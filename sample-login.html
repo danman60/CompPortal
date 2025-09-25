@@ -168,18 +168,18 @@
     </div>
 
     <script>
-        // Simple form validation demo
+        // Direct login demo - no validation required
         document.querySelector('form').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // Show loading
+            // Show loading briefly for better UX
             document.getElementById('loading').classList.remove('hidden');
 
-            // Simulate API call
+            // Quick redirect to dashboard (demo mode)
             setTimeout(() => {
                 document.getElementById('loading').classList.add('hidden');
                 window.location.href = 'sample-dashboard.html';
-            }, 2000);
+            }, 800);
         });
 
         // Add some interactive effects

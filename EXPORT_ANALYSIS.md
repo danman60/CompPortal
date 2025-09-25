@@ -116,6 +116,96 @@ Analysis of existing CSV export capabilities based on sample files from the curr
 - **Revenue Management**: Account-based billing system
 - **Competition Production**: Professional event management with video coordination
 
+### 4. **Competition Outline & Rehearsal Schedule Export** (`NATIONALS FINAL OUTLINE.pdf`)
+
+**Purpose**: Comprehensive event management document for multi-day competition logistics and elite team coordination
+
+**Document Structure** (5 pages):
+- **Event Overview**: Competition dates (July 14-19, 2025), location details, key contacts
+- **Elite Team Rehearsal Schedule**: Detailed instructor assignments and time slots
+- **Competition Flow Management**: Adjudication sessions, title round organization, finalist selections
+- **Special Events Coordination**: Private waterpark events, awards gala, entertainment scheduling
+
+**Key Features Revealed**:
+
+**Multi-Day Event Management**:
+- **6-day competition structure** spanning Monday to Saturday
+- **Elite team pre-competition rehearsals** with specialized instructors
+- **Professional event coordination** with specific venue requirements
+- **VIP experience management** including private recreational events
+
+**Advanced Scheduling Capabilities**:
+- **Instructor assignment tracking** - Specific dance professionals assigned to different elite teams
+- **Venue coordination** - Multiple location management (competition hall, waterpark, gala venue)
+- **Time slot precision** - Detailed scheduling down to specific time blocks
+- **Resource allocation** - Staff, venue, and equipment coordination
+
+**Elite Competition Features**:
+- **"Glow-Off" Championship** - Special elite competition category
+- **Title Round Management** - Advanced finalist selection and judging
+- **Adjudication Sessions** - Professional judging panel coordination
+- **Awards Ceremony Production** - Full gala event with entertainment
+
+**Business Intelligence Features**:
+- **Event timeline management** - Critical path scheduling for complex multi-day events
+- **Stakeholder coordination** - Detailed contact information for all key personnel
+- **Revenue event integration** - Private events and premium experiences for participants
+- **Professional production values** - Entertainment booking and venue management
+
+---
+
+### 5. **Comprehensive Competition Schedule Export** (`NATIONALS FULL SCHEDULE.pdf`)
+
+**Purpose**: Complete performance timetable for all competition participants, judges, and production staff
+
+**Document Scope** (51 pages):
+- **387 individual performances** across multiple days and sessions
+- **Precise timing coordination** with performance durations and transitions
+- **Multi-session organization** spanning different competition days
+- **Complete participant tracking** with full dancer names and studio affiliations
+
+**Advanced Scheduling Features Revealed**:
+
+**Performance Management System**:
+- **Entry-level precision**: Each of 387 performances individually tracked and timed
+- **Performance duration tracking**: Individual routine lengths for accurate scheduling
+- **Transition time management**: Built-in buffer times between performances
+- **Session coordination**: Multiple competition sessions per day with distinct judging panels
+
+**Competition Categories & Classification**:
+- **Titanium Division**: Elite skill level competitions
+- **Crystal Division**: Intermediate skill level competitions
+- **Age Group Stratification**: Mini (7-8), Pre Junior (9-10), Junior (11-12), Teen (13-14), Senior (15-16), Senior+ (17+)
+- **Dance Style Categories**: Ballet, Jazz, Lyrical, Contemporary, Hip Hop, Tap, Acro, Musical Theatre, Pointe
+- **Entry Size Classifications**: Solo, Duet/Trio (2-3), Small Group (4-8), Large Group (10+)
+
+**Advanced Competition Features**:
+- **Title Interviews**: Individual interview sessions with elite competitors
+- **Improvisation Competitions**: Special spontaneous performance categories
+- **"Glow-Off" Finals**: Championship round with special recognition
+- **Overalls Competition**: Cross-category championship competitions
+- **Awards Ceremony Integration**: Performance schedule coordinated with awards timing
+
+**Production & Technical Coordination**:
+- **Video Production Support**: Organized performance lineup for recording
+- **Sound Technical Requirements**: Music coordination and technical setup times
+- **Backstage Management**: Performer flow and preparation areas
+- **Judge Assignment**: Consistent judging panels across sessions
+- **Program Integration**: Schedule designed for printed program materials
+
+**Data Management Sophistication**:
+- **Dancer Identity Consistency**: Full name tracking across multiple performances per dancer
+- **Studio Affiliation Tracking**: Complete studio assignment for every performer
+- **Performance Sequencing**: Logical flow of performances to maintain energy and variety
+- **Time Optimization**: Efficient scheduling to maximize venue utilization
+- **Heat Organization**: Subdivision of large categories for manageable judging sessions
+
+**Business Impact Analysis**:
+- **Professional Event Management**: Demonstrates capability to manage large-scale competitive events
+- **Revenue Optimization**: Efficient scheduling maximizes venue rental and judge utilization
+- **Participant Experience**: Organized flow ensures positive experience for families and dancers
+- **Production Value**: Professional scheduling supports high-quality video and photography
+
 ---
 
 ## Technical Implementation Requirements
@@ -297,7 +387,17 @@ CREATE INDEX idx_scores_judge ON scores(judge_id);
    - Dynamic age grouping and classification systems
    - Comprehensive award category management
 
-4. **Advanced Competition Management Exports**
+4. **Competition Event Management Exports**
+   - **Multi-Day Event Outline**: Complete competition overview with logistics coordination
+   - **Elite Team Rehearsal Schedule**: Instructor assignment and specialized training coordination
+   - **Comprehensive Performance Schedule**: 387+ performance timetable with precise timing
+   - **Venue & Resource Coordination**: Multi-location event management
+   - **VIP Experience Management**: Premium event coordination (waterpark, gala, entertainment)
+   - **Title Interview Scheduling**: Elite competitor individual interview coordination
+   - **"Glow-Off" Championship**: Special elite competition event management
+   - **Awards Ceremony Production**: Full gala event with entertainment booking
+
+5. **Advanced Competition Management Exports**
    - **Judge Scorecards**: Individual scoring sheets with entry details
    - **Session Management**: Time-based scheduling with duration tracking
    - **Award Ceremony Reports**: Placement and recognition tracking
@@ -305,6 +405,9 @@ CREATE INDEX idx_scores_judge ON scores(judge_id);
    - **Studio Performance Analytics**: Historical performance tracking
    - **Revenue/Billing Reports**: Account-based competition fees
    - **Title Round Tracking**: Elite competition management
+   - **Backstage Management**: Performer flow and preparation coordination
+   - **Sound Technical Coordination**: Music and technical setup requirements
+   - **Improvisation Competition**: Spontaneous performance category management
 
 ### **Modern Export Features to Implement**
 
@@ -347,6 +450,16 @@ interface ExportService {
   exportRegistrationStats(competitionId: string): Promise<ExportResult>;
   exportCompetitionAnalytics(competitionId: string): Promise<ExportResult>;
   exportStudioBillingReport(studioId: string, dateRange: DateRange): Promise<ExportResult>;
+
+  // Advanced PDF exports (based on PDF analysis)
+  exportEventOutline(competitionId: string, options: EventOutlineOptions): Promise<ExportResult>;
+  exportEliteTeamSchedule(competitionId: string, includeInstructors: boolean): Promise<ExportResult>;
+  exportComprehensiveSchedule(competitionId: string, options: ComprehensiveScheduleOptions): Promise<ExportResult>;
+  exportTitleInterviewSchedule(competitionId: string): Promise<ExportResult>;
+  exportGlowOffChampionship(competitionId: string, includeFinalists: boolean): Promise<ExportResult>;
+  exportVIPExperienceSchedule(competitionId: string): Promise<ExportResult>;
+  exportVenueCoordination(competitionId: string, venueId?: string): Promise<ExportResult>;
+  exportImprovisationSchedule(competitionId: string, sessionId?: string): Promise<ExportResult>;
 }
 
 interface ScoringExportOptions extends BaseExportOptions {
@@ -382,6 +495,30 @@ interface LineupExportOptions {
   includeStudioDetails: boolean;
   markTitleRounds: boolean;
   format: 'csv' | 'pdf' | 'json';
+}
+
+interface EventOutlineOptions extends BaseExportOptions {
+  includeEliteTeamSchedule: boolean;
+  includeVenueDetails: boolean;
+  includeContactInformation: boolean;
+  includeSpecialEvents: boolean;  // Waterpark, gala, entertainment
+  includeInstructorAssignments: boolean;
+  multiDayView: boolean;  // 6-day competition structure
+}
+
+interface ComprehensiveScheduleOptions extends BaseExportOptions {
+  includePerformanceDurations: boolean;
+  includeTransitionTimes: boolean;
+  groupBySession: boolean;
+  groupByDay: boolean;
+  includeTitleInterviews: boolean;
+  includeImprovisation: boolean;
+  includeGlowOffRounds: boolean;
+  includeOverallCompetitions: boolean;
+  showJudgePanels: boolean;
+  formatForProgram: boolean;  // Optimize for printed program layout
+  includeBackstageNotes: boolean;
+  includeTechnicalRequirements: boolean;
 }
 ```
 
@@ -453,17 +590,43 @@ async function streamCompetitionExport(
 
 ## Business Impact
 
-These exports reveal a **sophisticated competition management system** handling:
-- **Multi-studio coordination** across provinces/states
-- **Complex performance categorization** with 400+ individual entries
-- **Professional competition production** requiring detailed participant tracking
-- **Title round management** for championship levels
-- **Video production support** with structured performance data
+These exports reveal a **highly sophisticated, enterprise-grade competition management system** handling:
 
-The modern rebuild must **maintain this level of detail** while improving:
-- Data quality and validation
-- Export performance and scalability
-- User experience for export generation
-- Integration with modern competition production tools
+### **Scale & Complexity**
+- **Multi-studio coordination** across provinces/states (26+ studios, international scope)
+- **Complex performance categorization** with 387+ individual entries across multiple skill divisions
+- **Professional multi-day event production** (6-day competition structure)
+- **Elite championship management** with specialized "Glow-Off" competitions and title rounds
+- **Comprehensive participant tracking** across multiple performance categories per dancer
 
-This analysis demonstrates the system serves **serious competitive dance events** requiring professional-grade data management and export capabilities.
+### **Advanced Event Management Capabilities**
+- **Multi-venue coordination** (competition halls, waterpark venues, gala locations)
+- **Elite team rehearsal coordination** with specialized instructor assignments
+- **VIP experience management** including private recreational events and premium experiences
+- **Professional entertainment coordination** with awards gala production
+- **Technical production support** including video, sound, and backstage management
+- **Improvisation competition management** for spontaneous performance categories
+
+### **Professional Production Requirements**
+- **Precise timing coordination** with performance duration tracking and transition management
+- **Judge panel management** across multiple sessions and locations
+- **Program integration** with printed materials and digital coordination
+- **Revenue optimization** through efficient venue utilization and premium event offerings
+- **Stakeholder coordination** across instructors, judges, venue staff, and entertainment personnel
+
+### **Data Management Sophistication**
+- **Individual performance tracking** for 387+ separate routines with full participant details
+- **Cross-category dancer management** enabling multiple entries per performer
+- **Studio performance analytics** for historical tracking and reporting
+- **Financial integration** with account-based billing and revenue tracking
+- **Competition flow optimization** with strategic performance sequencing
+
+The modern rebuild must **exceed this level of sophistication** while improving:
+- **Data quality and validation** with modern input controls and verification
+- **Export performance and scalability** for concurrent multi-user access and large datasets
+- **User experience** with intuitive interfaces for complex event management
+- **Real-time coordination** with live updates across all stakeholders
+- **Integration capabilities** with modern event production, payment, and communication tools
+- **Mobile accessibility** for on-site competition management and coordination
+
+This analysis demonstrates the system serves **professional-grade competitive dance events** requiring enterprise-level data management, sophisticated scheduling capabilities, and comprehensive export functionality that rivals major sporting event management systems. The complexity revealed through these exports indicates this is not a simple registration system, but a full-scale event production platform requiring significant technical sophistication in the rebuild.
