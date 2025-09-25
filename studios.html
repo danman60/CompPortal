@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studios - GlowDance Competition Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7c3aed',
+                        },
+                        dance: {
+                            pink: '#ec4899',
+                            purple: '#8b5cf6',
+                            gold: '#f59e0b',
+                            blue: '#3b82f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+    <!-- Background Animation -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -inset-10 opacity-10">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-dance-pink rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse"></div>
+            <div class="absolute top-1/3 right-1/4 w-96 h-96 bg-dance-purple rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-2000"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-96 h-96 bg-dance-gold rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-4000"></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="relative bg-white/10 backdrop-blur-md shadow-sm border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="h-8 w-8 bg-gradient-to-br from-dance-pink to-dance-purple rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-white text-sm"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-semibold text-white">GlowDance</span>
+                    </div>
+
+                    <!-- Main Navigation -->
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="sample-dashboard.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
+                            <a href="studios.html" class="bg-white/20 text-white px-3 py-2 rounded-md text-sm font-medium">Studios</a>
+                            <a href="dancers.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dancers</a>
+                            <a href="reservations.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservations</a>
+                            <a href="reports.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reports</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <button class="text-gray-300 hover:text-white relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                        </div>
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <button class="text-gray-300 hover:text-white ml-4">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="px-4 py-4 sm:px-0">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center">
+                        <i class="fas fa-building mr-3 text-dance-blue"></i>
+                        Studio Management
+                    </h1>
+                    <p class="mt-2 text-gray-300">Manage your dance studio profile and settings</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
+                        <i class="fas fa-edit mr-2"></i>
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Studio Profile Overview -->
+        <div class="px-4 sm:px-0 mb-8">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-start space-x-6">
+                    <!-- Studio Logo -->
+                    <div class="flex-shrink-0">
+                        <div class="h-24 w-24 bg-gradient-to-br from-dance-gold to-dance-pink rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                            UDA
+                        </div>
+                    </div>
+
+                    <!-- Studio Info -->
+                    <div class="flex-grow">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-2xl font-bold text-white">Uxbridge Dance Academy</h2>
+                            <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium border border-green-500/30">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Approved
+                            </span>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-4 text-gray-300">
+                            <div>
+                                <p class="flex items-center mb-2">
+                                    <i class="fas fa-map-marker-alt w-5 text-dance-gold mr-2"></i>
+                                    Uxbridge, Ontario, Canada
+                                </p>
+                                <p class="flex items-center mb-2">
+                                    <i class="fas fa-phone w-5 text-dance-gold mr-2"></i>
+                                    (905) 852-3393
+                                </p>
+                                <p class="flex items-center mb-2">
+                                    <i class="fas fa-envelope w-5 text-dance-gold mr-2"></i>
+                                    info@uxbridgedance.com
+                                </p>
+                            </div>
+                            <div>
+                                <p class="flex items-center mb-2">
+                                    <i class="fas fa-users w-5 text-dance-purple mr-2"></i>
+                                    12 Active Dancers
+                                </p>
+                                <p class="flex items-center mb-2">
+                                    <i class="fas fa-calendar-alt w-5 text-dance-purple mr-2"></i>
+                                    Est. 2008
+                                </p>
+                                <p class="flex items-center mb-2">
+                                    <i class="fas fa-trophy w-5 text-dance-purple mr-2"></i>
+                                    15+ Years Experience
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Studio Details Cards -->
+        <div class="px-4 sm:px-0 grid md:grid-cols-2 gap-6 mb-8">
+            <!-- Contact Information -->
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-address-card mr-3 text-dance-gold"></i>
+                    Contact Information
+                </h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Studio Name</label>
+                        <input type="text" value="Uxbridge Dance Academy" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Contact Name</label>
+                            <input type="text" value="Emily Einsmann" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                            <input type="text" value="Studio Director" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                            <input type="tel" value="(905) 852-3393" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                            <input type="email" value="info@uxbridgedance.com" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Studio Details -->
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-info-circle mr-3 text-dance-pink"></i>
+                    Studio Details
+                </h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Established Year</label>
+                            <input type="number" value="2008" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Student Count</label>
+                            <input type="number" value="85" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Primary Styles</label>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-dance-pink/20 text-dance-pink px-3 py-1 rounded-full text-sm border border-dance-pink/30">Ballet</span>
+                            <span class="bg-dance-purple/20 text-dance-purple px-3 py-1 rounded-full text-sm border border-dance-purple/30">Jazz</span>
+                            <span class="bg-dance-gold/20 text-dance-gold px-3 py-1 rounded-full text-sm border border-dance-gold/30">Contemporary</span>
+                            <span class="bg-dance-blue/20 text-dance-blue px-3 py-1 rounded-full text-sm border border-dance-blue/30">Tap</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Website</label>
+                        <input type="url" value="https://uxbridgedanceacademy.com" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="px-4 sm:px-0 mb-8">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-map-marker-alt mr-3 text-dance-blue"></i>
+                    Address Information
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Street Address</label>
+                            <input type="text" value="9176 Main Street" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Suite/Unit (Optional)</label>
+                            <input type="text" placeholder="Suite 200" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">City</label>
+                                <input type="text" value="Uxbridge" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Province/State</label>
+                                <input type="text" value="Ontario" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Postal Code</label>
+                                <input type="text" value="L9P 1R2" class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Country</label>
+                                <select class="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple focus:border-transparent">
+                                    <option value="CA" selected>Canada</option>
+                                    <option value="US">United States</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="px-4 sm:px-0 flex justify-end space-x-4">
+            <button class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-2 rounded-lg font-medium transition-all duration-200">
+                Cancel Changes
+            </button>
+            <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
+                <i class="fas fa-save mr-2"></i>
+                Save Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        // Add form interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus effects for inputs
+            const inputs = document.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('focused');
+                });
+                input.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('focused');
+                });
+            });
+
+            // Save button functionality
+            document.querySelector('[data-save]')?.addEventListener('click', function() {
+                // Show success message
+                const button = this;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>Saved!';
+                button.classList.add('bg-green-500', 'hover:bg-green-600');
+
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-green-500', 'hover:bg-green-600');
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

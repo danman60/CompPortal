@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservations - GlowDance Competition Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7c3aed',
+                        },
+                        dance: {
+                            pink: '#ec4899',
+                            purple: '#8b5cf6',
+                            gold: '#f59e0b',
+                            blue: '#3b82f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+    <!-- Background Animation -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -inset-10 opacity-10">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-dance-pink rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse"></div>
+            <div class="absolute top-1/3 right-1/4 w-96 h-96 bg-dance-purple rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-2000"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-96 h-96 bg-dance-gold rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-4000"></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="relative bg-white/10 backdrop-blur-md shadow-sm border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="h-8 w-8 bg-gradient-to-br from-dance-pink to-dance-purple rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-white text-sm"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-semibold text-white">GlowDance</span>
+                    </div>
+
+                    <!-- Main Navigation -->
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="sample-dashboard.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
+                            <a href="studios.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Studios</a>
+                            <a href="dancers.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dancers</a>
+                            <a href="reservations.html" class="bg-white/20 text-white px-3 py-2 rounded-md text-sm font-medium">Reservations</a>
+                            <a href="reports.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reports</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <button class="text-gray-300 hover:text-white relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                        </div>
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <button class="text-gray-300 hover:text-white ml-4">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="px-4 py-4 sm:px-0">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center">
+                        <i class="fas fa-calendar-alt mr-3 text-dance-gold"></i>
+                        Competition Reservations
+                    </h1>
+                    <p class="mt-2 text-gray-300">Book competition spaces and manage your entries</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
+                        <i class="fas fa-history mr-2"></i>
+                        View History
+                    </button>
+                    <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
+                        <i class="fas fa-plus mr-2"></i>
+                        New Reservation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservation Stats -->
+        <div class="px-4 sm:px-0 grid md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-gold/20 border border-dance-gold/30">
+                        <i class="fas fa-bookmark text-dance-gold text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Active Reservations</p>
+                        <p class="text-2xl font-bold text-white">2</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-purple/20 border border-dance-purple/30">
+                        <i class="fas fa-ticket-alt text-dance-purple text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Total Entries</p>
+                        <p class="text-2xl font-bold text-white">18</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-pink/20 border border-dance-pink/30">
+                        <i class="fas fa-dollar-sign text-dance-pink text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Total Fees</p>
+                        <p class="text-2xl font-bold text-white">$1,425</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-blue/20 border border-dance-blue/30">
+                        <i class="fas fa-check-circle text-dance-blue text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Confirmed</p>
+                        <p class="text-2xl font-bold text-white">100%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Reservations -->
+        <div class="px-4 sm:px-0 mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                <i class="fas fa-list-alt mr-3 text-dance-purple"></i>
+                Active Reservations
+            </h2>
+
+            <div class="space-y-6">
+                <!-- Reservation 1 -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-16 w-16 bg-gradient-to-br from-dance-gold to-dance-pink rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                                GD
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">GlowDance Championship 2025</h3>
+                                <p class="text-gray-300">Toronto Convention Centre • June 15-21, 2025</p>
+                                <div class="flex items-center space-x-4 mt-2">
+                                    <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm border border-green-500/30">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Confirmed
+                                    </span>
+                                    <span class="text-sm text-gray-400">Booking #GD2025-UDA-001</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold text-white">$975</p>
+                            <p class="text-sm text-gray-300">13 Entries</p>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6 mb-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-300 mb-2">Competition Details</h4>
+                            <div class="space-y-1 text-sm text-white">
+                                <p><i class="fas fa-calendar w-4 text-dance-gold mr-2"></i>June 15-21, 2025</p>
+                                <p><i class="fas fa-clock w-4 text-dance-gold mr-2"></i>6-Day Event</p>
+                                <p><i class="fas fa-users w-4 text-dance-gold mr-2"></i>26+ Studios</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-300 mb-2">Your Allocation</h4>
+                            <div class="space-y-1 text-sm text-white">
+                                <p><i class="fas fa-ticket-alt w-4 text-dance-purple mr-2"></i>13 Competition Entries</p>
+                                <p><i class="fas fa-chair w-4 text-dance-purple mr-2"></i>5 Reserved Spaces</p>
+                                <p><i class="fas fa-parking w-4 text-dance-purple mr-2"></i>2 Parking Passes</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-300 mb-2">Payment Status</h4>
+                            <div class="space-y-1 text-sm text-white">
+                                <p><i class="fas fa-credit-card w-4 text-dance-pink mr-2"></i>Paid in Full</p>
+                                <p><i class="fas fa-receipt w-4 text-dance-pink mr-2"></i>Invoice #INV-2025-001</p>
+                                <p><i class="fas fa-calendar-check w-4 text-dance-pink mr-2"></i>Paid March 15, 2025</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                        <div class="flex space-x-3">
+                            <button class="bg-dance-purple/20 hover:bg-dance-purple/30 text-dance-purple border border-dance-purple/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                                <i class="fas fa-eye mr-2"></i>
+                                View Details
+                            </button>
+                            <button class="bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                                <i class="fas fa-edit mr-2"></i>
+                                Manage Entries
+                            </button>
+                        </div>
+                        <button class="bg-white/10 hover:bg-white/20 text-gray-300 border border-white/20 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-download mr-2"></i>
+                            Download Schedule
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reservation 2 -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-16 w-16 bg-gradient-to-br from-dance-blue to-dance-purple rounded-2xl flex items-center justify-center text-white text-xl font-bold">
+                                SC
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Spring Championship 2025</h3>
+                                <p class="text-gray-300">Hamilton Convention Centre • April 12-14, 2025</p>
+                                <div class="flex items-center space-x-4 mt-2">
+                                    <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm border border-yellow-500/30">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Pending Payment
+                                    </span>
+                                    <span class="text-sm text-gray-400">Booking #SC2025-UDA-002</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold text-white">$450</p>
+                            <p class="text-sm text-gray-300">5 Entries</p>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6 mb-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-300 mb-2">Competition Details</h4>
+                            <div class="space-y-1 text-sm text-white">
+                                <p><i class="fas fa-calendar w-4 text-dance-blue mr-2"></i>April 12-14, 2025</p>
+                                <p><i class="fas fa-clock w-4 text-dance-blue mr-2"></i>3-Day Event</p>
+                                <p><i class="fas fa-users w-4 text-dance-blue mr-2"></i>18 Studios</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-300 mb-2">Your Allocation</h4>
+                            <div class="space-y-1 text-sm text-white">
+                                <p><i class="fas fa-ticket-alt w-4 text-dance-purple mr-2"></i>5 Competition Entries</p>
+                                <p><i class="fas fa-chair w-4 text-dance-purple mr-2"></i>3 Reserved Spaces</p>
+                                <p><i class="fas fa-parking w-4 text-dance-purple mr-2"></i>1 Parking Pass</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-300 mb-2">Payment Status</h4>
+                            <div class="space-y-1 text-sm text-white">
+                                <p><i class="fas fa-exclamation-triangle w-4 text-yellow-400 mr-2"></i>Payment Due</p>
+                                <p><i class="fas fa-receipt w-4 text-yellow-400 mr-2"></i>Invoice #INV-2025-002</p>
+                                <p><i class="fas fa-calendar-times w-4 text-yellow-400 mr-2"></i>Due March 30, 2025</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                        <div class="flex space-x-3">
+                            <button class="bg-dance-purple/20 hover:bg-dance-purple/30 text-dance-purple border border-dance-purple/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                                <i class="fas fa-eye mr-2"></i>
+                                View Details
+                            </button>
+                            <button class="bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                                <i class="fas fa-edit mr-2"></i>
+                                Manage Entries
+                            </button>
+                        </div>
+                        <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-credit-card mr-2"></i>
+                            Make Payment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Competitions -->
+        <div class="px-4 sm:px-0 mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                <i class="fas fa-calendar-plus mr-3 text-dance-blue"></i>
+                Available Competitions
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Available Competition 1 -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Summer Elite Championships</h3>
+                            <p class="text-gray-300">Metro Toronto Convention Centre</p>
+                            <p class="text-sm text-gray-400 mt-1">August 18-24, 2025</p>
+                        </div>
+                        <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm border border-green-500/30">
+                            Registration Open
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div>
+                            <p class="text-gray-300">Entry Fee: <span class="text-white font-medium">$85/entry</span></p>
+                            <p class="text-gray-300">Duration: <span class="text-white font-medium">7 Days</span></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-300">Registration Closes: <span class="text-white font-medium">June 15</span></p>
+                            <p class="text-gray-300">Available Spaces: <span class="text-white font-medium">142</span></p>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button class="flex-1 bg-dance-blue/20 hover:bg-dance-blue/30 text-dance-blue border border-dance-blue/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Learn More
+                        </button>
+                        <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-plus mr-2"></i>
+                            Reserve Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Available Competition 2 -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Fall Regional Competition</h3>
+                            <p class="text-gray-300">Mississauga Convention Centre</p>
+                            <p class="text-sm text-gray-400 mt-1">October 5-8, 2025</p>
+                        </div>
+                        <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm border border-yellow-500/30">
+                            Opening Soon
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div>
+                            <p class="text-gray-300">Entry Fee: <span class="text-white font-medium">$75/entry</span></p>
+                            <p class="text-gray-300">Duration: <span class="text-white font-medium">4 Days</span></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-300">Registration Opens: <span class="text-white font-medium">May 1</span></p>
+                            <p class="text-gray-300">Expected Spaces: <span class="text-white font-medium">200+</span></p>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button class="flex-1 bg-dance-blue/20 hover:bg-dance-blue/30 text-dance-blue border border-dance-blue/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Learn More
+                        </button>
+                        <button class="bg-white/10 text-gray-300 border border-white/20 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200" disabled>
+                            <i class="fas fa-clock mr-2"></i>
+                            Coming Soon
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="px-4 sm:px-0">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-bolt mr-3 text-dance-gold"></i>
+                    Quick Actions
+                </h3>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <button class="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-all duration-200 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 rounded-lg bg-dance-purple/20 border border-dance-purple/30 group-hover:bg-dance-purple/30">
+                                <i class="fas fa-calendar-plus text-dance-purple"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-white">Add Competition Entry</h4>
+                                <p class="text-sm text-gray-400">Register dancers for competitions</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button class="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-all duration-200 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 rounded-lg bg-dance-gold/20 border border-dance-gold/30 group-hover:bg-dance-gold/30">
+                                <i class="fas fa-file-invoice text-dance-gold"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-white">View Invoices</h4>
+                                <p class="text-sm text-gray-400">Download payment receipts</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button class="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-all duration-200 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 rounded-lg bg-dance-pink/20 border border-dance-pink/30 group-hover:bg-dance-pink/30">
+                                <i class="fas fa-bell text-dance-pink"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-white">Competition Alerts</h4>
+                                <p class="text-sm text-gray-400">Set reminders and notifications</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects for cards
+            const reservationCards = document.querySelectorAll('.bg-white\\/10.backdrop-blur-md.rounded-2xl');
+
+            reservationCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.2)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '';
+                });
+            });
+
+            // Payment reminder functionality
+            const paymentButtons = document.querySelectorAll('[data-payment]');
+            paymentButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Show payment modal or redirect to payment page
+                    console.log('Payment process initiated');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

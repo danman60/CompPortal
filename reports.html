@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - GlowDance Competition Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7c3aed',
+                        },
+                        dance: {
+                            pink: '#ec4899',
+                            purple: '#8b5cf6',
+                            gold: '#f59e0b',
+                            blue: '#3b82f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+    <!-- Background Animation -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -inset-10 opacity-10">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-dance-pink rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse"></div>
+            <div class="absolute top-1/3 right-1/4 w-96 h-96 bg-dance-purple rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-2000"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-96 h-96 bg-dance-gold rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-4000"></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="relative bg-white/10 backdrop-blur-md shadow-sm border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="h-8 w-8 bg-gradient-to-br from-dance-pink to-dance-purple rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-white text-sm"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-semibold text-white">GlowDance</span>
+                    </div>
+
+                    <!-- Main Navigation -->
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="sample-dashboard.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
+                            <a href="studios.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Studios</a>
+                            <a href="dancers.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dancers</a>
+                            <a href="reservations.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservations</a>
+                            <a href="reports.html" class="bg-white/20 text-white px-3 py-2 rounded-md text-sm font-medium">Reports</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <button class="text-gray-300 hover:text-white relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                        </div>
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <button class="text-gray-300 hover:text-white ml-4">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="px-4 py-4 sm:px-0">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center">
+                        <i class="fas fa-chart-bar mr-3 text-dance-blue"></i>
+                        Reports & Analytics
+                    </h1>
+                    <p class="mt-2 text-gray-300">Competition schedules, performance analytics, and data exports</p>
+                    <p class="text-sm text-gray-400 mt-1">
+                        <i class="fas fa-clock mr-1"></i>
+                        Last updated 2 hours ago
+                    </p>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh Data
+                    </button>
+                    <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
+                        <i class="fas fa-download mr-2"></i>
+                        Export All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Overview Cards -->
+        <div class="px-4 sm:px-0 grid md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-blue/20 border border-dance-blue/30">
+                        <i class="fas fa-file-alt text-dance-blue text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Available Reports</p>
+                        <p class="text-2xl font-bold text-white">12</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-gold/20 border border-dance-gold/30">
+                        <i class="fas fa-calendar-alt text-dance-gold text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Scheduled Events</p>
+                        <p class="text-2xl font-bold text-white">24</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-purple/20 border border-dance-purple/30">
+                        <i class="fas fa-download text-dance-purple text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Downloads This Month</p>
+                        <p class="text-2xl font-bold text-white">47</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-lg bg-dance-pink/20 border border-dance-pink/30">
+                        <i class="fas fa-clock text-dance-pink text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-300">Last Generated</p>
+                        <p class="text-2xl font-bold text-white">2h ago</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Competition Schedules -->
+        <div class="px-4 sm:px-0 mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                <i class="fas fa-calendar-week mr-3 text-dance-purple"></i>
+                Competition Schedules
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Current Competition Schedule -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-white">GlowDance Championship 2025</h3>
+                        <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm border border-green-500/30">
+                            Final Schedule
+                        </span>
+                    </div>
+
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-clock text-dance-gold"></i>
+                                <div>
+                                    <p class="text-white font-medium">Session 1 - Morning</p>
+                                    <p class="text-sm text-gray-300">June 15, 9:00 AM - 12:00 PM</p>
+                                </div>
+                            </div>
+                            <span class="text-white font-bold">8 Entries</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-clock text-dance-gold"></i>
+                                <div>
+                                    <p class="text-white font-medium">Session 2 - Afternoon</p>
+                                    <p class="text-sm text-gray-300">June 15, 2:00 PM - 5:00 PM</p>
+                                </div>
+                            </div>
+                            <span class="text-white font-bold">5 Entries</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-star text-dance-purple"></i>
+                                <div>
+                                    <p class="text-white font-medium">Awards Ceremony</p>
+                                    <p class="text-sm text-gray-300">June 21, 7:00 PM - 9:00 PM</p>
+                                </div>
+                            </div>
+                            <span class="text-dance-purple font-bold">Finale</span>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3">
+                        <button class="flex-1 bg-dance-purple/20 hover:bg-dance-purple/30 text-dance-purple border border-dance-purple/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-eye mr-2"></i>
+                            View Full Schedule
+                        </button>
+                        <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-download mr-2"></i>
+                            Download PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upcoming Competition Schedule -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-white">Spring Championship 2025</h3>
+                        <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm border border-yellow-500/30">
+                            Draft Schedule
+                        </span>
+                    </div>
+
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-clock text-dance-gold"></i>
+                                <div>
+                                    <p class="text-white font-medium">Session 1 - Solo/Duet</p>
+                                    <p class="text-sm text-gray-300">April 12, 10:00 AM - 1:00 PM</p>
+                                </div>
+                            </div>
+                            <span class="text-white font-bold">3 Entries</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-clock text-dance-gold"></i>
+                                <div>
+                                    <p class="text-white font-medium">Session 2 - Groups</p>
+                                    <p class="text-sm text-gray-300">April 13, 3:00 PM - 6:00 PM</p>
+                                </div>
+                            </div>
+                            <span class="text-white font-bold">2 Entries</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg opacity-50">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-star text-gray-500"></i>
+                                <div>
+                                    <p class="text-gray-400 font-medium">Awards Ceremony</p>
+                                    <p class="text-sm text-gray-500">TBD</p>
+                                </div>
+                            </div>
+                            <span class="text-gray-500 font-bold">TBD</span>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3">
+                        <button class="flex-1 bg-white/10 hover:bg-white/20 text-gray-300 border border-white/20 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit Schedule
+                        </button>
+                        <button class="bg-white/5 text-gray-400 border border-white/10 px-4 py-2 rounded-lg font-medium text-sm cursor-not-allowed" disabled>
+                            <i class="fas fa-download mr-2"></i>
+                            Generate PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Analytics -->
+        <div class="px-4 sm:px-0 mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                <i class="fas fa-chart-line mr-3 text-dance-gold"></i>
+                Performance Analytics
+            </h2>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Dancer Performance Chart -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-user-friends mr-2 text-dance-pink"></i>
+                        Dancer Performance
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Emma Sullivan</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-white/10 rounded-full h-2">
+                                    <div class="bg-dance-pink h-2 rounded-full" style="width: 92%"></div>
+                                </div>
+                                <span class="text-white font-medium">92%</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Maya Singh</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-white/10 rounded-full h-2">
+                                    <div class="bg-dance-gold h-2 rounded-full" style="width: 88%"></div>
+                                </div>
+                                <span class="text-white font-medium">88%</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Ava Rodriguez</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-white/10 rounded-full h-2">
+                                    <div class="bg-dance-purple h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                                <span class="text-white font-medium">85%</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Studio Average</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-white/10 rounded-full h-2">
+                                    <div class="bg-dance-blue h-2 rounded-full" style="width: 87%"></div>
+                                </div>
+                                <span class="text-white font-medium">87%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full mt-4 bg-dance-pink/20 hover:bg-dance-pink/30 text-dance-pink border border-dance-pink/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        View Detailed Analytics
+                    </button>
+                </div>
+
+                <!-- Competition Trends -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-trending-up mr-2 text-dance-gold"></i>
+                        Competition Trends
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div class="p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white font-medium">2024 vs 2025</span>
+                                <span class="text-green-400 text-sm">+15%</span>
+                            </div>
+                            <div class="text-sm text-gray-300">
+                                Entries increased from 16 to 18
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white font-medium">Average Score</span>
+                                <span class="text-blue-400 text-sm">+3.2</span>
+                            </div>
+                            <div class="text-sm text-gray-300">
+                                Improved from 84.1 to 87.3
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white font-medium">Top Categories</span>
+                                <span class="text-purple-400 text-sm">Ballet, Jazz</span>
+                            </div>
+                            <div class="text-sm text-gray-300">
+                                Strongest performance areas
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white font-medium">Award Rate</span>
+                                <span class="text-yellow-400 text-sm">78%</span>
+                            </div>
+                            <div class="text-sm text-gray-300">
+                                14 of 18 entries placed
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full mt-4 bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        View Trend Analysis
+                    </button>
+                </div>
+
+                <!-- Export Center -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-download mr-2 text-dance-blue"></i>
+                        Export Center
+                    </h3>
+
+                    <div class="space-y-3">
+                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-3 text-left transition-all duration-200 group">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-csv text-dance-purple"></i>
+                                    <div>
+                                        <p class="text-white font-medium">Dancer Roster</p>
+                                        <p class="text-xs text-gray-400">CSV • Updated today</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-download text-gray-400 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </button>
+
+                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-3 text-left transition-all duration-200 group">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-pdf text-dance-pink"></i>
+                                    <div>
+                                        <p class="text-white font-medium">Competition Schedule</p>
+                                        <p class="text-xs text-gray-400">PDF • Final version</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-download text-gray-400 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </button>
+
+                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-3 text-left transition-all duration-200 group">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-excel text-dance-gold"></i>
+                                    <div>
+                                        <p class="text-white font-medium">Score Summary</p>
+                                        <p class="text-xs text-gray-400">XLSX • 2h ago</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-download text-gray-400 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </button>
+
+                        <button class="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-3 text-left transition-all duration-200 group">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-archive text-dance-blue"></i>
+                                    <div>
+                                        <p class="text-white font-medium">Complete Package</p>
+                                        <p class="text-xs text-gray-400">ZIP • All reports</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-download text-gray-400 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </button>
+                    </div>
+
+                    <button class="w-full mt-4 bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                        <i class="fas fa-cog mr-2"></i>
+                        Custom Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="px-4 sm:px-0">
+            <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                <i class="fas fa-history mr-3 text-dance-pink"></i>
+                Recent Activities
+            </h2>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-4 p-3 bg-white/5 rounded-lg">
+                        <div class="p-2 rounded-full bg-dance-blue/20 border border-dance-blue/30">
+                            <i class="fas fa-download text-dance-blue text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white font-medium">Competition schedule downloaded</p>
+                            <p class="text-sm text-gray-400">GlowDance Championship 2025 • PDF</p>
+                        </div>
+                        <span class="text-sm text-gray-400">2 hours ago</span>
+                    </div>
+
+                    <div class="flex items-center space-x-4 p-3 bg-white/5 rounded-lg">
+                        <div class="p-2 rounded-full bg-dance-gold/20 border border-dance-gold/30">
+                            <i class="fas fa-chart-bar text-dance-gold text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white font-medium">Analytics report generated</p>
+                            <p class="text-sm text-gray-400">Performance summary • 12 dancers</p>
+                        </div>
+                        <span class="text-sm text-gray-400">1 day ago</span>
+                    </div>
+
+                    <div class="flex items-center space-x-4 p-3 bg-white/5 rounded-lg">
+                        <div class="p-2 rounded-full bg-dance-purple/20 border border-dance-purple/30">
+                            <i class="fas fa-file-csv text-dance-purple text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white font-medium">Dancer roster exported</p>
+                            <p class="text-sm text-gray-400">CSV format • Complete list</p>
+                        </div>
+                        <span class="text-sm text-gray-400">3 days ago</span>
+                    </div>
+
+                    <div class="flex items-center space-x-4 p-3 bg-white/5 rounded-lg">
+                        <div class="p-2 rounded-full bg-dance-pink/20 border border-dance-pink/30">
+                            <i class="fas fa-sync-alt text-dance-pink text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white font-medium">Data refresh completed</p>
+                            <p class="text-sm text-gray-400">All reports updated • Auto-sync</p>
+                        </div>
+                        <span class="text-sm text-gray-400">1 week ago</span>
+                    </div>
+                </div>
+
+                <button class="w-full mt-4 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/20 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                    <i class="fas fa-history mr-2"></i>
+                    View All Activities
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Export button functionality
+            const exportButtons = document.querySelectorAll('[data-export]');
+            exportButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const exportType = this.dataset.export;
+                    console.log(`Exporting ${exportType}`);
+
+                    // Show download animation
+                    const icon = this.querySelector('i');
+                    const originalClass = icon.className;
+                    icon.className = 'fas fa-spinner fa-spin';
+
+                    setTimeout(() => {
+                        icon.className = 'fas fa-check text-green-400';
+                        setTimeout(() => {
+                            icon.className = originalClass;
+                        }, 2000);
+                    }, 1500);
+                });
+            });
+
+            // Progress bar animations
+            const progressBars = document.querySelectorAll('[style*="width:"]');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.transition = 'width 1s ease-out';
+                    bar.style.width = width;
+                }, 500);
+            });
+
+            // Refresh data functionality
+            const refreshButton = document.querySelector('[data-refresh]');
+            refreshButton?.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                icon.classList.add('fa-spin');
+
+                setTimeout(() => {
+                    icon.classList.remove('fa-spin');
+                    // Update timestamp
+                    const timestamp = document.querySelector('.text-gray-400');
+                    timestamp.innerHTML = '<i class="fas fa-clock mr-1"></i>Just updated';
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
