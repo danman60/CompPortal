@@ -1,0 +1,85 @@
+[
+  {
+    "action": "https://glowdancecomp.computitionhq.com/studios/477/reservations",
+    "method": "post",
+    "fields": [
+      {
+        "name": "authenticity_token",
+        "type": "hidden",
+        "value": "atbKCrNNDzO2m33n08q2vQGMkmyR8oAGSRmoS8fH3oI=",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "reservation[location_id]",
+        "type": "select-one",
+        "value": "268",
+        "required": false,
+        "id": "reservation_location_id"
+      },
+      {
+        "name": "reservation[spaces]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "reservation_spaces"
+      },
+      {
+        "name": "reservation[agentfirstname]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "reservation_agentfirstname"
+      },
+      {
+        "name": "reservation[agentlastname]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "reservation_agentlastname"
+      },
+      {
+        "name": "reservation[ageofconsent]",
+        "type": "hidden",
+        "value": "0",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "reservation[ageofconsent]",
+        "type": "checkbox",
+        "value": "1",
+        "required": false,
+        "id": "reservation_ageofconsent"
+      },
+      {
+        "name": "reservation[agentemail]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "reservation_agentemail"
+      },
+      {
+        "name": "reservation[waiverconsent]",
+        "type": "hidden",
+        "value": "0",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "reservation[waiverconsent]",
+        "type": "checkbox",
+        "value": "1",
+        "required": false,
+        "id": "reservation_waiverconsent"
+      },
+      {
+        "name": "commit",
+        "type": "submit",
+        "value": "Create Reservation",
+        "required": false,
+        "id": "reservation_submit"
+      }
+    ]
+  }
+]

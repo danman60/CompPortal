@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <title>Computition | Studios</title>
+    <link href="/stylesheets/scaffold.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/formtastic.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/formtastic_changes.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/blueprint/screen.css?1754082241" media="screen, projection" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/blueprint/print.css?1754082241" media="print" rel="stylesheet" type="text/css">
+    <!--[if lt IE 8]><link href="/stylesheets/blueprint/ie.css?1754082241" media="screen, projection" rel="stylesheet" type="text/css" /><![endif]-->
+
+    <link href="/stylesheets/smoothness/jquery-ui-1.8.4.custom.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+
+    <script src="/javascripts/clipboard.min.js?1754082241" type="text/javascript"></script>
+    <script src="/javascripts/jquery-1.4.2.js?1754082241" type="text/javascript"></script>
+    <script src="/javascripts/jquery-ui-1.8.4.custom.min.js?1754082241" type="text/javascript"></script>
+
+
+    
+
+  </head>
+  <body>
+
+    <div class="container">
+
+      <div class="span-24 last" id="user_nav">
+        
+          <span style="float: left">Welcome <strong>Uxbridge Dance Academy </strong> | <a href="/users/current/edit">Edit Profile</a>
+            
+          </span>
+          <span style="float: right"><a href="/mydashboard">My Dashboard</a> |
+            <a href="/help">Help</a> |
+            <a href="/logout">Logout</a>
+
+          </span>
+        
+
+        
+        
+        <img alt="Banner_glowdancecomp" src="/images/banner_glowdancecomp.jpg?1754082241" style="padding: 10px 0px 10px 0px;">
+      </div>
+
+      <div class="span-22 prepend-1 append-1 last">
+        <p style="color: green">
+          
+            
+          
+            
+          
+            
+          
+            
+          
+            
+          
+        </p>
+        <h2>Editing Studio</h2>
+
+<h3 class="form-section-header">Studio Information</h3>
+
+<form action="/studios/477" class="formtastic studio" id="edit_studio_477" method="post"><div style="margin:0;padding:0;display:inline"><input name="_method" type="hidden" value="put"><input name="authenticity_token" type="hidden" value="atbKCrNNDzO2m33n08q2vQGMkmyR8oAGSRmoS8fH3oI="></div>
+
+  <fieldset class="inputs"><ol>
+    <li class="string required" id="studio_name_input"><label for="studio_name">Name<abbr title="required">*</abbr></label><input id="studio_name" maxlength="255" name="studio[name]" type="text" value="Uxbridge Dance Academy "></li>
+    <li class="string required" id="studio_address1_input"><label for="studio_address1">Address 1<abbr title="required">*</abbr></label><input id="studio_address1" maxlength="255" name="studio[address1]" type="text" value="69 Albert Street"></li>
+    <li class="string optional" id="studio_address2_input"><label for="studio_address2">Address 2</label><input id="studio_address2" maxlength="255" name="studio[address2]" type="text" value=""></li>
+    <li class="string required" id="studio_city_input"><label for="studio_city">City<abbr title="required">*</abbr></label><input id="studio_city" maxlength="255" name="studio[city]" type="text" value="Uxbridge"></li>
+    <li class="select required" id="studio_province_input"><label for="studio_province">Province<abbr title="required">*</abbr></label><select id="studio_province" name="studio[province]"><option value=""></option>
+<option value="AB">AB</option>
+<option value="BC">BC</option>
+<option value="MB">MB</option>
+<option value="NB">NB</option>
+<option value="NL">NL</option>
+<option value="NT">NT</option>
+<option value="NS">NS</option>
+<option value="NU">NU</option>
+<option value="ON" selected="selected">ON</option>
+<option value="PE">PE</option>
+<option value="QC">QC</option>
+<option value="SK">SK</option>
+<option value="YT">YT</option></select></li>
+    <li class="string required" id="studio_postalcode_input"><label for="studio_postalcode">Postal Code<abbr title="required">*</abbr></label><input id="studio_postalcode" maxlength="255" name="studio[postalcode]" type="text" value="L9P 1E5"></li>
+    <li class="phone required" id="studio_phone_input"><label for="studio_phone">Phone<abbr title="required">*</abbr></label><input id="studio_phone" maxlength="255" name="studio[phone]" type="text" value="647 448 4621"></li>
+    <li class="phone optional" id="studio_fax_input"><label for="studio_fax">Fax</label><input id="studio_fax" maxlength="255" name="studio[fax]" type="text" value=""></li>
+    <li class="email required" id="studio_email_input"><label for="studio_email">Email<abbr title="required">*</abbr></label><input id="studio_email" maxlength="255" name="studio[email]" type="text" value="Emily.einsmann@gmail.com"></li>
+    <li class="string required" id="studio_contactname_input"><label for="studio_contactname">Contact Name<abbr title="required">*</abbr></label><input id="studio_contactname" maxlength="255" name="studio[contactname]" type="text" value="Emily Einsmann">
+<p class="inline-hints">Please provide the name of a contact who will be onsite during the competition.</p></li>
+    <li class="phone optional" id="studio_contactphone_input"><label for="studio_contactphone">Contact Phone</label><input id="studio_contactphone" maxlength="255" name="studio[contactphone]" type="text" value="647 448 4621">
+<p class="inline-hints">Please provide the phone number of a contact who will be onsite during the competition.</p></li>
+    <li class="email optional" id="studio_contactemail_input"><label for="studio_contactemail">Contact Email</label><input id="studio_contactemail" maxlength="255" name="studio[contactemail]" type="text" value="emily.einsmann@gmail.com"></li>
+    <li class="text optional" id="studio_comments_input"><label for="studio_comments">Comments</label><textarea id="studio_comments" name="studio[comments]" rows="20"></textarea></li>
+
+    
+
+  </ol></fieldset>
+
+  <fieldset class="buttons"><ol><li class="commit"><input class="update" id="studio_submit" name="commit" type="submit" value="Update Studio"></li></ol></fieldset>
+</form>
+
+<a href="/studios/477">Cancel</a> |
+<a href="/studios">Return to Studios</a>
+      </div>
+
+      <div id="master-footer" class="span-24 last">
+        <img alt="Small_mouse" src="/images/small_mouse.jpg?1754082241" style="padding-right: 10px;">
+        <strong>ComputitionHQ</strong> is a service of <em> Wolfe's Computer Consulting Inc.</em> 
+        Copyright © 2009-2025. Need assistance?  Have a suggestion?  <script type="text/javascript">eval(decodeURIComponent('%64%6f%63%75%6d%65%6e%74%2e%77%72%69%74%65%28%27%3c%61%20%68%72%65%66%3d%5c%22%6d%61%69%6c%74%6f%3a%70%72%65%73%69%64%65%6e%74%40%77%63%63%69%6e%63%2e%63%61%3f%73%75%62%6a%65%63%74%3d%43%6f%6d%70%75%74%69%74%69%6f%6e%48%51%25%32%30%53%75%70%70%6f%72%74%5c%22%3e%43%6f%6e%74%61%63%74%20%55%73%3c%5c%2f%61%3e%27%29%3b'))</script><a href="mailto:president@wccinc.ca?subject=ComputitionHQ%20Support">Contact Us</a>
+      </div>
+
+    </div>
+
+  
+</body></html>

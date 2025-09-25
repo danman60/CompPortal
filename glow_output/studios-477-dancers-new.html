@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <title>Computition | Dancers</title>
+    <link href="/stylesheets/scaffold.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/formtastic.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/formtastic_changes.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/blueprint/screen.css?1754082241" media="screen, projection" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/blueprint/print.css?1754082241" media="print" rel="stylesheet" type="text/css">
+    <!--[if lt IE 8]><link href="/stylesheets/blueprint/ie.css?1754082241" media="screen, projection" rel="stylesheet" type="text/css" /><![endif]-->
+
+    <link href="/stylesheets/smoothness/jquery-ui-1.8.4.custom.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+
+    <script src="/javascripts/clipboard.min.js?1754082241" type="text/javascript"></script>
+    <script src="/javascripts/jquery-1.4.2.js?1754082241" type="text/javascript"></script>
+    <script src="/javascripts/jquery-ui-1.8.4.custom.min.js?1754082241" type="text/javascript"></script>
+
+
+    
+
+  </head>
+  <body>
+
+    <div class="container">
+
+      <div class="span-24 last" id="user_nav">
+        
+          <span style="float: left">Welcome <strong>Uxbridge Dance Academy </strong> | <a href="/users/current/edit">Edit Profile</a>
+            
+          </span>
+          <span style="float: right"><a href="/mydashboard">My Dashboard</a> |
+            <a href="/help">Help</a> |
+            <a href="/logout">Logout</a>
+
+          </span>
+        
+
+        
+        
+        <img alt="Banner_glowdancecomp" src="/images/banner_glowdancecomp.jpg?1754082241" style="padding: 10px 0px 10px 0px;">
+      </div>
+
+      <div class="span-22 prepend-1 append-1 last">
+        <p style="color: green">
+          
+            
+          
+            
+          
+            
+          
+            
+          
+            
+          
+        </p>
+        <h2>New Dancer</h2>
+
+<h3 class="form-section-header">Dancer Information</h3>
+
+<form action="/studios/477/dancers" class="formtastic dancer" id="new_dancer" method="post"><div style="margin:0;padding:0;display:inline"><input name="authenticity_token" type="hidden" value="atbKCrNNDzO2m33n08q2vQGMkmyR8oAGSRmoS8fH3oI="></div>
+
+  <fieldset class="inputs"><ol>
+    <li class="select optional" id="dancer_studio_input"><label for="dancer_studio_id">Studio</label><select id="dancer_studio_id" name="dancer[studio_id]"><option value="477" selected="selected">Uxbridge Dance Academy </option></select></li>
+    <li class="string required" id="dancer_first_name_input"><label for="dancer_first_name">First Name<abbr title="required">*</abbr></label><input id="dancer_first_name" maxlength="255" name="dancer[first_name]" type="text"></li>
+    <li class="string required" id="dancer_last_name_input"><label for="dancer_last_name">Last Name<abbr title="required">*</abbr></label><input id="dancer_last_name" maxlength="255" name="dancer[last_name]" type="text"></li>
+    <li class="string optional" id="dancer_dob_input"><label for="dancer_dob">Date of Birth</label><input id="dancer_dob" name="dancer[dob]" type="text">
+<p class="inline-hints">Enter in one of the following formats yyyy-mm-dd | mm/dd/yyyy</p></li>
+    <li class="string optional" id="dancer_age_override_input"><label for="dancer_age_override">Age Override</label><input id="dancer_age_override" name="dancer[age_override]" type="text">
+<p class="inline-hints">An &lt;b&gt;alternate&lt;/b&gt; to providing a date of birth.  If you have an known age rather than a date of birth you can enter it here to override the age calculation.  Note that this will bypass age rule calculations for entries and will not automatically update from year to year</p></li>
+
+    <h3 class="form-section-header">Entries</h3>
+    <table>
+      <tfoot><tr><td>0 entries</td></tr></tfoot>
+      <tbody>
+        
+          <tr>
+            <td>Not a dancer in any entries yet.</td>
+          </tr>
+        
+      </tbody>
+    </table>
+
+  </ol></fieldset>
+
+  <fieldset class="buttons"><ol><li class="commit"><input class="create" id="dancer_submit" name="commit" type="submit" value="Create Dancer"></li></ol></fieldset>
+</form>
+
+<a href="/studios/477/dancers">Return to Dancers</a>
+      </div>
+
+      <div id="master-footer" class="span-24 last">
+        <img alt="Small_mouse" src="/images/small_mouse.jpg?1754082241" style="padding-right: 10px;">
+        <strong>ComputitionHQ</strong> is a service of <em> Wolfe's Computer Consulting Inc.</em> 
+        Copyright © 2009-2025. Need assistance?  Have a suggestion?  <script type="text/javascript">eval(decodeURIComponent('%64%6f%63%75%6d%65%6e%74%2e%77%72%69%74%65%28%27%3c%61%20%68%72%65%66%3d%5c%22%6d%61%69%6c%74%6f%3a%70%72%65%73%69%64%65%6e%74%40%77%63%63%69%6e%63%2e%63%61%3f%73%75%62%6a%65%63%74%3d%43%6f%6d%70%75%74%69%74%69%6f%6e%48%51%25%32%30%53%75%70%70%6f%72%74%5c%22%3e%43%6f%6e%74%61%63%74%20%55%73%3c%5c%2f%61%3e%27%29%3b'))</script><a href="mailto:president@wccinc.ca?subject=ComputitionHQ%20Support">Contact Us</a>
+      </div>
+
+    </div>
+
+  
+</body></html>

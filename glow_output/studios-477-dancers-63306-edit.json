@@ -1,0 +1,64 @@
+[
+  {
+    "action": "https://glowdancecomp.computitionhq.com/studios/477/dancers/63306",
+    "method": "post",
+    "fields": [
+      {
+        "name": "_method",
+        "type": "hidden",
+        "value": "put",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "authenticity_token",
+        "type": "hidden",
+        "value": "atbKCrNNDzO2m33n08q2vQGMkmyR8oAGSRmoS8fH3oI=",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "dancer[studio_id]",
+        "type": "select-one",
+        "value": "477",
+        "required": false,
+        "id": "dancer_studio_id"
+      },
+      {
+        "name": "dancer[first_name]",
+        "type": "text",
+        "value": "Raya",
+        "required": false,
+        "id": "dancer_first_name"
+      },
+      {
+        "name": "dancer[last_name]",
+        "type": "text",
+        "value": "Brennan-Brown ",
+        "required": false,
+        "id": "dancer_last_name"
+      },
+      {
+        "name": "dancer[dob]",
+        "type": "text",
+        "value": "2012-07-05",
+        "required": false,
+        "id": "dancer_dob"
+      },
+      {
+        "name": "dancer[age_override]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "dancer_age_override"
+      },
+      {
+        "name": "commit",
+        "type": "submit",
+        "value": "Update Dancer",
+        "required": false,
+        "id": "dancer_submit"
+      }
+    ]
+  }
+]

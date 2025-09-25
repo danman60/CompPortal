@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <title>Computition | Reservations</title>
+    <link href="/stylesheets/scaffold.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/formtastic.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/formtastic_changes.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/blueprint/screen.css?1754082241" media="screen, projection" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/blueprint/print.css?1754082241" media="print" rel="stylesheet" type="text/css">
+    <!--[if lt IE 8]><link href="/stylesheets/blueprint/ie.css?1754082241" media="screen, projection" rel="stylesheet" type="text/css" /><![endif]-->
+
+    <link href="/stylesheets/smoothness/jquery-ui-1.8.4.custom.css?1754082241" media="screen" rel="stylesheet" type="text/css">
+
+    <script src="/javascripts/clipboard.min.js?1754082241" type="text/javascript"></script>
+    <script src="/javascripts/jquery-1.4.2.js?1754082241" type="text/javascript"></script>
+    <script src="/javascripts/jquery-ui-1.8.4.custom.min.js?1754082241" type="text/javascript"></script>
+
+
+    
+  
+    <script type="text/javascript">
+      $(function() {
+        var testNationals = $('#reservation_location_id').find("option:selected");
+        if (testNationals.val() == '-1') {
+
+        }
+        else {
+          $("label[for='reservation_dancer_estimate']").text('')
+          $("#reservation_dancer_estimate").hide();
+        }
+
+        $('#reservation_location_id').change(function () {
+          var optionSelected = $(this).find("option:selected");
+          if (optionSelected.val() == '-1') {
+            $("label[for='reservation_dancer_estimate']").text('# of Dancers Attending')
+            $("#reservation_dancer_estimate").show();
+          }
+          else {
+            $("label[for='reservation_dancer_estimate']").text('')
+            $("#reservation_dancer_estimate").hide();
+          }
+        });
+      });
+    </script>
+  
+
+
+  </head>
+  <body>
+
+    <div class="container">
+
+      <div class="span-24 last" id="user_nav">
+        
+          <span style="float: left">Welcome <strong>Uxbridge Dance Academy </strong> | <a href="/users/current/edit">Edit Profile</a>
+            
+          </span>
+          <span style="float: right"><a href="/mydashboard">My Dashboard</a> |
+            <a href="/help">Help</a> |
+            <a href="/logout">Logout</a>
+
+          </span>
+        
+
+        
+        
+        <img alt="Banner_glowdancecomp" src="/images/banner_glowdancecomp.jpg?1754082241" style="padding: 10px 0px 10px 0px;">
+      </div>
+
+      <div class="span-22 prepend-1 append-1 last">
+        <p style="color: green">
+          
+            
+          
+            
+          
+            
+          
+            
+          
+            
+          
+        </p>
+        <h2>New Reservation</h2>
+
+
+
+<h3 class="form-section-header">Reservation Information</h3>
+
+
+  
+
+
+<form action="/studios/477/reservations" class="formtastic reservation" id="new_reservation" method="post"><div style="margin:0;padding:0;display:inline"><input name="authenticity_token" type="hidden" value="atbKCrNNDzO2m33n08q2vQGMkmyR8oAGSRmoS8fH3oI="></div>
+
+  <fieldset class="inputs"><ol>
+    <li class="select optional" id="reservation_location_input"><label for="reservation_location_id">Location</label><select id="reservation_location_id" name="reservation[location_id]"><option value="268">Orlando, FL (February 20, 2026 to February 22, 2026)</option>
+<option value="269">St. Catherines 1 (April) (April 9, 2026 to April 12, 2026)</option>
+<option value="270">Collingwood 1 (April) (April 23, 2026 to April 26, 2026)</option>
+<option value="271">Toronto (May 8, 2026 to May 10, 2026)</option>
+<option value="272">St. Catherines 2 (May) (May 14, 2026 to May 17, 2026)</option>
+<option value="273">Collingwood 2 (June) (June 4, 2026 to June 7, 2026)</option></select></li>
+    <li class="numeric required" id="reservation_spaces_input"><label for="reservation_spaces"># of Routines<abbr title="required">*</abbr></label><input id="reservation_spaces" name="reservation[spaces]" type="text"></li>
+    
+
+    
+
+    
+      
+        
+      
+
+      <h2>Assumption Of Risk And Waiver Of Liability</h2>
+      <p>As an agent and/or representative of the participants or contestants registered (the "Agent"), I fully agree and understand that dance and gymnastics is a hazardous activity and involves personal risks, hazards and dangers. I, The Agent, understand that these risks, hazards and dangers are inherent in and incidental to dance and gymnastics and may result in injuries, including, but not limited to, paralyzing injury or death. The Agent hereby assumes these risks, hazards and dangers.</p>
+      <p>The Agent further agrees to acknowledge that by gathering together with other participants there is potential to contract infectious communicable diseases such as, without limitation, measles, mumps, influenza, COVID-19, chicken pox, rubella, and whooping cough. In addition, the Agent acknowledges the contagious nature of COVID-19 and voluntarily assumes the risk that the Agent and its participants and spectators may be exposed to or infected by COVID-19 by attending and that such exposure or infection may result in personal injury, illness, permanent disability and death.</p>
+      <p>In consideration of the Agent being permitted to utilize the services and programs of Glow Dance Competition, the Agent on behalf of themselves and their participants has carefully considered such premises, equipment, and facilities and that the Agent recognizes and assumes the risks, hazards and dangers of injuries from contracting any infectious communicable disease, such as, without limitation, measles, mumps, influenza, COVID-19 and voluntarily assumes the risk that the Agent and its participants and spectators may be exposed to or infected by COVID-19 by attending and that such exposure or infection may result in personal injury, illness, permanent disability and death. </p>
+      <p>In consideration of the Agent being permitted to utilize the services and programs of Glow Dance Competition, the Agent on behalf of themselves and their participants have carefully considered such premises, equipment, and facilities and that the Agent recognizes and assumes the risks, hazards and dangers of injuries from contracting any infectious communicable disease, such as, without limitation, measles, mumps, influenza, COVID-19, chicken pox, rubella, and whooping cough, regardless of whether the source is a customer, participant, staff member or any other individual present in the facility.</p>
+      <p>The Agent, on his or her own behalf and on behalf of their participants, hereby waives, releases and forever discharges any and all claims or causes of actions which the Agent may have now or hereafter against Glow Dance Competition, whether known or unknown, arising out of any injuries, contraction of infectious communicable disease, or damage that undersigned may sustain in connection to their participation in program and will indemnify and hold harmless Glow Dance Competition, its directors, officers, employees, volunteer and agents (collectively, the "Released Parties"). The Agent hereby further agrees not to sue Glow Dance Competition or other Released Parties for the claims waived and released in this Waiver of Liability.</p>
+
+      <br>
+      <h4>Electronic Signature for Studio Representative - The "Agent":</h4> 
+      <li class="string optional" id="reservation_agentfirstname_input"><label for="reservation_agentfirstname">First Name</label><input id="reservation_agentfirstname" maxlength="255" name="reservation[agentfirstname]" type="text"></li>
+      <li class="string optional" id="reservation_agentlastname_input"><label for="reservation_agentlastname">Last Name</label><input id="reservation_agentlastname" maxlength="255" name="reservation[agentlastname]" type="text"></li>
+      <li class="boolean optional" id="reservation_ageofconsent_input"><input name="reservation[ageofconsent]" type="hidden" value="0"><label for="reservation_ageofconsent"><input id="reservation_ageofconsent" name="reservation[ageofconsent]" type="checkbox" value="1">I certify that I am 18 years of age or older</label></li>
+      <li class="email optional" id="reservation_agentemail_input"><label for="reservation_agentemail">Email Address</label><input id="reservation_agentemail" maxlength="255" name="reservation[agentemail]" type="text"></li>
+      <li class="boolean required" id="reservation_waiverconsent_input"><input name="reservation[waiverconsent]" type="hidden" value="0"><label for="reservation_waiverconsent"><input id="reservation_waiverconsent" name="reservation[waiverconsent]" type="checkbox" value="1">I have fully read, understood, and agree to the Assumption Of Risk And Waiver Of Liability shown above.<abbr title="required">*</abbr></label></li>
+    
+  </ol></fieldset>
+
+  <fieldset class="buttons"><ol><li class="commit"><input class="create" id="reservation_submit" name="commit" type="submit" value="Create Reservation"></li></ol></fieldset>
+</form>
+
+<a href="/studios/477/reservations">Return to Reservations</a>
+      </div>
+
+      <div id="master-footer" class="span-24 last">
+        <img alt="Small_mouse" src="/images/small_mouse.jpg?1754082241" style="padding-right: 10px;">
+        <strong>ComputitionHQ</strong> is a service of <em> Wolfe's Computer Consulting Inc.</em> 
+        Copyright © 2009-2025. Need assistance?  Have a suggestion?  <script type="text/javascript">eval(decodeURIComponent('%64%6f%63%75%6d%65%6e%74%2e%77%72%69%74%65%28%27%3c%61%20%68%72%65%66%3d%5c%22%6d%61%69%6c%74%6f%3a%70%72%65%73%69%64%65%6e%74%40%77%63%63%69%6e%63%2e%63%61%3f%73%75%62%6a%65%63%74%3d%43%6f%6d%70%75%74%69%74%69%6f%6e%48%51%25%32%30%53%75%70%70%6f%72%74%5c%22%3e%43%6f%6e%74%61%63%74%20%55%73%3c%5c%2f%61%3e%27%29%3b'))</script><a href="mailto:president@wccinc.ca?subject=ComputitionHQ%20Support">Contact Us</a>
+      </div>
+
+    </div>
+
+  
+</body></html>

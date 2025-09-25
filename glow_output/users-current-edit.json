@@ -1,0 +1,78 @@
+[
+  {
+    "action": "https://glowdancecomp.computitionhq.com/users/663",
+    "method": "post",
+    "fields": [
+      {
+        "name": "_method",
+        "type": "hidden",
+        "value": "put",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "authenticity_token",
+        "type": "hidden",
+        "value": "atbKCrNNDzO2m33n08q2vQGMkmyR8oAGSRmoS8fH3oI=",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "user[username]",
+        "type": "text",
+        "value": "Uxbridge Dance Academy ",
+        "required": false,
+        "id": "user_username"
+      },
+      {
+        "name": "user[email]",
+        "type": "text",
+        "value": "Emily.einsmann@gmail.com",
+        "required": false,
+        "id": "user_email"
+      },
+      {
+        "name": "user[password]",
+        "type": "password",
+        "value": "",
+        "required": false,
+        "id": "user_password"
+      },
+      {
+        "name": "user[password_confirmation]",
+        "type": "password",
+        "value": "",
+        "required": false,
+        "id": "user_password_confirmation"
+      },
+      {
+        "name": "user[openid_identifier]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "user_openid_identifier"
+      },
+      {
+        "name": "user[terms_of_service]",
+        "type": "hidden",
+        "value": "0",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "user[terms_of_service]",
+        "type": "checkbox",
+        "value": "1",
+        "required": false,
+        "id": "user_terms_of_service"
+      },
+      {
+        "name": "commit",
+        "type": "submit",
+        "value": "Save Changes",
+        "required": false,
+        "id": "user_submit"
+      }
+    ]
+  }
+]

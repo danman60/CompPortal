@@ -1,0 +1,120 @@
+[
+  {
+    "action": "https://glowdancecomp.computitionhq.com/studios/477",
+    "method": "post",
+    "fields": [
+      {
+        "name": "_method",
+        "type": "hidden",
+        "value": "put",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "authenticity_token",
+        "type": "hidden",
+        "value": "atbKCrNNDzO2m33n08q2vQGMkmyR8oAGSRmoS8fH3oI=",
+        "required": false,
+        "id": ""
+      },
+      {
+        "name": "studio[name]",
+        "type": "text",
+        "value": "Uxbridge Dance Academy ",
+        "required": false,
+        "id": "studio_name"
+      },
+      {
+        "name": "studio[address1]",
+        "type": "text",
+        "value": "69 Albert Street",
+        "required": false,
+        "id": "studio_address1"
+      },
+      {
+        "name": "studio[address2]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "studio_address2"
+      },
+      {
+        "name": "studio[city]",
+        "type": "text",
+        "value": "Uxbridge",
+        "required": false,
+        "id": "studio_city"
+      },
+      {
+        "name": "studio[province]",
+        "type": "select-one",
+        "value": "ON",
+        "required": false,
+        "id": "studio_province"
+      },
+      {
+        "name": "studio[postalcode]",
+        "type": "text",
+        "value": "L9P 1E5",
+        "required": false,
+        "id": "studio_postalcode"
+      },
+      {
+        "name": "studio[phone]",
+        "type": "text",
+        "value": "647 448 4621",
+        "required": false,
+        "id": "studio_phone"
+      },
+      {
+        "name": "studio[fax]",
+        "type": "text",
+        "value": "",
+        "required": false,
+        "id": "studio_fax"
+      },
+      {
+        "name": "studio[email]",
+        "type": "text",
+        "value": "Emily.einsmann@gmail.com",
+        "required": false,
+        "id": "studio_email"
+      },
+      {
+        "name": "studio[contactname]",
+        "type": "text",
+        "value": "Emily Einsmann",
+        "required": false,
+        "id": "studio_contactname"
+      },
+      {
+        "name": "studio[contactphone]",
+        "type": "text",
+        "value": "647 448 4621",
+        "required": false,
+        "id": "studio_contactphone"
+      },
+      {
+        "name": "studio[contactemail]",
+        "type": "text",
+        "value": "emily.einsmann@gmail.com",
+        "required": false,
+        "id": "studio_contactemail"
+      },
+      {
+        "name": "studio[comments]",
+        "type": "textarea",
+        "value": "",
+        "required": false,
+        "id": "studio_comments"
+      },
+      {
+        "name": "commit",
+        "type": "submit",
+        "value": "Update Studio",
+        "required": false,
+        "id": "studio_submit"
+      }
+    ]
+  }
+]
