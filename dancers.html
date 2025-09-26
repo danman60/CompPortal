@@ -428,8 +428,9 @@
     </div>
 
     <!-- Add Dancer Modal -->
-    <div id="addDancerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50">
-        <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-md w-full mx-4">
+    <div id="addDancerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+        <div class="flex items-center justify-center min-h-full px-4">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-semibold text-white">Add New Dancer</h2>
                 <button id="closeModalBtn" class="text-gray-400 hover:text-white">
@@ -476,6 +477,7 @@
                     </button>
                 </div>
             </form>
+            </div>
         </div>
     </div>
 
@@ -519,12 +521,14 @@
             // Open modal
             addDancerBtn?.addEventListener('click', function() {
                 addDancerModal.classList.remove('hidden');
+                addDancerModal.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
             });
 
             // Close modal functions
             function closeModal() {
                 addDancerModal.classList.add('hidden');
+                addDancerModal.style.display = 'none';
                 document.body.style.overflow = 'auto';
                 addDancerForm.reset();
             }
