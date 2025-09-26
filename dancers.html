@@ -110,7 +110,7 @@
                         <i class="fas fa-upload mr-2"></i>
                         Import Dancers
                     </button>
-                    <button class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
+                    <button id="addDancerBtn" class="bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center">
                         <i class="fas fa-plus mr-2"></i>
                         Add Dancer
                     </button>
@@ -427,6 +427,58 @@
         </div>
     </div>
 
+    <!-- Add Dancer Modal -->
+    <div id="addDancerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-white">Add New Dancer</h2>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="addDancerForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Dancer Name *</label>
+                    <input type="text" id="dancerName" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Enter dancer's full name">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Date of Birth *</label>
+                    <input type="date" id="dancerDOB" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Age Override (optional)</label>
+                    <input type="number" id="ageOverride" min="5" max="25" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Leave blank to auto-calculate">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Primary Dance Style</label>
+                    <select id="danceStyle" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                        <option value="">Select primary style</option>
+                        <option value="Ballet">Ballet</option>
+                        <option value="Jazz">Jazz</option>
+                        <option value="Contemporary">Contemporary</option>
+                        <option value="Hip Hop">Hip Hop</option>
+                        <option value="Tap">Tap</option>
+                        <option value="Lyrical">Lyrical</option>
+                        <option value="Musical Theatre">Musical Theatre</option>
+                    </select>
+                </div>
+
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="cancelBtn" class="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg font-medium transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-4 py-2 rounded-lg font-medium transition-all duration-200">
+                        Add Dancer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- JavaScript for interactivity -->
     <script>
         // Search functionality
@@ -455,6 +507,65 @@
                 card.addEventListener('mouseleave', function() {
                     this.style.transform = 'translateY(0)';
                 });
+            });
+
+            // Add Dancer Modal functionality
+            const addDancerBtn = document.getElementById('addDancerBtn');
+            const addDancerModal = document.getElementById('addDancerModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const addDancerForm = document.getElementById('addDancerForm');
+
+            // Open modal
+            addDancerBtn?.addEventListener('click', function() {
+                addDancerModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+
+            // Close modal functions
+            function closeModal() {
+                addDancerModal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                addDancerForm.reset();
+            }
+
+            closeModalBtn?.addEventListener('click', closeModal);
+            cancelBtn?.addEventListener('click', closeModal);
+
+            // Close modal when clicking outside
+            addDancerModal?.addEventListener('click', function(e) {
+                if (e.target === addDancerModal) {
+                    closeModal();
+                }
+            });
+
+            // Handle form submission
+            addDancerForm?.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = {
+                    name: document.getElementById('dancerName').value,
+                    dateOfBirth: document.getElementById('dancerDOB').value,
+                    ageOverride: document.getElementById('ageOverride').value,
+                    primaryStyle: document.getElementById('danceStyle').value
+                };
+
+                // Calculate age if no override provided
+                let age = formData.ageOverride;
+                if (!age && formData.dateOfBirth) {
+                    const today = new Date();
+                    const birthDate = new Date(formData.dateOfBirth);
+                    age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+                }
+
+                // Show success message (In real app, this would save to database)
+                alert(`Dancer "${formData.name}" added successfully!\nAge: ${age}\nPrimary Style: ${formData.primaryStyle || 'Not specified'}\n\nIn a production app, this would be saved to the database.`);
+
+                closeModal();
             });
         });
     </script>
