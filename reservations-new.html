@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Reservation - GlowDance Competition Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7c3aed',
+                        },
+                        dance: {
+                            pink: '#ec4899',
+                            purple: '#8b5cf6',
+                            gold: '#f59e0b',
+                            blue: '#3b82f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+    <!-- Background Animation -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -inset-10 opacity-10">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-dance-pink rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse"></div>
+            <div class="absolute top-1/3 right-1/4 w-96 h-96 bg-dance-purple rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-2000"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-96 h-96 bg-dance-gold rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-4000"></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="relative bg-white/10 backdrop-blur-md shadow-sm border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="h-8 w-8 bg-gradient-to-br from-dance-pink to-dance-purple rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-white text-sm"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-semibold text-white">GlowDance</span>
+                    </div>
+
+                    <!-- Main Navigation -->
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="sample-dashboard.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
+                            <a href="studios.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Studios</a>
+                            <a href="dancers.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dancers</a>
+                            <a href="reservations.html" class="bg-white/20 text-white px-3 py-2 rounded-md text-sm font-medium">Reservations</a>
+                            <a href="reports.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reports</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <button class="text-gray-300 hover:text-white relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                        </div>
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <button class="text-gray-300 hover:text-white ml-4">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="px-4 py-4 sm:px-0">
+            <div class="flex items-center mb-6">
+                <a href="reservations.html" class="text-gray-400 hover:text-white mr-4">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Create New Reservation</h1>
+                    <p class="text-gray-300 mt-1">Reserve competition spaces for your dancers</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservation Form -->
+        <div class="px-4 sm:px-0">
+            <form id="reservationForm" class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8">
+                <!-- Step 1: Competition Location -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-white mb-4">1. Select Competition Location</h2>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="competition-location bg-white/5 border border-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-all duration-200" data-location="toronto">
+                            <div class="flex items-center mb-3">
+                                <input type="radio" name="location" value="toronto" class="mr-3 text-dance-purple focus:ring-dance-purple/50">
+                                <h3 class="font-semibold text-white">Toronto Regional</h3>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-2">March 22-24, 2025</p>
+                            <p class="text-sm text-gray-300">Metro Toronto Convention Centre</p>
+                            <div class="mt-3 flex items-center">
+                                <span class="bg-green-500/20 text-green-300 px-2 py-1 rounded-full text-xs">Available</span>
+                                <span class="text-xs text-gray-400 ml-2">87 spots remaining</span>
+                            </div>
+                        </div>
+
+                        <div class="competition-location bg-white/5 border border-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-all duration-200" data-location="hamilton">
+                            <div class="flex items-center mb-3">
+                                <input type="radio" name="location" value="hamilton" class="mr-3 text-dance-purple focus:ring-dance-purple/50">
+                                <h3 class="font-semibold text-white">Hamilton Championship</h3>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-2">April 5-7, 2025</p>
+                            <p class="text-sm text-gray-300">Hamilton Convention Centre</p>
+                            <div class="mt-3 flex items-center">
+                                <span class="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full text-xs">Limited</span>
+                                <span class="text-xs text-gray-400 ml-2">12 spots remaining</span>
+                            </div>
+                        </div>
+
+                        <div class="competition-location bg-white/5 border border-white/20 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-all duration-200" data-location="mississauga">
+                            <div class="flex items-center mb-3">
+                                <input type="radio" name="location" value="mississauga" class="mr-3 text-dance-purple focus:ring-dance-purple/50">
+                                <h3 class="font-semibold text-white">Mississauga Spring Classic</h3>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-2">April 19-21, 2025</p>
+                            <p class="text-sm text-gray-300">Living Arts Centre</p>
+                            <div class="mt-3 flex items-center">
+                                <span class="bg-green-500/20 text-green-300 px-2 py-1 rounded-full text-xs">Available</span>
+                                <span class="text-xs text-gray-400 ml-2">134 spots remaining</span>
+                            </div>
+                        </div>
+
+                        <div class="competition-location bg-white/5 border border-white/20 rounded-lg p-4 cursor-pointer opacity-50" data-location="ottawa">
+                            <div class="flex items-center mb-3">
+                                <input type="radio" name="location" value="ottawa" disabled class="mr-3 text-dance-purple focus:ring-dance-purple/50">
+                                <h3 class="font-semibold text-white">Ottawa Invitational</h3>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-2">May 3-5, 2025</p>
+                            <p class="text-sm text-gray-300">Shaw Centre</p>
+                            <div class="mt-3 flex items-center">
+                                <span class="bg-red-500/20 text-red-300 px-2 py-1 rounded-full text-xs">Full</span>
+                                <span class="text-xs text-gray-400 ml-2">0 spots remaining</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Reservation Details -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-white mb-4">2. Reservation Details</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Number of Entry Spaces *</label>
+                            <input type="number" id="entrySpaces" min="1" max="50" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="How many competition entries?">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Estimated Cost</label>
+                            <div id="estimatedCost" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-gray-400">
+                                Select location and entries to calculate
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Agent Details -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-white mb-4">3. Competition Agent Details</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Agent Name *</label>
+                            <input type="text" id="agentName" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Who will accompany dancers?">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Agent Phone *</label>
+                            <input type="tel" id="agentPhone" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Emergency contact number">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Special Requirements (Optional)</label>
+                            <textarea id="specialRequirements" rows="3" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Accessibility needs, dietary restrictions, etc."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Waivers & Consent -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-white mb-4">4. Waivers & Consent</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <input type="checkbox" id="liabilityWaiver" required class="mt-1 mr-3 text-dance-purple focus:ring-dance-purple/50">
+                            <label for="liabilityWaiver" class="text-sm text-gray-300">
+                                <span class="text-white font-medium">Liability Waiver *</span><br>
+                                I acknowledge and agree to the competition liability waiver on behalf of all participating dancers from our studio.
+                            </label>
+                        </div>
+
+                        <div class="flex items-start">
+                            <input type="checkbox" id="photoConsent" class="mt-1 mr-3 text-dance-purple focus:ring-dance-purple/50">
+                            <label for="photoConsent" class="text-sm text-gray-300">
+                                <span class="text-white font-medium">Photo/Video Consent</span><br>
+                                I consent to photos and videos being taken of our dancers for competition promotional purposes.
+                            </label>
+                        </div>
+
+                        <div class="flex items-start">
+                            <input type="checkbox" id="ageConsent" required class="mt-1 mr-3 text-dance-purple focus:ring-dance-purple/50">
+                            <label for="ageConsent" class="text-sm text-gray-300">
+                                <span class="text-white font-medium">Age Verification *</span><br>
+                                I certify that all dancer ages and birth dates in our system are accurate and up-to-date.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex space-x-4">
+                    <button type="button" onclick="window.location.href='reservations.html'" class="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                        Create Reservation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+        <div class="flex items-center justify-center min-h-full px-4">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-md w-full mx-4">
+                <div class="text-center">
+                    <div class="h-16 w-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check text-green-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold text-white mb-2">Reservation Created!</h2>
+                    <p id="successMessage" class="text-gray-300 mb-6">Your reservation has been submitted and is pending approval.</p>
+                    <button onclick="window.location.href='reservations.html'" class="w-full bg-gradient-to-r from-dance-purple to-dance-pink text-white px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                        View Reservations
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('reservationForm');
+            const locationCards = document.querySelectorAll('.competition-location');
+            const entrySpacesInput = document.getElementById('entrySpaces');
+            const estimatedCostDiv = document.getElementById('estimatedCost');
+
+            // Competition pricing
+            const pricing = {
+                'toronto': 85,
+                'hamilton': 95,
+                'mississauga': 80,
+                'ottawa': 90
+            };
+
+            // Location selection
+            locationCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (!radio.disabled) {
+                        radio.checked = true;
+                        updateEstimatedCost();
+                    }
+                });
+            });
+
+            // Cost calculation
+            function updateEstimatedCost() {
+                const selectedLocation = document.querySelector('input[name="location"]:checked');
+                const entrySpaces = parseInt(entrySpacesInput.value) || 0;
+
+                if (selectedLocation && entrySpaces > 0) {
+                    const cost = pricing[selectedLocation.value] * entrySpaces;
+                    estimatedCostDiv.innerHTML = `<span class="text-white font-medium">$${cost.toLocaleString()} CAD</span>`;
+                } else {
+                    estimatedCostDiv.textContent = 'Select location and entries to calculate';
+                }
+            }
+
+            entrySpacesInput.addEventListener('input', updateEstimatedCost);
+
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = {
+                    location: document.querySelector('input[name="location"]:checked')?.value,
+                    entrySpaces: entrySpacesInput.value,
+                    agentName: document.getElementById('agentName').value,
+                    agentPhone: document.getElementById('agentPhone').value,
+                    specialRequirements: document.getElementById('specialRequirements').value,
+                    liabilityWaiver: document.getElementById('liabilityWaiver').checked,
+                    photoConsent: document.getElementById('photoConsent').checked,
+                    ageConsent: document.getElementById('ageConsent').checked
+                };
+
+                if (!formData.location) {
+                    alert('Please select a competition location.');
+                    return;
+                }
+
+                // Show success modal
+                const locationName = document.querySelector(`input[name="location"][value="${formData.location}"] + h3`).textContent;
+                document.getElementById('successMessage').textContent =
+                    `Your reservation for ${locationName} with ${formData.entrySpaces} entry spaces has been created. You'll receive a confirmation email shortly.`;
+
+                document.getElementById('successModal').classList.remove('hidden');
+                document.getElementById('successModal').style.display = 'flex';
+            });
+        });
+    </script>
+
+    <style>
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+
+        /* Custom subtle pulse animation */
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 0.15; transform: scale(0.95); }
+            50% { opacity: 0.25; transform: scale(1.05); }
+        }
+
+        .animate-pulse {
+            animation: subtle-pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</body>
+</html>
