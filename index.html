@@ -18,8 +18,62 @@
             }
         }
     </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-gray-900 to-black min-h-screen flex items-center justify-center">
+<body class="bg-gradient-to-br from-slate-900 via-gray-900 to-black min-h-screen">
+    <!-- Navigation Header -->
+    <nav class="relative bg-white/10 backdrop-blur-md shadow-sm border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="h-8 w-8 bg-gradient-to-br from-dance-pink to-dance-purple rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-white text-sm"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-semibold text-white">GlowDance</span>
+                    </div>
+
+                    <!-- Main Navigation -->
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="sample-dashboard.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
+                            <a href="studios.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Studios</a>
+                            <a href="dancers.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dancers</a>
+                            <a href="reservations.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservations</a>
+                            <a href="reports.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reports</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <button class="text-gray-300 hover:text-white relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                        </div>
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <button class="text-gray-300 hover:text-white ml-4">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <!-- Animated Background Orbs -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-1/2 -left-1/2 w-full h-full">
@@ -29,7 +83,7 @@
         </div>
     </div>
 
-    <div class="relative z-10 text-center max-w-2xl mx-auto p-8">
+    <div class="relative z-10 text-center max-w-2xl mx-auto p-8 mt-8">
         <!-- Logo/Brand -->
         <div class="mb-8">
             <h1 class="text-6xl font-bold bg-gradient-to-r from-dance-pink via-dance-purple to-dance-gold bg-clip-text text-transparent mb-4">
