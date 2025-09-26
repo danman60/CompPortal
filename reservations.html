@@ -235,7 +235,7 @@
                                 <i class="fas fa-eye mr-2"></i>
                                 View Details
                             </button>
-                            <button class="bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <button class="bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200" onclick="openEntriesModal('GD2025-UDA-001', 'GlowDance Championship 2025')">
                                 <i class="fas fa-edit mr-2"></i>
                                 Manage Entries
                             </button>
@@ -305,7 +305,7 @@
                                 <i class="fas fa-eye mr-2"></i>
                                 View Details
                             </button>
-                            <button class="bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200">
+                            <button class="bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200" onclick="openEntriesModal('SC2025-UDA-002', 'Spring Championship 2025')">
                                 <i class="fas fa-edit mr-2"></i>
                                 Manage Entries
                             </button>
@@ -449,6 +449,136 @@
         </div>
     </div>
 
+    <!-- Manage Entries Modal -->
+    <div id="entriesModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+        <div class="flex items-center justify-center min-h-full px-4">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white" id="modalTitle">Manage Competition Entries</h2>
+                        <p class="text-gray-300" id="modalSubtitle">Add dancers and routines to your reservation</p>
+                    </div>
+                    <button onclick="closeEntriesModal()" class="text-gray-300 hover:text-white">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <!-- Existing Entries -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-list mr-3 text-dance-purple"></i>
+                        Current Entries
+                    </h3>
+                    <div class="space-y-4" id="currentEntries">
+                        <!-- Dynamic entries will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Add New Entry Form -->
+                <div class="bg-white/5 border border-white/20 rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-plus mr-3 text-dance-gold"></i>
+                        Add New Entry
+                    </h3>
+
+                    <form id="entryForm" class="space-y-4">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Select Dancer *</label>
+                                <select id="dancerSelect" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                                    <option value="">Choose a dancer...</option>
+                                    <option value="1">Emma Sullivan - Age 13</option>
+                                    <option value="2">Maya Singh - Age 15</option>
+                                    <option value="3">Ava Rodriguez - Age 11</option>
+                                    <option value="4">Sophia Chen - Age 14</option>
+                                    <option value="5">Isabella Martinez - Age 12</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Routine Name *</label>
+                                <input type="text" id="routineName" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Enter routine name">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Category *</label>
+                                <select id="categorySelect" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                                    <option value="">Choose category...</option>
+                                    <option value="solo">Solo</option>
+                                    <option value="duet">Duet/Trio</option>
+                                    <option value="group">Small Group (4-9)</option>
+                                    <option value="large-group">Large Group (10+)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Dance Style *</label>
+                                <select id="styleSelect" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                                    <option value="">Choose style...</option>
+                                    <option value="ballet">Ballet</option>
+                                    <option value="jazz">Jazz</option>
+                                    <option value="contemporary">Contemporary</option>
+                                    <option value="hip-hop">Hip Hop</option>
+                                    <option value="tap">Tap</option>
+                                    <option value="lyrical">Lyrical</option>
+                                    <option value="acro">Acro</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Competition Level *</label>
+                                <select id="levelSelect" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                                    <option value="">Choose level...</option>
+                                    <option value="recreational">Recreational</option>
+                                    <option value="novice">Novice</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                    <option value="competitive">Competitive</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Music Duration</label>
+                                <input type="text" id="musicDuration" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="e.g., 2:30">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Additional Notes (Optional)</label>
+                            <textarea id="entryNotes" rows="3" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Special requirements, music notes, etc."></textarea>
+                        </div>
+
+                        <div class="flex space-x-4">
+                            <button type="button" onclick="resetEntryForm()" class="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                                Reset Form
+                            </button>
+                            <button type="submit" class="flex-2 bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                                <i class="fas fa-plus mr-2"></i>
+                                Add Entry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                    <div class="text-sm text-gray-300">
+                        <span id="entryCount">0</span> entries added
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="closeEntriesModal()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                            Close
+                        </button>
+                        <button class="bg-gradient-to-r from-dance-gold to-dance-pink hover:from-dance-pink hover:to-dance-gold text-white px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                            <i class="fas fa-save mr-2"></i>
+                            Save All Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript for interactivity -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -475,6 +605,147 @@
                     console.log('Payment process initiated');
                 });
             });
+        });
+
+        // Entries Modal Management
+        let currentReservationId = '';
+        let currentCompetitionName = '';
+        let entriesData = [];
+
+        function openEntriesModal(reservationId, competitionName) {
+            currentReservationId = reservationId;
+            currentCompetitionName = competitionName;
+
+            document.getElementById('modalTitle').textContent = `Manage Entries - ${competitionName}`;
+            document.getElementById('modalSubtitle').textContent = `Reservation #${reservationId}`;
+
+            // Load existing entries
+            loadExistingEntries();
+
+            document.getElementById('entriesModal').classList.remove('hidden');
+            document.getElementById('entriesModal').style.display = 'flex';
+        }
+
+        function closeEntriesModal() {
+            document.getElementById('entriesModal').classList.add('hidden');
+            document.getElementById('entriesModal').style.display = 'none';
+        }
+
+        function loadExistingEntries() {
+            const currentEntriesDiv = document.getElementById('currentEntries');
+
+            // Demo data - in production this would come from Supabase
+            const demoEntries = [
+                {
+                    id: 1,
+                    dancer: 'Emma Sullivan',
+                    routine: 'Midnight Dreams',
+                    category: 'Solo',
+                    style: 'Contemporary',
+                    level: 'Intermediate'
+                },
+                {
+                    id: 2,
+                    dancer: 'Maya Singh',
+                    routine: 'Fire Within',
+                    category: 'Solo',
+                    style: 'Jazz',
+                    level: 'Advanced'
+                }
+            ];
+
+            currentEntriesDiv.innerHTML = '';
+
+            if (demoEntries.length === 0) {
+                currentEntriesDiv.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-inbox text-4xl mb-4"></i>
+                        <p>No entries added yet. Use the form below to add your first entry.</p>
+                    </div>
+                `;
+            } else {
+                demoEntries.forEach(entry => {
+                    currentEntriesDiv.innerHTML += createEntryCard(entry);
+                });
+            }
+
+            document.getElementById('entryCount').textContent = demoEntries.length;
+        }
+
+        function createEntryCard(entry) {
+            return `
+                <div class="bg-white/5 border border-white/20 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-12 w-12 bg-gradient-to-br from-dance-purple to-dance-pink rounded-lg flex items-center justify-center text-white font-bold">
+                                ${entry.dancer.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-white">${entry.routine}</h4>
+                                <p class="text-sm text-gray-300">${entry.dancer} • ${entry.category} ${entry.style}</p>
+                                <p class="text-xs text-gray-400">Level: ${entry.level}</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editEntry(${entry.id})" class="bg-dance-gold/20 hover:bg-dance-gold/30 text-dance-gold border border-dance-gold/30 px-3 py-1 rounded text-sm">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="removeEntry(${entry.id})" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1 rounded text-sm">
+                                <i class="fas fa-trash mr-1"></i>Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function editEntry(entryId) {
+            // In production, would load entry data into form for editing
+            console.log('Editing entry:', entryId);
+            alert('Edit functionality would load entry data into the form for modification.');
+        }
+
+        function removeEntry(entryId) {
+            if (confirm('Are you sure you want to remove this entry?')) {
+                console.log('Removing entry:', entryId);
+                // In production, would remove from database and refresh display
+                loadExistingEntries();
+            }
+        }
+
+        function resetEntryForm() {
+            document.getElementById('entryForm').reset();
+        }
+
+        // Handle entry form submission
+        document.getElementById('entryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = {
+                dancer: document.getElementById('dancerSelect').options[document.getElementById('dancerSelect').selectedIndex].text,
+                routine: document.getElementById('routineName').value,
+                category: document.getElementById('categorySelect').value,
+                style: document.getElementById('styleSelect').value,
+                level: document.getElementById('levelSelect').value,
+                duration: document.getElementById('musicDuration').value,
+                notes: document.getElementById('entryNotes').value
+            };
+
+            // In production, would save to Supabase
+            console.log('Adding new entry:', formData);
+
+            // Show success feedback
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Entry Added!';
+            submitBtn.classList.add('bg-green-500');
+
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.classList.remove('bg-green-500');
+                resetEntryForm();
+                loadExistingEntries(); // Refresh entries display
+            }, 2000);
         });
     </script>
 </body>
