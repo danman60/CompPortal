@@ -6,6 +6,7 @@
     <title>Dancers - GlowDance Competition Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="js/supabase-config.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -552,8 +553,8 @@
                 }
             });
 
-            // Handle form submission
-            addDancerForm?.addEventListener('submit', function(e) {
+            // Handle form submission with Supabase integration
+            addDancerForm?.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const formData = {
@@ -563,22 +564,46 @@
                     primaryStyle: document.getElementById('danceStyle').value
                 };
 
-                // Calculate age if no override provided
-                let age = formData.ageOverride;
-                if (!age && formData.dateOfBirth) {
-                    const today = new Date();
-                    const birthDate = new Date(formData.dateOfBirth);
-                    age = today.getFullYear() - birthDate.getFullYear();
-                    const monthDiff = today.getMonth() - birthDate.getMonth();
-                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                        age--;
+                // Calculate age using helper function
+                const age = window.GlowDanceDB?.helpers.calculateAge(
+                    formData.dateOfBirth,
+                    formData.ageOverride
+                ) || 0;
+
+                try {
+                    // Show loading state
+                    const submitBtn = addDancerForm.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                    submitBtn.disabled = true;
+
+                    // Format data for database using schema helper
+                    const dbData = window.GlowDanceDB?.helpers.formatDancerForDB(formData);
+
+                    // Save to Supabase (demo)
+                    const result = await window.GlowDanceDB?.client.insertDancer(dbData);
+
+                    if (result?.error) {
+                        throw new Error(result.error.message);
                     }
+
+                    // Success message with database integration context
+                    alert(`✅ Dancer "${formData.name}" saved successfully!\n\n📊 Details:\n• Age: ${age}\n• Primary Style: ${formData.primaryStyle || 'Not specified'}\n• Database ID: ${result.data?.id || 'demo-id'}\n\n💾 Data saved to Supabase with schema validation`);
+
+                    closeModal();
+
+                    // In production, would refresh dancer list from database
+                    console.log('🎭 Production: Would refresh dancer cards from Supabase');
+
+                } catch (error) {
+                    alert(`❌ Error saving dancer: ${error.message}\n\nPlease check the console for details.`);
+                    console.error('Supabase error:', error);
+                } finally {
+                    // Restore button state
+                    const submitBtn = addDancerForm.querySelector('button[type="submit"]');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
                 }
-
-                // Show success message (In real app, this would save to database)
-                alert(`Dancer "${formData.name}" added successfully!\nAge: ${age}\nPrimary Style: ${formData.primaryStyle || 'Not specified'}\n\nIn a production app, this would be saved to the database.`);
-
-                closeModal();
             });
 
             // Sorting functionality

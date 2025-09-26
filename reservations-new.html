@@ -6,6 +6,7 @@
     <title>New Reservation - GlowDance Competition Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="js/supabase-config.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -202,6 +203,11 @@
                         </div>
 
                         <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Agent Email *</label>
+                            <input type="email" id="agentEmail" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Agent contact email">
+                        </div>
+
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-300 mb-2">Special Requirements (Optional)</label>
                             <textarea id="specialRequirements" rows="3" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Accessibility needs, dietary restrictions, etc."></textarea>
                         </div>
@@ -243,8 +249,9 @@
                     <button type="button" onclick="window.location.href='reservations.html'" class="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3 rounded-lg font-medium transition-all duration-200">
                         Cancel
                     </button>
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-6 py-3 rounded-lg font-medium transition-all duration-200">
-                        Create Reservation
+                    <button type="submit" id="submitBtn" class="flex-1 bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                        <span id="submitText">Create Reservation</span>
+                        <i id="submitSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
                     </button>
                 </div>
             </form>
@@ -311,8 +318,8 @@
 
             entrySpacesInput.addEventListener('input', updateEstimatedCost);
 
-            // Form submission
-            form.addEventListener('submit', function(e) {
+            // Form submission with Supabase integration
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const formData = {
@@ -320,6 +327,7 @@
                     entrySpaces: entrySpacesInput.value,
                     agentName: document.getElementById('agentName').value,
                     agentPhone: document.getElementById('agentPhone').value,
+                    agentEmail: document.getElementById('agentEmail').value,
                     specialRequirements: document.getElementById('specialRequirements').value,
                     liabilityWaiver: document.getElementById('liabilityWaiver').checked,
                     photoConsent: document.getElementById('photoConsent').checked,
@@ -331,13 +339,55 @@
                     return;
                 }
 
-                // Show success modal
-                const locationName = document.querySelector(`input[name="location"][value="${formData.location}"] + h3`).textContent;
-                document.getElementById('successMessage').textContent =
-                    `Your reservation for ${locationName} with ${formData.entrySpaces} entry spaces has been created. You'll receive a confirmation email shortly.`;
+                if (!formData.agentEmail) {
+                    alert('Please provide an agent email address.');
+                    return;
+                }
 
-                document.getElementById('successModal').classList.remove('hidden');
-                document.getElementById('successModal').style.display = 'flex';
+                // Show loading state
+                const submitBtn = document.getElementById('submitBtn');
+                const submitText = document.getElementById('submitText');
+                const submitSpinner = document.getElementById('submitSpinner');
+
+                submitBtn.disabled = true;
+                submitText.textContent = 'Creating...';
+                submitSpinner.classList.remove('hidden');
+
+                try {
+                    // Use Supabase helper to format data
+                    const reservationData = window.GlowDanceDB.helpers.formatReservationForDB(formData);
+
+                    // Calculate total cost
+                    const selectedLocation = formData.location;
+                    const cost = pricing[selectedLocation] * parseInt(formData.entrySpaces);
+                    reservationData.total_cost = cost;
+
+                    // Insert reservation via Supabase
+                    const result = await window.GlowDanceDB.client.insertReservation(reservationData);
+
+                    if (result.error) {
+                        throw new Error(result.error.message);
+                    }
+
+                    console.log('✅ Reservation created:', result.data);
+
+                    // Show success modal
+                    const locationName = document.querySelector(`input[name="location"][value="${formData.location}"] + h3`).textContent;
+                    document.getElementById('successMessage').textContent =
+                        `Your reservation for ${locationName} with ${formData.entrySpaces} entry spaces has been created. You'll receive a confirmation email shortly.`;
+
+                    document.getElementById('successModal').classList.remove('hidden');
+                    document.getElementById('successModal').style.display = 'flex';
+
+                } catch (error) {
+                    console.error('❌ Error creating reservation:', error);
+                    alert('Error creating reservation: ' + error.message);
+
+                    // Reset loading state on error
+                    submitBtn.disabled = false;
+                    submitText.textContent = 'Create Reservation';
+                    submitSpinner.classList.add('hidden');
+                }
             });
         });
     </script>
