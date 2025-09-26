@@ -65,8 +65,15 @@
                     </div>
                 </div>
 
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+
                 <!-- User Menu -->
-                <div class="flex items-center space-x-4">
+                <div class="hidden sm:flex items-center space-x-4">
                     <!-- Notifications -->
                     <button class="text-gray-300 hover:text-white relative">
                         <i class="fas fa-bell text-xl"></i>
@@ -88,6 +95,38 @@
                     <button class="text-gray-300 hover:text-white ml-4">
                         <i class="fas fa-sign-out-alt text-xl"></i>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu (hidden by default) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white/10 backdrop-blur-md border-t border-white/20">
+            <div class="px-4 py-3 space-y-2">
+                <a href="sample-dashboard.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Dashboard</a>
+                <a href="studios.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Studios</a>
+                <a href="dancers.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Dancers</a>
+                <a href="reservations.html" class="block bg-white/20 text-white px-3 py-2 rounded-md text-base font-medium">Reservations</a>
+                <a href="reports.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Reports</a>
+
+                <!-- Mobile User Actions -->
+                <div class="pt-4 border-t border-white/20 mt-4">
+                    <div class="flex items-center space-x-3 px-3 py-2">
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="flex-1 text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md text-center">
+                            <i class="fas fa-bell text-lg"></i>
+                        </button>
+                        <button class="flex-1 text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md text-center">
+                            <i class="fas fa-sign-out-alt text-lg"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -747,6 +786,36 @@
                 loadExistingEntries(); // Refresh entries display
             }, 2000);
         });
+
+        // Mobile menu toggle functionality
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+
+                // Toggle hamburger/X icon
+                const icon = this.querySelector('i');
+                if (mobileMenu.classList.contains('hidden')) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                } else {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                }
+            });
+
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!mobileMenuButton.contains(event.target) && !mobileMenu.contains(event.target)) {
+                    mobileMenu.classList.add('hidden');
+                    const icon = mobileMenuButton.querySelector('i');
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            });
+        }
     </script>
 </body>
 </html>
