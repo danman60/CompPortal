@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help - ComputitionHQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="js/notification-system.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7c3aed',
+                        },
+                        dance: {
+                            pink: '#ec4899',
+                            purple: '#8b5cf6',
+                            gold: '#f59e0b',
+                            blue: '#3b82f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+    <!-- Background Animation -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -inset-10 opacity-10 max-w-full">
+            <div class="absolute top-1/4 left-1/4 w-48 h-48 sm:w-96 sm:h-96 bg-dance-pink rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse"></div>
+            <div class="absolute top-1/3 right-1/4 w-48 h-48 sm:w-96 sm:h-96 bg-dance-purple rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-2000"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-48 h-48 sm:w-96 sm:h-96 bg-dance-gold rounded-full mix-blend-soft-light filter blur-3xl opacity-20 animate-pulse animation-delay-4000"></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="relative bg-white/10 backdrop-blur-md shadow-sm border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="h-8 w-8 bg-gradient-to-br from-dance-pink to-dance-purple rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-white text-sm"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-semibold text-white">ComputitionHQ</span>
+                    </div>
+
+                    <!-- Main Navigation -->
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="sample-dashboard.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dashboard</a>
+                            <a href="studios.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Studios</a>
+                            <a href="dancers.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Dancers</a>
+                            <a href="reservations.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservations</a>
+                            <a href="reports.html" class="text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reports</a>
+                            <a href="help.html" class="bg-white/20 text-white px-3 py-2 rounded-md text-sm font-medium">Help</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- User Menu -->
+                <div class="hidden sm:flex items-center space-x-4">
+                    <!-- Notifications -->
+                    <button class="text-gray-300 hover:text-white relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                    </button>
+
+                    <!-- User Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-white">Welcome <strong>Uxbridge Dance Academy</strong></p>
+                            <p class="text-xs text-gray-300">
+                                <a href="/users/current/edit" class="hover:text-white transition-colors">Edit Profile</a> |
+                                <a href="/help" class="hover:text-white transition-colors">Help</a> |
+                                <a href="/logout" class="hover:text-white transition-colors">Logout</a>
+                            </p>
+                        </div>
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <button class="text-gray-300 hover:text-white ml-4">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu (hidden by default) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white/10 backdrop-blur-md border-t border-white/20">
+            <div class="px-4 py-3 space-y-2">
+                <a href="sample-dashboard.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Dashboard</a>
+                <a href="studios.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Studios</a>
+                <a href="dancers.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Dancers</a>
+                <a href="reservations.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Reservations</a>
+                <a href="reports.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Reports</a>
+                <a href="help.html" class="block bg-white/20 text-white px-3 py-2 rounded-md text-base font-medium">Help</a>
+
+                <!-- Mobile User Actions -->
+                <div class="pt-4 border-t border-white/20 mt-4">
+                    <div class="flex items-center space-x-3 px-3 py-2">
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                            UDA
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="flex-1 text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md text-center">
+                            <i class="fas fa-bell text-lg"></i>
+                        </button>
+                        <button class="flex-1 text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md text-center">
+                            <i class="fas fa-sign-out-alt text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Competition Banner Section -->
+    <div class="relative bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0">
+                <div class="flex items-center space-x-4">
+                    <div class="h-16 w-16 bg-gradient-to-br from-dance-pink via-dance-purple to-dance-gold rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-trophy text-white text-2xl"></i>
+                    </div>
+                    <div class="text-center md:text-left">
+                        <h2 class="text-2xl font-bold text-white">GlowDance Competition 2025</h2>
+                        <p class="text-gray-300 text-sm">Premium Dance Competition Experience</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="px-4 py-4 sm:px-0">
+            <div class="flex items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center">
+                        <i class="fas fa-question-circle mr-3 text-dance-blue"></i>
+                        Help & Support
+                    </h1>
+                    <p class="text-gray-300 mt-2">Get answers to your questions and contact our support team</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="px-4 sm:px-0 mb-8">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200 cursor-pointer" onclick="scrollToSection('faq')">
+                    <div class="flex items-center space-x-4">
+                        <div class="p-3 rounded-lg bg-dance-purple/20 border border-dance-purple/30">
+                            <i class="fas fa-question text-dance-purple text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-white">Frequently Asked Questions</h3>
+                            <p class="text-sm text-gray-300">Find answers to common questions</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200 cursor-pointer" onclick="scrollToSection('contact')">
+                    <div class="flex items-center space-x-4">
+                        <div class="p-3 rounded-lg bg-dance-gold/20 border border-dance-gold/30">
+                            <i class="fas fa-envelope text-dance-gold text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-white">Contact Support</h3>
+                            <p class="text-sm text-gray-300">Get help from our team</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200 cursor-pointer" onclick="scrollToSection('guides')">
+                    <div class="flex items-center space-x-4">
+                        <div class="p-3 rounded-lg bg-dance-pink/20 border border-dance-pink/30">
+                            <i class="fas fa-book text-dance-pink text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-white">User Guides</h3>
+                            <p class="text-sm text-gray-300">Step-by-step instructions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div id="faq" class="px-4 sm:px-0 mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-6 flex items-center">
+                <i class="fas fa-question-circle mr-3 text-dance-purple"></i>
+                Frequently Asked Questions
+            </h2>
+
+            <div class="space-y-4">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">How do I register dancers for a competition?</h3>
+                    <p class="text-gray-300">Go to the Dancers section, click "Add New Dancer" to register your dancers, then create a reservation for your chosen competition and add entries for each routine.</p>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">What information do I need for competition registration?</h3>
+                    <p class="text-gray-300">You'll need dancer details (name, date of birth, dance style, experience level), agent information, and signed waivers for liability and age consent.</p>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">How do I export schedules and reports?</h3>
+                    <p class="text-gray-300">Visit the Reports section where you can export competition schedules, dancer lists, and other reports in CSV or PDF format.</p>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Can I edit dancer information after registration?</h3>
+                    <p class="text-gray-300">Yes, you can edit dancer profiles anytime from the Dancers section. Use the edit button on any dancer card to update their information.</p>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">What are the competition fees?</h3>
+                    <p class="text-gray-300">Competition fees vary by location: Toronto Regional ($85/entry), Hamilton Championship ($95/entry), Mississauga Spring Classic ($80/entry). Fees are calculated automatically when you create a reservation.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div id="contact" class="px-4 sm:px-0 mb-8">
+            <h2 class="text-2xl font-semibold text-white mb-6 flex items-center">
+                <i class="fas fa-envelope mr-3 text-dance-gold"></i>
+                Contact Support
+            </h2>
+
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8">
+                <form id="contactForm" class="space-y-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Your Name *</label>
+                            <input type="text" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Your full name">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Studio Name</label>
+                            <input type="text" value="Uxbridge Dance Academy" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Email Address *</label>
+                            <input type="email" required class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="your@email.com">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Subject Category</label>
+                            <select class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent">
+                                <option value="">Select a category...</option>
+                                <option value="technical">Technical Support</option>
+                                <option value="billing">Billing Question</option>
+                                <option value="competition">Competition Question</option>
+                                <option value="registration">Registration Issue</option>
+                                <option value="feature">Feature Request</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Message *</label>
+                        <textarea required rows="5" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-dance-purple/50 focus:border-transparent" placeholder="Please describe your question or issue in detail..."></textarea>
+                    </div>
+
+                    <div class="flex space-x-4">
+                        <button type="button" onclick="document.getElementById('contactForm').reset()" class="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                            Clear Form
+                        </button>
+                        <button type="submit" class="flex-2 bg-gradient-to-r from-dance-purple to-dance-pink hover:from-dance-pink hover:to-dance-purple text-white px-6 py-3 rounded-lg font-medium transition-all duration-200">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-6 pt-6 border-t border-white/10">
+                    <h3 class="text-lg font-semibold text-white mb-4">Alternative Contact Methods</h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-envelope text-dance-gold"></i>
+                            <div>
+                                <p class="text-white font-medium">Email Support</p>
+                                <a href="mailto:president@wccinc.ca?subject=ComputitionHQ%20Support" class="text-dance-purple hover:text-dance-pink transition-colors">president@wccinc.ca</a>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-clock text-dance-blue"></i>
+                            <div>
+                                <p class="text-white font-medium">Response Time</p>
+                                <p class="text-gray-300">Usually within 24 hours</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Guides Section -->
+        <div id="guides" class="px-4 sm:px-0">
+            <h2 class="text-2xl font-semibold text-white mb-6 flex items-center">
+                <i class="fas fa-book mr-3 text-dance-pink"></i>
+                User Guides
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200">
+                    <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-user-plus mr-2 text-dance-purple"></i>
+                        Adding Dancers
+                    </h3>
+                    <ol class="text-gray-300 space-y-2 text-sm">
+                        <li>1. Navigate to the Dancers page</li>
+                        <li>2. Click "Add New Dancer" button</li>
+                        <li>3. Fill out dancer information form</li>
+                        <li>4. Submit to save to your studio roster</li>
+                    </ol>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200">
+                    <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-calendar-alt mr-2 text-dance-gold"></i>
+                        Creating Reservations
+                    </h3>
+                    <ol class="text-gray-300 space-y-2 text-sm">
+                        <li>1. Go to Reservations → New Reservation</li>
+                        <li>2. Select competition location</li>
+                        <li>3. Enter number of entry spaces needed</li>
+                        <li>4. Fill agent details and sign waivers</li>
+                    </ol>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200">
+                    <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-edit mr-2 text-dance-blue"></i>
+                        Managing Entries
+                    </h3>
+                    <ol class="text-gray-300 space-y-2 text-sm">
+                        <li>1. From Reservations page, click "Manage Entries"</li>
+                        <li>2. Select dancer and routine details</li>
+                        <li>3. Choose category, style, and level</li>
+                        <li>4. Add music duration and special notes</li>
+                    </ol>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-all duration-200">
+                    <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-download mr-2 text-dance-pink"></i>
+                        Exporting Reports
+                    </h3>
+                    <ol class="text-gray-300 space-y-2 text-sm">
+                        <li>1. Navigate to the Reports section</li>
+                        <li>2. Choose export format (CSV or PDF)</li>
+                        <li>3. Select report type (Schedule, Dancers, etc.)</li>
+                        <li>4. Download file to your device</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Footer -->
+    <footer class="relative bg-white/10 backdrop-blur-md border-t border-white/20 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                <div class="flex items-center space-x-3">
+                    <div class="h-6 w-6 bg-gradient-to-br from-dance-gold to-dance-pink rounded flex items-center justify-center">
+                        <i class="fas fa-mouse-pointer text-white text-xs"></i>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        <strong class="text-white">ComputitionHQ</strong> is a service of
+                        <em class="text-gray-200">Wolfe's Computer Consulting Inc.</em>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-6 text-sm text-gray-300">
+                    <span>Copyright © 2009-2025</span>
+                    <span class="hidden md:inline">|</span>
+                    <span>Need assistance? Have a suggestion?</span>
+                    <a href="mailto:president@wccinc.ca?subject=ComputitionHQ%20Support"
+                       class="text-dance-purple hover:text-dance-pink transition-colors">
+                        Contact Us
+                    </a>
+                </div>
+            </div>
+
+            <!-- Powered by Notice -->
+            <div class="mt-4 pt-4 border-t border-white/10 text-center text-xs text-gray-400">
+                Enhanced with modern design by Claude Code • Original platform by ComputitionHQ
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle functionality
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+
+                    // Toggle hamburger/X icon
+                    const icon = this.querySelector('i');
+                    if (mobileMenu.classList.contains('hidden')) {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    } else {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    }
+                });
+
+                // Close mobile menu when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!mobileMenuButton.contains(event.target) && !mobileMenu.contains(event.target)) {
+                        mobileMenu.classList.add('hidden');
+                        const icon = mobileMenuButton.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+            }
+
+            // Contact form submission
+            document.getElementById('contactForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Show success notification
+                notifications.success(
+                    'Message Sent Successfully!',
+                    'Your support request has been submitted. We\'ll respond within 24 hours.',
+                    {
+                        duration: 6000,
+                        action: {
+                            label: 'View Dashboard',
+                            handler: "window.location.href='sample-dashboard.html'"
+                        }
+                    }
+                );
+
+                // Reset form
+                this.reset();
+            });
+        });
+
+        // Scroll to section function
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    </script>
+
+    <style>
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+
+        /* Custom subtle pulse animation */
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 0.15; transform: scale(0.95); }
+            50% { opacity: 0.25; transform: scale(1.05); }
+        }
+
+        .animate-pulse {
+            animation: subtle-pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</body>
+</html>

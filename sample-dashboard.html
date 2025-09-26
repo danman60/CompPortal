@@ -6,6 +6,8 @@
     <title>Dashboard - GlowDance Competition Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="js/notification-system.js"></script>
+    <script src="js/auth-system.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -50,7 +52,7 @@
                         <div class="h-8 w-8 bg-gradient-to-br from-dance-pink to-dance-purple rounded-lg flex items-center justify-center">
                             <i class="fas fa-star text-white text-sm"></i>
                         </div>
-                        <span class="ml-3 text-xl font-semibold text-white">GlowDance</span>
+                        <span class="ml-3 text-xl font-semibold text-white">ComputitionHQ</span>
                     </div>
 
                     <!-- Main Navigation -->
@@ -81,18 +83,22 @@
                     </button>
 
                     <!-- User Profile -->
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3 user-profile" data-user-profile>
                         <div class="text-right">
-                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
-                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                            <p class="text-sm font-medium text-white">Welcome <strong class="studio-name">Uxbridge Dance Academy</strong></p>
+                            <p class="text-xs text-gray-300">
+                                <a href="/users/current/edit" class="hover:text-white transition-colors">Edit Profile</a> |
+                                <a href="help.html" class="hover:text-white transition-colors">Help</a> |
+                                <button data-action="logout" class="hover:text-white transition-colors">Logout</button>
+                            </p>
                         </div>
-                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium user-initials">
                             UDA
                         </div>
                     </div>
 
                     <!-- Logout -->
-                    <button class="text-gray-300 hover:text-white ml-4">
+                    <button data-action="logout" class="text-gray-300 hover:text-white ml-4">
                         <i class="fas fa-sign-out-alt text-xl"></i>
                     </button>
                 </div>
@@ -109,21 +115,21 @@
                 <a href="reports.html" class="block text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-md text-base font-medium transition-colors">Reports</a>
 
                 <!-- Mobile User Actions -->
-                <div class="pt-4 border-t border-white/20 mt-4">
+                <div class="pt-4 border-t border-white/20 mt-4 user-profile" data-user-profile>
                     <div class="flex items-center space-x-3 px-3 py-2">
-                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium">
+                        <div class="h-10 w-10 bg-gradient-to-br from-dance-gold to-dance-pink rounded-full flex items-center justify-center text-white font-medium user-initials">
                             UDA
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-white">Uxbridge Dance Academy</p>
-                            <p class="text-xs text-gray-300">Emily Einsmann</p>
+                            <p class="text-sm font-medium text-white studio-name">Uxbridge Dance Academy</p>
+                            <p class="text-xs text-gray-300 user-name">Emily Einsmann</p>
                         </div>
                     </div>
                     <div class="flex space-x-2 mt-3">
                         <button class="flex-1 text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md text-center">
                             <i class="fas fa-bell text-lg"></i>
                         </button>
-                        <button class="flex-1 text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md text-center">
+                        <button data-action="logout" class="flex-1 text-gray-300 hover:text-white hover:bg-white/10 p-2 rounded-md text-center">
                             <i class="fas fa-sign-out-alt text-lg"></i>
                         </button>
                     </div>
@@ -131,6 +137,23 @@
             </div>
         </div>
     </nav>
+
+    <!-- Competition Banner Section -->
+    <div class="relative bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0">
+                <div class="flex items-center space-x-4">
+                    <div class="h-16 w-16 bg-gradient-to-br from-dance-pink via-dance-purple to-dance-gold rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-trophy text-white text-2xl"></i>
+                    </div>
+                    <div class="text-center md:text-left">
+                        <h2 class="text-2xl font-bold text-white">GlowDance Competition 2025</h2>
+                        <p class="text-gray-300 text-sm">Premium Dance Competition Experience</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <div class="relative max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -409,6 +432,38 @@
             }
         });
     </script>
+
+    <!-- Professional Footer -->
+    <footer class="relative bg-white/10 backdrop-blur-md border-t border-white/20 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                <div class="flex items-center space-x-3">
+                    <div class="h-6 w-6 bg-gradient-to-br from-dance-gold to-dance-pink rounded flex items-center justify-center">
+                        <i class="fas fa-mouse-pointer text-white text-xs"></i>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        <strong class="text-white">ComputitionHQ</strong> is a service of
+                        <em class="text-gray-200">Wolfe's Computer Consulting Inc.</em>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-6 text-sm text-gray-300">
+                    <span>Copyright © 2009-2025</span>
+                    <span class="hidden md:inline">|</span>
+                    <span>Need assistance? Have a suggestion?</span>
+                    <a href="mailto:president@wccinc.ca?subject=ComputitionHQ%20Support"
+                       class="text-dance-purple hover:text-dance-pink transition-colors">
+                        Contact Us
+                    </a>
+                </div>
+            </div>
+
+            <!-- Powered by Notice -->
+            <div class="mt-4 pt-4 border-t border-white/10 text-center text-xs text-gray-400">
+                Enhanced with modern design by Claude Code • Original platform by ComputitionHQ
+            </div>
+        </div>
+    </footer>
 
     <style>
         .animation-delay-2000 {
