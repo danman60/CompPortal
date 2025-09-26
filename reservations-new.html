@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="js/supabase-config.js"></script>
+    <script src="js/notification-system.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -371,17 +372,52 @@
 
                     console.log('✅ Reservation created:', result.data);
 
-                    // Show success modal
+                    // Show success notification
                     const locationName = document.querySelector(`input[name="location"][value="${formData.location}"] + h3`).textContent;
+
+                    notifications.reservation(
+                        'Reservation Created!',
+                        `${locationName} with ${formData.entrySpaces} entry spaces reserved successfully.`,
+                        {
+                            duration: 6000,
+                            action: {
+                                label: 'View Reservations',
+                                handler: "window.location.href='reservations.html'"
+                            }
+                        }
+                    );
+
+                    // Show success modal as well
                     document.getElementById('successMessage').textContent =
                         `Your reservation for ${locationName} with ${formData.entrySpaces} entry spaces has been created. You'll receive a confirmation email shortly.`;
 
                     document.getElementById('successModal').classList.remove('hidden');
                     document.getElementById('successModal').style.display = 'flex';
 
+                    // Also show a follow-up notification
+                    setTimeout(() => {
+                        notifications.info(
+                            'Confirmation Email Sent',
+                            'Check your inbox for reservation details and next steps.',
+                            { duration: 4000 }
+                        );
+                    }, 2000);
+
                 } catch (error) {
                     console.error('❌ Error creating reservation:', error);
-                    alert('Error creating reservation: ' + error.message);
+
+                    // Show error notification
+                    notifications.error(
+                        'Reservation Failed',
+                        `Unable to create reservation: ${error.message}`,
+                        {
+                            duration: 8000,
+                            action: {
+                                label: 'Try Again',
+                                handler: 'document.getElementById("submitBtn").click()'
+                            }
+                        }
+                    );
 
                     // Reset loading state on error
                     submitBtn.disabled = false;

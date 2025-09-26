@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="js/supabase-config.js"></script>
+    <script src="js/notification-system.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -627,7 +628,18 @@
                     }
 
                     // Success message with database integration context
-                    alert(`✅ Dancer "${formData.name}" saved successfully!\n\n📊 Details:\n• Age: ${age}\n• Primary Style: ${formData.primaryStyle || 'Not specified'}\n• Database ID: ${result.data?.id || 'demo-id'}\n\n💾 Data saved to Supabase with schema validation`);
+                    // Show success notification instead of alert
+                    notifications.dancer(
+                        'Dancer Added Successfully!',
+                        `${formData.name} (Age ${age}, ${formData.primaryStyle || 'Not specified'}) has been registered.`,
+                        {
+                            duration: 5000,
+                            action: {
+                                label: 'Add Another',
+                                handler: 'document.getElementById("addDancerBtn").click()'
+                            }
+                        }
+                    );
 
                     closeModal();
 

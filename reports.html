@@ -6,6 +6,7 @@
     <title>Reports - GlowDance Competition Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="js/notification-system.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -763,7 +764,7 @@
 </html>`;
             }
 
-            // Download file function
+            // Download file function with notifications
             function downloadFile(content, filename, mimeType) {
                 const blob = new Blob([content], { type: mimeType });
                 const url = URL.createObjectURL(blob);
@@ -774,6 +775,22 @@
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+
+                // Show export success notification
+                const fileType = filename.split('.').pop().toUpperCase();
+                const fileSize = (blob.size / 1024).toFixed(1);
+
+                notifications.export(
+                    `${fileType} Export Complete`,
+                    `${filename} (${fileSize} KB) downloaded successfully.`,
+                    {
+                        duration: 4000,
+                        action: {
+                            label: 'View Downloads',
+                            handler: 'alert("Check your Downloads folder for the exported file.")'
+                        }
+                    }
+                );
             }
 
             // Progress bar animations
