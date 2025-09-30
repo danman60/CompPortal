@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-09-30T20:44:42.877Z",
+  "tests": [
+    {
+      "name": "Homepage Load",
+      "status": "pass",
+      "details": "Sign In: false, Demo Info: true"
+    },
+    {
+      "name": "Add Dancer Modal",
+      "status": "partial",
+      "details": "Form fields present: false"
+    },
+    {
+      "name": "Studios Page",
+      "status": "pass",
+      "details": "Studio info displayed, contact sections: 4"
+    },
+    {
+      "name": "Error",
+      "status": "fail",
+      "details": "locator.count: Unexpected token \"=\" while parsing css selector \"select, .dancer-select, text=/assign dancer/i\". Did you mean to CSS.escape it?"
+    }
+  ],
+  "screenshots": [
+    "01-homepage.png",
+    "02-dancers-list.png",
+    "03-add-dancer-modal.png",
+    "05-studios-page.png",
+    "06-reservations-page.png",
+    "07-entries-modal.png"
+  ]
+}

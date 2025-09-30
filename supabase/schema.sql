@@ -1064,11 +1064,11 @@ INSERT INTO entry_size_categories (name, min_participants, max_participants, bas
 
 -- Insert default system settings
 INSERT INTO system_settings (key, value, description, category, data_type) VALUES
-  ('competition_default_judges', '3', 'Default number of judges per competition', 'competition', 'number'),
-  ('entry_fee_late_multiplier', '1.25', 'Multiplier for late registration fees', 'competition', 'number'),
-  ('max_entries_per_dancer', '8', 'Maximum entries allowed per dancer per competition', 'competition', 'number'),
-  ('email_from_address', '"GlowDance Portal" <noreply@glowdance.com>', 'Default from address for system emails', 'email', 'string'),
-  ('timezone_default', 'America/Toronto', 'Default timezone for competitions', 'general', 'string');
+  ('competition_default_judges', '3'::jsonb, 'Default number of judges per competition', 'competition', 'number'),
+  ('entry_fee_late_multiplier', '1.25'::jsonb, 'Multiplier for late registration fees', 'competition', 'number'),
+  ('max_entries_per_dancer', '8'::jsonb, 'Maximum entries allowed per dancer per competition', 'competition', 'number'),
+  ('email_from_address', '"GlowDance Portal <noreply@glowdance.com>"'::jsonb, 'Default from address for system emails', 'email', 'string'),
+  ('timezone_default', '"America/Toronto"'::jsonb, 'Default timezone for competitions', 'general', 'string');
 
 -- Insert default email templates
 INSERT INTO email_templates (template_key, name, subject, html_body, text_body) VALUES
