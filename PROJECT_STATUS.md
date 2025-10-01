@@ -1,7 +1,8 @@
 # GlowDance Competition Portal - Project Status & Roadmap
 
-**Last Updated**: September 25, 2025
-**Project Phase**: MVP Demo Complete → Production Development Ready
+**Last Updated**: October 1, 2025
+**Project Phase**: MVP Demo Complete → Requirements Finalized → Production Development Ready
+**Latest Update**: Comprehensive stakeholder requirements captured from meeting (see MEETING_REQUIREMENTS_2025-10-01.md)
 
 ---
 
@@ -89,6 +90,78 @@ Through export analysis, we've uncovered sophisticated capabilities that weren't
 
 ---
 
+## 📋 **NEW: Stakeholder Requirements (October 2025)**
+
+### **Meeting Outcomes & Product Vision**
+**Date**: October 1, 2025
+**Participants**: Daniel (Product Owner), Emily (Competition Director), Mike (Technical Lead)
+**Document**: See `MEETING_REQUIREMENTS_2025-10-01.md` for complete details
+
+### **Bootstrap MVP Strategy (Year 1)**
+**Philosophy**: Manual workflows acceptable to get system operational quickly
+- Manual payment processing (e-transfer) acceptable for Year 1
+- Manual invoice adjustments by directors (no automated discounts initially)
+- Manual reservation approvals (not auto-approved)
+- Focus on core workflows over automation
+
+### **Key Requirements Captured**
+
+#### **Core Registration System (P0 - Critical)**
+1. **Self-Service Studio Registration**: Studios create own accounts without admin intervention
+2. **Reservation/Allocation System**: Studios reserve X entries, directors approve, system enforces limits
+3. **Dancer Database**: Bulk CSV import + individual entry, age auto-calculation from birthdate
+4. **Routine Registration**: Link dancers to routines, track props/duration/genre, finalize before deadline
+5. **Invoice Generation**: Auto-generate invoices, directors manually adjust pricing, e-transfer payment tracking
+
+#### **Admin Dashboard (P0 - Critical)**
+6. **Studio Management View**: See all studios, reservations, entries, payment status
+7. **Capacity Management**: Set competition max (e.g., 600 entries), real-time tracking, alert at 90%
+8. **Multi-Competition Support**: Separate GLOW and EMPWR instances, ~8 events/year, easy rebranding
+
+#### **Scheduling System (P1 - High)**
+9. **Conflict Detection**: Auto-detect same dancer in multiple routines too close together, costume change time
+10. **Schedule Generation**: Auto-generate schedule with specific times, optimize for minimal conflicts
+11. **Schedule Reports**: PDF exports (studio-specific, master, per-dancer), email distribution
+
+#### **Music Management (P1 - High)**
+12. **Music Upload Portal**: Studios upload MP3s per routine, deadline tracking, missing music alerts
+13. **Playlist Generation**: Combine all music in schedule order, send to backstage music person
+14. **Music Coordinator View**: Track upload status, send reminders, export status report
+
+#### **Tabulation System (P1 - High)**
+15. **Judge Interface**: Tablet-based scoring (web app), sliders/input fields, offline-capable
+16. **Live Score Sync**: Real-time sync to database, aggregate scores, calculate standings
+17. **Scoring Data Management**: Store all scores, detect anomalies, generate rankings
+
+#### **Report Generation (P1 - High)**
+18. **Competition Day Reports**: Real-time standings, award placements, printable formats
+19. **Studio Reports**: Per-studio summaries, routine placements, scores, email post-competition
+
+#### **Email Notifications (P1 - High)**
+20. **Automated Emails**: Registration confirmation, reservation status, invoices, schedules, music reminders
+
+#### **Future (Year 2+ / Not MVP)**
+- Stripe integration for online payments (Year 2)
+- Media delivery portal (separate project)
+- Convention registration module (separate project)
+- Mobile judge apps (optional)
+
+### **Scale & Performance Requirements**
+- **~60 studios** across all competitions
+- **600-800 entries** per competition weekend
+- **~8 competitions per year**
+- **Multiple dancers per routine** (1-20+ for groups)
+- **Multi-venue support** (competition halls, waterparks, gala venues)
+
+### **Critical Success Factors**
+- **Competition Day Reliability**: Zero downtime during live events
+- **Scheduling Accuracy**: Zero conflict scenarios, realistic time allocations
+- **Music Workflow**: 100% music collection before deadlines
+- **Judge Experience**: Tablet scoring must work flawlessly (backup paper scorecards)
+- **Director Time Savings**: 20+ hours saved per competition vs. legacy system
+
+---
+
 ## 🛠️ **Technology Stack Selected**
 
 ### **Frontend**
@@ -135,110 +208,250 @@ Through export analysis, we've uncovered sophisticated capabilities that weren't
 - **Data Integration**: Cross-page consistency verified
 - **Testing Complete**: Playwright MCP validation with screenshots
 
-### **Phase 2: Production Development** (12-16 weeks)
-**Status**: 🟡 **Ready to Begin**
-**Dependencies**: ✅ Phase 1 Demo Complete
+### **Phase 2: Bootstrap MVP - Core Registration** (12-16 weeks)
+**Status**: 🟡 **Ready to Begin - Requirements Finalized**
+**Dependencies**: ✅ Phase 1 Demo Complete, ✅ Stakeholder Requirements Captured
+**Priority**: P0 (Critical)
 
-#### Advanced Features
-- [ ] **Competition Management**
-  - Multi-session competitions
-  - Location and venue coordination
-  - Judge assignment and management
+**Goal**: Replace legacy system with basic automation, manual workflows acceptable
 
-- [ ] **Advanced Dancer System**
-  - Bulk import/export
-  - Performance history tracking
-  - Cross-studio dancer management
+#### Sprint 1-2: Foundation (4 weeks)
+- [ ] **Authentication & Account Creation**
+  - Studio director self-registration
+  - Email verification flow
+  - Password management
+  - Profile setup wizard
 
-- [ ] **Reporting System**
-  - Schedule generation
-  - Participant lists
-  - Basic CSV exports
+- [ ] **Database Schema Deployment**
+  - Deploy Supabase migrations
+  - Set up RLS policies
+  - Seed initial data
+  - Verify connections
+
+#### Sprint 3-4: Reservation System (4 weeks)
+- [ ] **Reservation/Allocation System**
+  - Studio creates reservation (X entries for competition)
+  - Director approval workflow
+  - Capacity tracking (e.g., 600 max)
+  - Alert system for limit violations
+  - Allocation adjustments
+
+#### Sprint 5-6: Dancer & Routine Management (4 weeks)
+- [ ] **Dancer Database**
+  - Bulk CSV import
+  - Individual dancer forms
+  - Age auto-calculation from birthdate
+  - Edit/search/filter dancers
+
+- [ ] **Routine Registration**
+  - Create routines with metadata (title, duration, props, genre)
+  - Link dancers to routines
+  - Draft vs. finalized status
+  - Validation against reservation limits
+
+#### Sprint 7-8: Invoice & Admin Dashboard (4 weeks)
+- [ ] **Invoice Generation (Manual Payment)**
+  - Auto-generate invoices from entries
+  - Director review and manual adjustments
+  - E-transfer payment tracking (manual)
+  - Email invoice to studios
 
 - [ ] **Admin Dashboard**
-  - Studio approval workflow
-  - User management
-  - System configuration
+  - Studio management view (all studios, reservations, entries)
+  - Capacity management dashboard
+  - Payment status tracking
+  - Multi-competition support (GLOW vs. EMPWR)
 
-### **Phase 3: Enterprise Features** (4-6 weeks)
+### **Phase 3: Scheduling & Music Management** (10-14 weeks)
 **Status**: 🔴 Future Development
 **Dependencies**: Phase 2 completion
+**Priority**: P1 (High)
 
-#### Professional Production Features
-- [ ] **Multi-Day Event Management**
-  - 6-day competition structure
-  - Multi-venue coordination
-  - Elite team rehearsal scheduling
+**Goal**: Automated scheduling and music workflow for competition day
 
-- [ ] **Advanced Export System**
-  - Professional PDF generation (event outlines, schedules)
-  - Competition lineup exports
-  - Judge scorecard generation
-  - Video production schedules
+#### Sprint 9-11: Scheduling System (6 weeks)
+- [ ] **Conflict Detection Logic**
+  - Same dancer in multiple routines (time conflicts)
+  - Costume change time calculations
+  - Prop setup/removal time
+  - Flag conflicts before finalization
 
-- [ ] **Elite Competition Features**
-  - Title round management
-  - "Glow-Off" championship tracking
-  - Title interview scheduling
-  - Improvisation competitions
+- [ ] **Schedule Generation**
+  - Auto-generate schedule with specific times
+  - Optimize for minimal conflicts
+  - Session boundaries (morning/afternoon/evening)
+  - Manual adjustment capability
 
-- [ ] **VIP Experience Management**
-  - Premium event coordination
-  - Private venue bookings
-  - Entertainment scheduling
-  - Awards ceremony production
+- [ ] **Schedule Reports**
+  - Studio-specific PDF schedules
+  - Master schedule PDF
+  - Per-dancer schedules
+  - Email distribution to all studios
 
-### **Phase 4: Migration & Production** (2-4 weeks)
+#### Sprint 12-14: Music Management (6 weeks)
+- [ ] **Music Upload Portal**
+  - Studios upload MP3 files per routine
+  - Link music to scheduled routine
+  - Deadline tracking
+  - Missing music alerts
+
+- [ ] **Playlist Generation**
+  - Combine all music in schedule order
+  - Master playlist for backstage
+  - Downloadable individual files
+  - Metadata/cue sheet generation
+
+- [ ] **Music Coordinator View**
+  - Track upload status per studio
+  - Send automated reminders
+  - Export status report
+
+#### Sprint 15-16: Email Notifications (2 weeks)
+- [ ] **Automated Email System**
+  - Registration confirmations
+  - Reservation approvals/rejections
+  - Invoice notifications
+  - Schedule availability
+  - Music deadline reminders
+  - General competition updates
+
+### **Phase 4: Tabulation & Reporting** (8-10 weeks)
 **Status**: 🔴 Future Development
 **Dependencies**: Phase 3 completion
+**Priority**: P1 (High)
 
-#### Production Deployment
-- [ ] **Data Migration**
-  - Legacy system data extraction
-  - Data cleaning and validation
-  - Import into modern database
+**Goal**: Live scoring and competition day operations
 
+#### Sprint 17-19: Judge Tabulation System (6 weeks)
+- [ ] **Judge Interface (Tablet)**
+  - Web-based scoring interface
+  - Touch-optimized controls (sliders/input)
+  - Offline-first capability
+  - Individual judge login
+  - Works on iOS and Android tablets
+
+- [ ] **Live Score Sync**
+  - Real-time sync to central database
+  - Aggregate scores from all judges
+  - Calculate standings automatically
+  - Handle network interruptions
+  - WebSocket or polling fallback
+
+- [ ] **Scoring Data Management**
+  - Store all judge scores
+  - Track scoring progress
+  - Detect scoring anomalies
+  - Generate rankings
+  - Audit trail for changes
+
+#### Sprint 20-21: Report Generation (4 weeks)
+- [ ] **Competition Day Reports**
+  - Real-time standings (PDF)
+  - Award placement reports
+  - Score sheets
+  - Rankings by category/age group
+  - Printable formats
+
+- [ ] **Studio Reports**
+  - Per-studio performance summaries
+  - Routine placements
+  - Scores received
+  - Awards won
+  - Email post-competition
+
+### **Phase 5: Migration & Production Deployment** (4-6 weeks)
+**Status**: 🔴 Future Development
+**Dependencies**: Phase 4 completion
+
+#### Sprint 22-23: Data Migration (3 weeks)
+- [ ] **Legacy System Data Extraction**
+  - Extract studios, dancers, competitions
+  - Clean and validate data
+  - Map to new schema
+  - Import into Supabase
+
+- [ ] **Parallel System Testing**
+  - Run both systems for one competition
+  - Compare outputs
+  - Validate accuracy
+  - Train directors on new system
+
+#### Sprint 24-25: Production Launch (2 weeks)
 - [ ] **Performance Testing**
-  - Load testing with realistic data volumes
+  - Load testing (60 studios, 800 entries)
   - Concurrent user testing
-  - Export performance optimization
+  - Tablet scoring under load
+  - Music file upload stress test
 
 - [ ] **Security Audit**
   - Penetration testing
   - Vulnerability assessment
-  - Compliance verification
+  - RLS policy verification
+  - PII compliance check
 
 - [ ] **Go-Live Strategy**
-  - Parallel system operation
-  - User training and onboarding
+  - Full cutover to new system
   - Legacy system sunset
+  - On-call support team
+  - Emergency rollback plan
+
+### **Phase 6: Future Enhancements** (Year 2+)
+**Status**: 🔵 Planned - Not MVP
+**Priority**: P3 (Low - Post-Launch)
+
+**Goal**: Advanced features after successful Season 1
+
+- [ ] **Stripe Payment Integration** (6-8 weeks)
+  - Online credit card processing
+  - Automatic payment confirmation
+  - Refund handling
+  - Payment history dashboard
+
+- [ ] **Advanced Features** (TBD)
+  - Media delivery portal (separate project)
+  - Convention registration (separate project)
+  - Mobile judge apps (optional)
+  - Public results portal (optional)
+  - Advanced analytics dashboard
 
 ---
 
-## 📊 **Project Metrics**
+## 📊 **Updated Project Metrics**
 
-### **Completion Status**
-- **Analysis & Planning**: ✅ **100% Complete** (20-26 week timeline)
-- **MVP Development**: 🟡 **0% Complete** (8-10 weeks remaining)
-- **Feature Parity**: 🔴 **0% Complete** (12-16 weeks remaining)
-- **Enterprise Features**: 🔴 **0% Complete** (4-6 weeks remaining)
-- **Migration & Launch**: 🔴 **0% Complete** (2-4 weeks remaining)
+### **Completion Status by Phase**
+- **Phase 1: Demo**: ✅ **100% Complete** (92% quality score)
+- **Phase 2: Bootstrap MVP (P0)**: 🟡 **0% Complete** (12-16 weeks remaining)
+- **Phase 3: Scheduling & Music (P1)**: 🔴 **0% Complete** (10-14 weeks remaining)
+- **Phase 4: Tabulation & Reporting (P1)**: 🔴 **0% Complete** (8-10 weeks remaining)
+- **Phase 5: Migration & Launch**: 🔴 **0% Complete** (4-6 weeks remaining)
+- **Phase 6: Future Features**: 🔵 **Planned** (Year 2+)
 
-### **Overall Project Status**
-**Phase Complete**: Analysis & Design ✅
+### **Overall Project Timeline**
+**Phase Complete**: Analysis & Design ✅ Requirements Finalized ✅
 **Current Phase**: Ready for Development 🟡
-**Total Timeline**: 20-26 weeks (currently week 2-3)
+**Bootstrap MVP Timeline**: 12-16 weeks (Phase 2 only)
+**Full Feature Set**: 34-46 weeks (~7-10 months total)
+**Target Launch**: Q2 2026 (for Fall 2026 competition season)
 **Project Health**: 🟢 **On Track**
+
+### **Risk Assessment**
+- **High Risk**: Scheduling algorithm complexity, judge tablet reliability
+- **Medium Risk**: Music file management at scale, data migration accuracy
+- **Low Risk**: Authentication, basic CRUD operations, reporting
 
 ---
 
 ## 🔍 **Key Project Assets**
 
 ### **Documentation**
+- **PROJECT_STATUS.md**: This status document (updated Oct 2025)
+- **MEETING_REQUIREMENTS_2025-10-01.md**: 📋 **NEW!** Comprehensive stakeholder requirements (20 features, 9 phases)
+- **PRODUCTION_ROADMAP.md**: 12-16 week backend implementation plan
 - **REBUILD_BLUEPRINT.md**: 50+ page comprehensive technical plan
 - **EXPORT_ANALYSIS.md**: Enterprise export system requirements
+- **SESSION_LOG_2025-10-01.md**: Latest development session notes
+- **COMPPORTAL.txt**: Project configuration and credentials
 - **README.md**: Project overview and getting started guide
-- **PROJECT_STATUS.md**: This status document
 
 ### **Legacy Analysis**
 - **glow_output/**: 18 scraped HTML pages from legacy system
