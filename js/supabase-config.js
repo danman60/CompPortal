@@ -1,10 +1,9 @@
 // Supabase Configuration for GlowDance Competition Portal
-// Note: This is a demo configuration showing schema alignment
-// In production, these values would be stored as environment variables
+// Connected to live Supabase instance
 
 const SUPABASE_CONFIG = {
-    url: 'https://your-project-url.supabase.co',
-    anonKey: 'your-anon-key-here',
+    url: 'https://cafugvuaatsgihrsmvvl.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhZnVndnVhYXRzZ2locnNtdnZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNTk5MzksImV4cCI6MjA3NDgzNTkzOX0.WqX70GzRkDRhcurYeEnqG8YFniTYFqpjv6u3mPlbdoc',
 
     // Database Schema Alignment (per CLAUDE.md requirements)
     tables: {
@@ -60,125 +59,119 @@ const DataModels = {
     }
 };
 
-// Demo Supabase Client (would use actual @supabase/supabase-js in production)
-class DemoSupabaseClient {
-    constructor() {
-        this.isDemo = true;
-        console.log('🎭 Demo Supabase Client initialized for GlowDance Portal');
-    }
+// Initialize Supabase Client
+// Note: Requires @supabase/supabase-js CDN or npm package
+let supabaseClient;
 
-    // Simulate adding a new dancer
-    async insertDancer(dancerData) {
-        console.log('📝 Demo: Would insert dancer to Supabase:', dancerData);
-
-        // Simulate validation against schema
-        const requiredFields = ['name', 'date_of_birth'];
-        const missingFields = requiredFields.filter(field => !dancerData[field]);
-
-        if (missingFields.length > 0) {
-            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-        }
-
-        // Simulate successful insert
-        return {
-            data: {
-                id: 'demo-uuid-' + Date.now(),
-                ...dancerData,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            },
-            error: null
-        };
-    }
-
-    // Simulate creating a reservation
-    async insertReservation(reservationData) {
-        console.log('🎟️ Demo: Would insert reservation to Supabase:', reservationData);
-
-        // Simulate schema validation
-        const requiredFields = ['competition_id', 'entry_spaces', 'agent_name', 'liability_waiver', 'age_consent'];
-        const missingFields = requiredFields.filter(field => !reservationData[field]);
-
-        if (missingFields.length > 0) {
-            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-        }
-
-        // Simulate successful insert
-        return {
-            data: {
-                id: 'demo-reservation-' + Date.now(),
-                ...reservationData,
-                status: 'pending',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            },
-            error: null
-        };
-    }
-
-    // Simulate fetching dancers for sorting/filtering
-    async getDancers(filters = {}) {
-        console.log('📊 Demo: Would fetch dancers with filters:', filters);
-
-        // Return demo data that matches our existing UI
-        return {
-            data: [
-                {
-                    id: 'demo-1',
-                    name: 'Emma Sullivan',
-                    date_of_birth: '2011-08-15',
-                    age_override: null,
-                    primary_style: 'Ballet',
-                    experience_years: 6,
-                    created_at: '2024-01-15T10:30:00Z'
-                },
-                {
-                    id: 'demo-2',
-                    name: 'Maya Singh',
-                    date_of_birth: '2009-12-03',
-                    age_override: null,
-                    primary_style: 'Jazz',
-                    experience_years: 8,
-                    created_at: '2024-02-20T14:15:00Z'
-                },
-                {
-                    id: 'demo-3',
-                    name: 'Ava Rodriguez',
-                    date_of_birth: '2013-06-22',
-                    age_override: null,
-                    primary_style: 'Contemporary',
-                    experience_years: 4,
-                    created_at: '2024-03-10T09:45:00Z'
-                }
-            ],
-            error: null
-        };
-    }
-
-    // Simulate real-time subscription for live updates
-    subscribe(table, callback) {
-        console.log(`🔄 Demo: Would subscribe to ${table} changes`);
-
-        // Simulate receiving updates
-        setTimeout(() => {
-            callback({
-                eventType: 'INSERT',
-                new: {
-                    id: 'demo-new-' + Date.now(),
-                    name: 'New Dancer Added',
-                    primary_style: 'Hip Hop'
-                }
-            });
-        }, 5000);
-
-        return {
-            unsubscribe: () => console.log('Demo: Unsubscribed from changes')
-        };
-    }
+// Check if we're in browser and supabase library is loaded
+if (typeof window !== 'undefined' && window.supabase) {
+    supabaseClient = window.supabase.createClient(
+        SUPABASE_CONFIG.url,
+        SUPABASE_CONFIG.anonKey
+    );
+    console.log('✅ Supabase Client initialized for GlowDance Portal');
+} else {
+    console.warn('⚠️ Supabase library not loaded. Include from CDN: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    supabaseClient = null;
 }
 
-// Export for use in production (would be actual supabase client)
-const supabaseClient = new DemoSupabaseClient();
+// Database Helper Functions
+const DatabaseAPI = {
+    // Insert a new dancer
+    async insertDancer(dancerData) {
+        if (!supabaseClient) throw new Error('Supabase client not initialized');
+
+        const { data, error } = await supabaseClient
+            .from('dancers')
+            .insert([dancerData])
+            .select();
+
+        if (error) {
+            console.error('Error inserting dancer:', error);
+            throw error;
+        }
+
+        return { data, error };
+    },
+
+    // Create a reservation
+    async insertReservation(reservationData) {
+        if (!supabaseClient) throw new Error('Supabase client not initialized');
+
+        const { data, error } = await supabaseClient
+            .from('reservations')
+            .insert([reservationData])
+            .select();
+
+        if (error) {
+            console.error('Error inserting reservation:', error);
+            throw error;
+        }
+
+        return { data, error };
+    },
+
+    // Fetch dancers with optional filters
+    async getDancers(filters = {}) {
+        if (!supabaseClient) throw new Error('Supabase client not initialized');
+
+        let query = supabaseClient
+            .from('dancers')
+            .select('*');
+
+        // Apply filters if provided
+        if (filters.studio_id) {
+            query = query.eq('studio_id', filters.studio_id);
+        }
+        if (filters.primary_style) {
+            query = query.eq('primary_style', filters.primary_style);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Error fetching dancers:', error);
+            return { data: null, error };
+        }
+
+        return { data, error };
+    },
+
+    // Fetch studios
+    async getStudios() {
+        if (!supabaseClient) throw new Error('Supabase client not initialized');
+
+        const { data, error } = await supabaseClient
+            .from('studios')
+            .select('*');
+
+        return { data, error };
+    },
+
+    // Fetch competitions
+    async getCompetitions() {
+        if (!supabaseClient) throw new Error('Supabase client not initialized');
+
+        const { data, error } = await supabaseClient
+            .from('competitions')
+            .select('*')
+            .order('event_date', { ascending: true });
+
+        return { data, error };
+    },
+
+    // Real-time subscription to table changes
+    subscribe(table, callback) {
+        if (!supabaseClient) throw new Error('Supabase client not initialized');
+
+        const subscription = supabaseClient
+            .channel(`public:${table}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table }, callback)
+            .subscribe();
+
+        return subscription;
+    }
+};
 
 // Integration helper functions that align with existing schema
 const SupabaseHelpers = {
@@ -226,16 +219,19 @@ const SupabaseHelpers = {
     }
 };
 
-// Demo usage examples
-console.log('🎭 GlowDance Supabase Integration Demo Ready');
+// Initialize and log status
+console.log('🎭 GlowDance Supabase Integration Ready');
 console.log('📋 Schema models loaded:', Object.keys(DataModels));
 console.log('⚡ Helper functions available:', Object.keys(SupabaseHelpers));
+console.log('🔌 Database API available:', Object.keys(DatabaseAPI));
 
 // Export for use in HTML files
 if (typeof window !== 'undefined') {
     window.GlowDanceDB = {
         client: supabaseClient,
+        api: DatabaseAPI,
         helpers: SupabaseHelpers,
-        models: DataModels
+        models: DataModels,
+        config: SUPABASE_CONFIG
     };
 }

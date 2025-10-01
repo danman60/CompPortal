@@ -6,6 +6,9 @@
     <title>Dashboard - GlowDance Competition Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
     <script src="js/notification-system.js"></script>
     <script src="js/auth-system.js"></script>
     <script>
@@ -396,7 +399,10 @@
 
     <script>
         // Add interactive features
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Load real data from Supabase
+            await loadDashboardData();
+
             // Add click handlers to action cards
             document.querySelectorAll('.cursor-pointer.group').forEach(card => {
                 card.addEventListener('click', function() {
@@ -439,6 +445,51 @@
                 });
             }
         });
+
+        // Load dashboard data from Supabase
+        async function loadDashboardData() {
+            try {
+                // Check if Supabase client is available
+                if (!window.GlowDanceDB || !window.GlowDanceDB.client) {
+                    console.warn('Supabase client not initialized. Using static data.');
+                    return;
+                }
+
+                const api = window.GlowDanceDB.api;
+
+                // Fetch dancers count
+                const { data: dancers, error: dancersError } = await api.getDancers();
+                if (!dancersError && dancers) {
+                    const dancerCount = dancers.length;
+                    // Update dancer count badges
+                    document.querySelectorAll('.bg-blue-500\\/20.text-blue-300').forEach(badge => {
+                        if (badge.textContent.includes('Active')) {
+                            badge.textContent = `${dancerCount} Active`;
+                        }
+                    });
+                    console.log(`✅ Loaded ${dancerCount} dancers from Supabase`);
+                }
+
+                // Fetch studios count
+                const { data: studios, error: studiosError } = await api.getStudios();
+                if (!studiosError && studios) {
+                    console.log(`✅ Loaded ${studios.length} studios from Supabase`);
+                }
+
+                // Fetch competitions
+                const { data: competitions, error: competitionsError } = await api.getCompetitions();
+                if (!competitionsError && competitions) {
+                    console.log(`✅ Loaded ${competitions.length} competitions from Supabase`);
+                }
+
+                // Update status message
+                console.log('✅ Dashboard data loaded from Supabase successfully!');
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                console.warn('Falling back to static demo data');
+            }
+        }
     </script>
 
     <!-- Professional Footer -->
