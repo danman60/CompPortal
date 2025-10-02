@@ -196,7 +196,7 @@ export const entryRouter = router({
             orderBy: { display_order: 'asc' },
           },
           age_groups: true,
-          categories: true,
+          dance_categories: true,
           classifications: true,
           entry_size_categories: true,
           competition_sessions: true,
