@@ -1,11 +1,11 @@
 # GlowDance Competition Portal - Project Status & Roadmap
 
-**Last Updated**: October 2, 2025
-**Project Phase**: Backend Deployed to Vercel → Database Connection Troubleshooting → 55% to Working MVP
+**Last Updated**: October 2, 2025 (Late Evening)
+**Project Phase**: Backend Working Locally → Production Deployment Pending → 60% to Working MVP
 **Production URLs**:
 - Static Demo: https://beautiful-bonbon-cde2fe.netlify.app/
-- Next.js Backend: https://comp-portal-one.vercel.app/ (deployed, DB connection blocked)
-**Latest Update**: Deployed Next.js backend to Vercel, fixed tRPC v11 config, troubleshooting database connection (Commits: 579bf96, a265172, fec9a5f)
+- Next.js Backend: https://comp-portal-one.vercel.app/ (deployed, DB fix pending verification)
+**Latest Update**: ✅ BREAKTHROUGH - Database connection working locally! Found `.env.local` override issue. Studio API functional. Vercel env vars updated, awaiting production test. (Commits: 579bf96, a265172, fec9a5f, a2663ae)
 
 ---
 
@@ -33,34 +33,43 @@ The legacy system uses **dangerously outdated technologies**:
 
 ---
 
-## 📊 **Current Status: BACKEND DEPLOYED - DATABASE CONNECTION BLOCKED**
+## 📊 **Current Status: DATABASE CONNECTED LOCALLY - PRODUCTION UPDATE PENDING**
 
-### 🚀 **Latest Session (October 2, 2025)**
+### 🎉 **Latest Session (October 2, 2025 - Extended)**
 
-#### **Vercel Production Deployment Complete**
-- ✅ **Next.js backend deployed** - Live at https://comp-portal-one.vercel.app/
-- ✅ **Vercel CLI configured** - Authenticated and linked to project
-- ✅ **tRPC v11 configuration fixed** - Transformer moved to link config
-- ✅ **Prisma auto-generation working** - Postinstall script added
-- ✅ **Environment variables loaded** - All 6 vars confirmed SET in production
-- ✅ **Test endpoints working** - `/api/trpc/test.*` endpoints responding
-- ❌ **Database connection failing** - Studio API returns 500 error (critical blocker)
+#### **BREAKTHROUGH: Database Connection Working!**
+- ✅ **Root cause identified** - `.env.local` file was overriding `.env` with broken pooler connection
+- ✅ **Local database connection working** - Studio API responding with real data
+- ✅ **Direct connection validated** - Port 5432 works, pooler 6543 has auth issues
+- ✅ **Password encoding fixed** - Unencoded (`!`) works, URL-encoded (`%21`) fails with Prisma
+- ✅ **Vercel env vars updated** - Changed to direct connection with unencoded password
+- ⏳ **Production test pending** - Vercel redeployed, awaiting verification
+
+**The Fix**:
+```env
+# Before (broken - .env.local)
+DATABASE_URL=postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+
+# After (working - .env.local)
+DATABASE_URL=postgresql://postgres:!EH4TtrJ2-V!5b_@db.cafugvuaatsgihrsmvvl.supabase.co:5432/postgres
+```
+
+**Key Changes**:
+1. Username: `postgres.cafugvuaatsgihrsmvvl` → `postgres`
+2. Port: `6543` (pooler) → `5432` (direct)
+3. Host: `aws-0-us-west-1.pooler.supabase.com` → `db.cafugvuaatsgihrsmvvl.supabase.co`
+4. Password: Kept unencoded (not URL-encoded)
 
 **Git Commits**:
 - `579bf96` - Fix tRPC v11 transformer configuration
 - `a265172` - Add postinstall script for Prisma Client generation
 - `fec9a5f` - Add checkEnv debug endpoint
+- `a2663ae` - Session log and project status update (this commit)
 
 **Deployment Architecture**:
 - **Static Demo**: Netlify (existing, working)
-- **Next.js Backend**: Vercel (new, partially working)
-- **Database**: Supabase PostgreSQL (connection issues)
-
-**Critical Blocker**: Database authentication failing in production
-- Tried pooler connection (port 6543): "Tenant or user not found"
-- Tried direct connection (port 5432): Still 500 error
-- Environment variables confirmed loaded correctly
-- Next step: Debug exact error from Vercel function logs
+- **Next.js Backend**: Vercel (deployed, DB fix applied)
+- **Database**: Supabase PostgreSQL (working locally, pending production test)
 
 ---
 
