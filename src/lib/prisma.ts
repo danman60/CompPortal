@@ -2,9 +2,15 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as dns from 'dns';
+import * as net from 'net';
 
-// Force IPv4 resolution
+// Force IPv4-only resolution
 dns.setDefaultResultOrder('ipv4first');
+
+// Override DNS lookup to force IPv4
+const customDnsLookup = (hostname: string, options: any, callback: any) => {
+  dns.lookup(hostname, { ...options, family: 4 }, callback);
+};
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
