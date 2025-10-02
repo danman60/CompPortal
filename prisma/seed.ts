@@ -1,6 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: ['error', 'warn'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 async function main() {
   console.log('🌱 Starting database seed...');
@@ -9,8 +19,8 @@ async function main() {
   console.log('📝 Cleaning existing test data...');
 
   // Create lookup tables first
-  console.log('📚 Creating categories...');
-  const soloCategory = await prisma.categories.upsert({
+  console.log('📚 Creating dance categories...');
+  const soloCategory = await prisma.dance_categories.upsert({
     where: { name: 'Solo' },
     update: {},
     create: {
@@ -21,7 +31,7 @@ async function main() {
     },
   });
 
-  const duoCategory = await prisma.categories.upsert({
+  const duoCategory = await prisma.dance_categories.upsert({
     where: { name: 'Duo/Trio' },
     update: {},
     create: {
@@ -32,7 +42,7 @@ async function main() {
     },
   });
 
-  const groupCategory = await prisma.categories.upsert({
+  const groupCategory = await prisma.dance_categories.upsert({
     where: { name: 'Small Group' },
     update: {},
     create: {
@@ -183,30 +193,216 @@ async function main() {
     },
   });
 
-  // Create test competition
-  console.log('🏆 Creating test competition...');
-  const competition = await prisma.competitions.create({
+  // Create EMPWR Dance competitions
+  console.log('🏆 Creating EMPWR Dance competitions...');
+  const empwrLondon = await prisma.competitions.create({
     data: {
-      name: 'GlowDance Championship 2025',
-      year: 2025,
-      description: 'Annual GlowDance competition featuring elite performances',
-      registration_opens: new Date('2025-03-01'),
-      registration_closes: new Date('2025-05-15'),
-      competition_start_date: new Date('2025-06-20'),
-      competition_end_date: new Date('2025-06-25'),
-      primary_location: 'Vancouver Convention Centre',
-      venue_address: '1055 Canada Place, Vancouver, BC V6C 0C3',
-      venue_capacity: 600,
+      name: 'EMPWR Dance - London',
+      year: 2026,
+      description: 'EMPWR Dance Competition in London, Ontario',
+      registration_opens: new Date('2026-01-15'),
+      registration_closes: new Date('2026-04-01'),
+      competition_start_date: new Date('2026-04-10'),
+      competition_end_date: new Date('2026-04-12'),
+      primary_location: 'London, ON',
+      venue_capacity: 500,
       session_count: 3,
       number_of_judges: 5,
       entry_fee: '75.00',
       late_fee: '25.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@empwrdance.com',
+      contact_phone: '1-800-EMPWR',
+    },
+  });
+
+  const empwrStCath1 = await prisma.competitions.create({
+    data: {
+      name: 'EMPWR Dance - St. Catharines #1',
+      year: 2026,
+      description: 'EMPWR Dance Competition in St. Catharines, Ontario',
+      registration_opens: new Date('2026-01-15'),
+      registration_closes: new Date('2026-04-07'),
+      competition_start_date: new Date('2026-04-16'),
+      competition_end_date: new Date('2026-04-18'),
+      primary_location: 'St. Catharines, ON',
+      venue_capacity: 500,
+      session_count: 3,
+      number_of_judges: 5,
+      entry_fee: '75.00',
+      late_fee: '25.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@empwrdance.com',
+      contact_phone: '1-800-EMPWR',
+    },
+  });
+
+  const empwrStCath2 = await prisma.competitions.create({
+    data: {
+      name: 'EMPWR Dance - St. Catharines #2',
+      year: 2026,
+      description: 'EMPWR Dance Competition in St. Catharines, Ontario',
+      registration_opens: new Date('2026-01-15'),
+      registration_closes: new Date('2026-04-28'),
+      competition_start_date: new Date('2026-05-07'),
+      competition_end_date: new Date('2026-05-09'),
+      primary_location: 'St. Catharines, ON',
+      venue_capacity: 500,
+      session_count: 3,
+      number_of_judges: 5,
+      entry_fee: '75.00',
+      late_fee: '25.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@empwrdance.com',
+      contact_phone: '1-800-EMPWR',
+    },
+  });
+
+  // Create GLOW Dance competitions (2026 Tour)
+  console.log('✨ Creating GLOW Dance tour competitions...');
+  const glowOrlando = await prisma.competitions.create({
+    data: {
+      name: 'GLOW Dance - Orlando',
+      year: 2026,
+      description: 'GLOW Dance Championship Tour - Orlando, Florida',
+      registration_opens: new Date('2025-12-01'),
+      registration_closes: new Date('2026-02-10'),
+      competition_start_date: new Date('2026-02-20'),
+      competition_end_date: new Date('2026-02-22'),
+      primary_location: 'Orlando, FL',
+      venue_capacity: 600,
+      session_count: 4,
+      number_of_judges: 7,
+      entry_fee: '85.00',
+      late_fee: '30.00',
       status: 'registration_open',
       is_public: true,
       contact_email: 'info@glowdance.com',
-      contact_phone: '604-555-GLOW',
+      contact_phone: '1-800-GLOW',
+      website: 'https://glowdance.com',
     },
   });
+
+  const glowStCath1 = await prisma.competitions.create({
+    data: {
+      name: 'GLOW Dance - St. Catharines (Spring)',
+      year: 2026,
+      description: 'GLOW Dance Championship Tour - St. Catharines, Ontario',
+      registration_opens: new Date('2026-01-15'),
+      registration_closes: new Date('2026-03-30'),
+      competition_start_date: new Date('2026-04-09'),
+      competition_end_date: new Date('2026-04-12'),
+      primary_location: 'St. Catharines, ON',
+      venue_capacity: 650,
+      session_count: 4,
+      number_of_judges: 7,
+      entry_fee: '85.00',
+      late_fee: '30.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@glowdance.com',
+      contact_phone: '1-800-GLOW',
+      website: 'https://glowdance.com',
+    },
+  });
+
+  const glowBlueMountain1 = await prisma.competitions.create({
+    data: {
+      name: 'GLOW Dance - Blue Mountain (April)',
+      year: 2026,
+      description: 'GLOW Dance Championship Tour - Blue Mountain, Ontario',
+      registration_opens: new Date('2026-01-15'),
+      registration_closes: new Date('2026-04-14'),
+      competition_start_date: new Date('2026-04-23'),
+      competition_end_date: new Date('2026-04-26'),
+      primary_location: 'Blue Mountain, ON',
+      venue_capacity: 550,
+      session_count: 4,
+      number_of_judges: 7,
+      entry_fee: '85.00',
+      late_fee: '30.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@glowdance.com',
+      contact_phone: '1-800-GLOW',
+      website: 'https://glowdance.com',
+    },
+  });
+
+  const glowToronto = await prisma.competitions.create({
+    data: {
+      name: 'GLOW Dance - Toronto',
+      year: 2026,
+      description: 'GLOW Dance Championship Tour - Toronto, Ontario',
+      registration_opens: new Date('2026-02-01'),
+      registration_closes: new Date('2026-04-29'),
+      competition_start_date: new Date('2026-05-08'),
+      competition_end_date: new Date('2026-05-10'),
+      primary_location: 'Toronto, ON',
+      venue_capacity: 700,
+      session_count: 4,
+      number_of_judges: 7,
+      entry_fee: '85.00',
+      late_fee: '30.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@glowdance.com',
+      contact_phone: '1-800-GLOW',
+      website: 'https://glowdance.com',
+    },
+  });
+
+  const glowStCath2 = await prisma.competitions.create({
+    data: {
+      name: 'GLOW Dance - St. Catharines (May)',
+      year: 2026,
+      description: 'GLOW Dance Championship Tour - St. Catharines, Ontario',
+      registration_opens: new Date('2026-02-01'),
+      registration_closes: new Date('2026-05-05'),
+      competition_start_date: new Date('2026-05-14'),
+      competition_end_date: new Date('2026-05-17'),
+      primary_location: 'St. Catharines, ON',
+      venue_capacity: 650,
+      session_count: 4,
+      number_of_judges: 7,
+      entry_fee: '85.00',
+      late_fee: '30.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@glowdance.com',
+      contact_phone: '1-800-GLOW',
+      website: 'https://glowdance.com',
+    },
+  });
+
+  const glowBlueMountain2 = await prisma.competitions.create({
+    data: {
+      name: 'GLOW Dance - Blue Mountain (June)',
+      year: 2026,
+      description: 'GLOW Dance Championship Tour - Blue Mountain, Ontario',
+      registration_opens: new Date('2026-02-15'),
+      registration_closes: new Date('2026-05-26'),
+      competition_start_date: new Date('2026-06-04'),
+      competition_end_date: new Date('2026-06-07'),
+      primary_location: 'Blue Mountain, ON',
+      venue_capacity: 550,
+      session_count: 4,
+      number_of_judges: 7,
+      entry_fee: '85.00',
+      late_fee: '30.00',
+      status: 'upcoming',
+      is_public: true,
+      contact_email: 'info@glowdance.com',
+      contact_phone: '1-800-GLOW',
+      website: 'https://glowdance.com',
+    },
+  });
+
+  // Use first GLOW competition for test data
+  const competition = glowOrlando;
 
   // Create test dancers
   console.log('👯 Creating test dancers...');
@@ -404,12 +600,13 @@ async function main() {
   console.log('\n📊 Summary:');
   console.log(`- Studios: 3`);
   console.log(`- Dancers: 15`);
-  console.log(`- Competition: 1`);
+  console.log(`- Competitions: 10 (3 EMPWR + 7 GLOW Dance 2026 Tour)`);
   console.log(`- Reservations: 3`);
   console.log(`- Entries: 9`);
   console.log(`- Categories: 3`);
   console.log(`- Age Groups: 3`);
   console.log(`- Classifications: 3`);
+  console.log(`- Entry Size Categories: 3`);
 }
 
 main()
