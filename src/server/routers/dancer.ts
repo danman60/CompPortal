@@ -119,12 +119,12 @@ export const dancerRouter = router({
               competition_entries: {
                 select: {
                   id: true,
-                  entry_title: true,
+                  title: true,
                   competition_id: true,
                   competitions: {
                     select: {
                       name: true,
-                      start_date: true,
+                      competition_start_date: true,
                     },
                   },
                 },
