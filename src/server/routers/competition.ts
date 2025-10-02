@@ -104,7 +104,7 @@ export const competitionRouter = router({
             orderBy: { session_number: 'asc' },
           },
           competition_locations: {
-            orderBy: { location_name: 'asc' },
+            orderBy: { name: 'asc' },
           },
           judges: {
             orderBy: { panel_position: 'asc' },

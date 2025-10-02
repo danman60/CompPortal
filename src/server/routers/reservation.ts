@@ -84,7 +84,7 @@ export const reservationRouter = router({
             competition_locations: {
               select: {
                 id: true,
-                location_name: true,
+                name: true,
               },
             },
             _count: {
@@ -143,17 +143,14 @@ export const reservationRouter = router({
           competition_locations: {
             select: {
               id: true,
-              location_name: true,
-              location_type: true,
-              venue_address: true,
+              name: true,
+              address: true,
             },
           },
           competition_entries: {
             select: {
               id: true,
-              entry_title: true,
-              dance_style: true,
-              age_category: true,
+              title: true,
             },
           },
           users: {

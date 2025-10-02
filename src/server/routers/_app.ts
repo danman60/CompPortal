@@ -4,6 +4,7 @@ import { studioRouter } from './studio';
 import { dancerRouter } from './dancer';
 import { competitionRouter } from './competition';
 import { reservationRouter } from './reservation';
+import { entryRouter } from './entry';
 
 /**
  * Main tRPC router
@@ -15,9 +16,7 @@ export const appRouter = router({
   dancer: dancerRouter,
   competition: competitionRouter,
   reservation: reservationRouter,
-  // Additional routers will be added here:
-  // entry: entryRouter,
-  // etc.
+  entry: entryRouter,
 });
 
 // Export type definition of API
