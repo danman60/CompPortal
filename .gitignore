@@ -36,12 +36,11 @@ coverage/
 .yarn-integrity
 
 # Environment variables
-.env
+# .env - committed to git for deployment
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env.production
 .env.vercel
 .env.vercel.check
 
