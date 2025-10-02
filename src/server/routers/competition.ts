@@ -107,7 +107,7 @@ export const competitionRouter = router({
             orderBy: { name: 'asc' },
           },
           judges: {
-            orderBy: { panel_position: 'asc' },
+            orderBy: { judge_number: 'asc' },
           },
           _count: {
             select: {
