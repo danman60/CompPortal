@@ -51,36 +51,27 @@ async function main() {
   });
 
   console.log('📊 Creating age groups...');
-  const petiteAge = await prisma.age_groups.upsert({
-    where: { group_name: 'Petite' },
-    update: {},
-    create: {
-      group_name: 'Petite',
+  const petiteAge = await prisma.age_groups.create({
+    data: {
+      name: 'Petite',
       min_age: 5,
       max_age: 8,
-      description: 'Ages 5-8',
     },
   });
 
-  const juniorAge = await prisma.age_groups.upsert({
-    where: { group_name: 'Junior' },
-    update: {},
-    create: {
-      group_name: 'Junior',
+  const juniorAge = await prisma.age_groups.create({
+    data: {
+      name: 'Junior',
       min_age: 9,
       max_age: 11,
-      description: 'Ages 9-11',
     },
   });
 
-  const teenAge = await prisma.age_groups.upsert({
-    where: { group_name: 'Teen' },
-    update: {},
-    create: {
-      group_name: 'Teen',
+  const teenAge = await prisma.age_groups.create({
+    data: {
+      name: 'Teen',
       min_age: 12,
       max_age: 14,
-      description: 'Ages 12-14',
     },
   });
 
@@ -91,7 +82,7 @@ async function main() {
     create: {
       name: 'Recreational',
       description: 'For fun and enjoyment',
-      skill_level: 'beginner',
+      skill_level: 1,
     },
   });
 
@@ -101,7 +92,7 @@ async function main() {
     create: {
       name: 'Competitive',
       description: 'Competitive level dancers',
-      skill_level: 'intermediate',
+      skill_level: 2,
     },
   });
 
@@ -111,7 +102,7 @@ async function main() {
     create: {
       name: 'Elite',
       description: 'Highest competitive level',
-      skill_level: 'advanced',
+      skill_level: 3,
     },
   });
 
