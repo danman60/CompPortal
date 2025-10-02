@@ -1,6 +1,9 @@
 import { router } from '../trpc';
 import { testRouter } from './test';
 import { studioRouter } from './studio';
+import { dancerRouter } from './dancer';
+import { competitionRouter } from './competition';
+import { reservationRouter } from './reservation';
 
 /**
  * Main tRPC router
@@ -9,9 +12,11 @@ import { studioRouter } from './studio';
 export const appRouter = router({
   test: testRouter,
   studio: studioRouter,
+  dancer: dancerRouter,
+  competition: competitionRouter,
+  reservation: reservationRouter,
   // Additional routers will be added here:
-  // dancer: dancerRouter,
-  // competition: competitionRouter,
+  // entry: entryRouter,
   // etc.
 });
 
