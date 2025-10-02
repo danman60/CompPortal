@@ -441,3 +441,37 @@ npx prisma db pull
 ---
 
 **End of Session Log**
+
+---
+
+## Session 2: Database Connection Fix Attempts (Morning)
+**Time**: ~9:00 AM
+**Focus**: Resolving Vercel serverless DB connection issues
+
+### Connection Attempts Summary
+
+| # | Approach | Connection String | Local | Vercel | Error |
+|---|----------|------------------|-------|--------|-------|
+| 1 | Pooler + postgres.{ref} | `postgresql://postgres.cafugvuaatsgihrsmvvl:pass@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=3` | ❌ | ❌ | "FATAL: Tenant or user not found" |
+| 2 | Pooler + postgres user | `postgresql://postgres:pass@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=3` | ❌ | ❌ | "FATAL: Tenant or user not found" |
+| 3 | Direct + SSL params | `postgresql://postgres:pass@db.cafugvuaatsgihrsmvvl.supabase.co:5432/postgres?sslmode=require&connection_limit=1` | ✅ | ❌ | Works locally, "Can't reach database server" in Vercel |
+
+### Root Cause Analysis
+- **Supabase pooler authentication**: Completely broken with both username formats
+- **Direct connection in serverless**: Works locally but fails in Vercel's ephemeral environment
+- **Issue**: Vercel serverless functions can't maintain persistent PostgreSQL connections
+
+### Current Solution: Prisma Driver Adapter
+**Status**: IN PROGRESS
+
+Implementing `@prisma/adapter-pg` with `engineType="library"`:
+- ✅ Installed `@prisma/adapter-pg` and `pg` packages
+- ✅ Updated `prisma/schema.prisma` with `driverAdapters` preview feature
+- 🔄 Next: Update `src/lib/prisma.ts` to use adapter
+- ⏳ Test locally and deploy
+
+**Why this works**:
+- Uses `pg` driver which handles connection pooling for serverless
+- Designed specifically for ephemeral environments like Vercel
+- Combined with Supabase pooler, eliminates connection thrashing
+
