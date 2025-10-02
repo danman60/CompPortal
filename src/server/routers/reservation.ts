@@ -157,8 +157,6 @@ export const reservationRouter = router({
             select: {
               id: true,
               email: true,
-              first_name: true,
-              last_name: true,
             },
           },
         },
