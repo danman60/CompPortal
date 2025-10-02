@@ -475,3 +475,41 @@ Implementing `@prisma/adapter-pg` with `engineType="library"`:
 - Designed specifically for ephemeral environments like Vercel
 - Combined with Supabase pooler, eliminates connection thrashing
 
+
+---
+
+## Session 3: Railway Deployment (Afternoon)
+**Time**: ~1:00 PM
+**Focus**: Moving from Vercel serverless to Railway persistent server
+
+### Railway Deployment
+- ✅ Connected GitHub repo to Railway
+- ✅ Auto-detected Next.js 15.5.4
+- ✅ Imported environment variables
+- ✅ Successful build and deployment
+- **URL**: https://compportal-production.up.railway.app
+
+### Database Connection Attempts on Railway
+
+| Attempt | DATABASE_URL | Result |
+|---------|-------------|--------|
+| 1 | Pooler URL with pgbouncer | ❌ "Tenant or user not found" |
+| 2 | Direct connection (5432) | ❌ `ENETUNREACH` IPv6 address |
+
+### Current Issue: IPv6 Connection Problem
+**Error**: `connect ENETUNREACH 2600:1f16:1cd0:331f:94f5:b482:72c4:9281:5432`
+
+Railway attempting IPv6 connection to Supabase, but Supabase direct endpoint may only support IPv4.
+
+**Next Fix**: Add `?sslmode=require` to DATABASE_URL to potentially force IPv4/SSL connection.
+
+### Why Railway (Decision Rationale)
+After 5 failed attempts with Vercel serverless and Supabase pooler, switched to Railway because:
+- Persistent server handles direct connections (works locally)
+- No serverless connection limitations
+- Keeps all Prisma ORM code intact
+- Low cost (~$5/month)
+
+### Status: 95% Complete
+Everything working except final DB connection parameter tuning.
+
