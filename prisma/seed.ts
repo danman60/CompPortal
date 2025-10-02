@@ -19,37 +19,34 @@ async function main() {
   console.log('📝 Cleaning existing test data...');
 
   // Create lookup tables first
-  console.log('📚 Creating dance categories...');
-  const soloCategory = await prisma.dance_categories.upsert({
-    where: { name: 'Solo' },
+  console.log('📚 Creating dance categories (styles)...');
+  const jazzCategory = await prisma.dance_categories.upsert({
+    where: { name: 'Jazz' },
     update: {},
     create: {
-      name: 'Solo',
-      description: 'Individual performance',
-      min_performers: 1,
-      max_performers: 1,
+      name: 'Jazz',
+      description: 'Jazz dance style',
+      color_code: '#FF6B6B',
     },
   });
 
-  const duoCategory = await prisma.dance_categories.upsert({
-    where: { name: 'Duo/Trio' },
+  const contemporaryCategory = await prisma.dance_categories.upsert({
+    where: { name: 'Contemporary' },
     update: {},
     create: {
-      name: 'Duo/Trio',
-      description: 'Performance with 2-3 dancers',
-      min_performers: 2,
-      max_performers: 3,
+      name: 'Contemporary',
+      description: 'Contemporary dance style',
+      color_code: '#4ECDC4',
     },
   });
 
-  const groupCategory = await prisma.dance_categories.upsert({
-    where: { name: 'Small Group' },
+  const hipHopCategory = await prisma.dance_categories.upsert({
+    where: { name: 'Hip Hop' },
     update: {},
     create: {
-      name: 'Small Group',
-      description: 'Performance with 4-9 dancers',
-      min_performers: 4,
-      max_performers: 9,
+      name: 'Hip Hop',
+      description: 'Hip hop dance style',
+      color_code: '#FFE66D',
     },
   });
 
@@ -119,33 +116,39 @@ async function main() {
   });
 
   console.log('📏 Creating entry size categories...');
-  const soloSize = await prisma.entry_size_categories.upsert({
-    where: { size_name: 'Solo' },
-    update: {},
-    create: {
-      size_name: 'Solo',
-      min_performers: 1,
-      max_performers: 1,
+  const soloSize = await prisma.entry_size_categories.create({
+    data: {
+      name: 'Solo',
+      min_participants: 1,
+      max_participants: 1,
+      base_fee: 75.00,
     },
   });
 
-  const duoSize = await prisma.entry_size_categories.upsert({
-    where: { size_name: 'Duo/Trio' },
-    update: {},
-    create: {
-      size_name: 'Duo/Trio',
-      min_performers: 2,
-      max_performers: 3,
+  const duoSize = await prisma.entry_size_categories.create({
+    data: {
+      name: 'Duo/Trio',
+      min_participants: 2,
+      max_participants: 3,
+      base_fee: 85.00,
     },
   });
 
-  const smallGroupSize = await prisma.entry_size_categories.upsert({
-    where: { size_name: 'Small Group' },
-    update: {},
-    create: {
-      size_name: 'Small Group',
-      min_performers: 4,
-      max_performers: 9,
+  const smallGroupSize = await prisma.entry_size_categories.create({
+    data: {
+      name: 'Small Group',
+      min_participants: 4,
+      max_participants: 9,
+      base_fee: 95.00,
+    },
+  });
+
+  const largeGroupSize = await prisma.entry_size_categories.create({
+    data: {
+      name: 'Large Group',
+      min_participants: 10,
+      max_participants: 24,
+      base_fee: 110.00,
     },
   });
 
@@ -507,7 +510,7 @@ async function main() {
         reservation_id: reservation1.id,
         studio_id: studio1.id,
         title: `${dancer.primary_style} Solo ${i + 1}`,
-        category_id: soloCategory.id,
+        category_id: jazzCategory.id,
         classification_id: competitiveClass.id,
         age_group_id: petiteAge.id,
         entry_size_category_id: soloSize.id,
@@ -540,7 +543,7 @@ async function main() {
         reservation_id: reservation2.id,
         studio_id: studio2.id,
         title: `Dynamic Duo ${i + 1}`,
-        category_id: duoCategory.id,
+        category_id: contemporaryCategory.id,
         classification_id: eliteClass.id,
         age_group_id: juniorAge.id,
         entry_size_category_id: duoSize.id,
@@ -576,7 +579,7 @@ async function main() {
       reservation_id: reservation2.id,
       studio_id: studio2.id,
       title: 'Rhythm Squad',
-      category_id: groupCategory.id,
+      category_id: hipHopCategory.id,
       classification_id: competitiveClass.id,
       age_group_id: teenAge.id,
       entry_size_category_id: smallGroupSize.id,
