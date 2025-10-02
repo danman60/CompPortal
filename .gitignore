@@ -82,3 +82,4 @@ next-env.d.ts
 
 # Screenshots (keep the ones we captured for analysis)
 # glow_output/*.png - keeping these for now as they're analysis artifacts
+.vercel

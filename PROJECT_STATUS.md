@@ -1,9 +1,11 @@
 # GlowDance Competition Portal - Project Status & Roadmap
 
-**Last Updated**: October 1, 2025 (Late Evening)
-**Project Phase**: MVP Demo Complete → Backend Foundation Built → 50% to Working MVP
-**Production URL**: https://beautiful-bonbon-cde2fe.netlify.app/ (static demo)
-**Latest Update**: Added complete Next.js backend with tRPC and Prisma ORM (Commit: f6d4a0f)
+**Last Updated**: October 2, 2025
+**Project Phase**: Backend Deployed to Vercel → Database Connection Troubleshooting → 55% to Working MVP
+**Production URLs**:
+- Static Demo: https://beautiful-bonbon-cde2fe.netlify.app/
+- Next.js Backend: https://comp-portal-one.vercel.app/ (deployed, DB connection blocked)
+**Latest Update**: Deployed Next.js backend to Vercel, fixed tRPC v11 config, troubleshooting database connection (Commits: 579bf96, a265172, fec9a5f)
 
 ---
 
@@ -31,7 +33,38 @@ The legacy system uses **dangerously outdated technologies**:
 
 ---
 
-## 📊 **Current Status: LIVE DATABASE CONNECTED - READY FOR DEPLOYMENT**
+## 📊 **Current Status: BACKEND DEPLOYED - DATABASE CONNECTION BLOCKED**
+
+### 🚀 **Latest Session (October 2, 2025)**
+
+#### **Vercel Production Deployment Complete**
+- ✅ **Next.js backend deployed** - Live at https://comp-portal-one.vercel.app/
+- ✅ **Vercel CLI configured** - Authenticated and linked to project
+- ✅ **tRPC v11 configuration fixed** - Transformer moved to link config
+- ✅ **Prisma auto-generation working** - Postinstall script added
+- ✅ **Environment variables loaded** - All 6 vars confirmed SET in production
+- ✅ **Test endpoints working** - `/api/trpc/test.*` endpoints responding
+- ❌ **Database connection failing** - Studio API returns 500 error (critical blocker)
+
+**Git Commits**:
+- `579bf96` - Fix tRPC v11 transformer configuration
+- `a265172` - Add postinstall script for Prisma Client generation
+- `fec9a5f` - Add checkEnv debug endpoint
+
+**Deployment Architecture**:
+- **Static Demo**: Netlify (existing, working)
+- **Next.js Backend**: Vercel (new, partially working)
+- **Database**: Supabase PostgreSQL (connection issues)
+
+**Critical Blocker**: Database authentication failing in production
+- Tried pooler connection (port 6543): "Tenant or user not found"
+- Tried direct connection (port 5432): Still 500 error
+- Environment variables confirmed loaded correctly
+- Next step: Debug exact error from Vercel function logs
+
+---
+
+## 📊 **Previous Status: LIVE DATABASE CONNECTED - READY FOR DEPLOYMENT**
 
 ### 🎉 **Latest Milestone (October 1, 2025 - Evening)**
 
