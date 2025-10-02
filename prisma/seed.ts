@@ -18,6 +18,41 @@ async function main() {
   // Clean existing data (optional - comment out if you want to keep existing data)
   console.log('📝 Cleaning existing test data...');
 
+  // Create test users first (required for studio owner_id foreign key)
+  console.log('👥 Creating test users...');
+  const testUser1 = await prisma.users.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'owner1@test.com',
+      created_at: new Date(),
+      updated_at: new Date(),
+    },
+  });
+
+  const testUser2 = await prisma.users.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000002' },
+    update: {},
+    create: {
+      id: '00000000-0000-0000-0000-000000000002',
+      email: 'owner2@test.com',
+      created_at: new Date(),
+      updated_at: new Date(),
+    },
+  });
+
+  const testUser3 = await prisma.users.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000003' },
+    update: {},
+    create: {
+      id: '00000000-0000-0000-0000-000000000003',
+      email: 'owner3@test.com',
+      created_at: new Date(),
+      updated_at: new Date(),
+    },
+  });
+
   // Create lookup tables first
   console.log('📚 Creating dance categories (styles)...');
   const jazzCategory = await prisma.dance_categories.upsert({
@@ -149,7 +184,7 @@ async function main() {
     data: {
       name: 'Starlight Dance Academy',
       code: 'SDA',
-      owner_id: '00000000-0000-0000-0000-000000000000',
+      owner_id: testUser1.id,
       email: 'info@starlightdance.com',
       phone: '604-555-0100',
       city: 'Vancouver',
@@ -163,7 +198,7 @@ async function main() {
     data: {
       name: 'Elite Performance Studio',
       code: 'EPS',
-      owner_id: '00000000-0000-0000-0000-000000000000',
+      owner_id: testUser2.id,
       email: 'contact@eliteperformance.com',
       phone: '604-555-0200',
       city: 'Burnaby',
@@ -177,7 +212,7 @@ async function main() {
     data: {
       name: 'Rhythm & Motion Dance',
       code: 'RMD',
-      owner_id: '00000000-0000-0000-0000-000000000000',
+      owner_id: testUser3.id,
       email: 'hello@rhythmmotion.com',
       phone: '604-555-0300',
       city: 'Surrey',
