@@ -11,14 +11,19 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
-// Create connection pool
-const pool = globalForPrisma.pool ?? new Pool({
+// Parse DATABASE_URL and configure connection
+const connectionConfig: any = {
   connectionString: process.env.DATABASE_URL,
   max: 1, // Limit connections in serverless
-  ssl: {
-    rejectUnauthorized: false, // Accept self-signed certs
-  },
-});
+};
+
+// Handle SSL configuration
+if (process.env.DATABASE_URL?.includes('supabase') || process.env.DATABASE_URL?.includes('pooler')) {
+  connectionConfig.ssl = { rejectUnauthorized: false };
+}
+
+// Create connection pool
+const pool = globalForPrisma.pool ?? new Pool(connectionConfig);
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.pool = pool;
 
