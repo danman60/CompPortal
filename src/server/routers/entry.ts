@@ -120,7 +120,7 @@ export const entryRouter = router({
             age_groups: {
               select: {
                 id: true,
-                group_name: true,
+                name: true,
               },
             },
             dance_categories: {
