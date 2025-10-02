@@ -6,7 +6,8 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Skip postinstall during dependency installation (prisma generate will fail without schema)
+RUN npm ci --ignore-scripts
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -24,7 +25,7 @@ COPY prisma ./prisma
 # Copy environment variables
 COPY .env.production .env
 
-# Generate Prisma Client
+# NOW generate Prisma Client (schema exists)
 RUN npx prisma generate
 
 # Copy all source code
