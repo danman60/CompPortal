@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  compportal:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/trpc/test.hello"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
