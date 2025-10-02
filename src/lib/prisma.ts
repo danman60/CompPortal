@@ -15,6 +15,9 @@ const globalForPrisma = globalThis as unknown as {
 const pool = globalForPrisma.pool ?? new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 1, // Limit connections in serverless
+  ssl: {
+    rejectUnauthorized: false, // Accept self-signed certs
+  },
 });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.pool = pool;
