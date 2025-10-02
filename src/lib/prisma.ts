@@ -1,6 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import * as dns from 'dns';
+
+// Force IPv4 resolution
+dns.setDefaultResultOrder('ipv4first');
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
