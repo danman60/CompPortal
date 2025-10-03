@@ -53,7 +53,6 @@ export default function ReservationsList() {
     approveMutation.mutate({
       id: reservationId,
       spacesConfirmed: confirmed,
-      approvedBy: 'temp-user-id', // TODO: Replace with actual user ID from auth context
     });
   };
 
@@ -67,7 +66,6 @@ export default function ReservationsList() {
     setProcessingId(reservationId);
     rejectMutation.mutate({
       id: reservationId,
-      rejectedBy: 'temp-user-id', // TODO: Replace with actual user ID from auth context
       reason: reason || undefined,
     });
   };

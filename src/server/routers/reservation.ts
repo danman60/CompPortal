@@ -474,7 +474,6 @@ export const reservationRouter = router({
       z.object({
         id: z.string().uuid(),
         spacesConfirmed: z.number().int().min(0).optional(),
-        approvedBy: z.string().uuid(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -489,7 +488,7 @@ export const reservationRouter = router({
           status: 'approved',
           spaces_confirmed: input.spacesConfirmed,
           approved_at: new Date(),
-          approved_by: input.approvedBy,
+          approved_by: ctx.userId,
           updated_at: new Date(),
         },
         include: {
@@ -517,7 +516,6 @@ export const reservationRouter = router({
       z.object({
         id: z.string().uuid(),
         reason: z.string().optional(),
-        rejectedBy: z.string().uuid(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -531,7 +529,7 @@ export const reservationRouter = router({
         data: {
           status: 'rejected',
           internal_notes: input.reason,
-          approved_by: input.rejectedBy,
+          approved_by: ctx.userId,
           updated_at: new Date(),
         },
       });
