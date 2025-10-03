@@ -90,6 +90,32 @@ export default async function DashboardPage() {
               </div>
             </div>
           </Link>
+
+          <Link
+            href="/dashboard/invoices"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">💰</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Invoices</h3>
+                <p className="text-gray-400 text-sm">Studio invoices</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/emails"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">📨</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Emails</h3>
+                <p className="text-gray-400 text-sm">Email templates</p>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </main>

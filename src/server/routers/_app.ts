@@ -7,6 +7,7 @@ import { reservationRouter } from './reservation';
 import { entryRouter } from './entry';
 import { lookupRouter } from './lookup';
 import { invoiceRouter } from './invoice';
+import { emailRouter } from './email';
 
 /**
  * Main tRPC router
@@ -21,6 +22,7 @@ export const appRouter = router({
   entry: entryRouter,
   lookup: lookupRouter,
   invoice: invoiceRouter,
+  email: emailRouter,
 });
 
 // Export type definition of API
