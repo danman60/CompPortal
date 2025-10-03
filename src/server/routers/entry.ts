@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 
 // Validation schema for entry participant
@@ -51,8 +51,8 @@ const entryInputSchema = z.object({
 });
 
 export const entryRouter = router({
-  // Get all entries with optional filtering
-  getAll: publicProcedure
+  // Get all entries with optional filtering (role-based access)
+  getAll: protectedProcedure
     .input(
       z
         .object({
@@ -65,12 +65,19 @@ export const entryRouter = router({
         })
         .optional()
     )
-    .query(async ({ input = {} }) => {
+    .query(async ({ input = {}, ctx }) => {
       const { studioId, competitionId, reservationId, status, limit = 50, offset = 0 } = input;
 
       const where: any = {};
 
-      if (studioId) {
+      // Role-based filtering: studio directors can only see their own entries
+      if (ctx.userRole === 'studio_director') {
+        if (!ctx.studioId) {
+          return { entries: [], total: 0, limit, offset, hasMore: false };
+        }
+        where.studio_id = ctx.studioId;
+      } else if (studioId) {
+        // Admins can filter by specific studio
         where.studio_id = studioId;
       }
 
@@ -148,10 +155,10 @@ export const entryRouter = router({
       };
     }),
 
-  // Get a single entry by ID
-  getById: publicProcedure
+  // Get a single entry by ID (role-based access)
+  getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const entry = await prisma.competition_entries.findUnique({
         where: { id: input.id },
         include: {
@@ -205,6 +212,11 @@ export const entryRouter = router({
 
       if (!entry) {
         throw new Error('Entry not found');
+      }
+
+      // Studio directors can only access their own studio's entries
+      if (ctx.userRole === 'studio_director' && entry.studio_id !== ctx.studioId) {
+        throw new Error('Unauthorized access to this entry');
       }
 
       return entry;

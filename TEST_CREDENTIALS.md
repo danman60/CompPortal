@@ -1,17 +1,61 @@
 # CompPortal Test Credentials
 
-## 🔐 Test Account for Human Testing
+## 🔐 Test Accounts for Human Testing
 
 ### Production URL
 **https://comp-portal-one.vercel.app**
 
-### Test User Login
+### 1. Studio Director Account (NEW ✨)
+```
+Email: demo.studio@gmail.com
+Password: StudioDemo123!
+Role: Studio Director
+Studio: Demo Dance Studio (Code: DEMO)
+```
+
+**Permissions:**
+- ✅ Manage own studio's dancers
+- ✅ Create/edit entries for own studio
+- ✅ View own studio's reservations
+- ❌ Cannot see other studios' data
+- ❌ Cannot approve reservations
+
+### 2. Competition Director Account (NEW ✨)
+```
+Email: demo.director@gmail.com
+Password: DirectorDemo123!
+Role: Competition Director
+```
+
+**Permissions:**
+- ✅ View ALL studios and their data
+- ✅ View ALL competition entries
+- ✅ Approve/reject reservations
+- ✅ Manage competition settings
+- ✅ Release reservation tokens
+- ✅ View analytics across all studios
+
+### 3. Super Admin Account (NEW ✨)
+```
+Email: demo.admin@gmail.com
+Password: AdminDemo123!
+Role: Super Admin
+```
+
+**Permissions:**
+- ✅ Everything competition directors can do
+- ✅ Manage user roles
+- ✅ System-wide settings
+- ✅ Platform administration
+
+### 4. Legacy Test Account
 ```
 Email: golden.tester@gmail.com
 Password: SecurePass123!
+Role: Studio Director (default)
 ```
 
-**Account Status:** ✅ Email confirmed, fully activated
+**Account Status:** ✅ All accounts email confirmed, fully activated
 
 ---
 

@@ -1,0 +1,140 @@
+import Link from 'next/link';
+import StudioDirectorStats from './StudioDirectorStats';
+
+interface StudioDirectorDashboardProps {
+  userEmail: string;
+  studioName?: string;
+}
+
+export default function StudioDirectorDashboard({ userEmail, studioName }: StudioDirectorDashboardProps) {
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-4xl font-bold text-white mb-2">
+          My Studio Dashboard
+        </h1>
+        <p className="text-gray-400">
+          Welcome back, {userEmail}
+          {studioName && <span className="text-purple-400"> • {studioName}</span>}
+        </p>
+      </div>
+
+      {/* Stats */}
+      <StudioDirectorStats />
+
+      {/* Quick Actions - Studio Director View */}
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Manage Dancers */}
+          <Link
+            href="/dashboard/dancers"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">💃</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">My Dancers</h3>
+                <p className="text-gray-400 text-sm">Register and manage dancers</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* My Entries */}
+          <Link
+            href="/dashboard/entries"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🎭</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">My Entries</h3>
+                <p className="text-gray-400 text-sm">Create and edit routines</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Studio Settings */}
+          <Link
+            href="/dashboard/studios"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">⚙️</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Studio Settings</h3>
+                <p className="text-gray-400 text-sm">Update studio information</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* My Reservations */}
+          <Link
+            href="/dashboard/reservations"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">📋</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">My Reservations</h3>
+                <p className="text-gray-400 text-sm">View competition bookings</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Invoices */}
+          <Link
+            href="/dashboard/invoices"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">💰</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">My Invoices</h3>
+                <p className="text-gray-400 text-sm">View studio billing</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Scoreboard */}
+          <Link
+            href="/dashboard/scoreboard"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🏆</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Results</h3>
+                <p className="text-gray-400 text-sm">View competition scores</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">
+        <h2 className="text-2xl font-bold text-white mb-4">💡 Getting Started</h2>
+        <div className="space-y-3 text-gray-300">
+          <div className="flex items-start gap-3">
+            <span className="text-purple-400 font-bold">1.</span>
+            <p>Register your dancers in the <Link href="/dashboard/dancers" className="text-purple-400 hover:underline">Dancers</Link> section</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-purple-400 font-bold">2.</span>
+            <p>Create competition entries in <Link href="/dashboard/entries" className="text-purple-400 hover:underline">My Entries</Link></p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-purple-400 font-bold">3.</span>
+            <p>Upload music files for each routine</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-purple-400 font-bold">4.</span>
+            <p>Check <Link href="/dashboard/scoreboard" className="text-purple-400 hover:underline">Results</Link> after performances</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
