@@ -35,8 +35,10 @@ coverage/
 # Yarn Integrity file
 .yarn-integrity
 
-# Environment variables
-# .env - committed to git for deployment
+# Environment variables - NEVER commit production credentials
+.env
+.env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
