@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { isStudioDirector } from '@/lib/permissions';
 
 // Validation schema for reservation input
 const reservationInputSchema = z.object({
@@ -27,8 +28,8 @@ const reservationInputSchema = z.object({
 });
 
 export const reservationRouter = router({
-  // Get all reservations with optional filtering
-  getAll: publicProcedure
+  // Get all reservations with optional filtering (role-based)
+  getAll: protectedProcedure
     .input(
       z
         .object({
@@ -41,12 +42,16 @@ export const reservationRouter = router({
         })
         .optional()
     )
-    .query(async ({ input = {} }) => {
+    .query(async ({ ctx, input = {} }) => {
       const { studioId, competitionId, status, paymentStatus, limit = 50, offset = 0 } = input;
 
       const where: any = {};
 
-      if (studioId) {
+      // Studio directors can only see their own studio's reservations
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        where.studio_id = ctx.studioId;
+      } else if (studioId) {
+        // Admins can filter by studioId if provided
         where.studio_id = studioId;
       }
 
