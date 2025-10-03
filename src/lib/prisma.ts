@@ -13,17 +13,11 @@ const connectionConfig: any = {
   max: 1, // Limit connections in serverless
   // Disable statement cache for PgBouncer compatibility
   statement_cache_size: 0,
-};
-
-// Handle SSL configuration for Supabase
-// Use require mode but don't reject unauthorized certs (Supabase uses managed SSL)
-if (process.env.DATABASE_URL?.includes('supabase')) {
-  connectionConfig.ssl = {
+  // SSL configuration for Supabase - disable cert validation for pooler
+  ssl: {
     rejectUnauthorized: false,
-    // Explicitly set CA to null to skip certificate validation
-    ca: undefined,
-  };
-}
+  },
+};
 
 // If using pgbouncer (port 6543), disable binary protocol
 if (process.env.DATABASE_URL?.includes(':6543')) {
