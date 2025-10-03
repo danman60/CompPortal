@@ -105,6 +105,9 @@ export const reservationRouter = router({
             id: true,
             name: true,
             year: true,
+            total_reservation_tokens: true,
+            available_reservation_tokens: true,
+            tokens_override_enabled: true,
           },
           orderBy: [
             { year: 'desc' },

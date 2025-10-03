@@ -584,6 +584,9 @@ model competitions {
   contact_email             String?                 @db.VarChar(255)
   contact_phone             String?                 @db.VarChar(50)
   rules_document_url        String?
+  total_reservation_tokens  Int?                    @default(600)
+  available_reservation_tokens Int?                 @default(600)
+  tokens_override_enabled   Boolean?                @default(false)
   created_at                DateTime?               @default(now()) @db.Timestamp(6)
   updated_at                DateTime?               @default(now()) @db.Timestamp(6)
   awards                    awards[]

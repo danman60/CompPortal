@@ -50,18 +50,60 @@ export default function ReservationsList() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Competition Filter */}
-        <select
-          value={selectedCompetition}
-          onChange={(e) => setSelectedCompetition(e.target.value)}
-          className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="all">All Competitions</option>
-          {competitions.map((comp) => (
-            <option key={comp.id} value={comp.id}>
-              {comp.name} ({comp.year})
-            </option>
-          ))}
-        </select>
+        <div className="flex-1">
+          <select
+            value={selectedCompetition}
+            onChange={(e) => setSelectedCompetition(e.target.value)}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="all">All Competitions</option>
+            {competitions.map((comp) => (
+              <option key={comp.id} value={comp.id}>
+                {comp.name} ({comp.year}) - {comp.available_reservation_tokens || 0}/{comp.total_reservation_tokens || 600} tokens
+              </option>
+            ))}
+          </select>
+
+          {/* Token Summary for Selected Competition */}
+          {selectedCompetition !== 'all' && (() => {
+            const selectedComp = competitions.find(c => c.id === selectedCompetition);
+            if (!selectedComp) return null;
+
+            const tokensUsed = (selectedComp.total_reservation_tokens || 600) - (selectedComp.available_reservation_tokens || 600);
+            const tokensPercentage = Math.round((tokensUsed / (selectedComp.total_reservation_tokens || 600)) * 100);
+
+            return (
+              <div className="mt-2 p-3 bg-black/20 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-400">Reservation Tokens</span>
+                  {selectedComp.tokens_override_enabled && (
+                    <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded">Override Enabled</span>
+                  )}
+                </div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-300">Used:</span>
+                  <span className="text-white font-semibold">{tokensUsed}</span>
+                </div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-300">Available:</span>
+                  <span className="text-green-400 font-semibold">{selectedComp.available_reservation_tokens || 0}</span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      tokensPercentage >= 90
+                        ? 'bg-red-500'
+                        : tokensPercentage >= 70
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
+                    }`}
+                    style={{ width: `${tokensPercentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
 
         {/* Status Filter */}
         <div className="flex gap-2">
