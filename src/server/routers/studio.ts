@@ -1,31 +1,22 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
-import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-server';
 
 export const studioRouter = router({
   // Get all studios
   getAll: publicProcedure.query(async () => {
-    const studios = await prisma.studios.findMany({
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        city: true,
-        province: true,
-        country: true,
-        status: true,
-        email: true,
-        phone: true,
-        created_at: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    const { data: studios, error } = await supabaseAdmin
+      .from('studios')
+      .select('id, name, code, city, province, country, status, email, phone, created_at')
+      .order('name', { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch studios: ${error.message}`);
+    }
 
     return {
-      studios,
-      count: studios.length,
+      studios: studios ?? [],
+      count: studios?.length ?? 0,
     };
   }),
 
@@ -33,54 +24,61 @@ export const studioRouter = router({
   getById: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
-      const studio = await prisma.studios.findUnique({
-        where: { id: input.id },
-        include: {
-          dancers: {
-            select: {
-              id: true,
-              first_name: true,
-              last_name: true,
-              date_of_birth: true,
-            },
-          },
-          _count: {
-            select: {
-              dancers: true,
-              reservations: true,
-              competition_entries: true,
-            },
-          },
-        },
-      });
+      // Get studio with dancers
+      const { data: studio, error: studioError } = await supabaseAdmin
+        .from('studios')
+        .select('*, dancers(id, first_name, last_name, date_of_birth)')
+        .eq('id', input.id)
+        .single();
+
+      if (studioError) {
+        throw new Error(`Failed to fetch studio: ${studioError.message}`);
+      }
 
       if (!studio) {
         throw new Error('Studio not found');
       }
 
-      return studio;
+      // Get counts separately
+      const [dancersCount, reservationsCount, entriesCount] = await Promise.all([
+        supabaseAdmin.from('dancers').select('id', { count: 'exact', head: true }).eq('studio_id', input.id),
+        supabaseAdmin.from('reservations').select('id', { count: 'exact', head: true }).eq('studio_id', input.id),
+        supabaseAdmin.from('competition_entries').select('id', { count: 'exact', head: true }).eq('studio_id', input.id),
+      ]);
+
+      return {
+        ...studio,
+        _count: {
+          dancers: dancersCount.count ?? 0,
+          reservations: reservationsCount.count ?? 0,
+          competition_entries: entriesCount.count ?? 0,
+        },
+      };
     }),
 
   // Get studios with statistics
   getStats: publicProcedure.query(async () => {
-    const [total, pending, approved, withDancers] = await Promise.all([
-      prisma.studios.count(),
-      prisma.studios.count({ where: { status: 'pending' } }),
-      prisma.studios.count({ where: { status: 'approved' } }),
-      prisma.studios.count({
-        where: {
-          dancers: {
-            some: {},
-          },
-        },
-      }),
+    const [totalResult, pendingResult, approvedResult] = await Promise.all([
+      supabaseAdmin.from('studios').select('id', { count: 'exact', head: true }),
+      supabaseAdmin.from('studios').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabaseAdmin.from('studios').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
     ]);
 
+    // Get count of studios with dancers (need to do this differently)
+    const { data: studiosWithDancers, error: dancersError } = await supabaseAdmin
+      .from('studios')
+      .select('id, dancers(id)')
+      .not('dancers', 'is', null);
+
+    const withDancersCount = studiosWithDancers?.filter(
+      (studio) => studio.dancers && studio.dancers.length > 0
+    ).length ?? 0;
+
     return {
-      total,
-      pending,
-      approved,
-      withDancers,
+      total: totalResult.count ?? 0,
+      pending: pendingResult.count ?? 0,
+      approved: approvedResult.count ?? 0,
+      withDancers: withDancersCount,
     };
   }),
 
@@ -100,8 +98,9 @@ export const studioRouter = router({
       // For now, using a dummy owner_id - will be replaced with actual auth
       const dummyOwnerId = '00000000-0000-0000-0000-000000000000';
 
-      const studio = await prisma.studios.create({
-        data: {
+      const { data: studio, error } = await supabaseAdmin
+        .from('studios')
+        .insert({
           name: input.name,
           email: input.email,
           phone: input.phone,
@@ -110,8 +109,13 @@ export const studioRouter = router({
           country: input.country ?? 'Canada',
           owner_id: dummyOwnerId,
           status: 'pending',
-        },
-      });
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to create studio: ${error.message}`);
+      }
 
       return studio;
     }),
