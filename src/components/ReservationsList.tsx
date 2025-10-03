@@ -2,11 +2,75 @@
 
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function ReservationsList() {
-  const { data, isLoading } = trpc.reservation.getAll.useQuery();
+  const router = useRouter();
+  const { data, isLoading, refetch } = trpc.reservation.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Approval mutation
+  const approveMutation = trpc.reservation.approve.useMutation({
+    onSuccess: () => {
+      refetch();
+      setProcessingId(null);
+    },
+    onError: (error) => {
+      alert(`Approval failed: ${error.message}`);
+      setProcessingId(null);
+    },
+  });
+
+  // Rejection mutation
+  const rejectMutation = trpc.reservation.reject.useMutation({
+    onSuccess: () => {
+      refetch();
+      setProcessingId(null);
+    },
+    onError: (error) => {
+      alert(`Rejection failed: ${error.message}`);
+      setProcessingId(null);
+    },
+  });
+
+  const handleApprove = (reservationId: string, spacesRequested: number) => {
+    const spacesConfirmed = prompt(
+      `Approve this reservation.\n\nSpaces Requested: ${spacesRequested}\n\nHow many spaces to confirm?`,
+      spacesRequested.toString()
+    );
+
+    if (!spacesConfirmed) return;
+
+    const confirmed = parseInt(spacesConfirmed, 10);
+    if (isNaN(confirmed) || confirmed < 1 || confirmed > spacesRequested) {
+      alert('Invalid number of spaces. Must be between 1 and spaces requested.');
+      return;
+    }
+
+    setProcessingId(reservationId);
+    approveMutation.mutate({
+      id: reservationId,
+      spacesConfirmed: confirmed,
+      approvedBy: 'temp-user-id', // TODO: Replace with actual user ID from auth context
+    });
+  };
+
+  const handleReject = (reservationId: string, studioName: string) => {
+    const reason = prompt(
+      `Reject reservation for ${studioName}?\n\nOptional: Enter rejection reason:`
+    );
+
+    if (reason === null) return; // User cancelled
+
+    setProcessingId(reservationId);
+    rejectMutation.mutate({
+      id: reservationId,
+      rejectedBy: 'temp-user-id', // TODO: Replace with actual user ID from auth context
+      reason: reason || undefined,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -372,6 +436,49 @@ export default function ReservationsList() {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Action Buttons (Competition Director Only) */}
+                {reservation.status === 'pending' && (
+                  <div className="mt-6 pt-6 border-t border-white/10 flex gap-4">
+                    <button
+                      onClick={() => handleApprove(reservation.id, reservation.spaces_requested)}
+                      disabled={processingId === reservation.id}
+                      className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+                    >
+                      {processingId === reservation.id && approveMutation.isPending
+                        ? '⚙️ Approving...'
+                        : '✅ Approve Reservation'}
+                    </button>
+                    <button
+                      onClick={() => handleReject(reservation.id, reservation.studios?.name || 'studio')}
+                      disabled={processingId === reservation.id}
+                      className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+                    >
+                      {processingId === reservation.id && rejectMutation.isPending
+                        ? '⚙️ Rejecting...'
+                        : '❌ Reject Reservation'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Entry Count Badge (for Approved Reservations) */}
+                {reservation.status === 'approved' && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-400 mb-1">Competition Entries</div>
+                        <div className="text-2xl font-bold text-white">
+                          {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                        </div>
+                      </div>
+                      <div className="text-4xl">
+                        {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                          ? '✅'
+                          : '⏳'}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
