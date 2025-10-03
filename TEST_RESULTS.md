@@ -117,7 +117,59 @@
   - ✅ Studio names visible for each dancer
   - ✅ **RBAC VALIDATED**: Competition Director sees ALL data (unlike Studio Director who only sees their own)
 
-### CD-3 through CD-10: ⏳ PENDING
+### CD-3: View All Entries Across All Studios ✅ PASS
+- **URL**: /dashboard/entries
+- **Results**:
+  - ✅ Page loads without errors
+  - ✅ 9 entries visible from ALL studios:
+    - Starlight Dance Academy: 5 entries
+    - Elite Performance Studio: 4 entries
+  - ✅ Status filters working: All (9), Draft (1), Registered (5), Confirmed (3), Cancelled (0)
+  - ✅ Competition filter working
+  - ✅ **RBAC VALIDATED**: Competition Director sees ALL entries from all studios
+
+### CD-4: View All Reservations ✅ PASS
+- **URL**: /dashboard/reservations
+- **Results**:
+  - ✅ Page loads without errors
+  - ✅ 3 reservations visible from ALL studios:
+    - Rhythm & Motion Dance: PENDING (10 spaces requested)
+    - Elite Performance Studio: APPROVED (15 spaces confirmed)
+    - Starlight Dance Academy: APPROVED (20 spaces confirmed)
+  - ✅ Status filters working: All (3), Pending (1), Approved (2), Rejected (0)
+  - ✅ Competition filter working
+  - ✅ Approve/Reject buttons visible for pending reservations
+  - ✅ **RBAC VALIDATED**: Competition Director sees ALL reservations from all studios
+
+### CD-5: Approve Studio Reservation ⏳ PENDING
+- Requires creating a new reservation to test approval workflow
+
+### CD-6: Reject Studio Reservation ⏳ PENDING
+- Requires creating a new reservation to test rejection workflow
+
+### CD-7: View Competition Analytics ✅ PASS
+- **URL**: /dashboard/analytics
+- **Results**:
+  - ✅ Page loads without errors
+  - ✅ System-wide metrics visible:
+    - Total Competitions: 9
+    - Total Studios: 4
+    - Total Dancers: 16
+    - Total Entries: 9
+  - ✅ Competition-specific analytics working (GLOW Dance - Orlando):
+    - Total Entries: 9
+    - Participating Studios: 2
+    - Total Dancers: 14
+    - Scoring Progress: 22%
+  - ✅ Revenue analytics displayed: $1,025 total revenue
+  - ✅ Entries by category chart visible
+  - ✅ Entries by studio chart visible
+  - ✅ Top revenue studios ranking displayed
+  - ✅ Judge performance metrics visible
+  - ✅ Top 10 performers leaderboard displayed
+  - ✅ **All numbers are accurate (not 0)**
+
+### CD-8 through CD-10: ⏳ PENDING
 
 ---
 
@@ -168,12 +220,12 @@
 
 ## Progress Tracker
 
-**Tests Passed**: 6/30 (20%)
+**Tests Passed**: 9/30 (30%)
 **Tests Failed**: 0/30 (0%)
-**Tests Pending**: 24/30 (80%)
+**Tests Pending**: 21/30 (70%)
 
 **Studio Director**: 5/10 complete (SD-1, SD-2, SD-3, SD-5, SD-7 passed; SD-4, SD-6, SD-8, SD-9, SD-10 pending)
-**Competition Director**: 2/10 complete (CD-1, CD-2 passed)
+**Competition Director**: 5/10 complete (CD-1, CD-2, CD-3, CD-4, CD-7 passed; CD-5, CD-6, CD-8, CD-9, CD-10 pending)
 **Super Admin**: 0/10 complete
 
 ---
@@ -196,5 +248,11 @@
 1. **SD-4**: Cross-studio security test (requires API-level testing or browser request interception)
 2. **SD-6**: Create entry for own studio
 3. **SD-8**: Create reservation for own studio
-4. **CD-3 through CD-10**: Complete Competition Director tests
-5. **SA-1 through SA-10**: Execute Super Admin tests
+4. **CD-5, CD-6**: Reservation approval/rejection (requires creating test reservations)
+5. **CD-8, CD-9, CD-10**: Judge management, scoring, scoreboard
+6. **SA-1 through SA-10**: Execute Super Admin tests
+
+### ✅ New Tests Passed (Session 2)
+- **CD-3**: View all entries across all studios - 9 entries from 2 studios visible
+- **CD-4**: View all reservations - 3 reservations from 3 studios visible
+- **CD-7**: View competition analytics - Full analytics dashboard with accurate metrics
