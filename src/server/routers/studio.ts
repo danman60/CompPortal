@@ -47,7 +47,7 @@ export const studioRouter = router({
       ]);
 
       return {
-        ...studio,
+        ...(studio as Record<string, any>),
         _count: {
           dancers: dancersCount.count ?? 0,
           reservations: reservationsCount.count ?? 0,
