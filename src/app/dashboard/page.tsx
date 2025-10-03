@@ -38,7 +38,7 @@ export default async function DashboardPage() {
         <DashboardStats />
 
         {/* Quick Links */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link
             href="/dashboard/studios"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
@@ -60,7 +60,20 @@ export default async function DashboardPage() {
               <div className="text-4xl">💃</div>
               <div>
                 <h3 className="text-xl font-semibold text-white">Dancers</h3>
-                <p className="text-gray-400 text-sm">Manage dancers & entries</p>
+                <p className="text-gray-400 text-sm">Manage dancers</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/entries"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🎭</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Entries</h3>
+                <p className="text-gray-400 text-sm">Competition entries</p>
               </div>
             </div>
           </Link>
@@ -73,7 +86,7 @@ export default async function DashboardPage() {
               <div className="text-4xl">📋</div>
               <div>
                 <h3 className="text-xl font-semibold text-white">Reservations</h3>
-                <p className="text-gray-400 text-sm">Manage capacity tracking</p>
+                <p className="text-gray-400 text-sm">Capacity tracking</p>
               </div>
             </div>
           </Link>

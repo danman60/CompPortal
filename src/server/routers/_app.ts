@@ -5,6 +5,7 @@ import { dancerRouter } from './dancer';
 import { competitionRouter } from './competition';
 import { reservationRouter } from './reservation';
 import { entryRouter } from './entry';
+import { lookupRouter } from './lookup';
 
 /**
  * Main tRPC router
@@ -17,6 +18,7 @@ export const appRouter = router({
   competition: competitionRouter,
   reservation: reservationRouter,
   entry: entryRouter,
+  lookup: lookupRouter,
 });
 
 // Export type definition of API
