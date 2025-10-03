@@ -74,18 +74,14 @@ export default function Home() {
           </div>
 
           <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/sample-dashboard.html"
-              className="text-purple-400 hover:text-purple-300 text-sm"
-            >
-              View Demo Dashboard →
-            </Link>
-            <Link
+            <a
               href="/api/trpc"
               className="text-purple-400 hover:text-purple-300 text-sm"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               API Documentation →
-            </Link>
+            </a>
           </div>
 
           <div className="mt-12 text-gray-400 text-sm">
