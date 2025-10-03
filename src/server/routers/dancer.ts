@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { isStudioDirector } from '@/lib/permissions';
 
 // Validation schema for dancer input
 const dancerInputSchema = z.object({
@@ -30,8 +31,8 @@ const dancerInputSchema = z.object({
 });
 
 export const dancerRouter = router({
-  // Get all dancers with optional filtering
-  getAll: publicProcedure
+  // Get all dancers with optional filtering (role-based)
+  getAll: protectedProcedure
     .input(
       z
         .object({
@@ -43,12 +44,16 @@ export const dancerRouter = router({
         })
         .optional()
     )
-    .query(async ({ input = {} }) => {
+    .query(async ({ ctx, input = {} }) => {
       const { studioId, search, status, limit = 50, offset = 0 } = input;
 
       const where: any = {};
 
-      if (studioId) {
+      // Studio directors can only see their own studio's dancers
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        where.studio_id = ctx.studioId;
+      } else if (studioId) {
+        // Admins can filter by studioId if provided
         where.studio_id = studioId;
       }
 
@@ -163,8 +168,8 @@ export const dancerRouter = router({
       };
     }),
 
-  // Get dancer statistics
-  getStats: publicProcedure
+  // Get dancer statistics (role-based)
+  getStats: protectedProcedure
     .input(
       z
         .object({
@@ -172,10 +177,14 @@ export const dancerRouter = router({
         })
         .optional()
     )
-    .query(async ({ input = {} }) => {
+    .query(async ({ ctx, input = {} }) => {
       const where: any = {};
 
-      if (input.studioId) {
+      // Studio directors can only see their own studio's stats
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        where.studio_id = ctx.studioId;
+      } else if (input.studioId) {
+        // Admins can filter by studioId if provided
         where.studio_id = input.studioId;
       }
 
