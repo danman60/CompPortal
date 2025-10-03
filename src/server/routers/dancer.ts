@@ -335,4 +335,81 @@ export const dancerRouter = router({
         errors: errors.length > 0 ? errors : undefined,
       };
     }),
+
+  // Bulk import from CSV (resolves studio codes to IDs)
+  bulkImport: publicProcedure
+    .input(
+      z.object({
+        dancers: z.array(
+          z.object({
+            first_name: z.string().min(1),
+            last_name: z.string().min(1),
+            studio_code: z.string().length(5),
+            date_of_birth: z.string().optional(),
+            gender: z.string().optional(),
+            email: z.string().optional(),
+            phone: z.string().optional(),
+            parent_name: z.string().optional(),
+            parent_email: z.string().optional(),
+            parent_phone: z.string().optional(),
+            registration_number: z.string().optional(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Get all unique studio codes from the input
+      const studioCodes = [...new Set(input.dancers.map((d) => d.studio_code))];
+
+      // Fetch all studios by code in a single query
+      const studios = await prisma.studios.findMany({
+        where: {
+          code: {
+            in: studioCodes,
+          },
+        },
+        select: {
+          id: true,
+          code: true,
+        },
+      });
+
+      // Create a map of studio code to studio ID
+      const studioMap = new Map(studios.map((s) => [s.code, s.id]));
+
+      // Process each dancer
+      const results = await Promise.allSettled(
+        input.dancers.map(async (dancerData) => {
+          const studio_id = studioMap.get(dancerData.studio_code);
+
+          if (!studio_id) {
+            throw new Error(`Studio with code ${dancerData.studio_code} not found`);
+          }
+
+          const { studio_code, date_of_birth, ...data } = dancerData;
+
+          return prisma.dancers.create({
+            data: {
+              studio_id,
+              ...data,
+              date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+              gender: data.gender ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1).toLowerCase() : undefined,
+            },
+          });
+        })
+      );
+
+      const successful = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      const errors = results
+        .filter((r) => r.status === 'rejected')
+        .map((r: any) => r.reason?.message || 'Unknown error');
+
+      return {
+        successful,
+        failed,
+        total: input.dancers.length,
+        errors: errors.length > 0 ? errors : undefined,
+      };
+    }),
 });
