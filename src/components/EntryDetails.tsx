@@ -289,21 +289,21 @@ export default function EntryDetails({ entryId }: EntryDetailsProps) {
           <div className="bg-white/5 rounded-lg p-4">
             <div className="text-gray-400 text-sm mb-1">Entry Fee</div>
             <div className="text-white font-semibold text-2xl">
-              ${(entry.entry_fee || 0).toFixed(2)}
+              ${Number(entry.entry_fee || 0).toFixed(2)}
             </div>
           </div>
 
           <div className="bg-white/5 rounded-lg p-4">
             <div className="text-gray-400 text-sm mb-1">Late Fee</div>
             <div className="text-white font-semibold text-2xl">
-              ${(entry.late_fee || 0).toFixed(2)}
+              ${Number(entry.late_fee || 0).toFixed(2)}
             </div>
           </div>
 
           <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-4">
             <div className="text-green-300 text-sm mb-1">Total Fee</div>
             <div className="text-green-200 font-bold text-2xl">
-              ${(entry.total_fee || 0).toFixed(2)}
+              ${Number(entry.total_fee || 0).toFixed(2)}
             </div>
           </div>
         </div>
