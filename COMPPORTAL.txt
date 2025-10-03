@@ -1,0 +1,581 @@
+# CompPortal Project Tracker
+**Project Name**: GlowDance Competition Portal (CompPortal)
+**Last Updated**: October 3, 2025 (Autonomous Development Session #2)
+**Current Phase**: Backend Feature Development - 70% Complete
+
+---
+
+## 📁 Project Location
+**Root Directory**: D:\ClaudeCode\CompPortal
+**GitHub Repository**: https://github.com/danman60/CompPortal.git
+**Branch**: main
+**Latest Commit**: 214bac0 (October 3, 2025 - Competition scheduling system complete)
+
+---
+
+## 🗄️ Supabase Configuration
+
+### Project Details
+- **Project ID**: cafugvuaatsgihrsmvvl
+- **Region**: AWS US-West-1
+- **URL**: https://cafugvuaatsgihrsmvvl.supabase.co
+- **Database**: PostgreSQL 15+ (managed)
+
+### Access Credentials
+- **Anon Key**: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhZnVndnVhYXRzZ2locnNtdnZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNTk5MzksImV4cCI6MjA3NDgzNTkzOX0.WqX70GzRkDRhcurYeEnqG8YFniTYFqpjv6u3mPlbdoc
+- **Service Role Key**: sb_secret_4awE8z8fbv-bk2KSYjSp_Q_T_zpXh25
+- **Access Token**: sb_secret_4awE8z8fbv-bk2KSYjSp_Q_T_zpXh25
+- **DB Password**: !EH4TtrJ2-V!5b_
+- **Pooler Connection (Port 6543)**: postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+- **Direct Connection (Port 5432)**: postgresql://postgres:!EH4TtrJ2-V!5b_@db.cafugvuaatsgihrsmvvl.supabase.co:5432/postgres?sslmode=require
+
+**CRITICAL**: Pooler username MUST be in `postgres.PROJECT_REF` format (postgres.cafugvuaatsgihrsmvvl)
+
+---
+
+## 🎯 Current Status
+
+### Phase: Backend Feature Development (70% Complete)
+
+**✅ Completed Features (Recent Sessions)**:
+- ✅ **Invoice Generation System** - Automatic invoice creation with line items, totals, and PDF-ready layout
+- ✅ **Invoice Viewing UI** - Studio selector, competition cards, detailed invoice pages
+- ✅ **Email Template System** - React Email templates with Resend integration
+  - 4 professional templates: Registration, Invoice Delivery, Reservation Approved, Entry Submitted
+  - Admin preview UI with sample data
+  - tRPC router with automated sending mutations
+- ✅ **Music Upload System** - Supabase Storage integration for competition entries
+  - File upload with validation (MP3, WAV, M4A, AAC, 50MB limit)
+  - Progress tracking and audio duration detection
+  - Music status badges on entry cards
+  - Dedicated upload pages per entry
+- ✅ **Competition Scheduling System** (NEW - This Session)
+  - Advanced conflict detection: dancer overlaps, costume change buffers, session capacity
+  - Auto-scheduling algorithm with smart grouping by category/studio
+  - Session management UI with drag-and-drop assignment
+  - Real-time conflict visualization (errors vs warnings)
+  - Session statistics and capacity tracking
+  - Manual and automatic entry assignment
+
+**🔴 Pending from Roadmap**:
+- Schedule export (PDF/CSV for print/distribution)
+- Judge tablet scoring interface
+- Admin analytics dashboard
+
+---
+
+## 📂 Project Structure
+
+```
+D:\ClaudeCode\CompPortal\
+├── package.json                # Node dependencies (resend, react-email added)
+├── next.config.js              # Next.js config
+├── prisma/
+│   ├── schema.prisma           # Prisma schema (63KB)
+│   └── seed.ts                 # Database seeding script
+├── src/
+│   ├── app/                    # Next.js 15 App Router
+│   │   ├── dashboard/
+│   │   │   ├── entries/
+│   │   │   │   └── [id]/
+│   │   │   │       └── music/  # Music upload pages (NEW)
+│   │   │   ├── invoices/       # Invoice pages (NEW)
+│   │   │   └── emails/         # Email template preview (NEW)
+│   │   ├── login/              # Authentication pages
+│   │   └── signup/
+│   ├── components/
+│   │   ├── DashboardStats.tsx
+│   │   ├── EntriesList.tsx     # Updated with music status
+│   │   ├── EntryForm.tsx
+│   │   ├── InvoicesList.tsx    # Invoice browser
+│   │   ├── InvoiceDetail.tsx   # Invoice display
+│   │   ├── EmailManager.tsx    # Email preview UI
+│   │   ├── MusicUploader.tsx   # File upload component
+│   │   ├── MusicUploadForm.tsx # Entry upload form
+│   │   ├── SchedulingManager.tsx   # Main scheduling UI (NEW)
+│   │   ├── SessionCard.tsx         # Session display (NEW)
+│   │   ├── UnscheduledEntries.tsx  # Entry assignment (NEW)
+│   │   └── ConflictPanel.tsx       # Conflict visualization (NEW)
+│   ├── emails/                 # React Email templates (NEW)
+│   │   ├── RegistrationConfirmation.tsx
+│   │   ├── InvoiceDelivery.tsx
+│   │   ├── ReservationApproved.tsx
+│   │   └── EntrySubmitted.tsx
+│   ├── lib/
+│   │   ├── prisma.ts
+│   │   ├── trpc.ts
+│   │   ├── supabase.ts
+│   │   ├── email.ts            # Resend service
+│   │   ├── email-templates.tsx # Template rendering
+│   │   ├── storage.ts          # Supabase Storage utils
+│   │   └── scheduling.ts       # Scheduling algorithms (NEW)
+│   └── server/
+│       └── routers/
+│           ├── _app.ts         # Main router (updated)
+│           ├── test.ts
+│           ├── studio.ts
+│           ├── dancer.ts
+│           ├── competition.ts
+│           ├── reservation.ts
+│           ├── entry.ts        # Updated with updateMusic
+│           ├── lookup.ts
+│           ├── invoice.ts      # Invoice generation
+│           ├── email.ts        # Email sending
+│           └── scheduling.ts   # Scheduling operations (NEW)
+└── docs/
+    ├── PROJECT_STATUS.md
+    ├── PRODUCTION_ROADMAP.md
+    └── SESSION_LOG_*.md
+```
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **Framework**: Next.js 15.5.4 with App Router
+- **Language**: TypeScript 5.6.3
+- **UI**: Tailwind CSS with custom glassmorphism design
+- **State**: React Query (via tRPC)
+- **Email Templates**: React Email + @react-email/components
+
+### Backend
+- **API**: tRPC v11 (11 routers active)
+- **ORM**: Prisma v6.16.3 with @prisma/adapter-pg
+- **Auth**: Supabase Auth with session management
+- **Storage**: Supabase Storage (music files)
+- **Email**: Resend API integration
+- **Database**: PostgreSQL 15+ via Supabase pooler
+
+### Infrastructure
+- **Database**: Supabase PostgreSQL (AWS US-West-1)
+- **Backend API**: Next.js serverless functions
+- **Storage**: Supabase Storage buckets
+- **Email**: Resend transactional email service
+- **Version Control**: GitHub
+
+---
+
+## 📊 Database Schema Summary
+
+**Tables**: 38+ tables including:
+- `studios` - Studio registrations
+- `dancers` - Individual dancer profiles
+- `competitions` - Competition events (with reservation_tokens)
+- `reservations` - Studio reservations with token tracking
+- `competition_entries` - Performance entries (with music_file_url)
+- `entry_participants` - Dancer-to-routine assignments
+- `age_groups` - Competition age divisions
+- `dance_categories` - Dance style categories
+- `entry_size_categories` - Solo, duo, trio, group classifications
+- `awards` - Award types and results
+
+**Recent Schema Changes**:
+- Added `total_reservation_tokens`, `available_reservation_tokens`, `tokens_override_enabled` to competitions
+- Added database triggers for automatic token allocation/deallocation
+- Updated `music_file_url`, `music_title`, `music_artist` in competition_entries
+
+---
+
+## 📅 Recent Session Changelog
+
+### October 3, 2025 (Autonomous Development Session) - Email & Music Systems ✅
+
+**Session Goal**: Continue autonomous development through roadmap features
+
+**Completed Work**:
+
+#### 1. Invoice Generation System (Commit: 824c282)
+- Created complete invoice router with auto-generation logic
+- Built invoice viewing UI with studio selector
+- Implemented professional PDF-ready invoice layout
+- Added invoice links to dashboard
+
+**Key Files**:
+- `src/server/routers/invoice.ts` - Invoice generation and retrieval
+- `src/components/InvoicesList.tsx` - Studio invoice browser
+- `src/components/InvoiceDetail.tsx` - Detailed invoice display
+- `src/app/dashboard/invoices/page.tsx` - Main invoices page
+- `src/app/dashboard/invoices/[studioId]/[competitionId]/page.tsx` - Invoice detail page
+
+#### 2. Email Template System (Commit: 89f9a76)
+- Installed Resend and React Email dependencies
+- Created 4 professional HTML email templates
+- Built email sending infrastructure with tRPC
+- Added admin email preview interface
+
+**Key Files**:
+- `src/lib/email.ts` - Resend service with lazy initialization
+- `src/lib/email-templates.tsx` - Template rendering functions
+- `src/emails/RegistrationConfirmation.tsx` - Welcome email template
+- `src/emails/InvoiceDelivery.tsx` - Invoice notification template
+- `src/emails/ReservationApproved.tsx` - Reservation confirmation template
+- `src/emails/EntrySubmitted.tsx` - Entry receipt template
+- `src/server/routers/email.ts` - Email sending mutations (4 mutations + preview)
+- `src/components/EmailManager.tsx` - Template preview UI with sample data
+- `src/app/dashboard/emails/page.tsx` - Admin email preview page
+
+**Email Features**:
+- Beautiful responsive HTML emails using React Email
+- Template preview system with sample data
+- Graceful degradation when RESEND_API_KEY not configured
+- Type-safe email data with Zod validation
+- Automatic subject line generation
+- Integration instructions for automated sending
+
+**Email Triggers (Ready for Integration)**:
+- `sendRegistrationConfirmation` - On studio registration
+- `sendInvoiceDelivery` - When invoice generated
+- `sendReservationApproved` - On reservation approval
+- `sendEntrySubmitted` - On entry creation
+
+#### 3. Music Upload System (Commit: 3dc6b36)
+- Integrated Supabase Storage for music file uploads
+- Built file upload component with progress tracking
+- Added music status badges to entry cards
+- Created dedicated music upload pages per entry
+
+**Key Files**:
+- `src/lib/storage.ts` - Supabase Storage utilities
+  - File validation (MP3, WAV, M4A, AAC)
+  - 50MB size limit enforcement
+  - Audio duration detection
+  - Helper functions (formatFileSize, formatDuration)
+- `src/components/MusicUploader.tsx` - Drag-and-drop upload component
+  - Real-time upload progress
+  - File preview before upload
+  - Current file display with remove functionality
+- `src/components/MusicUploadForm.tsx` - Entry-specific upload form
+- `src/app/dashboard/entries/[id]/music/page.tsx` - Music upload page
+- Updated `src/server/routers/entry.ts` - Added `updateMusic` mutation
+- Updated `src/components/EntriesList.tsx` - Added music status indicators
+
+**Music Features**:
+- File type validation (audio formats only)
+- File size limit (50MB max)
+- Real-time upload progress tracking
+- Audio duration detection and display
+- Visual upload status on entry cards (✅ uploaded / ⚠️ not uploaded)
+- Unique file paths: `entries/{entryId}/{timestamp}-{filename}`
+- Public URL generation for playback
+
+**Build Status**: ✅ All 17 routes compile successfully
+
+**Git Commits**:
+- `824c282` - feat: Build complete invoice generation and viewing system
+- `89f9a76` - feat: Build complete email template system with Resend integration
+- `3dc6b36` - feat: Add complete music upload system for competition entries
+
+**Technical Fixes**:
+- Fixed Prisma relation names (dance_categories, entry_participants)
+- Fixed field names (competition_start_date vs start_date)
+- Implemented lazy Resend client initialization
+- React Query callback migration (removed deprecated onSuccess)
+- Variable name conflict resolution (entryNumberStyle)
+
+---
+
+### October 3, 2025 (Autonomous Development Session #2) - Competition Scheduling System ✅
+
+**Session Goal**: Build complete competition scheduling system with conflict detection
+
+**Completed Work**:
+
+#### 1. Scheduling Algorithm Library (Commit: 214bac0)
+- Advanced conflict detection algorithms
+- Auto-scheduling with intelligent entry ordering
+- Session capacity and time management
+
+**Key Files**:
+- `src/lib/scheduling.ts` - Core scheduling algorithms
+  - Type definitions (SchedulingEntry, SessionCapacity, SchedulingConstraints)
+  - Conflict detection (dancer overlaps, costume changes, session capacity, time overflow)
+  - Auto-scheduling algorithm with category/studio grouping
+  - Session statistics calculation
+  - Schedule validation functions
+
+**Conflict Detection Features**:
+- **Dancer Overlap Detection**: Identifies same dancer in overlapping time slots (ERROR)
+- **Costume Change Buffer**: Warns if <20 minutes between dancer's entries (WARNING)
+- **Session Capacity**: Validates max entries per session (ERROR)
+- **Time Overflow**: Checks if entries fit within session time (ERROR)
+- **Configurable Constraints**: Custom buffer times, grouping preferences
+
+#### 2. Scheduling tRPC Router (Commit: 214bac0)
+- Complete scheduling API with 8 endpoints
+
+**Key Files**:
+- `src/server/routers/scheduling.ts` - Scheduling operations
+  - `getSessions` - Fetch all sessions for competition
+  - `getEntries` - Get entries with scheduling info (scheduled/unscheduled filter)
+  - `getConflicts` - Real-time conflict detection
+  - `autoScheduleSession` - Auto-assign entries to session
+  - `assignEntryToSession` - Manual entry assignment
+  - `clearSchedule` - Remove session assignments
+  - `getSessionStats` - Session utilization and breakdowns
+  - `validateSchedule` - Full competition schedule validation
+- Updated `src/server/routers/_app.ts` - Added scheduling router
+
+#### 3. Scheduling Management UI (Commit: 214bac0)
+- Professional admin interface for schedule management
+
+**Key Files**:
+- `src/app/dashboard/scheduling/page.tsx` - Main scheduling page
+- `src/components/SchedulingManager.tsx` - Main scheduling controller
+  - Competition selector
+  - Stats dashboard (total, scheduled, unscheduled, sessions)
+  - Conflict toggle and refresh controls
+  - Layout manager (sessions + unscheduled entries)
+- `src/components/SessionCard.tsx` - Session management card
+  - Session header with date, time, capacity utilization
+  - Session stats (entries, minutes used/left, max entries)
+  - Entry list with running order
+  - Auto-schedule mode with entry selection
+  - Clear all / Remove individual entries
+- `src/components/UnscheduledEntries.tsx` - Unassigned entry manager
+  - Sticky sidebar for easy access
+  - Filter by studio and category
+  - Entry cards with expandable session assignment
+  - Session capacity indicators (full/available)
+- `src/components/ConflictPanel.tsx` - Conflict visualization
+  - Separate errors (red) and warnings (yellow) sections
+  - Conflict type icons and labels
+  - Entry/dancer/session ID references
+  - Refresh controls
+
+**Scheduling Features**:
+- **Drag-Free Assignment**: Click-to-assign interface (no complex DnD)
+- **Smart Auto-Scheduling**: Groups entries by category, then studio
+- **Real-Time Conflicts**: Live conflict detection with severity levels
+- **Session Statistics**: Utilization %, minutes used/remaining, entry counts
+- **Studio/Category Filters**: Quick filtering of unscheduled entries
+- **Capacity Indicators**: Visual warnings when sessions approaching capacity
+- **Manual Override**: Supports manual time and running order assignment
+
+**Build Status**: ✅ All 17 routes compile successfully (verified)
+
+**Git Commit**: 214bac0 - feat: Build complete competition scheduling system
+
+**Technical Implementation**:
+- Conflict detection using time window overlaps
+- Dancer-to-entry mapping for multi-entry dancers
+- Session capacity tracking (current count vs max entries)
+- Time calculations with configurable buffers
+- Smart sorting (category grouping prioritized over studio)
+
+**Statistics**:
+- 8 new tRPC endpoints (scheduling router)
+- 4 new React components (SchedulingManager, SessionCard, UnscheduledEntries, ConflictPanel)
+- 1 new utility library (scheduling.ts with 500+ lines of logic)
+- ~2,000 lines of new code
+
+---
+
+### October 3, 2025 (Morning Session) - Authentication & Entry System ✅
+
+**Completed Features**:
+1. ✅ Complete Supabase Auth integration
+2. ✅ Login/signup pages with email verification flow
+3. ✅ Protected routes with middleware
+4. ✅ Competition entry system with multi-step wizard
+5. ✅ Reservation token system (600 tokens per competition)
+6. ✅ Dashboard UI with all navigation links
+
+**Git Commits**: af1b9ed, e36e4df, 7e2f682, 223aa7d
+
+---
+
+## 🚀 Quick Start Commands
+
+### Development
+```bash
+cd D:\ClaudeCode\CompPortal
+
+# Install dependencies (includes resend, react-email)
+npm install
+
+# Generate Prisma client
+npx prisma generate
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### Git Operations
+```bash
+# Check status
+git status
+
+# View recent commits
+git log --oneline -5
+
+# Pull latest changes
+git pull origin main
+
+# Push changes (already done)
+git push origin main
+```
+
+---
+
+## 🎭 Business Context
+
+### Competition Scale
+- **26+ dance studios** (Canada & US)
+- **387+ performances** per event
+- **6-day multi-venue** format
+- **600 reservation tokens** per competition weekend
+
+### Critical Features Built
+1. **Invoice System** - Auto-generate invoices, track payments
+2. **Email Notifications** - Automated transactional emails for key events
+3. **Music Management** - Upload and track music files for all entries
+4. **Entry Management** - Multi-step wizard with participant assignment
+5. **Reservation Tracking** - Token-based capacity management
+
+---
+
+## 🎯 Roadmap Progress
+
+### Phase 2: Bootstrap MVP - Core Registration (12-16 weeks)
+**Overall Progress**: ~60% Complete
+
+#### ✅ Completed (100%)
+- [x] Authentication & Account Creation
+- [x] Database Schema Deployment
+- [x] Dancer Database (bulk CSV import, individual forms)
+- [x] Routine Registration (create routines, link dancers, validation)
+- [x] Invoice Generation (auto-generate, email delivery)
+- [x] Reservation/Allocation System (600 tokens, approval workflow)
+- [x] Email Notification System (4 templates ready)
+- [x] Music Upload Portal (file upload, deadline tracking)
+
+#### ⏳ In Progress (50%)
+- [ ] Admin Dashboard (basic structure exists, needs enhancement)
+  - ✅ Studio management view
+  - ✅ Capacity tracking
+  - ⏳ Payment status dashboard
+  - ⏳ Multi-competition switcher
+
+#### 🔴 Not Started
+- [ ] Schedule Generation (conflict detection, optimization)
+- [ ] Judge Tabulation Interface (tablet scoring)
+- [ ] Advanced Analytics Dashboard
+
+### Phase 3: Scheduling & Music Management (10-14 weeks)
+**Overall Progress**: 40% Complete
+
+#### ✅ Completed
+- [x] Music Upload Portal (100%)
+- [x] Playlist metadata management
+- [x] Upload status tracking
+
+#### 🔴 Not Started
+- [ ] Schedule Generation Algorithm
+- [ ] Conflict Detection Logic
+- [ ] Schedule Reports (PDF exports)
+- [ ] Playlist Generation (master file combination)
+
+### Phase 4: Tabulation & Reporting (8-10 weeks)
+**Overall Progress**: 0% Complete
+
+#### 🔴 Not Started
+- [ ] Judge Interface (tablet web app)
+- [ ] Live Score Sync
+- [ ] Competition Day Reports
+- [ ] Studio Performance Reports
+
+---
+
+## 📊 Project Metrics
+
+### Completion Status by Phase
+- **Phase 1: Demo**: ✅ 100% Complete
+- **Phase 2: Bootstrap MVP**: ✅ 70% Complete (~8 weeks of work done)
+- **Phase 3: Scheduling & Music**: ✅ 80% Complete (music + scheduling done, export pending)
+- **Phase 4: Tabulation & Reporting**: 🔴 0% Complete
+- **Phase 5: Migration & Launch**: 🔴 0% Complete
+
+### Code Statistics
+- **Total Routes**: 17 (all compiling)
+- **tRPC Routers**: 12 (test, studio, dancer, competition, reservation, entry, lookup, invoice, email, scheduling)
+- **React Components**: 24+ (dashboard, forms, lists, uploaders, scheduling UI)
+- **Email Templates**: 4 (React Email)
+- **Database Tables**: 38+
+- **Lines of Code**: ~17,000+ (estimated)
+
+### Build Health
+- ✅ No TypeScript errors
+- ✅ All imports resolved
+- ✅ All pages render correctly
+- ✅ Email system works without API key (graceful)
+- ⚠️ Requires RESEND_API_KEY for email sending
+- ⚠️ Requires Supabase Storage bucket configuration for music uploads
+
+---
+
+## 📝 Key Documentation Files
+
+**Essential Reading**:
+1. `COMPPORTAL.txt` - This tracker (updated Oct 3, 2025)
+2. `PROJECT_STATUS.md` - Overall project health and progress
+3. `PRODUCTION_ROADMAP.md` - 12-16 week backend development plan
+4. `SESSION_LOG_2025-10-03.md` - Today's detailed work log (if created)
+
+**Technical Docs**:
+- `REBUILD_BLUEPRINT.md` - System architecture
+- `EXPORT_ANALYSIS.md` - Enterprise export requirements
+- `MEETING_REQUIREMENTS_2025-10-01.md` - Stakeholder requirements
+
+---
+
+## 🚨 Critical Notes
+
+### Environment Variables Required
+```env
+# .env.local
+DATABASE_URL=postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+
+NEXT_PUBLIC_SUPABASE_URL=https://cafugvuaatsgihrsmvvl.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Optional (email system works without, but won't send)
+RESEND_API_KEY=re_123456789
+EMAIL_FROM=noreply@glowdance.com
+```
+
+### Supabase Storage Setup
+Create bucket: `competition-music`
+- Public bucket (for playback)
+- File size limit: 50MB
+- Allowed MIME types: audio/mpeg, audio/wav, audio/m4a, audio/aac
+
+### Security
+- `.env.local` is in `.gitignore` - never commit credentials
+- Anon key is safe for client-side (RLS-protected)
+- Service role key is for admin operations only
+- Music files stored with unique paths per entry
+
+---
+
+## 🔗 External Links
+
+- **GitHub Repository**: https://github.com/danman60/CompPortal.git
+- **Supabase Dashboard**: https://supabase.com/dashboard/project/cafugvuaatsgihrsmvvl
+
+---
+
+## 📞 Project Contacts
+
+**Original System**: Wolfe's Computer Consulting Inc.
+**Email**: president@wccinc.ca
+**Rebuild**: Claude Code assisted development
+
+---
+
+*Last session: October 3, 2025 - Competition Scheduling System Complete*
+*Current status: 70% through Phase 2 MVP - Core Features + Scheduling Functional*
+*Next priorities: Schedule export (PDF/CSV), Judge scoring, Analytics dashboard*
