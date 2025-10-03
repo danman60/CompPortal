@@ -144,7 +144,28 @@
       "cleanup-agent (runs after 5 features)",
       "testing-agent (runs regression suite)",
       "Bug fix sprint (all agents)"
-    ]
+    ],
+    "autonomous_operation_policy": {
+      "mode": "continuous",
+      "stop_only_for_critical_blockers": true,
+      "make_autonomous_decisions": true,
+      "dont_stop_for": [
+        "low-priority questions",
+        "optional feature choices",
+        "minor implementation details",
+        "testing preferences",
+        "styling decisions",
+        "naming conventions",
+        "default values"
+      ],
+      "only_stop_for": [
+        "missing critical credentials",
+        "3+ consecutive build failures",
+        "database unreachable >5 minutes",
+        "deployment blocked",
+        "conflicting user requirements"
+      ]
+    }
   },
   "mcp_tools": {
     "supabase": {

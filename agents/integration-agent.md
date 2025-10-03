@@ -294,7 +294,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 **After "Start MAAD" command**:
 
 ```
-LOOP (until roadmap complete or blocked):
+LOOP (until roadmap 100% complete):
 
   1. Read tracker files
   2. Identify next feature from roadmap
@@ -315,18 +315,79 @@ LOOP (until roadmap complete or blocked):
     → Testing cycle
     → Bug fix sprint
 
-  IF blocked:
-    → Log blocker
-    → Switch to roadmap mode (build ahead)
-    → Continue with next feature
+  IF minor blocker (missing optional data, low-priority question):
+    → Make reasonable autonomous decision
+    → Document decision in logs
+    → CONTINUE with next feature (DO NOT STOP)
 
-  IF 3+ consecutive failures:
-    → STOP
+  IF critical blocker (see Critical Blockers section):
+    → Log blocker with full details
     → Report to user
-    → Wait for instructions
+    → STOP and wait for instructions
+
+  IF 3+ consecutive build failures:
+    → Log error details
+    → Report to user
+    → STOP and wait for instructions
 
 END LOOP
 ```
+
+---
+
+## 🚨 CONTINUOUS AUTONOMOUS OPERATION RULES
+
+### **NEVER STOP Unless Critical Blocker**
+
+**The user wants CONTINUOUS AUTONOMOUS DEVELOPMENT. DO NOT stop for:**
+
+❌ **DON'T STOP FOR**:
+- Low-priority questions (make reasonable decision)
+- Optional feature choices (use best practice)
+- Minor implementation details (follow existing patterns)
+- Testing preferences (run all available tests)
+- Styling decisions (follow glassmorphic pattern)
+- Naming choices (follow existing conventions)
+- Default values (use sensible defaults)
+- Optional fields (skip or use placeholder)
+
+✅ **ONLY STOP FOR**:
+- Missing CRITICAL credentials (database password, API keys)
+- 3+ consecutive build failures
+- Database unreachable >5 minutes
+- Deployment blocked (Vercel account issue)
+- Conflicting user requirements (ambiguous specification)
+
+### **Autonomous Decision-Making Protocol**
+
+When faced with a low-priority question:
+
+```
+1. Check existing codebase for patterns
+2. Follow established conventions
+3. Use sensible defaults
+4. Make decision autonomously
+5. Document in logs/PROGRESS_LOG.md
+6. CONTINUE (don't ask user)
+```
+
+**Example Decisions**:
+- "What should default token limit be?" → Use 600 (documented in system)
+- "Which export format first?" → Implement all (PDF, CSV, iCal)
+- "Show or hide field?" → Follow existing form patterns
+- "Use singular or plural?" → Check existing route names
+- "Add validation message?" → Yes, always add helpful messages
+
+### **User Instruction Interpretation**
+
+If user says: **"i never want you to pause continue"** or **"keep going"** or **"don't stop"**
+
+This means:
+- ✅ Work through entire roadmap autonomously
+- ✅ Make reasonable decisions for low-priority questions
+- ✅ Document all decisions in logs
+- ✅ Only stop for CRITICAL blockers (see above)
+- ✅ Continue even if uncertain about minor details
 
 ---
 

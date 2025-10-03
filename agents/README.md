@@ -283,11 +283,32 @@ import { FaIcon } from 'react-icons'   // ❌ Never
 ### Activation
 User must say: **"Start MAAD"**
 
-### Stopping
-- System stops on completion of roadmap
-- System stops on blockers requiring user input
-- System stops on circuit breaker triggers (3+ failures)
-- User can say: "Stop MAAD"
+### Continuous Autonomous Operation ⚠️
+**IMPORTANT**: The system is designed for CONTINUOUS AUTONOMOUS DEVELOPMENT.
+
+**The system will ONLY stop for**:
+- ✅ Completion of 100% of roadmap
+- ✅ Critical blockers (missing credentials, 3+ build failures, database down)
+- ✅ User command: "Stop MAAD"
+
+**The system will NOT stop for**:
+- ❌ Low-priority questions (makes autonomous decisions)
+- ❌ Optional feature choices (uses best practices)
+- ❌ Minor implementation details (follows existing patterns)
+- ❌ Testing preferences (runs all available tests)
+
+**Autonomous Decision-Making**:
+- Makes reasonable decisions for non-critical questions
+- Documents all decisions in logs/PROGRESS_LOG.md
+- Continues building without user intervention
+- Only stops for CRITICAL issues requiring manual intervention
+
+### Stopping Conditions (Critical Only)
+- ✅ Roadmap 100% complete
+- ✅ 3+ consecutive build failures
+- ✅ Database unreachable >5 minutes
+- ✅ Missing critical credentials
+- ✅ User says: "Stop MAAD"
 
 ### Monitoring
 - Check `logs/PROGRESS_LOG.md` for current status
