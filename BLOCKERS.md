@@ -2,10 +2,34 @@
 
 ## Active Blockers
 
-### 1. Prisma + Supabase Pooler Authentication Failure (CRITICAL)
+### 1. Vercel Environment Variable Update Required
 **Date**: October 3, 2025
-**Status**: BLOCKED
-**Impact**: All database queries via Prisma fail on Vercel
+**Status**: AWAITING USER ACTION
+**Impact**: Cannot test Prisma fix on Vercel until env var updated
+
+**Solution Found**: DATABASE_URL username format was incorrect
+
+**Action Required**:
+Update Vercel environment variable DATABASE_URL from:
+```
+postgresql://postgres:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1
+```
+
+To:
+```
+postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+```
+
+**Key Change**: Username must be `postgres.PROJECT_REF` format for pooler authentication
+
+---
+
+## Resolved Blockers
+
+### 1. Prisma + Supabase Pooler Authentication Failure (RESOLVED)
+**Date**: October 3, 2025
+**Status**: RESOLVED
+**Resolution**: Username format must be `postgres.cafugvuaatsgihrsmvvl` not `postgres`
 
 **Error**: `FATAL: Tenant or user not found`
 

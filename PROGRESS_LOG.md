@@ -65,11 +65,30 @@ Fix database connectivity on Vercel serverless deployment
 - **Solution**: Switched to Supabase JS Client
 - **Documented**: BLOCKERS.md
 
+### Solution Found: Prisma Works with Correct Username Format ✅
+
+**Root Cause**: DATABASE_URL username must be `postgres.PROJECT_REF` format for Supabase pooler
+
+**Correct Format**:
+```
+DATABASE_URL="postgresql://postgres.cafugvuaatsgihrsmvvl:PASSWORD@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+```
+
+**What Was Wrong**:
+- Original: `postgres:PASSWORD@...` ❌
+- Correct: `postgres.cafugvuaatsgihrsmvvl:PASSWORD@...` ✅
+
+**Local Testing**: ✅ Build succeeds with correct format
+**Vercel Status**: ⏳ Needs environment variable update in dashboard
+
 ### Next Steps
-1. Fix current deployment error
-2. Test local build: `npm run build`
-3. Complete remaining routers (dancer, competition, reservation, entry)
-4. Test all endpoints with Supabase client
+1. **USER ACTION REQUIRED**: Update Vercel environment variable DATABASE_URL to:
+   ```
+   postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+   ```
+2. Redeploy from Vercel dashboard
+3. Test endpoint: https://comp-portal-one.vercel.app/api/trpc/studio.getStats
+4. Complete remaining routers (dancer, competition, reservation, entry)
 5. Update project tracker with final solution
 
 ### Commits Made
