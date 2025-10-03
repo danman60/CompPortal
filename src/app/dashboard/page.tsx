@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import { prisma } from '@/lib/prisma';
 import StudioDirectorDashboard from '@/components/StudioDirectorDashboard';
 import CompetitionDirectorDashboard from '@/components/CompetitionDirectorDashboard';
+import { signOutAction } from '@/app/actions/auth';
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient();
@@ -36,7 +37,7 @@ export default async function DashboardPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header with Sign Out */}
         <div className="flex justify-end mb-4">
-          <form action="/api/auth/signout" method="POST">
+          <form action={signOutAction}>
             <button
               type="submit"
               className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200"
