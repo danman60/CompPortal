@@ -1,0 +1,181 @@
+'use client';
+
+import { trpc } from '@/lib/trpc';
+import { useState } from 'react';
+import Link from 'next/link';
+
+export default function InvoicesList() {
+  const { data: studios } = trpc.studio.getAll.useQuery();
+  const [selectedStudioId, setSelectedStudioId] = useState<string>('');
+
+  const { data: invoicesData, isLoading } = trpc.invoice.getByStudio.useQuery(
+    { studioId: selectedStudioId },
+    { enabled: !!selectedStudioId }
+  );
+
+  if (!selectedStudioId) {
+    return (
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
+        <div className="text-6xl mb-4">💰</div>
+        <h3 className="text-xl font-semibold text-white mb-4">Select a Studio</h3>
+        <p className="text-gray-400 mb-6">Choose a studio to view their invoices</p>
+
+        <select
+          value={selectedStudioId}
+          onChange={(e) => setSelectedStudioId(e.target.value)}
+          className="px-6 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="">Select Studio</option>
+          {studios?.studios.map((studio) => (
+            <option key={studio.id} value={studio.id}>
+              {studio.name} ({studio.code})
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
+            <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-white/20 rounded w-2/3"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const invoices = invoicesData?.invoices || [];
+  const selectedStudio = studios?.studios.find(s => s.id === selectedStudioId);
+
+  return (
+    <div>
+      {/* Studio Selector */}
+      <div className="mb-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Selected Studio
+        </label>
+        <select
+          value={selectedStudioId}
+          onChange={(e) => setSelectedStudioId(e.target.value)}
+          className="w-full md:w-auto px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="">Select Studio</option>
+          {studios?.studios.map((studio) => (
+            <option key={studio.id} value={studio.id}>
+              {studio.name} ({studio.code})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Invoices Grid */}
+      {invoices.length === 0 ? (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
+          <div className="text-6xl mb-4">📋</div>
+          <h3 className="text-xl font-semibold text-white mb-2">No Invoices Found</h3>
+          <p className="text-gray-400">
+            {selectedStudio?.name} has no competition entries yet.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Studio Summary */}
+          <div className="mb-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">{selectedStudio?.name}</h2>
+                <p className="text-gray-300">Studio Code: {selectedStudio?.code}</p>
+                {selectedStudio?.city && selectedStudio?.province && (
+                  <p className="text-gray-300">
+                    {selectedStudio.city}, {selectedStudio.province}
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-300 mb-1">Total Competitions</div>
+                <div className="text-3xl font-bold text-white">{invoices.length}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Invoices */}
+          <div className="space-y-4">
+            {invoices.map((invoice) => (
+              <div
+                key={invoice.competitionId}
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">
+                      {invoice.competitionName} ({invoice.competitionYear})
+                    </h3>
+                    {invoice.startDate && (
+                      <p className="text-sm text-gray-400">
+                        {new Date(invoice.startDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-400">
+                      ${invoice.totalAmount.toFixed(2)}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {invoice.entryCount} {invoice.entryCount === 1 ? 'entry' : 'entries'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Link
+                    href={`/dashboard/invoices/${selectedStudioId}/${invoice.competitionId}`}
+                    className="flex-1 text-center bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all"
+                  >
+                    View Invoice
+                  </Link>
+                  <button
+                    onClick={() => {
+                      // TODO: Implement download/print functionality
+                      alert('Download feature coming soon!');
+                    }}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                  >
+                    📥 Download
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Total Summary */}
+          <div className="mt-6 bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-gray-300 mb-1">Total Across All Competitions</div>
+                <div className="text-lg text-white">
+                  {invoices.reduce((sum, inv) => sum + inv.entryCount, 0)} total entries
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-300 mb-1">Grand Total</div>
+                <div className="text-3xl font-bold text-green-400">
+                  ${invoices.reduce((sum, inv) => sum + inv.totalAmount, 0).toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
