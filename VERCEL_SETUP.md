@@ -50,10 +50,16 @@ NEXT_PUBLIC_APP_URL="https://comp-portal-one.vercel.app"
 1. Go to https://vercel.com/danman60s-projects/comp-portal/settings/environment-variables
 2. Find the `DATABASE_URL` variable
 3. Click "Edit"
-4. Update value to include `postgres.cafugvuaatsgihrsmvvl` username
-5. Remove `sslmode=no-verify` parameter
+4. **CRITICAL**: Paste the value exactly as shown above - do NOT URL-encode special characters
+   - Password must be `!EH4TtrJ2-V!5b_` (with ! characters, NOT %21)
+   - If you see %21 in the password, it's wrong - delete and re-paste
+5. Full value should be:
+   ```
+   postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+   ```
 6. Click "Save"
-7. Redeploy from Deployments tab
+7. **Verify**: Check that Vercel didn't auto-encode the password (it should still show ! not %21)
+8. Redeploy from Deployments tab
 
 ---
 
@@ -80,9 +86,17 @@ After updating environment variables and redeploying:
 ## Troubleshooting
 
 ### "Tenant or user not found" Error
-**Cause**: USERNAME format is incorrect in DATABASE_URL
 
+**Cause 1**: USERNAME format is incorrect in DATABASE_URL
 **Solution**: Ensure username is `postgres.cafugvuaatsgihrsmvvl` (not just `postgres`)
+
+**Cause 2**: PASSWORD is URL-encoded in Vercel dashboard
+**Solution**:
+- Check if password shows `%21` instead of `!` in Vercel dashboard
+- Delete the DATABASE_URL variable entirely
+- Re-create it with plain text password: `!EH4TtrJ2-V!5b_`
+- Verify Vercel didn't auto-encode it after saving
+- **IMPORTANT**: Some browsers or Vercel's UI may auto-encode on paste - always verify after saving
 
 ### "self-signed certificate" Error
 **Cause**: `sslmode=no-verify` parameter present
