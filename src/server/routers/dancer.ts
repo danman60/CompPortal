@@ -217,11 +217,21 @@ export const dancerRouter = router({
       };
     }),
 
-  // Create a new dancer
-  create: publicProcedure
+  // Create a new dancer (role-based)
+  create: protectedProcedure
     .input(dancerInputSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { date_of_birth, ...data } = input;
+
+      // Studio directors can only create dancers for their own studio
+      if (isStudioDirector(ctx.userRole)) {
+        if (!ctx.studioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+        if (data.studio_id !== ctx.studioId) {
+          throw new Error('Cannot create dancers for other studios');
+        }
+      }
 
       const dancer = await prisma.dancers.create({
         data: {
@@ -242,16 +252,37 @@ export const dancerRouter = router({
       return dancer;
     }),
 
-  // Update a dancer
-  update: publicProcedure
+  // Update a dancer (role-based)
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string().uuid(),
         data: dancerInputSchema.partial(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { date_of_birth, ...data } = input.data;
+
+      // Studio directors can only update dancers from their own studio
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        const existingDancer = await prisma.dancers.findUnique({
+          where: { id: input.id },
+          select: { studio_id: true },
+        });
+
+        if (!existingDancer) {
+          throw new Error('Dancer not found');
+        }
+
+        if (existingDancer.studio_id !== ctx.studioId) {
+          throw new Error('Cannot update dancers from other studios');
+        }
+
+        // Prevent changing studio_id to another studio
+        if (data.studio_id && data.studio_id !== ctx.studioId) {
+          throw new Error('Cannot transfer dancers to other studios');
+        }
+      }
 
       const dancer = await prisma.dancers.update({
         where: { id: input.id },
@@ -274,10 +305,26 @@ export const dancerRouter = router({
       return dancer;
     }),
 
-  // Delete a dancer
-  delete: publicProcedure
+  // Delete a dancer (role-based)
+  delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Studio directors can only delete dancers from their own studio
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        const existingDancer = await prisma.dancers.findUnique({
+          where: { id: input.id },
+          select: { studio_id: true },
+        });
+
+        if (!existingDancer) {
+          throw new Error('Dancer not found');
+        }
+
+        if (existingDancer.studio_id !== ctx.studioId) {
+          throw new Error('Cannot delete dancers from other studios');
+        }
+      }
+
       // Check if dancer has entries
       const entriesCount = await prisma.entry_participants.count({
         where: { dancer_id: input.id },
@@ -297,9 +344,25 @@ export const dancerRouter = router({
     }),
 
   // Archive a dancer (soft delete)
-  archive: publicProcedure
+  archive: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Studio directors can only archive dancers from their own studio
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        const existingDancer = await prisma.dancers.findUnique({
+          where: { id: input.id },
+          select: { studio_id: true },
+        });
+
+        if (!existingDancer) {
+          throw new Error('Dancer not found');
+        }
+
+        if (existingDancer.studio_id !== ctx.studioId) {
+          throw new Error('Cannot archive dancers from other studios');
+        }
+      }
+
       const dancer = await prisma.dancers.update({
         where: { id: input.id },
         data: {
@@ -312,13 +375,25 @@ export const dancerRouter = router({
     }),
 
   // Bulk import dancers (for CSV uploads)
-  bulkCreate: publicProcedure
+  bulkCreate: protectedProcedure
     .input(
       z.object({
         dancers: z.array(dancerInputSchema),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Validate all dancers belong to user's studio (for studio directors)
+      if (isStudioDirector(ctx.userRole)) {
+        if (!ctx.studioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+
+        const invalidDancers = input.dancers.filter(d => d.studio_id !== ctx.studioId);
+        if (invalidDancers.length > 0) {
+          throw new Error('Cannot bulk create dancers for other studios');
+        }
+      }
+
       const results = await Promise.allSettled(
         input.dancers.map(async (dancerData) => {
           const { date_of_birth, ...data } = dancerData;
@@ -346,7 +421,7 @@ export const dancerRouter = router({
     }),
 
   // Bulk import from CSV (resolves studio codes to IDs)
-  bulkImport: publicProcedure
+  bulkImport: protectedProcedure
     .input(
       z.object({
         dancers: z.array(
@@ -366,7 +441,7 @@ export const dancerRouter = router({
         ),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Get all unique studio codes from the input
       const studioCodes = [...new Set(input.dancers.map((d) => d.studio_code))];
 
@@ -385,6 +460,21 @@ export const dancerRouter = router({
 
       // Create a map of studio code to studio ID
       const studioMap = new Map(studios.map((s) => [s.code, s.id]));
+
+      // Studio directors can only import dancers for their own studio
+      if (isStudioDirector(ctx.userRole)) {
+        if (!ctx.studioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+
+        // Check if any of the studio codes map to a different studio
+        const resolvedStudioIds = [...new Set(Array.from(studioMap.values()))];
+        const unauthorizedImport = resolvedStudioIds.some(id => id !== ctx.studioId);
+
+        if (unauthorizedImport || resolvedStudioIds.length > 1) {
+          throw new Error('Cannot bulk import dancers for other studios');
+        }
+      }
 
       // Process each dancer
       const results = await Promise.allSettled(

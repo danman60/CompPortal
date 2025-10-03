@@ -324,15 +324,25 @@ export const reservationRouter = router({
     }),
 
   // Create a new reservation
-  create: publicProcedure
+  create: protectedProcedure
     .input(reservationInputSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const {
         payment_due_date,
         deposit_amount,
         total_amount,
         ...data
       } = input;
+
+      // Studio directors can only create reservations for their own studio
+      if (isStudioDirector(ctx.userRole)) {
+        if (!ctx.studioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+        if (data.studio_id !== ctx.studioId) {
+          throw new Error('Cannot create reservations for other studios');
+        }
+      }
 
       // Check competition capacity
       const competition = await prisma.competitions.findUnique({
@@ -392,20 +402,41 @@ export const reservationRouter = router({
     }),
 
   // Update a reservation
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string().uuid(),
         data: reservationInputSchema.partial(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const {
         payment_due_date,
         deposit_amount,
         total_amount,
         ...data
       } = input.data;
+
+      // Studio directors can only update their own studio's reservations
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        const existingReservation = await prisma.reservations.findUnique({
+          where: { id: input.id },
+          select: { studio_id: true },
+        });
+
+        if (!existingReservation) {
+          throw new Error('Reservation not found');
+        }
+
+        if (existingReservation.studio_id !== ctx.studioId) {
+          throw new Error('Cannot update reservations from other studios');
+        }
+
+        // Prevent changing studio_id to another studio
+        if (data.studio_id && data.studio_id !== ctx.studioId) {
+          throw new Error('Cannot transfer reservations to other studios');
+        }
+      }
 
       const reservation = await prisma.reservations.update({
         where: { id: input.id },
@@ -438,7 +469,7 @@ export const reservationRouter = router({
     }),
 
   // Approve a reservation
-  approve: publicProcedure
+  approve: protectedProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -446,7 +477,12 @@ export const reservationRouter = router({
         approvedBy: z.string().uuid(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Only competition directors and super admins can approve reservations
+      if (isStudioDirector(ctx.userRole)) {
+        throw new Error('Studio directors cannot approve reservations');
+      }
+
       const reservation = await prisma.reservations.update({
         where: { id: input.id },
         data: {
@@ -476,7 +512,7 @@ export const reservationRouter = router({
     }),
 
   // Reject a reservation
-  reject: publicProcedure
+  reject: protectedProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -484,7 +520,12 @@ export const reservationRouter = router({
         rejectedBy: z.string().uuid(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Only competition directors and super admins can reject reservations
+      if (isStudioDirector(ctx.userRole)) {
+        throw new Error('Studio directors cannot reject reservations');
+      }
+
       const reservation = await prisma.reservations.update({
         where: { id: input.id },
         data: {
@@ -499,9 +540,25 @@ export const reservationRouter = router({
     }),
 
   // Cancel a reservation
-  cancel: publicProcedure
+  cancel: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Studio directors can only cancel their own studio's reservations
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        const existingReservation = await prisma.reservations.findUnique({
+          where: { id: input.id },
+          select: { studio_id: true },
+        });
+
+        if (!existingReservation) {
+          throw new Error('Reservation not found');
+        }
+
+        if (existingReservation.studio_id !== ctx.studioId) {
+          throw new Error('Cannot cancel reservations from other studios');
+        }
+      }
+
       const reservation = await prisma.reservations.update({
         where: { id: input.id },
         data: {
@@ -514,9 +571,25 @@ export const reservationRouter = router({
     }),
 
   // Delete a reservation
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Studio directors can only delete their own studio's reservations
+      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+        const existingReservation = await prisma.reservations.findUnique({
+          where: { id: input.id },
+          select: { studio_id: true },
+        });
+
+        if (!existingReservation) {
+          throw new Error('Reservation not found');
+        }
+
+        if (existingReservation.studio_id !== ctx.studioId) {
+          throw new Error('Cannot delete reservations from other studios');
+        }
+      }
+
       // Check if reservation has entries
       const entriesCount = await prisma.competition_entries.count({
         where: { reservation_id: input.id },
