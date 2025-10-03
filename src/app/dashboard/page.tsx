@@ -161,10 +161,23 @@ export default async function DashboardPage() {
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
           >
             <div className="flex items-center gap-4">
-              <div className="text-4xl">📊</div>
+              <div className="text-4xl">🏆</div>
               <div>
                 <h3 className="text-xl font-semibold text-white">Scoreboard</h3>
                 <p className="text-gray-400 text-sm">Live scores & rankings</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/analytics"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">📊</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Analytics</h3>
+                <p className="text-gray-400 text-sm">Insights & metrics</p>
               </div>
             </div>
           </Link>
