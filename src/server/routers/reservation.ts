@@ -62,7 +62,7 @@ export const reservationRouter = router({
         where.payment_status = paymentStatus;
       }
 
-      const [reservations, total] = await Promise.all([
+      const [reservations, total, competitions] = await Promise.all([
         prisma.reservations.findMany({
           where,
           include: {
@@ -100,10 +100,22 @@ export const reservationRouter = router({
           skip: offset,
         }),
         prisma.reservations.count({ where }),
+        prisma.competitions.findMany({
+          select: {
+            id: true,
+            name: true,
+            year: true,
+          },
+          orderBy: [
+            { year: 'desc' },
+            { name: 'asc' },
+          ],
+        }),
       ]);
 
       return {
         reservations,
+        competitions,
         total,
         limit,
         offset,
