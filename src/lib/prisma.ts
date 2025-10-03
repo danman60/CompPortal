@@ -16,8 +16,13 @@ const connectionConfig: any = {
 };
 
 // Handle SSL configuration for Supabase
+// Use require mode but don't reject unauthorized certs (Supabase uses managed SSL)
 if (process.env.DATABASE_URL?.includes('supabase')) {
-  connectionConfig.ssl = { rejectUnauthorized: false };
+  connectionConfig.ssl = {
+    rejectUnauthorized: false,
+    // Explicitly set CA to null to skip certificate validation
+    ca: undefined,
+  };
 }
 
 // If using pgbouncer (port 6543), disable binary protocol
