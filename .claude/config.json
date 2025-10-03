@@ -1,0 +1,236 @@
+{
+  "name": "CompPortal MAAD System",
+  "version": "1.0.0",
+  "description": "Multi-Agent Autonomous Development system for GlowDance Competition Portal",
+  "activation_command": "Start MAAD",
+  "agents": {
+    "integration": {
+      "file": "agents/integration-agent.md",
+      "role": "Orchestrator & Feature Integrator",
+      "priority": 1,
+      "triggers": [
+        "Start MAAD",
+        "feature",
+        "end-to-end",
+        "workflow",
+        "orchestrate"
+      ],
+      "mcp_tools": ["supabase", "vercel", "playwright"],
+      "mcp_usage": {
+        "supabase": "30%",
+        "vercel": "20%",
+        "playwright": "50%"
+      }
+    },
+    "testing": {
+      "file": "agents/testing-agent.md",
+      "role": "Production Testing & Bug Reporter",
+      "priority": 2,
+      "triggers": [
+        "test",
+        "playwright",
+        "browser",
+        "qa",
+        "bug",
+        "smoke",
+        "regression"
+      ],
+      "mcp_tools": ["playwright", "supabase", "vercel"],
+      "mcp_usage": {
+        "playwright": "90%",
+        "supabase": "5%",
+        "vercel": "5%"
+      }
+    },
+    "backend": {
+      "file": "agents/backend-agent.md",
+      "role": "API & Business Logic Developer",
+      "priority": 3,
+      "triggers": [
+        "api",
+        "router",
+        "trpc",
+        "procedure",
+        "endpoint",
+        "zod",
+        "validation"
+      ],
+      "mcp_tools": ["supabase", "vercel"],
+      "mcp_usage": {
+        "supabase": "60%",
+        "vercel": "40%"
+      }
+    },
+    "frontend": {
+      "file": "agents/frontend-agent.md",
+      "role": "UI/UX Component Developer",
+      "priority": 4,
+      "triggers": [
+        "component",
+        "page",
+        "ui",
+        "form",
+        "client",
+        "react"
+      ],
+      "mcp_tools": ["playwright", "vercel"],
+      "mcp_usage": {
+        "playwright": "40%",
+        "vercel": "60%"
+      }
+    },
+    "database": {
+      "file": "agents/database-agent.md",
+      "role": "Schema & Migration Manager",
+      "priority": 5,
+      "triggers": [
+        "schema",
+        "migration",
+        "table",
+        "rls",
+        "postgres",
+        "sql"
+      ],
+      "mcp_tools": ["supabase"],
+      "mcp_usage": {
+        "supabase": "90%"
+      }
+    },
+    "devops": {
+      "file": "agents/devops-agent.md",
+      "role": "Deployment & Monitoring Specialist",
+      "priority": 6,
+      "triggers": [
+        "deploy",
+        "build",
+        "error",
+        "monitor",
+        "vercel",
+        "production"
+      ],
+      "mcp_tools": ["vercel", "supabase", "playwright"],
+      "mcp_usage": {
+        "vercel": "90%",
+        "supabase": "40%",
+        "playwright": "30%"
+      }
+    },
+    "cleanup": {
+      "file": "agents/cleanup-agent.md",
+      "role": "Code Quality & Technical Debt Manager",
+      "priority": 7,
+      "triggers": [
+        "cleanup",
+        "refactor",
+        "quality",
+        "duplicate",
+        "unused"
+      ],
+      "activation": "Every 5 features",
+      "mcp_tools": []
+    }
+  },
+  "coordination": {
+    "standard_flow": [
+      "integration-agent (reads tracker, plans feature)",
+      "database-agent (creates schema if needed)",
+      "backend-agent (builds API)",
+      "frontend-agent (builds UI)",
+      "integration-agent (tests end-to-end)",
+      "devops-agent (monitors deployment)",
+      "testing-agent (runs smoke tests)"
+    ],
+    "cleanup_cycle": [
+      "cleanup-agent (runs after 5 features)",
+      "testing-agent (runs regression suite)",
+      "Bug fix sprint (all agents)"
+    ]
+  },
+  "mcp_tools": {
+    "supabase": {
+      "required_for": ["database", "backend", "devops"],
+      "high_usage": true,
+      "operations": [
+        "apply_migration",
+        "execute_sql",
+        "get_advisors",
+        "generate_typescript_types",
+        "get_logs"
+      ]
+    },
+    "vercel": {
+      "required_for": ["devops"],
+      "high_usage": true,
+      "operations": [
+        "list_deployments",
+        "get_deployment",
+        "get_build_logs",
+        "get_runtime_logs",
+        "web_fetch_vercel_url"
+      ]
+    },
+    "playwright": {
+      "required_for": ["testing", "frontend", "integration"],
+      "high_usage": true,
+      "operations": [
+        "navigate",
+        "click",
+        "fill",
+        "screenshot",
+        "evaluate",
+        "waitFor"
+      ]
+    }
+  },
+  "quality_gates": {
+    "before_commit": [
+      "npm run build succeeds",
+      "All routes compile",
+      "No TypeScript errors",
+      "All imports resolve",
+      "New router added to _app.ts (if created)",
+      "Prisma field names match schema",
+      "UI follows glassmorphic pattern",
+      "Components use 'use client' where needed"
+    ]
+  },
+  "circuit_breakers": {
+    "deployment_failures": {
+      "threshold": 3,
+      "action": "STOP_ALL_WORK",
+      "message": "3+ consecutive deployment failures - manual intervention required"
+    },
+    "database_down": {
+      "threshold_minutes": 5,
+      "action": "STOP_ALL_WORK",
+      "message": "Database unreachable for >5 minutes"
+    }
+  },
+  "project_context": {
+    "name": "GlowDance Competition Portal (CompPortal)",
+    "location": "D:\\ClaudeCode\\CompPortal",
+    "production_url": "https://comp-portal-one.vercel.app/",
+    "database": "Supabase PostgreSQL (cafugvuaatsgihrsmvvl)",
+    "current_phase": "Backend Feature Development - 70% Complete",
+    "tech_stack": [
+      "Next.js 15.5.4",
+      "TypeScript 5.6.3",
+      "tRPC v11",
+      "Prisma 6.16.3",
+      "Supabase",
+      "Tailwind CSS"
+    ]
+  },
+  "logs": {
+    "progress": "logs/PROGRESS_LOG.md",
+    "errors": "logs/ERROR_LOG.md",
+    "blockers": "logs/BLOCKERS.md",
+    "cleanup": "logs/CLEANUP_LOG.md",
+    "tests": "logs/TEST_LOG.md",
+    "metrics": "logs/CLEANUP_METRICS.md"
+  },
+  "scripts": {
+    "cleanup": "scripts/auto-cleanup.sh",
+    "tests": "scripts/run-tests.sh"
+  }
+}
