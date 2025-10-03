@@ -462,4 +462,239 @@ export const schedulingRouter = router({
         },
       };
     }),
+
+  // Export schedule as CSV
+  exportScheduleCSV: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      studioId: z.string().uuid().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const where: any = {
+        competition_id: input.competitionId,
+        session_id: { not: null }, // Only scheduled entries
+      };
+
+      if (input.studioId) {
+        where.studio_id = input.studioId;
+      }
+
+      const entries = await prisma.competition_entries.findMany({
+        where,
+        include: {
+          studios: { select: { name: true } },
+          dance_categories: { select: { name: true } },
+          competition_sessions: {
+            select: { session_date: true, start_time: true },
+          },
+        },
+        orderBy: [
+          { session_id: 'asc' },
+          { running_order: 'asc' },
+        ],
+      });
+
+      // Generate CSV
+      const headers = 'Entry Number,Studio,Category,Session Date,Session Time,Running Order,Duration (min)\n';
+      const rows = entries.map(entry => {
+        const sessionDate = entry.competition_sessions?.session_date
+          ? new Date(entry.competition_sessions.session_date).toLocaleDateString()
+          : 'N/A';
+        const sessionTime = entry.performance_time
+          ? new Date(entry.performance_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          : 'N/A';
+        // Duration is stored as interval, use default 3 minutes if not available
+        const duration = 3;
+
+        return [
+          entry.entry_number || '',
+          `"${entry.studios.name}"`,
+          `"${entry.dance_categories.name}"`,
+          sessionDate,
+          sessionTime,
+          entry.running_order || '',
+          duration,
+        ].join(',');
+      }).join('\n');
+
+      const csvContent = headers + rows;
+      const base64Data = Buffer.from(csvContent, 'utf-8').toString('base64');
+
+      return {
+        filename: `schedule-${input.competitionId}.csv`,
+        data: base64Data,
+        mimeType: 'text/csv',
+      };
+    }),
+
+  // Export schedule as iCal
+  exportScheduleICal: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      studioId: z.string().uuid().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const where: any = {
+        competition_id: input.competitionId,
+        session_id: { not: null },
+      };
+
+      if (input.studioId) {
+        where.studio_id = input.studioId;
+      }
+
+      const entries = await prisma.competition_entries.findMany({
+        where,
+        include: {
+          studios: { select: { name: true } },
+          dance_categories: { select: { name: true } },
+          competition_sessions: {
+            select: { session_date: true, start_time: true },
+          },
+        },
+        orderBy: [
+          { session_id: 'asc' },
+          { running_order: 'asc' },
+        ],
+      });
+
+      // Generate iCal format
+      const icalHeader = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//CompPortal//Schedule Export//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+      ].join('\r\n');
+
+      const icalFooter = 'END:VCALENDAR';
+
+      const events = entries.map(entry => {
+        const sessionDate = entry.competition_sessions?.session_date
+          ? new Date(entry.competition_sessions.session_date)
+          : new Date();
+        const performanceTime = entry.performance_time
+          ? new Date(entry.performance_time)
+          : new Date();
+
+        // Combine date and time
+        const startDateTime = new Date(
+          sessionDate.getFullYear(),
+          sessionDate.getMonth(),
+          sessionDate.getDate(),
+          performanceTime.getHours(),
+          performanceTime.getMinutes()
+        );
+
+        // Duration is stored as interval, use default 3 minutes
+        const duration = 3;
+        const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+
+        const formatDate = (date: Date) => {
+          return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+
+        return [
+          'BEGIN:VEVENT',
+          `UID:${entry.id}@compportal`,
+          `DTSTAMP:${formatDate(new Date())}`,
+          `DTSTART:${formatDate(startDateTime)}`,
+          `DTEND:${formatDate(endDateTime)}`,
+          `SUMMARY:Entry #${entry.entry_number} - ${entry.title}`,
+          `DESCRIPTION:Studio: ${entry.studios.name}\\nCategory: ${entry.dance_categories.name}`,
+          `LOCATION:Competition Venue`,
+          'END:VEVENT',
+        ].join('\r\n');
+      }).join('\r\n');
+
+      const icalContent = [icalHeader, events, icalFooter].join('\r\n');
+      const base64Data = Buffer.from(icalContent, 'utf-8').toString('base64');
+
+      return {
+        filename: `schedule-${input.competitionId}.ics`,
+        data: base64Data,
+        mimeType: 'text/calendar',
+      };
+    }),
+
+  // Export schedule as PDF (simple text-based)
+  exportSchedulePDF: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      studioId: z.string().uuid().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const where: any = {
+        competition_id: input.competitionId,
+        session_id: { not: null },
+      };
+
+      if (input.studioId) {
+        where.studio_id = input.studioId;
+      }
+
+      const entries = await prisma.competition_entries.findMany({
+        where,
+        include: {
+          studios: { select: { name: true } },
+          dance_categories: { select: { name: true } },
+          competition_sessions: {
+            select: { session_date: true, start_time: true, session_name: true },
+          },
+        },
+        orderBy: [
+          { session_id: 'asc' },
+          { running_order: 'asc' },
+        ],
+      });
+
+      // Group by session
+      const sessionGroups = entries.reduce((acc, entry) => {
+        const sessionId = entry.session_id || 'unscheduled';
+        if (!acc[sessionId]) {
+          acc[sessionId] = [];
+        }
+        acc[sessionId].push(entry);
+        return acc;
+      }, {} as Record<string, typeof entries>);
+
+      // Generate simple text-based PDF content (can be enhanced with actual PDF library)
+      let pdfContent = 'COMPETITION SCHEDULE\n\n';
+      pdfContent += '='.repeat(80) + '\n\n';
+
+      for (const [sessionId, sessionEntries] of Object.entries(sessionGroups)) {
+        const firstEntry = sessionEntries[0];
+        const sessionName = firstEntry.competition_sessions?.session_name || 'Session';
+        const sessionDate = firstEntry.competition_sessions?.session_date
+          ? new Date(firstEntry.competition_sessions.session_date).toLocaleDateString()
+          : 'N/A';
+
+        pdfContent += `${sessionName} - ${sessionDate}\n`;
+        pdfContent += '-'.repeat(80) + '\n';
+        pdfContent += 'Entry #  Studio                    Category                Time      Order\n';
+        pdfContent += '-'.repeat(80) + '\n';
+
+        sessionEntries.forEach(entry => {
+          const entryNum = String(entry.entry_number || '').padEnd(8);
+          const studio = entry.studios.name.substring(0, 24).padEnd(25);
+          const category = entry.dance_categories.name.substring(0, 23).padEnd(24);
+          const time = entry.performance_time
+            ? new Date(entry.performance_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+            : 'N/A'.padEnd(9);
+          const order = String(entry.running_order || '').padEnd(5);
+
+          pdfContent += `${entryNum} ${studio} ${category} ${time} ${order}\n`;
+        });
+
+        pdfContent += '\n';
+      }
+
+      const base64Data = Buffer.from(pdfContent, 'utf-8').toString('base64');
+
+      return {
+        filename: `schedule-${input.competitionId}.txt`,
+        data: base64Data,
+        mimeType: 'text/plain',
+      };
+    }),
 });

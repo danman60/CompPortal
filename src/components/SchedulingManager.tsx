@@ -36,6 +36,67 @@ export default function SchedulingManager() {
   const assignMutation = trpc.scheduling.assignEntryToSession.useMutation();
   const clearMutation = trpc.scheduling.clearSchedule.useMutation();
 
+  // Export mutations
+  const exportPDFMutation = trpc.scheduling.exportSchedulePDF.useMutation();
+  const exportCSVMutation = trpc.scheduling.exportScheduleCSV.useMutation();
+  const exportICalMutation = trpc.scheduling.exportScheduleICal.useMutation();
+
+  // Download helper function
+  const downloadFile = (base64Data: string, filename: string, mimeType: string) => {
+    const binaryData = atob(base64Data);
+    const bytes = new Uint8Array(binaryData.length);
+    for (let i = 0; i < binaryData.length; i++) {
+      bytes[i] = binaryData.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export handlers
+  const handleExportPDF = async () => {
+    if (!selectedCompetition) return;
+    try {
+      const result = await exportPDFMutation.mutateAsync({ competitionId: selectedCompetition });
+      const competition = competitions.find(c => c.id === selectedCompetition);
+      const filename = `schedule_${competition?.name || 'competition'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      downloadFile(result.data, filename, 'application/pdf');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      alert('Failed to export PDF. Please try again.');
+    }
+  };
+
+  const handleExportCSV = async () => {
+    if (!selectedCompetition) return;
+    try {
+      const result = await exportCSVMutation.mutateAsync({ competitionId: selectedCompetition });
+      const competition = competitions.find(c => c.id === selectedCompetition);
+      const filename = `schedule_${competition?.name || 'competition'}_${new Date().toISOString().split('T')[0]}.csv`;
+      downloadFile(result.data, filename, 'text/csv');
+    } catch (error) {
+      console.error('CSV export failed:', error);
+      alert('Failed to export CSV. Please try again.');
+    }
+  };
+
+  const handleExportICal = async () => {
+    if (!selectedCompetition) return;
+    try {
+      const result = await exportICalMutation.mutateAsync({ competitionId: selectedCompetition });
+      const competition = competitions.find(c => c.id === selectedCompetition);
+      const filename = `schedule_${competition?.name || 'competition'}_${new Date().toISOString().split('T')[0]}.ics`;
+      downloadFile(result.data, filename, 'text/calendar');
+    } catch (error) {
+      console.error('iCal export failed:', error);
+      alert('Failed to export iCal. Please try again.');
+    }
+  };
+
   const handleRefresh = async () => {
     await Promise.all([
       refetchSessions(),
@@ -83,11 +144,11 @@ export default function SchedulingManager() {
         <label className="block text-white font-semibold mb-3">
           Select Competition
         </label>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-center flex-wrap">
           <select
             value={selectedCompetition}
             onChange={(e) => setSelectedCompetition(e.target.value)}
-            className="flex-1 px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 min-w-[300px] px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="">-- Select a competition --</option>
             {competitions.map((comp) => (
@@ -120,6 +181,67 @@ export default function SchedulingManager() {
             </button>
           )}
         </div>
+
+        {/* Export Buttons */}
+        {selectedCompetition && (
+          <div className="mt-4 pt-4 border-t border-white/20">
+            <label className="block text-white font-semibold mb-3 text-sm">
+              Export Schedule
+            </label>
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={handleExportPDF}
+                disabled={exportPDFMutation.isPending}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {exportPDFMutation.isPending ? (
+                  <>
+                    <span className="animate-spin">⚙️</span>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    📄 Export PDF
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleExportCSV}
+                disabled={exportCSVMutation.isPending}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {exportCSVMutation.isPending ? (
+                  <>
+                    <span className="animate-spin">⚙️</span>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    📊 Export CSV
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleExportICal}
+                disabled={exportICalMutation.isPending}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {exportICalMutation.isPending ? (
+                  <>
+                    <span className="animate-spin">⚙️</span>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    📆 Export iCal
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {selectedCompetition && (
