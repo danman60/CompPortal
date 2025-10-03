@@ -211,19 +211,38 @@ export default function EntriesList() {
                 </div>
               )}
 
+              {/* Music Upload Status */}
+              {entry.music_file_url ? (
+                <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-green-500/20 border border-green-400/30 rounded-lg">
+                  <span className="text-green-400">✅</span>
+                  <span className="text-sm text-green-300">Music uploaded</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
+                  <span className="text-yellow-400">⚠️</span>
+                  <span className="text-sm text-yellow-300">Music not uploaded</span>
+                </div>
+              )}
+
               {/* Actions */}
-              <div className="flex gap-2 mt-4">
+              <div className="grid grid-cols-3 gap-2 mt-4">
                 <Link
                   href={`/dashboard/entries/${entry.id}`}
-                  className="flex-1 text-center bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm transition-all"
+                  className="text-center bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-all"
                 >
                   View
                 </Link>
                 <Link
                   href={`/dashboard/entries/${entry.id}/edit`}
-                  className="flex-1 text-center bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-4 py-2 rounded-lg text-sm transition-all"
+                  className="text-center bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-3 py-2 rounded-lg text-sm transition-all"
                 >
                   Edit
+                </Link>
+                <Link
+                  href={`/dashboard/entries/${entry.id}/music`}
+                  className="text-center bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-3 py-2 rounded-lg text-sm transition-all"
+                >
+                  🎵 Music
                 </Link>
               </div>
             </div>

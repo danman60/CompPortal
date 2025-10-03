@@ -508,4 +508,28 @@ export const entryRouter = router({
 
       return entry;
     }),
+
+  // Update music file URL
+  updateMusic: publicProcedure
+    .input(
+      z.object({
+        entryId: z.string().uuid(),
+        musicFileUrl: z.string().url().optional().nullable(),
+        musicTitle: z.string().max(255).optional(),
+        musicArtist: z.string().max(255).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const entry = await prisma.competition_entries.update({
+        where: { id: input.entryId },
+        data: {
+          music_file_url: input.musicFileUrl || null,
+          music_title: input.musicTitle,
+          music_artist: input.musicArtist,
+          updated_at: new Date(),
+        },
+      });
+
+      return entry;
+    }),
 });
