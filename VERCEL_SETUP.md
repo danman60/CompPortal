@@ -1,23 +1,35 @@
 # Vercel Environment Variables Setup
 
-## CRITICAL: DATABASE_URL Username Format
+## CRITICAL: DATABASE_URL Format Requirements
 
+### 1. Username Format
 The DATABASE_URL **MUST** use the format `postgres.PROJECT_REF` for the username.
 
-### ❌ INCORRECT (will fail with "Tenant or user not found"):
+### 2. Pooler Hostname
+**CRITICAL**: The pooler hostname varies by project region. **Always copy from Supabase dashboard**, don't hardcode!
+
+Go to: Supabase Dashboard → Settings → Database → Connection Pooling → Transaction Mode
+Copy the exact hostname shown (e.g., `aws-1-us-east-2.pooler.supabase.com`)
+
+### ❌ INCORRECT Examples:
 ```
-DATABASE_URL="postgresql://postgres:PASSWORD@aws-0-us-west-1.pooler.supabase.com:6543/postgres?sslmode=no-verify&pgbouncer=true&connection_limit=1"
+# Wrong username format
+DATABASE_URL="postgresql://postgres:PASSWORD@aws-1-us-east-2.pooler.supabase.com:6543/postgres"
+
+# Wrong pooler hostname (using old region)
+DATABASE_URL="postgresql://postgres.cafugvuaatsgihrsmvvl:PASSWORD@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
 ```
 
 ### ✅ CORRECT:
 ```
-DATABASE_URL="postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DATABASE_URL="postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-1-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
 ```
 
-**Key Changes**:
-1. Username: `postgres` → `postgres.cafugvuaatsgihrsmvvl`
-2. Removed `sslmode=no-verify` (not needed with pooler)
-3. Kept `pgbouncer=true&connection_limit=1` (required for Prisma on serverless)
+**Required Elements**:
+1. Username: `postgres.PROJECT_REF` (e.g., `postgres.cafugvuaatsgihrsmvvl`)
+2. Hostname: **Copy from Supabase dashboard** (varies by region)
+3. Port: `6543` (transaction pooler)
+4. Parameters: `pgbouncer=true&connection_limit=1` (required for Prisma on serverless)
 
 ---
 
@@ -27,7 +39,7 @@ Set these in Vercel Dashboard → Settings → Environment Variables:
 
 ### Database (Prisma)
 ```bash
-DATABASE_URL="postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-0-us-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DATABASE_URL="postgresql://postgres.cafugvuaatsgihrsmvvl:!EH4TtrJ2-V!5b_@aws-1-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
 DIRECT_URL="postgresql://postgres:!EH4TtrJ2-V!5b_@db.cafugvuaatsgihrsmvvl.supabase.co:5432/postgres"
 ```
 
