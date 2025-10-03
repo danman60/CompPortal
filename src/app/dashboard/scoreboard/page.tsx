@@ -17,7 +17,13 @@ export default function ScoreboardPage() {
   );
   const entries = entriesData?.entries;
 
-  // Fetch scores for selected entry
+  // Fetch ALL scores for selected competition
+  const { data: allCompetitionScores } = trpc.scoring.getScoresByCompetition.useQuery(
+    { competition_id: selectedCompetition },
+    { enabled: !!selectedCompetition }
+  );
+
+  // Fetch scores for selected entry (for modal)
   const { data: entryScores } = trpc.scoring.getScoresByEntry.useQuery(
     { entry_id: selectedEntry || '' },
     { enabled: !!selectedEntry }
@@ -25,7 +31,7 @@ export default function ScoreboardPage() {
 
   // Calculate average scores for all entries
   const entriesWithScores = entries?.map((entry) => {
-    const scores = entryScores?.filter(s => s.entry_id === entry.id) || [];
+    const scores = allCompetitionScores?.filter(s => s.entry_id === entry.id) || [];
     const totalScore = scores.reduce((sum, s) => sum + (Number(s.total_score) || 0), 0);
     const avgScore = scores.length > 0 ? totalScore / scores.length : 0;
     return {
@@ -179,7 +185,7 @@ export default function ScoreboardPage() {
                           <div className="text-right">
                             <div className="text-sm text-gray-400">Total Score</div>
                             <div className="text-2xl font-bold text-white">
-                              {score.total_score?.toFixed(1)}
+                              {Number(score.total_score)?.toFixed(1)}
                             </div>
                           </div>
                         </div>
@@ -188,19 +194,19 @@ export default function ScoreboardPage() {
                           <div>
                             <div className="text-xs text-gray-400 mb-1">Technical</div>
                             <div className="text-lg font-semibold text-blue-400">
-                              {score.technical_score?.toFixed(1)}
+                              {Number(score.technical_score)?.toFixed(1)}
                             </div>
                           </div>
                           <div>
                             <div className="text-xs text-gray-400 mb-1">Artistic</div>
                             <div className="text-lg font-semibold text-purple-400">
-                              {score.artistic_score?.toFixed(1)}
+                              {Number(score.artistic_score)?.toFixed(1)}
                             </div>
                           </div>
                           <div>
                             <div className="text-xs text-gray-400 mb-1">Performance</div>
                             <div className="text-lg font-semibold text-pink-400">
-                              {score.performance_score?.toFixed(1)}
+                              {Number(score.performance_score)?.toFixed(1)}
                             </div>
                           </div>
                         </div>

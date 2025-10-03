@@ -299,4 +299,47 @@ export const scoringRouter = router({
 
       return scores;
     }),
+
+  /**
+   * Get all scores for a specific competition
+   * Useful for scoreboard and analytics
+   *
+   * @param competition_id - Competition ID to get scores for
+   */
+  getScoresByCompetition: publicProcedure
+    .input(
+      z.object({
+        competition_id: z.string().uuid(),
+      })
+    )
+    .query(async ({ input }) => {
+      const scores = await prisma.scores.findMany({
+        where: {
+          competition_entries: {
+            competition_id: input.competition_id,
+          },
+        },
+        include: {
+          judges: {
+            select: {
+              id: true,
+              name: true,
+              judge_number: true,
+            },
+          },
+          competition_entries: {
+            select: {
+              id: true,
+              entry_number: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: {
+          scored_at: 'desc',
+        },
+      });
+
+      return scores;
+    }),
 });
