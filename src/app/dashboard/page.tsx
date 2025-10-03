@@ -116,6 +116,45 @@ export default async function DashboardPage() {
               </div>
             </div>
           </Link>
+
+          <Link
+            href="/dashboard/scheduling"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">📅</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Scheduling</h3>
+                <p className="text-gray-400 text-sm">Competition schedule</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/judges"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">👨‍⚖️</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Judges</h3>
+                <p className="text-gray-400 text-sm">Judge management</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/scoring"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">💯</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Scoring</h3>
+                <p className="text-gray-400 text-sm">Judge tablet interface</p>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </main>
