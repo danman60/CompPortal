@@ -60,16 +60,31 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/sample-dashboard.html"
+              href="/login"
               className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
             >
-              View Demo Dashboard
+              Sign In
+            </Link>
+            <Link
+              href="/signup"
+              className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200"
+            >
+              Create Account
+            </Link>
+          </div>
+
+          <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/sample-dashboard.html"
+              className="text-purple-400 hover:text-purple-300 text-sm"
+            >
+              View Demo Dashboard →
             </Link>
             <Link
               href="/api/trpc"
-              className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200"
+              className="text-purple-400 hover:text-purple-300 text-sm"
             >
-              API Documentation
+              API Documentation →
             </Link>
           </div>
 
