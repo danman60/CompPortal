@@ -1,13 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 
 type Step = 'basic' | 'details' | 'participants' | 'music' | 'review';
 
-export default function EntryForm() {
+interface EntryFormProps {
+  entryId?: string;
+}
+
+export default function EntryForm({ entryId }: EntryFormProps) {
   const router = useRouter();
+  const isEditMode = !!entryId;
   const [currentStep, setCurrentStep] = useState<Step>('basic');
   const [formData, setFormData] = useState({
     competition_id: '',
@@ -30,12 +35,51 @@ export default function EntryForm() {
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
   const { data: dancers } = trpc.dancer.getAll.useQuery({ studioId: formData.studio_id || undefined });
 
+  // Load existing entry data if editing
+  const { data: existingEntry } = trpc.entry.getById.useQuery(
+    { id: entryId! },
+    { enabled: isEditMode }
+  );
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (existingEntry && isEditMode) {
+      setFormData({
+        competition_id: existingEntry.competition_id || '',
+        studio_id: existingEntry.studio_id || '',
+        title: existingEntry.title || '',
+        category_id: existingEntry.category_id || '',
+        classification_id: existingEntry.classification_id || '',
+        age_group_id: existingEntry.age_group_id || '',
+        entry_size_category_id: existingEntry.entry_size_category_id || '',
+        choreographer: existingEntry.choreographer || '',
+        music_title: existingEntry.music_title || '',
+        music_artist: existingEntry.music_artist || '',
+        special_requirements: existingEntry.special_requirements || '',
+        participants: existingEntry.entry_participants?.map((p) => ({
+          dancer_id: p.dancer_id,
+          dancer_name: `${p.dancers?.first_name} ${p.dancers?.last_name}`,
+          role: p.role || undefined,
+        })) || [],
+      });
+    }
+  }, [existingEntry, isEditMode]);
+
   const createMutation = trpc.entry.create.useMutation({
     onSuccess: (data) => {
       router.push('/dashboard/entries');
     },
     onError: (error) => {
       alert(`Error creating entry: ${error.message}`);
+    },
+  });
+
+  const updateMutation = trpc.entry.update.useMutation({
+    onSuccess: (data) => {
+      router.push(`/dashboard/entries/${entryId}`);
+    },
+    onError: (error) => {
+      alert(`Error updating entry: ${error.message}`);
     },
   });
 
@@ -46,16 +90,25 @@ export default function EntryForm() {
     const perParticipantFee = Number(sizeCategory?.per_participant_fee || 0);
     const totalFee = baseFee + (perParticipantFee * formData.participants.length);
 
-    createMutation.mutate({
+    const entryData = {
       ...formData,
       entry_fee: totalFee,
       total_fee: totalFee,
-      status: 'draft',
+      status: 'draft' as const,
       participants: formData.participants.map((p, index) => ({
         ...p,
         display_order: index + 1,
       })),
-    });
+    };
+
+    if (isEditMode && entryId) {
+      updateMutation.mutate({
+        id: entryId,
+        data: entryData,
+      });
+    } else {
+      createMutation.mutate(entryData);
+    }
   };
 
   const steps: Step[] = ['basic', 'details', 'participants', 'music', 'review'];
@@ -474,10 +527,12 @@ export default function EntryForm() {
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || updateMutation.isPending}
               className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {createMutation.isPending ? 'Creating...' : 'Create Entry'}
+              {isEditMode
+                ? (updateMutation.isPending ? 'Updating...' : 'Update Entry')
+                : (createMutation.isPending ? 'Creating...' : 'Create Entry')}
             </button>
           )}
         </div>
