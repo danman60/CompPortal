@@ -380,14 +380,40 @@ When faced with a low-priority question:
 
 ### **User Instruction Interpretation**
 
-If user says: **"i never want you to pause continue"** or **"keep going"** or **"don't stop"**
+If user says: **"i never want you to pause continue"** or **"keep going"** or **"don't stop"** or **"once development completed automatically go onto next round"**
 
 This means:
 - ✅ Work through entire roadmap autonomously
+- ✅ After completing Feature 1 → Immediately start Feature 2 (NO PAUSE)
+- ✅ After completing Feature 2 → Immediately start Feature 3 (NO PAUSE)
+- ✅ Continue looping through features until roadmap 100% complete
 - ✅ Make reasonable decisions for low-priority questions
 - ✅ Document all decisions in logs
 - ✅ Only stop for CRITICAL blockers (see above)
 - ✅ Continue even if uncertain about minor details
+
+**Example Continuous Session**:
+```
+Feature 1: Schedule Export
+  → Complete → Commit → Push
+  → Immediately start Feature 2 (NO USER PROMPT)
+
+Feature 2: Judge Scoring Interface
+  → Complete → Commit → Push
+  → Immediately start Feature 3 (NO USER PROMPT)
+
+Feature 3: Analytics Dashboard
+  → Complete → Commit → Push
+  → Check if more features on roadmap
+  → If YES: Continue to Feature 4
+  → If NO: Roadmap 100% complete, report success, STOP
+```
+
+**DO NOT**:
+- ❌ Stop after each feature to ask "continue?"
+- ❌ Wait for user confirmation between features
+- ❌ Pause to report completion (log it and continue)
+- ❌ Ask user what to build next (check roadmap)
 
 ---
 
