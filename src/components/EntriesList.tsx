@@ -9,6 +9,15 @@ export default function EntriesList() {
   const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
 
+  // Fetch reservation data for space limit tracking
+  const { data: reservationData } = trpc.reservation.getAll.useQuery(
+    {
+      competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
+      status: 'approved',
+    },
+    { enabled: selectedCompetition !== 'all' }
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -40,8 +49,64 @@ export default function EntriesList() {
     return matchesStatus && matchesCompetition;
   });
 
+  // Calculate space limit for "Create Routine" button
+  const selectedReservation = reservationData?.reservations?.[0];
+  const hasSelectedCompetition = selectedCompetition !== 'all';
+  const confirmedSpaces = selectedReservation?.spaces_confirmed || 0;
+  const usedSpaces = hasSelectedCompetition
+    ? entries.filter(e => e.competition_id === selectedCompetition && e.status !== 'cancelled').length
+    : 0;
+  const isAtLimit = hasSelectedCompetition && selectedReservation && usedSpaces >= confirmedSpaces;
+
   return (
     <div>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <Link
+            href="/dashboard"
+            className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
+          >
+            ← Back to Dashboard
+          </Link>
+          <h1 className="text-4xl font-bold text-white mb-2">My Routines</h1>
+          <p className="text-gray-400">Manage your competition routines</p>
+        </div>
+
+        <div className="flex gap-3">
+          <Link
+            href="/dashboard/entries/assign"
+            className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+          >
+            <span>👥</span>
+            <span>Assign Dancers</span>
+          </Link>
+
+          {isAtLimit ? (
+            <div className="relative group">
+              <button
+                disabled
+                className="bg-gray-600 text-gray-400 px-6 py-3 rounded-lg cursor-not-allowed opacity-50 flex items-center gap-2"
+              >
+                ➕ Create Routine
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-64 bg-red-500/20 border border-red-400/30 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                <div className="text-xs text-red-200">
+                  Space limit reached for this competition. You cannot create more routines.
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/dashboard/entries/create"
+              className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+            >
+              ➕ Create Routine
+            </Link>
+          )}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Event Filter */}
@@ -112,6 +177,93 @@ export default function EntriesList() {
           </button>
         </div>
       </div>
+
+      {/* Space Limit Counter (for selected competition with approved reservation) */}
+      {selectedCompetition !== 'all' && reservationData?.reservations?.[0] && (
+        <div className="mb-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+          {(() => {
+            const reservation = reservationData.reservations[0];
+            const confirmedSpaces = reservation.spaces_confirmed || 0;
+            const usedSpaces = entries.filter(
+              e => e.competition_id === selectedCompetition && e.status !== 'cancelled'
+            ).length;
+            const remainingSpaces = confirmedSpaces - usedSpaces;
+            const usagePercent = confirmedSpaces > 0 ? (usedSpaces / confirmedSpaces) * 100 : 0;
+            const isNearLimit = usagePercent >= 80;
+            const isAtLimit = usedSpaces >= confirmedSpaces;
+
+            return (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">
+                      Space Usage for This Competition
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Reservation approved for {confirmedSpaces} {confirmedSpaces === 1 ? 'space' : 'spaces'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-white">
+                      {usedSpaces} / {confirmedSpaces}
+                    </div>
+                    <div className={`text-sm font-semibold ${
+                      isAtLimit ? 'text-red-400' :
+                      isNearLimit ? 'text-yellow-400' :
+                      'text-green-400'
+                    }`}>
+                      {remainingSpaces} {remainingSpaces === 1 ? 'space' : 'spaces'} remaining
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden border border-white/20">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      isAtLimit ? 'bg-red-500' :
+                      isNearLimit ? 'bg-yellow-500' :
+                      'bg-gradient-to-r from-green-500 to-emerald-500'
+                    }`}
+                    style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                  />
+                </div>
+
+                {/* Warning Messages */}
+                {isAtLimit && (
+                  <div className="mt-4 p-3 bg-red-500/20 border border-red-400/30 rounded-lg flex items-start gap-3">
+                    <span className="text-2xl">🚫</span>
+                    <div>
+                      <div className="text-sm font-semibold text-red-300 mb-1">
+                        Space Limit Reached
+                      </div>
+                      <div className="text-xs text-red-200">
+                        You have used all {confirmedSpaces} confirmed {confirmedSpaces === 1 ? 'space' : 'spaces'} for this competition.
+                        You cannot create more routines unless the reservation is updated.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isNearLimit && !isAtLimit && (
+                  <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg flex items-start gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <div className="text-sm font-semibold text-yellow-300 mb-1">
+                        Approaching Space Limit
+                      </div>
+                      <div className="text-xs text-yellow-200">
+                        Only {remainingSpaces} {remainingSpaces === 1 ? 'space' : 'spaces'} remaining.
+                        Plan your remaining routines carefully.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
 
       {/* Routines Grid */}
       {filteredEntries.length === 0 ? (

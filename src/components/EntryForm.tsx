@@ -35,6 +35,16 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
   const { data: dancers } = trpc.dancer.getAll.useQuery({ studioId: formData.studio_id || undefined });
 
+  // Fetch approved reservation for space limit enforcement
+  const { data: reservations } = trpc.reservation.getAll.useQuery(
+    {
+      studioId: formData.studio_id || undefined,
+      competitionId: formData.competition_id || undefined,
+      status: 'approved'
+    },
+    { enabled: !!formData.studio_id && !!formData.competition_id }
+  );
+
   // Load existing entry data if editing
   const { data: existingEntry } = trpc.entry.getById.useQuery(
     { id: entryId! },
@@ -90,8 +100,12 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     const perParticipantFee = Number(sizeCategory?.per_participant_fee || 0);
     const totalFee = baseFee + (perParticipantFee * formData.participants.length);
 
+    // Find approved reservation for space limit enforcement
+    const approvedReservation = reservations?.reservations?.[0];
+
     const entryData = {
       ...formData,
+      reservation_id: approvedReservation?.id, // Link to reservation for space enforcement
       entry_fee: totalFee,
       total_fee: totalFee,
       status: 'draft' as const,
