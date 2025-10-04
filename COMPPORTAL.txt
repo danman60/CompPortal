@@ -1,7 +1,23 @@
 # CompPortal Project Tracker
 **Project Name**: GlowDance Competition Portal (CompPortal)
-**Last Updated**: October 3, 2025 (Production Testing & Bug Fix Session)
-**Current Phase**: 100% Core Platform Complete ✅
+**Last Updated**: October 4, 2025 (Lean Session Protocol Implemented)
+**Current Phase**: MVP Registration Suite - 95% Complete ✅
+
+---
+
+## 🚀 SESSION PROTOCOL (START HERE)
+
+**For efficient sessions, read these files ONLY**:
+1. **PROJECT_STATUS.md** (69 lines) - Current MVP status, active work, next steps
+2. **git log -3** - Last 3 commits for recent context
+3. **LEAN_SESSION_GUIDE.md** - How to work efficiently (session capacity 2.5x improvement)
+
+**For deep dives, load from archive**:
+- `docs/archive/SESSION_LOG_*.md` - Detailed session notes (4 files, 1,700+ lines)
+- `docs/archive/MVP_REGISTRATION_*.md` - Complete test results (412 lines)
+- `docs/archive/PROJECT_STATUS_OLD.md` - Full roadmap (532 lines)
+
+**Token savings**: Start with ~2k tokens (vs ~15k before) = 87% reduction
 
 ---
 
