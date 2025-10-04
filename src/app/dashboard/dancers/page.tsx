@@ -37,6 +37,13 @@ export default async function DancersPage() {
               <span>Add Dancer</span>
             </Link>
             <Link
+              href="/dashboard/dancers/batch-add"
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+            >
+              <span>📝</span>
+              <span>Batch Add</span>
+            </Link>
+            <Link
               href="/dashboard/dancers/import"
               className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
             >

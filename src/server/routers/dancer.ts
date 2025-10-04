@@ -420,6 +420,71 @@ export const dancerRouter = router({
       };
     }),
 
+  // Batch create multiple dancers (for UI batch-add form)
+  batchCreate: protectedProcedure
+    .input(
+      z.object({
+        studio_id: z.string().uuid(),
+        dancers: z.array(
+          z.object({
+            first_name: z.string().min(1).max(100),
+            last_name: z.string().min(1).max(100),
+            date_of_birth: z.string().optional(), // ISO date string
+            gender: z.string().max(20).optional(),
+            email: z.string().email().optional().or(z.literal('')),
+            phone: z.string().max(50).optional(),
+            skill_level: z.string().max(50).optional(),
+          })
+        ).min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Studio directors can only create dancers for their own studio
+      if (isStudioDirector(ctx.userRole)) {
+        if (!ctx.studioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+        if (input.studio_id !== ctx.studioId) {
+          throw new Error('Cannot create dancers for other studios');
+        }
+      }
+
+      // Process each dancer in batch
+      const results = await Promise.allSettled(
+        input.dancers.map(async (dancerData) => {
+          const { date_of_birth, ...data } = dancerData;
+
+          return prisma.dancers.create({
+            data: {
+              studio_id: input.studio_id,
+              ...data,
+              date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+              status: 'active',
+            },
+          });
+        })
+      );
+
+      const successful = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      const errors = results
+        .filter((r) => r.status === 'rejected')
+        .map((r: any) => r.reason?.message || 'Unknown error');
+
+      // Get the created dancers from successful results
+      const createdDancers = results
+        .filter((r) => r.status === 'fulfilled')
+        .map((r: any) => r.value);
+
+      return {
+        successful,
+        failed,
+        total: input.dancers.length,
+        errors: errors.length > 0 ? errors : undefined,
+        dancers: createdDancers,
+      };
+    }),
+
   // Bulk import from CSV (resolves studio codes to IDs)
   bulkImport: protectedProcedure
     .input(
