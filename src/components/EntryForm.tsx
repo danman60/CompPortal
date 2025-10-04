@@ -3,11 +3,75 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type Step = 'basic' | 'details' | 'participants' | 'music' | 'review';
 
 interface EntryFormProps {
   entryId?: string;
+}
+
+// Sortable participant component for drag/drop
+function SortableParticipant({ participant, onRemove }: {
+  participant: { dancer_id: string; dancer_name: string };
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: participant.dancer_id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between p-3 bg-purple-500/20 border-2 border-purple-400 rounded-lg"
+    >
+      <div className="flex items-center gap-3 flex-1">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+          <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+          </svg>
+        </div>
+        <span className="text-white font-medium">{participant.dancer_name}</span>
+      </div>
+      <button
+        onClick={onRemove}
+        className="p-1 hover:bg-red-500/20 rounded transition-colors"
+        type="button"
+      >
+        <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  );
 }
 
 export default function EntryForm({ entryId }: EntryFormProps) {
@@ -34,6 +98,12 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   const { data: studios } = trpc.studio.getAll.useQuery();
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
   const { data: dancers } = trpc.dancer.getAll.useQuery({ studioId: formData.studio_id || undefined });
+
+  // Fetch existing entries for "copy dancers" feature
+  const { data: existingEntries } = trpc.entry.getAll.useQuery(
+    { studioId: formData.studio_id || undefined },
+    { enabled: !!formData.studio_id && !isEditMode }
+  );
 
   // Fetch approved reservation for space limit enforcement
   const { data: reservations } = trpc.reservation.getAll.useQuery(
@@ -92,6 +162,47 @@ export default function EntryForm({ entryId }: EntryFormProps) {
       alert(`Error updating entry: ${error.message}`);
     },
   });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for selected participants list
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setFormData((prevData) => {
+        const oldIndex = prevData.participants.findIndex((p) => p.dancer_id === active.id);
+        const newIndex = prevData.participants.findIndex((p) => p.dancer_id === over.id);
+
+        return {
+          ...prevData,
+          participants: arrayMove(prevData.participants, oldIndex, newIndex),
+        };
+      });
+    }
+  };
+
+  // Copy dancers from another routine
+  const handleCopyDancers = (entryId: string) => {
+    const sourceEntry = existingEntries?.entries.find(e => e.id === entryId);
+    if (sourceEntry?.entry_participants) {
+      const copiedParticipants = sourceEntry.entry_participants.map((p) => ({
+        dancer_id: p.dancer_id,
+        dancer_name: `${p.dancers?.first_name} ${p.dancers?.last_name}`,
+        role: p.role || undefined,
+      }));
+      setFormData({
+        ...formData,
+        participants: copiedParticipants,
+      });
+    }
+  };
 
   const handleSubmit = () => {
     // Calculate entry fee based on entry size category
@@ -316,68 +427,131 @@ export default function EntryForm({ entryId }: EntryFormProps) {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-white mb-6">Select Dancers</h2>
 
-            <div className="bg-black/20 p-4 rounded-lg mb-4">
-              <p className="text-sm text-gray-300">
-                Select dancers from {studios?.studios.find(s => s.id === formData.studio_id)?.name}
-              </p>
-            </div>
+            {/* Copy from existing routine */}
+            {existingEntries && existingEntries.entries.length > 0 && !isEditMode && (
+              <div className="bg-blue-500/10 border border-blue-400/30 p-4 rounded-lg">
+                <label className="block text-sm font-medium text-blue-300 mb-2">
+                  💡 Quick Start: Copy dancers from existing routine
+                </label>
+                <select
+                  onChange={(e) => e.target.value && handleCopyDancers(e.target.value)}
+                  className="w-full px-4 py-2 bg-black/40 text-white border border-white/20 rounded-lg focus:border-blue-400 focus:outline-none"
+                  defaultValue=""
+                >
+                  <option value="">-- Select a routine to copy dancers --</option>
+                  {existingEntries.entries.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.title} ({entry.entry_participants?.length || 0} dancers)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {dancers?.dancers.map((dancer) => {
-                const isSelected = formData.participants.some(p => p.dancer_id === dancer.id);
-                return (
-                  <div
-                    key={dancer.id}
-                    onClick={() => {
-                      if (isSelected) {
-                        setFormData({
-                          ...formData,
-                          participants: formData.participants.filter(p => p.dancer_id !== dancer.id),
-                        });
-                      } else {
-                        setFormData({
-                          ...formData,
-                          participants: [
-                            ...formData.participants,
-                            {
-                              dancer_id: dancer.id,
-                              dancer_name: `${dancer.first_name} ${dancer.last_name}`,
-                            },
-                          ],
-                        });
-                      }
-                    }}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      isSelected
-                        ? 'bg-purple-500/20 border-purple-400'
-                        : 'bg-white/5 border-white/20 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="text-white font-semibold">
-                          {dancer.first_name} {dancer.last_name}
-                        </div>
-                        {dancer.date_of_birth && (
-                          <div className="text-sm text-gray-400">
-                            Age: {new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Available Dancers */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  Available Dancers
+                  <span className="ml-2 text-sm text-gray-400">
+                    ({dancers?.dancers.filter(d => !formData.participants.some(p => p.dancer_id === d.id)).length || 0})
+                  </span>
+                </h3>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                  {dancers?.dancers
+                    .filter(d => !formData.participants.some(p => p.dancer_id === d.id))
+                    .map((dancer) => (
+                      <div
+                        key={dancer.id}
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            participants: [
+                              ...formData.participants,
+                              {
+                                dancer_id: dancer.id,
+                                dancer_name: `${dancer.first_name} ${dancer.last_name}`,
+                              },
+                            ],
+                          });
+                        }}
+                        className="p-3 rounded-lg border-2 border-white/20 bg-white/5 hover:bg-white/10 cursor-pointer transition-all group"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="text-white font-medium group-hover:text-purple-300 transition-colors">
+                              {dancer.first_name} {dancer.last_name}
+                            </div>
+                            {dancer.date_of_birth && (
+                              <div className="text-sm text-gray-400">
+                                Age: {new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <div className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'bg-purple-500 border-purple-400' : 'border-white/40'
-                      }`}>
-                        {isSelected && <span className="text-white text-sm">✓</span>}
-                      </div>
+                    ))}
+                  {dancers && dancers.dancers.filter(d => !formData.participants.some(p => p.dancer_id === d.id)).length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      All dancers have been selected
                     </div>
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              </div>
+
+              {/* Selected Dancers (Draggable to reorder) */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  Selected Dancers ({formData.participants.length})
+                  <span className="ml-2 text-xs text-gray-400">Drag to reorder</span>
+                </h3>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={formData.participants.map(p => p.dancer_id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                      {formData.participants.map((participant) => (
+                        <SortableParticipant
+                          key={participant.dancer_id}
+                          participant={participant}
+                          onRemove={() => {
+                            setFormData({
+                              ...formData,
+                              participants: formData.participants.filter(p => p.dancer_id !== participant.dancer_id),
+                            });
+                          }}
+                        />
+                      ))}
+                      {formData.participants.length === 0 && (
+                        <div className="text-center py-8 border-2 border-dashed border-white/20 rounded-lg">
+                          <p className="text-gray-400 mb-2">No dancers selected</p>
+                          <p className="text-sm text-gray-500">Click dancers from the left to add them</p>
+                        </div>
+                      )}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
             </div>
 
-            <div className="bg-blue-500/10 border border-blue-400/30 p-4 rounded-lg">
-              <p className="text-blue-300 text-sm">
-                Selected: {formData.participants.length} dancer(s)
+            <div className="bg-purple-500/10 border border-purple-400/30 p-4 rounded-lg">
+              <p className="text-purple-300 text-sm">
+                ✓ {formData.participants.length} dancer(s) selected
+                {formData.participants.length > 0 && (
+                  <span className="ml-2 text-xs text-gray-400">
+                    • Drag selected dancers to reorder
+                  </span>
+                )}
               </p>
             </div>
           </div>

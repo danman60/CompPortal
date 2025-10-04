@@ -8,6 +8,7 @@ export default function EntriesList() {
   const { data, isLoading } = trpc.entry.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Fetch reservation data for space limit tracking
   const { data: reservationData } = trpc.reservation.getAll.useQuery(
@@ -125,6 +126,36 @@ export default function EntriesList() {
 
         {/* Status Filter */}
         <div className="flex gap-2 flex-wrap">
+          {/* View Mode Toggle */}
+          <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-2 rounded-lg transition-all ${
+                viewMode === 'cards'
+                  ? 'bg-purple-500 text-white shadow-lg'
+                  : 'text-gray-300 hover:bg-white/10'
+              }`}
+              title="Card View"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-2 rounded-lg transition-all ${
+                viewMode === 'table'
+                  ? 'bg-purple-500 text-white shadow-lg'
+                  : 'text-gray-300 hover:bg-white/10'
+              }`}
+              title="Table View"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg transition-all ${
@@ -282,7 +313,8 @@ export default function EntriesList() {
             Create Your First Routine
           </Link>
         </div>
-      ) : (
+      ) : viewMode === 'cards' ? (
+        /* Cards View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEntries.map((entry) => (
             <div
@@ -424,6 +456,128 @@ export default function EntriesList() {
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/20 bg-white/5">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Entry #</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Title</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Category</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Age Group</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Dancers</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Music</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEntries.map((entry, index) => (
+                  <tr
+                    key={entry.id}
+                    className={`border-b border-white/10 hover:bg-white/5 transition-colors ${
+                      index % 2 === 0 ? 'bg-black/20' : ''
+                    }`}
+                  >
+                    <td className="px-6 py-4">
+                      {entry.entry_number ? (
+                        <div>
+                          <span className="text-white font-bold">
+                            #{entry.entry_number}{entry.entry_suffix || ''}
+                          </span>
+                          {entry.is_late_entry && (
+                            <div className="text-xs text-orange-400 mt-1">LATE</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">Pending</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-white font-medium">{entry.title}</div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {entry.competitions?.name} ({entry.competitions?.year})
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {entry.dance_categories?.name || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {entry.age_groups?.name || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-white">
+                        {entry.entry_participants?.length || 0} dancer{entry.entry_participants?.length !== 1 ? 's' : ''}
+                      </div>
+                      {entry.entry_participants && entry.entry_participants.length > 0 && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          {entry.entry_participants.slice(0, 2).map((p, i) => (
+                            <div key={p.id}>
+                              {p.dancers?.first_name} {p.dancers?.last_name}
+                            </div>
+                          ))}
+                          {entry.entry_participants.length > 2 && (
+                            <div>+{entry.entry_participants.length - 2} more</div>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {entry.music_file_url ? (
+                        <span className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-400">
+                          ✅ Uploaded
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-400">
+                          ⚠️ Pending
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
+                          entry.status === 'confirmed'
+                            ? 'bg-green-500/20 text-green-400'
+                            : entry.status === 'registered'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : entry.status === 'cancelled'
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-gray-500/20 text-gray-400'
+                        }`}
+                      >
+                        {entry.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/dashboard/entries/${entry.id}`}
+                          className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs transition-all"
+                        >
+                          View
+                        </Link>
+                        <Link
+                          href={`/dashboard/entries/${entry.id}/edit`}
+                          className="px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded text-xs transition-all"
+                        >
+                          Edit
+                        </Link>
+                        <Link
+                          href={`/dashboard/entries/${entry.id}/music`}
+                          className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded text-xs transition-all"
+                        >
+                          🎵
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
