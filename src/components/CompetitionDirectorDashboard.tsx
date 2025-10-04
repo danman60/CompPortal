@@ -59,7 +59,7 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
             </div>
           </Link>
 
-          {/* All Entries */}
+          {/* All Routines */}
           <Link
             href="/dashboard/entries"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
@@ -67,8 +67,8 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
             <div className="flex items-center gap-4">
               <div className="text-4xl">🎭</div>
               <div>
-                <h3 className="text-xl font-semibold text-white">All Entries</h3>
-                <p className="text-gray-400 text-sm">Competition entries</p>
+                <h3 className="text-xl font-semibold text-white">All Routines</h3>
+                <p className="text-gray-400 text-sm">View all event routines</p>
               </div>
             </div>
           </Link>
@@ -82,7 +82,7 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
               <div className="text-4xl">📅</div>
               <div>
                 <h3 className="text-xl font-semibold text-white">Scheduling</h3>
-                <p className="text-gray-400 text-sm">Competition schedule</p>
+                <p className="text-gray-400 text-sm">Event schedule</p>
               </div>
             </div>
           </Link>
@@ -211,16 +211,16 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
             <h3 className="text-white font-semibold">Reservation Management</h3>
             <ul className="space-y-1 text-sm">
               <li>• Approve or reject studio reservation requests</li>
-              <li>• Allocate competition entry tokens (600 per competition)</li>
+              <li>• Allocate event routine tokens (600 per event)</li>
               <li>• Monitor capacity across all studios</li>
             </ul>
           </div>
           <div className="space-y-2">
-            <h3 className="text-white font-semibold">Competition Operations</h3>
+            <h3 className="text-white font-semibold">Event Operations</h3>
             <ul className="space-y-1 text-sm">
-              <li>• Schedule competition sessions and heats</li>
+              <li>• Schedule event sessions and heats</li>
               <li>• Assign judges to panels</li>
-              <li>• Monitor entry submissions across all studios</li>
+              <li>• Monitor routine submissions across all studios</li>
             </ul>
           </div>
           <div className="space-y-2">
