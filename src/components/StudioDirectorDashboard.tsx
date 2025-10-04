@@ -41,7 +41,7 @@ export default function StudioDirectorDashboard({ userEmail, studioName }: Studi
             </div>
           </Link>
 
-          {/* My Entries */}
+          {/* My Routines */}
           <Link
             href="/dashboard/entries"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
@@ -49,7 +49,7 @@ export default function StudioDirectorDashboard({ userEmail, studioName }: Studi
             <div className="flex items-center gap-4">
               <div className="text-4xl">🎭</div>
               <div>
-                <h3 className="text-xl font-semibold text-white">My Entries</h3>
+                <h3 className="text-xl font-semibold text-white">My Routines</h3>
                 <p className="text-gray-400 text-sm">Create and edit routines</p>
               </div>
             </div>
@@ -78,7 +78,7 @@ export default function StudioDirectorDashboard({ userEmail, studioName }: Studi
               <div className="text-4xl">📋</div>
               <div>
                 <h3 className="text-xl font-semibold text-white">My Reservations</h3>
-                <p className="text-gray-400 text-sm">View competition bookings</p>
+                <p className="text-gray-400 text-sm">Reserve routines for events</p>
               </div>
             </div>
           </Link>
@@ -119,19 +119,23 @@ export default function StudioDirectorDashboard({ userEmail, studioName }: Studi
         <div className="space-y-3 text-gray-300">
           <div className="flex items-start gap-3">
             <span className="text-purple-400 font-bold">1.</span>
-            <p>Register your dancers in the <Link href="/dashboard/dancers" className="text-purple-400 hover:underline">Dancers</Link> section</p>
+            <p>Reserve your routines in <Link href="/dashboard/reservations" className="text-purple-400 hover:underline">Reservations</Link></p>
           </div>
           <div className="flex items-start gap-3">
             <span className="text-purple-400 font-bold">2.</span>
-            <p>Create competition entries in <Link href="/dashboard/entries" className="text-purple-400 hover:underline">My Entries</Link></p>
+            <p>Turn approved reservations into routines in <Link href="/dashboard/entries" className="text-purple-400 hover:underline">My Routines</Link></p>
           </div>
           <div className="flex items-start gap-3">
             <span className="text-purple-400 font-bold">3.</span>
-            <p>Upload music files for each routine</p>
+            <p>Upload music for each routine</p>
           </div>
           <div className="flex items-start gap-3">
             <span className="text-purple-400 font-bold">4.</span>
-            <p>Check <Link href="/dashboard/scoreboard" className="text-purple-400 hover:underline">Results</Link> after performances</p>
+            <p>Add your dancers in the <Link href="/dashboard/dancers" className="text-purple-400 hover:underline">Dancers</Link> section</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-purple-400 font-bold">5.</span>
+            <p>Assign dancers to routines</p>
           </div>
         </div>
       </div>

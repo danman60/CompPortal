@@ -44,13 +44,13 @@ export default function EntriesList() {
     <div>
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        {/* Competition Filter */}
+        {/* Event Filter */}
         <select
           value={selectedCompetition}
           onChange={(e) => setSelectedCompetition(e.target.value)}
           className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
-          <option value="all">All Competitions</option>
+          <option value="all">All Events</option>
           {competitions.map((comp) => comp && (
             <option key={comp.id} value={comp.id}>
               {comp.name} ({comp.year})
@@ -113,21 +113,21 @@ export default function EntriesList() {
         </div>
       </div>
 
-      {/* Entries Grid */}
+      {/* Routines Grid */}
       {filteredEntries.length === 0 ? (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
           <div className="text-6xl mb-4">🎭</div>
-          <h3 className="text-xl font-semibold text-white mb-2">No entries found</h3>
+          <h3 className="text-xl font-semibold text-white mb-2">No routines found</h3>
           <p className="text-gray-400 mb-6">
             {filter === 'all'
-              ? 'No competition entries have been created yet.'
-              : `No ${filter} entries found.`}
+              ? 'No routines have been created yet.'
+              : `No ${filter} routines found.`}
           </p>
           <Link
             href="/dashboard/entries/create"
             className="inline-block bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200"
           >
-            Create Your First Entry
+            Create Your First Routine
           </Link>
         </div>
       ) : (
@@ -162,13 +162,13 @@ export default function EntriesList() {
 
               {/* Details */}
               <div className="space-y-2 mb-4">
-                {/* Entry Number (if assigned) */}
+                {/* Routine Number (if assigned) */}
                 {entry.entry_number && (
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <span>🔢</span>
                     <span className="text-purple-400">
-                      Entry #{entry.entry_number}{entry.entry_suffix || ''}
-                      {entry.is_late_entry && <span className="ml-2 text-xs text-yellow-400">(Late Entry)</span>}
+                      Routine #{entry.entry_number}{entry.entry_suffix || ''}
+                      {entry.is_late_entry && <span className="ml-2 text-xs text-yellow-400">(Late Routine)</span>}
                     </span>
                   </div>
                 )}
@@ -198,7 +198,7 @@ export default function EntriesList() {
                 {entry.entry_number && (
                   <div className="flex items-center gap-2 text-sm text-gray-300">
                     <span>#️⃣</span>
-                    <span>Entry #{entry.entry_number}</span>
+                    <span>Routine #{entry.entry_number}</span>
                   </div>
                 )}
               </div>
@@ -263,7 +263,7 @@ export default function EntriesList() {
 
       {/* Results Count */}
       <div className="mt-6 text-center text-gray-400 text-sm">
-        Showing {filteredEntries.length} of {entries.length} entries
+        Showing {filteredEntries.length} of {entries.length} routines
       </div>
     </div>
   );

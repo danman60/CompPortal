@@ -125,7 +125,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
 
         <h3 className="text-lg font-semibold text-white">
           {currentStep === 1 && 'Select Competition'}
-          {currentStep === 2 && 'Spaces Requested'}
+          {currentStep === 2 && 'Routines Requested'}
           {currentStep === 3 && 'Agent Information'}
           {currentStep === 4 && 'Consents & Waivers'}
           {currentStep === 5 && 'Review & Submit'}
@@ -159,14 +159,14 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
         </div>
       )}
 
-      {/* Step 2: Spaces Requested */}
+      {/* Step 2: Routines Requested */}
       {currentStep === 2 && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-          <h2 className="text-2xl font-bold text-white mb-6">Spaces Requested</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Routines Requested</h2>
 
           <div>
             <label htmlFor="spaces_requested" className="block text-sm font-medium text-gray-300 mb-2">
-              Number of Spaces <span className="text-red-400">*</span>
+              Number of Routines <span className="text-red-400">*</span>
             </label>
             <input
               type="number"
@@ -177,7 +177,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               value={formData.spaces_requested}
               onChange={(e) => setFormData({ ...formData, spaces_requested: parseInt(e.target.value) || 1 })}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter number of spaces"
+              placeholder="Enter number of routines"
             />
             <p className="mt-2 text-sm text-gray-400">
               Number of performance entries you plan to register for this competition.
@@ -331,8 +331,8 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
             </div>
 
             <div>
-              <h3 className="font-semibold text-white mb-2">Spaces Requested</h3>
-              <p>{formData.spaces_requested} entries</p>
+              <h3 className="font-semibold text-white mb-2">Routines Requested</h3>
+              <p>{formData.spaces_requested} routines</p>
             </div>
 
             {(formData.agent_first_name || formData.agent_last_name) && (

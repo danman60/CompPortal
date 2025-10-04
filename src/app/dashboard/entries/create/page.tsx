@@ -21,10 +21,10 @@ export default async function CreateEntryPage() {
             href="/dashboard/entries"
             className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
           >
-            ← Back to Entries
+            ← Back to Routines
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Create Competition Entry</h1>
-          <p className="text-gray-400">Register a routine for competition</p>
+          <h1 className="text-4xl font-bold text-white mb-2">Create Routine</h1>
+          <p className="text-gray-400">Create a new routine for your event</p>
         </div>
 
         {/* Entry Form */}

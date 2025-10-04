@@ -148,7 +148,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Competition *
+                Event *
               </label>
               <select
                 value={formData.competition_id}
@@ -156,7 +156,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               >
-                <option value="">Select Competition</option>
+                <option value="">Select Event</option>
                 {competitions?.competitions.map((comp) => (
                   <option key={comp.id} value={comp.id}>
                     {comp.name} ({comp.year})
@@ -277,7 +277,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Entry Size *
+                Routine Size *
               </label>
               <select
                 value={formData.entry_size_category_id}
@@ -285,7 +285,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               >
-                <option value="">Select Entry Size</option>
+                <option value="">Select Routine Size</option>
                 {lookupData?.entrySizeCategories.map((size) => (
                   <option key={size.id} value={size.id}>
                     {size.name} ({size.min_participants}-{size.max_participants} dancers)
@@ -418,11 +418,11 @@ export default function EntryForm({ entryId }: EntryFormProps) {
         {/* Step 5: Review */}
         {currentStep === 'review' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Review Entry</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Review Routine</h2>
 
             <div className="bg-black/20 p-6 rounded-lg space-y-4">
               <div>
-                <div className="text-sm text-gray-400">Competition</div>
+                <div className="text-sm text-gray-400">Event</div>
                 <div className="text-white font-semibold">
                   {competitions?.competitions.find(c => c.id === formData.competition_id)?.name}
                 </div>
@@ -531,8 +531,8 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isEditMode
-                ? (updateMutation.isPending ? 'Updating...' : 'Update Entry')
-                : (createMutation.isPending ? 'Creating...' : 'Create Entry')}
+                ? (updateMutation.isPending ? 'Updating...' : 'Update Routine')
+                : (createMutation.isPending ? 'Creating...' : 'Create Routine')}
             </button>
           )}
         </div>
