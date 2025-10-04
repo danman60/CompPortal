@@ -495,12 +495,12 @@ model competition_entries {
   rankings                                                                             rankings[]
   scores                                                                               scores[]
 
+  @@unique([competition_id, entry_number, entry_suffix], map: "idx_entry_number_per_comp")
   @@index([competition_id], map: "idx_entries_competition")
   @@index([performance_date, performance_time], map: "idx_entries_performance_time")
   @@index([sequence_number], map: "idx_entries_sequence")
   @@index([session_id], map: "idx_entries_session")
   @@index([studio_id], map: "idx_entries_studio")
-  @@unique([competition_id, entry_number, entry_suffix], map: "idx_entry_number_per_comp")
   @@schema("public")
 }
 
@@ -562,47 +562,47 @@ model competition_sessions {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model competitions {
-  id                        String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                      String                  @db.VarChar(255)
-  year                      Int
-  description               String?
-  registration_opens        DateTime?               @db.Timestamp(6)
-  registration_closes       DateTime?               @db.Timestamp(6)
-  competition_start_date    DateTime?               @db.Date
-  competition_end_date      DateTime?               @db.Date
-  primary_location          String?                 @db.VarChar(255)
-  venue_address             String?
-  venue_capacity            Int?
-  session_count             Int?                    @default(1)
-  number_of_judges          Int?                    @default(3)
-  entry_fee                 Decimal?                @db.Decimal(10, 2)
-  late_fee                  Decimal?                @db.Decimal(10, 2)
-  allow_age_overrides       Boolean?                @default(true)
-  allow_multiple_entries    Boolean?                @default(true)
-  require_video_submissions Boolean?                @default(false)
-  status                    String?                 @default("upcoming") @db.VarChar(50)
-  is_public                 Boolean?                @default(true)
-  logo_url                  String?
-  website                   String?                 @db.VarChar(255)
-  contact_email             String?                 @db.VarChar(255)
-  contact_phone             String?                 @db.VarChar(50)
-  rules_document_url        String?
-  total_reservation_tokens  Int?                    @default(600)
-  available_reservation_tokens Int?                 @default(600)
-  tokens_override_enabled   Boolean?                @default(false)
-  created_at                DateTime?               @default(now()) @db.Timestamp(6)
-  updated_at                DateTime?               @default(now()) @db.Timestamp(6)
-  awards                    awards[]
-  competition_entries       competition_entries[]
-  competition_locations     competition_locations[]
-  competition_sessions      competition_sessions[]
-  documents                 documents[]
-  elite_instructors         elite_instructors[]
-  judges                    judges[]
-  rankings                  rankings[]
-  reservations              reservations[]
-  title_rounds              title_rounds[]
-  vip_events                vip_events[]
+  id                           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                         String                  @db.VarChar(255)
+  year                         Int
+  description                  String?
+  registration_opens           DateTime?               @db.Timestamp(6)
+  registration_closes          DateTime?               @db.Timestamp(6)
+  competition_start_date       DateTime?               @db.Date
+  competition_end_date         DateTime?               @db.Date
+  primary_location             String?                 @db.VarChar(255)
+  venue_address                String?
+  venue_capacity               Int?
+  session_count                Int?                    @default(1)
+  number_of_judges             Int?                    @default(3)
+  entry_fee                    Decimal?                @db.Decimal(10, 2)
+  late_fee                     Decimal?                @db.Decimal(10, 2)
+  allow_age_overrides          Boolean?                @default(true)
+  allow_multiple_entries       Boolean?                @default(true)
+  require_video_submissions    Boolean?                @default(false)
+  status                       String?                 @default("upcoming") @db.VarChar(50)
+  is_public                    Boolean?                @default(true)
+  logo_url                     String?
+  website                      String?                 @db.VarChar(255)
+  contact_email                String?                 @db.VarChar(255)
+  contact_phone                String?                 @db.VarChar(50)
+  rules_document_url           String?
+  total_reservation_tokens     Int?                    @default(600)
+  available_reservation_tokens Int?                    @default(600)
+  tokens_override_enabled      Boolean?                @default(false)
+  created_at                   DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                   DateTime?               @default(now()) @db.Timestamp(6)
+  awards                       awards[]
+  competition_entries          competition_entries[]
+  competition_locations        competition_locations[]
+  competition_sessions         competition_sessions[]
+  documents                    documents[]
+  elite_instructors            elite_instructors[]
+  judges                       judges[]
+  rankings                     rankings[]
+  reservations                 reservations[]
+  title_rounds                 title_rounds[]
+  vip_events                   vip_events[]
 
   @@index([competition_start_date, competition_end_date], map: "idx_competitions_dates")
   @@index([status], map: "idx_competitions_status")
@@ -966,6 +966,25 @@ model system_settings {
   created_at       DateTime? @default(now()) @db.Timestamp(6)
   updated_at       DateTime? @default(now()) @db.Timestamp(6)
 
+  @@schema("public")
+}
+
+/// Stores configurable competition parameters and rules
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model competition_settings {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  setting_category String
+  setting_key      String
+  setting_value    Json      @db.JsonB
+  display_order    Int       @default(0)
+  is_active        Boolean   @default(true)
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([setting_category, setting_key], map: "unique_category_key")
+  @@index([setting_category], map: "idx_settings_category")
+  @@index([is_active], map: "idx_settings_active")
+  @@index([display_order], map: "idx_settings_display_order")
   @@schema("public")
 }
 
