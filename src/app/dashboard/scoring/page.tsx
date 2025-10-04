@@ -15,6 +15,7 @@ export default function ScoringPage() {
   const [comments, setComments] = useState('');
   const [specialAwards, setSpecialAwards] = useState<string[]>([]);
   const [entryIndex, setEntryIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<'entry' | 'review'>('entry');
 
   // Fetch competitions
   const { data: competitions } = trpc.competition.getAll.useQuery();
@@ -31,6 +32,15 @@ export default function ScoringPage() {
     { enabled: !!selectedCompetition }
   );
   const entries = entriesData?.entries;
+
+  // Fetch judge's submitted scores for review tab
+  const { data: submittedScores } = trpc.scoring.getMyScores.useQuery(
+    {
+      judge_id: selectedJudge,
+      competition_id: selectedCompetition,
+    },
+    { enabled: !!selectedJudge && !!selectedCompetition }
+  );
 
   // Submit score mutation
   const submitScore = trpc.scoring.submitScore.useMutation({
@@ -141,8 +151,36 @@ export default function ScoringPage() {
           </div>
         )}
 
+        {/* Tab Switcher (when configured) */}
+        {selectedCompetition && selectedJudge && (
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-2 mb-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('entry')}
+                className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                  activeTab === 'entry'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                📝 Score Entry
+              </button>
+              <button
+                onClick={() => setActiveTab('review')}
+                className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                  activeTab === 'review'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                📋 Score Review {submittedScores && `(${submittedScores.length})`}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Scoring Interface (when configured) */}
-        {selectedCompetition && selectedJudge && currentEntry && (
+        {selectedCompetition && selectedJudge && activeTab === 'entry' && currentEntry && (
           <div className="space-y-4">
             {/* Entry Info */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -356,8 +394,124 @@ export default function ScoringPage() {
           </div>
         )}
 
+        {/* Score Review Tab */}
+        {selectedCompetition && selectedJudge && activeTab === 'review' && (
+          <div className="space-y-4">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Your Submitted Scores</h2>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-green-400">✅ All Synced</span>
+                </div>
+              </div>
+
+              {submittedScores && submittedScores.length > 0 ? (
+                <div className="space-y-3">
+                  {submittedScores.map((score: any) => (
+                    <div
+                      key={score.id}
+                      className="bg-white/5 rounded-lg border border-white/10 p-4 hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="px-3 py-1 bg-pink-500/20 border border-pink-400/30 rounded-lg text-pink-300 font-semibold text-sm">
+                              #{score.competition_entries.entry_number}
+                            </span>
+                            <h3 className="text-lg font-semibold text-white">
+                              {score.competition_entries.title}
+                            </h3>
+                            <span className="text-green-400 text-sm">✅</span>
+                          </div>
+                          <div className="flex gap-4 text-sm text-gray-400">
+                            <span>🏢 {score.competition_entries.studios?.name}</span>
+                            <span>🎭 {score.competition_entries.dance_categories?.name}</span>
+                            <span>📅 {score.competition_entries.age_groups?.name}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-3xl font-bold text-white mb-1">
+                            {Number(score.total_score).toFixed(1)}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(score.scored_at).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-white/10">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-400 mb-1">Technical</div>
+                          <div className="text-lg font-semibold text-blue-300">
+                            {score.technical_score}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-400 mb-1">Artistic</div>
+                          <div className="text-lg font-semibold text-purple-300">
+                            {score.artistic_score}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-400 mb-1">Performance</div>
+                          <div className="text-lg font-semibold text-pink-300">
+                            {score.performance_score}
+                          </div>
+                        </div>
+                      </div>
+
+                      {score.comments && (
+                        <div className="mt-3 pt-3 border-t border-white/10">
+                          <div className="text-xs text-gray-400 mb-1">Comments</div>
+                          <div className="text-sm text-gray-300">{score.comments}</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📝</div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    No Scores Submitted Yet
+                  </h3>
+                  <p className="text-gray-400 mb-4">
+                    Switch to Score Entry tab to start scoring routines
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('entry')}
+                    className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                  >
+                    Go to Score Entry
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {submittedScores && submittedScores.length > 0 && (
+              <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">📊</div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Session Summary</h3>
+                      <p className="text-sm text-gray-300">
+                        {submittedScores.length} routine{submittedScores.length !== 1 ? 's' : ''} scored
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-400">Sync Status</div>
+                    <div className="text-lg font-semibold text-green-400">✅ All Synced</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Empty State */}
-        {selectedCompetition && selectedJudge && !currentEntry && entries?.length === 0 && (
+        {selectedCompetition && selectedJudge && activeTab === 'entry' && !currentEntry && entries?.length === 0 && (
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
             <div className="text-6xl mb-4">📋</div>
             <h2 className="text-2xl font-bold text-white mb-2">No Entries Found</h2>
