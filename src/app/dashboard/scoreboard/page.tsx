@@ -1,27 +1,36 @@
 'use client';
 
 import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
+import { useRealtimeScores } from '@/hooks/useRealtimeScores';
 
 export default function ScoreboardPage() {
   const [selectedCompetition, setSelectedCompetition] = useState('');
 
-  const { data: scoreboard, refetch } = trpc.scoring.getScoreboard.useQuery(
-    { competitionId: selectedCompetition },
-    { enabled: !!selectedCompetition }
+  const { data: scoreboard, isConnected, error } = useRealtimeScores(
+    selectedCompetition || null
   );
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-white">Live Scoreboard</h1>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600"
-        >
-          Refresh
-        </button>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-white">Live Scoreboard</h1>
+          {selectedCompetition && (
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm text-gray-300">
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-300 mb-2">Competition ID</label>

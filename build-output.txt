@@ -1,0 +1,36 @@
+
+> compportal@1.0.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of D:\ClaudeCode\package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * D:\ClaudeCode\CompPortal\package-lock.json
+
+   ▲ Next.js 15.5.4
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · serverActions
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 7.8s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/hooks/useRealtimeScores.ts:18:7
+Type error: No overload matches this call.
+  Overload 1 of 2, '(input: { competition_id: string; } | typeof skipToken, opts: DefinedUseTRPCQueryOptions<({ studios: { code: string | null; name: string; id: string; }; age_groups: { name: string; id: string; }; classifications: { ...; }; dance_categories: { ...; }; entry_size_categories: { ...; }; } & { ...; })[], ({ ...; } & { ...; })[], TRPCClientErrorLike<...>, ({ ...; } & { ...; })[]>): DefinedUseTRPCQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, but 'competitionId' does not exist in type '{ competition_id: string; }'. Did you mean to write 'competition_id'?
+  Overload 2 of 2, '(input: { competition_id: string; } | typeof skipToken, opts?: UseTRPCQueryOptions<({ studios: { code: string | null; name: string; id: string; }; age_groups: { name: string; id: string; }; classifications: { ...; }; dance_categories: { ...; }; entry_size_categories: { ...; }; } & { ...; })[], ({ ...; } & { ...; })[], TRPCClientErrorLike<...>, ({ ...; } & { ...; })[]> | undefined): UseTRPCQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, but 'competitionId' does not exist in type '{ competition_id: string; }'. Did you mean to write 'competition_id'?
+
+[0m [90m 16 |[39m   [90m// Initial data fetch using tRPC[39m
+ [90m 17 |[39m   [36mconst[39m { data[33m:[39m initialData[33m,[39m refetch } [33m=[39m trpc[33m.[39mscoring[33m.[39mgetScoreboard[33m.[39museQuery(
+[31m[1m>[22m[39m[90m 18 |[39m     { competitionId[33m:[39m competitionId [33m||[39m [32m''[39m }[33m,[39m
+ [90m    |[39m       [31m[1m^[22m[39m
+ [90m 19 |[39m     {
+ [90m 20 |[39m       enabled[33m:[39m [33m![39m[33m![39mcompetitionId[33m,[39m
+ [90m 21 |[39m       refetchOnWindowFocus[33m:[39m [36mfalse[39m[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
