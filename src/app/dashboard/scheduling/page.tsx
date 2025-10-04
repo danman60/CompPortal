@@ -19,10 +19,10 @@ export default async function SchedulingPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-            📅 Competition Scheduling
+            📅 Event Scheduling
           </h1>
           <p className="text-gray-300">
-            Manage competition sessions, assign entries, and resolve conflicts
+            Manage event sessions, assign routines, and resolve conflicts
           </p>
         </div>
 

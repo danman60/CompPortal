@@ -50,7 +50,7 @@ export default function ReportsPage() {
 
       if (reportType === 'entry') {
         if (!selectedEntryId) {
-          alert('Please select an entry');
+          alert('Please select a routine');
           return;
         }
         result = await generateEntryScoresheetMutation.mutateAsync({
@@ -102,7 +102,7 @@ export default function ReportsPage() {
           >
             ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">📄 Competition Reports</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">📄 Event Reports</h1>
           <p className="text-gray-400">
             Generate professional PDF reports and scorecards
           </p>
@@ -124,7 +124,7 @@ export default function ReportsPage() {
                       : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
                   }`}
                 >
-                  <div className="text-lg font-medium">📊 Competition Summary</div>
+                  <div className="text-lg font-medium">📊 Event Summary</div>
                   <div className="text-sm opacity-75">Overall stats and highlights</div>
                 </button>
 
@@ -136,8 +136,8 @@ export default function ReportsPage() {
                       : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
                   }`}
                 >
-                  <div className="text-lg font-medium">📋 Entry Score Sheet</div>
-                  <div className="text-sm opacity-75">Individual entry scores</div>
+                  <div className="text-lg font-medium">📋 Routine Score Sheet</div>
+                  <div className="text-sm opacity-75">Individual routine scores</div>
                 </button>
 
                 <button
@@ -173,10 +173,10 @@ export default function ReportsPage() {
               <h2 className="text-xl font-semibold text-white mb-6">Report Parameters</h2>
 
               <div className="space-y-5">
-                {/* Competition selector - always shown */}
+                {/* Event selector - always shown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Competition *
+                    Event *
                   </label>
                   <select
                     value={selectedCompetitionId}
@@ -190,7 +190,7 @@ export default function ReportsPage() {
                     }}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                   >
-                    <option value="" className="text-gray-900">-- Select a competition --</option>
+                    <option value="" className="text-gray-900">-- Select an event --</option>
                     {competitions?.map((comp) => (
                       <option key={comp.id} value={comp.id} className="text-gray-900">
                         {comp.name}
@@ -205,14 +205,14 @@ export default function ReportsPage() {
                     {reportType === 'entry' && (
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Entry *
+                          Routine *
                         </label>
                         <select
                           value={selectedEntryId}
                           onChange={(e) => setSelectedEntryId(e.target.value)}
                           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                         >
-                          <option value="" className="text-gray-900">-- Select an entry --</option>
+                          <option value="" className="text-gray-900">-- Select a routine --</option>
                           {reportOptions?.entries.map((entry) => (
                             <option key={entry.id} value={entry.id} className="text-gray-900">
                               #{entry.entry_number} - {entry.title}
@@ -287,11 +287,11 @@ export default function ReportsPage() {
                         <div className="flex items-start gap-3">
                           <div className="text-2xl">ℹ️</div>
                           <div className="text-sm text-blue-200">
-                            <strong>Competition Summary Report</strong>
+                            <strong>Event Summary Report</strong>
                             <p className="mt-1 opacity-90">
                               This report includes overall statistics, category breakdowns,
                               age group distribution, and award summaries for the selected
-                              competition.
+                              event.
                             </p>
                           </div>
                         </div>
@@ -319,7 +319,7 @@ export default function ReportsPage() {
 
                   {!selectedCompetitionId && (
                     <p className="text-sm text-gray-400 mt-2 text-center">
-                      Please select a competition to begin
+                      Please select an event to begin
                     </p>
                   )}
                 </div>
@@ -332,18 +332,18 @@ export default function ReportsPage() {
 
               <div className="space-y-4 text-sm text-gray-300">
                 <div>
-                  <strong className="text-purple-400">📊 Competition Summary:</strong>
+                  <strong className="text-purple-400">📊 Event Summary:</strong>
                   <p className="ml-6 mt-1">
-                    Complete overview of the competition including total entries, participating
+                    Complete overview of the event including total routines, participating
                     studios, dancer counts, category breakdowns, and award distribution. Perfect
-                    for stakeholder reports and competition archives.
+                    for stakeholder reports and event archives.
                   </p>
                 </div>
 
                 <div>
-                  <strong className="text-purple-400">📋 Entry Score Sheet:</strong>
+                  <strong className="text-purple-400">📋 Routine Score Sheet:</strong>
                   <p className="ml-6 mt-1">
-                    Detailed score breakdown for a single entry showing all judge scores
+                    Detailed score breakdown for a single routine showing all judge scores
                     (Technical, Artistic, Performance), average score, award level, and judge
                     comments. Ideal for providing feedback to studios and dancers.
                   </p>
@@ -361,9 +361,9 @@ export default function ReportsPage() {
                 <div>
                   <strong className="text-purple-400">👨‍⚖️ Judge Scorecard:</strong>
                   <p className="ml-6 mt-1">
-                    Complete record of all scores submitted by a specific judge, including entry
+                    Complete record of all scores submitted by a specific judge, including routine
                     details, categories, and scoring statistics. Essential for judge records and
-                    competition administration.
+                    event administration.
                   </p>
                 </div>
               </div>
