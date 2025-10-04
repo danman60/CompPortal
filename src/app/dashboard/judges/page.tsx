@@ -80,9 +80,9 @@ export default function JudgesPage() {
                 onChange={(e) => setSelectedCompetition(e.target.value)}
                 className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
-                <option value="">-- Select a competition --</option>
+                <option value="" className="text-gray-900">-- Select a competition --</option>
                 {competitions?.competitions?.map((comp) => (
-                  <option key={comp.id} value={comp.id}>
+                  <option key={comp.id} value={comp.id} className="text-gray-900">
                     {comp.name} ({comp.year})
                   </option>
                 ))}

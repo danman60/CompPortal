@@ -5,7 +5,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function ReservationsList() {
+interface ReservationsListProps {
+  isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
+}
+
+export default function ReservationsList({ isStudioDirector = false }: ReservationsListProps) {
   const router = useRouter();
   const { data, isLoading, refetch } = trpc.reservation.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
@@ -133,16 +137,16 @@ export default function ReservationsList() {
             onChange={(e) => setSelectedCompetition(e.target.value)}
             className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            <option value="all">All Competitions</option>
+            <option value="all" className="text-gray-900">All Competitions</option>
             {competitions.map((comp) => (
-              <option key={comp.id} value={comp.id}>
-                {comp.name} ({comp.year}) - {comp.available_reservation_tokens || 0}/{comp.total_reservation_tokens || 600} tokens
+              <option key={comp.id} value={comp.id} className="text-gray-900">
+                {comp.name} ({comp.year}){!isStudioDirector && ` - ${comp.available_reservation_tokens || 0}/${comp.total_reservation_tokens || 600} tokens`}
               </option>
             ))}
           </select>
 
-          {/* Token Summary for Selected Competition */}
-          {selectedCompetition !== 'all' && (() => {
+          {/* Token Summary for Selected Competition - Competition Directors Only */}
+          {!isStudioDirector && selectedCompetition !== 'all' && (() => {
             const selectedComp = competitions.find(c => c.id === selectedCompetition);
             if (!selectedComp) return null;
 
@@ -453,7 +457,7 @@ export default function ReservationsList() {
                 )}
 
                 {/* Action Buttons (Competition Director Only) */}
-                {reservation.status === 'pending' && (
+                {!isStudioDirector && reservation.status === 'pending' && (
                   <div className="mt-6 pt-6 border-t border-white/10 flex gap-4">
                     <button
                       onClick={() => handleApprove(reservation.id, reservation.spaces_requested)}
@@ -473,6 +477,17 @@ export default function ReservationsList() {
                         ? '⚙️ Rejecting...'
                         : '❌ Reject Reservation'}
                     </button>
+                  </div>
+                )}
+
+                {/* Status Badge for Studio Directors */}
+                {isStudioDirector && reservation.status === 'pending' && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="flex items-center gap-2">
+                      <div className="px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg text-center w-full">
+                        ⏳ Pending Approval
+                      </div>
+                    </div>
                   </div>
                 )}
 

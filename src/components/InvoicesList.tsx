@@ -1,19 +1,40 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-export default function InvoicesList() {
-  const { data: studios } = trpc.studio.getAll.useQuery();
-  const [selectedStudioId, setSelectedStudioId] = useState<string>('');
+interface InvoicesListProps {
+  studioId?: string; // If provided, hard-lock to this studio (studio director)
+}
+
+export default function InvoicesList({ studioId }: InvoicesListProps) {
+  const { data: studios } = trpc.studio.getAll.useQuery(undefined, {
+    enabled: !studioId, // Only fetch all studios if not locked to one
+  });
+
+  // Fetch single studio if studioId is provided (studio director)
+  const { data: singleStudio } = trpc.studio.getById.useQuery(
+    { id: studioId! },
+    { enabled: !!studioId }
+  );
+
+  const [selectedStudioId, setSelectedStudioId] = useState<string>(studioId || '');
+
+  // Auto-select studio if studioId prop is provided
+  useEffect(() => {
+    if (studioId) {
+      setSelectedStudioId(studioId);
+    }
+  }, [studioId]);
 
   const { data: invoicesData, isLoading } = trpc.invoice.getByStudio.useQuery(
     { studioId: selectedStudioId },
     { enabled: !!selectedStudioId }
   );
 
-  if (!selectedStudioId) {
+  // Only show studio selector for competition directors (no studioId prop)
+  if (!selectedStudioId && !studioId) {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
         <div className="text-6xl mb-4">💰</div>
@@ -25,9 +46,9 @@ export default function InvoicesList() {
           onChange={(e) => setSelectedStudioId(e.target.value)}
           className="px-6 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
-          <option value="">Select Studio</option>
+          <option value="" className="text-gray-900">Select Studio</option>
           {studios?.studios.map((studio) => (
-            <option key={studio.id} value={studio.id}>
+            <option key={studio.id} value={studio.id} className="text-gray-900">
               {studio.name} ({studio.code})
             </option>
           ))}
@@ -51,28 +72,32 @@ export default function InvoicesList() {
   }
 
   const invoices = invoicesData?.invoices || [];
-  const selectedStudio = studios?.studios.find(s => s.id === selectedStudioId);
+  const selectedStudio = studioId
+    ? singleStudio
+    : studios?.studios.find(s => s.id === selectedStudioId);
 
   return (
     <div>
-      {/* Studio Selector */}
-      <div className="mb-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Selected Studio
-        </label>
-        <select
-          value={selectedStudioId}
-          onChange={(e) => setSelectedStudioId(e.target.value)}
-          className="w-full md:w-auto px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="">Select Studio</option>
-          {studios?.studios.map((studio) => (
-            <option key={studio.id} value={studio.id}>
-              {studio.name} ({studio.code})
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Studio Selector - only show for competition directors */}
+      {!studioId && (
+        <div className="mb-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Selected Studio
+          </label>
+          <select
+            value={selectedStudioId}
+            onChange={(e) => setSelectedStudioId(e.target.value)}
+            className="w-full md:w-auto px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="" className="text-gray-900">Select Studio</option>
+            {studios?.studios.map((studio) => (
+              <option key={studio.id} value={studio.id} className="text-gray-900">
+                {studio.name} ({studio.code})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Invoices Grid */}
       {invoices.length === 0 ? (

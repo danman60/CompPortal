@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import ReservationsList from '@/components/ReservationsList';
 
@@ -11,6 +12,12 @@ export default async function ReservationsPage() {
   if (error || !user) {
     redirect('/login');
   }
+
+  // Check if user is a studio director (owns a studio)
+  const isStudioDirector = await prisma.studios.findFirst({
+    where: { owner_id: user.id },
+    select: { id: true },
+  });
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
@@ -28,7 +35,7 @@ export default async function ReservationsPage() {
         </div>
 
         {/* Reservations List */}
-        <ReservationsList />
+        <ReservationsList isStudioDirector={!!isStudioDirector} />
       </div>
     </main>
   );

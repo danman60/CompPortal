@@ -190,9 +190,9 @@ export default function ReportsPage() {
                     }}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                   >
-                    <option value="">-- Select a competition --</option>
+                    <option value="" className="text-gray-900">-- Select a competition --</option>
                     {competitions?.map((comp) => (
-                      <option key={comp.id} value={comp.id}>
+                      <option key={comp.id} value={comp.id} className="text-gray-900">
                         {comp.name}
                       </option>
                     ))}
@@ -212,9 +212,9 @@ export default function ReportsPage() {
                           onChange={(e) => setSelectedEntryId(e.target.value)}
                           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                         >
-                          <option value="">-- Select an entry --</option>
+                          <option value="" className="text-gray-900">-- Select an entry --</option>
                           {reportOptions?.entries.map((entry) => (
-                            <option key={entry.id} value={entry.id}>
+                            <option key={entry.id} value={entry.id} className="text-gray-900">
                               #{entry.entry_number} - {entry.title}
                             </option>
                           ))}
@@ -233,9 +233,9 @@ export default function ReportsPage() {
                             onChange={(e) => setSelectedCategoryId(e.target.value)}
                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                           >
-                            <option value="">-- Select a category --</option>
+                            <option value="" className="text-gray-900">-- Select a category --</option>
                             {reportOptions?.categories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>
+                              <option key={cat.id} value={cat.id} className="text-gray-900">
                                 {cat.name}
                               </option>
                             ))}
@@ -251,9 +251,9 @@ export default function ReportsPage() {
                             onChange={(e) => setSelectedAgeGroupId(e.target.value)}
                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                           >
-                            <option value="">-- Select an age group --</option>
+                            <option value="" className="text-gray-900">-- Select an age group --</option>
                             {reportOptions?.age_groups.map((age) => (
-                              <option key={age.id} value={age.id}>
+                              <option key={age.id} value={age.id} className="text-gray-900">
                                 {age.name}
                               </option>
                             ))}
@@ -272,9 +272,9 @@ export default function ReportsPage() {
                           onChange={(e) => setSelectedJudgeId(e.target.value)}
                           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                         >
-                          <option value="">-- Select a judge --</option>
+                          <option value="" className="text-gray-900">-- Select a judge --</option>
                           {reportOptions?.judges.map((judge) => (
-                            <option key={judge.id} value={judge.id}>
+                            <option key={judge.id} value={judge.id} className="text-gray-900">
                               {judge.name} (#{judge.judge_number})
                             </option>
                           ))}
