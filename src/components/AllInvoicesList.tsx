@@ -1,14 +1,26 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
+  const searchParams = useSearchParams();
+
+  // Initialize filters from URL query parameters
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Read URL query parameters on mount
+  useEffect(() => {
+    const paymentStatus = searchParams.get('paymentStatus');
+    if (paymentStatus) {
+      setPaymentStatusFilter(paymentStatus);
+    }
+  }, [searchParams]);
 
   // Fetch all invoices with optional filters
   const { data, isLoading } = trpc.invoice.getAllInvoices.useQuery({
