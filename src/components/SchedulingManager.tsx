@@ -98,25 +98,25 @@ export default function SchedulingManager() {
     }
   };
 
-  // Assign entry numbers handler
+  // Assign routine numbers handler
   const handleAssignNumbers = async () => {
     if (!selectedCompetition) return;
-    if (!confirm('Assign entry numbers to all entries without numbers? This will start numbering at 100.')) return;
+    if (!confirm('Assign routine numbers to all routines without numbers? This will start numbering at 100.')) return;
 
     try {
       const result = await assignNumbersMutation.mutateAsync({ competitionId: selectedCompetition });
       if (result.assignedCount === 0) {
-        alert('All entries already have numbers assigned.');
+        alert('All routines already have numbers assigned.');
       } else {
         const range = result.startNumber && result.endNumber
           ? ` (${result.startNumber}-${result.endNumber})`
           : '';
-        alert(`Success! Assigned entry numbers${range} to ${result.assignedCount} entries.`);
+        alert(`Success! Assigned routine numbers${range} to ${result.assignedCount} routines.`);
       }
       refetchEntries();
     } catch (error) {
-      console.error('Entry number assignment failed:', error);
-      alert('Failed to assign entry numbers. Please try again.');
+      console.error('Routine number assignment failed:', error);
+      alert('Failed to assign routine numbers. Please try again.');
     }
   };
 
@@ -142,7 +142,7 @@ export default function SchedulingManager() {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
         <div className="animate-spin text-6xl mb-4">⚙️</div>
-        <p className="text-white">Loading competitions...</p>
+        <p className="text-white">Loading events...</p>
       </div>
     );
   }
@@ -151,8 +151,8 @@ export default function SchedulingManager() {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
         <div className="text-6xl mb-4">📅</div>
-        <h3 className="text-xl font-semibold text-white mb-2">No Competitions Found</h3>
-        <p className="text-gray-400">Create a competition first to manage scheduling.</p>
+        <h3 className="text-xl font-semibold text-white mb-2">No Events Found</h3>
+        <p className="text-gray-400">Create an event first to manage scheduling.</p>
       </div>
     );
   }
@@ -162,10 +162,10 @@ export default function SchedulingManager() {
 
   return (
     <div className="space-y-6">
-      {/* Competition Selector */}
+      {/* Event Selector */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
         <label className="block text-white font-semibold mb-3">
-          Select Competition
+          Select Event
         </label>
         <div className="flex gap-4 items-center flex-wrap">
           <select
@@ -173,7 +173,7 @@ export default function SchedulingManager() {
             onChange={(e) => setSelectedCompetition(e.target.value)}
             className="flex-1 min-w-[300px] px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            <option value="">-- Select a competition --</option>
+            <option value="">-- Select an event --</option>
             {competitions.map((comp) => (
               <option key={comp.id} value={comp.id}>
                 {comp.name} ({comp.year})
@@ -205,11 +205,11 @@ export default function SchedulingManager() {
           )}
         </div>
 
-        {/* Entry Numbering */}
+        {/* Routine Numbering */}
         {selectedCompetition && (
           <div className="mt-4 pt-4 border-t border-white/20">
             <label className="block text-white font-semibold mb-3 text-sm">
-              Entry Numbering
+              Routine Numbering
             </label>
             <button
               onClick={handleAssignNumbers}
@@ -223,12 +223,12 @@ export default function SchedulingManager() {
                 </>
               ) : (
                 <>
-                  🔢 Assign Entry Numbers (100+)
+                  🔢 Assign Routine Numbers (100+)
                 </>
               )}
             </button>
             <p className="text-xs text-gray-400 mt-2">
-              Assigns sequential numbers starting at 100 to all scheduled entries without numbers
+              Assigns sequential numbers starting at 100 to all scheduled routines without numbers
             </p>
           </div>
         )}
@@ -311,7 +311,7 @@ export default function SchedulingManager() {
               <div className="text-3xl font-bold text-white mb-1">
                 {entries?.length || 0}
               </div>
-              <div className="text-gray-300 text-sm">Total Entries</div>
+              <div className="text-gray-300 text-sm">Total Routines</div>
             </div>
             <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
               <div className="text-3xl font-bold text-white mb-1">
@@ -361,7 +361,7 @@ export default function SchedulingManager() {
               ) : (
                 <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
                   <div className="text-4xl mb-2">📅</div>
-                  <p className="text-white">No sessions found for this competition</p>
+                  <p className="text-white">No sessions found for this event</p>
                 </div>
               )}
             </div>
