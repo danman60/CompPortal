@@ -1,7 +1,7 @@
 # Bugs & Features Tracker
 
-**Last Updated**: 2025-10-04
-**Source**: RBAC Golden Test Results (TEST_RESULTS.md) + Phase 2 Implementation
+**Last Updated**: 2025-10-04 (Session 2)
+**Source**: RBAC Golden Test Results (TEST_RESULTS.md) + Phase 2-4 Implementation
 
 ---
 
@@ -101,6 +101,79 @@
 - **Completed Date**: 2025-10-04
 - **Notes**: Database schema still uses original names (competitions, competition_entries) - UI-only updates for now
 
+### 4. Phase 3.1: Global Invoices View
+- **Priority**: 🟡 High
+- **Impact**: Competition Directors can manage payments across all studios
+- **Description**: Global invoices management system for payment tracking
+- **Features**:
+  - View all invoices across all studios and events
+  - Filter by event and payment status
+  - Update payment status (pending/partial/paid/refunded/cancelled)
+  - Revenue summary statistics
+  - Payment confirmation tracking (who confirmed, when)
+- **Files Created**:
+  - `src/components/AllInvoicesList.tsx` (268 lines)
+  - `src/app/dashboard/invoices/all/page.tsx`
+- **Backend**: Added `invoice.getAllInvoices` query, `reservation.markAsPaid` mutation
+- **Database**: Added payment_confirmed_by, payment_confirmed_at to reservations table
+- **Commit**: 0676225
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-04
+
+### 5. Phase 3.2: Dashboard Metrics Enhancement
+- **Priority**: 🟡 High
+- **Impact**: Improved payment visibility on CD dashboard
+- **Description**: Added unpaid invoices metric to Competition Director dashboard
+- **Features**:
+  - Unpaid invoices count card
+  - Total amount owed display
+  - Click-through to filtered invoices view
+  - URL query parameter support for pre-filtering
+- **Files Modified**: `src/components/DashboardStats.tsx`, `src/components/AllInvoicesList.tsx`
+- **Commit**: 326082d
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-04
+
+### 6. Phase 4.1: Multi-Row Dancer Batch Input
+- **Priority**: 🟡 High
+- **Impact**: Streamlined dancer creation workflow
+- **Description**: Spreadsheet-style interface for adding multiple dancers at once
+- **Features**:
+  - Table interface with dynamic row management
+  - Add 1, 5, or 10 rows at a time
+  - React Hook Form with useFieldArray
+  - Batch create mutation with error handling
+  - Auto-skip empty rows
+  - Success/fail reporting per dancer
+- **Files Created**:
+  - `src/components/DancerBatchForm.tsx` (385 lines)
+  - `src/app/dashboard/dancers/batch-add/page.tsx`
+- **Backend**: Added `dancer.batchCreate` mutation
+- **Commit**: d478576
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-04
+
+### 7. Phase 4.2: Dancer-to-Routine Assignment Interface
+- **Priority**: 🟡 High
+- **Impact**: Simplified routine participant management
+- **Description**: Two-panel interface for assigning dancers to routines
+- **Features**:
+  - Two-panel layout (routines left, dancers right)
+  - Click-to-select routine + click-to-assign dancer
+  - Real-time participant tracking
+  - Remove dancer functionality
+  - Search dancers by name
+  - Age auto-calculation from date_of_birth
+  - Visual feedback for selected routines
+- **Dependencies**: @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+- **Files Created**:
+  - `src/components/DancerAssignmentPanel.tsx` (384 lines)
+  - `src/app/dashboard/entries/assign/page.tsx`
+- **Backend**: Uses existing `entry.addParticipant` and `entry.removeParticipant` mutations
+- **Commit**: 9b0b86b
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-04
+
 ---
 
 ## 🚧 Missing Features (Blocking Testing/Functionality)
@@ -142,7 +215,139 @@
 
 ## 🎯 Planned Features (Roadmap)
 
-### 1. Entry Numbering & Sub-Entry Logic
+### 1. Competition Settings (Global Parameters)
+- **Priority**: 🟡 High (Configuration Management)
+- **Feature ID**: FEAT-CompetitionSettings
+- **Scheduled For**: Next Session
+- **Status**: ⏳ PLANNED
+
+#### Feature Description
+**Competition-wide settings management for Competition Directors**
+
+Global configuration parameters that affect all events. Competition Directors can manage standard parameters including routine types, age divisions, classification levels, dance styles, time limits, scoring rubrics, and awards.
+
+**Settings Categories**:
+
+**Routine Types**:
+- Solo (1 dancer)
+- Duet/Trio (2–3 dancers)
+- Small Group (4–9 dancers)
+- Large Group (10–15 dancers)
+- Line (16–24 dancers)
+- Super Line (25+ dancers)
+- Production (40+ dancers)
+
+**Age Divisions**:
+- Micro (5 & Under)
+- Mini (6–8)
+- Junior (9–11)
+- Intermediate (12–14)
+- Senior (15–17)
+- Adult (18+)
+- Note: Age based on average as of Jan 1
+
+**Classification Levels**:
+- Novice (≤3 hrs/week training)
+- Part-Time (4–6 hrs/week training)
+- Competitive (7+ hrs/week training)
+
+**Dance Styles**:
+- Jazz, Tap, Lyrical, Contemporary, Ballet, Pointe, Hip Hop, Acro, Musical Theatre, Open, Song & Dance, Specialty
+
+**Time Limits** (by routine type):
+- Solo/Duet/Trio: 3:00 min
+- Small Group: 3:30 min
+- Large Group: 4:00 min
+- Line: 5:00 min
+- Super Line: 6:00 min
+- Production: 8:00 min
+- Note: Overtime penalties apply
+
+**Scoring Rubric**:
+- 100 points per judge
+- Platinum: 95–100
+- Elite Gold: 90–94.9
+- Gold: 85–89.9
+- Silver: 80–84.9
+- Bronze: 75–79.9
+- Overall awards calculated by average
+
+**Awards Configuration**:
+- Top 10 (Solo)
+- Top 3 (Duet/Trio)
+- Top 3 (Groups/Lines/Productions)
+- Custom awards: Adjudicators Choice, Entertainment, Choreography, Costume, Heart of EMPWR
+
+#### Technical Implementation
+
+**Database Schema**:
+```sql
+-- Use existing system_settings table or create competition_settings
+CREATE TABLE IF NOT EXISTS competition_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  setting_category VARCHAR(100) NOT NULL, -- 'routine_types', 'age_divisions', etc.
+  setting_key VARCHAR(100) NOT NULL,
+  setting_value JSONB NOT NULL,
+  display_order INT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(setting_category, setting_key)
+);
+
+-- Example data structure
+{
+  "routine_types": [
+    { "key": "solo", "label": "Solo", "min_dancers": 1, "max_dancers": 1, "time_limit": 180 },
+    { "key": "duet_trio", "label": "Duet/Trio", "min_dancers": 2, "max_dancers": 3, "time_limit": 180 }
+  ],
+  "age_divisions": [
+    { "key": "micro", "label": "Micro", "min_age": 0, "max_age": 5 },
+    { "key": "mini", "label": "Mini", "min_age": 6, "max_age": 8 }
+  ],
+  "scoring_rubric": [
+    { "key": "platinum", "label": "Platinum", "min_score": 95, "max_score": 100 },
+    { "key": "elite_gold", "label": "Elite Gold", "min_score": 90, "max_score": 94.9 }
+  ]
+}
+```
+
+**API Endpoints**:
+- `GET /api/settings/competition` - Fetch all competition settings
+- `PUT /api/settings/competition/:category` - Update settings by category
+- `POST /api/settings/competition/:category/item` - Add new item to category
+- `DELETE /api/settings/competition/:category/:key` - Remove item
+
+**UI Components**:
+- Competition Settings page (`/dashboard/settings/competition`)
+- Tabbed interface for each category
+- Inline editing with validation
+- Add/remove items per category
+- Drag-to-reorder display order
+- Active/inactive toggle per item
+
+**Files to Create/Modify**:
+- Backend: `src/server/routers/settings.ts` (new router)
+- Frontend: `src/app/dashboard/settings/competition/page.tsx` (new page)
+- Frontend: `src/components/CompetitionSettingsForm.tsx` (new component)
+- Schema: Update `prisma/schema.prisma` or use existing system_settings
+- Navigation: Add "Competition Settings" to CD dashboard
+
+**User Stories**:
+- As a **Competition Director**, I can configure routine types and time limits that apply to all events
+- As a **Competition Director**, I can define age divisions and classification levels used for categorization
+- As a **Competition Director**, I can set scoring rubrics and award tiers
+- As a **Studio Director**, I see these configured options when creating routines
+
+**Integration Points**:
+- Entry creation forms use configured routine types, age divisions, styles
+- Scoring system uses configured rubric and award tiers
+- Time validation uses configured time limits per routine type
+- Reports and exports reference these settings
+
+---
+
+### 2. Entry Numbering & Sub-Entry Logic
 - **Priority**: 🟡 High (Core scheduling feature)
 - **Feature ID**: FEAT-EntryNumbering
 - **Scheduled For**: Phase 4, Week 13 (Schedule Generation)
@@ -335,19 +540,23 @@ CREATE INDEX idx_scores_by_judge ON judges_scores(judge_id, entry_id);
 ## 📊 Summary
 
 **Total Bugs**: 2 (2 fixed, 0 active)
-**Completed Features**: 3 (Dancer Edit UI, Reservation Create UI, Phase 2 Terminology)
+**Completed Features**: 7 (Dancer Edit, Reservation Create, Terminology, Global Invoices, Dashboard Metrics, Batch Dancer Input, Dancer Assignment)
 **Missing Features**: 1 (API Testing Infrastructure - medium priority)
 **Feature Requests**: 2 (low priority)
-**Planned Features**: 2 (1 high priority, 1 critical)
+**Planned Features**: 3 (Competition Settings, Entry Numbering, Real-Time Scoring)
 
 **Recent Completions** (October 2025):
-- ✅ Dancer Edit UI (Oct 2) - Enables dancer management
-- ✅ Reservation Create UI (Oct 2) - Enables studio director workflow
+- ✅ Phase 4.2: Dancer-to-Routine Assignment UI (Oct 4) - Two-panel click-to-assign interface
+- ✅ Phase 4.1: Multi-Row Dancer Batch Input (Oct 4) - Spreadsheet-style batch creation
+- ✅ Phase 3.2: Dashboard Metrics Enhancement (Oct 4) - Unpaid invoices tracking
+- ✅ Phase 3.1: Global Invoices View for CDs (Oct 4) - Revenue and payment management
 - ✅ Phase 2 Terminology Standardization (Oct 4) - Competition→Event, Entries→Routines across 20 files
+- ✅ Reservation Create UI (Oct 2) - Enables studio director workflow
+- ✅ Dancer Edit UI (Oct 2) - Enables dancer management
 
 **Critical Path**:
-1. **Entry Numbering & Sub-Entry Logic** - High priority, core scheduling feature (Week 13)
-2. **Real-Time Scoring & Tabulation** - Critical for competition day operations (Week 14)
-3. **API Testing Infrastructure** - Medium priority for security penetration testing
+1. **Competition Settings** - High priority, global configuration system (Next Session)
+2. **Entry Numbering & Sub-Entry Logic** - High priority, core scheduling feature (Week 13)
+3. **Real-Time Scoring & Tabulation** - Critical for competition day operations (Week 14)
 
 **Full Workflow Documentation**: See `COMPETITION_WORKFLOW.md` for complete industry-standard end-to-end process.
