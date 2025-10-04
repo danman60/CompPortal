@@ -3,6 +3,7 @@
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function ReservationsList() {
   const router = useRouter();
@@ -109,6 +110,20 @@ export default function ReservationsList() {
 
   return (
     <div>
+      {/* Header with Create Button */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Reservations</h2>
+          <p className="text-gray-400 mt-1">Manage your competition reservations</p>
+        </div>
+        <Link
+          href="/dashboard/reservations/new"
+          className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+        >
+          + Create Reservation
+        </Link>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Competition Filter */}
