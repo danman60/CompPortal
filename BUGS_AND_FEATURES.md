@@ -491,9 +491,9 @@ For each entry, display:
 - **Priority**: 🔴 Critical (Competition Day Operations)
 - **Feature ID**: FEAT-RealtimeScoring
 - **Scheduled For**: Phase 4, Week 14 (Real-Time Scoring & Export System)
-- **Status**: 🟡 PHASE 1 COMPLETE (Phase 2 Pending)
-- **Phase 1 Completed**: 2025-10-04
-- **Commit**: 3ca9066
+- **Status**: ✅ COMPLETE (Both Phase 1 & 2)
+- **Phase 1 Completed**: 2025-10-04 (Commit: 3ca9066)
+- **Phase 2 Completed**: 2025-10-04 (Commit: 16ba88c)
 
 #### Phase 1 Implementation Summary (COMPLETED)
 **Scoring system with automatic calculation and manual scoreboard refresh**
@@ -526,7 +526,38 @@ For each entry, display:
 - `src/app/dashboard/scoring/page.tsx`, `src/app/dashboard/scoreboard/page.tsx`
 
 **Phase 1 Status**: ✅ Manual scoring workflow functional
-**Phase 2 Planned**: WebSocket/SSE for real-time scoreboard updates
+
+#### Phase 2 Implementation Summary (COMPLETED)
+**Real-time scoreboard updates using Supabase Realtime subscriptions**
+
+**CADENCE Execution**: Frontend-only implementation (no backend changes)
+
+**Implementation**:
+- Created `useRealtimeScores` custom hook with Supabase Realtime WebSocket subscriptions
+- Subscribes to `competition_entries` UPDATE events filtered by `competition_id`
+- Listens for changes to `calculated_score`, `award_level`, `category_placement` fields
+- Auto-refetches scoreboard data when scoring fields change
+- Connection status indicator (green = connected, red = disconnected)
+- Error handling with automatic retry logic
+
+**Frontend Updates**:
+- Removed manual "Refresh" button from scoreboard
+- Added real-time connection status indicator with visual feedback
+- Error message display for connection issues
+- Seamless integration with existing tRPC queries
+
+**Technical Architecture**:
+- Supabase Realtime EventSource-based WebSocket (Vercel serverless-friendly)
+- Sub-second latency for score propagation
+- Automatic cleanup on component unmount/competition change
+- No backend changes (existing `calculateEntryScore` triggers DB updates automatically)
+- Postgres change events propagated via Supabase Realtime infrastructure
+
+**Files Created/Modified**:
+- `src/hooks/useRealtimeScores.ts` (NEW - 78 lines)
+- `src/app/dashboard/scoreboard/page.tsx` (MODIFIED - real-time integration)
+
+**Phase 2 Status**: ✅ Real-time scoreboard updates functional
 
 #### Original Feature Description
 **Industry-standard real-time scoring system for competition day adjudication and live results**
