@@ -45,13 +45,13 @@ export default function AnalyticsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">📊 Analytics Dashboard</h1>
-          <p className="text-gray-400">Competition insights and performance metrics</p>
+          <p className="text-gray-400">Event insights and performance metrics</p>
         </div>
 
-        {/* Competition Selector */}
+        {/* Event Selector */}
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Select Competition (or view system-wide metrics)
+            Select Event (or view system-wide metrics)
           </label>
           <select
             value={selectedCompetition}
@@ -72,7 +72,7 @@ export default function AnalyticsPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-md rounded-xl border border-white/20 p-6">
-                <div className="text-sm text-gray-400 mb-1">Total Competitions</div>
+                <div className="text-sm text-gray-400 mb-1">Total Events</div>
                 <div className="text-4xl font-bold text-white">{systemStats.totalCompetitions}</div>
               </div>
 
@@ -96,7 +96,7 @@ export default function AnalyticsPage() {
               <h2 className="text-2xl font-semibold text-white mb-4">System Overview</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-lg font-medium text-white mb-3">Competitions by Status</h3>
+                  <h3 className="text-lg font-medium text-white mb-3">Events by Status</h3>
                   <div className="space-y-2">
                     {systemStats.competitionsByStatus.map((stat) => (
                       <div key={stat.status} className="flex justify-between items-center">
