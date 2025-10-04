@@ -375,13 +375,50 @@ CREATE TABLE IF NOT EXISTS competition_settings (
 
 ---
 
-### 2. Entry Numbering & Sub-Entry Logic
+### 9. Entry Numbering & Sub-Entry Logic
 - **Priority**: 🟡 High (Core scheduling feature)
 - **Feature ID**: FEAT-EntryNumbering
 - **Scheduled For**: Phase 4, Week 13 (Schedule Generation)
-- **Status**: ⏳ PLANNED
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-04
+- **Commit**: cd645a2
 
-#### Feature Description
+#### Implementation Summary
+**Industry-standard entry numbering system with auto-assignment starting at 100**
+
+**CADENCE Multi-Agent Execution**: Database → Backend + Frontend (parallel)
+
+**Database**:
+- Created migration: `20250104_add_schedule_lock_fields.sql`
+- Added `schedule_published_at`, `schedule_locked` to competitions table
+- Created unique constraint for entry_number + suffix per competition
+- Applied migration to Supabase database
+
+**Backend** (scheduling router):
+- Modified `autoScheduleSession`: auto-assigns entry numbers starting at 100
+- Added `publishSchedule` mutation: locks schedule and prevents changes
+- Added `assignLateSuffix` mutation: assigns letter suffixes to late entries
+- Updated CSV/iCal/PDF exports to display entry numbers with suffixes
+
+**Frontend**:
+- **EntriesList**: Entry number badge display with gradient styling
+- **SchedulingManager**: "Publish Schedule" button with lock status
+- **LateSuffixModal**: Modal for late entry suffix assignment
+- **UnscheduledEntries**: "Late Entry" button for suffix assignment
+
+**Files Created** (3):
+- `supabase/migrations/20250104_add_schedule_lock_fields.sql`
+- `src/components/LateSuffixModal.tsx`
+- `ENTRY_NUMBERING_IMPLEMENTATION.md`
+
+**Files Modified** (5):
+- `prisma/schema.prisma`
+- `src/server/routers/scheduling.ts`
+- `src/components/EntriesList.tsx`
+- `src/components/SchedulingManager.tsx`
+- `src/components/UnscheduledEntries.tsx`
+
+#### Original Feature Description
 **Industry-standard entry numbering system for competition scheduling**
 
 **Entry Numbers:**
@@ -568,12 +605,13 @@ CREATE INDEX idx_scores_by_judge ON judges_scores(judge_id, entry_id);
 ## 📊 Summary
 
 **Total Bugs**: 2 (2 fixed, 0 active)
-**Completed Features**: 8 (Dancer Edit, Reservation Create, Terminology, Global Invoices, Dashboard Metrics, Batch Dancer Input, Dancer Assignment, Competition Settings)
+**Completed Features**: 9 (Dancer Edit, Reservation Create, Terminology, Global Invoices, Dashboard Metrics, Batch Dancer Input, Dancer Assignment, Competition Settings, Entry Numbering)
 **Missing Features**: 1 (API Testing Infrastructure - medium priority)
 **Feature Requests**: 2 (low priority)
-**Planned Features**: 2 (Entry Numbering, Real-Time Scoring)
+**Planned Features**: 1 (Real-Time Scoring)
 
 **Recent Completions** (October 2025):
+- ✅ Entry Numbering System (Oct 4) - Industry-standard numbering starting at 100, schedule locking, late entry suffixes
 - ✅ Competition Settings (Oct 4) - CADENCE multi-agent execution, 7 categories with CRUD
 - ✅ Phase 4.2: Dancer-to-Routine Assignment UI (Oct 4) - Two-panel click-to-assign interface
 - ✅ Phase 4.1: Multi-Row Dancer Batch Input (Oct 4) - Spreadsheet-style batch creation
@@ -584,8 +622,7 @@ CREATE INDEX idx_scores_by_judge ON judges_scores(judge_id, entry_id);
 - ✅ Dancer Edit UI (Oct 2) - Enables dancer management
 
 **Critical Path**:
-1. **Entry Numbering & Sub-Entry Logic** - High priority, core scheduling feature (Next Priority)
-2. **Real-Time Scoring & Tabulation** - Critical for competition day operations (Week 14)
+1. **Real-Time Scoring & Tabulation** - Critical for competition day operations (Next Priority)
 3. **Schedule Export** - PDF/CSV/iCal formats for print/distribution
 
 **Full Workflow Documentation**: See `COMPETITION_WORKFLOW.md` for complete industry-standard end-to-end process.
