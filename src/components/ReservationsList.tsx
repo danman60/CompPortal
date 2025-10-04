@@ -492,22 +492,93 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                   </div>
                 )}
 
-                {/* Entry Count Badge (for Approved Reservations) */}
+                {/* Entry Count Badge & CTA (for Approved Reservations) */}
                 {reservation.status === 'approved' && (
                   <div className="mt-6 pt-6 border-t border-white/10">
-                    <div className="flex items-center justify-between">
+                    {isStudioDirector ? (
+                      /* Studio Director: Create Routines CTA */
                       <div>
-                        <div className="text-sm text-gray-400 mb-1">Competition Entries</div>
-                        <div className="text-2xl font-bold text-white">
-                          {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <div className="text-sm text-gray-400 mb-1">Space Usage</div>
+                            <div className="text-3xl font-bold text-white">
+                              {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                            </div>
+                            <div className={`text-sm font-semibold mt-1 ${
+                              (reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0) > 0
+                                ? 'text-green-400'
+                                : 'text-gray-400'
+                            }`}>
+                              {(reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0)} {
+                                ((reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0)) === 1
+                                  ? 'space'
+                                  : 'spaces'
+                              } remaining
+                            </div>
+                          </div>
+                          <div className="text-5xl">
+                            {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                              ? '✅'
+                              : '📝'}
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mb-4">
+                          <div className="h-3 bg-white/10 rounded-full overflow-hidden border border-white/20">
+                            <div
+                              className={`h-full transition-all duration-500 ${
+                                (reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                                  ? 'bg-green-500'
+                                  : (reservation._count?.competition_entries || 0) / (reservation.spaces_confirmed || 1) >= 0.8
+                                  ? 'bg-yellow-500'
+                                  : 'bg-gradient-to-r from-pink-500 to-purple-500'
+                              }`}
+                              style={{
+                                width: `${Math.min(
+                                  ((reservation._count?.competition_entries || 0) / (reservation.spaces_confirmed || 1)) * 100,
+                                  100
+                                )}%`
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Create Routines Button */}
+                        <Link
+                          href={`/dashboard/entries?competition=${reservation.competition_id}`}
+                          className={`block w-full text-center px-6 py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                            (reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                              ? 'bg-white/10 text-gray-400 cursor-not-allowed border border-white/20'
+                              : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
+                          }`}
+                          onClick={(e) => {
+                            if ((reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                            ? '✅ All Spaces Filled'
+                            : '+ Create Routines'}
+                        </Link>
+                      </div>
+                    ) : (
+                      /* Competition Director: Simple Entry Count */
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm text-gray-400 mb-1">Competition Entries</div>
+                          <div className="text-2xl font-bold text-white">
+                            {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                          </div>
+                        </div>
+                        <div className="text-4xl">
+                          {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                            ? '✅'
+                            : '⏳'}
                         </div>
                       </div>
-                      <div className="text-4xl">
-                        {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
-                          ? '✅'
-                          : '⏳'}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
