@@ -162,6 +162,17 @@ export default function EntriesList() {
 
               {/* Details */}
               <div className="space-y-2 mb-4">
+                {/* Entry Number (if assigned) */}
+                {entry.entry_number && (
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <span>🔢</span>
+                    <span className="text-purple-400">
+                      Entry #{entry.entry_number}{entry.entry_suffix || ''}
+                      {entry.is_late_entry && <span className="ml-2 text-xs text-yellow-400">(Late Entry)</span>}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 text-sm text-gray-300">
                   <span>🏢</span>
                   <span>{entry.studios?.name}</span>

@@ -35,6 +35,7 @@ export default function SchedulingManager() {
   // Mutations
   const assignMutation = trpc.scheduling.assignEntryToSession.useMutation();
   const clearMutation = trpc.scheduling.clearSchedule.useMutation();
+  const assignNumbersMutation = trpc.scheduling.assignEntryNumbers.useMutation();
 
   // Export mutations
   const exportPDFMutation = trpc.scheduling.exportSchedulePDF.useMutation();
@@ -94,6 +95,28 @@ export default function SchedulingManager() {
     } catch (error) {
       console.error('iCal export failed:', error);
       alert('Failed to export iCal. Please try again.');
+    }
+  };
+
+  // Assign entry numbers handler
+  const handleAssignNumbers = async () => {
+    if (!selectedCompetition) return;
+    if (!confirm('Assign entry numbers to all entries without numbers? This will start numbering at 100.')) return;
+
+    try {
+      const result = await assignNumbersMutation.mutateAsync({ competitionId: selectedCompetition });
+      if (result.assignedCount === 0) {
+        alert('All entries already have numbers assigned.');
+      } else {
+        const range = result.startNumber && result.endNumber
+          ? ` (${result.startNumber}-${result.endNumber})`
+          : '';
+        alert(`Success! Assigned entry numbers${range} to ${result.assignedCount} entries.`);
+      }
+      refetchEntries();
+    } catch (error) {
+      console.error('Entry number assignment failed:', error);
+      alert('Failed to assign entry numbers. Please try again.');
     }
   };
 
@@ -181,6 +204,34 @@ export default function SchedulingManager() {
             </button>
           )}
         </div>
+
+        {/* Entry Numbering */}
+        {selectedCompetition && (
+          <div className="mt-4 pt-4 border-t border-white/20">
+            <label className="block text-white font-semibold mb-3 text-sm">
+              Entry Numbering
+            </label>
+            <button
+              onClick={handleAssignNumbers}
+              disabled={assignNumbersMutation.isPending}
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {assignNumbersMutation.isPending ? (
+                <>
+                  <span className="animate-spin">⚙️</span>
+                  Assigning Numbers...
+                </>
+              ) : (
+                <>
+                  🔢 Assign Entry Numbers (100+)
+                </>
+              )}
+            </button>
+            <p className="text-xs text-gray-400 mt-2">
+              Assigns sequential numbers starting at 100 to all scheduled entries without numbers
+            </p>
+          </div>
+        )}
 
         {/* Export Buttons */}
         {selectedCompetition && (

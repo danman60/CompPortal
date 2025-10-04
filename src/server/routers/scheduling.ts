@@ -12,6 +12,9 @@ import {
   validateSchedule,
   getMinutesDifference,
 } from '@/lib/scheduling';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import icalGenerator from 'ical-generator';
 
 // Convert Prisma entry to SchedulingEntry
 function toSchedulingEntry(entry: any): SchedulingEntry {
@@ -463,7 +466,7 @@ export const schedulingRouter = router({
       };
     }),
 
-  // Export schedule as CSV
+  // Export schedule as CSV (RFC 4180 compliant)
   exportScheduleCSV: publicProcedure
     .input(z.object({
       competitionId: z.string().uuid(),
@@ -479,13 +482,26 @@ export const schedulingRouter = router({
         where.studio_id = input.studioId;
       }
 
+      // Fetch competition details for filename
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: { name: true },
+      });
+
       const entries = await prisma.competition_entries.findMany({
         where,
         include: {
           studios: { select: { name: true } },
           dance_categories: { select: { name: true } },
+          age_groups: { select: { name: true } },
+          entry_size_categories: { select: { name: true } },
           competition_sessions: {
-            select: { session_date: true, start_time: true },
+            select: {
+              session_name: true,
+              session_number: true,
+              session_date: true,
+              start_time: true
+            },
           },
         },
         orderBy: [
@@ -494,34 +510,80 @@ export const schedulingRouter = router({
         ],
       });
 
-      // Generate CSV
-      const headers = 'Entry Number,Studio,Category,Session Date,Session Time,Running Order,Duration (min)\n';
+      // RFC 4180 compliant CSV escape function
+      const escapeCSV = (value: string | number | null | undefined): string => {
+        if (value === null || value === undefined) return '';
+        const str = String(value);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      // Generate CSV with proper headers
+      const headers = [
+        'Session',
+        'Date',
+        'Time',
+        'Entry Number',
+        'Routine Title',
+        'Studio',
+        'Category',
+        'Age Group',
+        'Entry Size',
+        'Duration (min)',
+        'Running Order',
+      ];
+
       const rows = entries.map(entry => {
+        const sessionName = entry.competition_sessions?.session_name ||
+                           `Session ${entry.competition_sessions?.session_number || 'N/A'}`;
         const sessionDate = entry.competition_sessions?.session_date
-          ? new Date(entry.competition_sessions.session_date).toLocaleDateString()
+          ? new Date(entry.competition_sessions.session_date).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
           : 'N/A';
         const sessionTime = entry.performance_time
-          ? new Date(entry.performance_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          ? new Date(entry.performance_time).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
           : 'N/A';
-        // Duration is stored as interval, use default 3 minutes if not available
-        const duration = 3;
+        const duration = 3; // Default 3 minutes (duration field is interval type)
+
+        // Format entry number with suffix (e.g., "156" or "156a")
+        const entryNumber = entry.entry_number
+          ? `${entry.entry_number}${entry.entry_suffix || ''}`
+          : '';
 
         return [
-          entry.entry_number || '',
-          `"${entry.studios.name}"`,
-          `"${entry.dance_categories.name}"`,
-          sessionDate,
-          sessionTime,
-          entry.running_order || '',
-          duration,
-        ].join(',');
-      }).join('\n');
+          escapeCSV(sessionName),
+          escapeCSV(sessionDate),
+          escapeCSV(sessionTime),
+          escapeCSV(entryNumber),
+          escapeCSV(entry.title),
+          escapeCSV(entry.studios.name),
+          escapeCSV(entry.dance_categories.name),
+          escapeCSV(entry.age_groups.name),
+          escapeCSV(entry.entry_size_categories.name),
+          escapeCSV(duration),
+          escapeCSV(entry.running_order),
+        ];
+      });
 
-      const csvContent = headers + rows;
+      const csvContent = [
+        headers.map(escapeCSV).join(','),
+        ...rows.map(row => row.join(',')),
+      ].join('\r\n');
+
       const base64Data = Buffer.from(csvContent, 'utf-8').toString('base64');
+      const timestamp = new Date().toISOString().split('T')[0];
+      const slug = competition?.name.toLowerCase().replace(/\s+/g, '-') || 'competition';
 
       return {
-        filename: `schedule-${input.competitionId}.csv`,
+        filename: `schedule-${slug}-${timestamp}.csv`,
         data: base64Data,
         mimeType: 'text/csv',
       };
@@ -543,13 +605,30 @@ export const schedulingRouter = router({
         where.studio_id = input.studioId;
       }
 
+      // Fetch competition details
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: {
+          name: true,
+          primary_location: true,
+          venue_address: true,
+        },
+      });
+
       const entries = await prisma.competition_entries.findMany({
         where,
         include: {
           studios: { select: { name: true } },
           dance_categories: { select: { name: true } },
+          age_groups: { select: { name: true } },
+          entry_size_categories: { select: { name: true } },
           competition_sessions: {
-            select: { session_date: true, start_time: true },
+            select: {
+              session_name: true,
+              session_number: true,
+              session_date: true,
+              start_time: true,
+            },
           },
         },
         orderBy: [
@@ -558,18 +637,15 @@ export const schedulingRouter = router({
         ],
       });
 
-      // Generate iCal format
-      const icalHeader = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//CompPortal//Schedule Export//EN',
-        'CALSCALE:GREGORIAN',
-        'METHOD:PUBLISH',
-      ].join('\r\n');
+      // Create calendar
+      const calendar = icalGenerator({
+        name: `${competition?.name || 'Competition'} Schedule`,
+        prodId: '//CompPortal//Schedule Export//EN',
+        timezone: 'America/Toronto',
+      });
 
-      const icalFooter = 'END:VCALENDAR';
-
-      const events = entries.map(entry => {
+      // Add events for each entry
+      entries.forEach(entry => {
         const sessionDate = entry.competition_sessions?.session_date
           ? new Date(entry.competition_sessions.session_date)
           : new Date();
@@ -588,36 +664,157 @@ export const schedulingRouter = router({
 
         // Duration is stored as interval, use default 3 minutes
         const duration = 3;
-        const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+        const endDateTime = new Date(startDateTime.getTime() + duration * 60 * 1000);
 
-        const formatDate = (date: Date) => {
-          return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-        };
+        const sessionName = entry.competition_sessions?.session_name ||
+                           `Session ${entry.competition_sessions?.session_number || ''}`;
+        const location = competition?.primary_location || 'Competition Venue';
 
-        return [
-          'BEGIN:VEVENT',
-          `UID:${entry.id}@compportal`,
-          `DTSTAMP:${formatDate(new Date())}`,
-          `DTSTART:${formatDate(startDateTime)}`,
-          `DTEND:${formatDate(endDateTime)}`,
-          `SUMMARY:Entry #${entry.entry_number} - ${entry.title}`,
-          `DESCRIPTION:Studio: ${entry.studios.name}\\nCategory: ${entry.dance_categories.name}`,
-          `LOCATION:Competition Venue`,
-          'END:VEVENT',
-        ].join('\r\n');
-      }).join('\r\n');
+        // Format entry number with suffix (e.g., "156" or "156a")
+        const entryNumber = entry.entry_number
+          ? `${entry.entry_number}${entry.entry_suffix || ''}`
+          : 'TBD';
 
-      const icalContent = [icalHeader, events, icalFooter].join('\r\n');
+        const event = calendar.createEvent({
+          start: startDateTime,
+          end: endDateTime,
+          summary: `${entry.title} - ${entry.studios.name}`,
+          description: [
+            `Entry #${entryNumber}`,
+            `Studio: ${entry.studios.name}`,
+            `Category: ${entry.dance_categories.name}`,
+            `Age Group: ${entry.age_groups.name}`,
+            `Size: ${entry.entry_size_categories.name}`,
+            `Session: ${sessionName}`,
+            `Running Order: ${entry.running_order || 'TBD'}`,
+          ].join('\n'),
+          location,
+          sequence: 0,
+        });
+        // Set UID using method chaining
+        event.uid(`${entry.id}@compportal.com`);
+      });
+
+      const icalContent = calendar.toString();
       const base64Data = Buffer.from(icalContent, 'utf-8').toString('base64');
+      const slug = competition?.name.toLowerCase().replace(/\s+/g, '-') || 'competition';
 
       return {
-        filename: `schedule-${input.competitionId}.ics`,
+        filename: `schedule-${slug}.ics`,
         data: base64Data,
         mimeType: 'text/calendar',
       };
     }),
 
-  // Export schedule as PDF (simple text-based)
+  // Export schedule as PDF with jsPDF
+  // Assign entry numbers to all competition entries (starts at 100)
+  assignEntryNumbers: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Get all entries for this competition that don't have numbers yet
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          entry_number: null,
+        },
+        orderBy: [
+          { session_id: 'asc' },
+          { running_order: 'asc' },
+          { created_at: 'asc' },
+        ],
+      });
+
+      if (entries.length === 0) {
+        return { success: true, message: 'All entries already have numbers', assignedCount: 0 };
+      }
+
+      // Get the highest existing entry number for this competition
+      const maxEntry = await prisma.competition_entries.findFirst({
+        where: {
+          competition_id: input.competitionId,
+          entry_number: { not: null },
+        },
+        orderBy: { entry_number: 'desc' },
+      });
+
+      let nextNumber = maxEntry?.entry_number ? maxEntry.entry_number + 1 : 100;
+
+      // Assign numbers sequentially
+      const updates = entries.map(entry =>
+        prisma.competition_entries.update({
+          where: { id: entry.id },
+          data: {
+            entry_number: nextNumber++,
+            updated_at: new Date(),
+          },
+        })
+      );
+
+      await Promise.all(updates);
+
+      return {
+        success: true,
+        message: `Assigned entry numbers to ${entries.length} entries`,
+        assignedCount: entries.length,
+        startNumber: maxEntry?.entry_number ? maxEntry.entry_number + 1 : 100,
+        endNumber: nextNumber - 1,
+      };
+    }),
+
+  // Assign late entry suffix (e.g., 156a, 156b)
+  assignLateEntrySuffix: publicProcedure
+    .input(z.object({
+      entryId: z.string().uuid(),
+      afterEntryNumber: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      // Get the entry to update
+      const entry = await prisma.competition_entries.findUnique({
+        where: { id: input.entryId },
+      });
+
+      if (!entry) {
+        throw new Error('Entry not found');
+      }
+
+      // Find existing suffixes for this entry number
+      const existingSuffixes = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: entry.competition_id,
+          entry_number: input.afterEntryNumber,
+          entry_suffix: { not: null },
+        },
+        select: { entry_suffix: true },
+        orderBy: { entry_suffix: 'desc' },
+      });
+
+      // Calculate next suffix letter
+      let nextSuffix = 'a';
+      if (existingSuffixes.length > 0) {
+        const lastSuffix = existingSuffixes[0].entry_suffix || 'a';
+        nextSuffix = String.fromCharCode(lastSuffix.charCodeAt(0) + 1);
+      }
+
+      // Update entry with suffix
+      await prisma.competition_entries.update({
+        where: { id: input.entryId },
+        data: {
+          entry_number: input.afterEntryNumber,
+          entry_suffix: nextSuffix,
+          is_late_entry: true,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        entryNumber: `${input.afterEntryNumber}${nextSuffix}`,
+        suffix: nextSuffix,
+      };
+    }),
+
   exportSchedulePDF: publicProcedure
     .input(z.object({
       competitionId: z.string().uuid(),
@@ -633,13 +830,26 @@ export const schedulingRouter = router({
         where.studio_id = input.studioId;
       }
 
+      // Fetch competition details
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: { name: true },
+      });
+
       const entries = await prisma.competition_entries.findMany({
         where,
         include: {
           studios: { select: { name: true } },
           dance_categories: { select: { name: true } },
+          age_groups: { select: { name: true } },
+          entry_size_categories: { select: { name: true } },
           competition_sessions: {
-            select: { session_date: true, start_time: true, session_name: true },
+            select: {
+              session_name: true,
+              session_number: true,
+              session_date: true,
+              start_time: true,
+            },
           },
         },
         orderBy: [
@@ -649,6 +859,7 @@ export const schedulingRouter = router({
       });
 
       // Group by session
+      type EntryWithRelations = typeof entries[0];
       const sessionGroups = entries.reduce((acc, entry) => {
         const sessionId = entry.session_id || 'unscheduled';
         if (!acc[sessionId]) {
@@ -656,45 +867,140 @@ export const schedulingRouter = router({
         }
         acc[sessionId].push(entry);
         return acc;
-      }, {} as Record<string, typeof entries>);
+      }, {} as Record<string, EntryWithRelations[]>);
 
-      // Generate simple text-based PDF content (can be enhanced with actual PDF library)
-      let pdfContent = 'COMPETITION SCHEDULE\n\n';
-      pdfContent += '='.repeat(80) + '\n\n';
+      // Create PDF
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
 
+      let isFirstPage = true;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Title on first page
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Competition Schedule - ${competition?.name || 'Competition'}`, pageWidth / 2, 15, {
+        align: 'center',
+      });
+
+      let yPosition = 25;
+
+      // Process each session
       for (const [sessionId, sessionEntries] of Object.entries(sessionGroups)) {
+        if (!isFirstPage) {
+          doc.addPage();
+          yPosition = 15;
+        }
+        isFirstPage = false;
+
         const firstEntry = sessionEntries[0];
-        const sessionName = firstEntry.competition_sessions?.session_name || 'Session';
+        const sessionName = firstEntry.competition_sessions?.session_name ||
+                           `Session ${firstEntry.competition_sessions?.session_number || ''}`;
         const sessionDate = firstEntry.competition_sessions?.session_date
-          ? new Date(firstEntry.competition_sessions.session_date).toLocaleDateString()
-          : 'N/A';
+          ? new Date(firstEntry.competition_sessions.session_date).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          : 'Date TBD';
 
-        pdfContent += `${sessionName} - ${sessionDate}\n`;
-        pdfContent += '-'.repeat(80) + '\n';
-        pdfContent += 'Entry #  Studio                    Category                Time      Order\n';
-        pdfContent += '-'.repeat(80) + '\n';
+        // Session header
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${sessionName}`, 14, yPosition);
+        yPosition += 6;
 
-        sessionEntries.forEach(entry => {
-          const entryNum = String(entry.entry_number || '').padEnd(8);
-          const studio = entry.studios.name.substring(0, 24).padEnd(25);
-          const category = entry.dance_categories.name.substring(0, 23).padEnd(24);
-          const time = entry.performance_time
-            ? new Date(entry.performance_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-            : 'N/A'.padEnd(9);
-          const order = String(entry.running_order || '').padEnd(5);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text(sessionDate, 14, yPosition);
+        yPosition += 8;
 
-          pdfContent += `${entryNum} ${studio} ${category} ${time} ${order}\n`;
+        // Table data
+        const tableData = sessionEntries.map(entry => {
+          // Format entry number with suffix (e.g., "156" or "156a")
+          const entryNumber = entry.entry_number
+            ? `${entry.entry_number}${entry.entry_suffix || ''}`
+            : '';
+
+          return [
+            entryNumber,
+            entry.title || '',
+            entry.studios.name || '',
+            entry.dance_categories.name || '',
+            entry.age_groups.name || '',
+            entry.performance_time
+              ? new Date(entry.performance_time).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : 'TBD',
+            entry.running_order?.toString() || '',
+          ];
         });
 
-        pdfContent += '\n';
+        autoTable(doc, {
+          head: [['Entry #', 'Routine Name', 'Studio', 'Category', 'Age Group', 'Time', 'Order']],
+          body: tableData,
+          startY: yPosition,
+          theme: 'striped',
+          headStyles: {
+            fillColor: [66, 66, 66],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 9,
+          },
+          bodyStyles: {
+            fontSize: 8,
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245],
+          },
+          columnStyles: {
+            0: { cellWidth: 15 },  // Entry #
+            1: { cellWidth: 50 },  // Routine Name
+            2: { cellWidth: 45 },  // Studio
+            3: { cellWidth: 35 },  // Category
+            4: { cellWidth: 30 },  // Age Group
+            5: { cellWidth: 20 },  // Time
+            6: { cellWidth: 15 },  // Order
+          },
+          margin: { top: yPosition, left: 14, right: 14 },
+          didDrawPage: (data) => {
+            // Footer with page numbers
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text(
+              `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+              14,
+              pageHeight - 10
+            );
+            doc.text(
+              `Page ${doc.getCurrentPageInfo().pageNumber}`,
+              pageWidth - 14,
+              pageHeight - 10,
+              { align: 'right' }
+            );
+          },
+        });
+
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
       }
 
-      const base64Data = Buffer.from(pdfContent, 'utf-8').toString('base64');
+      // Get PDF as buffer
+      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+      const base64Data = pdfBuffer.toString('base64');
+      const timestamp = new Date().toISOString().split('T')[0];
+      const slug = competition?.name.toLowerCase().replace(/\s+/g, '-') || 'competition';
 
       return {
-        filename: `schedule-${input.competitionId}.txt`,
+        filename: `schedule-${slug}-${timestamp}.pdf`,
         data: base64Data,
-        mimeType: 'text/plain',
+        mimeType: 'application/pdf',
       };
     }),
 });

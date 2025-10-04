@@ -440,6 +440,8 @@ model competition_entries {
   reservation_id                                                                       String?                  @db.Uuid
   studio_id                                                                            String                   @db.Uuid
   entry_number                                                                         Int?
+  entry_suffix                                                                         String?                  @db.VarChar(5)
+  is_late_entry                                                                        Boolean?                 @default(false)
   sequence_number                                                                      Int?
   title                                                                                String                   @db.VarChar(255)
   category_id                                                                          String                   @db.Uuid
@@ -498,6 +500,7 @@ model competition_entries {
   @@index([sequence_number], map: "idx_entries_sequence")
   @@index([session_id], map: "idx_entries_session")
   @@index([studio_id], map: "idx_entries_studio")
+  @@unique([competition_id, entry_number, entry_suffix], map: "idx_entry_number_per_comp")
   @@schema("public")
 }
 
