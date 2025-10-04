@@ -31,6 +31,20 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
       <div>
         <h2 className="text-2xl font-bold text-white mb-4">Admin Tools</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Competitions */}
+          <Link
+            href="/dashboard/competitions"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🎪</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Events</h3>
+                <p className="text-gray-400 text-sm">Create & manage events</p>
+              </div>
+            </div>
+          </Link>
+
           {/* All Studios */}
           <Link
             href="/dashboard/studios"
@@ -153,6 +167,20 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
               <div>
                 <h3 className="text-xl font-semibold text-white">Analytics</h3>
                 <p className="text-gray-400 text-sm">Insights & metrics</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Reports */}
+          <Link
+            href="/dashboard/reports"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">📄</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Reports</h3>
+                <p className="text-gray-400 text-sm">PDF scorecards & results</p>
               </div>
             </div>
           </Link>
