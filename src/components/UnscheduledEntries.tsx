@@ -77,7 +77,7 @@ export default function UnscheduledEntries({
       <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border-b border-white/20 p-6">
         <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
           <span>📋</span>
-          Unscheduled Entries
+          Unscheduled Routines
         </h3>
         <div className="text-3xl font-bold text-yellow-400">
           {filteredEntries.length}
@@ -138,7 +138,7 @@ export default function UnscheduledEntries({
         </div>
       )}
 
-      {/* Entries List */}
+      {/* Routines List */}
       <div className="p-4 max-h-[500px] overflow-y-auto">
         {isLoading ? (
           <div className="text-center py-12">
@@ -150,8 +150,8 @@ export default function UnscheduledEntries({
             <div className="text-4xl mb-2">✅</div>
             <p>
               {entries.length === 0
-                ? 'All entries are scheduled!'
-                : 'No entries match filters'}
+                ? 'All routines are scheduled!'
+                : 'No routines match filters'}
             </p>
           </div>
         ) : (
@@ -212,7 +212,7 @@ export default function UnscheduledEntries({
                               {formatDate(session.sessionDate)} @ {formatTime(session.startTime)}
                             </div>
                             <div className="text-gray-400">
-                              {session.currentEntryCount} / {session.maxEntries || '∞'} entries
+                              {session.currentEntryCount} / {session.maxEntries || '∞'} routines
                             </div>
                             {isFull && <div className="text-red-400 mt-1">⚠️ Full</div>}
                             {assigningTo === session.sessionId && <div>⚙️ Assigning...</div>}

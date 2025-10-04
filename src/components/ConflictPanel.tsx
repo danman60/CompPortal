@@ -51,7 +51,7 @@ export default function ConflictPanel({ conflicts, onRefresh }: ConflictPanelPro
         <div className="text-6xl mb-4">✅</div>
         <h3 className="text-2xl font-bold text-white mb-2">No Conflicts Detected</h3>
         <p className="text-gray-300">
-          The current schedule has no conflicts. All entries are properly scheduled!
+          The current schedule has no conflicts. All routines are properly scheduled!
         </p>
         <button
           onClick={onRefresh}
@@ -135,7 +135,7 @@ export default function ConflictPanel({ conflicts, onRefresh }: ConflictPanelPro
                           key={entryId}
                           className="px-2 py-1 bg-white/10 text-gray-300 rounded"
                         >
-                          Entry: {entryId.slice(0, 8)}...
+                          Routine: {entryId.slice(0, 8)}...
                         </span>
                       ))}
                       {conflict.dancerIds?.map((dancerId) => (
@@ -196,7 +196,7 @@ export default function ConflictPanel({ conflicts, onRefresh }: ConflictPanelPro
                           key={entryId}
                           className="px-2 py-1 bg-white/10 text-gray-300 rounded"
                         >
-                          Entry: {entryId.slice(0, 8)}...
+                          Routine: {entryId.slice(0, 8)}...
                         </span>
                       ))}
                       {conflict.dancerIds?.map((dancerId) => (

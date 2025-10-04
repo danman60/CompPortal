@@ -60,14 +60,14 @@ export default function SessionCard({
   };
 
   const handleClearAll = async () => {
-    if (confirm(`Clear all ${entries.length} entries from this session?`)) {
+    if (confirm(`Clear all ${entries.length} routines from this session?`)) {
       await onClearEntries(entries.map(e => e.id));
     }
   };
 
   const handleAutoSchedule = async () => {
     if (selectedEntries.length === 0) {
-      alert('No entries selected for auto-scheduling');
+      alert('No routines selected for auto-scheduling');
       return;
     }
 
@@ -120,7 +120,7 @@ export default function SessionCard({
         <div className="grid grid-cols-4 gap-4 text-center">
           <div className="bg-white/10 rounded-lg p-3">
             <div className="text-2xl font-bold text-white">{entries.length}</div>
-            <div className="text-xs text-gray-400">Entries</div>
+            <div className="text-xs text-gray-400">Routines</div>
           </div>
           <div className="bg-white/10 rounded-lg p-3">
             <div className="text-2xl font-bold text-white">{stats?.totalDuration || 0}</div>
@@ -132,7 +132,7 @@ export default function SessionCard({
           </div>
           <div className="bg-white/10 rounded-lg p-3">
             <div className="text-2xl font-bold text-white">{session.maxEntries || '∞'}</div>
-            <div className="text-xs text-gray-400">Max Entries</div>
+            <div className="text-xs text-gray-400">Max Routines</div>
           </div>
         </div>
 
@@ -157,9 +157,9 @@ export default function SessionCard({
       {/* Auto-Schedule Panel */}
       {showAutoSchedule && (
         <div className="bg-yellow-500/10 border-b border-yellow-400/30 p-4">
-          <h4 className="text-white font-semibold mb-2">🤖 Auto-Schedule Entries</h4>
+          <h4 className="text-white font-semibold mb-2">🤖 Auto-Schedule Routines</h4>
           <p className="text-gray-300 text-sm mb-3">
-            Select entries to automatically schedule them in this session with optimal timing.
+            Select routines to automatically schedule them in this session with optimal timing.
           </p>
           {selectedEntries.length > 0 && (
             <div className="flex gap-2">
@@ -168,7 +168,7 @@ export default function SessionCard({
                 disabled={autoScheduleMutation.isPending}
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
               >
-                Schedule {selectedEntries.length} {selectedEntries.length === 1 ? 'Entry' : 'Entries'}
+                Schedule {selectedEntries.length} {selectedEntries.length === 1 ? 'Routine' : 'Routines'}
               </button>
               <button
                 onClick={() => setSelectedEntries([])}
@@ -181,12 +181,12 @@ export default function SessionCard({
         </div>
       )}
 
-      {/* Entries List */}
+      {/* Routines List */}
       <div className="p-4 max-h-[600px] overflow-y-auto">
         {entries.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <div className="text-4xl mb-2">📭</div>
-            <p>No entries scheduled yet</p>
+            <p>No routines scheduled yet</p>
           </div>
         ) : (
           <div className="space-y-2">
