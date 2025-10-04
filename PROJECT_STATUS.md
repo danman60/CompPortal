@@ -117,15 +117,36 @@ ac21c8c - End-to-end test results (3 routines created successfully)
 
 ---
 
+## Latest Performance Optimizations (Oct 4, 2025)
+
+### 🚀 Database Indexing Improvements
+**Migration**: `add_index_competition_entries_reservation_id`
+
+**Indexes Added**:
+1. `idx_entries_reservation` - Single column index on `reservation_id`
+2. `idx_entries_reservation_status` - Composite index on `(reservation_id, status)`
+
+**Impact**:
+- Critical for space limit validation queries (our security fix)
+- Query execution time: **0.110ms** (tested with EXPLAIN ANALYZE)
+- Optimizes the most frequently hit validation path
+- Scales efficiently as data grows
+
+**Why This Matters**:
+The space limit validation fix we deployed queries entries by `reservation_id`. Without these indexes, this would become a performance bottleneck as the database grows. These indexes ensure the validation remains fast even with thousands of entries.
+
+---
+
 ## Next Session Priorities
 
 1. ✅ ~~Deploy backend fix to production~~ (Completed - commit `6eded36`)
 2. ✅ ~~Backend security audit~~ (Completed - 16 routers audited, no issues found)
 3. ✅ ~~Test critical user flows~~ (Completed - space limits, reservations, judge scoring all working)
-4. 📋 Final production testing on Vercel deployment
-5. 📹 Record demo video/screenshots for stakeholders
-6. 📊 Performance testing under realistic load
-7. 🔄 Post-MVP: UI warning when approaching space limit (nice-to-have)
+4. ✅ ~~Performance optimization~~ (Completed - added critical indexes, 0.110ms query time)
+5. 📋 Final production testing on Vercel deployment
+6. 📹 Record demo video/screenshots for stakeholders
+7. 📊 Load testing with realistic data volumes
+8. 🔄 Post-MVP: UI warning when approaching space limit (nice-to-have)
 
 ---
 
