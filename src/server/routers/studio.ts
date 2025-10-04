@@ -115,4 +115,30 @@ export const studioRouter = router({
 
       return studio;
     }),
+
+  // Update an existing studio
+  update: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        data: z.object({
+          name: z.string().min(2).max(255).optional(),
+          email: z.string().email().optional(),
+          phone: z.string().optional(),
+          address1: z.string().optional(),
+          city: z.string().optional(),
+          province: z.string().optional(),
+          postal_code: z.string().optional(),
+          country: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const studio = await prisma.studios.update({
+        where: { id: input.id },
+        data: input.data,
+      });
+
+      return studio;
+    }),
 });

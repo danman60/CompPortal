@@ -380,3 +380,147 @@ System Enforces Token Limit
 **Success Rate**: 100%
 **MVP Status**: ✅ 100% Complete (Two-Week Deadline Met)
 **Features Until Cleanup**: 3
+
+---
+
+## October 3, 2025 - Phase 1 & Phase 2: Critical Bug Fixes + Terminology Updates ✅
+
+### 00:00 - Phase 1: Critical Bug Fixes (Role-Based Scoping & Dropdown Styling)
+
+#### Planning Phase
+- **Source**: User test report with fixes/requests
+- **Created**: FIXES_AND_ENHANCEMENTS.md (comprehensive 520-line implementation plan)
+- **Priority**: 🔴 CRITICAL (P0 bugs affecting UX and security)
+- **Complexity**: MEDIUM
+- **Estimated Time**: 2-3 hours
+
+#### Problem Identified
+1. **Dropdown White-on-White**: All `<select>` dropdowns showed white text on white background (unreadable)
+2. **Studio Director Invoice Access**: Studio directors could view ALL studios' invoices
+3. **Studio Director Reservation UI**: Studio directors saw capacity tokens and approve/reject buttons (competition director features)
+
+#### Implementation Phase - Phase 1
+
+**Files Modified**:
+1. src/app/dashboard/reports/page.tsx - Fixed 5 dropdown elements
+2. src/app/dashboard/analytics/page.tsx - Fixed dropdown styling
+3. src/app/dashboard/judges/page.tsx - Fixed dropdown styling
+4. src/app/dashboard/scoreboard/page.tsx - Fixed dropdown styling
+5. src/app/dashboard/scoring/page.tsx - Fixed 2 dropdown elements
+6. src/components/ReservationForm.tsx - Fixed dropdown styling
+7. src/app/dashboard/invoices/page.tsx - Added server-side studio ownership detection
+8. src/components/InvoicesList.tsx - Added `studioId` prop for role-based rendering
+9. src/app/dashboard/reservations/page.tsx - Added role detection
+10. src/components/ReservationsList.tsx - Added `isStudioDirector` prop with conditional rendering
+
+**Key Changes**:
+- Added `className="text-gray-900"` to all `<option>` elements (11 files)
+- Server-side Prisma queries for studio ownership: `await prisma.studios.findFirst({ where: { owner_id: user.id } })`
+- Conditional rendering based on role props
+- Hidden token capacity, approve/reject UI from studio directors
+- Hard-locked studio directors to their own studio data
+
+#### Testing Phase - Phase 1
+- **Build Test**: ✅ Passed - All 24 routes compile successfully
+- **Playwright Test**: ⏳ Blocked by deployment issue (wrong app showing at URL)
+
+#### Deployment Phase - Phase 1
+- **Commit Hash**: b6705b5
+- **Commit Message**: "Phase 1: Critical Bug Fixes (Role-Based Scoping & Dropdowns)"
+- **Build Status**: ✅ Success
+
+---
+
+### 00:30 - Phase 2: Terminology Updates (Competition → Event, Entries → Routines)
+
+#### Planning Phase
+- **User Requirements**: Standardize terminology throughout application
+  - Competition → Event
+  - Entries/Entry → Routines/Routine
+  - Spaces Requested → Routines Requested
+  - Entry # → Routine #
+
+#### Implementation Phase - Phase 2
+
+**Phase 2.0 - Core Studio Director Views**
+
+**Files Modified**:
+1. src/components/StudioDirectorDashboard.tsx
+   - Updated Getting Started workflow (5 steps)
+   - Changed "My Entries" → "My Routines"
+   - Updated reservation description
+
+2. src/components/ReservationForm.tsx
+   - Step 2 title: "Routines Requested"
+   - Form label: "Number of Routines"
+   - Review section updated
+
+3. src/app/dashboard/entries/page.tsx
+   - Page title: "My Routines"
+   - Description: "Manage your competition routines"
+   - Button: "Create Routine"
+
+4. src/app/dashboard/entries/create/page.tsx
+   - Page title: "Create Routine"
+   - Breadcrumb: "Back to Routines"
+
+5. src/components/EntryForm.tsx
+   - "Competition *" → "Event *"
+   - "Entry Size *" → "Routine Size *"
+   - "Review Entry" → "Review Routine"
+   - Buttons: "Create/Update Routine"
+
+6. src/components/EntriesList.tsx
+   - Filter: "All Events"
+   - Empty state: "No routines found"
+   - "Entry #" → "Routine #" (all instances)
+   - Results count: "routines"
+
+**Phase 2.1 - Competition Director Views**
+
+**Files Modified**:
+7. src/components/CompetitionDirectorDashboard.tsx
+   - "All Entries" → "All Routines"
+   - "Competition entries" → "View all event routines"
+   - "Competition schedule" → "Event schedule"
+   - "Competition Operations" → "Event Operations"
+   - "competition entry tokens" → "event routine tokens"
+   - "entry submissions" → "routine submissions"
+
+#### Testing Phase - Phase 2
+- **Build Test**: ✅ Passed - All 24 routes compile successfully (both commits)
+- **Playwright Test**: ⏳ Blocked by deployment issue
+
+#### Deployment Phase - Phase 2
+- **Commit Hash 1**: 91921ca (Phase 2.0 - Core views)
+- **Commit Hash 2**: 6e36b05 (Phase 2.1 - Competition Director views)
+- **Build Status**: ✅ Success (both builds)
+
+#### Results
+- **Status**: ✅ Code Complete (Testing Blocked)
+- **Total Files Modified**: 17 files across both phases
+- **Total Commits**: 3 (b6705b5, 91921ca, 6e36b05)
+- **Build Success Rate**: 100% (3/3 builds passed)
+- **Production Testing**: ⏸️ **BLOCKED** - Deployment URL (comp-portal.vercel.app) showing wrong application (Passt compliance platform instead of GlowDance CompPortal)
+
+#### Deployment Blocker
+- **Issue**: https://comp-portal.vercel.app redirects to Passt authentication page
+- **Impact**: Cannot validate fixes in production with Playwright MCP
+- **Next Steps**: User needs to provide correct deployment URL or fix Vercel deployment configuration
+
+#### Next Steps
+- ⏳ Fix deployment URL issue
+- ⏳ Playwright MCP validation of all fixes
+- ⏳ Fix studio settings to single-tenant view
+- ⏳ Additional terminology updates in remaining files
+- ⏳ Continue with Phase 3+ items from FIXES_AND_ENHANCEMENTS.md
+
+---
+
+## Statistics (Updated)
+
+**Total Features Completed**: 4 (Schedule Export, Entry Numbering, Phase 1 Fixes, Phase 2 Terminology)
+**Total Commits**: 5 (ed77a41, 87cc26f, b6705b5, 91921ca, 6e36b05)
+**Average Build Time**: ~1m
+**Success Rate**: 100%
+**Current Blocker**: Deployment URL issue preventing production testing
