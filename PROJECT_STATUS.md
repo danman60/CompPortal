@@ -52,12 +52,44 @@ ac21c8c - End-to-end test results (3 routines created successfully)
 
 ---
 
+## Latest Session (Oct 4, 2025 - Space Limit Validation Testing)
+
+### 🔴 CRITICAL BUG DISCOVERED & FIXED
+
+**Issue**: Space limit validation was being bypassed when `reservation_id` was undefined
+**Root Cause**: Backend validation used `if (input.reservation_id)` which skipped entirely when undefined
+**Impact**: Studios could create unlimited routines despite confirmed space limits
+
+**Fix Applied** (`src/server/routers/entry.ts:327-365`):
+- Now always checks for approved reservations using `findFirst`
+- Requires `reservation_id` when approved reservation exists
+- Validates `reservation_id` matches the approved reservation
+- Enforces space limit before allowing entry creation
+
+### ✅ Validation Test Results
+
+**Test**: Attempt to create 11th routine when 10-space limit reached
+**Result**: ✅ **VALIDATION WORKING CORRECTLY**
+- Error message: "Reservation capacity exceeded. Confirmed: 10, Current: 10"
+- Database verified: Still exactly 10 entries (11th was blocked)
+- Space counter UI: Shows "10 / 10 - 0 spaces remaining"
+
+**Files Modified**:
+- `src/server/routers/entry.ts` - Backend validation fix
+
+### Test Data Cleanup
+- Fixed inconsistent test data (first 3 routines had `reservation_id: null`)
+- All 10 routines now properly linked to reservation `07222fbe...`
+- Ready for production testing
+
+---
+
 ## Next Session Priorities
 
-1. Final QA pass with clean database
-2. Test edge cases (11th routine creation, validation errors)
-3. Deploy to production
-4. Record demo video/screenshots
+1. Deploy backend fix to production (Vercel auto-deploy)
+2. Final QA pass on production environment
+3. Record demo video/screenshots
+4. Post-MVP: Consider adding UI warning when approaching space limit
 
 ---
 
