@@ -36,6 +36,16 @@ export default function SchedulingManager() {
   const assignMutation = trpc.scheduling.assignEntryToSession.useMutation();
   const clearMutation = trpc.scheduling.clearSchedule.useMutation();
   const assignNumbersMutation = trpc.scheduling.assignEntryNumbers.useMutation();
+  const publishMutation = trpc.scheduling.publishSchedule.useMutation({
+    onSuccess: () => {
+      alert('Schedule published and locked! Entry numbers are now final.');
+      refetchEntries();
+      refetchSessions();
+    },
+    onError: (error) => {
+      alert(`Error: ${error.message}`);
+    },
+  });
 
   // Export mutations
   const exportPDFMutation = trpc.scheduling.exportSchedulePDF.useMutation();
@@ -138,6 +148,13 @@ export default function SchedulingManager() {
     await handleRefresh();
   };
 
+  const handlePublishSchedule = () => {
+    if (!selectedCompetition) return;
+    if (confirm('Publish schedule? This will lock all entry numbers and prevent changes.')) {
+      publishMutation.mutate({ competitionId: selectedCompetition });
+    }
+  };
+
   if (competitionsLoading) {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
@@ -191,6 +208,16 @@ export default function SchedulingManager() {
               }`}
             >
               {showConflicts ? '⚠️ Hide Conflicts' : '🔍 Show Conflicts'}
+            </button>
+          )}
+
+          {selectedCompetition && (
+            <button
+              onClick={handlePublishSchedule}
+              disabled={publishMutation.isPending}
+              className="px-4 py-2 rounded-lg font-semibold transition-all bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 disabled:opacity-50"
+            >
+              {publishMutation.isPending ? '⚙️ Publishing...' : '📋 Publish Schedule'}
             </button>
           )}
 

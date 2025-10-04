@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SchedulingEntry } from '@/lib/scheduling';
+import { LateSuffixModal } from './LateSuffixModal';
 
 interface UnscheduledEntriesProps {
   entries: SchedulingEntry[];
@@ -31,6 +32,7 @@ export default function UnscheduledEntries({
   const [assigningTo, setAssigningTo] = useState<string | null>(null);
   const [filterStudio, setFilterStudio] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [showSuffixModal, setShowSuffixModal] = useState<string | null>(null);
 
   // Get unique studios and categories
   const studios = Array.from(new Set(entries.map(e => e.studioName))).sort();
@@ -71,9 +73,24 @@ export default function UnscheduledEntries({
     });
   };
 
+  const selectedForSuffix = filteredEntries.find(e => e.id === showSuffixModal);
+
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden sticky top-6">
-      {/* Header */}
+    <>
+      {showSuffixModal && selectedForSuffix && (
+        <LateSuffixModal
+          entryId={showSuffixModal}
+          entryTitle={selectedForSuffix.title}
+          onClose={() => setShowSuffixModal(null)}
+          onSuccess={() => {
+            onRefresh();
+            setShowSuffixModal(null);
+          }}
+        />
+      )}
+
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden sticky top-6">
+        {/* Header */}
       <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border-b border-white/20 p-6">
         <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
           <span>📋</span>
@@ -173,15 +190,27 @@ export default function UnscheduledEntries({
                     <div>⏱️ {entry.duration} min</div>
                   </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedEntry(selectedEntry === entry.id ? null : entry.id);
-                    }}
-                    className="w-full mt-3 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-sm font-semibold transition-all"
-                  >
-                    {selectedEntry === entry.id ? 'Cancel' : 'Assign to Session'}
-                  </button>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEntry(selectedEntry === entry.id ? null : entry.id);
+                      }}
+                      className="flex-1 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-sm font-semibold transition-all"
+                    >
+                      {selectedEntry === entry.id ? 'Cancel' : 'Assign to Session'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowSuffixModal(entry.id);
+                      }}
+                      className="px-3 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 rounded-lg text-sm font-semibold transition-all"
+                      title="Mark as Late Entry"
+                    >
+                      Late Entry
+                    </button>
+                  </div>
                 </div>
 
                 {/* Session Assignment */}
@@ -227,6 +256,7 @@ export default function UnscheduledEntries({
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

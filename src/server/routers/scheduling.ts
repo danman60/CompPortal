@@ -251,18 +251,42 @@ export const schedulingRouter = router({
       // Auto-schedule
       const scheduledEntries = autoScheduleSession(sessionCapacity, schedulingEntries, constraints);
 
-      // Update database
-      const updates = scheduledEntries.map(entry =>
-        prisma.competition_entries.update({
+      // Check if schedule is locked
+      const competition = await prisma.competitions.findUnique({
+        where: { id: session.competition_id },
+        select: { schedule_locked: true },
+      });
+
+      if (competition?.schedule_locked) {
+        throw new Error('Cannot modify schedule - entry numbers are locked');
+      }
+
+      // Get highest entry number for this competition
+      const highestEntry = await prisma.competition_entries.findFirst({
+        where: {
+          competition_id: session.competition_id,
+          entry_number: { not: null },
+        },
+        orderBy: { entry_number: 'desc' },
+        select: { entry_number: true },
+      });
+
+      let nextEntryNumber = highestEntry?.entry_number ? highestEntry.entry_number + 1 : 100;
+
+      // Update database with entry numbers
+      const updates = scheduledEntries.map(entry => {
+        const entryNumber = nextEntryNumber++;
+        return prisma.competition_entries.update({
           where: { id: entry.id },
           data: {
             session_id: entry.sessionId,
             performance_time: entry.performanceTime,
             running_order: entry.runningOrder,
+            entry_number: entryNumber,
             updated_at: new Date(),
           },
-        })
-      );
+        });
+      });
 
       await Promise.all(updates);
 
@@ -335,11 +359,84 @@ export const schedulingRouter = router({
           session_id: null,
           performance_time: null,
           running_order: null,
+          entry_number: null,
+          entry_suffix: null,
+          is_late_entry: false,
           updated_at: new Date(),
         },
       });
 
       return { success: true, clearedCount: input.entryIds.length };
+    }),
+
+  // Publish schedule and lock entry numbers
+  publishSchedule: publicProcedure
+    .input(z.object({ competitionId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      // Check if all entries have numbers
+      const unnumberedCount = await prisma.competition_entries.count({
+        where: {
+          competition_id: input.competitionId,
+          entry_number: null,
+        },
+      });
+
+      if (unnumberedCount > 0) {
+        throw new Error(`Cannot publish: ${unnumberedCount} entries are not scheduled`);
+      }
+
+      // Lock the schedule
+      await prisma.competitions.update({
+        where: { id: input.competitionId },
+        data: {
+          schedule_locked: true,
+          schedule_published_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+
+      return { success: true, message: 'Schedule published and locked' };
+    }),
+
+  // Assign suffix to late entry (e.g., 156a, 156b)
+  assignLateSuffix: publicProcedure
+    .input(z.object({
+      entryId: z.string().uuid(),
+      baseEntryNumber: z.number().int().min(100),
+      suffix: z.string().regex(/^[a-z]$/), // Single lowercase letter
+    }))
+    .mutation(async ({ input }) => {
+      const entry = await prisma.competition_entries.findUnique({
+        where: { id: input.entryId },
+        select: { competition_id: true },
+      });
+
+      if (!entry) throw new Error('Entry not found');
+
+      // Check if suffix already exists
+      const existing = await prisma.competition_entries.findFirst({
+        where: {
+          competition_id: entry.competition_id,
+          entry_number: input.baseEntryNumber,
+          entry_suffix: input.suffix,
+        },
+      });
+
+      if (existing) {
+        throw new Error(`Suffix ${input.baseEntryNumber}${input.suffix} already exists`);
+      }
+
+      await prisma.competition_entries.update({
+        where: { id: input.entryId },
+        data: {
+          entry_number: input.baseEntryNumber,
+          entry_suffix: input.suffix,
+          is_late_entry: true,
+          updated_at: new Date(),
+        },
+      });
+
+      return { success: true, displayNumber: `${input.baseEntryNumber}${input.suffix}` };
     }),
 
   // Get session statistics

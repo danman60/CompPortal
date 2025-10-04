@@ -590,6 +590,8 @@ model competitions {
   total_reservation_tokens     Int?                    @default(600)
   available_reservation_tokens Int?                    @default(600)
   tokens_override_enabled      Boolean?                @default(false)
+  schedule_published_at        DateTime?               @db.Timestamptz(6)
+  schedule_locked              Boolean?                @default(false)
   created_at                   DateTime?               @default(now()) @db.Timestamp(6)
   updated_at                   DateTime?               @default(now()) @db.Timestamp(6)
   awards                       awards[]

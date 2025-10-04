@@ -137,6 +137,20 @@ export default function EntriesList() {
               key={entry.id}
               className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all"
             >
+              {/* Entry Number Badge */}
+              {entry.entry_number && (
+                <div className="mb-2">
+                  <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-bold rounded-lg shadow-md">
+                    #{entry.entry_number}{entry.entry_suffix || ''}
+                  </span>
+                  {entry.is_late_entry && (
+                    <span className="ml-2 px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
+                      LATE
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Header */}
               <div className="flex justify-between items-start mb-4">
                 <div>
