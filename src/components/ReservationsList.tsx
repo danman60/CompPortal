@@ -11,7 +11,8 @@ interface ReservationsListProps {
 
 export default function ReservationsList({ isStudioDirector = false }: ReservationsListProps) {
   const router = useRouter();
-  const { data, isLoading, refetch } = trpc.reservation.getAll.useQuery();
+  const utils = trpc.useUtils();
+  const { data, isLoading } = trpc.reservation.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   // Approval mutation
   const approveMutation = trpc.reservation.approve.useMutation({
     onSuccess: () => {
-      refetch();
+      utils.reservation.getAll.invalidate();
       setProcessingId(null);
     },
     onError: (error) => {
@@ -31,7 +32,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   // Rejection mutation
   const rejectMutation = trpc.reservation.reject.useMutation({
     onSuccess: () => {
-      refetch();
+      utils.reservation.getAll.invalidate();
       setProcessingId(null);
     },
     onError: (error) => {
