@@ -8,20 +8,17 @@
 
 ---
 
-## Current Status: 95% MVP Complete ✅
+## Current Status: 98% MVP Complete ✅
 
 ### What's Working
 - ✅ Reservation workflow (SD creates → CD approves)
 - ✅ Routine creation with 7 category types
 - ✅ Dancer management (batch + individual)
-- ✅ Space limit enforcement (committed e29ba13)
+- ✅ Space limit enforcement (counter UI + backend validation)
+- ✅ "Create Routines" CTA on approved reservations
 - ✅ Role-based access control (SD/CD)
 - ✅ Judge scoring interface with special awards
 - ✅ Score review tab for judges
-
-### Active Work
-- 🔧 Testing space limit with 11+ routines
-- 🔧 Add "Create Routines" CTA to reservation cards
 
 ### Known Gaps
 - ⚠️ Email notifications (deferred post-MVP)
@@ -32,9 +29,9 @@
 ## Recent Commits
 
 ```
+d88fd88 - Add "Create Routines" CTA to approved reservations
 e29ba13 - Space limit enforcement (counter UI + validation)
 ac21c8c - End-to-end test results (3 routines created successfully)
-e273f91 - MVP status assessment (90% → 95% complete)
 ```
 
 ---
@@ -57,10 +54,10 @@ e273f91 - MVP status assessment (90% → 95% complete)
 
 ## Next Session Priorities
 
-1. Test 11th routine creation (should fail with clear error)
-2. Add CTA button on approved reservations
-3. Final QA pass with clean database
-4. Deploy to production
+1. Final QA pass with clean database
+2. Test edge cases (11th routine creation, validation errors)
+3. Deploy to production
+4. Record demo video/screenshots
 
 ---
 
