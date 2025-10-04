@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { demoLoginAction } from './actions/auth';
 
 export default function Home() {
   return (
@@ -55,6 +56,47 @@ export default function Home() {
                 </div>
                 <p className="text-gray-300 text-sm">Setting up...</p>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-yellow-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6 mb-8">
+            <h2 className="text-xl font-semibold text-yellow-400 mb-3">
+              🚀 Quick Testing Login (No Auth Required)
+            </h2>
+            <p className="text-gray-300 text-sm mb-4">
+              One-click demo login for rapid testing
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <form action={demoLoginAction.bind(null, 'studio_director')}>
+                <button
+                  type="submit"
+                  className="w-full bg-blue-500/30 hover:bg-blue-500/50 text-blue-300 px-4 py-3 rounded-lg border border-blue-400/30 transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="text-2xl mb-1">🏢</div>
+                  <div className="font-semibold">Studio Director</div>
+                  <div className="text-xs opacity-75">My studio data only</div>
+                </button>
+              </form>
+              <form action={demoLoginAction.bind(null, 'competition_director')}>
+                <button
+                  type="submit"
+                  className="w-full bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 px-4 py-3 rounded-lg border border-purple-400/30 transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="text-2xl mb-1">🎯</div>
+                  <div className="font-semibold">Competition Director</div>
+                  <div className="text-xs opacity-75">All studios access</div>
+                </button>
+              </form>
+              <form action={demoLoginAction.bind(null, 'super_admin')}>
+                <button
+                  type="submit"
+                  className="w-full bg-red-500/30 hover:bg-red-500/50 text-red-300 px-4 py-3 rounded-lg border border-red-400/30 transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="text-2xl mb-1">👑</div>
+                  <div className="font-semibold">Super Admin</div>
+                  <div className="text-xs opacity-75">Full system access</div>
+                </button>
+              </form>
             </div>
           </div>
 
