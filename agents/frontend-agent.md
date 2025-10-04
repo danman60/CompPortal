@@ -2,7 +2,7 @@
 
 ## 🚨 ACTIVATION TRIGGER
 
-**This agent ONLY activates when delegated by integration-agent during "Start MAAD" operation.**
+**This agent ONLY activates when delegated by integration-agent during "CADENCE protocol" operation.**
 
 Do NOT run independently.
 
