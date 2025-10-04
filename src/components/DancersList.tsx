@@ -2,6 +2,7 @@
 
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function DancersList() {
   const { data, isLoading } = trpc.dancer.getAll.useQuery();
@@ -152,6 +153,16 @@ export default function DancersList() {
                   </span>
                 </div>
               )}
+
+              {/* Edit Button */}
+              <div className="mt-4">
+                <Link
+                  href={`/dashboard/dancers/${dancer.id}`}
+                  className="block w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  Edit Dancer
+                </Link>
+              </div>
             </div>
           ))}
         </div>

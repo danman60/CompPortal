@@ -1,16 +1,18 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface DancerFormProps {
   studioId?: string;
+  dancerId?: string; // For edit mode
 }
 
-export default function DancerForm({ studioId }: DancerFormProps) {
+export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
+  const isEditMode = !!dancerId;
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -21,6 +23,28 @@ export default function DancerForm({ studioId }: DancerFormProps) {
     phone: '',
   });
 
+  // Fetch existing dancer data for edit mode
+  const { data: existingDancer, isLoading: isLoadingDancer } = trpc.dancer.getById.useQuery(
+    { id: dancerId! },
+    { enabled: isEditMode }
+  );
+
+  // Pre-populate form data when editing
+  useEffect(() => {
+    if (existingDancer && isEditMode) {
+      setFormData({
+        first_name: existingDancer.first_name || '',
+        last_name: existingDancer.last_name || '',
+        date_of_birth: existingDancer.date_of_birth
+          ? new Date(existingDancer.date_of_birth).toISOString().split('T')[0]
+          : '',
+        gender: existingDancer.gender || '',
+        email: existingDancer.email || '',
+        phone: existingDancer.phone || '',
+      });
+    }
+  }, [existingDancer, isEditMode]);
+
   const createDancer = trpc.dancer.create.useMutation({
     onSuccess: () => {
       utils.dancer.getAll.invalidate();
@@ -28,30 +52,67 @@ export default function DancerForm({ studioId }: DancerFormProps) {
     },
   });
 
+  const updateDancer = trpc.dancer.update.useMutation({
+    onSuccess: () => {
+      utils.dancer.getAll.invalidate();
+      utils.dancer.getById.invalidate({ id: dancerId! });
+      router.push('/dashboard/dancers');
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!studioId) {
+    if (!isEditMode && !studioId) {
       alert('Studio ID is required. Please make sure you are logged in.');
       return;
     }
 
     try {
-      await createDancer.mutateAsync({
-        studio_id: studioId,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        date_of_birth: formData.date_of_birth || undefined,
-        gender: formData.gender || undefined,
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        status: 'active',
-      });
+      if (isEditMode) {
+        // Update existing dancer
+        await updateDancer.mutateAsync({
+          id: dancerId!,
+          data: {
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            date_of_birth: formData.date_of_birth || undefined,
+            gender: formData.gender || undefined,
+            email: formData.email || undefined,
+            phone: formData.phone || undefined,
+          },
+        });
+      } else {
+        // Create new dancer
+        await createDancer.mutateAsync({
+          studio_id: studioId!,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          date_of_birth: formData.date_of_birth || undefined,
+          gender: formData.gender || undefined,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          status: 'active',
+        });
+      }
     } catch (error) {
-      console.error('Error creating dancer:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create dancer');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} dancer:`, error);
+      alert(error instanceof Error ? error.message : `Failed to ${isEditMode ? 'update' : 'create'} dancer`);
     }
   };
+
+  if (isEditMode && isLoadingDancer) {
+    return (
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
+        <div className="h-8 bg-white/20 rounded w-1/3 mb-6"></div>
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-12 bg-white/20 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -168,10 +229,16 @@ export default function DancerForm({ studioId }: DancerFormProps) {
         </button>
         <button
           type="submit"
-          disabled={createDancer.isPending}
+          disabled={isEditMode ? updateDancer.isPending : createDancer.isPending}
           className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
-          {createDancer.isPending ? 'Creating...' : 'Create Dancer'}
+          {isEditMode
+            ? updateDancer.isPending
+              ? 'Updating...'
+              : 'Update Dancer'
+            : createDancer.isPending
+            ? 'Creating...'
+            : 'Create Dancer'}
         </button>
       </div>
 
