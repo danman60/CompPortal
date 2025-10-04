@@ -52,7 +52,32 @@ ac21c8c - End-to-end test results (3 routines created successfully)
 
 ---
 
-## Latest Session (Oct 4, 2025 - MVP Hardening & Security Audit)
+## Latest Session (Oct 4, 2025 - MVP Hardening & Production Fix)
+
+### 🔴 CRITICAL PRODUCTION BUG DISCOVERED & FIXED
+
+**Issue**: API calls failing on Vercel production deployments
+**Root Cause**: Hardcoded `NEXT_PUBLIC_APP_URL` didn't match actual deployment URLs
+**Impact**: Dashboard showed 0 dancers/entries/reservations despite database having data
+
+**Fix Applied** (`src/providers/trpc-provider.tsx:15-17`):
+```typescript
+url: typeof window !== 'undefined'
+  ? `${window.location.origin}/api/trpc`  // Dynamic URL detection
+  : `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/trpc`
+```
+
+**Testing Results**:
+- ✅ Dashboard now loads real data (1 dancer, 10 entries, 3 reservations)
+- ✅ All API calls working correctly on production
+- ✅ Works on any Vercel deployment URL automatically
+
+**Commits**:
+- `fdf5525` - fix: Use dynamic origin for API calls to fix production deployment
+
+---
+
+## Previous Session (Oct 4, 2025 - MVP Hardening & Security Audit)
 
 ### 🔴 CRITICAL BUG DISCOVERED & FIXED
 
