@@ -475,6 +475,9 @@ model competition_entries {
   costume_description                                                                  String?
   props_required                                                                       String?
   accessibility_needs                                                                  String?
+  calculated_score                                                                     Decimal?                 @db.Decimal(5, 2)
+  award_level                                                                          String?                  @db.VarChar(50)
+  category_placement                                                                   Int?
   created_at                                                                           DateTime?                @default(now()) @db.Timestamp(6)
   updated_at                                                                           DateTime?                @default(now()) @db.Timestamp(6)
   awards                                                                               awards[]
@@ -501,6 +504,9 @@ model competition_entries {
   @@index([sequence_number], map: "idx_entries_sequence")
   @@index([session_id], map: "idx_entries_session")
   @@index([studio_id], map: "idx_entries_studio")
+  @@index([calculated_score(sort: Desc)], map: "idx_entries_calculated_score")
+  @@index([award_level], map: "idx_entries_award_level")
+  @@index([category_placement], map: "idx_entries_placement")
   @@schema("public")
 }
 
@@ -592,6 +598,7 @@ model competitions {
   tokens_override_enabled      Boolean?                @default(false)
   schedule_published_at        DateTime?               @db.Timestamptz(6)
   schedule_locked              Boolean?                @default(false)
+  scoring_ranges               Json?                   @default("{\"platinum\": [95, 100], \"high_gold\": [90, 94.9], \"gold\": [85, 89.9], \"silver\": [80, 84.9], \"bronze\": [70, 79.9]}")
   created_at                   DateTime?               @default(now()) @db.Timestamp(6)
   updated_at                   DateTime?               @default(now()) @db.Timestamp(6)
   awards                       awards[]

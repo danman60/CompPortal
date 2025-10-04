@@ -163,50 +163,74 @@ export default function ScoringPage() {
             </div>
 
             {/* Score Entry */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-6">
               {/* Technical Score */}
               <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">🔧 Technical</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold text-white">🔧 Technical Score</h3>
+                  <div className="text-3xl font-bold text-white">{scores.technical}</div>
+                </div>
                 <input
-                  type="number"
-                  value={scores.technical}
-                  onChange={(e) => handleScoreChange('technical', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-6 text-4xl font-bold text-center rounded-lg bg-white/5 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="range"
                   min="0"
                   max="100"
-                  step="0.1"
+                  value={scores.technical}
+                  onChange={(e) => handleScoreChange('technical', parseInt(e.target.value))}
+                  className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${scores.technical}%, rgba(255, 255, 255, 0.2) ${scores.technical}%, rgba(255, 255, 255, 0.2) 100%)`
+                  }}
                 />
-                <div className="mt-2 text-center text-sm text-gray-400">0 - 100</div>
+                <div className="flex justify-between text-sm text-gray-400 mt-2">
+                  <span>0</span>
+                  <span>100</span>
+                </div>
               </div>
 
               {/* Artistic Score */}
               <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">🎨 Artistic</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold text-white">🎨 Artistic Score</h3>
+                  <div className="text-3xl font-bold text-white">{scores.artistic}</div>
+                </div>
                 <input
-                  type="number"
-                  value={scores.artistic}
-                  onChange={(e) => handleScoreChange('artistic', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-6 text-4xl font-bold text-center rounded-lg bg-white/5 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  type="range"
                   min="0"
                   max="100"
-                  step="0.1"
+                  value={scores.artistic}
+                  onChange={(e) => handleScoreChange('artistic', parseInt(e.target.value))}
+                  className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${scores.artistic}%, rgba(255, 255, 255, 0.2) ${scores.artistic}%, rgba(255, 255, 255, 0.2) 100%)`
+                  }}
                 />
-                <div className="mt-2 text-center text-sm text-gray-400">0 - 100</div>
+                <div className="flex justify-between text-sm text-gray-400 mt-2">
+                  <span>0</span>
+                  <span>100</span>
+                </div>
               </div>
 
               {/* Performance Score */}
               <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">⭐ Performance</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold text-white">⭐ Performance Score</h3>
+                  <div className="text-3xl font-bold text-white">{scores.performance}</div>
+                </div>
                 <input
-                  type="number"
-                  value={scores.performance}
-                  onChange={(e) => handleScoreChange('performance', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-6 text-4xl font-bold text-center rounded-lg bg-white/5 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  type="range"
                   min="0"
                   max="100"
-                  step="0.1"
+                  value={scores.performance}
+                  onChange={(e) => handleScoreChange('performance', parseInt(e.target.value))}
+                  className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, rgb(236, 72, 153) 0%, rgb(236, 72, 153) ${scores.performance}%, rgba(255, 255, 255, 0.2) ${scores.performance}%, rgba(255, 255, 255, 0.2) 100%)`
+                  }}
                 />
-                <div className="mt-2 text-center text-sm text-gray-400">0 - 100</div>
+                <div className="flex justify-between text-sm text-gray-400 mt-2">
+                  <span>0</span>
+                  <span>100</span>
+                </div>
               </div>
             </div>
 
