@@ -613,7 +613,7 @@ For each entry, display:
 - **Feature ID**: FEAT-CompetitionMgmt
 - **Status**: ✅ COMPLETE
 - **Completed Date**: 2025-10-04 (Session 7 - CADENCE Protocol)
-- **Commit**: [pending]
+- **Commit**: 8b984e5
 
 #### Implementation Summary
 **Full-featured UI for Competition Directors to create and manage competition events**
