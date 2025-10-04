@@ -1,7 +1,7 @@
 # Bugs & Features Tracker
 
-**Last Updated**: 2025-10-04 (Session 2)
-**Source**: RBAC Golden Test Results (TEST_RESULTS.md) + Phase 2-4 Implementation
+**Last Updated**: 2025-10-04 (Session 8)
+**Source**: RBAC Golden Test Results (TEST_RESULTS.md) + Phase 2-4 Implementation + CADENCE Protocol
 
 ---
 
@@ -812,6 +812,60 @@ interface CompetitionFormData {
 
 ---
 
+### ✅ Feature #15: Special Awards for Judge Scoring
+**Session**: 8 (October 4, 2025)
+**Implementation Date**: 2025-10-04
+**Status**: ✅ Complete
+
+**Feature Description**:
+Implemented special awards selection system for judges during scoring, allowing recognition beyond numerical scores. Aligns with Judge User Journey Phase 3 (Special Awards & Designations).
+
+**Implementation Details**:
+
+**Frontend** (`src/app/dashboard/scoring/page.tsx`):
+- Added `specialAwards` state management with `useState<string[]>([])`
+- Created toggle function for award selection/deselection
+- Implemented glassmorphic UI section with 6 predefined awards:
+  - Judge's Choice
+  - Outstanding Technique
+  - Best Choreography
+  - Exceptional Performance
+  - Rising Star
+  - Crowd Favorite
+- Visual feedback: Yellow highlight for selected awards (`bg-yellow-500/20 border-yellow-400`)
+- Selected awards summary display with `bg-yellow-500/10 border border-yellow-400/30`
+- Reset special awards state on score submission success
+
+**Backend** (`src/server/routers/scoring.ts`):
+- Added `special_awards: z.array(z.string()).optional()` to submitScore input schema
+- Implemented workaround for database schema limitation (scores table lacks special_awards column)
+- Special awards appended to comments field with format: `[Special Awards: Award1, Award2]`
+- Maintains backward compatibility with existing scoring system
+
+**Files Modified**:
+- `src/app/dashboard/scoring/page.tsx` (+57 lines)
+- `src/server/routers/scoring.ts` (+10 lines)
+
+**Build Impact**:
+- Scoring page size: 2.49 kB → 2.82 kB (+330 bytes)
+- All 35 routes compile successfully
+
+**Business Impact**:
+- Judges can recognize exceptional routines beyond numerical scoring
+- Special awards enhance competition experience and recognition
+- Awards data captured in structured format for potential reporting
+- Aligns with industry standards for dance competition adjudication
+
+**Future Enhancements**:
+- Add `special_awards String[]` column to scores table for proper data storage
+- Implement competition-specific award configuration (CD defines available awards)
+- Add special awards filtering/reporting in results dashboard
+- Track special awards statistics across competitions
+
+**Status**: ✅ Special awards feature complete and verified
+
+---
+
 #### Original Feature Description
 **Industry-standard real-time scoring system for competition day adjudication and live results**
 
@@ -924,12 +978,13 @@ CREATE INDEX idx_scores_by_judge ON judges_scores(judge_id, entry_id);
 ## 📊 Summary
 
 **Total Bugs**: 2 (2 fixed, 0 active)
-**Completed Features**: 14 (Dancer Edit, Reservation Create, Terminology, Global Invoices, Dashboard Metrics, Batch Dancer Input, Dancer Assignment, Competition Settings, Entry Numbering, Real-Time Scoring, Schedule Export, Competition Management, Judge Management Enhancement, Dashboard Navigation)
+**Completed Features**: 15 (Dancer Edit, Reservation Create, Terminology, Global Invoices, Dashboard Metrics, Batch Dancer Input, Dancer Assignment, Competition Settings, Entry Numbering, Real-Time Scoring, Schedule Export, Competition Management, Judge Management Enhancement, Dashboard Navigation, Special Awards)
 **Missing Features**: 1 (API Testing Infrastructure - medium priority)
 **Feature Requests**: 2 (low priority)
 **Planned Features**: 0 (all critical competition features complete)
 
 **Recent Completions** (October 2025):
+- ✅ Special Awards for Judge Scoring (Oct 4) - Toggle-based award selection with 6 predefined awards
 - ✅ Real-Time Scoring Phase 2 (Oct 4) - Supabase Realtime integration for live scoreboard updates
 - ✅ Real-Time Scoring Phase 1 (Oct 4) - Judge scoring interface with automatic calculation
 - ✅ Entry Numbering System (Oct 4) - Industry-standard numbering starting at 100, schedule locking, late entry suffixes

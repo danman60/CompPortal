@@ -13,6 +13,7 @@ export default function ScoringPage() {
     performance: 0,
   });
   const [comments, setComments] = useState('');
+  const [specialAwards, setSpecialAwards] = useState<string[]>([]);
   const [entryIndex, setEntryIndex] = useState(0);
 
   // Fetch competitions
@@ -38,9 +39,10 @@ export default function ScoringPage() {
       if (entries && entryIndex < entries.length - 1) {
         setEntryIndex(entryIndex + 1);
       }
-      // Reset scores
+      // Reset scores and awards
       setScores({ technical: 0, artistic: 0, performance: 0 });
       setComments('');
+      setSpecialAwards([]);
     },
   });
 
@@ -65,7 +67,16 @@ export default function ScoringPage() {
       artistic_score: scores.artistic,
       performance_score: scores.performance,
       comments: comments || undefined,
+      special_awards: specialAwards.length > 0 ? specialAwards : undefined,
     });
+  };
+
+  const toggleSpecialAward = (award: string) => {
+    setSpecialAwards(prev =>
+      prev.includes(award)
+        ? prev.filter(a => a !== award)
+        : [...prev, award]
+    );
   };
 
   const totalScore = scores.technical + scores.artistic + scores.performance;
@@ -260,6 +271,43 @@ export default function ScoringPage() {
                 rows={4}
                 placeholder="Enter your feedback..."
               />
+            </div>
+
+            {/* Special Awards */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+              <h3 className="text-lg font-semibold text-white mb-3">🏆 Special Awards (Optional)</h3>
+              <p className="text-sm text-gray-400 mb-4">Select any special awards this routine deserves</p>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {[
+                  "Judge's Choice",
+                  "Outstanding Technique",
+                  "Best Choreography",
+                  "Exceptional Performance",
+                  "Rising Star",
+                  "Crowd Favorite"
+                ].map((award) => (
+                  <button
+                    key={award}
+                    onClick={() => toggleSpecialAward(award)}
+                    className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                      specialAwards.includes(award)
+                        ? 'bg-yellow-500/20 border-yellow-400 text-yellow-300'
+                        : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    {specialAwards.includes(award) ? '✓ ' : ''}{award}
+                  </button>
+                ))}
+              </div>
+
+              {specialAwards.length > 0 && (
+                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-400/30 rounded-lg">
+                  <div className="text-sm text-yellow-200">
+                    Selected Awards: {specialAwards.join(', ')}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

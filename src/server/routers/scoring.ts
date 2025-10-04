@@ -182,6 +182,7 @@ export const scoringRouter = router({
         artistic_score: z.number().min(0).max(100),
         performance_score: z.number().min(0).max(100),
         comments: z.string().optional(),
+        special_awards: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -230,6 +231,13 @@ export const scoringRouter = router({
       const total_score =
         input.technical_score + input.artistic_score + input.performance_score;
 
+      // Append special awards to comments if provided
+      let finalComments = input.comments || '';
+      if (input.special_awards && input.special_awards.length > 0) {
+        const awardsText = `\n\n[Special Awards: ${input.special_awards.join(', ')}]`;
+        finalComments = finalComments + awardsText;
+      }
+
       // Create score
       const score = await prisma.scores.create({
         data: {
@@ -239,7 +247,7 @@ export const scoringRouter = router({
           artistic_score: input.artistic_score,
           performance_score: input.performance_score,
           total_score,
-          comments: input.comments,
+          comments: finalComments || undefined,
           is_final: true,
           scored_at: new Date(),
         },
