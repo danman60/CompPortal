@@ -190,4 +190,131 @@ export const invoiceRouter = router({
 
       return { invoices };
     }),
+
+  // Get all invoices across all studios and competitions (Competition Directors only)
+  getAllInvoices: publicProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid().optional(),
+        paymentStatus: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ input = {} }) => {
+      const { competitionId, paymentStatus } = input;
+
+      // Get all studio × competition combinations with entries
+      const entryGroups = await prisma.competition_entries.groupBy({
+        by: ['studio_id', 'competition_id'],
+        where: {
+          status: { not: 'cancelled' },
+          ...(competitionId && { competition_id: competitionId }),
+        },
+        _count: { id: true },
+        _sum: { total_fee: true },
+      });
+
+      // Fetch all invoices with studio/competition/reservation details
+      const invoices = await Promise.all(
+        entryGroups.map(async (group) => {
+          const [studio, competition, reservation] = await Promise.all([
+            prisma.studios.findUnique({
+              where: { id: group.studio_id },
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                city: true,
+                province: true,
+                email: true,
+                phone: true,
+              },
+            }),
+            prisma.competitions.findUnique({
+              where: { id: group.competition_id },
+              select: {
+                id: true,
+                name: true,
+                year: true,
+                competition_start_date: true,
+                competition_end_date: true,
+              },
+            }),
+            prisma.reservations.findFirst({
+              where: {
+                studio_id: group.studio_id,
+                competition_id: group.competition_id,
+              },
+              select: {
+                id: true,
+                spaces_requested: true,
+                spaces_confirmed: true,
+                deposit_amount: true,
+                total_amount: true,
+                payment_status: true,
+                payment_due_date: true,
+                payment_confirmed_at: true,
+                payment_confirmed_by: true,
+                status: true,
+              },
+            }),
+          ]);
+
+          // Skip if studio or competition not found
+          if (!studio || !competition) {
+            return null;
+          }
+
+          // Apply payment status filter
+          if (paymentStatus && reservation?.payment_status !== paymentStatus) {
+            return null;
+          }
+
+          return {
+            studioId: studio.id,
+            studioName: studio.name,
+            studioCode: studio.code,
+            studioCity: studio.city,
+            studioProvince: studio.province,
+            studioEmail: studio.email,
+            studioPhone: studio.phone,
+            competitionId: competition.id,
+            competitionName: competition.name,
+            competitionYear: competition.year,
+            competitionStartDate: competition.competition_start_date,
+            competitionEndDate: competition.competition_end_date,
+            entryCount: group._count.id,
+            totalAmount: Number(group._sum.total_fee || 0),
+            reservation: reservation ? {
+              id: reservation.id,
+              spacesRequested: reservation.spaces_requested,
+              spacesConfirmed: reservation.spaces_confirmed || 0,
+              depositAmount: Number(reservation.deposit_amount || 0),
+              reservationTotal: Number(reservation.total_amount || 0),
+              paymentStatus: reservation.payment_status,
+              paymentDueDate: reservation.payment_due_date,
+              paymentConfirmedAt: reservation.payment_confirmed_at,
+              paymentConfirmedBy: reservation.payment_confirmed_by,
+              reservationStatus: reservation.status,
+            } : null,
+          };
+        })
+      );
+
+      // Filter out null entries and sort by competition year (desc) and studio name (asc)
+      const validInvoices = invoices
+        .filter((inv): inv is NonNullable<typeof inv> => inv !== null)
+        .sort((a, b) => {
+          // Sort by year descending first
+          const yearDiff = (b.competitionYear || 0) - (a.competitionYear || 0);
+          if (yearDiff !== 0) return yearDiff;
+
+          // Then by studio name ascending
+          return a.studioName.localeCompare(b.studioName);
+        });
+
+      return {
+        invoices: validInvoices,
+        total: validInvoices.length,
+      };
+    }),
 });

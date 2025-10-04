@@ -605,4 +605,45 @@ export const reservationRouter = router({
 
       return { success: true, message: 'Reservation deleted successfully' };
     }),
+
+  // Mark payment as confirmed (Competition Directors only)
+  markAsPaid: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        paymentStatus: z.enum(['pending', 'partial', 'paid', 'refunded', 'cancelled']),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Only competition directors and super admins can confirm payments
+      if (isStudioDirector(ctx.userRole)) {
+        throw new Error('Studio directors cannot confirm payments');
+      }
+
+      const reservation = await prisma.reservations.update({
+        where: { id: input.id },
+        data: {
+          payment_status: input.paymentStatus,
+          payment_confirmed_at: new Date(),
+          payment_confirmed_by: ctx.userId,
+          updated_at: new Date(),
+        },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return reservation;
+    }),
 });

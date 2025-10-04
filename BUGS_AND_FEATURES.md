@@ -1,7 +1,7 @@
 # Bugs & Features Tracker
 
-**Last Updated**: 2025-10-03
-**Source**: RBAC Golden Test Results (TEST_RESULTS.md)
+**Last Updated**: 2025-10-04
+**Source**: RBAC Golden Test Results (TEST_RESULTS.md) + Phase 2 Implementation
 
 ---
 
@@ -48,40 +48,64 @@
 
 ---
 
-## 🚧 Missing Features (Blocking Testing/Functionality)
+## ✅ Completed Features
 
 ### 1. Dancer Edit UI
 - **Priority**: 🟡 High
-- **Impact**: Cannot modify existing dancers, blocks SA-10 test
-- **Description**: Need to implement dancer edit page/modal
-- **Required For**:
-  - SA-10: Modify dancer across studios (security test)
-  - General dancer management workflow
-- **Current Workaround**: None - feature doesn't exist
-- **Files to Create/Modify**:
+- **Impact**: Enables dancer management workflow
+- **Description**: Implemented dancer edit page with full update capability
+- **Files Modified**:
   - `src/app/dashboard/dancers/[id]/page.tsx` (edit page)
-  - OR `src/components/DancerEditForm.tsx` (modal)
-  - Update `src/components/DancersList.tsx` (add edit button/navigation)
-- **Backend**: Already exists in `src/server/routers/dancer.ts` (update mutation)
-- **Status**: ⏳ PENDING
+  - `src/components/DancersList.tsx` (edit button/navigation)
+- **Backend**: Uses existing `src/server/routers/dancer.ts` update mutation
+- **Commit**: 2fcf7cb
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-02
 
 ### 2. Reservation Create UI
 - **Priority**: 🟡 High
-- **Impact**: Studio directors cannot create reservations, blocks SD-8 test
-- **Description**: Need to implement reservation creation form for studio directors
-- **Required For**:
+- **Impact**: Enables studio directors to request event reservations
+- **Description**: Implemented reservation creation form for studio directors
+- **Includes**:
   - SD-8: Create reservation for own studio
-  - CD-6: Reject reservation (need new pending reservation to test)
-  - Studio director workflow completion
-- **Current Workaround**: None - feature doesn't exist
-- **Files to Create/Modify**:
+  - CD-6: Approve/reject reservation workflow
+  - Studio director reservation management
+- **Files Created**:
   - `src/app/dashboard/reservations/new/page.tsx` (create page)
-  - OR `src/components/ReservationForm.tsx` (form component)
-  - Update `src/components/ReservationsList.tsx` (add create button)
-- **Backend**: Already exists in `src/server/routers/reservation.ts` (create mutation)
-- **Status**: ⏳ PENDING
+  - `src/components/ReservationForm.tsx` (form component)
+  - Updated `src/components/ReservationsList.tsx` (create button)
+- **Backend**: Uses `src/server/routers/reservation.ts` create mutation
+- **Commit**: 6634b17
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-02
 
-### 3. API Testing Infrastructure
+### 3. Phase 2 Terminology Standardization
+- **Priority**: 🟡 High
+- **Impact**: Consistent user-facing terminology across entire application
+- **Description**: Global terminology updates per user feedback
+- **Changes**:
+  - Competition → Event (all UI labels, navigation, page titles)
+  - Entries/Entry → Routines/Routine (all user-facing text)
+  - Spaces Requested → Routines Requested (reservation forms)
+- **Scope**: 20 files modified across 9 commits (Phase 2.0-2.5)
+- **Files Updated**:
+  - Phase 2.0: Core files (CompetitionsList, ReservationsList, EntriesList, DancersList, EntryForm, Competition Director Dashboard)
+  - Phase 2.1: Competition Director Dashboard refinements
+  - Phase 2.2: Analytics page
+  - Phase 2.3: Reports, Scoreboard, Scheduling pages
+  - Phase 2.4: SchedulingManager component
+  - Phase 2.5: Scheduling sub-components (UnscheduledEntries, SessionCard, ConflictPanel)
+- **Commits**: b78ef91, c55f49f, 90daadd, 6a2bba0, 11a68e7, 79dc4d6, 36b4da2, 80bdc87, 9c30523
+- **Verification**: Tested in production via Playwright MCP (comp-portal-btiqed80c deployment)
+- **Status**: ✅ COMPLETED
+- **Completed Date**: 2025-10-04
+- **Notes**: Database schema still uses original names (competitions, competition_entries) - UI-only updates for now
+
+---
+
+## 🚧 Missing Features (Blocking Testing/Functionality)
+
+### 1. API Testing Infrastructure
 - **Priority**: 🔵 Medium
 - **Impact**: Cannot complete security penetration tests
 - **Description**: Need tools to intercept/modify API requests for security testing
@@ -311,13 +335,19 @@ CREATE INDEX idx_scores_by_judge ON judges_scores(judge_id, entry_id);
 ## 📊 Summary
 
 **Total Bugs**: 2 (2 fixed, 0 active)
-**Missing Features**: 3 (2 high priority, 1 medium priority)
+**Completed Features**: 3 (Dancer Edit UI, Reservation Create UI, Phase 2 Terminology)
+**Missing Features**: 1 (API Testing Infrastructure - medium priority)
 **Feature Requests**: 2 (low priority)
 **Planned Features**: 2 (1 high priority, 1 critical)
 
+**Recent Completions** (October 2025):
+- ✅ Dancer Edit UI (Oct 2) - Enables dancer management
+- ✅ Reservation Create UI (Oct 2) - Enables studio director workflow
+- ✅ Phase 2 Terminology Standardization (Oct 4) - Competition→Event, Entries→Routines across 20 files
+
 **Critical Path**:
-1. **Dancer Edit UI** and **Reservation Create UI** - High priority missing features that block core user workflows
-2. **Entry Numbering & Sub-Entry Logic** - High priority, core scheduling feature (Week 13)
-3. **Real-Time Scoring & Tabulation** - Critical for competition day operations (Week 14)
+1. **Entry Numbering & Sub-Entry Logic** - High priority, core scheduling feature (Week 13)
+2. **Real-Time Scoring & Tabulation** - Critical for competition day operations (Week 14)
+3. **API Testing Infrastructure** - Medium priority for security penetration testing
 
 **Full Workflow Documentation**: See `COMPETITION_WORKFLOW.md` for complete industry-standard end-to-end process.
