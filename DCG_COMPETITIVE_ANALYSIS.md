@@ -5,6 +5,8 @@
 **Screenshots Analyzed**: 19 images (Competition Director views)
 **Competitor**: DanceComp Genie v2.40.1 (Powered by DanceComp Genie)
 
+**Note**: Additional competitor data available in `/glow_output` folder (Glow Dance system - 3 screenshots, 20+ HTML/JSON files). Recommend merging analysis in future session for comprehensive competitive landscape.
+
 ---
 
 ## 📋 Executive Summary
