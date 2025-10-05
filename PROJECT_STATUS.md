@@ -39,13 +39,28 @@
 - ✅ Professional email templates (StudioApproved, StudioRejected)
 
 ### Known Gaps (Deferred Post-Launch)
-- ⏭️ Additional email notifications (entry submitted, music reminders, payment confirmations)
+- ✅ Email notifications: Entry submitted, payment confirmations (Oct 5)
+- ⏭️ Email notifications: Music reminders
 - ⏭️ Bulk dancer CSV import
 - ⏭️ Music tracking dashboard
 
 ---
 
-## Latest Session (Oct 5, 2025 - Phase 5 CD Enhancements) 🎯
+## Latest Session (Oct 5, 2025 - Email Notifications) 📧
+
+**Feature**: Automated email notifications for entry creation and payment updates
+
+**Implemented** (Commits 04b769b-13cd598):
+- Entry creation: Sends EntrySubmitted email with routine details (entry.ts:420-470)
+- Payment confirmation: Sends PaymentConfirmed email on status change (reservation.ts:808-854)
+- Template: Created PaymentConfirmed component with status-specific messaging
+- Graceful error handling: Email failures logged, mutations succeed
+
+**Deployment**: ✅ dpl_693natZsy4RgdtACNy8QATchdLMo (entry), 🔄 dpl_9xzb7qp8Vw9oCXv1S3umSgwyahFg (payment)
+
+---
+
+## Previous Session (Oct 5, 2025 - Phase 5 CD Enhancements) 🎯
 
 ### ✅ Phase 5: 8 of 8 Issues Complete (100%)
 
