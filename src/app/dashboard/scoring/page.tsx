@@ -471,7 +471,7 @@ export default function ScoringPage() {
             <div className="bg-emerald-500/10 backdrop-blur-md rounded-xl border border-emerald-400/30 p-4">
               <div className="flex items-center justify-center gap-3 text-emerald-300">
                 <span className="text-2xl">👈</span>
-                <span className="text-sm font-medium">Swipe left/right to navigate entries</span>
+                <span className="text-sm font-medium">Swipe left/right to navigate routines</span>
                 <span className="text-2xl">👉</span>
               </div>
             </div>

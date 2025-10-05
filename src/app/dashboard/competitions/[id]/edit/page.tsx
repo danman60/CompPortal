@@ -295,7 +295,7 @@ export default function EditCompetitionPage() {
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" {...register('allow_multiple_entries')} className="w-5 h-5" />
-              <span className="text-white">Allow multiple entries per dancer</span>
+              <span className="text-white">Allow multiple routines per dancer</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" {...register('require_video_submissions')} className="w-5 h-5" />
