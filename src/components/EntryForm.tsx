@@ -3,75 +3,11 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 type Step = 'basic' | 'details' | 'participants' | 'props' | 'review';
 
 interface EntryFormProps {
   entryId?: string;
-}
-
-// Sortable participant component for drag/drop
-function SortableParticipant({ participant, onRemove }: {
-  participant: { dancer_id: string; dancer_name: string };
-  onRemove: () => void;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: participant.dancer_id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center justify-between p-3 bg-purple-500/20 border-2 border-purple-400 rounded-lg"
-    >
-      <div className="flex items-center gap-3 flex-1">
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-          <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-          </svg>
-        </div>
-        <span className="text-white font-medium">{participant.dancer_name}</span>
-      </div>
-      <button
-        onClick={onRemove}
-        className="p-1 hover:bg-red-500/20 rounded transition-colors"
-        type="button"
-      >
-        <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  );
 }
 
 export default function EntryForm({ entryId }: EntryFormProps) {
@@ -179,31 +115,6 @@ export default function EntryForm({ entryId }: EntryFormProps) {
       alert(`Error updating entry: ${error.message}`);
     },
   });
-
-  // Drag and drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // Handle drag end for selected participants list
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setFormData((prevData) => {
-        const oldIndex = prevData.participants.findIndex((p) => p.dancer_id === active.id);
-        const newIndex = prevData.participants.findIndex((p) => p.dancer_id === over.id);
-
-        return {
-          ...prevData,
-          participants: arrayMove(prevData.participants, oldIndex, newIndex),
-        };
-      });
-    }
-  };
 
   // Copy dancers from another routine
   const handleCopyDancers = (entryId: string) => {
@@ -529,54 +440,47 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 </div>
               </div>
 
-              {/* Selected Dancers (Draggable to reorder) */}
+              {/* Selected Dancers */}
               <div>
                 <h3 className="text-lg font-semibold text-white mb-3">
                   Selected Dancers ({formData.participants.length})
-                  <span className="ml-2 text-xs text-gray-400">Drag to reorder</span>
                 </h3>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={formData.participants.map(p => p.dancer_id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                      {formData.participants.map((participant) => (
-                        <SortableParticipant
-                          key={participant.dancer_id}
-                          participant={participant}
-                          onRemove={() => {
-                            setFormData({
-                              ...formData,
-                              participants: formData.participants.filter(p => p.dancer_id !== participant.dancer_id),
-                            });
-                          }}
-                        />
-                      ))}
-                      {formData.participants.length === 0 && (
-                        <div className="text-center py-8 border-2 border-dashed border-white/20 rounded-lg">
-                          <p className="text-gray-400 mb-2">No dancers selected</p>
-                          <p className="text-sm text-gray-500">Click dancers from the left to add them</p>
-                        </div>
-                      )}
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                  {formData.participants.map((participant) => (
+                    <div
+                      key={participant.dancer_id}
+                      className="flex items-center justify-between p-3 bg-purple-500/20 border-2 border-purple-400 rounded-lg"
+                    >
+                      <span className="text-white font-medium">{participant.dancer_name}</span>
+                      <button
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            participants: formData.participants.filter(p => p.dancer_id !== participant.dancer_id),
+                          });
+                        }}
+                        className="p-1 hover:bg-red-500/20 rounded transition-colors"
+                        type="button"
+                      >
+                        <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
-                  </SortableContext>
-                </DndContext>
+                  ))}
+                  {formData.participants.length === 0 && (
+                    <div className="text-center py-8 border-2 border-dashed border-white/20 rounded-lg">
+                      <p className="text-gray-400 mb-2">No dancers selected</p>
+                      <p className="text-sm text-gray-500">Click dancers from the left to add them</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="bg-purple-500/10 border border-purple-400/30 p-4 rounded-lg">
               <p className="text-purple-300 text-sm">
                 ✓ {formData.participants.length} dancer(s) selected
-                {formData.participants.length > 0 && (
-                  <span className="ml-2 text-xs text-gray-400">
-                    • Drag selected dancers to reorder
-                  </span>
-                )}
               </p>
             </div>
           </div>
