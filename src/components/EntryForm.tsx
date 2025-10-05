@@ -102,10 +102,15 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   const [existingMusicUrl, setExistingMusicUrl] = useState<string | null>(null);
 
   // Fetch all necessary data
+  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
   const { data: competitions } = trpc.competition.getAll.useQuery();
   const { data: studios } = trpc.studio.getAll.useQuery();
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
   const { data: dancers } = trpc.dancer.getAll.useQuery({ studioId: formData.studio_id || undefined });
+
+  // Determine if user is a studio director
+  const isStudioDirector = currentUser?.role === 'studio_director';
+  const userStudio = currentUser?.studio;
 
   // Fetch existing entries for "copy dancers" feature
   const { data: existingEntries } = trpc.entry.getAll.useQuery(
@@ -128,6 +133,13 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     { id: entryId! },
     { enabled: isEditMode }
   );
+
+  // Auto-set studio for Studio Directors
+  useEffect(() => {
+    if (isStudioDirector && userStudio && !formData.studio_id && !isEditMode) {
+      setFormData((prev) => ({ ...prev, studio_id: userStudio.id }));
+    }
+  }, [isStudioDirector, userStudio, formData.studio_id, isEditMode]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -366,19 +378,27 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Studio *
               </label>
-              <select
-                value={formData.studio_id}
-                onChange={(e) => setFormData({ ...formData, studio_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                required
-              >
-                <option value="">Select Studio</option>
-                {studios?.studios.map((studio) => (
-                  <option key={studio.id} value={studio.id}>
-                    {studio.name}
-                  </option>
-                ))}
-              </select>
+              {isStudioDirector && userStudio ? (
+                <div className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg">
+                  <div className="text-sm text-gray-400 mb-1">Studio (locked)</div>
+                  <div className="text-white font-semibold">{userStudio.name}</div>
+                  <input type="hidden" name="studio_id" value={userStudio.id} />
+                </div>
+              ) : (
+                <select
+                  value={formData.studio_id}
+                  onChange={(e) => setFormData({ ...formData, studio_id: e.target.value })}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  required
+                >
+                  <option value="">Select Studio</option>
+                  {studios?.studios.map((studio) => (
+                    <option key={studio.id} value={studio.id}>
+                      {studio.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
