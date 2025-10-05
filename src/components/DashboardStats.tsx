@@ -9,8 +9,9 @@ export default function DashboardStats() {
   const { data: dancerStats, isLoading: dancersLoading } = trpc.dancer.getStats.useQuery();
   const { data: competitionStats, isLoading: competitionsLoading } = trpc.competition.getStats.useQuery();
   const { data: unpaidInvoices, isLoading: invoicesLoading } = trpc.invoice.getAllInvoices.useQuery({ paymentStatus: 'pending' });
+  const { data: upcomingCompetitions, isLoading: upcomingLoading } = trpc.competition.getUpcoming.useQuery();
 
-  if (reservationsLoading || studiosLoading || dancersLoading || competitionsLoading || invoicesLoading) {
+  if (reservationsLoading || studiosLoading || dancersLoading || competitionsLoading || invoicesLoading || upcomingLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
@@ -26,6 +27,13 @@ export default function DashboardStats() {
 
   const unpaidCount = unpaidInvoices?.invoices?.length || 0;
   const unpaidTotal = unpaidInvoices?.invoices?.reduce((sum, inv) => sum + inv.totalAmount, 0) || 0;
+
+  // Helper function to get capacity color
+  const getCapacityColor = (percent: number) => {
+    if (percent >= 90) return 'bg-red-500';
+    if (percent >= 70) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -99,28 +107,54 @@ export default function DashboardStats() {
         </div>
       </div>
 
-      {/* Competitions Card */}
-      <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Events</h3>
-          <div className="text-3xl">🏆</div>
+      {/* Competitions Card with Capacity Meters */}
+      <Link href="/dashboard/competitions">
+        <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all duration-200 cursor-pointer">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Events Capacity</h3>
+            <div className="text-3xl">🏆</div>
+          </div>
+          <div className="text-4xl font-bold text-white mb-4">{competitionStats?.total || 0}</div>
+
+          {/* Upcoming Competitions with Capacity Bars */}
+          <div className="space-y-3">
+            {upcomingCompetitions?.competitions && upcomingCompetitions.competitions.length > 0 ? (
+              upcomingCompetitions.competitions.slice(0, 3).map((comp) => {
+                const totalEntries = comp._count?.competition_entries || 0;
+                const capacity = comp.venue_capacity || 600;
+                const utilizationPercent = capacity > 0 ? (totalEntries / capacity) * 100 : 0;
+                const barColor = getCapacityColor(utilizationPercent);
+
+                return (
+                  <div key={comp.id} className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-300 truncate mr-2">{comp.name}</span>
+                      <span className="text-white font-semibold whitespace-nowrap">
+                        {totalEntries}/{capacity}
+                      </span>
+                    </div>
+                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`${barColor} h-full transition-all duration-500 rounded-full`}
+                        style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {utilizationPercent >= 90 ? '🔴' : utilizationPercent >= 70 ? '🟡' : '🟢'} {utilizationPercent.toFixed(1)}% full
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-sm text-gray-400">No upcoming events</div>
+            )}
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-1 text-blue-400 text-xs">
+            <span>View all events →</span>
+          </div>
         </div>
-        <div className="text-4xl font-bold text-white mb-2">{competitionStats?.total || 0}</div>
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between text-gray-300">
-            <span>Upcoming:</span>
-            <span className="font-semibold text-green-400">{competitionStats?.byStatus?.upcoming || 0}</span>
-          </div>
-          <div className="flex justify-between text-gray-300">
-            <span>Registration Open:</span>
-            <span className="font-semibold text-blue-400">{competitionStats?.byStatus?.registration_open || 0}</span>
-          </div>
-          <div className="flex justify-between text-gray-300">
-            <span>This Year:</span>
-            <span className="font-semibold">{competitionStats?.byYear?.[0]?.count || 0}</span>
-          </div>
-        </div>
-      </div>
+      </Link>
 
       {/* Unpaid Invoices Card */}
       <Link href="/dashboard/invoices/all?paymentStatus=pending">
