@@ -48,15 +48,24 @@
 
 ## Latest Session (Oct 5, 2025 - Documentation Accuracy Update) 📋✅
 
-**All Priority Items 100% Complete** (Commits 8f5aca4-a544a14, 4 commits):
+**All Priority Items 100% Complete + Backlog 75% Complete** (Commits 8f5aca4-7e7c3b5, 7 commits):
 
+**Documentation Accuracy:**
 - Updated BUGS_AND_FEATURES.md to reflect actual completion status
 - Marked all Phase 3-5 items complete (were implemented but docs not updated)
-- Fixed final PDF terminology: 'ENTRIES' → 'ROUTINES' (pdf-reports.ts:714,766)
 - Studio Director Fixes: 15/15 Complete (100%)
 - Competition Director Fixes: 10/10 Complete (100%)
 
-All 21 issues from ROUTINES_RESERVATIONS_CONSOLIDATED.md now accurately documented.
+**Verified Features (Already Implemented):**
+- PDF terminology: 'ENTRIES' → 'ROUTINES' (c3b8a4c - pdf-reports.ts:714,766)
+- Manual "Mark as Paid" toggle (AllInvoicesList.tsx:262-273)
+- Global invoices view for CDs (/dashboard/invoices/all)
+- Invoices hard-lock to own studio (page.tsx:16-20, InvoicesList.tsx:9-34)
+
+**Status:**
+- All 21 issues from ROUTINES_RESERVATIONS_CONSOLIDATED.md complete
+- Backlog items: 6 of 8 complete (75%)
+- Remaining: Cache invalidation, Studio settings view, Reservation reduction warnings
 
 ---
 
