@@ -75,28 +75,30 @@ Focus on completing all missing features and enhancements related to:
 
 ---
 
-### 2. **Email Notifications** 🟡 MEDIUM PRIORITY
-**Current Status**: Email library exists, not integrated
-**Missing**:
-- Reservation approval/rejection notifications
-- New entry created notifications
-- Missing music reminders
-- Payment confirmation emails
-- Schedule change notifications
+### 2. **Email Notifications** ✅ PARTIALLY COMPLETED
+**Current Status**: Reservation emails implemented, other types pending
+**Completed**:
+- ✅ Reservation approval notifications
+- ✅ Reservation rejection notifications with reason
+- ✅ Professional HTML email templates
+- ✅ Integration with Resend email service
+- ✅ Graceful error handling
 
-**Implementation Plan**:
-1. Create email template components using existing email-templates.tsx
-2. Integrate with reservation approve/reject mutations
-3. Add background email queue (optional)
-4. Test email delivery with SendGrid/Resend
+**Deployment**: Commit f363b11 - deployed to production
 
-**Files to Modify**:
-- `src/lib/email.ts` (already has sendEmail function)
-- `src/lib/email-templates.tsx` (already has templates)
-- `src/server/routers/reservation.ts` (add email triggers)
-- `src/server/routers/entry.ts` (add email triggers)
+**Still Missing** (Lower Priority):
+- ⏭️ New entry created notifications
+- ⏭️ Missing music reminders
+- ⏭️ Payment confirmation emails
+- ⏭️ Schedule change notifications
 
-**Estimated Time**: 2 hours
+**Files Modified**:
+- `src/emails/ReservationRejected.tsx` (new template - 203 lines)
+- `src/lib/email-templates.tsx` (added rejection template rendering)
+- `src/server/routers/reservation.ts` (integrated email sending in approve/reject mutations)
+
+**Note**: Requires `RESEND_API_KEY` environment variable for email delivery.
+Without it, system continues functioning but emails won't send.
 
 ---
 
@@ -245,8 +247,8 @@ Focus on completing all missing features and enhancements related to:
 
 By end of session:
 - ✅ **Music upload works in production** - COMPLETED (commit b3c54fa)
-- ⏭️ Reservation approval sends email - NEXT
-- ⏭️ Studio approval workflow functional
+- ✅ **Reservation approval/rejection sends email** - COMPLETED (commit f363b11)
+- ⏭️ Studio approval workflow functional - NEXT
 - ⏭️ All features tested in production
 - ⏭️ Documentation updated
 - ⏭️ Zero blocking bugs

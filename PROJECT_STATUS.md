@@ -31,19 +31,19 @@
 - ✅ **All critical business logic verified in production**
 
 ### Known Gaps (Deferred Post-MVP)
-- ⏭️ Email notifications
 - ⏭️ Studio approval workflow
+- ⏭️ Additional email notifications (entry submitted, music reminders, etc.)
 
 ---
 
 ## Recent Commits
 
 ```
+f363b11 - feat: Implement email notifications for reservation approvals and rejections
 b3c54fa - feat: Implement complete music upload workflow for routine creation
+509cfb2 - docs: Mark music upload workflow as complete
 85ce954 - docs: Add comprehensive next session plan and update status
 a7fc525 - docs: Mark reservation rejection feature as complete
-48d9ee9 - feat: Enhance reservation rejection UI with detailed reasons
-665f303 - feat: Implement invoice PDF download functionality
 ```
 
 ---
