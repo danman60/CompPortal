@@ -880,7 +880,7 @@ export const reservationRouter = router({
           approved_at: new Date(),
           approved_by: ctx.userId,
           internal_notes: 'Manual reservation created by admin',
-          payment_status: 'PENDING',
+          payment_status: 'pending',
         },
         include: {
           studios: {
