@@ -77,6 +77,20 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
             </div>
           </Link>
 
+          {/* Music Tracking */}
+          <Link
+            href="/dashboard/music"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🎵</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Music Tracking</h3>
+                <p className="text-gray-400 text-sm">Monitor music file uploads</p>
+              </div>
+            </div>
+          </Link>
+
           {/* Studio Settings */}
           <Link
             href="/dashboard/studios"

@@ -214,7 +214,7 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 - [ ] Draggable dashboard button reordering
 
 ### Studio Management
-- [ ] Studio logo upload
+- [x] Studio logo upload *(Completed Oct 5 - Commit 14e337c)*
 - [ ] Studio branding customization
 - [ ] Multi-user studio accounts
 
