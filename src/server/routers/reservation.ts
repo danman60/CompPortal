@@ -567,7 +567,6 @@ export const reservationRouter = router({
         data: {
           status: 'rejected',
           internal_notes: input.reason,
-          rejected_at: new Date(),
           approved_by: ctx.userId,
           updated_at: new Date(),
         },

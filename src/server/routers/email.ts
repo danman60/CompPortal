@@ -194,7 +194,7 @@ export const emailRouter = router({
       };
 
       const html = await renderReservationApproved(data);
-      const subject = getEmailSubject('reservation', data);
+      const subject = getEmailSubject('reservation-approved', data);
 
       const result = await sendEmail({
         to: reservation.studios.email,

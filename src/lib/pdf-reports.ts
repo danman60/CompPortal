@@ -547,7 +547,7 @@ export function generateInvoicePDF(invoice: {
     spacesRequested: number;
     spacesConfirmed: number;
     depositAmount: number;
-    paymentStatus: string;
+    paymentStatus: string | null;
   } | null;
   lineItems: {
     id: string;
@@ -691,7 +691,7 @@ export function generateInvoicePDF(invoice: {
       ['Spaces Requested', invoice.reservation.spacesRequested.toString()],
       ['Spaces Confirmed', invoice.reservation.spacesConfirmed.toString()],
       ['Deposit Amount', `$${invoice.reservation.depositAmount.toFixed(2)}`],
-      ['Payment Status', invoice.reservation.paymentStatus.toUpperCase()],
+      ['Payment Status', (invoice.reservation.paymentStatus || 'PENDING').toUpperCase()],
     ];
 
     autoTable(doc, {

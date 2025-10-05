@@ -510,9 +510,9 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           <div className="text-sm text-gray-300">
                             <span className="text-gray-400">Reason:</span> {reservation.internal_notes}
                           </div>
-                          {reservation.rejected_at && (
+                          {reservation.updated_at && (
                             <div className="text-xs text-gray-500 mt-2">
-                              Rejected on {new Date(reservation.rejected_at).toLocaleDateString('en-US', {
+                              Rejected on {new Date(reservation.updated_at).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
