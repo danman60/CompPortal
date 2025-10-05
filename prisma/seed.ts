@@ -430,32 +430,70 @@ async function main() {
     },
   });
 
-  // Use first GLOW competition for test data
+  // Use GLOW Orlando for comprehensive seed data
   const competition = glowOrlando;
 
-  // Create test dancers
-  console.log('👯 Creating test dancers...');
+  // Create realistic test dancers for GlowDance Orlando
+  console.log('👯 Creating dancers for GlowDance Orlando...');
   const dancers = [];
 
-  for (let i = 0; i < 15; i++) {
-    const studioId = i < 5 ? studio1.id : i < 10 ? studio2.id : studio3.id;
-    const age = 8 + (i % 8);
+  // Realistic dancer data for demo purposes
+  const realisticDancers = [
+    // Starlight Dance Academy (studio1) - 20 dancers
+    { first: 'Sophia', last: 'Martinez', age: 7, gender: 'Female', style: 'Ballet', level: 'beginner' },
+    { first: 'Emma', last: 'Johnson', age: 9, gender: 'Female', style: 'Jazz', level: 'intermediate' },
+    { first: 'Olivia', last: 'Williams', age: 11, gender: 'Female', style: 'Contemporary', level: 'advanced' },
+    { first: 'Ava', last: 'Davis', age: 8, gender: 'Female', style: 'Tap', level: 'intermediate' },
+    { first: 'Isabella', last: 'Rodriguez', age: 10, gender: 'Female', style: 'Jazz', level: 'advanced' },
+    { first: 'Mia', last: 'Garcia', age: 12, gender: 'Female', style: 'Contemporary', level: 'advanced' },
+    { first: 'Charlotte', last: 'Wilson', age: 7, gender: 'Female', style: 'Ballet', level: 'beginner' },
+    { first: 'Amelia', last: 'Moore', age: 13, gender: 'Female', style: 'Hip Hop', level: 'advanced' },
+    { first: 'Harper', last: 'Taylor', age: 9, gender: 'Female', style: 'Jazz', level: 'intermediate' },
+    { first: 'Evelyn', last: 'Anderson', age: 14, gender: 'Female', style: 'Contemporary', level: 'advanced' },
+    // Elite Performance Studio (studio2) - 15 dancers
+    { first: 'Liam', last: 'Thompson', age: 10, gender: 'Male', style: 'Hip Hop', level: 'intermediate' },
+    { first: 'Noah', last: 'White', age: 12, gender: 'Male', style: 'Contemporary', level: 'advanced' },
+    { first: 'Chloe', last: 'Harris', age: 11, gender: 'Female', style: 'Jazz', level: 'advanced' },
+    { first: 'Grace', last: 'Martin', age: 9, gender: 'Female', style: 'Ballet', level: 'intermediate' },
+    { first: 'Lily', last: 'Lee', age: 13, gender: 'Female', style: 'Contemporary', level: 'advanced' },
+    { first: 'Ella', last: 'Walker', age: 8, gender: 'Female', style: 'Tap', level: 'beginner' },
+    { first: 'Aria', last: 'Hall', age: 14, gender: 'Female', style: 'Jazz', level: 'advanced' },
+    { first: 'Scarlett', last: 'Allen', age: 10, gender: 'Female', style: 'Hip Hop', level: 'intermediate' },
+    { first: 'Victoria', last: 'Young', age: 12, gender: 'Female', style: 'Contemporary', level: 'advanced' },
+    { first: 'Madison', last: 'King', age: 11, gender: 'Female', style: 'Jazz', level: 'advanced' },
+    // Rhythm & Motion Dance (studio3) - 10 dancers
+    { first: 'Ethan', last: 'Wright', age: 9, gender: 'Male', style: 'Hip Hop', level: 'intermediate' },
+    { first: 'Zoe', last: 'Lopez', age: 10, gender: 'Female', style: 'Contemporary', level: 'intermediate' },
+    { first: 'Layla', last: 'Hill', age: 8, gender: 'Female', style: 'Jazz', level: 'beginner' },
+    { first: 'Penelope', last: 'Scott', age: 11, gender: 'Female', style: 'Ballet', level: 'intermediate' },
+    { first: 'Riley', last: 'Green', age: 12, gender: 'Female', style: 'Contemporary', level: 'advanced' },
+    { first: 'Nora', last: 'Adams', age: 13, gender: 'Female', style: 'Jazz', level: 'advanced' },
+    { first: 'Hazel', last: 'Baker', age: 7, gender: 'Female', style: 'Tap', level: 'beginner' },
+    { first: 'Ellie', last: 'Gonzalez', age: 9, gender: 'Female', style: 'Hip Hop', level: 'intermediate' },
+    { first: 'Luna', last: 'Nelson', age: 14, gender: 'Female', style: 'Contemporary', level: 'advanced' },
+    { first: 'Stella', last: 'Carter', age: 10, gender: 'Female', style: 'Jazz', level: 'intermediate' },
+  ];
+
+  for (let i = 0; i < realisticDancers.length; i++) {
+    const dancerData = realisticDancers[i];
+    const studioId = i < 10 ? studio1.id : i < 25 ? studio2.id : studio3.id;
+
     const dancer = await prisma.dancers.create({
       data: {
         studio_id: studioId,
-        first_name: `Dancer${i + 1}`,
-        last_name: `Test${i + 1}`,
-        date_of_birth: new Date(`${2025 - age}-06-15`),
-        gender: i % 2 === 0 ? 'Female' : 'Male',
-        email: `dancer${i + 1}@test.com`,
-        phone: `604-555-${1000 + i}`,
-        parent_name: `Parent ${i + 1}`,
-        parent_email: `parent${i + 1}@test.com`,
-        parent_phone: `604-555-${2000 + i}`,
-        years_dancing: Math.min(age - 3, 10),
-        primary_style: ['Ballet', 'Jazz', 'Contemporary', 'Hip Hop', 'Tap'][i % 5],
-        skill_level: ['beginner', 'intermediate', 'advanced'][i % 3],
-        previous_competitions: i % 5,
+        first_name: dancerData.first,
+        last_name: dancerData.last,
+        date_of_birth: new Date(`${2025 - dancerData.age}-${3 + (i % 9)}-${10 + (i % 20)}`),
+        gender: dancerData.gender,
+        email: `${dancerData.first.toLowerCase()}.${dancerData.last.toLowerCase()}@email.com`,
+        phone: `407-555-${1000 + i}`,
+        parent_name: `${dancerData.gender === 'Male' ? 'Mr. & Mrs.' : 'Mr. & Mrs.'} ${dancerData.last}`,
+        parent_email: `parent.${dancerData.last.toLowerCase()}@email.com`,
+        parent_phone: `407-555-${2000 + i}`,
+        years_dancing: Math.min(dancerData.age - 3, 12),
+        primary_style: dancerData.style,
+        skill_level: dancerData.level,
+        previous_competitions: dancerData.level === 'advanced' ? 8 + (i % 5) : dancerData.level === 'intermediate' ? 3 + (i % 4) : i % 3,
         waiver_signed: true,
         status: 'active',
       },
@@ -527,24 +565,24 @@ async function main() {
   // Create test competition entries
   console.log('🎭 Creating test competition entries...');
 
-  // Solo entries
-  for (let i = 0; i < 5; i++) {
+  // Starlight Dance Academy (studio1) - Solo entries from dancers 0-6
+  const soloCategories = [jazzCategory, contemporaryCategory, hipHopCategory];
+  for (let i = 0; i < 7; i++) {
     const dancer = dancers[i];
     await prisma.competition_entries.create({
       data: {
         competition_id: competition.id,
         reservation_id: reservation1.id,
         studio_id: studio1.id,
-        title: `${dancer.primary_style} Solo ${i + 1}`,
-        category_id: jazzCategory.id,
+        title: `${dancer.primary_style} Solo - ${dancer.first_name}`,
+        category_id: soloCategories[i % 3].id,
         classification_id: competitiveClass.id,
-        age_group_id: petiteAge.id,
+        age_group_id: i < 3 ? petiteAge.id : juniorAge.id,
         entry_size_category_id: soloSize.id,
-        music_title: `Dance Track ${i + 1}`,
-        music_artist: `Artist ${i + 1}`,
+        music_title: `${dancer.primary_style} Track`,
+        music_artist: `Various Artists`,
         choreographer: 'Sarah Johnson',
         entry_fee: '75.00',
-        late_fee: '0.00',
         total_fee: '75.00',
         status: 'registered',
         entry_participants: {
@@ -559,68 +597,240 @@ async function main() {
     });
   }
 
-  // Duo entries
-  for (let i = 0; i < 3; i++) {
-    const dancer1 = dancers[i + 5];
-    const dancer2 = dancers[i + 6];
+  // Starlight Dance Academy - Duo entries (dancers 7-9)
+  await prisma.competition_entries.create({
+    data: {
+      competition_id: competition.id,
+      reservation_id: reservation1.id,
+      studio_id: studio1.id,
+      title: 'Ballet Duet - Elegance',
+      category_id: jazzCategory.id,
+      classification_id: eliteClass.id,
+      age_group_id: juniorAge.id,
+      entry_size_category_id: duoSize.id,
+      music_title: 'Swan Lake Variation',
+      choreographer: 'Sarah Johnson',
+      entry_fee: '150.00',
+      total_fee: '150.00',
+      status: 'confirmed',
+      entry_participants: {
+        create: [
+          {
+            dancer_id: dancers[7].id,
+            dancer_name: `${dancers[7].first_name} ${dancers[7].last_name}`,
+            dancer_age: 2025 - new Date(dancers[7].date_of_birth || '').getFullYear(),
+            display_order: 1,
+          },
+          {
+            dancer_id: dancers[8].id,
+            dancer_name: `${dancers[8].first_name} ${dancers[8].last_name}`,
+            dancer_age: 2025 - new Date(dancers[8].date_of_birth || '').getFullYear(),
+            display_order: 2,
+          },
+        ],
+      },
+    },
+  });
+
+  // Elite Performance Studio (studio2) - Solo entries from dancers 10-15
+  for (let i = 10; i < 16; i++) {
+    const dancer = dancers[i];
     await prisma.competition_entries.create({
       data: {
         competition_id: competition.id,
         reservation_id: reservation2.id,
         studio_id: studio2.id,
-        title: `Dynamic Duo ${i + 1}`,
-        category_id: contemporaryCategory.id,
-        classification_id: eliteClass.id,
-        age_group_id: juniorAge.id,
-        entry_size_category_id: duoSize.id,
-        music_title: `Duet Track ${i + 1}`,
+        title: `${dancer.primary_style} Solo - ${dancer.first_name}`,
+        category_id: soloCategories[(i - 10) % 3].id,
+        classification_id: i < 13 ? competitiveClass.id : eliteClass.id,
+        age_group_id: i < 13 ? juniorAge.id : teenAge.id,
+        entry_size_category_id: soloSize.id,
+        music_title: `${dancer.primary_style} Performance`,
         choreographer: 'Michael Chen',
-        entry_fee: '150.00',
-        total_fee: '150.00',
+        entry_fee: '75.00',
+        total_fee: '75.00',
         status: 'confirmed',
         entry_participants: {
-          create: [
-            {
-              dancer_id: dancer1.id,
-              dancer_name: `${dancer1.first_name} ${dancer1.last_name}`,
-              dancer_age: 2025 - new Date(dancer1.date_of_birth || '').getFullYear(),
-              display_order: 1,
-            },
-            {
-              dancer_id: dancer2.id,
-              dancer_name: `${dancer2.first_name} ${dancer2.last_name}`,
-              dancer_age: 2025 - new Date(dancer2.date_of_birth || '').getFullYear(),
-              display_order: 2,
-            },
-          ],
+          create: {
+            dancer_id: dancer.id,
+            dancer_name: `${dancer.first_name} ${dancer.last_name}`,
+            dancer_age: 2025 - new Date(dancer.date_of_birth || '').getFullYear(),
+            display_order: 1,
+          },
         },
       },
     });
   }
 
-  // Group entry
+  // Elite Performance Studio - Trio entries (dancers 16-21)
   await prisma.competition_entries.create({
     data: {
       competition_id: competition.id,
       reservation_id: reservation2.id,
       studio_id: studio2.id,
-      title: 'Rhythm Squad',
+      title: 'Contemporary Trio - Flow',
+      category_id: contemporaryCategory.id,
+      classification_id: eliteClass.id,
+      age_group_id: teenAge.id,
+      entry_size_category_id: trioSize.id,
+      music_title: 'River of Dreams',
+      choreographer: 'Michael Chen',
+      entry_fee: '175.00',
+      total_fee: '175.00',
+      status: 'confirmed',
+      entry_participants: {
+        create: [
+          {
+            dancer_id: dancers[16].id,
+            dancer_name: `${dancers[16].first_name} ${dancers[16].last_name}`,
+            dancer_age: 2025 - new Date(dancers[16].date_of_birth || '').getFullYear(),
+            display_order: 1,
+          },
+          {
+            dancer_id: dancers[17].id,
+            dancer_name: `${dancers[17].first_name} ${dancers[17].last_name}`,
+            dancer_age: 2025 - new Date(dancers[17].date_of_birth || '').getFullYear(),
+            display_order: 2,
+          },
+          {
+            dancer_id: dancers[18].id,
+            dancer_name: `${dancers[18].first_name} ${dancers[18].last_name}`,
+            dancer_age: 2025 - new Date(dancers[18].date_of_birth || '').getFullYear(),
+            display_order: 3,
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.competition_entries.create({
+    data: {
+      competition_id: competition.id,
+      reservation_id: reservation2.id,
+      studio_id: studio2.id,
+      title: 'Hip Hop Trio - Urban Beat',
       category_id: hipHopCategory.id,
       classification_id: competitiveClass.id,
+      age_group_id: juniorAge.id,
+      entry_size_category_id: trioSize.id,
+      music_title: 'Street Rhythm',
+      choreographer: 'Michael Chen',
+      entry_fee: '175.00',
+      total_fee: '175.00',
+      status: 'confirmed',
+      entry_participants: {
+        create: [
+          {
+            dancer_id: dancers[19].id,
+            dancer_name: `${dancers[19].first_name} ${dancers[19].last_name}`,
+            dancer_age: 2025 - new Date(dancers[19].date_of_birth || '').getFullYear(),
+            display_order: 1,
+          },
+          {
+            dancer_id: dancers[20].id,
+            dancer_name: `${dancers[20].first_name} ${dancers[20].last_name}`,
+            dancer_age: 2025 - new Date(dancers[20].date_of_birth || '').getFullYear(),
+            display_order: 2,
+          },
+          {
+            dancer_id: dancers[21].id,
+            dancer_name: `${dancers[21].first_name} ${dancers[21].last_name}`,
+            dancer_age: 2025 - new Date(dancers[21].date_of_birth || '').getFullYear(),
+            display_order: 3,
+          },
+        ],
+      },
+    },
+  });
+
+  // Elite Performance Studio - Small Group (dancers 22-24 + 10-12)
+  await prisma.competition_entries.create({
+    data: {
+      competition_id: competition.id,
+      reservation_id: reservation2.id,
+      studio_id: studio2.id,
+      title: 'Elite Ensemble - Unity',
+      category_id: jazzCategory.id,
+      classification_id: eliteClass.id,
       age_group_id: teenAge.id,
       entry_size_category_id: smallGroupSize.id,
-      music_title: 'Group Anthem',
+      music_title: 'Together We Rise',
       choreographer: 'Michael Chen',
       entry_fee: '200.00',
       total_fee: '200.00',
+      status: 'confirmed',
+      entry_participants: {
+        create: [10, 11, 12, 22, 23, 24].map((idx, order) => ({
+          dancer_id: dancers[idx].id,
+          dancer_name: `${dancers[idx].first_name} ${dancers[idx].last_name}`,
+          dancer_age: 2025 - new Date(dancers[idx].date_of_birth || '').getFullYear(),
+          display_order: order + 1,
+        })),
+      },
+    },
+  });
+
+  // Rhythm & Motion Dance (studio3) - Solo entries from dancers 25-29
+  for (let i = 25; i < 30; i++) {
+    const dancer = dancers[i];
+    await prisma.competition_entries.create({
+      data: {
+        competition_id: competition.id,
+        reservation_id: reservation3.id,
+        studio_id: studio3.id,
+        title: `${dancer.primary_style} Solo - ${dancer.first_name}`,
+        category_id: soloCategories[(i - 25) % 3].id,
+        classification_id: competitiveClass.id,
+        age_group_id: i < 28 ? petiteAge.id : juniorAge.id,
+        entry_size_category_id: soloSize.id,
+        music_title: `${dancer.primary_style} Showcase`,
+        choreographer: 'Emily Rodriguez',
+        entry_fee: '75.00',
+        total_fee: '75.00',
+        status: 'draft',
+        entry_participants: {
+          create: {
+            dancer_id: dancer.id,
+            dancer_name: `${dancer.first_name} ${dancer.last_name}`,
+            dancer_age: 2025 - new Date(dancer.date_of_birth || '').getFullYear(),
+            display_order: 1,
+          },
+        },
+      },
+    });
+  }
+
+  // Rhythm & Motion Dance - Duo entry (dancers 25-26)
+  await prisma.competition_entries.create({
+    data: {
+      competition_id: competition.id,
+      reservation_id: reservation3.id,
+      studio_id: studio3.id,
+      title: 'Jazz Duo - Synergy',
+      category_id: jazzCategory.id,
+      classification_id: competitiveClass.id,
+      age_group_id: petiteAge.id,
+      entry_size_category_id: duoSize.id,
+      music_title: 'Perfect Harmony',
+      choreographer: 'Emily Rodriguez',
+      entry_fee: '150.00',
+      total_fee: '150.00',
       status: 'draft',
       entry_participants: {
-        create: dancers.slice(10, 15).map((dancer, idx) => ({
-          dancer_id: dancer.id,
-          dancer_name: `${dancer.first_name} ${dancer.last_name}`,
-          dancer_age: 2025 - new Date(dancer.date_of_birth || '').getFullYear(),
-          display_order: idx + 1,
-        })),
+        create: [
+          {
+            dancer_id: dancers[25].id,
+            dancer_name: `${dancers[25].first_name} ${dancers[25].last_name}`,
+            dancer_age: 2025 - new Date(dancers[25].date_of_birth || '').getFullYear(),
+            display_order: 1,
+          },
+          {
+            dancer_id: dancers[26].id,
+            dancer_name: `${dancers[26].first_name} ${dancers[26].last_name}`,
+            dancer_age: 2025 - new Date(dancers[26].date_of_birth || '').getFullYear(),
+            display_order: 2,
+          },
+        ],
       },
     },
   });
@@ -628,10 +838,10 @@ async function main() {
   console.log('✅ Seed completed successfully!');
   console.log('\n📊 Summary:');
   console.log(`- Studios: 3`);
-  console.log(`- Dancers: 15`);
+  console.log(`- Dancers: 30`);
   console.log(`- Competitions: 10 (3 EMPWR + 7 GLOW Dance 2026 Tour)`);
   console.log(`- Reservations: 3`);
-  console.log(`- Entries: 9`);
+  console.log(`- Entries: 23 (8 studio1 + 9 studio2 + 6 studio3)`);
   console.log(`- Categories: 3`);
   console.log(`- Age Groups: 3`);
   console.log(`- Classifications: 3`);
