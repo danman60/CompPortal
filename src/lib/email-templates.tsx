@@ -2,6 +2,7 @@ import { render } from '@react-email/components';
 import RegistrationConfirmation from '@/emails/RegistrationConfirmation';
 import InvoiceDelivery from '@/emails/InvoiceDelivery';
 import ReservationApproved from '@/emails/ReservationApproved';
+import ReservationRejected from '@/emails/ReservationRejected';
 import EntrySubmitted from '@/emails/EntrySubmitted';
 
 /**
@@ -34,6 +35,15 @@ export interface ReservationApprovedData {
   spacesConfirmed: number;
   portalUrl: string;
   nextSteps?: string[];
+}
+
+export interface ReservationRejectedData {
+  studioName: string;
+  competitionName: string;
+  competitionYear: number;
+  reason?: string;
+  portalUrl: string;
+  contactEmail: string;
 }
 
 export interface EntrySubmittedData {
@@ -70,6 +80,13 @@ export async function renderReservationApproved(data: ReservationApprovedData) {
 }
 
 /**
+ * Render reservation rejected email
+ */
+export async function renderReservationRejected(data: ReservationRejectedData) {
+  return render(<ReservationRejected {...data} />);
+}
+
+/**
  * Render entry submitted email
  */
 export async function renderEntrySubmitted(data: EntrySubmittedData) {
@@ -80,13 +97,14 @@ export async function renderEntrySubmitted(data: EntrySubmittedData) {
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation' | 'entry',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'entry',
   data: { competitionName: string; competitionYear: number; [key: string]: any }
 ): string {
   const subjects = {
     registration: `Registration Confirmed - ${data.competitionName} (${data.competitionYear})`,
     invoice: `Invoice ${data.invoiceNumber} - ${data.competitionName} (${data.competitionYear})`,
-    reservation: `Reservation Approved - ${data.competitionName} (${data.competitionYear})`,
+    'reservation-approved': `Reservation Approved - ${data.competitionName} (${data.competitionYear})`,
+    'reservation-rejected': `Reservation Status Update - ${data.competitionName} (${data.competitionYear})`,
     entry: `Entry Submitted: ${data.entryTitle} - ${data.competitionName}`,
   };
 

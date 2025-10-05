@@ -2,6 +2,14 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { isStudioDirector } from '@/lib/permissions';
+import { sendEmail } from '@/lib/email';
+import {
+  renderReservationApproved,
+  renderReservationRejected,
+  getEmailSubject,
+  type ReservationApprovedData,
+  type ReservationRejectedData,
+} from '@/lib/email-templates';
 
 // Validation schema for reservation input
 const reservationInputSchema = z.object({
@@ -496,16 +504,46 @@ export const reservationRouter = router({
             select: {
               id: true,
               name: true,
+              email: true,
             },
           },
           competitions: {
             select: {
               id: true,
               name: true,
+              year: true,
             },
           },
         },
       });
+
+      // Send approval email to studio
+      if (reservation.studios?.email) {
+        try {
+          const emailData: ReservationApprovedData = {
+            studioName: reservation.studios.name,
+            competitionName: reservation.competitions?.name || 'Competition',
+            competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+            spacesConfirmed: reservation.spaces_confirmed || 0,
+            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
+          };
+
+          const html = await renderReservationApproved(emailData);
+          const subject = getEmailSubject('reservation-approved', {
+            competitionName: emailData.competitionName,
+            competitionYear: emailData.competitionYear,
+          });
+
+          await sendEmail({
+            to: reservation.studios.email,
+            subject,
+            html,
+          });
+        } catch (error) {
+          console.error('Failed to send approval email:', error);
+          // Don't throw - email failure shouldn't block the approval
+        }
+      }
 
       return reservation;
     }),
@@ -529,10 +567,57 @@ export const reservationRouter = router({
         data: {
           status: 'rejected',
           internal_notes: input.reason,
+          rejected_at: new Date(),
           approved_by: ctx.userId,
           updated_at: new Date(),
         },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+              year: true,
+              contact_email: true,
+            },
+          },
+        },
       });
+
+      // Send rejection email to studio
+      if (reservation.studios?.email) {
+        try {
+          const emailData: ReservationRejectedData = {
+            studioName: reservation.studios.name,
+            competitionName: reservation.competitions?.name || 'Competition',
+            competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+            reason: input.reason,
+            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
+            contactEmail: reservation.competitions?.contact_email || process.env.EMAIL_FROM || 'info@glowdance.com',
+          };
+
+          const html = await renderReservationRejected(emailData);
+          const subject = getEmailSubject('reservation-rejected', {
+            competitionName: emailData.competitionName,
+            competitionYear: emailData.competitionYear,
+          });
+
+          await sendEmail({
+            to: reservation.studios.email,
+            subject,
+            html,
+          });
+        } catch (error) {
+          console.error('Failed to send rejection email:', error);
+          // Don't throw - email failure shouldn't block the rejection
+        }
+      }
 
       return reservation;
     }),
