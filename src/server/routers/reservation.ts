@@ -961,4 +961,99 @@ export const reservationRouter = router({
 
       return reservation;
     }),
+
+  // Reduce reservation capacity with routine impact warnings
+  reduceCapacity: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        newCapacity: z.number().int().min(0),
+        confirmed: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Check user role - only competition directors and super admins
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || (userProfile.role !== 'competition_director' && userProfile.role !== 'super_admin')) {
+        throw new Error('Unauthorized: Only competition directors can reduce reservation capacity');
+      }
+
+      // Get reservation with current data
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.id },
+        include: {
+          studios: { select: { name: true } },
+          competitions: { select: { name: true, year: true } },
+        },
+      });
+
+      if (!reservation) {
+        throw new Error('Reservation not found');
+      }
+
+      const currentCapacity = reservation.spaces_confirmed || 0;
+
+      // Validate new capacity is less than current
+      if (input.newCapacity >= currentCapacity) {
+        throw new Error('New capacity must be less than current capacity to reduce');
+      }
+
+      // Count existing routines for this reservation
+      const routineCount = await prisma.competition_entries.count({
+        where: { reservation_id: input.id },
+      });
+
+      // Check if reduction would impact existing routines
+      const wouldImpactRoutines = routineCount > input.newCapacity;
+      const impactedRoutines = Math.max(0, routineCount - input.newCapacity);
+
+      // If not confirmed and would impact routines, return warning
+      if (!input.confirmed && wouldImpactRoutines) {
+        throw new Error(
+          JSON.stringify({
+            requiresConfirmation: true,
+            currentCapacity,
+            newCapacity: input.newCapacity,
+            existingRoutines: routineCount,
+            impactedRoutines,
+            warning: `This studio has ${routineCount} routines created. Reducing to ${input.newCapacity} spaces means ${impactedRoutines} routine(s) will exceed the new limit. The studio will need to remove or reassign these routines.`,
+          })
+        );
+      }
+
+      // Proceed with reduction (either no impact or confirmed)
+      const updatedReservation = await prisma.reservations.update({
+        where: { id: input.id },
+        data: {
+          spaces_confirmed: input.newCapacity,
+          updated_at: new Date(),
+        },
+        include: {
+          studios: { select: { id: true, name: true } },
+          competitions: { select: { id: true, name: true, year: true } },
+        },
+      });
+
+      // Adjust competition capacity (return spaces)
+      const capacityIncrease = currentCapacity - input.newCapacity;
+      await prisma.competitions.update({
+        where: { id: reservation.competition_id },
+        data: {
+          available_reservation_tokens: {
+            increment: capacityIncrease,
+          },
+        },
+      });
+
+      return {
+        reservation: updatedReservation,
+        capacityReduced: capacityIncrease,
+        existingRoutines: routineCount,
+        impact: wouldImpactRoutines ? `${impactedRoutines} routine(s) now exceed capacity` : 'No routines impacted',
+      };
+    }),
 });

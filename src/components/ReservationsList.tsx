@@ -21,6 +21,15 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   const [rejectModalData, setRejectModalData] = useState<{ id: string; studioName: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isManualReservationModalOpen, setIsManualReservationModalOpen] = useState(false);
+  const [reduceModalData, setReduceModalData] = useState<{
+    id: string;
+    studioName: string;
+    currentCapacity: number;
+    routineCount?: number;
+    impactedRoutines?: number;
+    warning?: string;
+  } | null>(null);
+  const [newCapacity, setNewCapacity] = useState<number>(0);
 
   // Approval mutation
   const approveMutation = trpc.reservation.approve.useMutation({
@@ -42,6 +51,37 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     },
     onError: (error) => {
       alert(`Rejection failed: ${error.message}`);
+      setProcessingId(null);
+    },
+  });
+
+  // Reduce capacity mutation
+  const reduceCapacityMutation = trpc.reservation.reduceCapacity.useMutation({
+    onSuccess: (data) => {
+      utils.reservation.getAll.invalidate();
+      setProcessingId(null);
+      setReduceModalData(null);
+      setNewCapacity(0);
+      alert(`Capacity reduced successfully. ${data.impact}`);
+    },
+    onError: (error) => {
+      // Try to parse warning JSON
+      try {
+        const warningData = JSON.parse(error.message);
+        if (warningData.requiresConfirmation) {
+          // Show warning modal with parsed data
+          setReduceModalData({
+            ...reduceModalData!,
+            routineCount: warningData.existingRoutines,
+            impactedRoutines: warningData.impactedRoutines,
+            warning: warningData.warning,
+          });
+          return;
+        }
+      } catch {
+        // Not a JSON warning, show regular error
+        alert(`Capacity reduction failed: ${error.message}`);
+      }
       setProcessingId(null);
     },
   });
@@ -82,6 +122,32 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     });
     setRejectModalData(null);
     setRejectionReason('');
+  };
+
+  const handleReduceCapacity = (
+    reservationId: string,
+    studioName: string,
+    currentCapacity: number,
+    routineCount: number
+  ) => {
+    setReduceModalData({
+      id: reservationId,
+      studioName,
+      currentCapacity,
+      routineCount,
+    });
+    setNewCapacity(currentCapacity);
+  };
+
+  const confirmReduceCapacity = () => {
+    if (!reduceModalData || newCapacity < 0) return;
+
+    setProcessingId(reduceModalData.id);
+    reduceCapacityMutation.mutate({
+      id: reduceModalData.id,
+      newCapacity,
+      confirmed: !!reduceModalData.warning, // Confirm if we've seen the warning
+    });
   };
 
   if (isLoading) {
@@ -629,18 +695,38 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                       </div>
                     ) : (
                       /* Competition Director: Simple Routine Count */
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm text-gray-400 mb-1">Routines Registered</div>
-                          <div className="text-2xl font-bold text-white">
-                            {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <div className="text-sm text-gray-400 mb-1">Routines Registered</div>
+                            <div className="text-2xl font-bold text-white">
+                              {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                            </div>
+                          </div>
+                          <div className="text-4xl">
+                            {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                              ? '✅'
+                              : '⏳'}
                           </div>
                         </div>
-                        <div className="text-4xl">
-                          {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
-                            ? '✅'
-                            : '⏳'}
-                        </div>
+
+                        {/* Reduce Capacity Button */}
+                        <button
+                          onClick={() =>
+                            handleReduceCapacity(
+                              reservation.id,
+                              reservation.studios?.name || 'studio',
+                              reservation.spaces_confirmed || 0,
+                              reservation._count?.competition_entries || 0
+                            )
+                          }
+                          disabled={processingId === reservation.id}
+                          className="w-full bg-orange-500/20 hover:bg-orange-500/30 disabled:bg-orange-500/10 text-orange-400 border border-orange-400/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+                        >
+                          {processingId === reservation.id && reduceCapacityMutation.isPending
+                            ? '⚙️ Reducing...'
+                            : '🔽 Reduce Capacity'}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -696,6 +782,87 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg transition-all"
               >
                 ❌ Reject Reservation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reduce Capacity Modal */}
+      {reduceModalData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">
+              {reduceModalData.warning ? '⚠️ Confirm Capacity Reduction' : 'Reduce Reservation Capacity'}
+            </h3>
+
+            <p className="text-gray-300 mb-4">
+              Reducing capacity for <span className="font-semibold text-white">{reduceModalData.studioName}</span>
+            </p>
+
+            <div className="bg-white/5 rounded-lg p-4 mb-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Current Capacity:</span>
+                <span className="text-white font-semibold">{reduceModalData.currentCapacity} routines</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Routines Created:</span>
+                <span className="text-white font-semibold">{reduceModalData.routineCount || 0} routines</span>
+              </div>
+            </div>
+
+            {reduceModalData.warning && (
+              <div className="bg-orange-500/10 border border-orange-400/30 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚠️</div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-orange-400 mb-2">Impact Warning</div>
+                    <div className="text-sm text-gray-300">{reduceModalData.warning}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                New Capacity <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                max={reduceModalData.currentCapacity}
+                value={newCapacity}
+                onChange={(e) => setNewCapacity(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                disabled={!!reduceModalData.warning}
+              />
+              {newCapacity < (reduceModalData.routineCount || 0) && !reduceModalData.warning && (
+                <p className="text-xs text-orange-400 mt-2">
+                  ⚠️ Warning: This studio has {reduceModalData.routineCount} routines created. Reducing capacity below this will create an overage.
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Released capacity will be returned to the competition pool.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setReduceModalData(null);
+                  setNewCapacity(0);
+                  setProcessingId(null);
+                }}
+                className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmReduceCapacity}
+                disabled={newCapacity < 0 || newCapacity >= reduceModalData.currentCapacity}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-orange-500/50 disabled:to-orange-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+              >
+                {reduceModalData.warning ? '✅ Confirm Reduction' : '🔽 Reduce Capacity'}
               </button>
             </div>
           </div>
