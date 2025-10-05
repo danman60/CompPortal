@@ -711,7 +711,7 @@ export function generateInvoicePDF(invoice: {
   // Line items table
   doc.setFontSize(9);
   doc.setTextColor(COLORS.textLight);
-  doc.text('ENTRIES', leftX, yPos);
+  doc.text('ROUTINES', leftX, yPos);
   yPos += 6;
 
   autoTable(doc, {
@@ -763,7 +763,7 @@ export function generateInvoicePDF(invoice: {
 
   doc.setFontSize(9);
   doc.setTextColor(COLORS.textLight);
-  doc.text(`Subtotal (${invoice.summary.entryCount} entries)`, totalsX, yPos);
+  doc.text(`Subtotal (${invoice.summary.entryCount} routines)`, totalsX, yPos);
   doc.setTextColor(COLORS.text);
   doc.text(`$${invoice.summary.subtotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 6;
