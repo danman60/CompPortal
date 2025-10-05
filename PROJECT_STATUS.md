@@ -45,7 +45,34 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - Studio Approval Workflow) 🎉
+## Latest Session (Oct 5, 2025 - Routines & Reservations Refinement) ✨
+
+### ✅ Phases 1-4 Complete (11 Issues Resolved)
+
+**Feature**: Routines & Reservations UX improvements from ROUTINES_RESERVATIONS_CONSOLIDATED.md
+
+**Phase 1-2** (Commits a58759d):
+- Helper text: Routine counter with progress bar (EntriesList.tsx:77-134)
+- Backend: Auto-invoice generation on approval (reservation.ts:521-543)
+- Database: invoices table with RLS policies
+
+**Phase 3** (Commits bac5c55, b1d7769):
+- UX: Music upload → Props field (EntryForm.tsx)
+- UX: Removed drag reordering from routine modal
+- Simplified to click-to-remove participant list
+
+**Phase 4** (Commit 8ee4fb9):
+- Unified dancer add flow at /dashboard/dancers/add (NEW page)
+- DancerBatchForm default: 1 row (was 5)
+- Navigation: Single "Add Dancers" button
+
+**Build Status**: ✅ All 32 routes compile successfully
+
+**Next Priority**: E2E Playwright MCP testing (25+ tests per journey per session instructions)
+
+---
+
+## Previous Session (Oct 5, 2025 - Studio Approval Workflow) 🎉
 
 ### ✅ Studio Approval System Complete
 
