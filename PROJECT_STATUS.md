@@ -240,14 +240,16 @@ The space limit validation fix we deployed queries entries by `reservation_id`. 
 
 ## Next Session Priorities
 
-1. ✅ ~~Deploy backend fix to production~~ (Completed - commit `6eded36`)
-2. ✅ ~~Backend security audit~~ (Completed - 16 routers audited, no issues found)
-3. ✅ ~~Test critical user flows~~ (Completed - space limits, reservations, judge scoring all working)
-4. ✅ ~~Performance optimization~~ (Completed - added critical indexes, 0.110ms query time)
-5. ✅ ~~Final production testing on Vercel deployment~~ (Completed - 86 tests, 98.9% pass rate, 108.9% confidence)
-6. 📹 Record demo video/screenshots for stakeholders (optional - using DEMO_SCRIPT.md)
-7. 📊 Load testing with realistic data volumes (post-launch)
-8. 🔄 Post-MVP: UI warning when approaching space limit (deferred - see recommendations in FINAL_TESTING_REPORT.md)
+**🔴 URGENT: Investigate Vercel Build Failures**
+- See `NEXT_SESSION_INSTRUCTIONS.md` for detailed investigation steps
+- Recent email notification implementation may affect production builds
+- Local builds work, need to verify Vercel deployment succeeds
+
+**Then Continue with:**
+1. 🟡 Studio Approval Workflow (Phase 3 from NEXT_SESSION_PLAN.md)
+2. 📹 Record demo video/screenshots for stakeholders (optional - using DEMO_SCRIPT.md)
+3. 📊 Load testing with realistic data volumes (post-launch)
+4. 🔄 Post-MVP enhancements (see NEXT_SESSION_PLAN.md)
 
 ---
 
