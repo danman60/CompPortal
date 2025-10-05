@@ -44,7 +44,7 @@
 - ✅ Music tracking dashboard (Oct 5 - Commits b4789b3-4abfbeb)
 
 ### Remaining Backlog
-- ⏭️ Bulk dancer CSV import
+- ✅ Bulk dancer CSV import (Already implemented - DancerCSVImport.tsx)
 
 ---
 
@@ -599,9 +599,7 @@ The space limit validation fix we deployed queries entries by `reservation_id`. 
 - ✅ Email notifications (entry submitted, music reminders, payments)
 - ✅ Music tracking dashboard
 - ✅ Studio approval workflow (implemented and tested)
-
-**Remaining Backlog:**
-- Bulk dancer CSV import
+- ✅ Bulk dancer CSV import (DancerCSVImport.tsx + bulkImport mutation)
 
 ---
 
