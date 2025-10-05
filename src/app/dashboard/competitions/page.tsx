@@ -7,8 +7,10 @@ import { useRouter } from 'next/navigation';
 
 export default function CompetitionsPage() {
   const router = useRouter();
+  const utils = trpc.useUtils();
   const { data, isLoading } = trpc.competition.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'registration_open' | 'in_progress' | 'completed'>('all');
+  const [processingReservationId, setProcessingReservationId] = useState<string | null>(null);
 
   const deleteMutation = trpc.competition.delete.useMutation({
     onSuccess: () => {
@@ -19,10 +21,64 @@ export default function CompetitionsPage() {
     },
   });
 
+  const approveMutation = trpc.reservation.approve.useMutation({
+    onSuccess: () => {
+      utils.competition.getAll.invalidate();
+      setProcessingReservationId(null);
+    },
+    onError: (error) => {
+      alert(`Approval failed: ${error.message}`);
+      setProcessingReservationId(null);
+    },
+  });
+
+  const rejectMutation = trpc.reservation.reject.useMutation({
+    onSuccess: () => {
+      utils.competition.getAll.invalidate();
+      setProcessingReservationId(null);
+    },
+    onError: (error) => {
+      alert(`Rejection failed: ${error.message}`);
+      setProcessingReservationId(null);
+    },
+  });
+
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
       deleteMutation.mutate({ id });
     }
+  };
+
+  const handleQuickApprove = (reservationId: string, spacesRequested: number) => {
+    const spacesConfirmed = prompt(
+      `Approve this reservation.\n\nRoutines Requested: ${spacesRequested}\n\nHow many routines to allocate?`,
+      spacesRequested.toString()
+    );
+
+    if (!spacesConfirmed) return;
+
+    const confirmed = parseInt(spacesConfirmed, 10);
+    if (isNaN(confirmed) || confirmed < 1 || confirmed > spacesRequested) {
+      alert('Invalid number of routines. Must be between 1 and routines requested.');
+      return;
+    }
+
+    setProcessingReservationId(reservationId);
+    approveMutation.mutate({
+      id: reservationId,
+      spacesConfirmed: confirmed,
+    });
+  };
+
+  const handleQuickReject = (reservationId: string, studioName: string) => {
+    const reason = prompt(`Reject reservation for ${studioName}?\n\nOptional reason:`);
+    if (reason === null) return; // Cancelled
+
+    setProcessingReservationId(reservationId);
+    rejectMutation.mutate({
+      id: reservationId,
+      reason: reason || undefined,
+    });
   };
 
   if (isLoading) {
@@ -186,16 +242,43 @@ export default function CompetitionsPage() {
                     Pending ({pendingReservations.length})
                   </h4>
                   {pendingReservations.length > 0 ? (
-                    <div className="space-y-1">
-                      {pendingReservations.slice(0, 3).map(r => (
-                        <div key={r.id} className="text-xs text-gray-300 truncate">
-                          • {r.studios?.name}
+                    <div className="space-y-2">
+                      {pendingReservations.slice(0, 2).map(r => (
+                        <div key={r.id} className="bg-black/20 rounded p-2">
+                          <div className="text-xs text-gray-300 mb-1 truncate">
+                            {r.studios?.name} ({r.spaces_requested} routines)
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleQuickApprove(r.id, r.spaces_requested);
+                              }}
+                              disabled={processingReservationId === r.id}
+                              className="flex-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-400/30 rounded px-2 py-1 text-xs font-semibold transition-all disabled:opacity-50"
+                            >
+                              {processingReservationId === r.id && approveMutation.isPending ? '...' : '✓'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleQuickReject(r.id, r.studios?.name || 'studio');
+                              }}
+                              disabled={processingReservationId === r.id}
+                              className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-400/30 rounded px-2 py-1 text-xs font-semibold transition-all disabled:opacity-50"
+                            >
+                              {processingReservationId === r.id && rejectMutation.isPending ? '...' : '✕'}
+                            </button>
+                          </div>
                         </div>
                       ))}
-                      {pendingReservations.length > 3 && (
-                        <div className="text-xs text-orange-400">
-                          +{pendingReservations.length - 3} more
-                        </div>
+                      {pendingReservations.length > 2 && (
+                        <Link
+                          href="/dashboard/reservations?status=pending"
+                          className="block text-xs text-orange-400 hover:text-orange-300 underline"
+                        >
+                          +{pendingReservations.length - 2} more →
+                        </Link>
                       )}
                     </div>
                   ) : (
