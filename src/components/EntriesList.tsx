@@ -74,6 +74,65 @@ export default function EntriesList() {
           <p className="text-gray-400">Manage your competition routines</p>
         </div>
 
+        {/* Routine Capacity Helper Text */}
+        {hasSelectedCompetition && selectedReservation && (
+          <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">📊</span>
+                <div>
+                  <div className="text-sm text-purple-300 font-semibold">
+                    Routines Available
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {usedSpaces} of {confirmedSpaces} routines created
+                  </div>
+                </div>
+              </div>
+              <div className={`text-2xl font-bold ${
+                isAtLimit
+                  ? 'text-red-400'
+                  : (confirmedSpaces - usedSpaces) <= 3
+                  ? 'text-yellow-400'
+                  : 'text-green-400'
+              }`}>
+                {confirmedSpaces - usedSpaces}
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-2">
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    isAtLimit
+                      ? 'bg-red-500'
+                      : (usedSpaces / confirmedSpaces) >= 0.8
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
+                  }`}
+                  style={{ width: `${Math.min((usedSpaces / confirmedSpaces) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div className={`text-xs ${
+              isAtLimit
+                ? 'text-red-300'
+                : (confirmedSpaces - usedSpaces) <= 3
+                ? 'text-yellow-300'
+                : 'text-gray-400'
+            }`}>
+              {isAtLimit
+                ? '⚠️ No routines remaining - capacity reached'
+                : (confirmedSpaces - usedSpaces) === 1
+                ? '⚠️ 1 routine remaining'
+                : `${confirmedSpaces - usedSpaces} routines remaining`
+              }
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <Link
             href="/dashboard/entries/assign"

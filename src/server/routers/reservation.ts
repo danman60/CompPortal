@@ -512,8 +512,33 @@ export const reservationRouter = router({
               id: true,
               name: true,
               year: true,
+              entry_fee: true,
             },
           },
+        },
+      });
+
+      // Auto-generate invoice on approval
+      const routinesFee = reservation.competitions?.entry_fee || 0;
+      const spacesConfirmed = reservation.spaces_confirmed || 0;
+      const subtotal = Number(routinesFee) * spacesConfirmed;
+
+      await prisma.invoices.create({
+        data: {
+          studio_id: reservation.studio_id,
+          competition_id: reservation.competition_id,
+          reservation_id: reservation.id,
+          line_items: [
+            {
+              description: `Routine reservations (${spacesConfirmed} routines @ $${Number(routinesFee).toFixed(2)} each)`,
+              quantity: spacesConfirmed,
+              unit_price: Number(routinesFee),
+              total: subtotal,
+            },
+          ],
+          subtotal: subtotal,
+          total: subtotal,
+          status: 'UNPAID',
         },
       });
 
