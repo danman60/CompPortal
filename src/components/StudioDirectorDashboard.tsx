@@ -4,11 +4,33 @@ import StudioDirectorStats from './StudioDirectorStats';
 interface StudioDirectorDashboardProps {
   userEmail: string;
   studioName?: string;
+  studioStatus?: string | null;
 }
 
-export default function StudioDirectorDashboard({ userEmail, studioName }: StudioDirectorDashboardProps) {
+export default function StudioDirectorDashboard({ userEmail, studioName, studioStatus }: StudioDirectorDashboardProps) {
   return (
     <div className="space-y-8">
+      {/* Pending Approval Banner */}
+      {studioStatus === 'pending' && (
+        <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border-2 border-yellow-400/50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="text-4xl">⏳</div>
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-yellow-300 mb-2">
+                Studio Pending Approval
+              </h3>
+              <p className="text-gray-300 mb-2">
+                Your studio registration is currently under review by the competition administrators.
+              </p>
+              <p className="text-gray-400 text-sm">
+                You will receive an email notification once your studio has been approved. Some features
+                may be limited until approval is complete.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold text-white mb-2">

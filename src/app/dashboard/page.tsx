@@ -22,12 +22,14 @@ export default async function DashboardPage() {
 
   // Fetch studio info if user is a studio director
   let studioName: string | undefined;
+  let studioStatus: string | null | undefined;
   if (userProfile?.role === 'studio_director') {
     const studio = await prisma.studios.findFirst({
       where: { owner_id: user.id },
-      select: { name: true },
+      select: { name: true, status: true },
     });
     studioName = studio?.name;
+    studioStatus = studio?.status;
   }
 
   const role = userProfile?.role || 'studio_director';
@@ -49,7 +51,11 @@ export default async function DashboardPage() {
 
         {/* Role-Based Dashboard */}
         {role === 'studio_director' ? (
-          <StudioDirectorDashboard userEmail={user.email || ''} studioName={studioName} />
+          <StudioDirectorDashboard
+            userEmail={user.email || ''}
+            studioName={studioName}
+            studioStatus={studioStatus}
+          />
         ) : (
           <CompetitionDirectorDashboard
             userEmail={user.email || ''}

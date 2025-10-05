@@ -4,6 +4,8 @@ import InvoiceDelivery from '@/emails/InvoiceDelivery';
 import ReservationApproved from '@/emails/ReservationApproved';
 import ReservationRejected from '@/emails/ReservationRejected';
 import EntrySubmitted from '@/emails/EntrySubmitted';
+import StudioApproved from '@/emails/StudioApproved';
+import StudioRejected from '@/emails/StudioRejected';
 
 /**
  * Render email templates to HTML
@@ -58,6 +60,20 @@ export interface EntrySubmittedData {
   entryFee: number;
 }
 
+export interface StudioApprovedData {
+  studioName: string;
+  ownerName?: string;
+  portalUrl: string;
+}
+
+export interface StudioRejectedData {
+  studioName: string;
+  ownerName?: string;
+  reason?: string;
+  portalUrl: string;
+  contactEmail: string;
+}
+
 /**
  * Render registration confirmation email
  */
@@ -94,11 +110,25 @@ export async function renderEntrySubmitted(data: EntrySubmittedData) {
 }
 
 /**
+ * Render studio approved email
+ */
+export async function renderStudioApproved(data: StudioApprovedData) {
+  return render(<StudioApproved {...data} />);
+}
+
+/**
+ * Render studio rejected email
+ */
+export async function renderStudioRejected(data: StudioRejectedData) {
+  return render(<StudioRejected {...data} />);
+}
+
+/**
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'entry',
-  data: { competitionName: string; competitionYear: number; [key: string]: any }
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'entry' | 'studio-approved' | 'studio-rejected',
+  data: { [key: string]: any }
 ): string {
   const subjects = {
     registration: `Registration Confirmed - ${data.competitionName} (${data.competitionYear})`,
@@ -106,6 +136,8 @@ export function getEmailSubject(
     'reservation-approved': `Reservation Approved - ${data.competitionName} (${data.competitionYear})`,
     'reservation-rejected': `Reservation Status Update - ${data.competitionName} (${data.competitionYear})`,
     entry: `Entry Submitted: ${data.entryTitle} - ${data.competitionName}`,
+    'studio-approved': `Welcome to the Platform - ${data.studioName}`,
+    'studio-rejected': `Studio Registration Status Update`,
   };
 
   return subjects[template];

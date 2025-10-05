@@ -2,6 +2,14 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { isStudioDirector } from '@/lib/auth-utils';
+import { sendEmail } from '@/lib/email';
+import {
+  renderStudioApproved,
+  renderStudioRejected,
+  getEmailSubject,
+  type StudioApprovedData,
+  type StudioRejectedData,
+} from '@/lib/email-templates';
 
 export const studioRouter = router({
   // Get all studios
@@ -165,14 +173,44 @@ export const studioRouter = router({
             select: {
               id: true,
               email: true,
-              full_name: true,
+              user_profiles: {
+                select: {
+                  first_name: true,
+                  last_name: true,
+                },
+              },
             },
           },
         },
       });
 
-      // TODO: Send approval email to studio owner
-      // Will implement email notification in next step
+      // Send approval email to studio owner
+      if (studio.users_studios_owner_idTousers?.email) {
+        try {
+          const profile = studio.users_studios_owner_idTousers.user_profiles;
+          const ownerName = profile && (profile.first_name || profile.last_name)
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+            : undefined;
+
+          const emailData: StudioApprovedData = {
+            studioName: studio.name,
+            ownerName,
+            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+          };
+
+          const html = await renderStudioApproved(emailData);
+          const subject = getEmailSubject('studio-approved', { studioName: studio.name });
+
+          await sendEmail({
+            to: studio.users_studios_owner_idTousers.email,
+            subject,
+            html,
+          });
+        } catch (error) {
+          console.error('Failed to send approval email:', error);
+          // Don't throw - email failure shouldn't block the approval
+        }
+      }
 
       return studio;
     }),
@@ -204,14 +242,46 @@ export const studioRouter = router({
             select: {
               id: true,
               email: true,
-              full_name: true,
+              user_profiles: {
+                select: {
+                  first_name: true,
+                  last_name: true,
+                },
+              },
             },
           },
         },
       });
 
-      // TODO: Send rejection email to studio owner
-      // Will implement email notification in next step
+      // Send rejection email to studio owner
+      if (studio.users_studios_owner_idTousers?.email) {
+        try {
+          const profile = studio.users_studios_owner_idTousers.user_profiles;
+          const ownerName = profile && (profile.first_name || profile.last_name)
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+            : undefined;
+
+          const emailData: StudioRejectedData = {
+            studioName: studio.name,
+            ownerName,
+            reason: input.reason,
+            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+            contactEmail: process.env.CONTACT_EMAIL || 'info@example.com',
+          };
+
+          const html = await renderStudioRejected(emailData);
+          const subject = getEmailSubject('studio-rejected', { studioName: studio.name });
+
+          await sendEmail({
+            to: studio.users_studios_owner_idTousers.email,
+            subject,
+            html,
+          });
+        } catch (error) {
+          console.error('Failed to send rejection email:', error);
+          // Don't throw - email failure shouldn't block the rejection
+        }
+      }
 
       return studio;
     }),
