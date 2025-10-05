@@ -8,9 +8,9 @@ export default function ScoringPage() {
   const [selectedJudge, setSelectedJudge] = useState<string>('');
   const [currentEntry, setCurrentEntry] = useState<any>(null);
   const [scores, setScores] = useState({
-    technical: 0,
-    artistic: 0,
-    performance: 0,
+    technical: 60,
+    artistic: 60,
+    performance: 60,
   });
   const [comments, setComments] = useState('');
   const [specialAwards, setSpecialAwards] = useState<string[]>([]);
@@ -54,7 +54,7 @@ export default function ScoringPage() {
         setEntryIndex(entryIndex + 1);
       }
       // Reset scores and awards
-      setScores({ technical: 0, artistic: 0, performance: 0 });
+      setScores({ technical: 60, artistic: 60, performance: 60 });
       setComments('');
       setSpecialAwards([]);
     },
@@ -68,7 +68,7 @@ export default function ScoringPage() {
   }, [entries, entryIndex]);
 
   const handleScoreChange = (category: 'technical' | 'artistic' | 'performance', value: number) => {
-    setScores({ ...scores, [category]: Math.max(0, Math.min(100, value)) });
+    setScores({ ...scores, [category]: Math.max(60, Math.min(100, value)) });
   };
 
   const handleSubmitScore = () => {
@@ -259,38 +259,38 @@ export default function ScoringPage() {
                 </div>
                 <input
                   type="range"
-                  min="0"
+                  min="60"
                   max="100"
                   value={scores.technical}
                   onChange={(e) => handleScoreChange('technical', parseInt(e.target.value))}
                   className="w-full h-8 bg-white/20 rounded-lg appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${scores.technical}%, rgba(255, 255, 255, 0.2) ${scores.technical}%, rgba(255, 255, 255, 0.2) 100%)`
+                    background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${((scores.technical - 60) / 40) * 100}%, rgba(255, 255, 255, 0.2) ${((scores.technical - 60) / 40) * 100}%, rgba(255, 255, 255, 0.2) 100%)`
                   }}
                 />
                 <div className="flex justify-between text-base text-gray-400 mt-3">
-                  <span>0</span>
+                  <span>60</span>
                   <span>100</span>
                 </div>
                 {/* Quick Score Presets */}
                 <div className="grid grid-cols-4 gap-2 mt-4">
                   <button
-                    onClick={() => applyQuickScore('technical', 25)}
+                    onClick={() => applyQuickScore('technical', 65)}
                     className="px-4 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-300 rounded-lg font-medium text-sm transition-all"
                   >
-                    Poor 25
-                  </button>
-                  <button
-                    onClick={() => applyQuickScore('technical', 50)}
-                    className="px-4 py-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400/30 text-yellow-300 rounded-lg font-medium text-sm transition-all"
-                  >
-                    Fair 50
+                    Poor 65
                   </button>
                   <button
                     onClick={() => applyQuickScore('technical', 75)}
+                    className="px-4 py-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400/30 text-yellow-300 rounded-lg font-medium text-sm transition-all"
+                  >
+                    Fair 75
+                  </button>
+                  <button
+                    onClick={() => applyQuickScore('technical', 85)}
                     className="px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-300 rounded-lg font-medium text-sm transition-all"
                   >
-                    Good 75
+                    Good 85
                   </button>
                   <button
                     onClick={() => applyQuickScore('technical', 95)}
@@ -309,38 +309,38 @@ export default function ScoringPage() {
                 </div>
                 <input
                   type="range"
-                  min="0"
+                  min="60"
                   max="100"
                   value={scores.artistic}
                   onChange={(e) => handleScoreChange('artistic', parseInt(e.target.value))}
                   className="w-full h-8 bg-white/20 rounded-lg appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${scores.artistic}%, rgba(255, 255, 255, 0.2) ${scores.artistic}%, rgba(255, 255, 255, 0.2) 100%)`
+                    background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(168, 85, 247) ${((scores.artistic - 60) / 40) * 100}%, rgba(255, 255, 255, 0.2) ${((scores.artistic - 60) / 40) * 100}%, rgba(255, 255, 255, 0.2) 100%)`
                   }}
                 />
                 <div className="flex justify-between text-base text-gray-400 mt-3">
-                  <span>0</span>
+                  <span>60</span>
                   <span>100</span>
                 </div>
                 {/* Quick Score Presets */}
                 <div className="grid grid-cols-4 gap-2 mt-4">
                   <button
-                    onClick={() => applyQuickScore('artistic', 25)}
+                    onClick={() => applyQuickScore('artistic', 65)}
                     className="px-4 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-300 rounded-lg font-medium text-sm transition-all"
                   >
-                    Poor 25
-                  </button>
-                  <button
-                    onClick={() => applyQuickScore('artistic', 50)}
-                    className="px-4 py-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400/30 text-yellow-300 rounded-lg font-medium text-sm transition-all"
-                  >
-                    Fair 50
+                    Poor 65
                   </button>
                   <button
                     onClick={() => applyQuickScore('artistic', 75)}
+                    className="px-4 py-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400/30 text-yellow-300 rounded-lg font-medium text-sm transition-all"
+                  >
+                    Fair 75
+                  </button>
+                  <button
+                    onClick={() => applyQuickScore('artistic', 85)}
                     className="px-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 text-purple-300 rounded-lg font-medium text-sm transition-all"
                   >
-                    Good 75
+                    Good 85
                   </button>
                   <button
                     onClick={() => applyQuickScore('artistic', 95)}
@@ -359,38 +359,38 @@ export default function ScoringPage() {
                 </div>
                 <input
                   type="range"
-                  min="0"
+                  min="60"
                   max="100"
                   value={scores.performance}
                   onChange={(e) => handleScoreChange('performance', parseInt(e.target.value))}
                   className="w-full h-8 bg-white/20 rounded-lg appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, rgb(236, 72, 153) 0%, rgb(236, 72, 153) ${scores.performance}%, rgba(255, 255, 255, 0.2) ${scores.performance}%, rgba(255, 255, 255, 0.2) 100%)`
+                    background: `linear-gradient(to right, rgb(236, 72, 153) 0%, rgb(236, 72, 153) ${((scores.performance - 60) / 40) * 100}%, rgba(255, 255, 255, 0.2) ${((scores.performance - 60) / 40) * 100}%, rgba(255, 255, 255, 0.2) 100%)`
                   }}
                 />
                 <div className="flex justify-between text-base text-gray-400 mt-3">
-                  <span>0</span>
+                  <span>60</span>
                   <span>100</span>
                 </div>
                 {/* Quick Score Presets */}
                 <div className="grid grid-cols-4 gap-2 mt-4">
                   <button
-                    onClick={() => applyQuickScore('performance', 25)}
+                    onClick={() => applyQuickScore('performance', 65)}
                     className="px-4 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-300 rounded-lg font-medium text-sm transition-all"
                   >
-                    Poor 25
-                  </button>
-                  <button
-                    onClick={() => applyQuickScore('performance', 50)}
-                    className="px-4 py-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400/30 text-yellow-300 rounded-lg font-medium text-sm transition-all"
-                  >
-                    Fair 50
+                    Poor 65
                   </button>
                   <button
                     onClick={() => applyQuickScore('performance', 75)}
+                    className="px-4 py-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-400/30 text-yellow-300 rounded-lg font-medium text-sm transition-all"
+                  >
+                    Fair 75
+                  </button>
+                  <button
+                    onClick={() => applyQuickScore('performance', 85)}
                     className="px-4 py-3 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/30 text-pink-300 rounded-lg font-medium text-sm transition-all"
                   >
-                    Good 75
+                    Good 85
                   </button>
                   <button
                     onClick={() => applyQuickScore('performance', 95)}
@@ -488,7 +488,7 @@ export default function ScoringPage() {
 
               <button
                 onClick={handleSubmitScore}
-                disabled={totalScore === 0}
+                disabled={totalScore === 180}
                 className="flex-1 px-8 py-6 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xl font-semibold rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Submit Score & Next →
