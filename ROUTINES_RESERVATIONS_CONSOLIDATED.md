@@ -277,7 +277,9 @@ const approve = adminProcedure
 
 ---
 
-### Issue 5: White-on-White Dropdowns (Global Issue)
+### Issue 5: White-on-White Dropdowns (Global Issue) ✅ FIXED
+
+**Status**: ✅ COMPLETE (Commit 4525136 - Jan 5, 2025)
 
 **Problem**: All `<select>` dropdowns render white text on white background
 
@@ -286,58 +288,24 @@ const approve = adminProcedure
 - USER_TESTING_NOTES.md: "Fix Dropdown Contrast - Resolve remaining white-on-white dropdowns"
 - FIXES_AND_ENHANCEMENTS.md Section 1.1: "Dropdown Menus Render White on White"
 
-**Affected Pages**:
-- Reservations (all pages)
-- Create Routine modal
-- Judge Management
-- Analytics
-- Scheduling
-- Any page with `<select>` elements
+**Solution Implemented**:
+- Audited all 5 files containing `<select>` elements
+- Added `className="text-gray-900"` to all `<option>` elements
+- Consistent pattern applied:
+  - `<select>`: `text-white` (visible on dark glassmorphic background)
+  - `<option>`: `text-gray-900` (visible on light background when dropdown opens)
 
-**Current Behavior** (BUG):
-```tsx
-// Likely missing text color class
-<select className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
-  {/* White text on white background until hover */}
-</select>
-```
+**Files Fixed**:
+1. ✅ src/components/EntriesList.tsx (line 119-123)
+2. ✅ src/components/SchedulingManager.tsx (line 193-197)
+3. ✅ src/components/AllInvoicesList.tsx (lines 134-158, two dropdowns)
+4. ✅ src/components/ReservationsList.tsx (already correct)
+5. ✅ src/components/InvoicesList.tsx (already correct)
 
-**Required Fix**:
-```tsx
-// Add explicit text color class
-<select className="
-  bg-white/10
-  backdrop-blur-md
-  rounded-xl
-  border border-white/20
-  text-gray-900  {/* ← ADD THIS */}
-">
-  <option value="">Select option</option>
-</select>
-
-// OR for dark backgrounds:
-<select className="
-  bg-white/10
-  backdrop-blur-md
-  rounded-xl
-  border border-white/20
-  text-white  {/* ← Dark bg variant */}
-">
-```
-
-**Implementation Strategy**:
-```bash
-# 1. Find all <select> elements
-grep -r "<select" src/ --include="*.tsx"
-
-# 2. Audit each for text color class
-# 3. Apply consistent styling:
-#    - Light backgrounds: text-gray-900
-#    - Dark backgrounds: text-white
-#    - Glassmorphic: test both, pick readable
-
-# 4. Test across all pages
-```
+**Deployment**:
+- Build: ✅ All 31 routes compile
+- Deployed: https://comp-portal-one.vercel.app
+- Status: READY (dpl_96Bwv686a3aVXwX6Cv7MVn7rufai)
 
 ---
 
