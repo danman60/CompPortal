@@ -8,6 +8,7 @@ export default function MusicTrackingDashboard() {
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [urgentOnly, setUrgentOnly] = useState(false);
   const [bulkSendResults, setBulkSendResults] = useState<{
     totalStudios: number;
     successCount: number;
@@ -181,32 +182,49 @@ export default function MusicTrackingDashboard() {
 
       {/* Competition Filter & Export */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-        <div className="flex flex-col md:flex-row md:items-end gap-4">
-          <div className="flex-1">
-            <label htmlFor="competition-filter" className="block text-sm font-medium text-gray-300 mb-2">
-              Filter by Competition
-            </label>
-            <select
-              id="competition-filter"
-              value={selectedCompetition || ''}
-              onChange={(e) => setSelectedCompetition(e.target.value || undefined)}
-              className="w-full px-4 py-2 bg-gray-900 text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-end gap-4">
+            <div className="flex-1">
+              <label htmlFor="competition-filter" className="block text-sm font-medium text-gray-300 mb-2">
+                Filter by Competition
+              </label>
+              <select
+                id="competition-filter"
+                value={selectedCompetition || ''}
+                onChange={(e) => setSelectedCompetition(e.target.value || undefined)}
+                className="w-full px-4 py-2 bg-gray-900 text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="" className="bg-gray-900 text-white">All Competitions</option>
+                {competitions?.competitions.map((comp) => (
+                  <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
+                    {comp.name} ({comp.year})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleExportCSV}
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
             >
-              <option value="" className="bg-gray-900 text-white">All Competitions</option>
-              {competitions?.competitions.map((comp) => (
-                <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
-                  {comp.name} ({comp.year})
-                </option>
-              ))}
-            </select>
+              <span>📥</span>
+              <span>Export CSV</span>
+            </button>
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
-          >
-            <span>📥</span>
-            <span>Export CSV</span>
-          </button>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={urgentOnly}
+              onChange={(e) => setUrgentOnly(e.target.checked)}
+              className="w-5 h-5 rounded border-white/20 bg-gray-900 text-red-500 focus:ring-2 focus:ring-red-500"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-white font-medium">Urgent Only</span>
+              <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-semibold rounded">
+                &lt;7 days
+              </span>
+              <span className="text-gray-400 text-sm">Show only competitions within 7 days</span>
+            </div>
+          </label>
         </div>
       </div>
 
@@ -259,7 +277,16 @@ export default function MusicTrackingDashboard() {
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.values(missingMusic).map((compGroup) => {
+            {Object.values(missingMusic)
+              .filter((compGroup) => {
+                // Filter by urgency if enabled
+                if (urgentOnly) {
+                  const daysUntil = compGroup.competition.daysUntil;
+                  return daysUntil !== null && daysUntil < 7;
+                }
+                return true;
+              })
+              .map((compGroup) => {
               const comp = compGroup.competition;
               const studioCount = Object.keys(compGroup.studios).length;
               const routineCount = Object.values(compGroup.studios).reduce(
