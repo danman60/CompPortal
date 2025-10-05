@@ -300,4 +300,158 @@ export const musicRouter = router({
 
       return result;
     }),
+
+  /**
+   * Send missing music reminders to all studios for a competition
+   */
+  sendBulkMissingMusicReminders: publicProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Get all studios with missing music for this competition
+      const studiosWithMissingMusic = await prisma.studios.findMany({
+        where: {
+          competition_entries: {
+            some: {
+              competition_id: input.competitionId,
+              music_file_url: null,
+              status: { not: 'cancelled' },
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+
+      const results: Array<{
+        studioId: string;
+        studioName: string;
+        success: boolean;
+        error?: string;
+      }> = [];
+
+      // Send reminder to each studio
+      for (const studio of studiosWithMissingMusic) {
+        if (!studio.email) {
+          results.push({
+            studioId: studio.id,
+            studioName: studio.name,
+            success: false,
+            error: 'No email address',
+          });
+          continue;
+        }
+
+        try {
+          // Get competition details and missing entries for this studio
+          const [competition, entriesWithoutMusic] = await Promise.all([
+            prisma.competitions.findUnique({
+              where: { id: input.competitionId },
+              select: {
+                name: true,
+                year: true,
+                competition_start_date: true,
+              },
+            }),
+            prisma.competition_entries.findMany({
+              where: {
+                studio_id: studio.id,
+                competition_id: input.competitionId,
+                status: { not: 'cancelled' },
+                music_file_url: null,
+              },
+              select: {
+                title: true,
+                entry_number: true,
+                dance_categories: {
+                  select: { name: true },
+                },
+              },
+            }),
+          ]);
+
+          if (!competition || entriesWithoutMusic.length === 0) {
+            results.push({
+              studioId: studio.id,
+              studioName: studio.name,
+              success: false,
+              error: 'No missing music entries',
+            });
+            continue;
+          }
+
+          // Calculate days until competition
+          let daysUntilCompetition: number | undefined;
+          if (competition.competition_start_date) {
+            const startDate = new Date(competition.competition_start_date);
+            const today = new Date();
+            const diffTime = startDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            daysUntilCompetition = diffDays > 0 ? diffDays : undefined;
+          }
+
+          // Import email functions
+          const {
+            renderMissingMusicReminder,
+            getEmailSubject,
+          } = await import('@/lib/email-templates');
+          const { sendEmail } = await import('@/lib/email');
+
+          const data = {
+            studioName: studio.name,
+            competitionName: competition.name,
+            competitionYear: competition.year,
+            routinesWithoutMusic: entriesWithoutMusic.map((entry) => ({
+              title: entry.title,
+              entryNumber: entry.entry_number || undefined,
+              category: entry.dance_categories?.name || 'N/A',
+            })),
+            portalUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://portal.glowdance.com',
+            daysUntilCompetition,
+          };
+
+          const html = await renderMissingMusicReminder(data);
+          const subject = getEmailSubject('missing-music', data);
+
+          const result = await sendEmail({
+            to: studio.email,
+            subject,
+            html,
+            templateType: 'missing-music',
+            studioId: studio.id,
+            competitionId: input.competitionId,
+          });
+
+          results.push({
+            studioId: studio.id,
+            studioName: studio.name,
+            success: result.success,
+            error: result.error,
+          });
+        } catch (error) {
+          results.push({
+            studioId: studio.id,
+            studioName: studio.name,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      const successCount = results.filter((r) => r.success).length;
+      const failureCount = results.filter((r) => !r.success).length;
+
+      return {
+        totalStudios: studiosWithMissingMusic.length,
+        successCount,
+        failureCount,
+        results,
+      };
+    }),
 });

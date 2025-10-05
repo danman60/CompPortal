@@ -6,6 +6,17 @@ import { useState } from 'react';
 export default function MusicTrackingDashboard() {
   const [selectedCompetition, setSelectedCompetition] = useState<string | undefined>(undefined);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [bulkSendResults, setBulkSendResults] = useState<{
+    totalStudios: number;
+    successCount: number;
+    failureCount: number;
+    results: Array<{
+      studioId: string;
+      studioName: string;
+      success: boolean;
+      error?: string;
+    }>;
+  } | null>(null);
 
   const { data: competitions } = trpc.competition.getAll.useQuery();
   const { data: stats, isLoading: statsLoading } = trpc.music.getMusicStats.useQuery();
@@ -25,6 +36,16 @@ export default function MusicTrackingDashboard() {
     },
   });
 
+  const bulkSendMutation = trpc.music.sendBulkMissingMusicReminders.useMutation({
+    onSuccess: (data) => {
+      setBulkSendResults(data);
+      refetch();
+    },
+    onError: (error) => {
+      alert(`Failed to send bulk reminders: ${error.message}`);
+    },
+  });
+
   const handleSendReminder = async (studioId: string, competitionId: string, studioName: string) => {
     if (!confirm(`Send missing music reminder to ${studioName}?`)) {
       return;
@@ -33,6 +54,14 @@ export default function MusicTrackingDashboard() {
     const key = `${studioId}-${competitionId}`;
     setSendingReminder(key);
     await sendReminderMutation.mutateAsync({ studioId, competitionId });
+  };
+
+  const handleBulkSend = async (competitionId: string, competitionName: string, studioCount: number) => {
+    if (!confirm(`Send missing music reminders to all ${studioCount} studios for ${competitionName}?`)) {
+      return;
+    }
+
+    await bulkSendMutation.mutateAsync({ competitionId });
   };
 
   const formatLastSent = (date: Date | null) => {
@@ -131,7 +160,7 @@ export default function MusicTrackingDashboard() {
                 <div key={comp.id} className="bg-white/5 rounded-lg p-6 border border-white/10">
                   {/* Competition Header */}
                   <div className="flex items-start justify-between mb-4">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-xl font-bold text-white mb-1">
                         {comp.name} ({comp.year})
                       </h3>
@@ -140,19 +169,32 @@ export default function MusicTrackingDashboard() {
                         across {studioCount} {studioCount === 1 ? 'studio' : 'studios'}
                       </div>
                     </div>
-                    {comp.daysUntil !== null && (
-                      <div
-                        className={`px-4 py-2 rounded-lg font-semibold ${
-                          comp.daysUntil < 7
-                            ? 'bg-red-500/20 text-red-400'
-                            : comp.daysUntil < 14
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-blue-500/20 text-blue-400'
+                    <div className="flex items-center gap-3">
+                      {comp.daysUntil !== null && (
+                        <div
+                          className={`px-4 py-2 rounded-lg font-semibold ${
+                            comp.daysUntil < 7
+                              ? 'bg-red-500/20 text-red-400'
+                              : comp.daysUntil < 14
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-blue-500/20 text-blue-400'
+                          }`}
+                        >
+                          {comp.daysUntil} days until event
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleBulkSend(comp.id, `${comp.name} (${comp.year})`, studioCount)}
+                        disabled={bulkSendMutation.isPending}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                          bulkSendMutation.isPending
+                            ? 'bg-purple-500/50 text-white cursor-wait'
+                            : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
                         }`}
                       >
-                        {comp.daysUntil} days until event
-                      </div>
-                    )}
+                        {bulkSendMutation.isPending ? '📧 Sending...' : '📧 Send All Reminders'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Studios */}
@@ -229,6 +271,93 @@ export default function MusicTrackingDashboard() {
           </div>
         )}
       </div>
+
+      {/* Bulk Send Results Modal */}
+      {bulkSendResults && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">
+                📧 Bulk Reminder Results
+              </h3>
+              <button
+                onClick={() => setBulkSendResults(null)}
+                className="text-white hover:text-gray-200 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-6">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <div className="text-gray-400 text-sm mb-1">Total Studios</div>
+                  <div className="text-2xl font-bold text-white">
+                    {bulkSendResults.totalStudios}
+                  </div>
+                </div>
+                <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
+                  <div className="text-green-400 text-sm mb-1">Sent Successfully</div>
+                  <div className="text-2xl font-bold text-green-400">
+                    {bulkSendResults.successCount}
+                  </div>
+                </div>
+                <div className="bg-red-500/20 rounded-lg p-4 border border-red-400/30">
+                  <div className="text-red-400 text-sm mb-1">Failed</div>
+                  <div className="text-2xl font-bold text-red-400">
+                    {bulkSendResults.failureCount}
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Results */}
+              <div className="space-y-2">
+                <h4 className="text-lg font-semibold text-white mb-3">Detailed Results</h4>
+                {bulkSendResults.results.map((result) => (
+                  <div
+                    key={result.studioId}
+                    className="bg-white/5 rounded-lg p-3 border border-white/10 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`text-lg ${result.success ? '✅' : '❌'}`}>
+                        {result.success ? '✅' : '❌'}
+                      </span>
+                      <div>
+                        <div className="text-white font-medium">{result.studioName}</div>
+                        {result.error && (
+                          <div className="text-xs text-red-400 mt-1">
+                            Error: {result.error}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded text-xs font-semibold ${
+                      result.success
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {result.success ? 'Sent' : 'Failed'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-white/5 px-6 py-4 flex justify-end border-t border-white/10">
+              <button
+                onClick={() => setBulkSendResults(null)}
+                className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg transition-colors font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
