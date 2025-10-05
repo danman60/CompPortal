@@ -21,6 +21,22 @@ export default function CompetitionsPage() {
     },
   });
 
+  const cloneMutation = trpc.competition.clone.useMutation({
+    onSuccess: (result) => {
+      alert(
+        `✅ Competition cloned successfully!\n\n` +
+        `New: ${result.competition?.name}\n` +
+        `Cloned from: ${result.clonedFrom}\n` +
+        `Sessions: ${result.sessionsCloned}\n` +
+        `Locations: ${result.locationsCloned}`
+      );
+      utils.competition.getAll.invalidate();
+    },
+    onError: (error) => {
+      alert(`Clone failed: ${error.message}`);
+    },
+  });
+
   const approveMutation = trpc.reservation.approve.useMutation({
     onSuccess: () => {
       utils.competition.getAll.invalidate();
@@ -46,6 +62,34 @@ export default function CompetitionsPage() {
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
       deleteMutation.mutate({ id });
+    }
+  };
+
+  const handleClone = (id: string, name: string, currentYear: number) => {
+    const newYearStr = prompt(
+      `Clone "${name}" (${currentYear})\n\nEnter the year for the new competition:`,
+      (currentYear + 1).toString()
+    );
+
+    if (!newYearStr) return;
+
+    const newYear = parseInt(newYearStr, 10);
+    if (isNaN(newYear) || newYear < 2000 || newYear > 2100) {
+      alert('Invalid year. Must be between 2000 and 2100.');
+      return;
+    }
+
+    const newName = prompt(
+      `Optional: Enter custom name for the cloned competition\n\n(Leave blank to use "${name} ${newYear}")`,
+      ''
+    );
+
+    if (confirm(`Clone "${name}" for year ${newYear}?`)) {
+      cloneMutation.mutate({
+        id,
+        newYear,
+        newName: newName || undefined,
+      });
     }
   };
 
@@ -317,6 +361,13 @@ export default function CompetitionsPage() {
                   >
                     View Details
                   </Link>
+                  <button
+                    onClick={() => handleClone(competition.id, competition.name, competition.year)}
+                    className="w-full px-4 py-2 bg-green-500/20 text-green-400 border border-green-400/30 rounded-lg hover:bg-green-500/30 transition-all font-medium text-sm"
+                    disabled={cloneMutation.isPending}
+                  >
+                    {cloneMutation.isPending ? 'Cloning...' : '📋 Clone'}
+                  </button>
                   <button
                     onClick={() => handleDelete(competition.id, competition.name)}
                     className="w-full px-4 py-2 bg-red-500/20 text-red-400 border border-red-400/30 rounded-lg hover:bg-red-500/30 transition-all font-medium text-sm"

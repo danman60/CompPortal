@@ -221,8 +221,8 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 ### Competition Management
 - [ ] Competition cloning (from past events)
 - [ ] Multi-competition switching (Glow/EMPWR)
-- [ ] Advanced scheduling with conflict detection
-- [ ] Judge assignment and management
+- [x] Advanced scheduling with conflict detection *(Verified Oct 5 - ConflictPanel.tsx, scheduling lib with 5 conflict types)*
+- [x] Judge assignment and management *(Verified Oct 5 - judges/page.tsx:1-502, full CRUD + check-in + panel assignment)*
 
 ---
 

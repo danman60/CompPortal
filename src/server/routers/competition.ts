@@ -416,4 +416,124 @@ export const competitionRouter = router({
         nearCapacity: utilizationPercent >= 90,
       };
     }),
+
+  // Clone a competition (for recurring events)
+  clone: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        newYear: z.number().int().min(2000).max(2100),
+        newName: z.string().min(1).max(255).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Fetch original competition with all related data
+      const original = await prisma.competitions.findUnique({
+        where: { id: input.id },
+        include: {
+          competition_sessions: {
+            orderBy: { session_number: 'asc' },
+          },
+          competition_locations: {
+            orderBy: { name: 'asc' },
+          },
+        },
+      });
+
+      if (!original) {
+        throw new Error('Competition not found');
+      }
+
+      // Create new competition with updated name and year
+      const newName =
+        input.newName || `${original.name} ${input.newYear}`.trim();
+
+      const newCompetition = await prisma.competitions.create({
+        data: {
+          name: newName,
+          year: input.newYear,
+          description: original.description,
+          registration_opens: original.registration_opens,
+          registration_closes: original.registration_closes,
+          competition_start_date: original.competition_start_date,
+          competition_end_date: original.competition_end_date,
+          primary_location: original.primary_location,
+          venue_address: original.venue_address,
+          venue_capacity: original.venue_capacity,
+          session_count: original.session_count,
+          number_of_judges: original.number_of_judges,
+          entry_fee: original.entry_fee,
+          late_fee: original.late_fee,
+          allow_age_overrides: original.allow_age_overrides,
+          allow_multiple_entries: original.allow_multiple_entries,
+          require_video_submissions: original.require_video_submissions,
+          status: 'upcoming', // New competition starts as upcoming
+          is_public: original.is_public,
+          logo_url: original.logo_url,
+          website: original.website,
+          contact_email: original.contact_email,
+          contact_phone: original.contact_phone,
+          rules_document_url: original.rules_document_url,
+          available_reservation_tokens: original.venue_capacity || 600,
+        },
+      });
+
+      // Clone sessions
+      if (original.competition_sessions.length > 0) {
+        await prisma.competition_sessions.createMany({
+          data: original.competition_sessions.map((session) => ({
+            competition_id: newCompetition.id,
+            session_name: session.session_name,
+            session_number: session.session_number,
+            session_date: session.session_date,
+            start_time: session.start_time,
+            end_time: session.end_time,
+            max_entries: session.max_entries,
+            location_id: session.location_id,
+          })),
+        });
+      }
+
+      // Clone locations
+      if (original.competition_locations.length > 0) {
+        await prisma.competition_locations.createMany({
+          data: original.competition_locations.map((location) => ({
+            competition_id: newCompetition.id,
+            name: location.name,
+            address: location.address,
+            capacity: location.capacity,
+            stage_dimensions: location.stage_dimensions,
+            dressing_rooms: location.dressing_rooms,
+            warm_up_areas: location.warm_up_areas,
+            parking_spaces: location.parking_spaces,
+            audio_system: location.audio_system,
+            lighting_system: location.lighting_system,
+            video_recording: location.video_recording,
+            live_streaming: location.live_streaming,
+          })),
+        });
+      }
+
+      // Return new competition with counts
+      const result = await prisma.competitions.findUnique({
+        where: { id: newCompetition.id },
+        include: {
+          _count: {
+            select: {
+              competition_entries: true,
+              reservations: true,
+              competition_sessions: true,
+              competition_locations: true,
+            },
+          },
+        },
+      });
+
+      return {
+        competition: result,
+        clonedFrom: original.name,
+        sessionsCloned: original.competition_sessions.length,
+        locationsCloned: original.competition_locations.length,
+      };
+    }),
 });
