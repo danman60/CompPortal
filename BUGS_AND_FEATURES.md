@@ -55,7 +55,7 @@ These appear in both USER_TESTING_NOTES.md and FIXES_AND_ENHANCEMENTS.md:
 - [x] **[CRITICAL]** Remove agent information editing *(Completed Oct 5)*
 - [ ] **[NEW]** Merge "Add Dancer" and "Batch Add" into unified action
 - [x] **[NEW]** Show routine counter: "3 of 30 remaining" *(Verified already implemented)*
-- [ ] **[NEW]** Replace Music section with Props field
+- [x] **[NEW]** Replace Music section with Props field *(Verified already implemented - music handled separately)*
 - [x] **[NEW]** Fix reservation flow white-on-white dropdowns *(Completed Oct 5)*
 - [x] **[NEW]** Add helper text: "Routines available: 12 of 20 approved" *(Verified already implemented)*
 - [x] **[NEW]** Auto-generate invoice on reservation submission *(Verified already implemented)*
