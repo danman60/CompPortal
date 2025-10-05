@@ -4,6 +4,8 @@ import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTableSort } from '@/hooks/useTableSort';
+import SortableHeader from '@/components/SortableHeader';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
@@ -115,6 +117,9 @@ export default function AllInvoicesList() {
   const invoices = data?.invoices || [];
   const competitions = competitionsData?.competitions || [];
 
+  // Sort invoices for table view
+  const { sortedData: sortedInvoices, sortConfig, requestSort } = useTableSort(invoices);
+
   return (
     <div className="space-y-6">
       {/* Filters */}
@@ -193,18 +198,10 @@ export default function AllInvoicesList() {
           <table className="w-full">
             <thead className="bg-white/5 border-b border-white/20">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Studio
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Event
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Routines
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Total Amount
-                </th>
+                <SortableHeader label="Studio" sortKey="studioName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Routines" sortKey="entryCount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Total Amount" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Payment Status
                 </th>
@@ -214,14 +211,14 @@ export default function AllInvoicesList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {invoices.length === 0 ? (
+              {sortedInvoices.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
                     No invoices found
                   </td>
                 </tr>
               ) : (
-                invoices.map((invoice) => (
+                sortedInvoices.map((invoice) => (
                   <tr key={`${invoice.studioId}-${invoice.competitionId}`} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
                       <div>

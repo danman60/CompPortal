@@ -3,6 +3,8 @@
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTableSort } from '@/hooks/useTableSort';
+import SortableHeader from '@/components/SortableHeader';
 
 export default function EntriesList() {
   const { data, isLoading } = trpc.entry.getAll.useQuery();
@@ -49,6 +51,9 @@ export default function EntriesList() {
     const matchesCompetition = selectedCompetition === 'all' || entry.competition_id === selectedCompetition;
     return matchesStatus && matchesCompetition;
   });
+
+  // Sort entries for table view
+  const { sortedData: sortedEntries, sortConfig, requestSort } = useTableSort(filteredEntries);
 
   // Calculate space limit for "Create Routine" button
   const selectedReservation = reservationData?.reservations?.[0];
@@ -523,18 +528,18 @@ export default function EntriesList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/20 bg-white/5">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Routine #</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Title</th>
+                  <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} />
+                  <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} />
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Category</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Age Group</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Dancers</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Music</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
+                  <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} />
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredEntries.map((entry, index) => (
+                {sortedEntries.map((entry, index) => (
                   <tr
                     key={entry.id}
                     className={`border-b border-white/10 hover:bg-white/5 transition-colors ${

@@ -3,6 +3,8 @@
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTableSort } from '@/hooks/useTableSort';
+import SortableHeader from '@/components/SortableHeader';
 
 export default function DancersList() {
   const { data, isLoading } = trpc.dancer.getAll.useQuery();
@@ -34,6 +36,9 @@ export default function DancersList() {
       `${dancer.first_name} ${dancer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesGender && matchesSearch;
   });
+
+  // Sort dancers for table view
+  const { sortedData: sortedDancers, sortConfig, requestSort } = useTableSort(filteredDancers);
 
   return (
     <div>
@@ -206,16 +211,16 @@ export default function DancersList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/20 bg-white/5">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Gender</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Age</th>
+                  <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} />
+                  <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} />
+                  <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} />
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Studio</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredDancers.map((dancer, index) => (
+                {sortedDancers.map((dancer, index) => (
                   <tr
                     key={dancer.id}
                     className={`border-b border-white/10 hover:bg-white/5 transition-colors ${
