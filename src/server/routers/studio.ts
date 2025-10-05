@@ -139,6 +139,7 @@ export const studioRouter = router({
           province: z.string().optional(),
           postal_code: z.string().optional(),
           country: z.string().optional(),
+          logo_url: z.string().url().optional().or(z.literal('')),
         }),
       })
     )

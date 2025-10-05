@@ -6,6 +6,7 @@ import { createClient } from './supabase';
  */
 
 const MUSIC_BUCKET = 'competition-music';
+const LOGOS_BUCKET = 'studio-logos';
 
 export interface UploadMusicParams {
   file: File;
@@ -14,6 +15,18 @@ export interface UploadMusicParams {
 }
 
 export interface UploadMusicResult {
+  success: boolean;
+  publicUrl?: string;
+  filePath?: string;
+  error?: string;
+}
+
+export interface UploadLogoParams {
+  file: File;
+  studioId: string;
+}
+
+export interface UploadLogoResult {
   success: boolean;
   publicUrl?: string;
   filePath?: string;
@@ -98,6 +111,103 @@ export async function deleteMusicFile(filePath: string): Promise<{ success: bool
 
     const { error } = await supabase.storage
       .from(MUSIC_BUCKET)
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Delete error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete file',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete exception:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Upload logo file to Supabase Storage
+ */
+export async function uploadLogoFile({
+  file,
+  studioId,
+}: UploadLogoParams): Promise<UploadLogoResult> {
+  try {
+    const supabase = createClient();
+
+    // Validate file type (images only)
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      return {
+        success: false,
+        error: 'Invalid file type. Please upload JPG, PNG, GIF, or WEBP images only.',
+      };
+    }
+
+    // Validate file size (max 5MB for images)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return {
+        success: false,
+        error: 'File too large. Maximum size is 5MB.',
+      };
+    }
+
+    // Generate unique file path
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `studios/${studioId}/${timestamp}-${sanitizedFileName}`;
+
+    // Upload file
+    const { data, error } = await supabase.storage
+      .from(LOGOS_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to upload file',
+      };
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(LOGOS_BUCKET)
+      .getPublicUrl(filePath);
+
+    return {
+      success: true,
+      publicUrl: urlData.publicUrl,
+      filePath,
+    };
+  } catch (error) {
+    console.error('Upload exception:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Delete logo file from Supabase Storage
+ */
+export async function deleteLogoFile(filePath: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createClient();
+
+    const { error } = await supabase.storage
+      .from(LOGOS_BUCKET)
       .remove([filePath]);
 
     if (error) {

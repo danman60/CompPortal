@@ -2,6 +2,7 @@
 
 import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
+import { uploadLogoFile } from '@/lib/storage';
 
 interface StudiosListProps {
   studioId?: string; // If provided, show edit mode for this studio only (studio director)
@@ -20,6 +21,7 @@ export default function StudiosList({ studioId }: StudiosListProps) {
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [editData, setEditData] = useState({
     name: '',
     email: '',
@@ -29,6 +31,7 @@ export default function StudiosList({ studioId }: StudiosListProps) {
     province: '',
     postal_code: '',
     country: '',
+    logo_url: '',
   });
 
   const updateMutation = trpc.studio.update.useMutation({
@@ -53,6 +56,7 @@ export default function StudiosList({ studioId }: StudiosListProps) {
         province: singleStudioData.province || '',
         postal_code: singleStudioData.postal_code || '',
         country: singleStudioData.country || '',
+        logo_url: singleStudioData.logo_url || '',
       });
     }
   }, [singleStudioData, studioId]);
@@ -85,6 +89,31 @@ export default function StudiosList({ studioId }: StudiosListProps) {
   // Studio Director Mode - Edit own studio
   if (studioId && singleStudioData) {
     const studio = singleStudioData;
+
+    const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      setIsUploadingLogo(true);
+
+      try {
+        const result = await uploadLogoFile({
+          file,
+          studioId,
+        });
+
+        if (result.success && result.publicUrl) {
+          setEditData({ ...editData, logo_url: result.publicUrl });
+          alert('✅ Logo uploaded successfully!');
+        } else {
+          alert(`❌ Upload failed: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        alert(`❌ Upload error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setIsUploadingLogo(false);
+      }
+    };
 
     const handleSave = () => {
       updateMutation.mutate({
@@ -126,11 +155,27 @@ export default function StudiosList({ studioId }: StudiosListProps) {
 
         {/* Studio Information */}
         {!isEditing ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Studio Name</label>
-              <div className="text-white">{studio.name || 'Not set'}</div>
-            </div>
+          <div className="space-y-6">
+            {/* Logo Display */}
+            {studio.logo_url && (
+              <div className="flex items-center gap-4 pb-6 border-b border-white/10">
+                <img
+                  src={studio.logo_url}
+                  alt={`${studio.name} logo`}
+                  className="w-20 h-20 object-cover rounded-lg border-2 border-white/20"
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Studio Logo</label>
+                  <div className="text-xs text-gray-500">Displayed on competition materials</div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Studio Name</label>
+                <div className="text-white">{studio.name || 'Not set'}</div>
+              </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Email</label>
               <div className="text-white">{studio.email || 'Not set'}</div>
@@ -159,9 +204,55 @@ export default function StudiosList({ studioId }: StudiosListProps) {
               <label className="block text-sm font-medium text-gray-400 mb-1">Country</label>
               <div className="text-white">{studio.country || 'Not set'}</div>
             </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Logo Upload Section */}
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <label className="block text-sm font-medium text-gray-300 mb-3">Studio Logo</label>
+              <div className="flex items-start gap-4">
+                {/* Logo Preview */}
+                <div className="flex-shrink-0">
+                  {editData.logo_url ? (
+                    <img
+                      src={editData.logo_url}
+                      alt="Studio logo"
+                      className="w-24 h-24 object-cover rounded-lg border-2 border-white/20"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-white/10 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center text-gray-500 text-xs">
+                      No Logo
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Controls */}
+                <div className="flex-1">
+                  <div className="mb-2">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={handleLogoUpload}
+                      disabled={isUploadingLogo}
+                      className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-500/20 file:text-purple-400 hover:file:bg-purple-500/30 file:cursor-pointer disabled:opacity-50"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    {isUploadingLogo ? 'Uploading...' : 'JPG, PNG, GIF, or WEBP. Max 5MB.'}
+                  </p>
+                  {editData.logo_url && (
+                    <button
+                      onClick={() => setEditData({ ...editData, logo_url: '' })}
+                      className="mt-2 text-xs text-red-400 hover:text-red-300"
+                    >
+                      Remove Logo
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Studio Name *</label>
