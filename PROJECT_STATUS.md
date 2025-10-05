@@ -39,11 +39,11 @@
 ## Recent Commits
 
 ```
+b3c54fa - feat: Implement complete music upload workflow for routine creation
+85ce954 - docs: Add comprehensive next session plan and update status
 a7fc525 - docs: Mark reservation rejection feature as complete
 48d9ee9 - feat: Enhance reservation rejection UI with detailed reasons
 665f303 - feat: Implement invoice PDF download functionality
-5a88bf3 - docs: Update README to reflect MVP completion status
-df7a996 - docs: Update landing page with latest status
 ```
 
 ---
