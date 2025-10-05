@@ -212,7 +212,7 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 - [x] Missing music CSV export *(Completed Oct 5 - Commit c1132fb - exportable report by competition)*
 
 ### Dashboard Enhancements
-- [x] Music tracking dashboard *(Completed Oct 5 - Commits b4789b3, efdc94b, c1132fb - full system with bulk send + CSV export)*
+- [x] Music tracking dashboard *(Completed Oct 5 - Commits b4789b3-4abfbeb - full system with bulk send, CSV export, auto-refresh, urgency filter)*
 - [ ] Personalized dashboard layout (drag/drop widgets)
 - [x] Visual capacity meters/progress bars per event *(Completed Oct 5 - Commit 9b7c100)*
 - [ ] Draggable dashboard button reordering
