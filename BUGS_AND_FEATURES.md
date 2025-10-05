@@ -203,14 +203,16 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 - [x] Payment confirmation emails *(Completed Oct 5 - Commit 13cd598)*
 - [x] Email logging and audit trail *(Completed Oct 5 - Commit fd05099)*
 - [x] Email history tracking UI *(Completed Oct 5 - Commit eb422db)*
+- [x] Bulk missing music reminders *(Completed Oct 5 - Commit efdc94b - send to all studios at once)*
 
 ### Data Import/Export
 - [x] Bulk dancer CSV import *(Implemented - DancerCSVImport.tsx + bulkImport mutation)*
 - [x] Schedule export (PDF/CSV/iCal) *(Verified Oct 5 - scheduling.ts:567-1103, SchedulingManager.tsx:50-322)*
 - [x] Results export (PDF/CSV) *(Completed Oct 5 - Commit 7bc395f)*
+- [x] Missing music CSV export *(Completed Oct 5 - Commit c1132fb - exportable report by competition)*
 
 ### Dashboard Enhancements
-- [x] Music tracking dashboard *(Completed Oct 5 - Commit b4789b3 - with reminder sending UI)*
+- [x] Music tracking dashboard *(Completed Oct 5 - Commits b4789b3, efdc94b, c1132fb - full system with bulk send + CSV export)*
 - [ ] Personalized dashboard layout (drag/drop widgets)
 - [x] Visual capacity meters/progress bars per event *(Completed Oct 5 - Commit 9b7c100)*
 - [ ] Draggable dashboard button reordering
