@@ -49,12 +49,12 @@ export default function Home() {
                 <p className="text-gray-300 text-sm">PDF/CSV/iCal formats</p>
               </div>
 
-              <div className="bg-blue-500/20 rounded-lg p-4 border border-blue-400/30">
+              <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-blue-400 text-xl">🚀</span>
+                  <span className="text-green-400 text-xl">✅</span>
                   <span className="text-white font-medium">Entry Numbering</span>
                 </div>
-                <p className="text-gray-300 text-sm">Next feature (auto 100+)</p>
+                <p className="text-gray-300 text-sm">Auto-assigned (100+)</p>
               </div>
             </div>
           </div>
