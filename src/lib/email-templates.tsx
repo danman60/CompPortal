@@ -6,6 +6,7 @@ import ReservationRejected from '@/emails/ReservationRejected';
 import EntrySubmitted from '@/emails/EntrySubmitted';
 import StudioApproved from '@/emails/StudioApproved';
 import StudioRejected from '@/emails/StudioRejected';
+import PaymentConfirmed from '@/emails/PaymentConfirmed';
 
 /**
  * Render email templates to HTML
@@ -74,6 +75,16 @@ export interface StudioRejectedData {
   contactEmail: string;
 }
 
+export interface PaymentConfirmedData {
+  studioName: string;
+  competitionName: string;
+  competitionYear: number;
+  amount: number;
+  paymentStatus: 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled';
+  invoiceNumber?: string;
+  paymentDate: string;
+}
+
 /**
  * Render registration confirmation email
  */
@@ -124,10 +135,17 @@ export async function renderStudioRejected(data: StudioRejectedData) {
 }
 
 /**
+ * Render payment confirmed email
+ */
+export async function renderPaymentConfirmed(data: PaymentConfirmedData) {
+  return render(<PaymentConfirmed {...data} />);
+}
+
+/**
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'entry' | 'studio-approved' | 'studio-rejected',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed',
   data: { [key: string]: any }
 ): string {
   const subjects = {
@@ -138,6 +156,7 @@ export function getEmailSubject(
     entry: `Entry Submitted: ${data.entryTitle} - ${data.competitionName}`,
     'studio-approved': `Welcome to the Platform - ${data.studioName}`,
     'studio-rejected': `Studio Registration Status Update`,
+    'payment-confirmed': `Payment ${data.paymentStatus.toUpperCase()} - ${data.competitionName} (${data.competitionYear})`,
   };
 
   return subjects[template];

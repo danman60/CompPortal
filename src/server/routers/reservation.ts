@@ -6,9 +6,11 @@ import { sendEmail } from '@/lib/email';
 import {
   renderReservationApproved,
   renderReservationRejected,
+  renderPaymentConfirmed,
   getEmailSubject,
   type ReservationApprovedData,
   type ReservationRejectedData,
+  type PaymentConfirmedData,
 } from '@/lib/email-templates';
 
 // Validation schema for reservation input
@@ -792,16 +794,65 @@ export const reservationRouter = router({
             select: {
               id: true,
               name: true,
+              email: true,
             },
           },
           competitions: {
             select: {
               id: true,
               name: true,
+              year: true,
             },
           },
         },
       });
+
+      // Send payment confirmation email
+      try {
+        if (reservation.studios.email && reservation.competitions) {
+          // Get invoice data for the email
+          const invoice = await prisma.invoices.findFirst({
+            where: {
+              studio_id: reservation.studio_id,
+              competition_id: reservation.competition_id,
+            },
+            select: {
+              id: true,
+              total: true,
+            },
+          });
+
+          const emailData: PaymentConfirmedData = {
+            studioName: reservation.studios.name,
+            competitionName: reservation.competitions.name,
+            competitionYear: reservation.competitions.year,
+            amount: invoice?.total ? parseFloat(invoice.total.toString()) : 0,
+            paymentStatus: input.paymentStatus,
+            invoiceNumber: invoice?.id,
+            paymentDate: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+          };
+
+          const html = await renderPaymentConfirmed(emailData);
+          const subject = getEmailSubject('payment-confirmed', {
+            paymentStatus: input.paymentStatus,
+            competitionName: reservation.competitions.name,
+            competitionYear: reservation.competitions.year,
+          });
+
+          await sendEmail({
+            to: reservation.studios.email,
+            subject,
+            html,
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send payment confirmation email:', emailError);
+        // Don't fail the mutation if email fails
+      }
 
       return reservation;
     }),
