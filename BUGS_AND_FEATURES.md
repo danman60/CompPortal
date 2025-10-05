@@ -215,7 +215,7 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 
 ### Studio Management
 - [x] Studio logo upload *(Completed Oct 5 - Commit 14e337c)*
-- [ ] Studio branding customization
+- [x] Studio branding customization *(Completed Oct 5 - Commit 47af75d)*
 - [ ] Multi-user studio accounts
 
 ### Competition Management
