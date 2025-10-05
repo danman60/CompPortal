@@ -39,9 +39,11 @@
 ## Recent Commits
 
 ```
-125296c - feat: Implement automatic entry numbering starting at 100
-2b5fff7 - fix: Update judge scoring to 60-100 range (not 0-100)
-50d6a8a - feat: Add tablet-optimized judge scoring interface
+a7fc525 - docs: Mark reservation rejection feature as complete
+48d9ee9 - feat: Enhance reservation rejection UI with detailed reasons
+665f303 - feat: Implement invoice PDF download functionality
+5a88bf3 - docs: Update README to reflect MVP completion status
+df7a996 - docs: Update landing page with latest status
 ```
 
 ---
