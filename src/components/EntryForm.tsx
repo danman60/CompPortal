@@ -209,9 +209,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               >
-                <option value="">Select Event</option>
+                <option value="" className="bg-gray-900 text-white">Select Event</option>
                 {competitions?.competitions.map((comp) => (
-                  <option key={comp.id} value={comp.id}>
+                  <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
                     {comp.name} ({comp.year})
                   </option>
                 ))}
@@ -235,9 +235,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   required
                 >
-                  <option value="">Select Studio</option>
+                  <option value="" className="bg-gray-900 text-white">Select Studio</option>
                   {studios?.studios.map((studio) => (
-                    <option key={studio.id} value={studio.id}>
+                    <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
                       {studio.name}
                     </option>
                   ))}
@@ -289,9 +289,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               >
-                <option value="">Select Category</option>
+                <option value="" className="bg-gray-900 text-white">Select Category</option>
                 {lookupData?.categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                  <option key={cat.id} value={cat.id} className="bg-gray-900 text-white">
                     {cat.name}
                   </option>
                 ))}
@@ -308,9 +308,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               >
-                <option value="">Select Classification</option>
+                <option value="" className="bg-gray-900 text-white">Select Classification</option>
                 {lookupData?.classifications.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
+                  <option key={cls.id} value={cls.id} className="bg-gray-900 text-white">
                     {cls.name} {cls.skill_level && `(Level ${cls.skill_level})`}
                   </option>
                 ))}
@@ -327,9 +327,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               >
-                <option value="">Select Age Group</option>
+                <option value="" className="bg-gray-900 text-white">Select Age Group</option>
                 {lookupData?.ageGroups.map((age) => (
-                  <option key={age.id} value={age.id}>
+                  <option key={age.id} value={age.id} className="bg-gray-900 text-white">
                     {age.name} ({age.min_age}-{age.max_age} years)
                   </option>
                 ))}
@@ -346,9 +346,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               >
-                <option value="">Select Routine Size</option>
+                <option value="" className="bg-gray-900 text-white">Select Routine Size</option>
                 {lookupData?.entrySizeCategories.map((size) => (
-                  <option key={size.id} value={size.id}>
+                  <option key={size.id} value={size.id} className="bg-gray-900 text-white">
                     {size.name} ({size.min_participants}-{size.max_participants} dancers)
                     {size.base_fee && ` - $${size.base_fee}`}
                   </option>

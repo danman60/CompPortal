@@ -51,9 +51,9 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
           onChange={(e) => setSelectedStudioId(e.target.value)}
           className="px-6 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
-          <option value="" className="text-gray-900">Select Studio</option>
+          <option value="" className="bg-gray-900 text-white">Select Studio</option>
           {studios?.studios.map((studio) => (
-            <option key={studio.id} value={studio.id} className="text-gray-900">
+            <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
               {studio.name} ({studio.code})
             </option>
           ))}
@@ -94,9 +94,9 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
             onChange={(e) => setSelectedStudioId(e.target.value)}
             className="w-full md:w-auto px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            <option value="" className="text-gray-900">Select Studio</option>
+            <option value="" className="bg-gray-900 text-white">Select Studio</option>
             {studios?.studios.map((studio) => (
-              <option key={studio.id} value={studio.id} className="text-gray-900">
+              <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
                 {studio.name} ({studio.code})
               </option>
             ))}
