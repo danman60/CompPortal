@@ -21,20 +21,7 @@ export default function EntriesList() {
     { enabled: selectedCompetition !== 'all' }
   );
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
-            <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-white/20 rounded w-2/3"></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
+  // Process data before any conditional returns (hooks must be called in consistent order)
   const entries = data?.entries || [];
 
   // Get unique competitions for filter
@@ -52,8 +39,23 @@ export default function EntriesList() {
     return matchesStatus && matchesCompetition;
   });
 
-  // Sort entries for table view
+  // Sort entries for table view (must be called before any conditional returns)
   const { sortedData: sortedEntries, sortConfig, requestSort } = useTableSort(filteredEntries);
+
+  // Loading state check AFTER all hooks
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
+            <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-white/20 rounded w-2/3"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   // Calculate space limit for "Create Routine" button
   const selectedReservation = reservationData?.reservations?.[0];
