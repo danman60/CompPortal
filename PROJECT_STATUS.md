@@ -45,30 +45,45 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - Routines & Reservations Refinement) ✨
+## Latest Session (Oct 5, 2025 - Phase 5 CD Enhancements) 🎯
+
+### ✅ Phase 5 In Progress (5 of 8 Issues Complete)
+
+**Feature**: Competition Director dashboard enhancements
+
+**Completed** (Commits 63fd533-f31858b):
+- #13: Pending Reservations card at top of dashboard (DashboardStats.tsx:33-54)
+- #14: 4×4 card grid for competitions with capacity/pending/confirmed (competitions/page.tsx:138-287)
+- #15: Quick approve/reject actions from competition cards (competitions/page.tsx:52-82, 240-287)
+- #16: Auto-adjust capacity on approve/reject/cancel (reservation.ts:521-530, 600-620, 707-717)
+- #18: Removed "Create Reservation" button for CDs (ReservationsList.tsx:131-138)
+
+**Remaining**:
+- #17: Manual reservation creation modal (admin-only)
+- #19: Column sorting for tables
+- #20: GlowDance Orlando seed data
+
+**Build Status**: ✅ All 32 routes compile
+
+**Testing**: 14/14 Phase 1-4 tests passed (100% pass rate, E2E_TESTING_REPORT.md)
+
+---
+
+## Previous Session (Oct 5, 2025 - Routines & Reservations Refinement) ✨
 
 ### ✅ Phases 1-4 Complete (11 Issues Resolved)
 
-**Feature**: Routines & Reservations UX improvements from ROUTINES_RESERVATIONS_CONSOLIDATED.md
-
 **Phase 1-2** (Commits a58759d):
-- Helper text: Routine counter with progress bar (EntriesList.tsx:77-134)
-- Backend: Auto-invoice generation on approval (reservation.ts:521-543)
-- Database: invoices table with RLS policies
+- Helper text: Routine counter with progress bar
+- Auto-invoice generation on approval
 
 **Phase 3** (Commits bac5c55, b1d7769):
-- UX: Music upload → Props field (EntryForm.tsx)
-- UX: Removed drag reordering from routine modal
-- Simplified to click-to-remove participant list
+- Music → Props field
+- Removed drag reordering
 
 **Phase 4** (Commit 8ee4fb9):
-- Unified dancer add flow at /dashboard/dancers/add (NEW page)
-- DancerBatchForm default: 1 row (was 5)
-- Navigation: Single "Add Dancers" button
-
-**Build Status**: ✅ All 32 routes compile successfully
-
-**Next Priority**: E2E Playwright MCP testing (25+ tests per journey per session instructions)
+- Unified dancer add flow
+- DancerBatchForm: 1 default row
 
 ---
 
