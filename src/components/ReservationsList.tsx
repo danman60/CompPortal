@@ -120,18 +120,22 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
 
   return (
     <div>
-      {/* Header with Create Button */}
+      {/* Header with Create Button (Studio Directors Only - Issue #18) */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-white">Reservations</h2>
-          <p className="text-gray-400 mt-1">Manage your competition reservations</p>
+          <p className="text-gray-400 mt-1">
+            {isStudioDirector ? 'Manage your competition reservations' : 'Approve and manage studio reservation requests'}
+          </p>
         </div>
-        <Link
-          href="/dashboard/reservations/new"
-          className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-        >
-          + Create Reservation
-        </Link>
+        {isStudioDirector && (
+          <Link
+            href="/dashboard/reservations/new"
+            className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+          >
+            + Create Reservation
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
