@@ -81,15 +81,15 @@ These appear in both USER_TESTING_NOTES.md and FIXES_AND_ENHANCEMENTS.md:
 - [x] Polish PDF generation (alignment, fonts) *(Completed Oct 5 - Commit c3b8a4c - Terminology fixes)*
 - [x] Test with real seeded data (GlowDance Orlando) *(Completed Oct 5 - Commit 8c8c3dc)*
 
-### From FIXES_AND_ENHANCEMENTS.md (Still Relevant)
+### From FIXES_AND_ENHANCEMENTS.md (Still Relevant - 3 of 8 Complete)
 - [ ] Fix reservation sync issue (cache invalidation)
 - [ ] Studio settings single-tenant view
 - [ ] Invoices page hard-lock to own studio
 - [x] Multi-row dancer batch add form *(Completed Oct 5 - Commit 8ee4fb9)*
 - [x] Table/card view toggle with persistence *(Completed Oct 4 - Commit c4012fb)*
 - [ ] Reservation reduction with routine impact warnings
-- [ ] Global invoices view for Competition Directors
-- [ ] Manual "Mark as Paid" toggle
+- [x] Global invoices view for Competition Directors *(Verified - /dashboard/invoices/all page)*
+- [x] Manual "Mark as Paid" toggle *(Verified - AllInvoicesList.tsx:262-273, reservation.markAsPaid mutation)*
 
 ---
 
