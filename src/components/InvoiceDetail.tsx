@@ -1,6 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
+import { generateInvoicePDF } from '@/lib/pdf-reports';
 
 type Props = {
   studioId: string;
@@ -208,7 +209,17 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           🖨️ Print Invoice
         </button>
         <button
-          onClick={() => alert('Download feature coming soon!')}
+          onClick={() => {
+            const pdfBlob = generateInvoicePDF(invoice);
+            const url = URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Invoice-${invoice.invoiceNumber}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }}
           className="flex-1 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all"
         >
           📥 Download PDF

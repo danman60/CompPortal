@@ -3,6 +3,7 @@
 import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { generateInvoicePDF } from '@/lib/pdf-reports';
 
 interface InvoicesListProps {
   studioId?: string; // If provided, hard-lock to this studio (studio director)
@@ -20,6 +21,10 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
   );
 
   const [selectedStudioId, setSelectedStudioId] = useState<string>(studioId || '');
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
+
+  // Utility function for invoice download
+  const utils = trpc.useUtils();
 
   // Auto-select studio if studioId prop is provided
   useEffect(() => {
@@ -169,13 +174,38 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
                     View Invoice
                   </Link>
                   <button
-                    onClick={() => {
-                      // TODO: Implement download/print functionality
-                      alert('Download feature coming soon!');
+                    onClick={async () => {
+                      try {
+                        setDownloadingInvoiceId(invoice.competitionId);
+                        // Fetch full invoice data
+                        const invoiceData = await utils.invoice.generateForStudio.fetch({
+                          studioId: selectedStudioId,
+                          competitionId: invoice.competitionId,
+                        });
+
+                        if (invoiceData) {
+                          // Generate PDF
+                          const pdfBlob = generateInvoicePDF(invoiceData);
+                          const url = URL.createObjectURL(pdfBlob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `Invoice-${invoiceData.invoiceNumber}.pdf`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                        }
+                      } catch (error) {
+                        console.error('Download error:', error);
+                        alert('Failed to download invoice. Please try again.');
+                      } finally {
+                        setDownloadingInvoiceId(null);
+                      }
                     }}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                    disabled={downloadingInvoiceId === invoice.competitionId}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    📥 Download
+                    {downloadingInvoiceId === invoice.competitionId ? '⏳' : '📥'} Download
                   </button>
                 </div>
               </div>

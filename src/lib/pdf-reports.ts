@@ -518,3 +518,288 @@ export function generateCompetitionSummaryReport(data: {
 
   return doc.output('blob');
 }
+
+/**
+ * Invoice PDF - Studio invoice for competition entries
+ */
+export function generateInvoicePDF(invoice: {
+  invoiceNumber: string;
+  invoiceDate: Date | string;
+  studio: {
+    name: string;
+    address1?: string | null;
+    address2?: string | null;
+    city?: string | null;
+    province?: string | null;
+    postal_code?: string | null;
+    country?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  };
+  competition: {
+    name: string;
+    year: number;
+    startDate?: Date | string | null;
+    endDate?: Date | string | null;
+    location?: string | null;
+  };
+  reservation?: {
+    spacesRequested: number;
+    spacesConfirmed: number;
+    depositAmount: number;
+    paymentStatus: string;
+  } | null;
+  lineItems: {
+    id: string;
+    entryNumber: number | null;
+    title: string;
+    category: string;
+    sizeCategory: string;
+    participantCount: number;
+    entryFee: number;
+    lateFee: number;
+    total: number;
+  }[];
+  summary: {
+    entryCount: number;
+    subtotal: number;
+    taxRate: number;
+    taxAmount: number;
+    totalAmount: number;
+  };
+}): Blob {
+  const doc = initPDF(`Invoice ${invoice.invoiceNumber}`);
+
+  // Invoice header with invoice number and date
+  let yPos = 40;
+  doc.setFontSize(18);
+  doc.setTextColor(COLORS.text);
+  doc.text('INVOICE', 15, yPos);
+  yPos += 7;
+
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(`Invoice #: ${invoice.invoiceNumber}`, 15, yPos);
+  yPos += 5;
+
+  const invoiceDate = new Date(invoice.invoiceDate);
+  doc.text(`Date: ${invoiceDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })}`, 15, yPos);
+  yPos += 15;
+
+  // Total amount in top right
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.textLight);
+  doc.text('Total Amount', 200, 40, { align: 'right' });
+  doc.setFontSize(20);
+  doc.setTextColor(COLORS.success);
+  doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, 200, 48, { align: 'right' });
+  yPos += 5;
+
+  // Bill To section (left) and Competition Info (right)
+  const leftX = 15;
+  const rightX = 115;
+
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text('BILL TO', leftX, yPos);
+  doc.text('COMPETITION', rightX, yPos);
+  yPos += 6;
+
+  // Studio info (Bill To)
+  doc.setFontSize(11);
+  doc.setTextColor(COLORS.text);
+  doc.text(invoice.studio.name, leftX, yPos);
+
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  let studioYPos = yPos + 5;
+  if (invoice.studio.address1) {
+    doc.text(invoice.studio.address1, leftX, studioYPos);
+    studioYPos += 4;
+  }
+  if (invoice.studio.address2) {
+    doc.text(invoice.studio.address2, leftX, studioYPos);
+    studioYPos += 4;
+  }
+  if (invoice.studio.city && invoice.studio.province) {
+    doc.text(
+      `${invoice.studio.city}, ${invoice.studio.province} ${invoice.studio.postal_code || ''}`,
+      leftX,
+      studioYPos
+    );
+    studioYPos += 4;
+  }
+  if (invoice.studio.country) {
+    doc.text(invoice.studio.country, leftX, studioYPos);
+    studioYPos += 4;
+  }
+  if (invoice.studio.email) {
+    studioYPos += 2;
+    doc.text(`Email: ${invoice.studio.email}`, leftX, studioYPos);
+    studioYPos += 4;
+  }
+  if (invoice.studio.phone) {
+    doc.text(`Phone: ${invoice.studio.phone}`, leftX, studioYPos);
+  }
+
+  // Competition info (right side)
+  doc.setFontSize(11);
+  doc.setTextColor(COLORS.text);
+  doc.text(invoice.competition.name, rightX, yPos);
+
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  let compYPos = yPos + 5;
+  doc.text(`Year: ${invoice.competition.year}`, rightX, compYPos);
+  compYPos += 4;
+
+  if (invoice.competition.startDate) {
+    const startDate = new Date(invoice.competition.startDate);
+    let dateText = `Date: ${startDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })}`;
+
+    if (invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate) {
+      const endDate = new Date(invoice.competition.endDate);
+      dateText += ` - ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+    }
+
+    doc.text(dateText, rightX, compYPos);
+    compYPos += 4;
+  }
+
+  if (invoice.competition.location) {
+    doc.text(invoice.competition.location, rightX, compYPos, { maxWidth: 85 });
+  }
+
+  yPos = Math.max(studioYPos, compYPos) + 12;
+
+  // Reservation details (if exists)
+  if (invoice.reservation) {
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.textLight);
+    doc.text('RESERVATION DETAILS', leftX, yPos);
+    yPos += 6;
+
+    const resData = [
+      ['Spaces Requested', invoice.reservation.spacesRequested.toString()],
+      ['Spaces Confirmed', invoice.reservation.spacesConfirmed.toString()],
+      ['Deposit Amount', `$${invoice.reservation.depositAmount.toFixed(2)}`],
+      ['Payment Status', invoice.reservation.paymentStatus.toUpperCase()],
+    ];
+
+    autoTable(doc, {
+      startY: yPos,
+      body: resData,
+      theme: 'plain',
+      styles: { fontSize: 9, cellPadding: 2 },
+      columnStyles: {
+        0: { cellWidth: 50, textColor: COLORS.textLight },
+        1: { cellWidth: 45, textColor: COLORS.text, fontStyle: 'bold' },
+      },
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+  }
+
+  // Line items table
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text('ENTRIES', leftX, yPos);
+  yPos += 6;
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['#', 'Routine Title', 'Category', 'Size', 'Dancers', 'Entry Fee', 'Late Fee', 'Total']],
+    body: invoice.lineItems.map((item) => [
+      item.entryNumber?.toString() || '-',
+      item.title,
+      item.category,
+      item.sizeCategory,
+      item.participantCount.toString(),
+      `$${item.entryFee.toFixed(2)}`,
+      item.lateFee > 0 ? `$${item.lateFee.toFixed(2)}` : '-',
+      `$${item.total.toFixed(2)}`,
+    ]),
+    theme: 'grid',
+    headStyles: {
+      fillColor: COLORS.primary,
+      textColor: '#ffffff',
+      fontSize: 8,
+      fontStyle: 'bold',
+    },
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 50 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 20 },
+      4: { cellWidth: 15, halign: 'center' },
+      5: { cellWidth: 20, halign: 'right' },
+      6: { cellWidth: 20, halign: 'right' },
+      7: { cellWidth: 20, halign: 'right', fontStyle: 'bold' },
+    },
+  });
+
+  // Totals section
+  yPos = (doc as any).lastAutoTable.finalY + 10;
+
+  const totalsX = 130;
+  const totalsWidth = 70;
+
+  // Subtotal
+  doc.setDrawColor(COLORS.border);
+  doc.line(totalsX, yPos, totalsX + totalsWidth, yPos);
+  yPos += 5;
+
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(`Subtotal (${invoice.summary.entryCount} entries)`, totalsX, yPos);
+  doc.setTextColor(COLORS.text);
+  doc.text(`$${invoice.summary.subtotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+  yPos += 6;
+
+  // Tax (if applicable)
+  if (invoice.summary.taxAmount > 0) {
+    doc.setTextColor(COLORS.textLight);
+    doc.text(`Tax (${(invoice.summary.taxRate * 100).toFixed(2)}%)`, totalsX, yPos);
+    doc.setTextColor(COLORS.text);
+    doc.text(`$${invoice.summary.taxAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+  }
+
+  // Total (highlighted)
+  doc.setDrawColor(COLORS.success);
+  doc.setLineWidth(0.5);
+  doc.line(totalsX, yPos, totalsX + totalsWidth, yPos);
+  yPos += 6;
+
+  doc.setFontSize(12);
+  doc.setTextColor(COLORS.text);
+  doc.text('TOTAL', totalsX, yPos);
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.success);
+  doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+  yPos += 10;
+
+  // Footer
+  yPos += 5;
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(`Thank you for participating in ${invoice.competition.name}!`, 15, yPos, { maxWidth: 180 });
+  yPos += 5;
+  doc.text('For questions about this invoice, please contact the competition organizers.', 15, yPos, { maxWidth: 180 });
+
+  addFooter(doc, 1, 1);
+
+  return doc.output('blob');
+}
