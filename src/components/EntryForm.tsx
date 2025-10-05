@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
+import { uploadMusicFile, formatFileSize, getMusicFileInfo } from '@/lib/storage';
 import {
   DndContext,
   closestCenter,
@@ -93,6 +94,13 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     participants: [] as Array<{ dancer_id: string; dancer_name: string; role?: string }>,
   });
 
+  // Music upload state
+  const [musicFile, setMusicFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [existingMusicUrl, setExistingMusicUrl] = useState<string | null>(null);
+
   // Fetch all necessary data
   const { data: competitions } = trpc.competition.getAll.useQuery();
   const { data: studios } = trpc.studio.getAll.useQuery();
@@ -142,12 +150,21 @@ export default function EntryForm({ entryId }: EntryFormProps) {
           role: p.role || undefined,
         })) || [],
       });
+      // Load existing music file if present
+      if (existingEntry.music_file_url) {
+        setExistingMusicUrl(existingEntry.music_file_url);
+      }
     }
   }, [existingEntry, isEditMode]);
 
   const createMutation = trpc.entry.create.useMutation({
-    onSuccess: (data) => {
-      router.push('/dashboard/entries');
+    onSuccess: async (data) => {
+      // If music file selected, upload it
+      if (musicFile && data.id) {
+        await handleMusicUpload(data.id);
+      } else {
+        router.push('/dashboard/entries');
+      }
     },
     onError: (error) => {
       alert(`Error creating entry: ${error.message}`);
@@ -155,11 +172,27 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   });
 
   const updateMutation = trpc.entry.update.useMutation({
-    onSuccess: (data) => {
-      router.push(`/dashboard/entries/${entryId}`);
+    onSuccess: async (data) => {
+      // If music file selected, upload it
+      if (musicFile && entryId) {
+        await handleMusicUpload(entryId);
+      } else {
+        router.push(`/dashboard/entries/${entryId}`);
+      }
     },
     onError: (error) => {
       alert(`Error updating entry: ${error.message}`);
+    },
+  });
+
+  const updateMusicMutation = trpc.entry.updateMusic.useMutation({
+    onSuccess: () => {
+      setIsUploading(false);
+      setUploadProgress(0);
+    },
+    onError: (error) => {
+      setUploadError(`Failed to save music: ${error.message}`);
+      setIsUploading(false);
     },
   });
 
@@ -201,6 +234,45 @@ export default function EntryForm({ entryId }: EntryFormProps) {
         ...formData,
         participants: copiedParticipants,
       });
+    }
+  };
+
+  // Handle music file upload
+  const handleMusicUpload = async (entryId: string) => {
+    if (!musicFile) return;
+
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadProgress(0);
+
+    try {
+      // Upload file to storage
+      const result = await uploadMusicFile({
+        file: musicFile,
+        entryId,
+        onProgress: (progress) => setUploadProgress(progress),
+      });
+
+      if (!result.success || !result.publicUrl) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      // Update entry with music URL
+      await updateMusicMutation.mutateAsync({
+        entryId,
+        musicFileUrl: result.publicUrl,
+        musicTitle: formData.music_title || undefined,
+        musicArtist: formData.music_artist || undefined,
+      });
+
+      // Navigate to entries list
+      router.push('/dashboard/entries');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to upload music';
+      setUploadError(errorMsg);
+      setIsUploading(false);
+      alert(`Music upload failed: ${errorMsg}\n\nYour routine was saved, but the music file was not uploaded. You can upload it later.`);
+      router.push('/dashboard/entries');
     }
   };
 
@@ -562,6 +634,111 @@ export default function EntryForm({ entryId }: EntryFormProps) {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-white mb-6">Music & Additional Info</h2>
 
+            {/* Music File Upload */}
+            <div className="bg-purple-500/10 border border-purple-400/30 p-6 rounded-lg">
+              <label className="block text-sm font-medium text-purple-300 mb-3">
+                🎵 Music File Upload
+              </label>
+
+              {/* Existing Music */}
+              {existingMusicUrl && !musicFile && (
+                <div className="mb-4 p-4 bg-green-500/10 border border-green-400/30 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-green-300">✓ Music file uploaded</span>
+                    <button
+                      type="button"
+                      onClick={() => setExistingMusicUrl(null)}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <audio controls className="w-full mt-2">
+                    <source src={existingMusicUrl} />
+                    Your browser does not support the audio element.
+                  </audio>
+                  <div className="text-xs text-gray-400 mt-2">
+                    {getMusicFileInfo(existingMusicUrl)?.fileName || 'Music file'}
+                  </div>
+                </div>
+              )}
+
+              {/* File Input */}
+              {!existingMusicUrl && (
+                <div>
+                  <input
+                    type="file"
+                    accept="audio/mpeg,audio/mp3,audio/wav,audio/m4a,audio/aac,.mp3,.wav,.m4a,.aac"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setMusicFile(file);
+                        setUploadError(null);
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-500 file:text-white file:cursor-pointer hover:file:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-2">
+                    Supported formats: MP3, WAV, M4A, AAC • Max size: 50MB
+                  </p>
+                </div>
+              )}
+
+              {/* Selected File Preview */}
+              {musicFile && (
+                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="text-sm text-blue-300 font-medium">{musicFile.name}</div>
+                      <div className="text-xs text-gray-400">{formatFileSize(musicFile.size)}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMusicFile(null);
+                        setUploadError(null);
+                      }}
+                      className="text-xs text-red-400 hover:text-red-300 ml-4"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  {/* Audio preview for selected file */}
+                  <audio controls className="w-full mt-2">
+                    <source src={URL.createObjectURL(musicFile)} />
+                    Your browser does not support the audio element.
+                  </audio>
+                  <p className="text-xs text-green-400 mt-2">
+                    ✓ File will be uploaded when you create/update the routine
+                  </p>
+                </div>
+              )}
+
+              {/* Upload Error */}
+              {uploadError && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-400/30 rounded-lg">
+                  <p className="text-sm text-red-400">❌ {uploadError}</p>
+                </div>
+              )}
+
+              {/* Upload Progress */}
+              {isUploading && (
+                <div className="mt-4 p-4 bg-purple-500/10 border border-purple-400/30 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="animate-spin">⏳</div>
+                    <span className="text-sm text-purple-300">Uploading music file...</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">{uploadProgress}% complete</p>
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Music Title
@@ -656,14 +833,32 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 </div>
               </div>
 
-              {formData.music_title && (
-                <div>
-                  <div className="text-sm text-gray-400">Music</div>
-                  <div className="text-white">
+              {/* Music Information */}
+              <div>
+                <div className="text-sm text-gray-400">Music</div>
+                {formData.music_title || formData.music_artist ? (
+                  <div className="text-white mb-1">
                     {formData.music_title} {formData.music_artist && `by ${formData.music_artist}`}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-gray-500 mb-1">Not specified</div>
+                )}
+                {musicFile && (
+                  <div className="text-sm text-green-400 flex items-center gap-2 mt-1">
+                    ✓ Music file ready: {musicFile.name} ({formatFileSize(musicFile.size)})
+                  </div>
+                )}
+                {existingMusicUrl && !musicFile && (
+                  <div className="text-sm text-green-400 flex items-center gap-2 mt-1">
+                    ✓ Music file uploaded
+                  </div>
+                )}
+                {!musicFile && !existingMusicUrl && (
+                  <div className="text-sm text-yellow-400 flex items-center gap-2 mt-1">
+                    ⚠️ No music file selected
+                  </div>
+                )}
+              </div>
 
               <div className="pt-4 border-t border-white/10">
                 <div className="text-sm text-gray-400">Estimated Fee</div>
