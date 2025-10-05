@@ -518,9 +518,19 @@ export const reservationRouter = router({
         },
       });
 
+      // Auto-adjust competition capacity (Issue #16)
+      const spacesConfirmed = reservation.spaces_confirmed || 0;
+      await prisma.competitions.update({
+        where: { id: reservation.competition_id },
+        data: {
+          available_reservation_tokens: {
+            decrement: spacesConfirmed,
+          },
+        },
+      });
+
       // Auto-generate invoice on approval
       const routinesFee = reservation.competitions?.entry_fee || 0;
-      const spacesConfirmed = reservation.spaces_confirmed || 0;
       const subtotal = Number(routinesFee) * spacesConfirmed;
 
       await prisma.invoices.create({
@@ -587,6 +597,28 @@ export const reservationRouter = router({
         throw new Error('Studio directors cannot reject reservations');
       }
 
+      // First, get the current reservation to check if it was approved
+      const existingReservation = await prisma.reservations.findUnique({
+        where: { id: input.id },
+        select: {
+          status: true,
+          spaces_confirmed: true,
+          competition_id: true,
+        },
+      });
+
+      // If rejecting a previously approved reservation, release tokens back (Issue #16)
+      if (existingReservation?.status === 'approved' && existingReservation.spaces_confirmed) {
+        await prisma.competitions.update({
+          where: { id: existingReservation.competition_id },
+          data: {
+            available_reservation_tokens: {
+              increment: existingReservation.spaces_confirmed,
+            },
+          },
+        });
+      }
+
       const reservation = await prisma.reservations.update({
         where: { id: input.id },
         data: {
@@ -650,20 +682,38 @@ export const reservationRouter = router({
   cancel: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      // First, get the reservation to check status and permission
+      const existingReservation = await prisma.reservations.findUnique({
+        where: { id: input.id },
+        select: {
+          studio_id: true,
+          status: true,
+          spaces_confirmed: true,
+          competition_id: true,
+        },
+      });
+
+      if (!existingReservation) {
+        throw new Error('Reservation not found');
+      }
+
       // Studio directors can only cancel their own studio's reservations
       if (isStudioDirector(ctx.userRole) && ctx.studioId) {
-        const existingReservation = await prisma.reservations.findUnique({
-          where: { id: input.id },
-          select: { studio_id: true },
-        });
-
-        if (!existingReservation) {
-          throw new Error('Reservation not found');
-        }
-
         if (existingReservation.studio_id !== ctx.studioId) {
           throw new Error('Cannot cancel reservations from other studios');
         }
+      }
+
+      // If cancelling an approved reservation, release tokens back (Issue #16)
+      if (existingReservation.status === 'approved' && existingReservation.spaces_confirmed) {
+        await prisma.competitions.update({
+          where: { id: existingReservation.competition_id },
+          data: {
+            available_reservation_tokens: {
+              increment: existingReservation.spaces_confirmed,
+            },
+          },
+        });
       }
 
       const reservation = await prisma.reservations.update({
