@@ -131,9 +131,9 @@ export default function AllInvoicesList() {
               onChange={(e) => setSelectedCompetition(e.target.value)}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              <option value="all">All Events</option>
+              <option value="all" className="text-gray-900">All Events</option>
               {competitions.map((comp: any) => (
-                <option key={comp.id} value={comp.id}>
+                <option key={comp.id} value={comp.id} className="text-gray-900">
                   {comp.name} ({comp.year})
                 </option>
               ))}
@@ -150,12 +150,12 @@ export default function AllInvoicesList() {
               onChange={(e) => setPaymentStatusFilter(e.target.value)}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="partial">Partial</option>
-              <option value="paid">Paid</option>
-              <option value="refunded">Refunded</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all" className="text-gray-900">All Statuses</option>
+              <option value="pending" className="text-gray-900">Pending</option>
+              <option value="partial" className="text-gray-900">Partial</option>
+              <option value="paid" className="text-gray-900">Paid</option>
+              <option value="refunded" className="text-gray-900">Refunded</option>
+              <option value="cancelled" className="text-gray-900">Cancelled</option>
             </select>
           </div>
         </div>

@@ -25,7 +25,7 @@ export default async function DancersPage() {
               ← Back to Dashboard
             </Link>
             <h1 className="text-4xl font-bold text-white mb-2">Dancers</h1>
-            <p className="text-gray-400">Manage dancers and competition entries</p>
+            <p className="text-gray-400">Manage dancers and competition routines</p>
           </div>
 
           <div className="flex gap-3">

@@ -45,13 +45,13 @@ export default function AnalyticsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">📊 Analytics Dashboard</h1>
-          <p className="text-gray-400">Event insights and performance metrics</p>
+          <p className="text-gray-400">Competition insights and performance metrics</p>
         </div>
 
         {/* Event Selector */}
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Select Event (or view system-wide metrics)
+            Select Competition (or view system-wide metrics)
           </label>
           <select
             value={selectedCompetition}
@@ -72,7 +72,7 @@ export default function AnalyticsPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-md rounded-xl border border-white/20 p-6">
-                <div className="text-sm text-gray-400 mb-1">Total Events</div>
+                <div className="text-sm text-gray-400 mb-1">Total Competitions</div>
                 <div className="text-4xl font-bold text-white">{systemStats.totalCompetitions}</div>
               </div>
 
@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
               </div>
 
               <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-white/20 p-6">
-                <div className="text-sm text-gray-400 mb-1">Total Entries</div>
+                <div className="text-sm text-gray-400 mb-1">Total Routines</div>
                 <div className="text-4xl font-bold text-white">{systemStats.totalEntries}</div>
               </div>
             </div>
@@ -96,7 +96,7 @@ export default function AnalyticsPage() {
               <h2 className="text-2xl font-semibold text-white mb-4">System Overview</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-lg font-medium text-white mb-3">Events by Status</h3>
+                  <h3 className="text-lg font-medium text-white mb-3">Competitions by Status</h3>
                   <div className="space-y-2">
                     {systemStats.competitionsByStatus.map((stat) => (
                       <div key={stat.status} className="flex justify-between items-center">
@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-md rounded-xl border border-white/20 p-6">
-                <div className="text-sm text-gray-400 mb-1">Total Entries</div>
+                <div className="text-sm text-gray-400 mb-1">Total Routines</div>
                 <div className="text-4xl font-bold text-white">{compStats.totalEntries}</div>
               </div>
 
@@ -153,16 +153,16 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            {/* Entries by Category */}
+            {/* Routines by Category */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-              <h2 className="text-2xl font-semibold text-white mb-4">Entries by Category</h2>
+              <h2 className="text-2xl font-semibold text-white mb-4">Routines by Category</h2>
               <div className="space-y-2">
                 {compStats.categoryStats.map((stat) => (
                   <div key={stat.category_id} className="flex items-center gap-4">
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
                         <span className="text-white">{stat.category_name}</span>
-                        <span className="text-gray-400">{stat.entry_count} entries</span>
+                        <span className="text-gray-400">{stat.entry_count} routines</span>
                       </div>
                       <div className="w-full bg-white/10 rounded-full h-2">
                         <div
@@ -178,9 +178,9 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            {/* Entries by Studio */}
+            {/* Routines by Studio */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-              <h2 className="text-2xl font-semibold text-white mb-4">Entries by Studio</h2>
+              <h2 className="text-2xl font-semibold text-white mb-4">Routines by Studio</h2>
               <div className="space-y-2">
                 {compStats.studioStats
                   .sort((a, b) => b.entry_count - a.entry_count)
@@ -190,7 +190,7 @@ export default function AnalyticsPage() {
                       <div className="flex-1">
                         <div className="flex justify-between mb-1">
                           <span className="text-white">{stat.studio_name}</span>
-                          <span className="text-gray-400">{stat.entry_count} entries</span>
+                          <span className="text-gray-400">{stat.entry_count} routines</span>
                         </div>
                         <div className="w-full bg-white/10 rounded-full h-2">
                           <div
@@ -256,7 +256,7 @@ export default function AnalyticsPage() {
                         <div className="flex-1">
                           <div className="text-white">{studio.studio_name}</div>
                           <div className="text-sm text-gray-400">
-                            {studio.entry_count} entries
+                            {studio.entry_count} routines
                           </div>
                         </div>
                         <div className="text-lg font-semibold text-green-400">

@@ -16,7 +16,7 @@ export function LateSuffixModal({ entryId, entryTitle, onClose, onSuccess }: Lat
 
   const assignMutation = trpc.scheduling.assignLateSuffix.useMutation({
     onSuccess: (data) => {
-      alert(`Late entry assigned: ${data.displayNumber}`);
+      alert(`Late routine assigned: ${data.displayNumber}`);
       onSuccess();
       onClose();
     },
@@ -32,12 +32,12 @@ export function LateSuffixModal({ entryId, entryTitle, onClose, onSuccess }: Lat
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-96">
-        <h3 className="text-xl font-bold text-white mb-4">Assign Late Entry Suffix</h3>
+        <h3 className="text-xl font-bold text-white mb-4">Assign Late Routine Suffix</h3>
         <p className="text-sm text-gray-300 mb-4">{entryTitle}</p>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Base Entry Number</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Base Routine Number</label>
             <input
               type="number"
               min="100"

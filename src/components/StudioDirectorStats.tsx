@@ -53,10 +53,10 @@ export default function StudioDirectorStats() {
         </div>
       </div>
 
-      {/* My Entries Card */}
+      {/* My Routines Card */}
       <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">My Entries</h3>
+          <h3 className="text-lg font-semibold text-white">My Routines</h3>
           <div className="text-3xl">🎭</div>
         </div>
         <div className="text-4xl font-bold text-white mb-2">{totalEntries}</div>

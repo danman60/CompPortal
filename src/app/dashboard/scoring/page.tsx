@@ -197,7 +197,7 @@ export default function ScoringPage() {
                     : 'bg-white/5 text-gray-300 hover:bg-white/10'
                 }`}
               >
-                📝 Score Entry
+                📝 Score Routine
               </button>
               <button
                 onClick={() => setActiveTab('review')}
@@ -228,13 +228,13 @@ export default function ScoringPage() {
                     {currentEntry.title}
                   </h2>
                   <div className="flex gap-4 text-gray-300">
-                    <span>📋 Entry #{currentEntry.entry_number}</span>
+                    <span>📋 Routine #{currentEntry.entry_number}</span>
                     <span>🏢 {currentEntry.studios?.name}</span>
                     <span>🎭 {currentEntry.dance_categories?.name}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm text-gray-400">Entry Progress</div>
+                  <div className="text-sm text-gray-400">Routine Progress</div>
                   <div className="text-2xl font-bold text-white">
                     {entryIndex + 1} / {entries?.length || 0}
                   </div>
@@ -483,7 +483,7 @@ export default function ScoringPage() {
                 disabled={entryIndex === 0}
                 className="flex-1 px-8 py-6 bg-white/10 text-white text-xl font-semibold rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                ← Previous Entry
+                ← Previous Routine
               </button>
 
               <button
@@ -497,7 +497,7 @@ export default function ScoringPage() {
 
             {/* Quick Navigation */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
-              <div className="text-base text-gray-400 mb-3">Quick Jump to Entry:</div>
+              <div className="text-base text-gray-400 mb-3">Quick Jump to Routine:</div>
               <div className="flex flex-wrap gap-3">
                 {entries?.slice(0, 20).map((entry, idx) => (
                   <button
@@ -610,7 +610,7 @@ export default function ScoringPage() {
                     onClick={() => setActiveTab('entry')}
                     className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
                   >
-                    Go to Score Entry
+                    Go to Score Routine
                   </button>
                 </div>
               )}
@@ -642,9 +642,9 @@ export default function ScoringPage() {
         {selectedCompetition && selectedJudge && activeTab === 'entry' && !currentEntry && entries?.length === 0 && (
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
             <div className="text-6xl mb-4">📋</div>
-            <h2 className="text-2xl font-bold text-white mb-2">No Entries Found</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">No Routines Found</h2>
             <p className="text-gray-400">
-              No competition entries found for this competition. Please check the scheduling page.
+              No competition routines found for this competition. Please check the scheduling page.
             </p>
           </div>
         )}

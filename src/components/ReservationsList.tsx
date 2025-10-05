@@ -45,7 +45,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
 
   const handleApprove = (reservationId: string, spacesRequested: number) => {
     const spacesConfirmed = prompt(
-      `Approve this reservation.\n\nSpaces Requested: ${spacesRequested}\n\nHow many spaces to confirm?`,
+      `Approve this reservation.\n\nRoutines Requested: ${spacesRequested}\n\nHow many routines to allocate?`,
       spacesRequested.toString()
     );
 
@@ -53,7 +53,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
 
     const confirmed = parseInt(spacesConfirmed, 10);
     if (isNaN(confirmed) || confirmed < 1 || confirmed > spacesRequested) {
-      alert('Invalid number of spaces. Must be between 1 and spaces requested.');
+      alert('Invalid number of routines. Must be between 1 and routines requested.');
       return;
     }
 
@@ -320,11 +320,11 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
 
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Requested:</span>
+                        <span className="text-gray-400">Routines Requested:</span>
                         <span className="text-white font-semibold">{reservation.spaces_requested}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Confirmed:</span>
+                        <span className="text-gray-400">Routines Allocated:</span>
                         <span className="text-green-400 font-semibold">
                           {reservation.spaces_confirmed || 0}
                         </span>
@@ -533,7 +533,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                       <div>
                         <div className="flex items-center justify-between mb-4">
                           <div>
-                            <div className="text-sm text-gray-400 mb-1">Space Usage</div>
+                            <div className="text-sm text-gray-400 mb-1">Routine Usage</div>
                             <div className="text-3xl font-bold text-white">
                               {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
                             </div>
@@ -544,8 +544,8 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                             }`}>
                               {(reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0)} {
                                 ((reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0)) === 1
-                                  ? 'space'
-                                  : 'spaces'
+                                  ? 'routine'
+                                  : 'routines'
                               } remaining
                             </div>
                           </div>
@@ -592,15 +592,15 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           }}
                         >
                           {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
-                            ? '✅ All Spaces Filled'
+                            ? '✅ All Routines Allocated'
                             : '+ Create Routines'}
                         </Link>
                       </div>
                     ) : (
-                      /* Competition Director: Simple Entry Count */
+                      /* Competition Director: Simple Routine Count */
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm text-gray-400 mb-1">Competition Entries</div>
+                          <div className="text-sm text-gray-400 mb-1">Routines Registered</div>
                           <div className="text-2xl font-bold text-white">
                             {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
                           </div>

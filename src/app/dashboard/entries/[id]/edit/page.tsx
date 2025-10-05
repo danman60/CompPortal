@@ -28,13 +28,13 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
             href={`/dashboard/entries/${id}`}
             className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
           >
-            ← Back to Entry Details
+            ← Back to Routine Details
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Edit Competition Entry</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Edit Competition Routine</h1>
           <p className="text-gray-400">Modify your routine registration details</p>
         </div>
 
-        {/* Entry Form with existing entry ID */}
+        {/* Routine Form with existing entry ID */}
         <EntryForm entryId={id} />
       </div>
     </main>

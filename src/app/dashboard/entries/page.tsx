@@ -14,7 +14,7 @@ export default async function EntriesPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
       <div className="container mx-auto px-4 py-8">
-        {/* Entries List with integrated header */}
+        {/* Routines List with integrated header */}
         <EntriesList />
       </div>
     </main>

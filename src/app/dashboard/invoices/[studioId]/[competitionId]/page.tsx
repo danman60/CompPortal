@@ -33,7 +33,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
             ← Back to Invoices
           </Link>
           <h1 className="text-4xl font-bold text-white mb-2">Invoice Detail</h1>
-          <p className="text-gray-400">Competition entry invoice and breakdown</p>
+          <p className="text-gray-400">Competition routine invoice and breakdown</p>
         </div>
 
         {/* Invoice Detail */}

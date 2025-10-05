@@ -124,7 +124,7 @@ export default function ReportsPage() {
                       : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
                   }`}
                 >
-                  <div className="text-lg font-medium">📊 Event Summary</div>
+                  <div className="text-lg font-medium">📊 Competition Summary</div>
                   <div className="text-sm opacity-75">Overall stats and highlights</div>
                 </button>
 
@@ -173,10 +173,10 @@ export default function ReportsPage() {
               <h2 className="text-xl font-semibold text-white mb-6">Report Parameters</h2>
 
               <div className="space-y-5">
-                {/* Event selector - always shown */}
+                {/* Competition selector - always shown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Event *
+                    Competition *
                   </label>
                   <select
                     value={selectedCompetitionId}
@@ -190,7 +190,7 @@ export default function ReportsPage() {
                     }}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-400"
                   >
-                    <option value="" className="text-gray-900">-- Select an event --</option>
+                    <option value="" className="text-gray-900">-- Select a competition --</option>
                     {competitions?.map((comp) => (
                       <option key={comp.id} value={comp.id} className="text-gray-900">
                         {comp.name}
@@ -287,11 +287,11 @@ export default function ReportsPage() {
                         <div className="flex items-start gap-3">
                           <div className="text-2xl">ℹ️</div>
                           <div className="text-sm text-blue-200">
-                            <strong>Event Summary Report</strong>
+                            <strong>Competition Summary Report</strong>
                             <p className="mt-1 opacity-90">
                               This report includes overall statistics, category breakdowns,
                               age group distribution, and award summaries for the selected
-                              event.
+                              competition.
                             </p>
                           </div>
                         </div>
@@ -319,7 +319,7 @@ export default function ReportsPage() {
 
                   {!selectedCompetitionId && (
                     <p className="text-sm text-gray-400 mt-2 text-center">
-                      Please select an event to begin
+                      Please select a competition to begin
                     </p>
                   )}
                 </div>
@@ -332,11 +332,11 @@ export default function ReportsPage() {
 
               <div className="space-y-4 text-sm text-gray-300">
                 <div>
-                  <strong className="text-purple-400">📊 Event Summary:</strong>
+                  <strong className="text-purple-400">📊 Competition Summary:</strong>
                   <p className="ml-6 mt-1">
-                    Complete overview of the event including total routines, participating
+                    Complete overview of the competition including total routines, participating
                     studios, dancer counts, category breakdowns, and award distribution. Perfect
-                    for stakeholder reports and event archives.
+                    for stakeholder reports and competition archives.
                   </p>
                 </div>
 

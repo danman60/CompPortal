@@ -29,10 +29,10 @@ export default async function EntryMusicPage({ params }: Props) {
             href="/dashboard/entries"
             className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
           >
-            ← Back to Entries
+            ← Back to Routines
           </Link>
           <h1 className="text-4xl font-bold text-white mb-2">Upload Music</h1>
-          <p className="text-gray-400">Upload the music file for your competition entry</p>
+          <p className="text-gray-400">Upload the music file for your competition routine</p>
         </div>
 
         {/* Music Upload Form */}

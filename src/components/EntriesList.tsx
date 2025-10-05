@@ -116,9 +116,9 @@ export default function EntriesList() {
           onChange={(e) => setSelectedCompetition(e.target.value)}
           className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
-          <option value="all">All Events</option>
+          <option value="all" className="text-gray-900">All Competitions</option>
           {competitions.map((comp) => comp && (
-            <option key={comp.id} value={comp.id}>
+            <option key={comp.id} value={comp.id} className="text-gray-900">
               {comp.name} ({comp.year})
             </option>
           ))}
@@ -321,7 +321,7 @@ export default function EntriesList() {
               key={entry.id}
               className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all"
             >
-              {/* Entry Number Badge */}
+              {/* Routine Number Badge */}
               {entry.entry_number && (
                 <div className="mb-2">
                   <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-bold rounded-lg shadow-md">
@@ -464,7 +464,7 @@ export default function EntriesList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/20 bg-white/5">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Entry #</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Routine #</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Title</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Category</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Age Group</th>

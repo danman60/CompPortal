@@ -53,8 +53,8 @@ const templates: Record<TemplateType, TemplateConfig> = {
     },
   },
   entry: {
-    name: 'Entry Submitted',
-    description: 'Sent when a competition entry is successfully submitted',
+    name: 'Routine Submitted',
+    description: 'Sent when a competition routine is successfully submitted',
     icon: '🎭',
     sampleData: {
       studioName: 'Dance Elite Studio',
@@ -201,7 +201,7 @@ export default function EmailManager() {
             <li><strong className="text-white">Registration Confirmation:</strong> When a studio completes registration</li>
             <li><strong className="text-white">Invoice Delivery:</strong> When an invoice is generated</li>
             <li><strong className="text-white">Reservation Approved:</strong> When reservation status changes to approved</li>
-            <li><strong className="text-white">Entry Submitted:</strong> When a competition entry is created</li>
+            <li><strong className="text-white">Routine Submitted:</strong> When a competition routine is created</li>
           </ul>
           <div className="mt-4 p-4 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
             <p className="text-yellow-200 text-sm">

@@ -42,7 +42,7 @@ export default function EntryDetails({ entryId }: EntryDetailsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Entry Header */}
+      {/* Routine Header */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -118,7 +118,7 @@ export default function EntryDetails({ entryId }: EntryDetailsProps) {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-400">
-            No dancers assigned to this entry yet.
+            No dancers assigned to this routine yet.
           </div>
         )}
       </div>
@@ -284,10 +284,10 @@ export default function EntryDetails({ entryId }: EntryDetailsProps) {
 
       {/* Fees */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-        <h3 className="text-2xl font-bold text-white mb-4">💰 Entry Fees</h3>
+        <h3 className="text-2xl font-bold text-white mb-4">💰 Routine Fees</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white/5 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Entry Fee</div>
+            <div className="text-gray-400 text-sm mb-1">Routine Fee</div>
             <div className="text-white font-semibold text-2xl">
               ${Number(entry.entry_fee || 0).toFixed(2)}
             </div>

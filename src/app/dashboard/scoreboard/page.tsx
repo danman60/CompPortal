@@ -48,7 +48,7 @@ export default function ScoreboardPage() {
           <table className="w-full">
             <thead className="bg-white/10">
               <tr>
-                <th className="px-4 py-3 text-left text-white font-semibold">Entry #</th>
+                <th className="px-4 py-3 text-left text-white font-semibold">Routine #</th>
                 <th className="px-4 py-3 text-left text-white font-semibold">Title</th>
                 <th className="px-4 py-3 text-left text-white font-semibold">Studio</th>
                 <th className="px-4 py-3 text-left text-white font-semibold">Category</th>
@@ -96,7 +96,7 @@ export default function ScoreboardPage() {
 
       {scoreboard && scoreboard.length === 0 && (
         <div className="text-center text-gray-400 py-12">
-          No scored entries yet for this competition.
+          No scored routines yet for this competition.
         </div>
       )}
     </div>

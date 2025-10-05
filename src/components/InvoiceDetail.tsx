@@ -108,11 +108,11 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           <h3 className="text-sm font-semibold text-gray-400 mb-3">RESERVATION DETAILS</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-black/20 p-4 rounded-lg">
-              <div className="text-xs text-gray-400 mb-1">Spaces Requested</div>
+              <div className="text-xs text-gray-400 mb-1">Routines Requested</div>
               <div className="text-xl font-bold text-white">{invoice.reservation.spacesRequested}</div>
             </div>
             <div className="bg-black/20 p-4 rounded-lg">
-              <div className="text-xs text-gray-400 mb-1">Spaces Confirmed</div>
+              <div className="text-xs text-gray-400 mb-1">Routines Allocated</div>
               <div className="text-xl font-bold text-green-400">{invoice.reservation.spacesConfirmed}</div>
             </div>
             <div className="bg-black/20 p-4 rounded-lg">
@@ -139,7 +139,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Line Items */}
       <div className="mb-8">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">ENTRIES</h3>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">ROUTINES</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-xs text-gray-400 uppercase bg-black/40">
@@ -180,7 +180,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       <div className="flex justify-end">
         <div className="w-full md:w-1/2 lg:w-1/3 space-y-2">
           <div className="flex justify-between py-2 border-b border-white/10">
-            <span className="text-gray-300">Subtotal ({invoice.summary.entryCount} entries)</span>
+            <span className="text-gray-300">Subtotal ({invoice.summary.entryCount} routines)</span>
             <span className="text-white font-semibold">${invoice.summary.subtotal.toFixed(2)}</span>
           </div>
 

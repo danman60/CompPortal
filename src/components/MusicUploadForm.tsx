@@ -37,7 +37,7 @@ export default function MusicUploadForm({ entryId }: MusicUploadFormProps) {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
         <div className="animate-spin text-6xl mb-4">⚙️</div>
-        <p className="text-white">Loading entry...</p>
+        <p className="text-white">Loading routine...</p>
       </div>
     );
   }
@@ -46,8 +46,8 @@ export default function MusicUploadForm({ entryId }: MusicUploadFormProps) {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
         <div className="text-6xl mb-4">❌</div>
-        <h3 className="text-xl font-semibold text-white mb-2">Entry Not Found</h3>
-        <p className="text-gray-400">Unable to find the specified entry.</p>
+        <h3 className="text-xl font-semibold text-white mb-2">Routine Not Found</h3>
+        <p className="text-gray-400">Unable to find the specified routine.</p>
       </div>
     );
   }

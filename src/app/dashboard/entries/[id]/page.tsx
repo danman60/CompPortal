@@ -29,17 +29,17 @@ export default async function EntryPage({ params }: EntryPageProps) {
               href="/dashboard/entries"
               className="text-gray-400 hover:text-white mb-4 inline-flex items-center gap-2 transition-colors"
             >
-              ← Back to Entries
+              ← Back to Routines
             </Link>
-            <h1 className="text-4xl font-bold text-white">Entry Details</h1>
-            <p className="text-gray-400">View competition entry information</p>
+            <h1 className="text-4xl font-bold text-white">Routine Details</h1>
+            <p className="text-gray-400">View competition routine information</p>
           </div>
           <div className="flex gap-3">
             <Link
               href={`/dashboard/entries/${id}/edit`}
               className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200"
             >
-              ✏️ Edit Entry
+              ✏️ Edit Routine
             </Link>
             <Link
               href={`/dashboard/entries/${id}/music`}
@@ -50,7 +50,7 @@ export default async function EntryPage({ params }: EntryPageProps) {
           </div>
         </div>
 
-        {/* Entry Details Component */}
+        {/* Routine Details Component */}
         <EntryDetails entryId={id} />
       </div>
     </main>

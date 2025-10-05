@@ -110,7 +110,7 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
           <div className="text-6xl mb-4">📋</div>
           <h3 className="text-xl font-semibold text-white mb-2">No Invoices Found</h3>
           <p className="text-gray-400">
-            {selectedStudio?.name} has no competition entries yet.
+            {selectedStudio?.name} has no registered routines yet.
           </p>
         </div>
       ) : (
@@ -161,7 +161,7 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
                       ${invoice.totalAmount.toFixed(2)}
                     </div>
                     <div className="text-sm text-gray-400">
-                      {invoice.entryCount} {invoice.entryCount === 1 ? 'entry' : 'entries'}
+                      {invoice.entryCount} {invoice.entryCount === 1 ? 'routine' : 'routines'}
                     </div>
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
               <div>
                 <div className="text-sm text-gray-300 mb-1">Total Across All Competitions</div>
                 <div className="text-lg text-white">
-                  {invoices.reduce((sum, inv) => sum + inv.entryCount, 0)} total entries
+                  {invoices.reduce((sum, inv) => sum + inv.entryCount, 0)} total routines
                 </div>
               </div>
               <div className="text-right">

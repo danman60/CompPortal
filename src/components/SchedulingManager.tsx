@@ -190,9 +190,9 @@ export default function SchedulingManager() {
             onChange={(e) => setSelectedCompetition(e.target.value)}
             className="flex-1 min-w-[300px] px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            <option value="">-- Select an event --</option>
+            <option value="" className="text-gray-900">-- Select an event --</option>
             {competitions.map((comp) => (
-              <option key={comp.id} value={comp.id}>
+              <option key={comp.id} value={comp.id} className="text-gray-900">
                 {comp.name} ({comp.year})
               </option>
             ))}
