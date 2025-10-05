@@ -304,8 +304,8 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                       </span>
                     </div>
 
-                    {/* Agent Info */}
-                    {reservation.agent_first_name && (
+                    {/* Agent Info - Competition Directors Only */}
+                    {!isStudioDirector && reservation.agent_first_name && (
                       <div className="space-y-2 pt-4 border-t border-white/10">
                         <div className="text-sm text-gray-400">
                           <strong className="text-white">Agent:</strong>{' '}
