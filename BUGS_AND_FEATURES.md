@@ -197,10 +197,10 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 
 ## ✨ Feature Requests (Backlog)
 
-### Email Notifications (Deferred Post-Launch)
-- [ ] Entry submitted confirmation email
-- [ ] Missing music reminder emails
-- [ ] Payment confirmation emails
+### Email Notifications (Partially Complete)
+- [x] Entry submitted confirmation email *(Completed Oct 5 - Commit 04b769b)*
+- [ ] Missing music reminder emails *(Deferred)*
+- [x] Payment confirmation emails *(Completed Oct 5 - Commit 13cd598)*
 
 ### Data Import/Export
 - [ ] Bulk dancer CSV import
