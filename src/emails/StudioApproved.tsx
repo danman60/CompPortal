@@ -58,7 +58,7 @@ export default function StudioApproved({
             </div>
             <div style={stepItem}>
               <div style={stepNumber}>3</div>
-              <Text style={stepText}>Submit competition entries and routines</Text>
+              <Text style={stepText}>Submit competition routines</Text>
             </div>
             <div style={stepItem}>
               <div style={stepNumber}>4</div>

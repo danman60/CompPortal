@@ -137,7 +137,7 @@ export const emailRouter = router({
         competitionYear: competition.year,
         invoiceNumber,
         totalAmount,
-        entryCount: entries.length,
+        routineCount: entries.length,
         invoiceUrl: input.invoiceUrl,
         dueDate: input.dueDate,
       };

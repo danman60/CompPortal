@@ -27,7 +27,7 @@ export default function ReservationApproved({
   spacesConfirmed,
   portalUrl,
   nextSteps = [
-    'Submit your competition entries',
+    'Submit your competition routines',
     'Upload music files for your routines',
     'Review and pay your invoice',
   ],

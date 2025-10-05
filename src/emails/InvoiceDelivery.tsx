@@ -17,7 +17,7 @@ interface InvoiceDeliveryProps {
   competitionYear: number;
   invoiceNumber: string;
   totalAmount: number;
-  entryCount: number;
+  routineCount: number;
   invoiceUrl: string;
   dueDate?: string;
 }
@@ -28,7 +28,7 @@ export default function InvoiceDelivery({
   competitionYear,
   invoiceNumber,
   totalAmount,
-  entryCount,
+  routineCount,
   invoiceUrl,
   dueDate,
 }: InvoiceDeliveryProps) {
@@ -56,8 +56,8 @@ export default function InvoiceDelivery({
 
             <div style={invoiceRow}>
               <div>
-                <Text style={invoiceLabel}>Entries</Text>
-                <Text style={invoiceValue}>{entryCount}</Text>
+                <Text style={invoiceLabel}>Routines</Text>
+                <Text style={invoiceValue}>{routineCount}</Text>
               </div>
               <div>
                 <Text style={invoiceLabel}>Total Amount</Text>

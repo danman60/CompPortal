@@ -26,7 +26,7 @@ export interface InvoiceDeliveryData {
   competitionYear: number;
   invoiceNumber: string;
   totalAmount: number;
-  entryCount: number;
+  routineCount: number;
   invoiceUrl: string;
   dueDate?: string;
 }
@@ -153,7 +153,7 @@ export function getEmailSubject(
     invoice: `Invoice ${data.invoiceNumber} - ${data.competitionName} (${data.competitionYear})`,
     'reservation-approved': `Reservation Approved - ${data.competitionName} (${data.competitionYear})`,
     'reservation-rejected': `Reservation Status Update - ${data.competitionName} (${data.competitionYear})`,
-    entry: `Entry Submitted: ${data.entryTitle} - ${data.competitionName}`,
+    entry: `Routine Submitted: ${data.entryTitle} - ${data.competitionName}`,
     'studio-approved': `Welcome to the Platform - ${data.studioName}`,
     'studio-rejected': `Studio Registration Status Update`,
     'payment-confirmed': `Payment ${data.paymentStatus.toUpperCase()} - ${data.competitionName} (${data.competitionYear})`,

@@ -36,24 +36,24 @@ export default function EntrySubmitted({
   return (
     <Html>
       <Head />
-      <Preview>Entry submitted: {entryTitle}</Preview>
+      <Preview>Routine submitted: {entryTitle}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>🎭 Entry Submitted!</Heading>
+          <Heading style={h1}>🎭 Routine Submitted!</Heading>
 
           <Text style={text}>
             Hello <strong>{studioName}</strong>,
           </Text>
 
           <Text style={text}>
-            Your competition entry has been successfully submitted for{' '}
+            Your competition routine has been successfully submitted for{' '}
             <strong>{competitionName} ({competitionYear})</strong>.
           </Text>
 
           <Section style={entryBox}>
             {entryNumber && (
               <>
-                <Text style={entryLabel}>Entry Number</Text>
+                <Text style={entryLabel}>Routine Number</Text>
                 <Text style={entryNumberStyle}>#{entryNumber}</Text>
                 <Hr style={hr} />
               </>
@@ -83,7 +83,7 @@ export default function EntrySubmitted({
                 <Text style={entryValue}>{participantCount}</Text>
               </div>
               <div style={{flex: 1}}>
-                <Text style={entryLabel}>Entry Fee</Text>
+                <Text style={entryLabel}>Routine Fee</Text>
                 <Text style={{...entryValue, color: '#10b981'}}>
                   ${entryFee.toFixed(2)}
                 </Text>
@@ -95,7 +95,7 @@ export default function EntrySubmitted({
             <Text style={reminderTitle}>📝 Important Reminders</Text>
             <ul style={list}>
               <li>Upload your music file through the portal</li>
-              <li>Review your entry details for accuracy</li>
+              <li>Review your routine details for accuracy</li>
               <li>Check your invoice for payment information</li>
               <li>Watch for schedule updates closer to competition date</li>
             </ul>
