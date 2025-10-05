@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/email';
+import { renderEntrySubmitted, getEmailSubject, type EntrySubmittedData } from '@/lib/email-templates';
 
 // Validation schema for entry participant
 const entryParticipantSchema = z.object({
@@ -414,6 +416,58 @@ export const entryRouter = router({
           },
         },
       });
+
+      // Send email notification
+      try {
+        // Fetch additional data for email
+        const [studio, competition, category, sizeCategory] = await Promise.all([
+          prisma.studios.findUnique({
+            where: { id: input.studio_id },
+            select: { name: true, email: true },
+          }),
+          prisma.competitions.findUnique({
+            where: { id: input.competition_id },
+            select: { name: true, year: true },
+          }),
+          prisma.dance_categories.findUnique({
+            where: { id: input.category_id },
+            select: { name: true },
+          }),
+          prisma.entry_size_categories.findUnique({
+            where: { id: input.entry_size_category_id },
+            select: { name: true },
+          }),
+        ]);
+
+        if (studio?.email && competition && category && sizeCategory) {
+          const emailData: EntrySubmittedData = {
+            studioName: studio.name,
+            competitionName: competition.name,
+            competitionYear: competition.year,
+            entryTitle: entry.title,
+            entryNumber: entry.entry_number || undefined,
+            category: category.name,
+            sizeCategory: sizeCategory.name,
+            participantCount: entry.entry_participants?.length || 0,
+            entryFee: entry_fee || 0,
+          };
+
+          const html = await renderEntrySubmitted(emailData);
+          const subject = getEmailSubject('entry', {
+            entryTitle: entry.title,
+            competitionName: competition.name,
+          });
+
+          await sendEmail({
+            to: studio.email,
+            subject,
+            html,
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send entry submission email:', emailError);
+        // Don't fail the mutation if email fails
+      }
 
       return entry;
     }),
