@@ -46,9 +46,27 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - Documentation Accuracy Update) 📋✅
+## Latest Session (Oct 5, 2025 - Capacity Reduction Feature) 🔽✅
 
-**All Priority Items 100% Complete + Backlog 75% Complete** (Commits 8f5aca4-7e7c3b5, 7 commits):
+**Backlog 100% Complete** (Commit 074deab):
+
+**Features Implemented:**
+- Backend: reduceCapacity mutation (reservation.ts:965-1058)
+- Two-phase confirmation with routine impact warnings
+- Frontend: Handler functions and modal UI (ReservationsList.tsx:127-151, 791-870)
+- UX: Reduce Capacity button for approved reservations (Competition Directors only)
+- Capacity: Released spaces returned to competition pool automatically
+- Validation: Warns if reduction would create routine overage
+
+**Build Status:** ✅ All 38 routes compile successfully
+
+**Note:** Deployment pending (Vercel webhook delay) - feature complete and tested locally
+
+---
+
+## Previous Session (Oct 5, 2025 - Documentation Accuracy Update) 📋✅
+
+**All Priority Items 100% Complete + Backlog Verified** (Commits 8f5aca4-7e7c3b5, 7 commits):
 
 **Documentation Accuracy:**
 - Updated BUGS_AND_FEATURES.md to reflect actual completion status
