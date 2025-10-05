@@ -209,7 +209,13 @@
 - **Description**: Allow detailed rejection reasons visible to studio directors
 - **Source**: CD-6 test planning
 - **Backend**: Already supports `internal_notes` field
-- **Status**: ⏳ PENDING (need to test CD-6)
+- **Status**: ✅ COMPLETED (October 4, 2025)
+- **Implementation**:
+  - Added prominent rejection reason display for Studio Directors
+  - Replaced browser prompt with professional rejection modal for Competition Directors
+  - Red-bordered notification box shows rejection reason and date
+  - Multi-line textarea for detailed rejection reasons in modal
+- **Commit**: 48d9ee9
 
 ---
 
