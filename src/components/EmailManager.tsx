@@ -3,7 +3,7 @@
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
 
-type TemplateType = 'registration' | 'invoice' | 'reservation' | 'entry';
+type TemplateType = 'registration' | 'invoice' | 'reservation' | 'entry' | 'missing-music';
 
 interface TemplateConfig {
   name: string;
@@ -66,6 +66,35 @@ const templates: Record<TemplateType, TemplateConfig> = {
       sizeCategory: 'Small Group',
       participantCount: 8,
       entryFee: 85.00,
+    },
+  },
+  'missing-music': {
+    name: 'Missing Music Reminder',
+    description: 'Sent to remind studios to upload missing music files',
+    icon: '🎵',
+    sampleData: {
+      studioName: 'Dance Elite Studio',
+      competitionName: 'Summer Showcase',
+      competitionYear: 2025,
+      routinesWithoutMusic: [
+        {
+          title: 'Starlight Dreams',
+          entryNumber: 42,
+          category: 'Contemporary',
+        },
+        {
+          title: 'Fire & Ice',
+          entryNumber: 58,
+          category: 'Jazz',
+        },
+        {
+          title: 'Whispers in the Wind',
+          entryNumber: 73,
+          category: 'Lyrical',
+        },
+      ],
+      portalUrl: 'https://portal.glowdance.com/dashboard',
+      daysUntilCompetition: 12,
     },
   },
 };
@@ -202,6 +231,7 @@ export default function EmailManager() {
             <li><strong className="text-white">Invoice Delivery:</strong> When an invoice is generated</li>
             <li><strong className="text-white">Reservation Approved:</strong> When reservation status changes to approved</li>
             <li><strong className="text-white">Routine Submitted:</strong> When a competition routine is created</li>
+            <li><strong className="text-white">Missing Music Reminder:</strong> Can be sent manually to remind studios about missing music files</li>
           </ul>
           <div className="mt-4 p-4 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
             <p className="text-yellow-200 text-sm">

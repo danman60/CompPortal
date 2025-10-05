@@ -368,7 +368,7 @@ export const emailRouter = router({
   previewTemplate: publicProcedure
     .input(
       z.object({
-        template: z.enum(['registration', 'invoice', 'reservation', 'entry']),
+        template: z.enum(['registration', 'invoice', 'reservation', 'entry', 'missing-music']),
         data: z.any(),
       })
     )
@@ -387,6 +387,9 @@ export const emailRouter = router({
           break;
         case 'entry':
           html = await renderEntrySubmitted(input.data);
+          break;
+        case 'missing-music':
+          html = await renderMissingMusicReminder(input.data);
           break;
         default:
           throw new Error('Invalid template');
