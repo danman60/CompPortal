@@ -136,9 +136,9 @@ export default function AllInvoicesList() {
               onChange={(e) => setSelectedCompetition(e.target.value)}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              <option value="all" className="text-gray-900">All Events</option>
+              <option value="all" className="bg-gray-900 text-white">All Events</option>
               {competitions.map((comp: any) => (
-                <option key={comp.id} value={comp.id} className="text-gray-900">
+                <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
                   {comp.name} ({comp.year})
                 </option>
               ))}
@@ -155,12 +155,12 @@ export default function AllInvoicesList() {
               onChange={(e) => setPaymentStatusFilter(e.target.value)}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              <option value="all" className="text-gray-900">All Statuses</option>
-              <option value="pending" className="text-gray-900">Pending</option>
-              <option value="partial" className="text-gray-900">Partial</option>
-              <option value="paid" className="text-gray-900">Paid</option>
-              <option value="refunded" className="text-gray-900">Refunded</option>
-              <option value="cancelled" className="text-gray-900">Cancelled</option>
+              <option value="all" className="bg-gray-900 text-white">All Statuses</option>
+              <option value="pending" className="bg-gray-900 text-white">Pending</option>
+              <option value="partial" className="bg-gray-900 text-white">Partial</option>
+              <option value="paid" className="bg-gray-900 text-white">Paid</option>
+              <option value="refunded" className="bg-gray-900 text-white">Refunded</option>
+              <option value="cancelled" className="bg-gray-900 text-white">Cancelled</option>
             </select>
           </div>
         </div>

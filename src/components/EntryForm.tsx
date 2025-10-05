@@ -507,8 +507,8 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 }}
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="no" className="text-gray-900">No props</option>
-                <option value="yes" className="text-gray-900">Yes - props used</option>
+                <option value="no" className="bg-gray-900 text-white">No props</option>
+                <option value="yes" className="bg-gray-900 text-white">Yes - props used</option>
               </select>
             </div>
 

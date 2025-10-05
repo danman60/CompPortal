@@ -137,9 +137,9 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               onChange={(e) => setFormData({ ...formData, competition_id: e.target.value })}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              <option value="" className="text-gray-900">Select a competition</option>
+              <option value="" className="bg-gray-900 text-white">Select a competition</option>
               {competitions.map((comp) => (
-                <option key={comp.id} value={comp.id} className="text-gray-900">
+                <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
                   {comp.name} {comp.year}
                 </option>
               ))}

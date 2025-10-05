@@ -180,9 +180,9 @@ export default function EntriesList() {
           onChange={(e) => setSelectedCompetition(e.target.value)}
           className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
-          <option value="all" className="text-gray-900">All Competitions</option>
+          <option value="all" className="bg-gray-900 text-white">All Competitions</option>
           {competitions.map((comp) => comp && (
-            <option key={comp.id} value={comp.id} className="text-gray-900">
+            <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
               {comp.name} ({comp.year})
             </option>
           ))}

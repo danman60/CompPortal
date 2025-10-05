@@ -129,9 +129,9 @@ export default function ManualReservationModal({
                       className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                       required
                     >
-                      <option value="" className="text-gray-900">Select competition...</option>
+                      <option value="" className="bg-gray-900 text-white">Select competition...</option>
                       {competitions.map((comp) => (
-                        <option key={comp.id} value={comp.id} className="text-gray-900">
+                        <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
                           {comp.name} ({comp.year}) - {comp.available_reservation_tokens ?? 600} slots available
                         </option>
                       ))}
@@ -169,9 +169,9 @@ export default function ManualReservationModal({
                       className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                       required
                     >
-                      <option value="" className="text-gray-900">Select studio...</option>
+                      <option value="" className="bg-gray-900 text-white">Select studio...</option>
                       {studios.map((studio) => (
-                        <option key={studio.id} value={studio.id} className="text-gray-900">
+                        <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
                           {studio.name}
                         </option>
                       ))}
