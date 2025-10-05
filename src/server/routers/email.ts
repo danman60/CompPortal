@@ -76,6 +76,9 @@ export const emailRouter = router({
         to: studio.email,
         subject,
         html,
+        templateType: 'registration',
+        studioId: input.studioId,
+        competitionId: input.competitionId,
       });
 
       return result;
@@ -151,6 +154,9 @@ export const emailRouter = router({
         to: studio.email,
         subject,
         html,
+        templateType: 'invoice',
+        studioId: input.studioId,
+        competitionId: input.competitionId,
       });
 
       return result;
@@ -202,6 +208,9 @@ export const emailRouter = router({
         to: reservation.studios.email,
         subject,
         html,
+        templateType: 'reservation-approved',
+        studioId: reservation.studio_id,
+        competitionId: reservation.competition_id,
       });
 
       return result;
@@ -265,6 +274,9 @@ export const emailRouter = router({
         to: entry.studios.email,
         subject,
         html,
+        templateType: 'entry',
+        studioId: entry.studio_id,
+        competitionId: entry.competition_id,
       });
 
       return result;
@@ -357,6 +369,9 @@ export const emailRouter = router({
         to: studio.email,
         subject,
         html,
+        templateType: 'missing-music',
+        studioId: input.studioId,
+        competitionId: input.competitionId,
       });
 
       return result;

@@ -607,6 +607,7 @@ model competitions {
   competition_sessions         competition_sessions[]
   documents                    documents[]
   elite_instructors            elite_instructors[]
+  email_logs                   email_logs[]
   invoices                     invoices[]
   judges                       judges[]
   rankings                     rankings[]
@@ -977,6 +978,7 @@ model studios {
   competition_entries              competition_entries[]
   dancers                          dancers[]
   documents                        documents[]
+  email_logs                       email_logs[]
   invoices                         invoices[]
   reservations                     reservations[]
   users_studios_owner_idTousers    users                 @relation("studios_owner_idTousers", fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -1092,6 +1094,25 @@ model vip_events {
   created_at               DateTime?    @default(now()) @db.Timestamp(6)
   competitions             competitions @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@schema("public")
+}
+
+model email_logs {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_type    String    @db.VarChar(50)
+  recipient_email  String    @db.VarChar(255)
+  subject          String    @db.VarChar(500)
+  studio_id        String?   @db.Uuid
+  competition_id   String?   @db.Uuid
+  success          Boolean   @default(true)
+  error_message    String?
+  sent_at          DateTime  @default(now()) @db.Timestamp(6)
+  studios          studios?  @relation(fields: [studio_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  competitions     competitions? @relation(fields: [competition_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([studio_id])
+  @@index([competition_id])
+  @@index([sent_at])
   @@schema("public")
 }
 

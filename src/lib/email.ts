@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { prisma } from './prisma';
 
 /**
  * Email service using Resend
@@ -26,6 +27,10 @@ export interface SendEmailParams {
   html: string;
   from?: string;
   replyTo?: string;
+  // Optional fields for email logging
+  templateType?: string;
+  studioId?: string;
+  competitionId?: string;
 }
 
 /**
@@ -37,34 +42,63 @@ export async function sendEmail({
   html,
   from = process.env.EMAIL_FROM || 'noreply@glowdance.com',
   replyTo,
+  templateType,
+  studioId,
+  competitionId,
 }: SendEmailParams) {
   const client = getResendClient();
+  const recipientEmail = Array.isArray(to) ? to[0] : to;
+  let success = false;
+  let errorMessage: string | undefined;
 
   if (!client) {
     console.error('Email sending disabled: RESEND_API_KEY not configured');
+    errorMessage = 'Email service not configured';
+  } else {
+    try {
+      const data = await client.emails.send({
+        from,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+        replyTo,
+      });
+
+      success = true;
+    } catch (error) {
+      console.error('Email send error:', error);
+      errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  // Log email to database if template type is provided
+  if (templateType) {
+    try {
+      await prisma.email_logs.create({
+        data: {
+          template_type: templateType,
+          recipient_email: recipientEmail,
+          subject,
+          studio_id: studioId || null,
+          competition_id: competitionId || null,
+          success,
+          error_message: errorMessage || null,
+        },
+      });
+    } catch (logError) {
+      console.error('Failed to log email:', logError);
+      // Don't fail the email send if logging fails
+    }
+  }
+
+  if (!success) {
     return {
       success: false,
-      error: 'Email service not configured',
+      error: errorMessage,
     };
   }
 
-  try {
-    const data = await client.emails.send({
-      from,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      replyTo,
-    });
-
-    return { success: true, data };
-  } catch (error) {
-    console.error('Email send error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  return { success: true };
 }
 
 /**
