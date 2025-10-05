@@ -46,17 +46,22 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - Email Notifications) 📧
+## Latest Session (Oct 5, 2025 - UI Fixes & Email Notifications) 🎨📧
 
-**Feature**: Automated email notifications for entry creation and payment updates
+**P0 Critical UI Fixes** (Commits 2a8ce3f, 0a1e021):
+- ✅ White-on-white dropdown visibility fixed (10 components, 27 dropdowns total)
+- ✅ Studio selection locked for Studio Directors (already implemented correctly)
+  - EntryForm.tsx: Shows locked studio name (lines 228-240)
+  - Server pages: Auto-fetch studio and pass studioId prop
+  - No dropdowns exposed to SDs for studio selection
 
-**Implemented** (Commits 04b769b-13cd598):
+**Email Notifications** (Commits 04b769b-13cd598):
 - Entry creation: Sends EntrySubmitted email with routine details (entry.ts:420-470)
 - Payment confirmation: Sends PaymentConfirmed email on status change (reservation.ts:808-854)
 - Template: Created PaymentConfirmed component with status-specific messaging
 - Graceful error handling: Email failures logged, mutations succeed
 
-**Deployment**: ✅ dpl_693natZsy4RgdtACNy8QATchdLMo (entry), 🔄 dpl_9xzb7qp8Vw9oCXv1S3umSgwyahFg (payment)
+**Deployment**: 🔄 dpl_CDk5m1wHS7JRqMGokJ23Y5nKmEFS (building)
 
 ---
 
