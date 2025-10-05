@@ -310,6 +310,7 @@ const approve = adminProcedure
 ---
 
 ### Issue 6: Lock Studio Selection (Non-Editable)
+**Status**: COMPLETE (commit 9ff4a23, deployment dpl_2noWaWft6dBh638fn674KBFyqLt8)
 
 **Problem**: Studio fields are editable when they shouldn't be
 
