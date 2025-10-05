@@ -435,7 +435,7 @@ async function main() {
 
   // Create realistic test dancers for GlowDance Orlando
   console.log('👯 Creating dancers for GlowDance Orlando...');
-  const dancers = [];
+  const dancers: any[] = [];
 
   // Realistic dancer data for demo purposes
   const realisticDancers = [
