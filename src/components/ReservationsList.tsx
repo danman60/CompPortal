@@ -16,6 +16,8 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [rejectModalData, setRejectModalData] = useState<{ id: string; studioName: string } | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // Approval mutation
   const approveMutation = trpc.reservation.approve.useMutation({
@@ -63,17 +65,20 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   };
 
   const handleReject = (reservationId: string, studioName: string) => {
-    const reason = prompt(
-      `Reject reservation for ${studioName}?\n\nOptional: Enter rejection reason:`
-    );
+    setRejectModalData({ id: reservationId, studioName });
+    setRejectionReason('');
+  };
 
-    if (reason === null) return; // User cancelled
+  const confirmReject = () => {
+    if (!rejectModalData) return;
 
-    setProcessingId(reservationId);
+    setProcessingId(rejectModalData.id);
     rejectMutation.mutate({
-      id: reservationId,
-      reason: reason || undefined,
+      id: rejectModalData.id,
+      reason: rejectionReason || undefined,
     });
+    setRejectModalData(null);
+    setRejectionReason('');
   };
 
   if (isLoading) {
@@ -492,6 +497,34 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                   </div>
                 )}
 
+                {/* Rejection Reason for Studio Directors */}
+                {isStudioDirector && reservation.status === 'rejected' && reservation.internal_notes && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl">❌</div>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-red-400 mb-2">
+                            Reservation Rejected
+                          </div>
+                          <div className="text-sm text-gray-300">
+                            <span className="text-gray-400">Reason:</span> {reservation.internal_notes}
+                          </div>
+                          {reservation.rejected_at && (
+                            <div className="text-xs text-gray-500 mt-2">
+                              Rejected on {new Date(reservation.rejected_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Entry Count Badge & CTA (for Approved Reservations) */}
                 {reservation.status === 'approved' && (
                   <div className="mt-6 pt-6 border-t border-white/10">
@@ -591,6 +624,52 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
       <div className="mt-6 text-center text-gray-400 text-sm">
         Showing {filteredReservations.length} of {reservations.length} reservations
       </div>
+
+      {/* Rejection Modal */}
+      {rejectModalData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">Reject Reservation</h3>
+
+            <p className="text-gray-300 mb-4">
+              Are you sure you want to reject the reservation for <span className="font-semibold text-white">{rejectModalData.studioName}</span>?
+            </p>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Rejection Reason <span className="text-gray-500">(optional but recommended)</span>
+              </label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Enter reason for rejection (visible to studio director)..."
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[100px]"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                This reason will be displayed to the studio director.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setRejectModalData(null);
+                  setRejectionReason('');
+                }}
+                className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmReject}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg transition-all"
+              >
+                ❌ Reject Reservation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
