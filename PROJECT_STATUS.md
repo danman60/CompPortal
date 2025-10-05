@@ -1,10 +1,12 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 5, 2025
+**Last Updated**: October 2025
 **MVP Due**: October 7, 2025 (2 days)
 **Current Phase**: MVP+ Features - Studio Approval Complete ✅
 **Branch**: main
 **Deployment**: Vercel (auto-deploy on push)
+
+**📂 Documentation**: See [FILE_INDEX.md](./FILE_INDEX.md) for complete documentation map
 
 ---
 
@@ -320,32 +322,80 @@ The space limit validation fix we deployed queries entries by `reservation_id`. 
 
 ## Next Session Priorities
 
-**🎉 Studio Approval Workflow Complete!** - All MVP+ features implemented!
+**🚨 CRITICAL: ROUTINES & RESERVATIONS REFINEMENT**
 
-**Recommended Next Steps:**
-1. ✅ **Test Studio Approval Workflow End-to-End**
-   - Log in as Competition Director on production
-   - Navigate to /dashboard/admin/studios
-   - Test approve flow (check email delivery)
-   - Test reject flow with reason (check email delivery)
-   - Verify Studio Director sees pending banner
-   - Verify banner disappears after approval
+**Primary Document**: [ROUTINES_RESERVATIONS_CONSOLIDATED.md](./ROUTINES_RESERVATIONS_CONSOLIDATED.md)
 
-2. 📹 **Record Demo Video** (optional - using DEMO_SCRIPT.md)
-   - Showcase complete MVP workflow
-   - Include studio approval feature
-   - Share with stakeholders
+**Context**: Multiple rounds of feedback about Routines & Reservations workflow have accumulated. This comprehensive document consolidates ALL feedback sources into a single implementation plan.
 
-3. 🔄 **Post-Launch Enhancements** (see NEXT_SESSION_PLAN.md)
-   - Entry submitted email notifications
-   - Missing music reminder emails
-   - Payment confirmation emails
-   - Bulk dancer CSV import
-   - Music tracking dashboard
+**21 Issues Identified**:
+- 6 P0-Critical (blocking core workflow)
+- 8 P1-High (UX improvements)
+- 7 P2-Medium/CD enhancements
 
-4. 📊 **Load Testing** with realistic data volumes (post-launch)
+**Implementation Estimate**: 8-10 days across 5 phases
 
 ---
 
-**Detailed Docs**: See `docs/archive/` for session logs and test reports
-**Old Status File**: Archived to `docs/archive/PROJECT_STATUS_OLD.md`
+**Phase 1: CRITICAL UX Fixes (1-2 days)**
+1. ✅ Terminology: Replace "Entries" → "Routines" (UI only, defer schema)
+2. ✅ White-on-white dropdowns (global fix)
+3. ✅ Lock Studio Selection (hard-code to session)
+4. ✅ Hide Capacity from Studios (role-based rendering)
+5. ✅ Remove Agent Information Editing (pull from profile)
+
+**Phase 2: Helper Text & Guidance (1 day)**
+6. ✅ Routine Counter ("X of Y available")
+7. ✅ Auto-Generate Invoice (on approval)
+
+**Phase 3: Routine Creation Improvements (2 days)**
+8. ✅ Replace Music → Props Field
+9. ✅ Remove Drag Reordering in Modal
+10. ✅ Dashboard Label ("My Routines")
+
+**Phase 4: Dancer Management (2 days)**
+11. ✅ Unified Dancer Add Flow (merge single + batch)
+12. ✅ Drag-and-Drop Assignment Enhancement
+
+**Phase 5: Competition Director Enhancements (2-3 days)**
+13. ✅ Dashboard Reservations Emphasis
+14. ✅ 4×4 Card Grid for Competitions
+15. ✅ Approve/Reject from Cards
+16. ✅ Auto-Adjust Capacity
+17. ✅ Manual Reservation Creation (admin-only)
+18. ✅ Remove CD "Create Reservation" Button
+19. ✅ Column Sorting
+20. ✅ Real Seeded Data (GlowDance Orlando)
+
+**Priority 3: At Competition Mode Planning**
+- See `BUGS_AND_FEATURES.md` → "At Competition Mode" section
+- Future major feature for live event operations
+- Real-time judge sync, RTMP overlay, routine navigation
+
+**Deferred Post-Launch:**
+- Email notifications (entry submitted, music reminders, payments)
+- Bulk dancer CSV import
+- Music tracking dashboard
+- Studio approval workflow end-to-end testing (already implemented)
+
+---
+
+## 📂 Documentation Structure (Updated October 2025)
+
+**Active Documentation** (Project Root):
+- `PROJECT_STATUS.md` - This file, current state & priorities
+- `BUGS_AND_FEATURES.md` - Consolidated bug/feature tracker
+- `USER_TESTING_NOTES.md` - Latest user testing feedback
+- `FIXES_AND_ENHANCEMENTS.md` - Previous implementation plan
+- `README.md`, `QUICKSTART.md`, `TEST_CREDENTIALS.md`
+
+**Organized Documentation** (`docs/` folders):
+- `docs/journeys/` - User journeys (SD, CD, Judge workflows)
+- `docs/testing/` - All testing reports and test documentation
+- `docs/sessions/` - Session summaries and handoffs
+- `docs/planning/` - Roadmaps, next session plans, checklists
+- `docs/reference/` - Technical setup, guides, blueprints
+- `docs/stakeholder/` - Demo scripts, presentations, competitive analysis
+- `docs/archive/` - Historical docs, old session logs
+
+**Complete Index**: [FILE_INDEX.md](./FILE_INDEX.md) - Full documentation map with search tips
