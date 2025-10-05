@@ -46,22 +46,26 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - UI Fixes & Email Notifications) 🎨📧
+## Latest Session (Oct 5, 2025 - P0 UI Fixes & Terminology) 🎨✏️
 
-**P0 Critical UI Fixes** (Commits 2a8ce3f, 0a1e021):
+**P0 Critical UI Fixes** (Commits 2a8ce3f, 0a1e021, 5490dbc):
 - ✅ White-on-white dropdown visibility fixed (10 components, 27 dropdowns total)
 - ✅ Studio selection locked for Studio Directors (already implemented correctly)
   - EntryForm.tsx: Shows locked studio name (lines 228-240)
   - Server pages: Auto-fetch studio and pass studioId prop
   - No dropdowns exposed to SDs for studio selection
 
-**Email Notifications** (Commits 04b769b-13cd598):
-- Entry creation: Sends EntrySubmitted email with routine details (entry.ts:420-470)
-- Payment confirmation: Sends PaymentConfirmed email on status change (reservation.ts:808-854)
-- Template: Created PaymentConfirmed component with status-specific messaging
-- Graceful error handling: Email failures logged, mutations succeed
+**Terminology Replacement - 'Entries' → 'Routines'** (Commits a848f0d, 85d0b98, 775654f):
+- ✅ Email templates (4 files): EntrySubmitted, ReservationApproved, StudioApproved, InvoiceDelivery
+- ✅ Competition settings: "Allow multiple routines per dancer", "Max routines"
+- ✅ Scoring UI: "navigate routines" swipe indicator
+- ✅ Analytics/Invoices/PDFs: "Routine Fees", "Avg per Routine", table headers
+- 🔄 Remaining: Component names, routes, internal variables (future session)
 
-**Deployment**: 🔄 dpl_CDk5m1wHS7JRqMGokJ23Y5nKmEFS (building)
+**Email Notifications** (Previous commits 04b769b-13cd598):
+- Entry creation: Sends EntrySubmitted email with routine details
+- Payment confirmation: Sends PaymentConfirmed email on status change
+- Graceful error handling: Email failures logged, mutations succeed
 
 ---
 
