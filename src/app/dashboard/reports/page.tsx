@@ -30,14 +30,28 @@ export default function ReportsPage() {
   const generateJudgeScorecardMutation = trpc.reports.generateJudgeScorecard.useMutation();
   const generateCompetitionSummaryMutation = trpc.reports.generateCompetitionSummary.useMutation();
 
+  // CSV export mutations
+  const exportCategoryResultsCSVMutation = trpc.reports.exportCategoryResultsCSV.useMutation();
+  const exportCompetitionSummaryCSVMutation = trpc.reports.exportCompetitionSummaryCSV.useMutation();
+
   const isGenerating =
     generateEntryScoresheetMutation.isPending ||
     generateCategoryResultsMutation.isPending ||
     generateJudgeScorecardMutation.isPending ||
-    generateCompetitionSummaryMutation.isPending;
+    generateCompetitionSummaryMutation.isPending ||
+    exportCategoryResultsCSVMutation.isPending ||
+    exportCompetitionSummaryCSVMutation.isPending;
 
   const downloadPDF = (base64Data: string, filename: string) => {
     const linkSource = `data:application/pdf;base64,${base64Data}`;
+    const downloadLink = document.createElement('a');
+    downloadLink.href = linkSource;
+    downloadLink.download = filename;
+    downloadLink.click();
+  };
+
+  const downloadCSV = (base64Data: string, filename: string) => {
+    const linkSource = `data:text/csv;base64,${base64Data}`;
     const downloadLink = document.createElement('a');
     downloadLink.href = linkSource;
     downloadLink.download = filename;
@@ -88,6 +102,39 @@ export default function ReportsPage() {
     } catch (error: any) {
       console.error('Report generation error:', error);
       alert(`❌ Error: ${error.message || 'Failed to generate report'}`);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      let result;
+
+      if (reportType === 'category') {
+        if (!selectedCategoryId || !selectedAgeGroupId) {
+          alert('Please select both category and age group');
+          return;
+        }
+        result = await exportCategoryResultsCSVMutation.mutateAsync({
+          competition_id: selectedCompetitionId,
+          category_id: selectedCategoryId,
+          age_group_id: selectedAgeGroupId,
+        });
+      } else if (reportType === 'summary') {
+        result = await exportCompetitionSummaryCSVMutation.mutateAsync({
+          competition_id: selectedCompetitionId,
+        });
+      } else {
+        alert('CSV export is only available for Category Results and Competition Summary reports');
+        return;
+      }
+
+      if (result) {
+        downloadCSV(result.data, result.filename);
+        alert(`✅ CSV exported successfully: ${result.filename}`);
+      }
+    } catch (error: any) {
+      console.error('CSV export error:', error);
+      alert(`❌ Error: ${error.message || 'Failed to export CSV'}`);
     }
   };
 
@@ -300,8 +347,8 @@ export default function ReportsPage() {
                   </>
                 )}
 
-                {/* Generate button */}
-                <div className="pt-4">
+                {/* Generate buttons */}
+                <div className="pt-4 space-y-3">
                   <button
                     onClick={handleGenerateReport}
                     disabled={!selectedCompetitionId || isGenerating}
@@ -310,12 +357,30 @@ export default function ReportsPage() {
                     {isGenerating ? (
                       <span className="flex items-center justify-center gap-2">
                         <span className="animate-spin">⚙️</span>
-                        Generating PDF...
+                        Generating...
                       </span>
                     ) : (
                       <>📥 Generate & Download PDF</>
                     )}
                   </button>
+
+                  {/* CSV Export - only for category and summary */}
+                  {(reportType === 'category' || reportType === 'summary') && (
+                    <button
+                      onClick={handleExportCSV}
+                      disabled={!selectedCompetitionId || isGenerating}
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold text-lg"
+                    >
+                      {isGenerating ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="animate-spin">⚙️</span>
+                          Exporting...
+                        </span>
+                      ) : (
+                        <>📊 Export as CSV</>
+                      )}
+                    </button>
+                  )}
 
                   {!selectedCompetitionId && (
                     <p className="text-sm text-gray-400 mt-2 text-center">

@@ -587,4 +587,260 @@ export const reportsRouter = router({
         entries: entries.filter((e) => e.entry_number !== null),
       };
     }),
+
+  /**
+   * Export Category Results as CSV
+   * Same data as PDF but in CSV format for spreadsheet analysis
+   */
+  exportCategoryResultsCSV: publicProcedure
+    .input(
+      z.object({
+        competition_id: z.string().uuid(),
+        category_id: z.string().uuid(),
+        age_group_id: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Fetch competition
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competition_id },
+        select: {
+          name: true,
+          competition_start_date: true,
+          competition_end_date: true,
+        },
+      });
+
+      if (!competition) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Competition not found',
+        });
+      }
+
+      // Fetch category and age group names
+      const category = await prisma.dance_categories.findUnique({
+        where: { id: input.category_id },
+      });
+
+      const ageGroup = await prisma.age_groups.findUnique({
+        where: { id: input.age_group_id },
+      });
+
+      // Fetch all entries in this category/age group with scores
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competition_id,
+          category_id: input.category_id,
+          age_group_id: input.age_group_id,
+        },
+        include: {
+          studios: {
+            select: {
+              name: true,
+            },
+          },
+          scores: true,
+        },
+      });
+
+      // Calculate average scores and sort by placement
+      const entriesWithScores = entries
+        .map((entry) => {
+          const avgScore =
+            entry.scores.length > 0
+              ? entry.scores.reduce((sum, s) => sum + Number(s.total_score), 0) /
+                entry.scores.length
+              : 0;
+
+          let awardLevel = 'Not Scored';
+          if (avgScore >= 270) awardLevel = 'Platinum';
+          else if (avgScore >= 255) awardLevel = 'High Gold';
+          else if (avgScore >= 240) awardLevel = 'Gold';
+          else if (avgScore >= 210) awardLevel = 'Silver';
+          else if (avgScore > 0) awardLevel = 'Bronze';
+
+          return {
+            entry_number: entry.entry_number || 0,
+            title: entry.title,
+            studio_name: entry.studios.name,
+            average_score: avgScore,
+            award_level: awardLevel,
+          };
+        })
+        .filter((e) => e.average_score > 0)
+        .sort((a, b) => b.average_score - a.average_score)
+        .map((entry, index) => ({
+          ...entry,
+          placement: index + 1,
+        }));
+
+      if (entriesWithScores.length === 0) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No scored entries found in this category',
+        });
+      }
+
+      // RFC 4180 compliant CSV escape
+      const escapeCSV = (value: string | number | null | undefined): string => {
+        if (value === null || value === undefined) return '';
+        const str = String(value);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      // Generate CSV
+      const headers = [
+        'Placement',
+        'Entry Number',
+        'Routine Title',
+        'Studio',
+        'Average Score',
+        'Award Level',
+      ];
+
+      const rows = entriesWithScores.map((entry) => [
+        escapeCSV(entry.placement),
+        escapeCSV(entry.entry_number),
+        escapeCSV(entry.title),
+        escapeCSV(entry.studio_name),
+        escapeCSV(entry.average_score.toFixed(2)),
+        escapeCSV(entry.award_level),
+      ]);
+
+      const csvContent = [
+        `# ${competition.name} - ${category?.name || 'Unknown'} - ${ageGroup?.name || 'Unknown'}`,
+        headers.map(escapeCSV).join(','),
+        ...rows.map((row) => row.join(',')),
+      ].join('\r\n');
+
+      const base64Data = Buffer.from(csvContent, 'utf-8').toString('base64');
+      const slug = `${category?.name || 'category'}-${ageGroup?.name || 'agegroup'}`.toLowerCase().replace(/\s+/g, '-');
+
+      return {
+        filename: `results-${slug}.csv`,
+        data: base64Data,
+        mimeType: 'text/csv',
+      };
+    }),
+
+  /**
+   * Export Competition Summary as CSV
+   * Exports overall statistics and entry counts by category
+   */
+  exportCompetitionSummaryCSV: publicProcedure
+    .input(
+      z.object({
+        competition_id: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Fetch competition with all related data
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competition_id },
+        include: {
+          _count: {
+            select: {
+              competition_entries: true,
+              reservations: true,
+            },
+          },
+        },
+      });
+
+      if (!competition) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Competition not found',
+        });
+      }
+
+      // Fetch entries grouped by category
+      const entriesByCategory = await prisma.competition_entries.groupBy({
+        by: ['category_id'],
+        where: { competition_id: input.competition_id },
+        _count: true,
+      });
+
+      // Fetch category names
+      const categoryIds = entriesByCategory.map((e) => e.category_id);
+      const categories = await prisma.dance_categories.findMany({
+        where: { id: { in: categoryIds } },
+      });
+
+      // Fetch entries grouped by age group
+      const entriesByAgeGroup = await prisma.competition_entries.groupBy({
+        by: ['age_group_id'],
+        where: { competition_id: input.competition_id },
+        _count: true,
+      });
+
+      // Fetch age group names
+      const ageGroupIds = entriesByAgeGroup.map((e) => e.age_group_id);
+      const ageGroups = await prisma.age_groups.findMany({
+        where: { id: { in: ageGroupIds } },
+      });
+
+      // Fetch unique studios count
+      const uniqueStudios = await prisma.competition_entries.findMany({
+        where: { competition_id: input.competition_id },
+        distinct: ['studio_id'],
+        select: { studio_id: true },
+      });
+
+      // RFC 4180 compliant CSV escape
+      const escapeCSV = (value: string | number | null | undefined): string => {
+        if (value === null || value === undefined) return '';
+        const str = String(value);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      // Build CSV sections
+      const lines: string[] = [];
+
+      // Header
+      lines.push(`# Competition Summary: ${competition.name}`);
+      lines.push('');
+
+      // Overall stats
+      lines.push('Overall Statistics');
+      lines.push('Metric,Count');
+      lines.push(`Total Routines,${competition._count.competition_entries}`);
+      lines.push(`Total Studios,${uniqueStudios.length}`);
+      lines.push(`Venue Capacity,${competition.venue_capacity || 'N/A'}`);
+      lines.push('');
+
+      // Entries by category
+      lines.push('Routines by Category');
+      lines.push('Category,Count');
+      entriesByCategory.forEach((entry) => {
+        const category = categories.find((c) => c.id === entry.category_id);
+        lines.push(`${escapeCSV(category?.name || 'Unknown')},${entry._count}`);
+      });
+      lines.push('');
+
+      // Entries by age group
+      lines.push('Routines by Age Group');
+      lines.push('Age Group,Count');
+      entriesByAgeGroup.forEach((entry) => {
+        const ageGroup = ageGroups.find((a) => a.id === entry.age_group_id);
+        lines.push(`${escapeCSV(ageGroup?.name || 'Unknown')},${entry._count}`);
+      });
+
+      const csvContent = lines.join('\r\n');
+      const base64Data = Buffer.from(csvContent, 'utf-8').toString('base64');
+      const slug = competition.name.toLowerCase().replace(/\s+/g, '-');
+
+      return {
+        filename: `summary-${slug}.csv`,
+        data: base64Data,
+        mimeType: 'text/csv',
+      };
+    }),
 });
