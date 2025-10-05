@@ -30,18 +30,11 @@ export default async function DancersPage() {
 
           <div className="flex gap-3">
             <Link
-              href="/dashboard/dancers/new"
+              href="/dashboard/dancers/add"
               className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
             >
               <span>➕</span>
-              <span>Add Dancer</span>
-            </Link>
-            <Link
-              href="/dashboard/dancers/batch-add"
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-            >
-              <span>📝</span>
-              <span>Batch Add</span>
+              <span>Add Dancers</span>
             </Link>
             <Link
               href="/dashboard/dancers/import"

@@ -27,7 +27,7 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
     dancers: DancerRow[];
   }>({
     defaultValues: {
-      dancers: Array(5).fill({
+      dancers: Array(1).fill({
         first_name: '',
         last_name: '',
         date_of_birth: '',
