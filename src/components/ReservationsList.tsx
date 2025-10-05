@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ManualReservationModal from './ManualReservationModal';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -13,11 +14,13 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   const router = useRouter();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.reservation.getAll.useQuery();
+  const { data: studiosData } = trpc.studio.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectModalData, setRejectModalData] = useState<{ id: string; studioName: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [isManualReservationModalOpen, setIsManualReservationModalOpen] = useState(false);
 
   // Approval mutation
   const approveMutation = trpc.reservation.approve.useMutation({
@@ -135,6 +138,15 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           >
             + Create Reservation
           </Link>
+        )}
+        {/* Manual Reservation Button (Competition Directors Only - Issue #17) */}
+        {!isStudioDirector && (
+          <button
+            onClick={() => setIsManualReservationModalOpen(true)}
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-medium"
+          >
+            📋 Manual Reservation
+          </button>
         )}
       </div>
 
@@ -689,6 +701,17 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </div>
         </div>
       )}
+
+      {/* Manual Reservation Modal (Issue #17) */}
+      <ManualReservationModal
+        isOpen={isManualReservationModalOpen}
+        onClose={() => setIsManualReservationModalOpen(false)}
+        competitions={competitions}
+        studios={studiosData?.studios || []}
+        onSuccess={() => {
+          utils.reservation.getAll.invalidate();
+        }}
+      />
     </div>
   );
 }

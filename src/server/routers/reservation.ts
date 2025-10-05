@@ -805,4 +805,109 @@ export const reservationRouter = router({
 
       return reservation;
     }),
+
+  // Manual reservation creation (admin-only)
+  createManual: protectedProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid(),
+        studioId: z.string().uuid(),
+        spacesAllocated: z.number().int().min(1).max(600),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Check user role - only competition directors and super admins
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || (userProfile.role !== 'competition_director' && userProfile.role !== 'super_admin')) {
+        throw new Error('Unauthorized: Only competition directors can create manual reservations');
+      }
+
+      // Verify competition exists and has capacity
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: {
+          id: true,
+          name: true,
+          available_reservation_tokens: true,
+          total_reservation_tokens: true,
+        },
+      });
+
+      if (!competition) {
+        throw new Error('Competition not found');
+      }
+
+      const availableTokens = competition.available_reservation_tokens ?? 600;
+      if (input.spacesAllocated > availableTokens) {
+        throw new Error(`Insufficient capacity. Available: ${availableTokens}, Requested: ${input.spacesAllocated}`);
+      }
+
+      // Verify studio exists
+      const studio = await prisma.studios.findUnique({
+        where: { id: input.studioId },
+        select: { id: true, name: true },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
+      // Check if reservation already exists for this studio/competition
+      const existingReservation = await prisma.reservations.findFirst({
+        where: {
+          studio_id: input.studioId,
+          competition_id: input.competitionId,
+          status: { in: ['pending', 'approved'] },
+        },
+      });
+
+      if (existingReservation) {
+        throw new Error('Studio already has a reservation for this competition');
+      }
+
+      // Create pre-approved reservation
+      const reservation = await prisma.reservations.create({
+        data: {
+          studio_id: input.studioId,
+          competition_id: input.competitionId,
+          spaces_requested: input.spacesAllocated,
+          spaces_confirmed: input.spacesAllocated,
+          status: 'approved',
+          approved_at: new Date(),
+          approved_by: ctx.userId,
+          internal_notes: 'Manual reservation created by admin',
+          payment_status: 'PENDING',
+        },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Auto-adjust competition capacity (Issue #16)
+      await prisma.competitions.update({
+        where: { id: input.competitionId },
+        data: {
+          available_reservation_tokens: {
+            decrement: input.spacesAllocated,
+          },
+        },
+      });
+
+      return reservation;
+    }),
 });
