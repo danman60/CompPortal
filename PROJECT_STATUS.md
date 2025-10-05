@@ -46,21 +46,32 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - P0 UI Fixes & Terminology) 🎨✏️
+## Latest Session (Oct 5, 2025 - P0 UI Fixes Complete) 🎨✅
 
-**P0 Critical UI Fixes** (Commits 2a8ce3f, 0a1e021, 5490dbc):
-- ✅ White-on-white dropdown visibility fixed (10 components, 27 dropdowns total)
-- ✅ Studio selection locked for Studio Directors (already implemented correctly)
-  - EntryForm.tsx: Shows locked studio name (lines 228-240)
-  - Server pages: Auto-fetch studio and pass studioId prop
-  - No dropdowns exposed to SDs for studio selection
+**All P0 Critical UI Fixes Complete** (Commits 2a8ce3f-9cf1e8f, 7 commits):
 
-**Terminology Replacement - 'Entries' → 'Routines'** (Commits a848f0d, 85d0b98, 775654f):
-- ✅ Email templates (4 files): EntrySubmitted, ReservationApproved, StudioApproved, InvoiceDelivery
-- ✅ Competition settings: "Allow multiple routines per dancer", "Max routines"
-- ✅ Scoring UI: "navigate routines" swipe indicator
-- ✅ Analytics/Invoices/PDFs: "Routine Fees", "Avg per Routine", table headers
-- 🔄 Remaining: Component names, routes, internal variables (future session)
+1. ✅ **White-on-white dropdown visibility** (2a8ce3f, 0a1e021)
+   - Fixed 10 components, 27 dropdowns total
+   - Applied dark background pattern: `className="bg-gray-900 text-white"`
+
+2. ✅ **Studio selection locked** (Verified - Already implemented)
+   - EntryForm.tsx: Shows locked studio name for Studio Directors
+   - Server pages: Auto-fetch studio and pass studioId prop
+
+3. ✅ **'Entries' → 'Routines' terminology** (a848f0d, 85d0b98, 775654f)
+   - Email templates (4 files): EntrySubmitted, ReservationApproved, StudioApproved, InvoiceDelivery
+   - Competition settings: "Allow multiple routines per dancer", "Max routines"
+   - Scoring UI: "navigate routines" swipe indicator
+   - Analytics/Invoices/PDFs: "Routine Fees", "Avg per Routine"
+   - 🔄 Remaining: Component names, routes, internal variables (future session)
+
+4. ✅ **Capacity metrics hidden** (Verified - Already implemented)
+   - ReservationsList.tsx: `!isStudioDirector` check hides token summary
+   - reservations/page.tsx: Correctly passes isStudioDirector prop
+
+5. ✅ **Agent information hidden** (9cf1e8f)
+   - ReservationsList.tsx:308: Added `!isStudioDirector` check for agent info block
+   - Agent contact details (name, email, phone) now Competition Directors only
 
 **Email Notifications** (Previous commits 04b769b-13cd598):
 - Entry creation: Sends EntrySubmitted email with routine details
