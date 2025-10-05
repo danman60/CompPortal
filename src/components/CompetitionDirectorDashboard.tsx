@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import DashboardStats from './DashboardStats';
+import CompetitionSwitcher from './CompetitionSwitcher';
 
 interface CompetitionDirectorDashboardProps {
   userEmail: string;
@@ -11,17 +12,22 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-white mb-2">
-          {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
-        </h1>
-        <p className="text-gray-400">
-          Welcome back, {userEmail}
-          <span className="ml-2 px-2 py-1 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-semibold">
-            {isAdmin ? 'SUPER ADMIN' : 'DIRECTOR'}
-          </span>
-        </p>
+      {/* Header with Competition Switcher */}
+      <div className="flex justify-between items-start gap-6">
+        <div className="flex-1">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
+          </h1>
+          <p className="text-gray-400">
+            Welcome back, {userEmail}
+            <span className="ml-2 px-2 py-1 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-semibold">
+              {isAdmin ? 'SUPER ADMIN' : 'DIRECTOR'}
+            </span>
+          </p>
+        </div>
+        <div className="w-80">
+          <CompetitionSwitcher />
+        </div>
       </div>
 
       {/* Global Stats */}
