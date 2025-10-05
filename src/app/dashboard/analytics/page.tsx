@@ -219,7 +219,7 @@ export default function AnalyticsPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center pb-3 border-b border-white/10">
-                      <span className="text-gray-400">Entry Fees</span>
+                      <span className="text-gray-400">Routine Fees</span>
                       <span className="text-lg font-semibold text-white">
                         ${revenueStats.totalEntryFees.toLocaleString()}
                       </span>
@@ -231,7 +231,7 @@ export default function AnalyticsPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Avg per Entry</span>
+                      <span className="text-gray-400">Avg per Routine</span>
                       <span className="text-lg font-semibold text-white">
                         ${revenueStats.averageEntryFee.toFixed(2)}
                       </span>

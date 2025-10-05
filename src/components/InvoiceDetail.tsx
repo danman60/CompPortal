@@ -149,7 +149,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 <th className="px-4 py-3 text-left">Category</th>
                 <th className="px-4 py-3 text-left">Size</th>
                 <th className="px-4 py-3 text-left">Dancers</th>
-                <th className="px-4 py-3 text-right">Entry Fee</th>
+                <th className="px-4 py-3 text-right">Routine Fee</th>
                 <th className="px-4 py-3 text-right">Late Fee</th>
                 <th className="px-4 py-3 text-right">Total</th>
               </tr>

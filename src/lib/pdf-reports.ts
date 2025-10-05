@@ -716,7 +716,7 @@ export function generateInvoicePDF(invoice: {
 
   autoTable(doc, {
     startY: yPos,
-    head: [['#', 'Routine Title', 'Category', 'Size', 'Dancers', 'Entry Fee', 'Late Fee', 'Total']],
+    head: [['#', 'Routine Title', 'Category', 'Size', 'Dancers', 'Routine Fee', 'Late Fee', 'Total']],
     body: invoice.lineItems.map((item) => [
       item.entryNumber?.toString() || '-',
       item.title,

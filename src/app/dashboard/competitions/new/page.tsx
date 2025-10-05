@@ -192,7 +192,7 @@ export default function NewCompetitionPage() {
                 type="number"
                 {...register('venue_capacity', { valueAsNumber: true })}
                 className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
-                placeholder="Max entries"
+                placeholder="Max routines"
               />
             </div>
 
@@ -215,7 +215,7 @@ export default function NewCompetitionPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Entry Fee ($)</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Routine Fee ($)</label>
               <input
                 type="number"
                 step="0.01"
