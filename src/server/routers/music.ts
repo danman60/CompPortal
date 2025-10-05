@@ -454,4 +454,93 @@ export const musicRouter = router({
         results,
       };
     }),
+
+  /**
+   * Export missing music report as CSV
+   */
+  exportMissingMusicCSV: publicProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const where: any = {
+        music_file_url: null,
+        status: { not: 'cancelled' },
+      };
+
+      if (input.competitionId) {
+        where.competition_id = input.competitionId;
+      }
+
+      const routinesWithoutMusic = await prisma.competition_entries.findMany({
+        where,
+        select: {
+          title: true,
+          entry_number: true,
+          studios: {
+            select: {
+              name: true,
+              code: true,
+              email: true,
+            },
+          },
+          competitions: {
+            select: {
+              name: true,
+              year: true,
+            },
+          },
+          dance_categories: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: [
+          { competition_id: 'asc' },
+          { studio_id: 'asc' },
+          { entry_number: 'asc' },
+        ],
+      });
+
+      // RFC 4180 compliant CSV formatting
+      const escapeCSV = (value: string | null | undefined): string => {
+        if (value === null || value === undefined) {
+          return '';
+        }
+        const str = String(value);
+        if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const headers = [
+        'Competition',
+        'Year',
+        'Studio Name',
+        'Studio Code',
+        'Studio Email',
+        'Routine #',
+        'Routine Title',
+        'Category',
+      ];
+
+      const rows = routinesWithoutMusic.map((entry) => [
+        escapeCSV(entry.competitions.name),
+        escapeCSV(String(entry.competitions.year)),
+        escapeCSV(entry.studios.name),
+        escapeCSV(entry.studios.code),
+        escapeCSV(entry.studios.email),
+        escapeCSV(entry.entry_number ? String(entry.entry_number) : ''),
+        escapeCSV(entry.title),
+        escapeCSV(entry.dance_categories?.name || 'N/A'),
+      ]);
+
+      const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+
+      return { csv };
+    }),
 });

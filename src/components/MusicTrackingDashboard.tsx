@@ -77,26 +77,73 @@ export default function MusicTrackingDashboard() {
     return sent.toLocaleDateString();
   };
 
+  const exportCSVMutation = trpc.music.exportMissingMusicCSV.useQuery(
+    {
+      competitionId: selectedCompetition,
+    },
+    {
+      enabled: false, // Don't run automatically
+    }
+  );
+
+  const handleExportCSV = async () => {
+    try {
+      const result = await exportCSVMutation.refetch();
+
+      if (result.data?.csv) {
+        const blob = new Blob([result.data.csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        const filename = selectedCompetition
+          ? `missing-music-${selectedCompetition}-${Date.now()}.csv`
+          : `missing-music-all-${Date.now()}.csv`;
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      alert('Failed to export CSV');
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Competition Filter */}
+      {/* Competition Filter & Export */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-        <label htmlFor="competition-filter" className="block text-sm font-medium text-gray-300 mb-2">
-          Filter by Competition
-        </label>
-        <select
-          id="competition-filter"
-          value={selectedCompetition || ''}
-          onChange={(e) => setSelectedCompetition(e.target.value || undefined)}
-          className="w-full md:w-96 px-4 py-2 bg-gray-900 text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="" className="bg-gray-900 text-white">All Competitions</option>
-          {competitions?.competitions.map((comp) => (
-            <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
-              {comp.name} ({comp.year})
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col md:flex-row md:items-end gap-4">
+          <div className="flex-1">
+            <label htmlFor="competition-filter" className="block text-sm font-medium text-gray-300 mb-2">
+              Filter by Competition
+            </label>
+            <select
+              id="competition-filter"
+              value={selectedCompetition || ''}
+              onChange={(e) => setSelectedCompetition(e.target.value || undefined)}
+              className="w-full px-4 py-2 bg-gray-900 text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="" className="bg-gray-900 text-white">All Competitions</option>
+              {competitions?.competitions.map((comp) => (
+                <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
+                  {comp.name} ({comp.year})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+          >
+            <span>📥</span>
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
