@@ -205,7 +205,7 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 ### Data Import/Export
 - [x] Bulk dancer CSV import *(Implemented - DancerCSVImport.tsx + bulkImport mutation)*
 - [x] Schedule export (PDF/CSV/iCal) *(Verified Oct 5 - scheduling.ts:567-1103, SchedulingManager.tsx:50-322)*
-- [ ] Results export (PDF/CSV)
+- [x] Results export (PDF/CSV) *(Completed Oct 5 - Commit 7bc395f)*
 
 ### Dashboard Enhancements
 - [ ] Music tracking dashboard
