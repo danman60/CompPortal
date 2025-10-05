@@ -46,7 +46,24 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - Capacity Reduction Feature) 🔽✅
+## Latest Session (Oct 5, 2025 - Visual Capacity Meters) 📊✅
+
+**Dashboard Enhancement Complete** (Commit 9b7c100):
+
+**Features Implemented:**
+- Dashboard: Visual capacity meters for upcoming events (DashboardStats.tsx:110-157)
+- UX: Color-coded progress bars (green <70%, yellow 70-90%, red >90%)
+- Display: Shows up to 3 upcoming competitions with utilization percentage
+- Query: Integrated competition.getUpcoming for real-time capacity data
+- Layout: Enhanced Events card with capacity visualization and click-to-view
+
+**Build Status:** ✅ All 38 routes compile successfully
+
+**Feature Request:** Visual capacity meters per event (BUGS_AND_FEATURES.md:213) - ✅ Complete
+
+---
+
+## Previous Session (Oct 5, 2025 - Capacity Reduction Feature) 🔽✅
 
 **Backlog 100% Complete** (Commit 074deab):
 

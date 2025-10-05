@@ -210,7 +210,7 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 ### Dashboard Enhancements
 - [ ] Music tracking dashboard
 - [ ] Personalized dashboard layout (drag/drop widgets)
-- [ ] Visual capacity meters/progress bars per event
+- [x] Visual capacity meters/progress bars per event *(Completed Oct 5 - Commit 9b7c100)*
 - [ ] Draggable dashboard button reordering
 
 ### Studio Management
