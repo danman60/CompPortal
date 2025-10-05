@@ -24,14 +24,14 @@
 ### Items in BOTH Testing Sessions (Highest Priority)
 These appear in both USER_TESTING_NOTES.md and FIXES_AND_ENHANCEMENTS.md:
 
-✅ **Critical** (P0 - Start Here):
-1. White-on-white dropdown fixes (all pages)
-2. Lock Studio selection to current studio (non-editable)
-3. Hide capacity metrics from Studio view
-4. Replace all "entries" → "routines" terminology
-5. Hide agent information from studio view
-6. **NEW**: Auto-generate invoices on reservation approval
-7. **NEW**: Show routine counter ("X of Y available")
+✅ **Critical** (P0 - ALL COMPLETE):
+1. ✅ White-on-white dropdown fixes (all pages) - Completed
+2. ✅ Lock Studio selection to current studio (non-editable) - Verified already implemented
+3. ✅ Hide capacity metrics from Studio view - Verified already implemented
+4. ✅ Replace all "entries" → "routines" terminology - User-facing text complete
+5. ✅ Hide agent information from studio view - Completed
+6. ✅ Auto-generate invoices on reservation approval - Verified already implemented
+7. ✅ Show routine counter ("X of Y available") - Verified already implemented
 
 **Implementation Plan**: [ROUTINES_RESERVATIONS_CONSOLIDATED.md](./ROUTINES_RESERVATIONS_CONSOLIDATED.md) - Phases 1-5 with time estimates
 
@@ -48,20 +48,20 @@ These appear in both USER_TESTING_NOTES.md and FIXES_AND_ENHANCEMENTS.md:
 - Historical workflow notes
 
 ### Studio Director Priority Fixes (Latest Testing)
-- [ ] **[CRITICAL]** Fix white-on-white dropdowns in Create Routine modal *(also in FIXES_AND_ENHANCEMENTS.md)*
-- [ ] **[CRITICAL]** Lock Studio selection to current studio *(also in FIXES_AND_ENHANCEMENTS.md)*
-- [ ] **[CRITICAL]** Replace all "entries" → "routines" terminology *(also in FIXES_AND_ENHANCEMENTS.md)*
-- [ ] **[CRITICAL]** Hide capacity metrics from Studio view *(also in FIXES_AND_ENHANCEMENTS.md)*
-- [ ] **[CRITICAL]** Remove agent information editing *(also in FIXES_AND_ENHANCEMENTS.md)*
+- [x] **[CRITICAL]** Fix white-on-white dropdowns in Create Routine modal *(Completed Oct 5)*
+- [x] **[CRITICAL]** Lock Studio selection to current studio *(Verified already implemented)*
+- [x] **[CRITICAL]** Replace all "entries" → "routines" terminology *(User-facing text complete Oct 5)*
+- [x] **[CRITICAL]** Hide capacity metrics from Studio view *(Verified already implemented)*
+- [x] **[CRITICAL]** Remove agent information editing *(Completed Oct 5)*
 - [ ] **[NEW]** Merge "Add Dancer" and "Batch Add" into unified action
-- [ ] **[NEW]** Show routine counter: "3 of 30 remaining"
+- [x] **[NEW]** Show routine counter: "3 of 30 remaining" *(Verified already implemented)*
 - [ ] **[NEW]** Replace Music section with Props field
-- [ ] **[NEW]** Fix reservation flow white-on-white dropdowns
-- [ ] **[NEW]** Add helper text: "Routines available: 12 of 20 approved"
-- [ ] **[NEW]** Auto-generate invoice on reservation submission
+- [x] **[NEW]** Fix reservation flow white-on-white dropdowns *(Completed Oct 5)*
+- [x] **[NEW]** Add helper text: "Routines available: 12 of 20 approved" *(Verified already implemented)*
+- [x] **[NEW]** Auto-generate invoice on reservation submission *(Verified already implemented)*
 - [ ] Remove drag reordering on participants inside Create Routine
 - [ ] Implement drag-and-drop linking (routines left, dancers right) *(also in FIXES_AND_ENHANCEMENTS.md)*
-- [ ] Dashboard label: "My Routines" (not "My Entries")
+- [x] Dashboard label: "My Routines" (not "My Entries") *(Verified already implemented)*
 - [ ] Keep Quick Start flow for routine creation
 
 ### Competition Director Priority Fixes (Latest Testing)
