@@ -414,20 +414,60 @@ export const emailRouter = router({
     }),
 
   /**
-   * Get email history (placeholder for future implementation)
+   * Get email history
    */
   getHistory: publicProcedure
     .input(
       z.object({
         studioId: z.string().uuid().optional(),
+        competitionId: z.string().uuid().optional(),
         limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
       })
     )
-    .query(async () => {
-      // TODO: Implement email history tracking in database
+    .query(async ({ input }) => {
+      const where: any = {};
+
+      if (input.studioId) {
+        where.studio_id = input.studioId;
+      }
+
+      if (input.competitionId) {
+        where.competition_id = input.competitionId;
+      }
+
+      const [emails, total] = await Promise.all([
+        prisma.email_logs.findMany({
+          where,
+          orderBy: { sent_at: 'desc' },
+          take: input.limit,
+          skip: input.offset,
+          include: {
+            studios: {
+              select: { name: true },
+            },
+            competitions: {
+              select: { name: true, year: true },
+            },
+          },
+        }),
+        prisma.email_logs.count({ where }),
+      ]);
+
       return {
-        emails: [],
-        total: 0,
+        emails: emails.map((email) => ({
+          id: email.id,
+          templateType: email.template_type,
+          recipientEmail: email.recipient_email,
+          subject: email.subject,
+          studioName: email.studios?.name || null,
+          competitionName: email.competitions?.name || null,
+          competitionYear: email.competitions?.year || null,
+          success: email.success,
+          errorMessage: email.error_message || null,
+          sentAt: email.sent_at,
+        })),
+        total,
       };
     }),
 });

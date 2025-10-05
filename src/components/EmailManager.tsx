@@ -114,6 +114,10 @@ export default function EmailManager() {
     }
   );
 
+  const { data: emailHistory } = trpc.email.getHistory.useQuery({
+    limit: 10,
+  });
+
   const handlePreview = async () => {
     setIsLoading(true);
     const result = await previewMutation.refetch();
@@ -240,6 +244,61 @@ export default function EmailManager() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Email History */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">📬 Recent Email History</h2>
+        {!emailHistory || emailHistory.emails.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            No emails sent yet
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {emailHistory.emails.map((email) => (
+              <div
+                key={email.id}
+                className="bg-white/5 rounded-lg p-4 border border-white/10"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        email.success
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {email.success ? '✓ Sent' : '✗ Failed'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {email.templateType}
+                      </span>
+                    </div>
+                    <div className="text-white font-medium mb-1">{email.subject}</div>
+                    <div className="text-sm text-gray-400">
+                      To: {email.recipientEmail}
+                      {email.studioName && ` • ${email.studioName}`}
+                      {email.competitionName && ` • ${email.competitionName} (${email.competitionYear})`}
+                    </div>
+                    {email.errorMessage && (
+                      <div className="mt-2 text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                        Error: {email.errorMessage}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(email.sentAt).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {emailHistory.total > 10 && (
+              <div className="text-center text-sm text-gray-400 pt-2">
+                Showing 10 of {emailHistory.total} emails
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
