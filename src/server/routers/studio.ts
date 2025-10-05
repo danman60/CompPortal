@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { isStudioDirector } from '@/lib/auth-utils';
 
 export const studioRouter = router({
   // Get all studios
@@ -138,6 +139,79 @@ export const studioRouter = router({
         where: { id: input.id },
         data: input.data,
       });
+
+      return studio;
+    }),
+
+  // Approve a studio
+  approve: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Only super admins and competition directors can approve studios
+      if (isStudioDirector(ctx.userRole)) {
+        throw new Error('Studio directors cannot approve studios');
+      }
+
+      const studio = await prisma.studios.update({
+        where: { id: input.id },
+        data: {
+          status: 'approved',
+          verified_at: new Date(),
+          verified_by: ctx.userId,
+          updated_at: new Date(),
+        },
+        include: {
+          users_studios_owner_idTousers: {
+            select: {
+              id: true,
+              email: true,
+              full_name: true,
+            },
+          },
+        },
+      });
+
+      // TODO: Send approval email to studio owner
+      // Will implement email notification in next step
+
+      return studio;
+    }),
+
+  // Reject a studio
+  reject: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Only super admins and competition directors can reject studios
+      if (isStudioDirector(ctx.userRole)) {
+        throw new Error('Studio directors cannot reject studios');
+      }
+
+      const studio = await prisma.studios.update({
+        where: { id: input.id },
+        data: {
+          status: 'rejected',
+          comments: input.reason,
+          verified_by: ctx.userId,
+          updated_at: new Date(),
+        },
+        include: {
+          users_studios_owner_idTousers: {
+            select: {
+              id: true,
+              email: true,
+              full_name: true,
+            },
+          },
+        },
+      });
+
+      // TODO: Send rejection email to studio owner
+      // Will implement email notification in next step
 
       return studio;
     }),
