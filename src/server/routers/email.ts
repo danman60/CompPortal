@@ -6,11 +6,13 @@ import {
   renderInvoiceDelivery,
   renderReservationApproved,
   renderEntrySubmitted,
+  renderMissingMusicReminder,
   getEmailSubject,
   type RegistrationConfirmationData,
   type InvoiceDeliveryData,
   type ReservationApprovedData,
   type EntrySubmittedData,
+  type MissingMusicReminderData,
 } from '@/lib/email-templates';
 import { prisma } from '@/lib/prisma';
 
@@ -261,6 +263,98 @@ export const emailRouter = router({
 
       const result = await sendEmail({
         to: entry.studios.email,
+        subject,
+        html,
+      });
+
+      return result;
+    }),
+
+  /**
+   * Send missing music reminder email
+   */
+  sendMissingMusicReminder: publicProcedure
+    .input(
+      z.object({
+        studioId: z.string().uuid(),
+        competitionId: z.string().uuid(),
+        portalUrl: z.string().url(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const [studio, competition, entriesWithoutMusic] = await Promise.all([
+        prisma.studios.findUnique({
+          where: { id: input.studioId },
+          select: { name: true, email: true },
+        }),
+        prisma.competitions.findUnique({
+          where: { id: input.competitionId },
+          select: {
+            name: true,
+            year: true,
+            competition_start_date: true,
+          },
+        }),
+        prisma.competition_entries.findMany({
+          where: {
+            studio_id: input.studioId,
+            competition_id: input.competitionId,
+            status: { not: 'cancelled' },
+            music_file_url: null,
+          },
+          select: {
+            title: true,
+            entry_number: true,
+            dance_categories: {
+              select: { name: true },
+            },
+          },
+        }),
+      ]);
+
+      if (!studio || !competition) {
+        throw new Error('Studio or competition not found');
+      }
+
+      if (!studio.email) {
+        throw new Error('Studio email not found');
+      }
+
+      if (entriesWithoutMusic.length === 0) {
+        return {
+          success: false,
+          message: 'No routines missing music for this studio',
+        };
+      }
+
+      // Calculate days until competition
+      let daysUntilCompetition: number | undefined;
+      if (competition.competition_start_date) {
+        const startDate = new Date(competition.competition_start_date);
+        const today = new Date();
+        const diffTime = startDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        daysUntilCompetition = diffDays > 0 ? diffDays : undefined;
+      }
+
+      const data: MissingMusicReminderData = {
+        studioName: studio.name,
+        competitionName: competition.name,
+        competitionYear: competition.year,
+        routinesWithoutMusic: entriesWithoutMusic.map((entry) => ({
+          title: entry.title,
+          entryNumber: entry.entry_number || undefined,
+          category: entry.dance_categories?.name || 'N/A',
+        })),
+        portalUrl: input.portalUrl,
+        daysUntilCompetition,
+      };
+
+      const html = await renderMissingMusicReminder(data);
+      const subject = getEmailSubject('missing-music', data);
+
+      const result = await sendEmail({
+        to: studio.email,
         subject,
         html,
       });
