@@ -73,6 +73,21 @@ export const competitionRouter = router({
                 competition_sessions: true,
               },
             },
+            reservations: {
+              select: {
+                id: true,
+                status: true,
+                spaces_requested: true,
+                spaces_confirmed: true,
+                studio_id: true,
+                studios: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: [
             { competition_start_date: 'desc' },

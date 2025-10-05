@@ -135,82 +135,116 @@ export default function CompetitionsPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredCompetitions.map((competition) => (
-            <div
-              key={competition.id}
-              className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-white mb-1">{competition.name}</h3>
-                  <p className="text-gray-400 text-sm mb-2">Year: {competition.year}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredCompetitions.map((competition) => {
+            // Calculate capacity metrics
+            const totalCapacity = competition.venue_capacity || 600;
+            const reservedCount = competition.reservations
+              ?.filter(r => r.status === 'approved')
+              .reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+            const remainingSlots = totalCapacity - reservedCount;
+
+            // Get pending reservations
+            const pendingReservations = competition.reservations?.filter(r => r.status === 'pending') || [];
+
+            // Get confirmed studios
+            const confirmedStudios = competition.reservations?.filter(r => r.status === 'approved') || [];
+
+            return (
+              <div
+                key={competition.id}
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col"
+              >
+                {/* Header */}
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-white mb-1 line-clamp-1">{competition.name}</h3>
+                  <p className="text-gray-400 text-xs">Year: {competition.year}</p>
                 </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    competition.status === 'upcoming'
-                      ? 'bg-blue-500/20 text-blue-400 border border-blue-400/30'
-                      : competition.status === 'registration_open'
-                      ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                      : competition.status === 'in_progress'
-                      ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                      : competition.status === 'completed'
-                      ? 'bg-purple-500/20 text-purple-400 border border-purple-400/30'
-                      : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                  }`}
-                >
-                  {competition.status?.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
 
-              {competition.description && (
-                <p className="text-gray-300 text-sm mb-4 line-clamp-2">{competition.description}</p>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                {competition.competition_start_date && (
-                  <div>
-                    <span className="text-gray-400">Start Date:</span>
-                    <div className="text-white font-medium">
-                      {new Date(competition.competition_start_date).toLocaleDateString()}
+                {/* Capacity Summary */}
+                <div className="bg-white/5 rounded-lg p-3 mb-4">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase mb-2">Capacity</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Total:</span>
+                      <span className="text-white font-semibold">{totalCapacity}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Reserved:</span>
+                      <span className="text-green-400 font-semibold">{reservedCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Remaining:</span>
+                      <span className="text-blue-400 font-semibold">{remainingSlots}</span>
                     </div>
                   </div>
-                )}
-                {competition.primary_location && (
-                  <div>
-                    <span className="text-gray-400">Location:</span>
-                    <div className="text-white font-medium">{competition.primary_location}</div>
-                  </div>
-                )}
-                {competition.venue_capacity && (
-                  <div>
-                    <span className="text-gray-400">Capacity:</span>
-                    <div className="text-white font-medium">{competition.venue_capacity} entries</div>
-                  </div>
-                )}
-                <div>
-                  <span className="text-gray-400">Sessions:</span>
-                  <div className="text-white font-medium">{competition.session_count}</div>
+                </div>
+
+                {/* Pending Reservations */}
+                <div className="bg-orange-500/10 border border-orange-400/30 rounded-lg p-3 mb-4">
+                  <h4 className="text-xs font-semibold text-orange-300 uppercase mb-2">
+                    Pending ({pendingReservations.length})
+                  </h4>
+                  {pendingReservations.length > 0 ? (
+                    <div className="space-y-1">
+                      {pendingReservations.slice(0, 3).map(r => (
+                        <div key={r.id} className="text-xs text-gray-300 truncate">
+                          • {r.studios?.name}
+                        </div>
+                      ))}
+                      {pendingReservations.length > 3 && (
+                        <div className="text-xs text-orange-400">
+                          +{pendingReservations.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-400">No pending requests</div>
+                  )}
+                </div>
+
+                {/* Confirmed Studios */}
+                <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3 mb-4">
+                  <h4 className="text-xs font-semibold text-green-300 uppercase mb-2">
+                    Confirmed ({confirmedStudios.length})
+                  </h4>
+                  {confirmedStudios.length > 0 ? (
+                    <div className="space-y-1">
+                      {confirmedStudios.slice(0, 3).map(r => (
+                        <div key={r.id} className="text-xs text-gray-300 truncate">
+                          • {r.studios?.name}
+                        </div>
+                      ))}
+                      {confirmedStudios.length > 3 && (
+                        <div className="text-xs text-green-400">
+                          +{confirmedStudios.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-400">No confirmed studios</div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="mt-auto space-y-2">
+                  <Link
+                    href={`/dashboard/competitions/${competition.id}/edit`}
+                    className="block w-full px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-400/30 rounded-lg hover:bg-blue-500/30 transition-all text-center font-medium text-sm"
+                  >
+                    View Details
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(competition.id, competition.name)}
+                    className="w-full px-4 py-2 bg-red-500/20 text-red-400 border border-red-400/30 rounded-lg hover:bg-red-500/30 transition-all font-medium text-sm"
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                  </button>
                 </div>
               </div>
-
-              <div className="flex gap-3 pt-4 border-t border-white/10">
-                <Link
-                  href={`/dashboard/competitions/${competition.id}/edit`}
-                  className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-400/30 rounded-lg hover:bg-blue-500/30 transition-all text-center font-medium"
-                >
-                  ✏️ Edit
-                </Link>
-                <button
-                  onClick={() => handleDelete(competition.id, competition.name)}
-                  className="flex-1 px-4 py-2 bg-red-500/20 text-red-400 border border-red-400/30 rounded-lg hover:bg-red-500/30 transition-all font-medium"
-                  disabled={deleteMutation.isPending}
-                >
-                  {deleteMutation.isPending ? '⏳ Deleting...' : '🗑️ Delete'}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
