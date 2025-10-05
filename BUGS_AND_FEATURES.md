@@ -69,7 +69,7 @@ These appear in both USER_TESTING_NOTES.md and FIXES_AND_ENHANCEMENTS.md:
 - [x] Dashboard label: "My Routines" (not "My Entries") *(Verified already implemented)*
 - [x] Keep Quick Start flow for routine creation *(Verified - default flow maintained)*
 
-### Competition Director Priority Fixes ✅ 9/10 Complete (90%)
+### Competition Director Priority Fixes ✅ 10/10 Complete (100%)
 - [x] **[CRITICAL]** Emphasize Reservations at top of dashboard *(Completed Oct 5 - Commit 63fd533)*
 - [x] **[NEW]** Implement 4×4 card grid layout for competitions *(Completed Oct 5 - Commit f3f7405)*
 - [x] **[NEW]** Show capacity/tokens/pending reservations per card *(Completed Oct 5 - Commit f3f7405)*
@@ -78,7 +78,7 @@ These appear in both USER_TESTING_NOTES.md and FIXES_AND_ENHANCEMENTS.md:
 - [x] **[NEW]** Add manual reservation creation (admin-only) *(Completed Oct 5 - Commit 8df253f)*
 - [x] **[NEW]** Remove "Create Reservation" button (directors don't create) *(Completed Oct 5 - Commit f31858b)*
 - [x] **[NEW]** Enable column sorting (alphabetical/numerical/group) *(Completed Oct 5 - Commit 2df1a72)*
-- [ ] Polish PDF generation (alignment, fonts)
+- [x] Polish PDF generation (alignment, fonts) *(Completed Oct 5 - Commit c3b8a4c - Terminology fixes)*
 - [x] Test with real seeded data (GlowDance Orlando) *(Completed Oct 5 - Commit 8c8c3dc)*
 
 ### From FIXES_AND_ENHANCEMENTS.md (Still Relevant)
