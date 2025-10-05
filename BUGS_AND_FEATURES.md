@@ -203,7 +203,7 @@ Real-time routine data feeds directly into RTMP overlay system, updating:
 - [x] Payment confirmation emails *(Completed Oct 5 - Commit 13cd598)*
 
 ### Data Import/Export
-- [ ] Bulk dancer CSV import
+- [x] Bulk dancer CSV import *(Implemented - DancerCSVImport.tsx + bulkImport mutation)*
 - [ ] Schedule export (PDF/CSV/iCal)
 - [ ] Results export (PDF/CSV)
 
