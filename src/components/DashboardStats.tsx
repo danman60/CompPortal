@@ -4,12 +4,13 @@ import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 
 export default function DashboardStats() {
+  const { data: reservationStats, isLoading: reservationsLoading } = trpc.reservation.getStats.useQuery();
   const { data: studioStats, isLoading: studiosLoading } = trpc.studio.getStats.useQuery();
   const { data: dancerStats, isLoading: dancersLoading } = trpc.dancer.getStats.useQuery();
   const { data: competitionStats, isLoading: competitionsLoading } = trpc.competition.getStats.useQuery();
   const { data: unpaidInvoices, isLoading: invoicesLoading } = trpc.invoice.getAllInvoices.useQuery({ paymentStatus: 'pending' });
 
-  if (studiosLoading || dancersLoading || competitionsLoading || invoicesLoading) {
+  if (reservationsLoading || studiosLoading || dancersLoading || competitionsLoading || invoicesLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
@@ -28,6 +29,30 @@ export default function DashboardStats() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Pending Reservations Card - HIGH PRIORITY */}
+      <Link href="/dashboard/reservations?status=pending">
+        <div className="bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md rounded-xl border border-orange-400/40 p-6 hover:from-orange-500/40 hover:to-red-500/40 transition-all duration-200 cursor-pointer shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Pending Reservations</h3>
+            <div className="text-3xl">🚨</div>
+          </div>
+          <div className="text-4xl font-bold text-white mb-2">{reservationStats?.pending || 0}</div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between text-gray-300">
+              <span>Approved:</span>
+              <span className="font-semibold text-green-400">{reservationStats?.approved || 0}</span>
+            </div>
+            <div className="flex justify-between text-gray-300">
+              <span>Total:</span>
+              <span className="font-semibold">{reservationStats?.total || 0}</span>
+            </div>
+            <div className="flex items-center gap-1 text-orange-300 mt-2">
+              <span className="text-xs">Click to review →</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+
       {/* Studios Card */}
       <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
         <div className="flex items-center justify-between mb-4">
