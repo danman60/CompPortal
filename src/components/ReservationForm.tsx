@@ -16,11 +16,6 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
   const [formData, setFormData] = useState({
     competition_id: '',
     spaces_requested: 1,
-    agent_first_name: '',
-    agent_last_name: '',
-    agent_email: '',
-    agent_phone: '',
-    agent_title: '',
     age_of_consent: false,
     waiver_consent: false,
     media_consent: false,
@@ -54,11 +49,6 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
         studio_id: studioId,
         competition_id: formData.competition_id,
         spaces_requested: formData.spaces_requested,
-        agent_first_name: formData.agent_first_name || undefined,
-        agent_last_name: formData.agent_last_name || undefined,
-        agent_email: formData.agent_email || undefined,
-        agent_phone: formData.agent_phone || undefined,
-        agent_title: formData.agent_title || undefined,
         age_of_consent: formData.age_of_consent,
         waiver_consent: formData.waiver_consent,
         media_consent: formData.media_consent,
@@ -126,9 +116,8 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
         <h3 className="text-lg font-semibold text-white">
           {currentStep === 1 && 'Select Competition'}
           {currentStep === 2 && 'Routines Requested'}
-          {currentStep === 3 && 'Agent Information'}
-          {currentStep === 4 && 'Consents & Waivers'}
-          {currentStep === 5 && 'Review & Submit'}
+          {currentStep === 3 && 'Consents & Waivers'}
+          {currentStep === 4 && 'Review & Submit'}
         </h3>
       </div>
 
@@ -186,92 +175,8 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
         </div>
       )}
 
-      {/* Step 3: Agent Information */}
+      {/* Step 3: Consents */}
       {currentStep === 3 && (
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-          <h2 className="text-2xl font-bold text-white mb-6">Agent Information</h2>
-          <p className="text-gray-400 mb-6">Primary contact person for this reservation (optional)</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="agent_first_name" className="block text-sm font-medium text-gray-300 mb-2">
-                First Name
-              </label>
-              <input
-                type="text"
-                id="agent_first_name"
-                maxLength={100}
-                value={formData.agent_first_name}
-                onChange={(e) => setFormData({ ...formData, agent_first_name: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Agent first name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="agent_last_name" className="block text-sm font-medium text-gray-300 mb-2">
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="agent_last_name"
-                maxLength={100}
-                value={formData.agent_last_name}
-                onChange={(e) => setFormData({ ...formData, agent_last_name: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Agent last name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="agent_email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="agent_email"
-                value={formData.agent_email}
-                onChange={(e) => setFormData({ ...formData, agent_email: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="agent@example.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="agent_phone" className="block text-sm font-medium text-gray-300 mb-2">
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="agent_phone"
-                maxLength={50}
-                value={formData.agent_phone}
-                onChange={(e) => setFormData({ ...formData, agent_phone: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="(555) 123-4567"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label htmlFor="agent_title" className="block text-sm font-medium text-gray-300 mb-2">
-                Title/Role
-              </label>
-              <input
-                type="text"
-                id="agent_title"
-                maxLength={100}
-                value={formData.agent_title}
-                onChange={(e) => setFormData({ ...formData, agent_title: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="e.g., Studio Director, Dance Teacher"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 4: Consents */}
-      {currentStep === 4 && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
           <h2 className="text-2xl font-bold text-white mb-6">Consents & Waivers</h2>
           <p className="text-gray-400 mb-6">Required agreements for participation</p>
@@ -319,8 +224,8 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
         </div>
       )}
 
-      {/* Step 5: Review */}
-      {currentStep === 5 && (
+      {/* Step 4: Review */}
+      {currentStep === 4 && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
           <h2 className="text-2xl font-bold text-white mb-6">Review & Submit</h2>
 
@@ -335,15 +240,6 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               <p>{formData.spaces_requested} routines</p>
             </div>
 
-            {(formData.agent_first_name || formData.agent_last_name) && (
-              <div>
-                <h3 className="font-semibold text-white mb-2">Agent Information</h3>
-                <p>{formData.agent_first_name} {formData.agent_last_name}</p>
-                {formData.agent_email && <p>{formData.agent_email}</p>}
-                {formData.agent_phone && <p>{formData.agent_phone}</p>}
-                {formData.agent_title && <p className="text-gray-400">{formData.agent_title}</p>}
-              </div>
-            )}
 
             <div>
               <h3 className="font-semibold text-white mb-2">Consents</h3>
@@ -387,10 +283,10 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
 
           <button
             type="submit"
-            disabled={!isStepValid() || (currentStep === 5 && createReservation.isPending)}
+            disabled={!isStepValid() || (currentStep === 4 && createReservation.isPending)}
             className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {currentStep === 5
+            {currentStep === 4
               ? createReservation.isPending
                 ? 'Submitting...'
                 : 'Submit Reservation'

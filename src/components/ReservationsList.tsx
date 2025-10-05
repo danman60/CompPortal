@@ -309,50 +309,65 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                     )}
                   </div>
 
-                  {/* Middle: Capacity Tracking */}
-                  <div className="flex flex-col justify-center">
-                    <div className="text-center mb-4">
-                      <div className="text-sm text-gray-400 mb-2">Capacity</div>
-                      <div className={`text-4xl font-bold ${getCapacityColor(capacityPercentage)}`}>
-                        {capacityPercentage}%
+                  {/* Middle: Capacity Tracking (Competition Directors Only) */}
+                  {!isStudioDirector && (
+                    <div className="flex flex-col justify-center">
+                      <div className="text-center mb-4">
+                        <div className="text-sm text-gray-400 mb-2">Capacity</div>
+                        <div className={`text-4xl font-bold ${getCapacityColor(capacityPercentage)}`}>
+                          {capacityPercentage}%
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Routines Requested:</span>
-                        <span className="text-white font-semibold">{reservation.spaces_requested}</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Routines Requested:</span>
+                          <span className="text-white font-semibold">{reservation.spaces_requested}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Routines Allocated:</span>
+                          <span className="text-green-400 font-semibold">
+                            {reservation.spaces_confirmed || 0}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Remaining:</span>
+                          <span className="text-yellow-400 font-semibold">
+                            {reservation.spaces_requested - (reservation.spaces_confirmed || 0)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Routines Allocated:</span>
-                        <span className="text-green-400 font-semibold">
-                          {reservation.spaces_confirmed || 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Remaining:</span>
-                        <span className="text-yellow-400 font-semibold">
-                          {reservation.spaces_requested - (reservation.spaces_confirmed || 0)}
-                        </span>
-                      </div>
-                    </div>
 
-                    {/* Progress Bar */}
-                    <div className="mt-4">
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-500 ${
-                            capacityPercentage === 100
-                              ? 'bg-green-500'
-                              : capacityPercentage >= 50
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500'
-                          }`}
-                          style={{ width: `${capacityPercentage}%` }}
-                        ></div>
+                      {/* Progress Bar */}
+                      <div className="mt-4">
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              capacityPercentage === 100
+                                ? 'bg-green-500'
+                                : capacityPercentage >= 50
+                                ? 'bg-yellow-500'
+                                : 'bg-red-500'
+                            }`}
+                            style={{ width: `${capacityPercentage}%` }}
+                          ></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Middle: Simple Summary (Studio Directors Only) */}
+                  {isStudioDirector && (
+                    <div className="flex flex-col justify-center">
+                      <div className="text-center">
+                        <div className="text-sm text-gray-400 mb-2">Request Summary</div>
+                        <div className="text-2xl font-bold text-white mb-1">
+                          {reservation.spaces_requested} {reservation.spaces_requested === 1 ? 'routine' : 'routines'}
+                        </div>
+                        <div className="text-sm text-gray-400">requested</div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Right: Dates & Payment */}
                   <div className="space-y-3">
