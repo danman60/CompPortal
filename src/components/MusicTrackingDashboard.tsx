@@ -7,6 +7,7 @@ export default function MusicTrackingDashboard() {
   const [selectedCompetition, setSelectedCompetition] = useState<string | undefined>(undefined);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
 
+  const { data: competitions } = trpc.competition.getAll.useQuery();
   const { data: stats, isLoading: statsLoading } = trpc.music.getMusicStats.useQuery();
   const { data: missingMusic, isLoading: missingMusicLoading, refetch } =
     trpc.music.getMissingMusicByCompetition.useQuery({
@@ -49,6 +50,26 @@ export default function MusicTrackingDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Competition Filter */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <label htmlFor="competition-filter" className="block text-sm font-medium text-gray-300 mb-2">
+          Filter by Competition
+        </label>
+        <select
+          id="competition-filter"
+          value={selectedCompetition || ''}
+          onChange={(e) => setSelectedCompetition(e.target.value || undefined)}
+          className="w-full md:w-96 px-4 py-2 bg-gray-900 text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="" className="bg-gray-900 text-white">All Competitions</option>
+          {competitions?.competitions.map((comp) => (
+            <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
+              {comp.name} ({comp.year})
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
