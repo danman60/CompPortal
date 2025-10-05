@@ -140,6 +140,9 @@ export const studioRouter = router({
           postal_code: z.string().optional(),
           country: z.string().optional(),
           logo_url: z.string().url().optional().or(z.literal('')),
+          website: z.string().url().optional().or(z.literal('')),
+          social_media: z.any().optional(), // JSON field for social links
+          settings: z.any().optional(), // JSON field for branding
         }),
       })
     )

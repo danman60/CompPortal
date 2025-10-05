@@ -32,6 +32,15 @@ export default function StudiosList({ studioId }: StudiosListProps) {
     postal_code: '',
     country: '',
     logo_url: '',
+    website: '',
+    // Branding settings
+    brand_color: '#8B5CF6', // Default purple
+    accent_color: '#EC4899', // Default pink
+    tagline: '',
+    // Social media
+    instagram: '',
+    facebook: '',
+    tiktok: '',
   });
 
   const updateMutation = trpc.studio.update.useMutation({
@@ -47,6 +56,10 @@ export default function StudiosList({ studioId }: StudiosListProps) {
   // Initialize edit data when studio data is loaded
   useEffect(() => {
     if (singleStudioData && studioId) {
+      // Parse JSON fields
+      const settings = (singleStudioData.settings as any) || {};
+      const socialMedia = (singleStudioData.social_media as any) || {};
+
       setEditData({
         name: singleStudioData.name || '',
         email: singleStudioData.email || '',
@@ -57,6 +70,15 @@ export default function StudiosList({ studioId }: StudiosListProps) {
         postal_code: singleStudioData.postal_code || '',
         country: singleStudioData.country || '',
         logo_url: singleStudioData.logo_url || '',
+        website: singleStudioData.website || '',
+        // Branding from settings
+        brand_color: settings.brand_color || '#8B5CF6',
+        accent_color: settings.accent_color || '#EC4899',
+        tagline: settings.tagline || '',
+        // Social media
+        instagram: socialMedia.instagram || '',
+        facebook: socialMedia.facebook || '',
+        tiktok: socialMedia.tiktok || '',
       });
     }
   }, [singleStudioData, studioId]);
@@ -116,9 +138,24 @@ export default function StudiosList({ studioId }: StudiosListProps) {
     };
 
     const handleSave = () => {
+      // Structure data for mutation
+      const { brand_color, accent_color, tagline, instagram, facebook, tiktok, ...basicData } = editData;
+
       updateMutation.mutate({
         id: studioId,
-        data: editData,
+        data: {
+          ...basicData,
+          settings: {
+            brand_color,
+            accent_color,
+            tagline,
+          },
+          social_media: {
+            instagram,
+            facebook,
+            tiktok,
+          },
+        },
       });
     };
 
@@ -326,6 +363,104 @@ export default function StudiosList({ studioId }: StudiosListProps) {
                   onChange={(e) => setEditData({ ...editData, country: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
+              </div>
+            </div>
+
+            {/* Branding Customization Section */}
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-lg font-semibold text-white mb-4">🎨 Branding</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Website</label>
+                  <input
+                    type="url"
+                    value={editData.website}
+                    onChange={(e) => setEditData({ ...editData, website: e.target.value })}
+                    placeholder="https://yourstudio.com"
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Tagline</label>
+                  <input
+                    type="text"
+                    value={editData.tagline}
+                    onChange={(e) => setEditData({ ...editData, tagline: e.target.value })}
+                    placeholder="Your studio motto"
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Brand Color</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={editData.brand_color}
+                      onChange={(e) => setEditData({ ...editData, brand_color: e.target.value })}
+                      className="w-16 h-10 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={editData.brand_color}
+                      onChange={(e) => setEditData({ ...editData, brand_color: e.target.value })}
+                      className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Accent Color</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={editData.accent_color}
+                      onChange={(e) => setEditData({ ...editData, accent_color: e.target.value })}
+                      className="w-16 h-10 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={editData.accent_color}
+                      onChange={(e) => setEditData({ ...editData, accent_color: e.target.value })}
+                      className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Media Section */}
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <h3 className="text-lg font-semibold text-white mb-4">📱 Social Media</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Instagram</label>
+                  <input
+                    type="text"
+                    value={editData.instagram}
+                    onChange={(e) => setEditData({ ...editData, instagram: e.target.value })}
+                    placeholder="@yourstudio"
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Facebook</label>
+                  <input
+                    type="text"
+                    value={editData.facebook}
+                    onChange={(e) => setEditData({ ...editData, facebook: e.target.value })}
+                    placeholder="YourStudioPage"
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">TikTok</label>
+                  <input
+                    type="text"
+                    value={editData.tiktok}
+                    onChange={(e) => setEditData({ ...editData, tiktok: e.target.value })}
+                    placeholder="@yourstudio"
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
               </div>
             </div>
 
