@@ -1,11 +1,13 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function MusicTrackingDashboard() {
   const [selectedCompetition, setSelectedCompetition] = useState<string | undefined>(undefined);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [bulkSendResults, setBulkSendResults] = useState<{
     totalStudios: number;
     successCount: number;
@@ -19,7 +21,7 @@ export default function MusicTrackingDashboard() {
   } | null>(null);
 
   const { data: competitions } = trpc.competition.getAll.useQuery();
-  const { data: stats, isLoading: statsLoading } = trpc.music.getMusicStats.useQuery();
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = trpc.music.getMusicStats.useQuery();
   const { data: missingMusic, isLoading: missingMusicLoading, refetch } =
     trpc.music.getMissingMusicByCompetition.useQuery({
       competitionId: selectedCompetition,
@@ -113,8 +115,70 @@ export default function MusicTrackingDashboard() {
     }
   };
 
+  const handleManualRefresh = async () => {
+    await Promise.all([refetchStats(), refetch()]);
+    setLastRefresh(new Date());
+  };
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(async () => {
+      // Only refresh if page is visible
+      if (!document.hidden) {
+        await Promise.all([refetchStats(), refetch()]);
+        setLastRefresh(new Date());
+      }
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, refetchStats, refetch]);
+
+  const formatLastRefresh = () => {
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - lastRefresh.getTime()) / 1000);
+
+    if (diffSeconds < 5) return 'Just now';
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    return lastRefresh.toLocaleTimeString();
+  };
+
   return (
     <div className="space-y-6">
+      {/* Auto-Refresh Controls */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="w-5 h-5 rounded border-white/20 bg-gray-900 text-purple-500 focus:ring-2 focus:ring-purple-500"
+              />
+              <div>
+                <span className="text-white font-medium">Auto-Refresh</span>
+                <span className="text-gray-400 text-sm ml-2">(every 30s)</span>
+              </div>
+            </label>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <span>Last updated:</span>
+              <span className="text-white font-medium">{formatLastRefresh()}</span>
+            </div>
+          </div>
+          <button
+            onClick={handleManualRefresh}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            <span>🔄</span>
+            <span>Refresh Now</span>
+          </button>
+        </div>
+      </div>
+
       {/* Competition Filter & Export */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
         <div className="flex flex-col md:flex-row md:items-end gap-4">
