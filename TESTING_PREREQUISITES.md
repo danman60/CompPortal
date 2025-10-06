@@ -29,9 +29,8 @@
 ### 1. **Demo User Accounts** (CRITICAL)
 
 **Required Accounts:**
-- Email: `demo.studio@gmail.com`
-- Email: `demo.director@gmail.com`
-- Both with password: `Demo1234!`
+- Email: `demo.studio@gmail.com` / Password: `StudioDemo123!`
+- Email: `demo.director@gmail.com` / Password: `DirectorDemo123!`
 
 **Status Check:**
 ```bash

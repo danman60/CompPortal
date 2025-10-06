@@ -20,12 +20,12 @@ You will be making ACTUAL changes to the production database. All actions you ta
 
 **Studio Director (Studio Owner)**:
 - Email: `demo.studio@gmail.com`
-- Password: `Demo1234!`
+- Password: `StudioDemo123!`
 - Studio: Demo Dance Studio
 
 **Competition Director (Event Admin)**:
 - Email: `demo.director@gmail.com`
-- Password: `Demo1234!`
+- Password: `DirectorDemo123!`
 - Access: All competitions and studios
 
 ## Context: What This Platform Does
@@ -213,7 +213,7 @@ CompPortal manages the complete lifecycle of dance competitions:
 #### Authentication & Dashboard (Tests 1-3)
 
 **Test 1: Studio Director Login**
-- Action: Navigate to production URL, click "Sign In", enter demo.studio@gmail.com / Demo1234!
+- Action: Navigate to production URL, click "Sign In", enter demo.studio@gmail.com / StudioDemo123!
 - Expected: Successful login → redirected to Studio Director dashboard
 - Verify: Header shows "Studio Director Dashboard", email visible, Sign Out button present
 
@@ -338,7 +338,7 @@ CompPortal manages the complete lifecycle of dance competitions:
 #### Authentication & Dashboard (Tests 14-16)
 
 **Test 14: Competition Director Login**
-- Action: Sign out from Studio Director account, sign in with demo.director@gmail.com / Demo1234!
+- Action: Sign out from Studio Director account, sign in with demo.director@gmail.com / DirectorDemo123!
 - Expected: Successful login → redirected to Competition Director dashboard
 - Verify: Header shows "Competition Director Dashboard", email visible, "DIRECTOR" badge
 
