@@ -2,10 +2,131 @@
 
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from '@dnd-kit/core';
 
 interface DancerAssignmentPanelProps {
   studioId: string;
+}
+
+// Droppable Routine Card Component
+function DroppableRoutineCard({ entry, isSelected, onSelect, onRemoveParticipant }: any) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: entry.id,
+  });
+
+  const participantCount = entry.entry_participants?.length || 0;
+
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={() => onSelect(entry.id)}
+      className={`bg-white/5 hover:bg-white/10 border rounded-lg p-4 transition-all cursor-pointer ${
+        isSelected
+          ? 'ring-2 ring-purple-400 border-purple-400'
+          : isOver
+          ? 'ring-2 ring-blue-400 border-blue-400 bg-blue-500/10'
+          : 'border-white/10'
+      }`}
+    >
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <h4 className="text-white font-semibold text-lg">{entry.title}</h4>
+          <div className="text-gray-400 text-sm mt-1">
+            {entry.dance_categories?.name} · {entry.age_groups?.name}
+          </div>
+        </div>
+        <div className="bg-purple-500/20 border border-purple-400/30 rounded-full px-3 py-1">
+          <span className="text-purple-300 text-sm font-semibold">
+            {participantCount} {participantCount === 1 ? 'dancer' : 'dancers'}
+          </span>
+        </div>
+      </div>
+
+      {/* Assigned Dancers */}
+      {participantCount > 0 && (
+        <div className="space-y-2 pt-3 border-t border-white/10">
+          {entry.entry_participants.map((participant: any) => (
+            <div
+              key={participant.id}
+              className="flex justify-between items-center bg-white/5 rounded-lg p-2"
+            >
+              <span className="text-white text-sm">
+                👤 {participant.dancer_name}
+                {participant.dancer_age && (
+                  <span className="text-gray-400 ml-2">({participant.dancer_age})</span>
+                )}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveParticipant(participant.id);
+                }}
+                className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded text-xs font-semibold transition-all"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isSelected && (
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <div className="text-blue-400 text-sm font-semibold">
+            ✓ Selected - Drag dancers here or click to assign →
+          </div>
+        </div>
+      )}
+
+      {isOver && (
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <div className="text-blue-400 text-sm font-semibold animate-pulse">
+            ↓ Drop dancer here
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Draggable Dancer Card Component
+function DraggableDancerCard({ dancer, age, isAssigned, onQuickAssign }: any) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: dancer.id,
+    disabled: isAssigned,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`flex justify-between items-center border rounded-lg p-3 transition-all ${
+        isDragging
+          ? 'opacity-50 cursor-grabbing'
+          : isAssigned
+          ? 'bg-green-500/10 border-green-400/30 cursor-not-allowed'
+          : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-grab active:cursor-grabbing'
+      }`}
+      onClick={() => !isAssigned && !isDragging && onQuickAssign(dancer.id)}
+    >
+      <div className="flex items-center gap-3">
+        <div className="text-2xl">{isAssigned ? '✅' : '👤'}</div>
+        <div>
+          <div className="text-white font-semibold">
+            {dancer.first_name} {dancer.last_name}
+          </div>
+          <div className="text-gray-400 text-sm">
+            {age !== undefined && `Age ${age}`}
+            {dancer.skill_level && (age !== undefined ? ' · ' : '') + dancer.skill_level}
+          </div>
+        </div>
+      </div>
+      <div className={`text-sm font-semibold ${isAssigned ? 'text-green-400' : 'text-blue-400'}`}>
+        {isAssigned ? 'Assigned ✓' : isDragging ? 'Dragging...' : 'Drag or click'}
+      </div>
+    </div>
+  );
 }
 
 export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPanelProps) {
@@ -194,73 +315,15 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
                 <p>No routines found</p>
               </div>
             ) : (
-              entries.map((entry: any) => {
-                const participantCount = entry.entry_participants?.length || 0;
-                const isSelected = selectedEntry === entry.id;
-
-                return (
-                  <div
-                    key={entry.id}
-                    id={entry.id}
-                    onClick={() => setSelectedEntry(entry.id)}
-                    className={`bg-white/5 hover:bg-white/10 border rounded-lg p-4 transition-all cursor-pointer ${
-                      isSelected
-                        ? 'ring-2 ring-purple-400 border-purple-400'
-                        : 'border-white/10'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h4 className="text-white font-semibold text-lg">{entry.title}</h4>
-                        <div className="text-gray-400 text-sm mt-1">
-                          {entry.dance_categories?.name} · {entry.age_groups?.name}
-                        </div>
-                      </div>
-                      <div className="bg-purple-500/20 border border-purple-400/30 rounded-full px-3 py-1">
-                        <span className="text-purple-300 text-sm font-semibold">
-                          {participantCount} {participantCount === 1 ? 'dancer' : 'dancers'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Assigned Dancers */}
-                    {participantCount > 0 && (
-                      <div className="space-y-2 pt-3 border-t border-white/10">
-                        {entry.entry_participants.map((participant: any) => (
-                          <div
-                            key={participant.id}
-                            className="flex justify-between items-center bg-white/5 rounded-lg p-2"
-                          >
-                            <span className="text-white text-sm">
-                              👤 {participant.dancer_name}
-                              {participant.dancer_age && (
-                                <span className="text-gray-400 ml-2">({participant.dancer_age})</span>
-                              )}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveParticipant(participant.id);
-                              }}
-                              className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded text-xs font-semibold transition-all"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {isSelected && (
-                      <div className="mt-3 pt-3 border-t border-white/10">
-                        <div className="text-blue-400 text-sm font-semibold">
-                          ✓ Selected - Click dancers on the right to assign →
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+              entries.map((entry: any) => (
+                <DroppableRoutineCard
+                  key={entry.id}
+                  entry={entry}
+                  isSelected={selectedEntry === entry.id}
+                  onSelect={setSelectedEntry}
+                  onRemoveParticipant={handleRemoveParticipant}
+                />
+              ))
             )}
           </div>
         </div>
@@ -310,31 +373,13 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
                 );
 
                 return (
-                  <div
+                  <DraggableDancerCard
                     key={dancer.id}
-                    className={`flex justify-between items-center border rounded-lg p-3 transition-all ${
-                      isAssigned
-                        ? 'bg-green-500/10 border-green-400/30 cursor-not-allowed'
-                        : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-pointer'
-                    }`}
-                    onClick={() => !isAssigned && handleQuickAssign(dancer.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">{isAssigned ? '✅' : '👤'}</div>
-                      <div>
-                        <div className="text-white font-semibold">
-                          {dancer.first_name} {dancer.last_name}
-                        </div>
-                        <div className="text-gray-400 text-sm">
-                          {age !== undefined && `Age ${age}`}
-                          {dancer.skill_level && (age !== undefined ? ' · ' : '') + dancer.skill_level}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`text-sm font-semibold ${isAssigned ? 'text-green-400' : 'text-blue-400'}`}>
-                      {isAssigned ? 'Assigned ✓' : 'Click to assign'}
-                    </div>
-                  </div>
+                    dancer={dancer}
+                    age={age}
+                    isAssigned={isAssigned}
+                    onQuickAssign={handleQuickAssign}
+                  />
                 );
               })
             )}
