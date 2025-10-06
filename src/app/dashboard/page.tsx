@@ -35,8 +35,13 @@ export default async function DashboardPage() {
   const role = userProfile?.role || 'studio_director';
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
-      <div className="container mx-auto px-4 py-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black relative overflow-hidden">
+      {/* Animated Gradient Overlay */}
+      <div className="absolute inset-0 opacity-15 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-purple-500 to-pink-500 animate-gradient-shift" style={{ backgroundSize: '200% 200%' }}></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header with Sign Out */}
         <div className="flex justify-end mb-4">
           <form action={signOutAction}>

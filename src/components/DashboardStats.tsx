@@ -70,27 +70,29 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
       </Link>
 
       {/* Studios Card */}
-      <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Studios</h3>
-          <div className="text-3xl">🏢</div>
+      <Link href="/dashboard/studios">
+        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Studios</h3>
+            <div className="text-3xl">🏢</div>
+          </div>
+          <div className="text-4xl font-bold text-white mb-2">{studioStats?.total || 0}</div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between text-gray-300">
+              <span>Approved:</span>
+              <span className="font-semibold text-green-400">{studioStats?.approved || 0}</span>
+            </div>
+            <div className="flex justify-between text-gray-300">
+              <span>Pending:</span>
+              <span className="font-semibold text-yellow-400">{studioStats?.pending || 0}</span>
+            </div>
+            <div className="flex justify-between text-gray-300">
+              <span>With Dancers:</span>
+              <span className="font-semibold">{studioStats?.withDancers || 0}</span>
+            </div>
+          </div>
         </div>
-        <div className="text-4xl font-bold text-white mb-2">{studioStats?.total || 0}</div>
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between text-gray-300">
-            <span>Approved:</span>
-            <span className="font-semibold text-green-400">{studioStats?.approved || 0}</span>
-          </div>
-          <div className="flex justify-between text-gray-300">
-            <span>Pending:</span>
-            <span className="font-semibold text-yellow-400">{studioStats?.pending || 0}</span>
-          </div>
-          <div className="flex justify-between text-gray-300">
-            <span>With Dancers:</span>
-            <span className="font-semibold">{studioStats?.withDancers || 0}</span>
-          </div>
-        </div>
-      </div>
+      </Link>
 
       {/* Dancers Card - Studio Directors Only */}
       {role === 'studio_director' && (

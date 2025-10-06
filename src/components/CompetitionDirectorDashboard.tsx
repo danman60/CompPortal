@@ -33,7 +33,7 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     id: 'routines',
     href: '/dashboard/entries',
     icon: '🎭',
-    title: 'All Routines',
+    title: 'Routines',
     description: 'View all event routines',
   },
   {
