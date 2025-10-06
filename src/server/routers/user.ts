@@ -1,5 +1,6 @@
 import { router, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
 
 /**
  * User Router - User profile and session data
@@ -37,4 +38,54 @@ export const userRouter = router({
       studio,
     };
   }),
+
+  /**
+   * Get dashboard layout preferences
+   */
+  getDashboardLayout: protectedProcedure.query(async ({ ctx }) => {
+    const userProfile = await prisma.user_profiles.findUnique({
+      where: { id: ctx.userId! },
+      select: {
+        notification_preferences: true,
+      },
+    });
+
+    const prefs = userProfile?.notification_preferences as any;
+    return prefs?.dashboard_layout || null;
+  }),
+
+  /**
+   * Save dashboard layout preferences
+   */
+  saveDashboardLayout: protectedProcedure
+    .input(z.object({
+      layout: z.array(z.string()),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Get current preferences
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId! },
+        select: {
+          notification_preferences: true,
+        },
+      });
+
+      const currentPrefs = (userProfile?.notification_preferences as any) || {};
+
+      // Update with new layout
+      const updatedPrefs = {
+        ...currentPrefs,
+        dashboard_layout: input.layout,
+      };
+
+      // Save back to database
+      await prisma.user_profiles.update({
+        where: { id: ctx.userId! },
+        data: {
+          notification_preferences: updatedPrefs,
+        },
+      });
+
+      return { success: true };
+    }),
 });

@@ -1,13 +1,115 @@
 import Link from 'next/link';
 import DashboardStats from './DashboardStats';
+import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 
 interface CompetitionDirectorDashboardProps {
   userEmail: string;
   role: 'competition_director' | 'super_admin';
 }
 
+const CD_DASHBOARD_CARDS: DashboardCard[] = [
+  {
+    id: 'events',
+    href: '/dashboard/competitions',
+    icon: '🎪',
+    title: 'Events',
+    description: 'Create & manage events',
+  },
+  {
+    id: 'studios',
+    href: '/dashboard/studios',
+    icon: '🏢',
+    title: 'All Studios',
+    description: 'View all dance studios',
+  },
+  {
+    id: 'routines',
+    href: '/dashboard/entries',
+    icon: '🎭',
+    title: 'All Routines',
+    description: 'View all event routines',
+  },
+  {
+    id: 'scheduling',
+    href: '/dashboard/scheduling',
+    icon: '📅',
+    title: 'Scheduling',
+    description: 'Event schedule',
+  },
+  {
+    id: 'judges',
+    href: '/dashboard/judges',
+    icon: '👨‍⚖️',
+    title: 'Judges',
+    description: 'Judge management',
+  },
+  {
+    id: 'scoring',
+    href: '/dashboard/scoring',
+    icon: '💯',
+    title: 'Scoring',
+    description: 'Judge tablet interface',
+  },
+  {
+    id: 'scoreboard',
+    href: '/dashboard/scoreboard',
+    icon: '🏆',
+    title: 'Scoreboard',
+    description: 'Live scores & rankings',
+  },
+  {
+    id: 'analytics',
+    href: '/dashboard/analytics',
+    icon: '📊',
+    title: 'Analytics',
+    description: 'Insights & metrics',
+  },
+  {
+    id: 'reports',
+    href: '/dashboard/reports',
+    icon: '📄',
+    title: 'Reports',
+    description: 'PDF scorecards & results',
+  },
+  {
+    id: 'invoices',
+    href: '/dashboard/invoices',
+    icon: '💰',
+    title: 'Invoices',
+    description: 'Studio invoices',
+  },
+  {
+    id: 'emails',
+    href: '/dashboard/emails',
+    icon: '📨',
+    title: 'Emails',
+    description: 'Email templates',
+  },
+  {
+    id: 'music',
+    href: '/dashboard/music-tracking',
+    icon: '🎵',
+    title: 'Music Tracking',
+    description: 'Monitor uploads & reminders',
+  },
+];
+
 export default function CompetitionDirectorDashboard({ userEmail, role }: CompetitionDirectorDashboardProps) {
   const isAdmin = role === 'super_admin';
+
+  // Add settings card for super admins
+  const dashboardCards = isAdmin
+    ? [
+        ...CD_DASHBOARD_CARDS,
+        {
+          id: 'settings',
+          href: '/dashboard/settings',
+          icon: '⚙️',
+          title: 'Settings',
+          description: 'System configuration',
+        },
+      ]
+    : CD_DASHBOARD_CARDS;
 
   return (
     <div className="space-y-8">
@@ -28,194 +130,7 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
       <DashboardStats />
 
       {/* Admin Actions */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Admin Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Competitions */}
-          <Link
-            href="/dashboard/competitions"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🎪</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Events</h3>
-                <p className="text-gray-400 text-sm">Create & manage events</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* All Studios */}
-          <Link
-            href="/dashboard/studios"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🏢</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">All Studios</h3>
-                <p className="text-gray-400 text-sm">View all dance studios</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* All Routines */}
-          <Link
-            href="/dashboard/entries"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🎭</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">All Routines</h3>
-                <p className="text-gray-400 text-sm">View all event routines</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Scheduling */}
-          <Link
-            href="/dashboard/scheduling"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">📅</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Scheduling</h3>
-                <p className="text-gray-400 text-sm">Event schedule</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Judges */}
-          <Link
-            href="/dashboard/judges"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">👨‍⚖️</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Judges</h3>
-                <p className="text-gray-400 text-sm">Judge management</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Scoring */}
-          <Link
-            href="/dashboard/scoring"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">💯</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Scoring</h3>
-                <p className="text-gray-400 text-sm">Judge tablet interface</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Scoreboard */}
-          <Link
-            href="/dashboard/scoreboard"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🏆</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Scoreboard</h3>
-                <p className="text-gray-400 text-sm">Live scores & rankings</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Analytics */}
-          <Link
-            href="/dashboard/analytics"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">📊</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Analytics</h3>
-                <p className="text-gray-400 text-sm">Insights & metrics</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Reports */}
-          <Link
-            href="/dashboard/reports"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">📄</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Reports</h3>
-                <p className="text-gray-400 text-sm">PDF scorecards & results</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Invoices */}
-          <Link
-            href="/dashboard/invoices"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">💰</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Invoices</h3>
-                <p className="text-gray-400 text-sm">Studio invoices</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Email Templates */}
-          <Link
-            href="/dashboard/emails"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">📨</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Emails</h3>
-                <p className="text-gray-400 text-sm">Email templates</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Music Tracking */}
-          <Link
-            href="/dashboard/music-tracking"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🎵</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Music Tracking</h3>
-                <p className="text-gray-400 text-sm">Monitor uploads & reminders</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* System Settings (Super Admin Only) */}
-          {isAdmin && (
-            <Link
-              href="/dashboard/settings"
-              className="bg-gradient-to-br from-red-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-red-400/30 p-6 hover:from-red-500/30 hover:to-orange-500/30 transition-all duration-200"
-            >
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">⚙️</div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white">Settings</h3>
-                  <p className="text-red-300 text-sm">System configuration</p>
-                </div>
-              </div>
-            </Link>
-          )}
-        </div>
-      </div>
+      <SortableDashboardCards cards={dashboardCards} />
 
       {/* Quick Info */}
       <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">

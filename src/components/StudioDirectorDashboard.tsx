@@ -1,11 +1,57 @@
 import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
+import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 
 interface StudioDirectorDashboardProps {
   userEmail: string;
   studioName?: string;
   studioStatus?: string | null;
 }
+
+const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
+  {
+    id: 'dancers',
+    href: '/dashboard/dancers',
+    icon: '💃',
+    title: 'My Dancers',
+    description: 'Register and manage dancers',
+  },
+  {
+    id: 'routines',
+    href: '/dashboard/entries',
+    icon: '🎭',
+    title: 'My Routines',
+    description: 'Create and edit routines',
+  },
+  {
+    id: 'reservations',
+    href: '/dashboard/reservations',
+    icon: '📋',
+    title: 'My Reservations',
+    description: 'Reserve routines for events',
+  },
+  {
+    id: 'results',
+    href: '/dashboard/scoreboard',
+    icon: '🏆',
+    title: 'Results',
+    description: 'View competition scores',
+  },
+  {
+    id: 'invoices',
+    href: '/dashboard/invoices',
+    icon: '💰',
+    title: 'My Invoices',
+    description: 'View studio billing',
+  },
+  {
+    id: 'music',
+    href: '/dashboard/music',
+    icon: '🎵',
+    title: 'Music Tracking',
+    description: 'Monitor music file uploads',
+  },
+];
 
 export default function StudioDirectorDashboard({ userEmail, studioName, studioStatus }: StudioDirectorDashboardProps) {
   return (
@@ -55,90 +101,7 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
       <StudioDirectorStats />
 
       {/* Quick Actions - Studio Director View */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Row 1: Dancers, Routines, Reservations */}
-          <Link
-            href="/dashboard/dancers"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">💃</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">My Dancers</h3>
-                <p className="text-gray-400 text-sm">Register and manage dancers</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/entries"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🎭</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">My Routines</h3>
-                <p className="text-gray-400 text-sm">Create and edit routines</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/reservations"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">📋</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">My Reservations</h3>
-                <p className="text-gray-400 text-sm">Reserve routines for events</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Row 2: Results, Invoices, Music Tracking */}
-          <Link
-            href="/dashboard/scoreboard"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🏆</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Results</h3>
-                <p className="text-gray-400 text-sm">View competition scores</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/invoices"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">💰</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">My Invoices</h3>
-                <p className="text-gray-400 text-sm">View studio billing</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/music"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🎵</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Music Tracking</h3>
-                <p className="text-gray-400 text-sm">Monitor music file uploads</p>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </div>
+      <SortableDashboardCards cards={STUDIO_DIRECTOR_CARDS} />
 
       {/* Recent Activity */}
       <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">
