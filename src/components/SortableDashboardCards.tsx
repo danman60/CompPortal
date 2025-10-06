@@ -50,16 +50,26 @@ function SortableCard({ card }: SortableCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes} className="relative">
       <Link
         href={card.href}
-        className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block cursor-grab active:cursor-grabbing"
+        className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block"
       >
         <div className="flex items-center gap-4">
           <div className="text-4xl">{card.icon}</div>
-          <div>
+          <div className="flex-1">
             <h3 className="text-xl font-semibold text-white">{card.title}</h3>
             <p className="text-gray-400 text-sm">{card.description}</p>
+          </div>
+          {/* Drag handle - separated from link */}
+          <div
+            {...listeners}
+            className="text-gray-400 hover:text-white cursor-grab active:cursor-grabbing p-2 -mr-2"
+            onClick={(e) => e.preventDefault()} // Prevent navigation when clicking drag handle
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+            </svg>
           </div>
         </div>
       </Link>

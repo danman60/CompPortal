@@ -78,7 +78,7 @@ export default function NewCompetitionPage() {
               </label>
               <input
                 {...register('name', { required: 'Event name is required' })}
-                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className={`w-full px-4 py-2 rounded-lg bg-white/5 border ${errors.name ? 'border-red-400' : 'border-white/20'} text-white focus:outline-none focus:ring-2 focus:ring-pink-500`}
                 placeholder="e.g., GlowDance Spring Showcase 2025"
               />
               {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>}
@@ -90,9 +90,15 @@ export default function NewCompetitionPage() {
               </label>
               <input
                 type="number"
-                {...register('year', { required: true, valueAsNumber: true, min: 2000, max: 2100 })}
-                className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                {...register('year', {
+                  required: 'Year is required',
+                  valueAsNumber: true,
+                  min: { value: 2000, message: 'Year must be 2000 or later' },
+                  max: { value: 2100, message: 'Year must be 2100 or earlier' }
+                })}
+                className={`w-full px-4 py-2 rounded-lg bg-white/5 border ${errors.year ? 'border-red-400' : 'border-white/20'} text-white focus:outline-none focus:ring-2 focus:ring-pink-500`}
               />
+              {errors.year && <p className="text-red-400 text-sm mt-1">{errors.year.message}</p>}
             </div>
 
             <div>
@@ -258,21 +264,26 @@ export default function NewCompetitionPage() {
         </div>
 
         {/* Submit Buttons */}
-        <div className="flex gap-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex-1 px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all disabled:opacity-50"
-          >
-            {createMutation.isPending ? '⏳ Creating...' : '✨ Create Event'}
-          </button>
+        <div className="space-y-3">
+          <p className="text-sm text-gray-400 text-center">
+            <span className="text-red-400">*</span> Required fields must be filled to create an event
+          </p>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all disabled:opacity-50"
+            >
+              {createMutation.isPending ? '⏳ Creating...' : '✨ Create Event'}
+            </button>
+          </div>
         </div>
       </form>
     </div>

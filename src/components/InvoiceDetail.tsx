@@ -224,6 +224,47 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         >
           📥 Download PDF
         </button>
+        <button
+          onClick={() => {
+            // Generate CSV content
+            const headers = ['#', 'Routine Title', 'Category', 'Size', 'Participants Count', 'Routine Fee', 'Late Fee', 'Total'];
+            const rows = invoice.lineItems.map((item, index) => [
+              item.entryNumber || index + 1,
+              item.title,
+              item.category,
+              item.sizeCategory,
+              item.participantCount,
+              `$${item.entryFee.toFixed(2)}`,
+              `$${item.lateFee.toFixed(2)}`,
+              `$${item.total.toFixed(2)}`
+            ]);
+
+            // Add summary rows
+            rows.push([]);
+            rows.push(['', '', '', '', '', '', 'Subtotal:', `$${invoice.summary.subtotal.toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', `Tax (${invoice.summary.taxRate}%):`, `$${invoice.summary.taxAmount.toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', 'Total:', `$${invoice.summary.totalAmount.toFixed(2)}`]);
+
+            // Convert to CSV
+            const csvContent = [headers, ...rows]
+              .map(row => row.map(cell => `"${cell}"`).join(','))
+              .join('\n');
+
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Invoice-${invoice.invoiceNumber}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }}
+          className="flex-1 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-all"
+        >
+          📊 Export CSV
+        </button>
       </div>
 
       {/* Footer */}

@@ -90,10 +90,10 @@ function DroppableRoutineCard({ entry, isSelected, onSelect, onRemoveParticipant
 }
 
 // Draggable Dancer Card Component
-function DraggableDancerCard({ dancer, age, isAssigned, onQuickAssign }: any) {
+function DraggableDancerCard({ dancer, age, isAssigned, isAssigning, onQuickAssign }: any) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: dancer.id,
-    disabled: isAssigned,
+    disabled: isAssigned || isAssigning,
   });
 
   return (
@@ -101,17 +101,21 @@ function DraggableDancerCard({ dancer, age, isAssigned, onQuickAssign }: any) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex justify-between items-center border rounded-lg p-3 transition-all ${
+      className={`flex justify-between items-center border rounded-lg p-3 transition-all duration-300 ${
         isDragging
           ? 'opacity-50 cursor-grabbing'
+          : isAssigning
+          ? 'bg-blue-500/20 border-blue-400/50 scale-95 opacity-75'
           : isAssigned
           ? 'bg-green-500/10 border-green-400/30 cursor-not-allowed'
           : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-grab active:cursor-grabbing'
       }`}
-      onClick={() => !isAssigned && !isDragging && onQuickAssign(dancer.id)}
+      onClick={() => !isAssigned && !isDragging && !isAssigning && onQuickAssign(dancer.id)}
     >
       <div className="flex items-center gap-3">
-        <div className="text-2xl">{isAssigned ? '✅' : '👤'}</div>
+        <div className="text-2xl">
+          {isAssigning ? '⏳' : isAssigned ? '✅' : '👤'}
+        </div>
         <div>
           <div className="text-white font-semibold">
             {dancer.first_name} {dancer.last_name}
@@ -122,8 +126,8 @@ function DraggableDancerCard({ dancer, age, isAssigned, onQuickAssign }: any) {
           </div>
         </div>
       </div>
-      <div className={`text-sm font-semibold ${isAssigned ? 'text-green-400' : 'text-blue-400'}`}>
-        {isAssigned ? 'Assigned ✓' : isDragging ? 'Dragging...' : 'Drag or click'}
+      <div className={`text-sm font-semibold ${isAssigning ? 'text-blue-400 animate-pulse' : isAssigned ? 'text-green-400' : 'text-blue-400'}`}>
+        {isAssigning ? 'Assigning...' : isAssigned ? 'Assigned ✓' : isDragging ? 'Dragging...' : 'Drag or click'}
       </div>
     </div>
   );
@@ -133,6 +137,7 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
   const utils = trpc.useUtils();
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
   const [draggedDancer, setDraggedDancer] = useState<any | null>(null);
+  const [assigningDancerId, setAssigningDancerId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   // Fetch entries for this studio
@@ -150,9 +155,12 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
   const addParticipantMutation = trpc.entry.addParticipant.useMutation({
     onSuccess: () => {
       utils.entry.getByStudio.invalidate();
+      // Clear assigning state after brief delay to show success
+      setTimeout(() => setAssigningDancerId(null), 600);
     },
     onError: (error) => {
       alert(`Failed to assign dancer: ${error.message}`);
+      setAssigningDancerId(null);
     },
   });
 
@@ -204,6 +212,9 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
       }
     }
 
+    // Set assigning state before mutation for visual feedback
+    setAssigningDancerId(dancerId);
+
     // Add participant
     addParticipantMutation.mutate({
       entryId,
@@ -216,9 +227,8 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
   };
 
   const handleRemoveParticipant = (participantId: string) => {
-    if (confirm('Remove this dancer from the routine?')) {
-      removeParticipantMutation.mutate({ participantId });
-    }
+    // Instant removal - no confirmation dialog (per UX requirement)
+    removeParticipantMutation.mutate({ participantId });
   };
 
   const handleQuickAssign = (dancerId: string) => {
@@ -252,6 +262,9 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
         dancer_age--;
       }
     }
+
+    // Set assigning state before mutation for visual feedback
+    setAssigningDancerId(dancerId);
 
     addParticipantMutation.mutate({
       entryId: selectedEntry,
@@ -378,6 +391,7 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
                     dancer={dancer}
                     age={age}
                     isAssigned={isAssigned}
+                    isAssigning={assigningDancerId === dancer.id}
                     onQuickAssign={handleQuickAssign}
                   />
                 );
