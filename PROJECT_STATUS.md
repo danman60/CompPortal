@@ -1,12 +1,36 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 5, 2025
+**Last Updated**: October 5, 2025 (Continued)
 **MVP Due**: October 7, 2025 (2 days)
-**Current Phase**: Post-MVP Enhancements - Music Tracking Complete ✅
+**Current Phase**: Bulk Import + Reservations Merge Complete ✅
 **Branch**: main
 **Deployment**: Vercel (auto-deploy on push)
 
 **📂 Documentation**: See [FILE_INDEX.md](./FILE_INDEX.md) for complete documentation map
+
+---
+
+## Latest Session (Oct 5, 2025 Continued - Bulk Import + Reservations Merge) 📁✅
+
+**Reservations Merge Complete** (Commits a1c6d6c, 7e894c3):
+
+**Features Implemented:**
+- Reservations merged into Events Management page (CompetitionReservationsPanel.tsx:1-182)
+- Expandable panels within competition cards with approve/reject actions
+- Bulk studio import via CSV with pre-approved reservations (BulkStudioImportModal.tsx:1-287)
+- Admin router with Supabase invite system (admin.ts:1-127)
+- Import button in Studio Approval page
+
+**CSV Format:**
+- Fields: studioName, studioCode, ownerEmail, firstName, lastName, phone, competitionId, spaces
+- Validation: Email existence check, studio code uniqueness, row-by-row error tracking
+- Creates: User invite → profile → studio (approved) → reservation (approved with pre-granted spaces)
+
+**Build Status:** ✅ All 40 routes compile successfully
+
+**Commits:**
+- a1c6d6c: Merge reservations into Events Management
+- 7e894c3: Bulk studio import with pre-approved reservations
 
 ---
 
