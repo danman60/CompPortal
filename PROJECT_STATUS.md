@@ -1,8 +1,8 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 5, 2025 (Drag/Drop + Dashboard Enhancements)
-**MVP Due**: October 7, 2025 (2 days)
-**Current Phase**: UX Enhancements Complete ✅
+**Last Updated**: October 6, 2025 (QA Bug Fixes - Round 2)
+**MVP Due**: October 7, 2025 (1 day)
+**Current Phase**: Competition Director UX Refinement ✅
 **Branch**: main
 **Deployment**: Vercel (auto-deploy on push)
 
@@ -10,7 +10,31 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 - Drag/Drop + Dashboard Enhancements) 🎨✅
+## Latest Session (Oct 6, 2025 - CD Dashboard QA Fixes) 🎯✅
+
+**Competition Director UX Refinements** (Commit ca30582):
+
+**Dashboard Reordering:**
+- CD cards prioritized: Events → Invoices → Studios first (CompetitionDirectorDashboard.tsx:10-95)
+- Events description updated: "Reservations & capacity"
+
+**Drag-Drop Button Fix:**
+- Added 8px activation constraint to prevent accidental drags (SortableDashboardCards.tsx:104-107)
+- Track isDragging state with 150ms cooldown after drop (SortableDashboardCards.tsx:128-136)
+- Prevent Link clicks during/immediately after drag (SortableDashboardCards.tsx:52-58)
+
+**Grid Snapping Fix:**
+- Changed verticalListSortingStrategy → rectSortingStrategy (SortableDashboardCards.tsx:18, 170)
+- Proper grid-aware collision detection for smooth animations
+
+**Build Status:** ✅ All 40 routes compile successfully
+**Deployment:** ✅ Pushed to Vercel (ca30582)
+
+**Addresses:** QA feedback round 2 - CD-specific issues
+
+---
+
+## Previous Session (Oct 5, 2025 - Drag/Drop + Dashboard Enhancements) 🎨✅
 
 **UX Improvements Complete** (Commits 924a4e6, 82e94fe, a00f420):
 

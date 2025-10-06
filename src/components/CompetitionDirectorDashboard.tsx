@@ -127,7 +127,7 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
       </div>
 
       {/* Global Stats */}
-      <DashboardStats />
+      <DashboardStats role={role} />
 
       {/* Admin Actions */}
       <SortableDashboardCards cards={dashboardCards} />

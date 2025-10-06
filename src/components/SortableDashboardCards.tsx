@@ -31,10 +31,10 @@ export interface DashboardCard {
 
 interface SortableCardProps {
   card: DashboardCard;
-  parentIsDragging: boolean;
+  isActiveCard: boolean;
 }
 
-function SortableCard({ card, parentIsDragging }: SortableCardProps) {
+function SortableCard({ card, isActiveCard }: SortableCardProps) {
   const {
     attributes,
     listeners,
@@ -51,9 +51,10 @@ function SortableCard({ card, parentIsDragging }: SortableCardProps) {
   };
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // Prevent navigation if currently dragging or just finished dragging
-    if (isDragging || parentIsDragging) {
+    // Prevent navigation if this card was just being dragged
+    if (isActiveCard) {
       e.preventDefault();
+      e.stopPropagation();
     }
   };
 
@@ -92,7 +93,7 @@ interface SortableDashboardCardsProps {
 
 export default function SortableDashboardCards({ cards: initialCards }: SortableDashboardCardsProps) {
   const [cards, setCards] = useState(initialCards);
-  const [isDragging, setIsDragging] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const utils = trpc.useUtils();
 
   // Load saved layout
@@ -126,15 +127,15 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
     }
   }, [savedLayout, initialCards]);
 
-  const handleDragStart = () => {
-    setIsDragging(true);
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    // Clear dragging state with small delay to prevent click
-    setTimeout(() => setIsDragging(false), 150);
+    // Clear active ID after a delay to prevent navigation
+    setTimeout(() => setActiveId(null), 200);
 
     if (!over || active.id === over.id) {
       return;
@@ -154,6 +155,10 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
     });
   };
 
+  const handleDragCancel = () => {
+    setActiveId(null);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -166,11 +171,12 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <SortableContext items={cards} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map((card) => (
-              <SortableCard key={card.id} card={card} parentIsDragging={isDragging} />
+              <SortableCard key={card.id} card={card} isActiveCard={activeId === card.id} />
             ))}
           </div>
         </SortableContext>

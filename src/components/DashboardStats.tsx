@@ -3,7 +3,11 @@
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 
-export default function DashboardStats() {
+interface DashboardStatsProps {
+  role?: 'studio_director' | 'competition_director' | 'super_admin';
+}
+
+export default function DashboardStats({ role = 'studio_director' }: DashboardStatsProps) {
   const { data: reservationStats, isLoading: reservationsLoading } = trpc.reservation.getStats.useQuery();
   const { data: studioStats, isLoading: studiosLoading } = trpc.studio.getStats.useQuery();
   const { data: dancerStats, isLoading: dancersLoading } = trpc.dancer.getStats.useQuery();
@@ -88,28 +92,30 @@ export default function DashboardStats() {
         </div>
       </div>
 
-      {/* Dancers Card */}
-      <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Dancers</h3>
-          <div className="text-3xl">💃</div>
+      {/* Dancers Card - Studio Directors Only */}
+      {role === 'studio_director' && (
+        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Dancers</h3>
+            <div className="text-3xl">💃</div>
+          </div>
+          <div className="text-4xl font-bold text-white mb-2">{dancerStats?.total || 0}</div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between text-gray-300">
+              <span>Active:</span>
+              <span className="font-semibold text-green-400">{dancerStats?.active || 0}</span>
+            </div>
+            <div className="flex justify-between text-gray-300">
+              <span>Male:</span>
+              <span className="font-semibold">{dancerStats?.byGender?.Male || 0}</span>
+            </div>
+            <div className="flex justify-between text-gray-300">
+              <span>Female:</span>
+              <span className="font-semibold">{dancerStats?.byGender?.Female || 0}</span>
+            </div>
+          </div>
         </div>
-        <div className="text-4xl font-bold text-white mb-2">{dancerStats?.total || 0}</div>
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between text-gray-300">
-            <span>Active:</span>
-            <span className="font-semibold text-green-400">{dancerStats?.active || 0}</span>
-          </div>
-          <div className="flex justify-between text-gray-300">
-            <span>Male:</span>
-            <span className="font-semibold">{dancerStats?.byGender?.Male || 0}</span>
-          </div>
-          <div className="flex justify-between text-gray-300">
-            <span>Female:</span>
-            <span className="font-semibold">{dancerStats?.byGender?.Female || 0}</span>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Competitions Card with Capacity Meters */}
       <Link href="/dashboard/competitions">
