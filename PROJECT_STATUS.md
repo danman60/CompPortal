@@ -49,6 +49,56 @@
 - Real database mutation verification
 - Persistence checks across sessions and refreshes
 
+**Prerequisites Documentation** (Commit 2ace369):
+- TESTING_PREREQUISITES.md - comprehensive checklist of required conditions
+- Identified critical missing conditions: demo accounts, pending reservations, unpaid invoices
+- Database reset options documented (full seed vs partial reset)
+- Email service verified as non-blocking
+
+---
+
+## Next Session Plan: Database Preparation with MCP Tools
+
+**Objective**: Use Supabase MCP to verify and prepare production database for testing
+
+**Tasks**:
+1. **Check Demo Accounts** (Supabase MCP)
+   - Query: `SELECT id, email FROM auth.users WHERE email IN ('demo.studio@gmail.com', 'demo.director@gmail.com')`
+   - Query: `SELECT id, email, role FROM user_profiles WHERE email IN ('demo.studio@gmail.com', 'demo.director@gmail.com')`
+   - If missing → Document how to create manually (MCP can't create Supabase Auth users)
+
+2. **Check Data States** (Supabase MCP)
+   - Query pending reservations count
+   - Query approved reservations with available spaces
+   - Query unpaid invoices count
+   - Query unassigned dancers count
+
+3. **Reset Data if Needed** (Supabase MCP)
+   - Option A: Run seed script via bash (if clean slate desired)
+   - Option B: Execute SQL to reset specific records to testable states
+   - Verify Demo Dance Studio ownership by demo.studio@gmail.com
+
+4. **Verify Production Deployment** (Vercel MCP)
+   - Check latest deployment status
+   - Review build logs for any errors
+   - Confirm all routes compiled successfully
+
+5. **Quick Smoke Test** (Playwright MCP - Optional)
+   - Navigate to login page
+   - Verify both demo accounts can authenticate
+   - Check dashboard loads without console errors
+
+**Files to Reference**:
+- TESTING_PREREQUISITES.md - full checklist and SQL queries
+- CHATGPT_TEST_AGENT_PROMPT.md - testing protocol to execute after prep
+- prisma/schema.prisma - database schema reference
+
+**Expected Outcome**:
+- Database in correct state for ChatGPT agent testing
+- All prerequisites verified (pending reservations, unpaid invoices, available spaces)
+- Documentation updated with actual current state
+- Ready to execute 25 golden path tests
+
 ---
 
 ## Previous Session (Oct 5, 2025 - Drag/Drop + Dashboard Enhancements) 🎨✅
