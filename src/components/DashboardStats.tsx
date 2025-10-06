@@ -8,7 +8,7 @@ export default function DashboardStats() {
   const { data: studioStats, isLoading: studiosLoading } = trpc.studio.getStats.useQuery();
   const { data: dancerStats, isLoading: dancersLoading } = trpc.dancer.getStats.useQuery();
   const { data: competitionStats, isLoading: competitionsLoading } = trpc.competition.getStats.useQuery();
-  const { data: unpaidInvoices, isLoading: invoicesLoading } = trpc.invoice.getAllInvoices.useQuery({ paymentStatus: 'pending' });
+  const { data: allInvoices, isLoading: invoicesLoading } = trpc.invoice.getAllInvoices.useQuery({});
   const { data: upcomingCompetitions, isLoading: upcomingLoading } = trpc.competition.getUpcoming.useQuery();
 
   if (reservationsLoading || studiosLoading || dancersLoading || competitionsLoading || invoicesLoading || upcomingLoading) {
@@ -25,8 +25,11 @@ export default function DashboardStats() {
     );
   }
 
-  const unpaidCount = unpaidInvoices?.invoices?.length || 0;
-  const unpaidTotal = unpaidInvoices?.invoices?.reduce((sum, inv) => sum + inv.totalAmount, 0) || 0;
+  const invoices = allInvoices?.invoices || [];
+  const unpaidCount = invoices.filter(inv => inv.reservation?.paymentStatus === 'pending' || !inv.reservation?.paymentStatus).length;
+  const paidCount = invoices.filter(inv => inv.reservation?.paymentStatus === 'paid').length;
+  const sentCount = invoices.filter(inv => inv.reservation?.paymentStatus === 'sent').length;
+  const totalInvoices = invoices.length;
 
   // Helper function to get capacity color
   const getCapacityColor = (percent: number) => {
@@ -37,25 +40,26 @@ export default function DashboardStats() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {/* Pending Reservations Card - HIGH PRIORITY */}
-      <Link href="/dashboard/reservations?status=pending">
+      {/* Reservations Card */}
+      <Link href="/dashboard/competitions">
         <div className="bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md rounded-xl border border-orange-400/40 p-6 hover:from-orange-500/40 hover:to-red-500/40 transition-all duration-200 cursor-pointer shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Pending Reservations</h3>
-            <div className="text-3xl">🚨</div>
+            <h3 className="text-lg font-semibold text-white">Reservations</h3>
+            <div className="text-3xl">📋</div>
           </div>
-          <div className="text-4xl font-bold text-white mb-2">{reservationStats?.pending || 0}</div>
+          <div className="text-4xl font-bold text-white mb-2">{reservationStats?.total || 0}</div>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-gray-300">
               <span>Approved:</span>
               <span className="font-semibold text-green-400">{reservationStats?.approved || 0}</span>
             </div>
             <div className="flex justify-between text-gray-300">
-              <span>Total:</span>
-              <span className="font-semibold">{reservationStats?.total || 0}</span>
+              <span>Pending:</span>
+              <span className="font-semibold text-yellow-400">{reservationStats?.pending || 0}</span>
             </div>
-            <div className="flex items-center gap-1 text-orange-300 mt-2">
-              <span className="text-xs">Click to review →</span>
+            <div className="flex justify-between text-gray-300">
+              <span>Rejected:</span>
+              <span className="font-semibold text-red-400">{reservationStats?.rejected || 0}</span>
             </div>
           </div>
         </div>
@@ -156,27 +160,26 @@ export default function DashboardStats() {
         </div>
       </Link>
 
-      {/* Unpaid Invoices Card */}
-      <Link href="/dashboard/invoices/all?paymentStatus=pending">
+      {/* Invoices Card */}
+      <Link href="/dashboard/invoices/all">
         <div className="bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-red-400/30 p-6 hover:from-red-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Unpaid Invoices</h3>
+            <h3 className="text-lg font-semibold text-white">Invoices</h3>
             <div className="text-3xl">💰</div>
           </div>
-          <div className="text-4xl font-bold text-white mb-2">{unpaidCount}</div>
+          <div className="text-4xl font-bold text-white mb-2">{totalInvoices}</div>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-gray-300">
-              <span>Total Owed:</span>
-              <span className="font-semibold text-red-400">
-                ${unpaidTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
+              <span>Sent:</span>
+              <span className="font-semibold text-blue-400">{sentCount}</span>
             </div>
             <div className="flex justify-between text-gray-300">
-              <span>Status:</span>
-              <span className="font-semibold text-yellow-400">Pending</span>
+              <span>Paid:</span>
+              <span className="font-semibold text-green-400">{paidCount}</span>
             </div>
-            <div className="flex items-center gap-1 text-blue-400 mt-2">
-              <span className="text-xs">Click to view all →</span>
+            <div className="flex justify-between text-gray-300">
+              <span>Unpaid:</span>
+              <span className="font-semibold text-yellow-400">{unpaidCount}</span>
             </div>
           </div>
         </div>

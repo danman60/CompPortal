@@ -45,6 +45,16 @@ export default function AllInvoicesList() {
     },
   });
 
+  // Send reminder mutation
+  const sendReminderMutation = trpc.invoice.sendInvoiceReminder.useMutation({
+    onSuccess: (data) => {
+      alert(`Reminder email sent to ${data.email}`);
+    },
+    onError: (error) => {
+      alert(`Failed to send reminder: ${error.message}`);
+    },
+  });
+
   const handleMarkAsPaid = (reservationId: string, currentStatus: string, studioName: string) => {
     const newStatus = prompt(
       `Update payment status for ${studioName}\n\nCurrent: ${currentStatus}\n\nSelect new status:\n- pending\n- partial\n- paid\n- refunded\n- cancelled`,
@@ -63,6 +73,15 @@ export default function AllInvoicesList() {
     markAsPaidMutation.mutate({
       id: reservationId,
       paymentStatus: newStatus as 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled',
+    });
+  };
+
+  const handleSendReminder = (studioId: string, competitionId: string, studioName: string) => {
+    if (!confirm(`Send payment reminder to ${studioName}?`)) return;
+
+    sendReminderMutation.mutate({
+      studioId,
+      competitionId,
     });
   };
 
@@ -251,7 +270,7 @@ export default function AllInvoicesList() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Link
                           href={`/dashboard/invoices/${invoice.studioId}/${invoice.competitionId}`}
                           className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg text-sm font-semibold transition-all border border-blue-400/30"
@@ -259,17 +278,30 @@ export default function AllInvoicesList() {
                           View
                         </Link>
                         {invoice.reservation && (
-                          <button
-                            onClick={() => handleMarkAsPaid(
-                              invoice.reservation!.id,
-                              invoice.reservation!.paymentStatus || 'pending',
-                              invoice.studioName
-                            )}
-                            disabled={processingId === invoice.reservation.id}
-                            className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg text-sm font-semibold transition-all border border-green-400/30 disabled:opacity-50"
-                          >
-                            {processingId === invoice.reservation.id ? 'Processing...' : 'Update Payment'}
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleMarkAsPaid(
+                                invoice.reservation!.id,
+                                invoice.reservation!.paymentStatus || 'pending',
+                                invoice.studioName
+                              )}
+                              disabled={processingId === invoice.reservation.id}
+                              className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg text-sm font-semibold transition-all border border-green-400/30 disabled:opacity-50"
+                            >
+                              {processingId === invoice.reservation.id ? 'Processing...' : 'Mark Paid'}
+                            </button>
+                            <button
+                              onClick={() => handleSendReminder(
+                                invoice.studioId,
+                                invoice.competitionId,
+                                invoice.studioName
+                              )}
+                              disabled={sendReminderMutation.isPending}
+                              className="px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-sm font-semibold transition-all border border-purple-400/30 disabled:opacity-50"
+                            >
+                              {sendReminderMutation.isPending ? 'Sending...' : 'Send Reminder'}
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

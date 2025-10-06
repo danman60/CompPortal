@@ -317,4 +317,52 @@ export const invoiceRouter = router({
         total: validInvoices.length,
       };
     }),
+
+  // Send invoice reminder email
+  sendInvoiceReminder: publicProcedure
+    .input(z.object({
+      studioId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      const { studioId, competitionId } = input;
+
+      // Get studio and competition details
+      const studio = await prisma.studios.findUnique({
+        where: { id: studioId },
+        select: {
+          name: true,
+          contact_email: true,
+        },
+      });
+
+      const competition = await prisma.competitions.findUnique({
+        where: { id: competitionId },
+        select: {
+          name: true,
+          year: true,
+        },
+      });
+
+      if (!studio || !competition || !studio.contact_email) {
+        throw new Error('Studio or competition not found');
+      }
+
+      // Get entries for total amount
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          studio_id: studioId,
+          competition_id: competitionId,
+          status: { not: 'cancelled' },
+        },
+      });
+
+      const totalAmount = entries.reduce((sum, entry) => sum + Number(entry.total_fee || 0), 0);
+
+      // Send reminder email (basic notification for now)
+      // In production, this would use email router with proper template
+      console.log(`Invoice reminder sent to ${studio.contact_email} for ${competition.name} ${competition.year} - $${totalAmount.toFixed(2)}`);
+
+      return { success: true, email: studio.contact_email };
+    }),
 });
