@@ -46,6 +46,166 @@ CompPortal manages the complete lifecycle of dance competitions:
 
 ---
 
+## Complete MVP Workflow (End-to-End Integration Test)
+
+**Before starting the 25 individual tests, execute this complete workflow to verify the entire system works together:**
+
+### Full Lifecycle Test: Reservation → Approval → Routines → Invoices → Payment
+
+**PHASE 1: Studio Director Creates Reservation**
+1. Sign in as demo.studio@gmail.com
+2. Navigate to Reservations page
+3. Note: Record current total routine count from dashboard
+4. Check if any APPROVED reservations exist with available spaces
+5. If yes, note the reservation ID and available spaces (e.g., "5/10 used")
+
+**PHASE 2: Competition Director Approves (if pending exists)**
+1. Sign out, sign in as demo.director@gmail.com
+2. Navigate to /dashboard/competitions
+3. Find a PENDING reservation (if any exist)
+4. Click "Approve" → Confirm
+5. **VERIFY**: Status changes to "APPROVED", capacity updates
+6. Navigate to /dashboard/invoices/all
+7. **VERIFY**: NEW invoice automatically generated for this studio/competition
+8. Note the invoice number and studio name
+
+**PHASE 3: Studio Director Creates Routines**
+1. Sign out, sign in as demo.studio@gmail.com
+2. Navigate to Reservations page
+3. **VERIFY**: Previously approved reservation now shows "APPROVED" status
+4. Note available spaces (e.g., "5/10 - 5 spaces remaining")
+5. If space available, click "Create Routine" button
+6. Fill out routine form (all 5 steps):
+   - Step 1: Title, category, age group, size category
+   - Step 2: Select performers (check at least 1 dancer)
+   - Step 3: Props info (optional)
+   - Step 4: Scheduling preferences
+   - Step 5: Review and submit
+7. Submit routine
+8. **VERIFY**: Success message, redirected to routines list
+9. **VERIFY**: New routine appears in list with entry number (100+)
+10. Navigate to dashboard
+11. **VERIFY**: Routine count increased by 1
+12. Navigate back to Reservations
+13. **VERIFY**: Space counter updated (e.g., "6/10 - 4 spaces remaining")
+
+**PHASE 4: Studio Director Views Invoice**
+1. Still signed in as demo.studio@gmail.com
+2. Navigate to Invoices page
+3. Select the competition from dropdown
+4. **VERIFY**: Invoice shows for this studio/competition
+5. Click "View Invoice"
+6. **VERIFY**: Line items include the newly created routine
+7. **VERIFY**: Total amount reflects routine fee + any late fees
+8. Note the total amount and payment status
+
+**PHASE 5: Competition Director Marks Invoice Paid**
+1. Sign out, sign in as demo.director@gmail.com
+2. Navigate to /dashboard/invoices/all
+3. Find the invoice for Demo Dance Studio (the one we just viewed)
+4. **VERIFY**: Shows same total amount as studio saw
+5. **VERIFY**: Payment status shows "Unpaid" or "Pending"
+6. Click "Mark Paid" → Confirm
+7. **VERIFY**: Status changes to "PAID"
+8. Navigate to dashboard stats
+9. **VERIFY**: Paid count increased, Unpaid count decreased
+
+**PHASE 6: Studio Director Verifies Payment**
+1. Sign out, sign in as demo.studio@gmail.com
+2. Navigate to Invoices → Select competition → View Invoice
+3. **VERIFY**: Payment status now shows "PAID"
+4. **VERIFY**: All line items still correct
+5. **VERIFY**: Reservation status still "APPROVED"
+
+**PHASE 7: Competition Director Verifies Cross-Studio Data**
+1. Sign out, sign in as demo.director@gmail.com
+2. Navigate to /dashboard/entries (Routines)
+3. **VERIFY**: See routines from Demo Dance Studio AND other studios
+4. **VERIFY**: Studio name column shows correct studio for each routine
+5. Navigate to /dashboard/studios
+6. **VERIFY**: See all studios (at least 4)
+7. Click on Demo Dance Studio
+8. **VERIFY**: See routine count includes the newly created routine
+
+**PHASE 8: Data Consistency Final Check**
+1. Sign in as demo.studio@gmail.com → Check routine count on dashboard
+2. Sign out, sign in as demo.director@gmail.com → Check total routine count across all studios
+3. **VERIFY**: Competition Director sees aggregate count >= Studio Director's count
+4. Refresh browser multiple times
+5. **VERIFY**: All counts persist (no data loss on refresh)
+
+**Success Criteria for Complete Workflow**:
+- ✅ Reservation approval visible to both roles
+- ✅ Routine creation updates space counter in real-time
+- ✅ Invoice automatically generated on approval
+- ✅ Invoice line items update when routines added
+- ✅ Payment status syncs across both roles
+- ✅ Competition Director sees cross-studio data
+- ✅ All data persists across role switches and page refreshes
+- ✅ No console errors during entire workflow
+
+### Dancer Assignment Workflow (Cross-Role Verification)
+
+**DANCER WORKFLOW TEST:**
+
+1. **Studio Director: Add New Dancer**
+   - Sign in as demo.studio@gmail.com
+   - Navigate to Dancers page
+   - Note current dancer count (e.g., "30 dancers")
+   - Click "Add Dancer" → Fill form (first name, last name, DOB, gender, skill level)
+   - Submit
+   - **VERIFY**: New dancer appears in list
+   - **VERIFY**: Dashboard dancer count increased by 1
+
+2. **Studio Director: Assign Dancer to Routine**
+   - Navigate to /dashboard/entries/assign
+   - Click a routine to select it
+   - Find the newly added dancer in right panel
+   - Click dancer to assign
+   - **VERIFY**: Dancer shows "✅ Assigned" status
+   - **VERIFY**: Routine panel shows dancer name and age
+   - Navigate to routine detail page
+   - **VERIFY**: Dancer listed in "Performers" section
+
+3. **Competition Director: Verify Cross-Studio Dancer Data**
+   - Sign out, sign in as demo.director@gmail.com
+   - Navigate to /dashboard/dancers
+   - **VERIFY**: See dancers from multiple studios (Demo Dance Studio + others)
+   - Search for the newly added dancer
+   - **VERIFY**: Dancer appears with correct studio attribution
+   - Navigate to /dashboard/entries (Routines)
+   - Find the routine where dancer was assigned
+   - Click to view routine detail
+   - **VERIFY**: Dancer listed in performers (CD can see routine participants)
+
+4. **Studio Director: Remove Dancer Assignment**
+   - Sign out, sign in as demo.studio@gmail.com
+   - Navigate to /dashboard/entries/assign
+   - Click the same routine
+   - **VERIFY**: Dancer still shows as assigned (persistence check)
+   - Click "Remove" next to dancer
+   - **VERIFY**: Dancer immediately unassigned, shows as available again
+   - Navigate to routine detail
+   - **VERIFY**: Dancer no longer listed in performers
+
+5. **Competition Director: Verify Removal Propagated**
+   - Sign out, sign in as demo.director@gmail.com
+   - Navigate to routine detail (same routine)
+   - **VERIFY**: Dancer no longer listed (removal visible to CD)
+   - Refresh page
+   - **VERIFY**: Change persisted in database
+
+**Success Criteria for Dancer Workflow**:
+- ✅ Dancer creation updates counts in real-time
+- ✅ Dancer assignments persist across page refreshes
+- ✅ Dancer assignments visible to both roles (with correct permissions)
+- ✅ Dancer removal immediate and persistent
+- ✅ Cross-studio dancer data visible to Competition Directors
+- ✅ Studio Directors only see their own dancers for assignment
+- ✅ No orphaned data after removal operations
+
+---
+
 ## 25 Golden Path Tests
 
 ### **STUDIO DIRECTOR JOURNEY (Tests 1-13)**
