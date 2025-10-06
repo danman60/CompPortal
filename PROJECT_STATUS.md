@@ -10,29 +10,44 @@
 
 ---
 
-## Latest Session (Oct 6, 2025 - CD Dashboard QA Fixes) 🎯✅
+## Latest Session (Oct 6, 2025 - CD Dashboard QA Fixes + Polish) 🎯✅
 
-**Competition Director UX Refinements** (Commits ca30582, 3672393):
+**Competition Director UX Refinements** (Commits ca30582, 3672393, 416c087, 5f0d6ac):
 
 **Dashboard Reordering:**
 - CD cards prioritized: Events → Invoices → Studios first (CompetitionDirectorDashboard.tsx:10-95)
 - Events description updated: "Reservations & capacity"
-- Dancers card hidden for Competition Directors (DashboardStats.tsx:95-118)
+- Dancers card hidden for Competition Directors (DashboardStats.tsx:96-118)
+- Studios card now clickable with Link wrapper (DashboardStats.tsx:73-95)
 
 **Drag-Drop Navigation Fix:**
-- Track activeId to identify recently dragged cards (SortableDashboardCards.tsx:95, 129-159)
-- Prevent Link clicks on active cards with stopPropagation (SortableDashboardCards.tsx:53-59)
-- 200ms cooldown after drag ends before clearing activeId
-- Added 8px activation constraint to prevent accidental drags
+- Track activeId to identify recently dragged cards (SortableDashboardCards.tsx:95, 133-159)
+- Added pointer-events-none to active cards (SortableDashboardCards.tsx:67-69)
+- 400ms cooldown after drag ends before clearing activeId
+- 10px activation distance to prevent accidental drags
 
 **Grid Snapping Fix:**
 - Changed verticalListSortingStrategy → rectSortingStrategy (SortableDashboardCards.tsx:18, 176)
 - Proper grid-aware collision detection for smooth animations
 
-**Build Status:** ✅ All 40 routes compile successfully
-**Deployment:** ✅ Pushed to Vercel (3672393)
+**Visual Polish:**
+- Animated gradient background: Pink/purple shifting overlay at 15% opacity (dashboard/page.tsx:39-42)
+- 15s gradient animation with 200% background-size (tailwind.config.js:25-39)
+- Terminology: "All Routines" → "Routines" (CompetitionDirectorDashboard.tsx:36)
 
-**Addresses:** QA feedback round 2 - Dancers removal + drag-drop navigation
+**Build Status:** ✅ All 40 routes compile successfully
+**Deployment:** ✅ Pushed to Vercel (5f0d6ac)
+**Testing:** ✅ Comprehensive ChatGPT agent test protocol created (CHATGPT_TEST_AGENT_PROMPT.md)
+
+**Addresses:** QA feedback rounds 2-3 - All CD issues + visual polish
+
+**Testing Protocol** (Commits 247ee9b, 330a208):
+- 25 golden path tests for both user journeys
+- Complete MVP workflow: Reservation → Approval → Routines → Invoices → Payment
+- Dancer assignment workflow with cross-role verification
+- Role switching tests to verify data consistency
+- Real database mutation verification
+- Persistence checks across sessions and refreshes
 
 ---
 
