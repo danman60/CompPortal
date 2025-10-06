@@ -32,14 +32,23 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
       )}
 
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-white mb-2">
-          My Studio Dashboard
-        </h1>
-        <p className="text-gray-400">
-          Welcome back, {userEmail}
-          {studioName && <span className="text-purple-400"> • {studioName}</span>}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            My Studio Dashboard
+          </h1>
+          <p className="text-gray-400">
+            Welcome back, {userEmail}
+            {studioName && <span className="text-purple-400"> • {studioName}</span>}
+          </p>
+        </div>
+        <Link
+          href="/dashboard/studios"
+          className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 px-4 py-2 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
+        >
+          <span className="text-xl">⚙️</span>
+          <span className="text-white font-semibold">Studio Settings</span>
+        </Link>
       </div>
 
       {/* Stats */}
@@ -49,7 +58,7 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
       <div>
         <h2 className="text-2xl font-bold text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Manage Dancers */}
+          {/* Row 1: Dancers, Routines, Reservations */}
           <Link
             href="/dashboard/dancers"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
@@ -63,7 +72,6 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
             </div>
           </Link>
 
-          {/* My Routines */}
           <Link
             href="/dashboard/entries"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
@@ -77,35 +85,6 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
             </div>
           </Link>
 
-          {/* Music Tracking */}
-          <Link
-            href="/dashboard/music"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🎵</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Music Tracking</h3>
-                <p className="text-gray-400 text-sm">Monitor music file uploads</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Studio Settings */}
-          <Link
-            href="/dashboard/studios"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">⚙️</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Studio Settings</h3>
-                <p className="text-gray-400 text-sm">Update studio information</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* My Reservations */}
           <Link
             href="/dashboard/reservations"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
@@ -119,7 +98,20 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
             </div>
           </Link>
 
-          {/* Invoices */}
+          {/* Row 2: Results, Invoices, Music Tracking */}
+          <Link
+            href="/dashboard/scoreboard"
+            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🏆</div>
+              <div>
+                <h3 className="text-xl font-semibold text-white">Results</h3>
+                <p className="text-gray-400 text-sm">View competition scores</p>
+              </div>
+            </div>
+          </Link>
+
           <Link
             href="/dashboard/invoices"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
@@ -133,16 +125,15 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
             </div>
           </Link>
 
-          {/* Scoreboard */}
           <Link
-            href="/dashboard/scoreboard"
+            href="/dashboard/music"
             className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
           >
             <div className="flex items-center gap-4">
-              <div className="text-4xl">🏆</div>
+              <div className="text-4xl">🎵</div>
               <div>
-                <h3 className="text-xl font-semibold text-white">Results</h3>
-                <p className="text-gray-400 text-sm">View competition scores</p>
+                <h3 className="text-xl font-semibold text-white">Music Tracking</h3>
+                <p className="text-gray-400 text-sm">Monitor music file uploads</p>
               </div>
             </div>
           </Link>

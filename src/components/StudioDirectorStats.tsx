@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
 
 export default function StudioDirectorStats() {
@@ -35,7 +36,10 @@ export default function StudioDirectorStats() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* My Dancers Card */}
-      <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
+      <Link
+        href="/dashboard/dancers"
+        className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer"
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">My Dancers</h3>
           <div className="text-3xl">💃</div>
@@ -51,10 +55,13 @@ export default function StudioDirectorStats() {
             <span className="font-semibold text-gray-400">{totalDancers - activeDancers}</span>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* My Routines Card */}
-      <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
+      <Link
+        href="/dashboard/entries"
+        className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer"
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">My Routines</h3>
           <div className="text-3xl">🎭</div>
@@ -70,10 +77,13 @@ export default function StudioDirectorStats() {
             <span className="font-semibold text-yellow-400">{draftEntries}</span>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* My Reservations Card */}
-      <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
+      <Link
+        href="/dashboard/reservations"
+        className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl border border-green-400/30 p-6 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-200 cursor-pointer"
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">My Reservations</h3>
           <div className="text-3xl">📋</div>
@@ -89,7 +99,7 @@ export default function StudioDirectorStats() {
             <span className="font-semibold text-yellow-400">{pendingReservations}</span>
           </div>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
