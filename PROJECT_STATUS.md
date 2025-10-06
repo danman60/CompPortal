@@ -1,8 +1,8 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 5, 2025 (Continued)
+**Last Updated**: October 5, 2025 (Drag/Drop + Dashboard Enhancements)
 **MVP Due**: October 7, 2025 (2 days)
-**Current Phase**: Bulk Import + Reservations Merge Complete ✅
+**Current Phase**: UX Enhancements Complete ✅
 **Branch**: main
 **Deployment**: Vercel (auto-deploy on push)
 
@@ -10,7 +10,37 @@
 
 ---
 
-## Latest Session (Oct 5, 2025 Continued - Bulk Import + Reservations Merge) 📁✅
+## Latest Session (Oct 5, 2025 - Drag/Drop + Dashboard Enhancements) 🎨✅
+
+**UX Improvements Complete** (Commits 924a4e6, 82e94fe, a00f420):
+
+**Drag/Drop Implementation:**
+- Dancers to routines: DroppableRoutineCard + DraggableDancerCard (DancerAssignmentPanel.tsx)
+- Dashboard reordering: SortableDashboardCards component with layout persistence
+- Backend: getDashboardLayout/saveDashboardLayout in user.ts
+- Visual feedback: isOver/isDragging states with cursor changes
+
+**Dashboard Stats Updates:**
+- Reservations card: Shows Approved/Pending/Rejected counts (was "Pending Reservations" only)
+- Invoices card: Shows Sent/Paid/Unpaid counts (was "Unpaid Invoices" only)
+- Fixed TypeScript error: `inv.reservation?.paymentStatus` (DashboardStats.tsx:29)
+
+**Invoice Management:**
+- Mark Paid button: Manual payment status updates (AllInvoicesList.tsx:283-292)
+- Send Reminder button: Coded email reminders (invoice.ts:322-368, AllInvoicesList.tsx:294-303)
+- Three action buttons: View (blue), Mark Paid (green), Send Reminder (purple)
+
+**Build Status:** ✅ All 40 routes compile successfully
+**Deployment:** ✅ Vercel production ready (dpl_Cg4TiMW4n)
+
+**Commits:**
+- 924a4e6: Drag/drop for dancer assignment
+- 82e94fe: Sortable dashboard cards with persistence
+- a00f420: Dashboard stats + invoice management
+
+---
+
+## Previous Session (Oct 5, 2025 Continued - Bulk Import + Reservations Merge) 📁✅
 
 **Reservations Merge Complete** (Commits a1c6d6c, 7e894c3):
 
