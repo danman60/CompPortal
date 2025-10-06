@@ -2,6 +2,7 @@
 
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
+import BulkStudioImportModal from './BulkStudioImportModal';
 
 export default function StudioApprovalList() {
   const utils = trpc.useUtils();
@@ -10,6 +11,7 @@ export default function StudioApprovalList() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectModalData, setRejectModalData] = useState<{ id: string; name: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Approval mutation
   const approveMutation = trpc.studio.approve.useMutation({
@@ -84,6 +86,17 @@ export default function StudioApprovalList() {
 
   return (
     <div className="space-y-6">
+      {/* Import Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg flex items-center gap-2"
+        >
+          <span>📁</span>
+          <span>Import Studios from CSV</span>
+        </button>
+      </div>
+
       {/* Filter Tabs */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
         <div className="flex gap-2">
@@ -254,6 +267,11 @@ export default function StudioApprovalList() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showImportModal && (
+        <BulkStudioImportModal onClose={() => setShowImportModal(false)} />
       )}
     </div>
   );
