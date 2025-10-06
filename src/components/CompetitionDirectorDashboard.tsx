@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import DashboardStats from './DashboardStats';
-import CompetitionSwitcher from './CompetitionSwitcher';
 
 interface CompetitionDirectorDashboardProps {
   userEmail: string;
@@ -12,22 +11,17 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
 
   return (
     <div className="space-y-8">
-      {/* Header with Competition Switcher */}
-      <div className="flex justify-between items-start gap-6">
-        <div className="flex-1">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
-          </h1>
-          <p className="text-gray-400">
-            Welcome back, {userEmail}
-            <span className="ml-2 px-2 py-1 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-semibold">
-              {isAdmin ? 'SUPER ADMIN' : 'DIRECTOR'}
-            </span>
-          </p>
-        </div>
-        <div className="w-80">
-          <CompetitionSwitcher />
-        </div>
+      {/* Header */}
+      <div className="flex-1">
+        <h1 className="text-4xl font-bold text-white mb-2">
+          {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
+        </h1>
+        <p className="text-gray-400">
+          Welcome back, {userEmail}
+          <span className="ml-2 px-2 py-1 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-semibold">
+            {isAdmin ? 'SUPER ADMIN' : 'DIRECTOR'}
+          </span>
+        </p>
       </div>
 
       {/* Global Stats */}
@@ -103,20 +97,6 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
               <div>
                 <h3 className="text-xl font-semibold text-white">Scheduling</h3>
                 <p className="text-gray-400 text-sm">Event schedule</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Dancers */}
-          <Link
-            href="/dashboard/dancers"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">💃</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">All Dancers</h3>
-                <p className="text-gray-400 text-sm">View all dancers</p>
               </div>
             </div>
           </Link>

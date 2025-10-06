@@ -106,6 +106,17 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
       return;
     }
 
+    // Check if dancer is already assigned to this routine
+    const entry = entries.find(e => e.id === selectedEntry);
+    const alreadyAssigned = entry?.entry_participants?.some(
+      (p: any) => p.dancer_id === dancerId
+    );
+
+    if (alreadyAssigned) {
+      alert('This dancer is already assigned to this routine.');
+      return;
+    }
+
     const dancer = dancersData?.dancers.find(d => d.id === dancerId);
     if (!dancer) return;
 
@@ -292,14 +303,24 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
                   }
                 }
 
+                // Check if dancer is assigned to selected routine
+                const entry = entries.find(e => e.id === selectedEntry);
+                const isAssigned = entry?.entry_participants?.some(
+                  (p: any) => p.dancer_id === dancer.id
+                );
+
                 return (
                   <div
                     key={dancer.id}
-                    className="flex justify-between items-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg p-3 transition-all cursor-pointer"
-                    onClick={() => handleQuickAssign(dancer.id)}
+                    className={`flex justify-between items-center border rounded-lg p-3 transition-all ${
+                      isAssigned
+                        ? 'bg-green-500/10 border-green-400/30 cursor-not-allowed'
+                        : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-pointer'
+                    }`}
+                    onClick={() => !isAssigned && handleQuickAssign(dancer.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">👤</div>
+                      <div className="text-2xl">{isAssigned ? '✅' : '👤'}</div>
                       <div>
                         <div className="text-white font-semibold">
                           {dancer.first_name} {dancer.last_name}
@@ -310,8 +331,8 @@ export default function DancerAssignmentPanel({ studioId }: DancerAssignmentPane
                         </div>
                       </div>
                     </div>
-                    <div className="text-blue-400 text-sm font-semibold">
-                      Click to assign
+                    <div className={`text-sm font-semibold ${isAssigned ? 'text-green-400' : 'text-blue-400'}`}>
+                      {isAssigned ? 'Assigned ✓' : 'Click to assign'}
                     </div>
                   </div>
                 );

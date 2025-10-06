@@ -524,6 +524,20 @@ export const entryRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      // Check if this dancer is already assigned to this entry
+      const existingParticipant = await prisma.entry_participants.findFirst({
+        where: {
+          entry_id: input.entryId,
+          dancer_id: input.participant.dancer_id,
+        },
+      });
+
+      if (existingParticipant) {
+        // Return the existing participant instead of throwing error
+        return existingParticipant;
+      }
+
+      // Create new participant
       const participant = await prisma.entry_participants.create({
         data: {
           entry_id: input.entryId,

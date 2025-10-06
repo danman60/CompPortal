@@ -371,12 +371,12 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 </label>
                 <select
                   onChange={(e) => e.target.value && handleCopyDancers(e.target.value)}
-                  className="w-full px-4 py-2 bg-black/40 text-white border border-white/20 rounded-lg focus:border-blue-400 focus:outline-none"
+                  className="w-full px-4 py-2 bg-gray-900 text-white border border-white/20 rounded-lg focus:border-blue-400 focus:outline-none"
                   defaultValue=""
                 >
-                  <option value="">-- Select a routine to copy dancers --</option>
+                  <option value="" className="bg-gray-900 text-white">-- Select a routine to copy dancers --</option>
                   {existingEntries.entries.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
+                    <option key={entry.id} value={entry.id} className="bg-gray-900 text-white">
                       {entry.title} ({entry.entry_participants?.length || 0} dancers)
                     </option>
                   ))}
