@@ -676,7 +676,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
 
                         {/* Create Routines Button */}
                         <Link
-                          href={`/dashboard/entries?competition=${reservation.competition_id}`}
+                          href={`/dashboard/entries/create?competition=${reservation.competition_id}&reservation=${reservation.id}`}
                           className={`block w-full text-center px-6 py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
                             (reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                               ? 'bg-white/10 text-gray-400 cursor-not-allowed border border-white/20'

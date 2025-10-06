@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type Step = 'basic' | 'details' | 'participants' | 'props' | 'review';
 
@@ -12,7 +12,12 @@ interface EntryFormProps {
 
 export default function EntryForm({ entryId }: EntryFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isEditMode = !!entryId;
+
+  // Get URL parameters if provided
+  const urlReservationId = searchParams.get('reservation');
+  const urlCompetitionId = searchParams.get('competition');
   const [currentStep, setCurrentStep] = useState<Step>('basic');
   const [formData, setFormData] = useState({
     competition_id: '',
@@ -70,6 +75,13 @@ export default function EntryForm({ entryId }: EntryFormProps) {
       setFormData((prev) => ({ ...prev, studio_id: userStudio.id }));
     }
   }, [isStudioDirector, userStudio, formData.studio_id, isEditMode]);
+
+  // Auto-set competition from URL parameter
+  useEffect(() => {
+    if (urlCompetitionId && !formData.competition_id && !isEditMode) {
+      setFormData((prev) => ({ ...prev, competition_id: urlCompetitionId }));
+    }
+  }, [urlCompetitionId, formData.competition_id, isEditMode]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -140,7 +152,10 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     const totalFee = baseFee + (perParticipantFee * formData.participants.length);
 
     // Find approved reservation for space limit enforcement
-    const approvedReservation = reservations?.reservations?.[0];
+    // Use URL reservation ID if provided, otherwise use first approved reservation
+    const approvedReservation = urlReservationId
+      ? reservations?.reservations?.find(r => r.id === urlReservationId)
+      : reservations?.reservations?.[0];
 
     const entryData = {
       ...formData,
