@@ -13,13 +13,20 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     href: '/dashboard/competitions',
     icon: '🎪',
     title: 'Events',
-    description: 'Create & manage events',
+    description: 'Reservations & capacity',
+  },
+  {
+    id: 'invoices',
+    href: '/dashboard/invoices',
+    icon: '💰',
+    title: 'Invoices',
+    description: 'Studio invoices',
   },
   {
     id: 'studios',
     href: '/dashboard/studios',
     icon: '🏢',
-    title: 'All Studios',
+    title: 'Studios',
     description: 'View all dance studios',
   },
   {
@@ -70,13 +77,6 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     icon: '📄',
     title: 'Reports',
     description: 'PDF scorecards & results',
-  },
-  {
-    id: 'invoices',
-    href: '/dashboard/invoices',
-    icon: '💰',
-    title: 'Invoices',
-    description: 'Studio invoices',
   },
   {
     id: 'emails',

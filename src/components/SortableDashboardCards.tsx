@@ -15,7 +15,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -31,9 +31,10 @@ export interface DashboardCard {
 
 interface SortableCardProps {
   card: DashboardCard;
+  parentIsDragging: boolean;
 }
 
-function SortableCard({ card }: SortableCardProps) {
+function SortableCard({ card, parentIsDragging }: SortableCardProps) {
   const {
     attributes,
     listeners,
@@ -49,10 +50,18 @@ function SortableCard({ card }: SortableCardProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Prevent navigation if currently dragging or just finished dragging
+    if (isDragging || parentIsDragging) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div ref={setNodeRef} style={style} {...attributes} className="relative">
       <Link
         href={card.href}
+        onClick={handleClick}
         className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block"
       >
         <div className="flex items-center gap-4">
@@ -83,6 +92,7 @@ interface SortableDashboardCardsProps {
 
 export default function SortableDashboardCards({ cards: initialCards }: SortableDashboardCardsProps) {
   const [cards, setCards] = useState(initialCards);
+  const [isDragging, setIsDragging] = useState(false);
   const utils = trpc.useUtils();
 
   // Load saved layout
@@ -92,7 +102,11 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
   const saveLayoutMutation = trpc.user.saveDashboardLayout.useMutation();
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -112,8 +126,15 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
     }
   }, [savedLayout, initialCards]);
 
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+
+    // Clear dragging state with small delay to prevent click
+    setTimeout(() => setIsDragging(false), 150);
 
     if (!over || active.id === over.id) {
       return;
@@ -143,12 +164,13 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={cards} strategy={verticalListSortingStrategy}>
+        <SortableContext items={cards} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map((card) => (
-              <SortableCard key={card.id} card={card} />
+              <SortableCard key={card.id} card={card} parentIsDragging={isDragging} />
             ))}
           </div>
         </SortableContext>
