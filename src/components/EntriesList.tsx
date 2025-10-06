@@ -11,6 +11,7 @@ export default function EntriesList() {
   const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
 
   // Fetch reservation data for space limit tracking
   const { data: reservationData } = trpc.reservation.getAll.useQuery(
@@ -20,6 +21,15 @@ export default function EntriesList() {
     },
     { enabled: selectedCompetition !== 'all' }
   );
+
+  // Delete mutation
+  const utils = trpc.useContext();
+  const deleteMutation = trpc.entry.delete.useMutation({
+    onSuccess: () => {
+      utils.entry.getAll.invalidate();
+      setSelectedEntries(new Set());
+    },
+  });
 
   // Process data before any conditional returns (hooks must be called in consistent order)
   const entries = data?.entries || [];
@@ -41,6 +51,36 @@ export default function EntriesList() {
 
   // Sort entries for table view (must be called before any conditional returns)
   const { sortedData: sortedEntries, sortConfig, requestSort } = useTableSort(filteredEntries);
+
+  // Checkbox handlers
+  const handleSelectAll = () => {
+    if (selectedEntries.size === sortedEntries.length) {
+      setSelectedEntries(new Set());
+    } else {
+      setSelectedEntries(new Set(sortedEntries.map(e => e.id)));
+    }
+  };
+
+  const handleSelectEntry = (entryId: string) => {
+    const newSelected = new Set(selectedEntries);
+    if (newSelected.has(entryId)) {
+      newSelected.delete(entryId);
+    } else {
+      newSelected.add(entryId);
+    }
+    setSelectedEntries(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEntries.size === 0) return;
+
+    const confirmMessage = `Are you sure you want to delete ${selectedEntries.size} routine${selectedEntries.size > 1 ? 's' : ''}?`;
+    if (!confirm(confirmMessage)) return;
+
+    for (const entryId of selectedEntries) {
+      await deleteMutation.mutateAsync({ id: entryId });
+    }
+  };
 
   // Helper function to determine routine completion status
   const getRoutineStatus = (entry: any) => {
@@ -162,6 +202,17 @@ export default function EntriesList() {
             <span>👥</span>
             <span>Assign Dancers</span>
           </Link>
+
+          {viewMode === 'table' && selectedEntries.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>🗑️</span>
+              <span>Delete Selected ({selectedEntries.size})</span>
+            </button>
+          )}
 
           {isAtLimit ? (
             <div className="relative group">
@@ -567,6 +618,14 @@ export default function EntriesList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/20 bg-white/5">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedEntries.size === sortedEntries.length && sortedEntries.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                  </th>
                   <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} />
                   <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} />
                   <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={requestSort} />
@@ -587,6 +646,14 @@ export default function EntriesList() {
                       index % 2 === 0 ? 'bg-black/20' : ''
                     }`}
                   >
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedEntries.has(entry.id)}
+                        onChange={() => handleSelectEntry(entry.id)}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       {entry.entry_number ? (
                         <div>
