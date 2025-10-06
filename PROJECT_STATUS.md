@@ -1,8 +1,8 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 6, 2025 (Database Preparation Complete)
+**Last Updated**: October 6, 2025 (Critical Bug Fixes from QA)
 **MVP Due**: October 7, 2025 (1 day)
-**Current Phase**: Production Testing Ready ✅
+**Current Phase**: Bug Fixes Deployed - Verification Pending ⚠️
 **Branch**: main
 **Deployment**: Vercel (auto-deploy on push)
 
@@ -10,7 +10,51 @@
 
 ---
 
-## Latest Session (Oct 6, 2025 - CD Dashboard QA Fixes + Polish) 🎯✅
+## Latest Session (Oct 6, 2025 - Critical Bug Fixes from QA Report) 🐛✅
+
+**QA Testing Results**: 20/25 tests passed (80%), 4 critical bugs identified
+
+**Bug Fixes Deployed** (Commits c9ffce4, 9a8092c):
+
+**1. ✅ Routine Creation Error - Invalid Reservation ID**
+   - **Issue**: "Invalid reservation ID" error when creating routines from newly approved reservations
+   - **Root Cause**: Button only passed `competition_id`, form picked wrong reservation when multiple existed
+   - **Fix**: Pass both `competition_id` and `reservation_id` via URL parameters (ReservationsList.tsx:679, EntryForm.tsx:5, 19-20, 79-84, 147-150)
+   - **Status**: Deployed (commit c9ffce4)
+
+**2. ✅ Competition Director Invoices Page Crash**
+   - **Issue**: Client-side exception on `/dashboard/invoices/all`
+   - **Root Cause**: Null values for optional studio fields (code, city, province, etc.) not handled
+   - **Fix**: Added null coalescing defaults for all studio/competition fields (invoice.ts:275-282)
+   - **Status**: Deployed (commit c9ffce4), **verification pending** (browser cache may show old error)
+
+**3. ✅ Dashboard Card Ordering**
+   - **Issue**: Cards not ordered "Events → Invoices → Studios" as designed
+   - **Root Cause**: User's saved dashboard layout had different order from testing
+   - **Fix**: Reset demo.director@gmail.com dashboard layout via SQL UPDATE (Supabase MCP)
+   - **Status**: Database updated, layout now correct on login
+
+**4. ✅ Test Documentation - Incorrect Passwords**
+   - **Issue**: Login tests failing with "Invalid login credentials"
+   - **Root Cause**: Test documentation had wrong passwords (`Demo1234!` instead of actual)
+   - **Actual Passwords**: `StudioDemo123!` and `DirectorDemo123!`
+   - **Fix**: Updated TESTING_PREREQUISITES.md and CHATGPT_TEST_AGENT_PROMPT.md (commit 9a8092c)
+   - **Status**: Documentation corrected
+
+**Build Status**: ✅ All 40 routes compile successfully
+**Deployment**: ✅ Pushed to production (commits c9ffce4, 9a8092c)
+**Verification**: ⚠️ Invoices page fix needs browser cache clear for verification
+
+**Next Steps**:
+1. Hard refresh browser or test in incognito mode to verify invoices page fix
+2. Rerun Test #7 (Routine Creation) to verify reservation ID fix
+3. Rerun Tests #22-23 (Invoices Page) to verify null handling fix
+4. Rerun Test #16 (Dashboard Layout) to verify card ordering
+5. Rerun Tests #1, #14 (Login) with correct passwords
+
+---
+
+## Previous Session (Oct 6, 2025 - CD Dashboard QA Fixes + Polish) 🎯✅
 
 **Competition Director UX Refinements** (Commits ca30582, 3672393, 416c087, 5f0d6ac):
 
