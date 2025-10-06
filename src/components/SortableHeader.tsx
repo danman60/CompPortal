@@ -2,9 +2,9 @@ import { SortConfig } from '@/hooks/useTableSort';
 
 interface SortableHeaderProps<T> {
   label: string;
-  sortKey: keyof T;
+  sortKey: keyof T | string;
   sortConfig: SortConfig<T>;
-  onSort: (key: keyof T) => void;
+  onSort: (key: keyof T | string) => void;
   className?: string;
 }
 

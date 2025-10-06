@@ -3,11 +3,16 @@ import { useState, useMemo } from 'react';
 type SortDirection = 'asc' | 'desc' | null;
 
 export interface SortConfig<T> {
-  key: keyof T | null;
+  key: keyof T | string | null;
   direction: SortDirection;
 }
 
-export function useTableSort<T>(data: T[], initialKey: keyof T | null = null) {
+// Helper to get nested property value
+function getNestedValue(obj: any, path: string): any {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+export function useTableSort<T>(data: T[], initialKey: keyof T | string | null = null) {
   const [sortConfig, setSortConfig] = useState<SortConfig<T>>({
     key: initialKey,
     direction: null,
@@ -19,8 +24,28 @@ export function useTableSort<T>(data: T[], initialKey: keyof T | null = null) {
     }
 
     return [...data].sort((a, b) => {
-      const aValue = a[sortConfig.key!];
-      const bValue = b[sortConfig.key!];
+      // Support nested paths (e.g., "dance_categories.name")
+      const key = sortConfig.key as string;
+      let aValue = key.includes('.') ? getNestedValue(a, key) : (a as any)[key];
+      let bValue = key.includes('.') ? getNestedValue(b, key) : (b as any)[key];
+
+      // Handle arrays (e.g., entry_participants) - sort by length
+      if (Array.isArray(aValue) && Array.isArray(bValue)) {
+        aValue = aValue.length;
+        bValue = bValue.length;
+      } else if (Array.isArray(aValue)) {
+        aValue = aValue.length;
+        bValue = 0;
+      } else if (Array.isArray(bValue)) {
+        aValue = 0;
+        bValue = bValue.length;
+      }
+
+      // Handle boolean (music_file_url existence)
+      if (key === 'music_file_url') {
+        aValue = aValue ? 1 : 0;
+        bValue = bValue ? 1 : 0;
+      }
 
       // Handle null/undefined
       if (aValue == null && bValue == null) return 0;
@@ -46,7 +71,7 @@ export function useTableSort<T>(data: T[], initialKey: keyof T | null = null) {
     });
   }, [data, sortConfig]);
 
-  const requestSort = (key: keyof T) => {
+  const requestSort = (key: keyof T | string) => {
     let direction: SortDirection = 'asc';
 
     if (sortConfig.key === key) {

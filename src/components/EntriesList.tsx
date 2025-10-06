@@ -532,10 +532,10 @@ export default function EntriesList() {
                 <tr className="border-b border-white/20 bg-white/5">
                   <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} />
                   <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} />
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Category</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Age Group</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Dancers</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Music</th>
+                  <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={requestSort} />
+                  <SortableHeader label="Age Group" sortKey="age_groups.name" sortConfig={sortConfig} onSort={requestSort} />
+                  <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={requestSort} />
+                  <SortableHeader label="Music" sortKey="music_file_url" sortConfig={sortConfig} onSort={requestSort} />
                   <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} />
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                 </tr>
