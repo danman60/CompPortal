@@ -17,47 +17,8 @@ export default function Home() {
           </h1>
 
           <p className="text-xl text-gray-300 mb-8">
-            MVP Complete - Production Ready! 🎉
+            Professional dance competition management platform
           </p>
-
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 mb-8">
-            <h2 className="text-2xl font-semibold text-white mb-4">
-              Platform Status
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-              <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-400 text-xl">✅</span>
-                  <span className="text-white font-medium">MVP Complete</span>
-                </div>
-                <p className="text-gray-300 text-sm">All core workflows functional</p>
-              </div>
-
-              <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-400 text-xl">✅</span>
-                  <span className="text-white font-medium">RBAC System</span>
-                </div>
-                <p className="text-gray-300 text-sm">80% tested (24/30 tests)</p>
-              </div>
-
-              <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-400 text-xl">✅</span>
-                  <span className="text-white font-medium">Schedule Export</span>
-                </div>
-                <p className="text-gray-300 text-sm">PDF/CSV/iCal formats</p>
-              </div>
-
-              <div className="bg-green-500/20 rounded-lg p-4 border border-green-400/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-400 text-xl">✅</span>
-                  <span className="text-white font-medium">Entry Numbering</span>
-                </div>
-                <p className="text-gray-300 text-sm">Auto-assigned (100+)</p>
-              </div>
-            </div>
-          </div>
 
           <div className="bg-yellow-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6 mb-8">
             <h2 className="text-xl font-semibold text-yellow-400 mb-3">
@@ -131,26 +92,6 @@ export default function Home() {
             <div className="mt-3 text-xs text-gray-400">
               ✓ Real-time scoring • ✓ Offline capable • ✓ Touch-optimized
             </div>
-          </div>
-
-          <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="/api/trpc"
-              className="text-purple-400 hover:text-purple-300 text-sm"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              API Documentation →
-            </a>
-          </div>
-
-          <div className="mt-12 text-gray-400 text-sm">
-            <p>
-              Static demo pages are still accessible at their original URLs
-            </p>
-            <p className="mt-2">
-              Backend development in progress...
-            </p>
           </div>
         </div>
       </div>
