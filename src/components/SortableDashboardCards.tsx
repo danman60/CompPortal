@@ -55,6 +55,7 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
     if (isActiveCard) {
       e.preventDefault();
       e.stopPropagation();
+      return false;
     }
   };
 
@@ -63,7 +64,9 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
       <Link
         href={card.href}
         onClick={handleClick}
-        className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block"
+        className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block ${
+          isActiveCard ? 'pointer-events-none' : ''
+        }`}
       >
         <div className="flex items-center gap-4">
           <div className="text-4xl">{card.icon}</div>
@@ -105,7 +108,7 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts
+        distance: 10, // Require 10px movement before drag starts
       },
     }),
     useSensor(KeyboardSensor, {
@@ -135,7 +138,7 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
     const { active, over } = event;
 
     // Clear active ID after a delay to prevent navigation
-    setTimeout(() => setActiveId(null), 200);
+    setTimeout(() => setActiveId(null), 400);
 
     if (!over || active.id === over.id) {
       return;

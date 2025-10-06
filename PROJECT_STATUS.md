@@ -12,25 +12,27 @@
 
 ## Latest Session (Oct 6, 2025 - CD Dashboard QA Fixes) 🎯✅
 
-**Competition Director UX Refinements** (Commit ca30582):
+**Competition Director UX Refinements** (Commits ca30582, 3672393):
 
 **Dashboard Reordering:**
 - CD cards prioritized: Events → Invoices → Studios first (CompetitionDirectorDashboard.tsx:10-95)
 - Events description updated: "Reservations & capacity"
+- Dancers card hidden for Competition Directors (DashboardStats.tsx:95-118)
 
-**Drag-Drop Button Fix:**
-- Added 8px activation constraint to prevent accidental drags (SortableDashboardCards.tsx:104-107)
-- Track isDragging state with 150ms cooldown after drop (SortableDashboardCards.tsx:128-136)
-- Prevent Link clicks during/immediately after drag (SortableDashboardCards.tsx:52-58)
+**Drag-Drop Navigation Fix:**
+- Track activeId to identify recently dragged cards (SortableDashboardCards.tsx:95, 129-159)
+- Prevent Link clicks on active cards with stopPropagation (SortableDashboardCards.tsx:53-59)
+- 200ms cooldown after drag ends before clearing activeId
+- Added 8px activation constraint to prevent accidental drags
 
 **Grid Snapping Fix:**
-- Changed verticalListSortingStrategy → rectSortingStrategy (SortableDashboardCards.tsx:18, 170)
+- Changed verticalListSortingStrategy → rectSortingStrategy (SortableDashboardCards.tsx:18, 176)
 - Proper grid-aware collision detection for smooth animations
 
 **Build Status:** ✅ All 40 routes compile successfully
-**Deployment:** ✅ Pushed to Vercel (ca30582)
+**Deployment:** ✅ Pushed to Vercel (3672393)
 
-**Addresses:** QA feedback round 2 - CD-specific issues
+**Addresses:** QA feedback round 2 - Dancers removal + drag-drop navigation
 
 ---
 
