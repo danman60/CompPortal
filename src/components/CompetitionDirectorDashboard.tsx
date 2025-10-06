@@ -59,20 +59,6 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
             </div>
           </Link>
 
-          {/* Manage Reservations */}
-          <Link
-            href="/dashboard/reservations"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">📋</div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Reservations</h3>
-                <p className="text-gray-400 text-sm">Approve & manage</p>
-              </div>
-            </div>
-          </Link>
-
           {/* All Routines */}
           <Link
             href="/dashboard/entries"

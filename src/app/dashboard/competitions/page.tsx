@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import CompetitionReservationsPanel from '@/components/CompetitionReservationsPanel';
 
 export default function CompetitionsPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.competition.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'registration_open' | 'in_progress' | 'completed'>('all');
-  const [processingReservationId, setProcessingReservationId] = useState<string | null>(null);
+  const [expandedCompetition, setExpandedCompetition] = useState<string | null>(null);
 
   const deleteMutation = trpc.competition.delete.useMutation({
     onSuccess: () => {
@@ -34,28 +35,6 @@ export default function CompetitionsPage() {
     },
     onError: (error) => {
       alert(`Clone failed: ${error.message}`);
-    },
-  });
-
-  const approveMutation = trpc.reservation.approve.useMutation({
-    onSuccess: () => {
-      utils.competition.getAll.invalidate();
-      setProcessingReservationId(null);
-    },
-    onError: (error) => {
-      alert(`Approval failed: ${error.message}`);
-      setProcessingReservationId(null);
-    },
-  });
-
-  const rejectMutation = trpc.reservation.reject.useMutation({
-    onSuccess: () => {
-      utils.competition.getAll.invalidate();
-      setProcessingReservationId(null);
-    },
-    onError: (error) => {
-      alert(`Rejection failed: ${error.message}`);
-      setProcessingReservationId(null);
     },
   });
 
@@ -91,38 +70,6 @@ export default function CompetitionsPage() {
         newName: newName || undefined,
       });
     }
-  };
-
-  const handleQuickApprove = (reservationId: string, spacesRequested: number) => {
-    const spacesConfirmed = prompt(
-      `Approve this reservation.\n\nRoutines Requested: ${spacesRequested}\n\nHow many routines to allocate?`,
-      spacesRequested.toString()
-    );
-
-    if (!spacesConfirmed) return;
-
-    const confirmed = parseInt(spacesConfirmed, 10);
-    if (isNaN(confirmed) || confirmed < 1 || confirmed > spacesRequested) {
-      alert('Invalid number of routines. Must be between 1 and routines requested.');
-      return;
-    }
-
-    setProcessingReservationId(reservationId);
-    approveMutation.mutate({
-      id: reservationId,
-      spacesConfirmed: confirmed,
-    });
-  };
-
-  const handleQuickReject = (reservationId: string, studioName: string) => {
-    const reason = prompt(`Reject reservation for ${studioName}?\n\nOptional reason:`);
-    if (reason === null) return; // Cancelled
-
-    setProcessingReservationId(reservationId);
-    rejectMutation.mutate({
-      id: reservationId,
-      reason: reason || undefined,
-    });
   };
 
   if (isLoading) {
@@ -280,76 +227,45 @@ export default function CompetitionsPage() {
                   </div>
                 </div>
 
-                {/* Pending Reservations */}
-                <div className="bg-orange-500/10 border border-orange-400/30 rounded-lg p-3 mb-4">
-                  <h4 className="text-xs font-semibold text-orange-300 uppercase mb-2">
-                    Pending ({pendingReservations.length})
-                  </h4>
-                  {pendingReservations.length > 0 ? (
-                    <div className="space-y-2">
-                      {pendingReservations.slice(0, 2).map(r => (
-                        <div key={r.id} className="bg-black/20 rounded p-2">
-                          <div className="text-xs text-gray-300 mb-1 truncate">
-                            {r.studios?.name} ({r.spaces_requested} routines)
-                          </div>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleQuickApprove(r.id, r.spaces_requested);
-                              }}
-                              disabled={processingReservationId === r.id}
-                              className="flex-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-400/30 rounded px-2 py-1 text-xs font-semibold transition-all disabled:opacity-50"
-                            >
-                              {processingReservationId === r.id && approveMutation.isPending ? '...' : '✓'}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleQuickReject(r.id, r.studios?.name || 'studio');
-                              }}
-                              disabled={processingReservationId === r.id}
-                              className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-400/30 rounded px-2 py-1 text-xs font-semibold transition-all disabled:opacity-50"
-                            >
-                              {processingReservationId === r.id && rejectMutation.isPending ? '...' : '✕'}
-                            </button>
-                          </div>
+                {/* Reservations Summary & Toggle */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => setExpandedCompetition(
+                      expandedCompetition === competition.id ? null : competition.id
+                    )}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 hover:bg-white/10 transition-all text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold text-white mb-1">
+                          📋 Reservations
+                        </h4>
+                        <div className="flex items-center gap-4 text-xs">
+                          {pendingReservations.length > 0 && (
+                            <span className="text-yellow-400">
+                              {pendingReservations.length} Pending
+                            </span>
+                          )}
+                          <span className="text-green-400">
+                            {confirmedStudios.length} Confirmed
+                          </span>
                         </div>
-                      ))}
-                      {pendingReservations.length > 2 && (
-                        <Link
-                          href="/dashboard/reservations?status=pending"
-                          className="block text-xs text-orange-400 hover:text-orange-300 underline"
-                        >
-                          +{pendingReservations.length - 2} more →
-                        </Link>
-                      )}
+                      </div>
+                      <span className="text-2xl">
+                        {expandedCompetition === competition.id ? '▼' : '▶'}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="text-xs text-gray-400">No pending requests</div>
-                  )}
-                </div>
+                  </button>
 
-                {/* Confirmed Studios */}
-                <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3 mb-4">
-                  <h4 className="text-xs font-semibold text-green-300 uppercase mb-2">
-                    Confirmed ({confirmedStudios.length})
-                  </h4>
-                  {confirmedStudios.length > 0 ? (
-                    <div className="space-y-1">
-                      {confirmedStudios.slice(0, 3).map(r => (
-                        <div key={r.id} className="text-xs text-gray-300 truncate">
-                          • {r.studios?.name}
-                        </div>
-                      ))}
-                      {confirmedStudios.length > 3 && (
-                        <div className="text-xs text-green-400">
-                          +{confirmedStudios.length - 3} more
-                        </div>
-                      )}
+                  {/* Expanded Reservations Panel */}
+                  {expandedCompetition === competition.id && (
+                    <div className="mt-2 bg-black/20 rounded-lg p-4 border border-white/10">
+                      <CompetitionReservationsPanel
+                        competitionId={competition.id}
+                        competitionName={competition.name}
+                        maxRoutines={totalCapacity}
+                      />
                     </div>
-                  ) : (
-                    <div className="text-xs text-gray-400">No confirmed studios</div>
                   )}
                 </div>
 
