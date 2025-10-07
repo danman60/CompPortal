@@ -326,38 +326,33 @@ export const entryRouter = router({
         ...data
       } = input;
 
-      // Check if there's an approved reservation for this studio/competition
-      const approvedReservation = await prisma.reservations.findFirst({
-        where: {
-          studio_id: input.studio_id,
-          competition_id: input.competition_id,
-          status: 'approved',
-        },
-        include: {
-          _count: {
-            select: {
-              competition_entries: true,
+      // If reservation ID provided, validate it and enforce space limits
+      if (input.reservation_id) {
+        const reservation = await prisma.reservations.findUnique({
+          where: { id: input.reservation_id },
+          include: {
+            _count: {
+              select: {
+                competition_entries: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      // If there's an approved reservation, enforce space limits
-      if (approvedReservation) {
-        // Reservation exists but wasn't linked - this is a bug in the frontend
-        if (!input.reservation_id) {
-          throw new Error(
-            'Reservation ID is required. This studio has an approved reservation for this competition.'
-          );
+        if (!reservation) {
+          throw new Error('Reservation not found.');
         }
 
-        // Verify the provided reservation_id matches the approved reservation
-        if (input.reservation_id !== approvedReservation.id) {
-          throw new Error('Invalid reservation ID for this studio and competition.');
+        if (reservation.status !== 'approved') {
+          throw new Error('Reservation must be approved before creating routines.');
         }
 
-        const currentEntries = approvedReservation._count.competition_entries;
-        const confirmedSpaces = approvedReservation.spaces_confirmed || 0;
+        if (reservation.studio_id !== input.studio_id || reservation.competition_id !== input.competition_id) {
+          throw new Error('Invalid reservation for this studio and competition.');
+        }
+
+        const currentEntries = reservation._count.competition_entries;
+        const confirmedSpaces = reservation.spaces_confirmed || 0;
 
         if (currentEntries >= confirmedSpaces) {
           throw new Error(

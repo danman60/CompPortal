@@ -305,7 +305,7 @@ export default function AllInvoicesList() {
                       {getPaymentStatusBadge(invoice.reservation?.paymentStatus)}
                       {invoice.reservation?.paymentConfirmedAt && (
                         <div className="text-gray-500 text-xs mt-1">
-                          Confirmed: {formatDate(invoice.reservation.paymentConfirmedAt)}
+                          Confirmed: {formatDate(invoice.reservation?.paymentConfirmedAt)}
                         </div>
                       )}
                     </td>
@@ -325,10 +325,10 @@ export default function AllInvoicesList() {
                                 invoice.reservation!.paymentStatus || 'pending',
                                 invoice.studioName
                               )}
-                              disabled={processingId === invoice.reservation.id}
+                              disabled={processingId === invoice.reservation?.id}
                               className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg text-sm font-semibold transition-all border border-green-400/30 disabled:opacity-50"
                             >
-                              {processingId === invoice.reservation.id ? 'Processing...' : 'Mark Paid'}
+                              {processingId === invoice.reservation?.id ? 'Processing...' : 'Mark Paid'}
                             </button>
                             <button
                               onClick={() => handleSendReminder(
