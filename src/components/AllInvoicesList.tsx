@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
+import toast from 'react-hot-toast';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
@@ -38,9 +39,10 @@ export default function AllInvoicesList() {
     onSuccess: () => {
       utils.invoice.getAllInvoices.invalidate();
       setProcessingId(null);
+      toast.success('Payment status updated to paid');
     },
     onError: (error) => {
-      alert(`Failed to update payment status: ${error.message}`);
+      toast.error(`Failed to update payment: ${error.message}`);
       setProcessingId(null);
     },
   });
@@ -48,10 +50,10 @@ export default function AllInvoicesList() {
   // Send reminder mutation
   const sendReminderMutation = trpc.invoice.sendInvoiceReminder.useMutation({
     onSuccess: (data) => {
-      alert(`Reminder email sent to ${data.email}`);
+      toast.success(`Reminder email sent to ${data.email}`);
     },
     onError: (error) => {
-      alert(`Failed to send reminder: ${error.message}`);
+      toast.error(`Failed to send reminder: ${error.message}`);
     },
   });
 

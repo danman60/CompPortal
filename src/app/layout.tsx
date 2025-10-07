@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { TRPCProvider } from '@/providers/trpc-provider';
+import ToastProvider from '@/components/ToastProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,7 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <TRPCProvider>{children}</TRPCProvider>
+        <TRPCProvider>
+          <ToastProvider />
+          {children}
+        </TRPCProvider>
       </body>
     </html>
   );
