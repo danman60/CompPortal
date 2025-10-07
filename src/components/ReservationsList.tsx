@@ -327,11 +327,28 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
           <div className="text-6xl mb-4">📋</div>
           <h3 className="text-xl font-semibold text-white mb-2">No reservations found</h3>
-          <p className="text-gray-400">
+          <p className="text-gray-400 mb-6">
             {filter === 'all'
-              ? 'No reservations have been made yet.'
-              : `No ${filter} reservations found.`}
+              ? isStudioDirector
+                ? 'Start by creating a reservation for an upcoming competition.'
+                : 'Reservations from studios will appear here once submitted.'
+              : `No ${filter} reservations found. Try adjusting your filters.`}
           </p>
+          {isStudioDirector && filter === 'all' ? (
+            <Link
+              href="/dashboard/reservations/new"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            >
+              + Create Reservation
+            </Link>
+          ) : filter !== 'all' ? (
+            <button
+              onClick={() => setFilter('all')}
+              className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg transition-all border border-purple-400/30"
+            >
+              Clear Filters
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="space-y-4">

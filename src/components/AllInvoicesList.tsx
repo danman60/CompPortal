@@ -258,8 +258,27 @@ export default function AllInvoicesList() {
             <tbody className="divide-y divide-white/10">
               {sortedInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                    No invoices found
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="text-6xl mb-4">📋</div>
+                      <h3 className="text-xl font-bold text-white mb-2">No Invoices Found</h3>
+                      <p className="text-gray-400 mb-4">
+                        {paymentStatusFilter !== 'all'
+                          ? `No ${paymentStatusFilter} invoices match your filters.`
+                          : 'Invoices will appear here once studios create reservations.'}
+                      </p>
+                      {paymentStatusFilter !== 'all' || selectedCompetition !== 'all' ? (
+                        <button
+                          onClick={() => {
+                            setPaymentStatusFilter('all');
+                            setSelectedCompetition('all');
+                          }}
+                          className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg transition-all border border-purple-400/30"
+                        >
+                          Clear Filters
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ) : (

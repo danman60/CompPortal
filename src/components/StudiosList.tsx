@@ -542,11 +542,19 @@ export default function StudiosList({ studioId }: StudiosListProps) {
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
           <div className="text-6xl mb-4">🏢</div>
           <h3 className="text-xl font-semibold text-white mb-2">No studios found</h3>
-          <p className="text-gray-400">
+          <p className="text-gray-400 mb-6">
             {filter === 'all'
-              ? 'No studios registered yet.'
-              : `No ${filter} studios found.`}
+              ? 'Studios that register for your competitions will appear here.'
+              : `No ${filter} studios found. Try viewing all studios.`}
           </p>
+          {filter !== 'all' && (
+            <button
+              onClick={() => setFilter('all')}
+              className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg transition-all border border-purple-400/30"
+            >
+              View All Studios
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
