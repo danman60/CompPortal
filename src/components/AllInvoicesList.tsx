@@ -56,23 +56,11 @@ export default function AllInvoicesList() {
   });
 
   const handleMarkAsPaid = (reservationId: string, currentStatus: string, studioName: string) => {
-    const newStatus = prompt(
-      `Update payment status for ${studioName}\n\nCurrent: ${currentStatus}\n\nSelect new status:\n- pending\n- partial\n- paid\n- refunded\n- cancelled`,
-      currentStatus
-    );
-
-    if (!newStatus) return;
-
-    const validStatuses = ['pending', 'partial', 'paid', 'refunded', 'cancelled'];
-    if (!validStatuses.includes(newStatus)) {
-      alert('Invalid payment status. Must be one of: pending, partial, paid, refunded, cancelled');
-      return;
-    }
-
+    // Immediately mark as paid without popup
     setProcessingId(reservationId);
     markAsPaidMutation.mutate({
       id: reservationId,
-      paymentStatus: newStatus as 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled',
+      paymentStatus: 'paid',
     });
   };
 
@@ -259,9 +247,7 @@ export default function AllInvoicesList() {
                 <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Routines" sortKey="entryCount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Total Amount" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Payment Status
-                </th>
+                <SortableHeader label="Payment Status" sortKey="reservation.payment_status" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
