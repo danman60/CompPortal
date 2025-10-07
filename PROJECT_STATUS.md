@@ -1,16 +1,51 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 6, 2025 (Third Round Bug Fixes)
-**MVP Due**: October 7, 2025 (1 day)
-**Current Phase**: Ready for Final Verification ✅
+**Last Updated**: October 7, 2025 (Clean Database + E2E Testing Ready)
+**MVP Due**: October 7, 2025 (TODAY)
+**Current Phase**: E2E Testing from Clean Slate ✅
 **Branch**: main
-**Deployment**: dpl_FTzWNQy6cqjHUiEJLh4QzHbBcj3s (READY)
+**Deployment**: dpl_AcRzS4DSQ2FevvKoeVcsXjWqPnKR (READY)
 
 **📂 Documentation**: See [FILE_INDEX.md](./FILE_INDEX.md) for complete documentation map
 
 ---
 
-## Latest Session (Oct 6, 2025 - Third Round Bug Fixes) 🐛✅
+## Latest Session (Oct 7, 2025 - Database Cleanup + UX Polish) 🧹✅
+
+**All User-Requested Changes Complete** (Commits 50db0d4, 837047c):
+
+**Database Cleanup (via Supabase MCP)**:
+- Deleted all demo data: 28 entries, 39 participants, 17 dancers, 11 reservations, 5 invoices, 3 test studios
+- Kept: Demo Dance Studio, 10 competitions (2024-2025), schema intact
+- Clean slate for predictable E2E testing
+
+**UX Improvements**:
+- SD Dashboard: Removed Events Capacity card, shows only 3 cards (StudioDirectorStats.tsx:37)
+- CD Dashboard: Switched Invoices/Events order, direct link to /dashboard/invoices/all (CompetitionDirectorDashboard.tsx:11-17)
+- Global Invoices: Added Download CSV button with RFC 4180 export (AllInvoicesList.tsx:216-253)
+- 1-Click Auth: Added revalidatePath to match manual login behavior (auth.ts:45)
+
+**E2E Testing Documentation**:
+- Created QA_VERIFICATION_ROUND_4.md: 9 comprehensive tests for clean database
+- Complete workflow: Reservation → Approval → Invoice → Dancers → Routines → CSV
+- Human-like testing behaviors for automation
+- Expected final state: 1 reservation, 5 routines, 3 dancers, 1 invoice
+
+**Build Status**: ✅ All 40 routes compile successfully
+**Deployment**: ✅ READY (dpl_AcRzS4DSQ2FevvKoeVcsXjWqPnKR)
+**Production URL**: https://comp-portal-one.vercel.app/
+
+**Production Verified**:
+- ✅ SD dashboard shows 3 cards (no Events Capacity)
+- ✅ CD dashboard has Invoices first, links to /all route
+- ✅ Global invoices page loads with CSV download button
+- ✅ Database clean: 0 invoices, 0 routines, 0 dancers, 0 reservations
+
+**Next Steps**: Execute QA_VERIFICATION_ROUND_4.md E2E testing suite
+
+---
+
+## Previous Session (Oct 6, 2025 - Third Round Bug Fixes) 🐛✅
 
 **3 Critical Blockers Fixed** (Commit 50b3b31):
 
