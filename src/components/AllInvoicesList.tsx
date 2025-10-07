@@ -199,13 +199,13 @@ export default function AllInvoicesList() {
         </div>
         <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-white/20 p-6">
           <div className="text-3xl font-bold text-white mb-2">
-            {invoices.filter(inv => inv.reservation?.paymentStatus === 'pending' || !inv.reservation).length}
+            {invoices.filter(inv => inv.reservation?.paymentStatus === 'pending' || !inv.reservation?.paymentStatus).length}
           </div>
           <div className="text-sm text-gray-300">Pending</div>
         </div>
         <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-white/20 p-6">
           <div className="text-3xl font-bold text-white mb-2">
-            {formatCurrency(invoices.reduce((sum, inv) => sum + inv.totalAmount, 0))}
+            {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
           </div>
           <div className="text-sm text-gray-300">Total Revenue</div>
         </div>
@@ -241,25 +241,27 @@ export default function AllInvoicesList() {
                   <tr key={`${invoice.studioId}-${invoice.competitionId}`} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-white font-semibold">{invoice.studioName}</div>
-                        <div className="text-gray-400 text-sm">{invoice.studioCode}</div>
-                        <div className="text-gray-500 text-xs">{invoice.studioCity}, {invoice.studioProvince}</div>
+                        <div className="text-white font-semibold">{invoice.studioName || 'N/A'}</div>
+                        <div className="text-gray-400 text-sm">{invoice.studioCode || 'N/A'}</div>
+                        <div className="text-gray-500 text-xs">
+                          {invoice.studioCity || 'N/A'}, {invoice.studioProvince || 'N/A'}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-white">{invoice.competitionName}</div>
-                        <div className="text-gray-400 text-sm">{invoice.competitionYear}</div>
+                        <div className="text-white">{invoice.competitionName || 'N/A'}</div>
+                        <div className="text-gray-400 text-sm">{invoice.competitionYear || 0}</div>
                         <div className="text-gray-500 text-xs">
                           {formatDate(invoice.competitionStartDate)} - {formatDate(invoice.competitionEndDate)}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-white">
-                      {invoice.entryCount}
+                      {invoice.entryCount || 0}
                     </td>
                     <td className="px-6 py-4 text-white font-semibold">
-                      {formatCurrency(invoice.totalAmount)}
+                      {formatCurrency(invoice.totalAmount || 0)}
                     </td>
                     <td className="px-6 py-4">
                       {getPaymentStatusBadge(invoice.reservation?.paymentStatus)}

@@ -532,27 +532,45 @@ export const reservationRouter = router({
       });
 
       // Auto-generate invoice on approval
-      const routinesFee = reservation.competitions?.entry_fee || 0;
-      const subtotal = Number(routinesFee) * spacesConfirmed;
-
-      await prisma.invoices.create({
-        data: {
+      const existingInvoice = await prisma.invoices.findFirst({
+        where: {
           studio_id: reservation.studio_id,
           competition_id: reservation.competition_id,
           reservation_id: reservation.id,
-          line_items: [
-            {
-              description: `Routine reservations (${spacesConfirmed} routines @ $${Number(routinesFee).toFixed(2)} each)`,
-              quantity: spacesConfirmed,
-              unit_price: Number(routinesFee),
-              total: subtotal,
-            },
-          ],
-          subtotal: subtotal,
-          total: subtotal,
-          status: 'UNPAID',
         },
       });
+
+      if (!existingInvoice && spacesConfirmed > 0) {
+        const routinesFee = reservation.competitions?.entry_fee;
+
+        if (!routinesFee || Number(routinesFee) <= 0) {
+          console.error('Cannot create invoice: Invalid entry fee for competition', {
+            competitionId: reservation.competition_id,
+            entryFee: routinesFee,
+          });
+        } else {
+          const subtotal = Number(routinesFee) * spacesConfirmed;
+
+          await prisma.invoices.create({
+            data: {
+              studio_id: reservation.studio_id,
+              competition_id: reservation.competition_id,
+              reservation_id: reservation.id,
+              line_items: [
+                {
+                  description: `Routine reservations (${spacesConfirmed} routines @ $${Number(routinesFee).toFixed(2)} each)`,
+                  quantity: spacesConfirmed,
+                  unit_price: Number(routinesFee),
+                  total: subtotal,
+                },
+              ],
+              subtotal: subtotal,
+              total: subtotal,
+              status: 'UNPAID',
+            },
+          });
+        }
+      }
 
       // Send approval email to studio
       if (reservation.studios?.email) {

@@ -159,7 +159,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
     const entryData = {
       ...formData,
-      reservation_id: approvedReservation?.id, // Link to reservation for space enforcement
+      reservation_id: urlReservationId || approvedReservation?.id, // Use URL reservation ID directly if provided
       entry_fee: totalFee,
       total_fee: totalFee,
       status: 'draft' as const,
