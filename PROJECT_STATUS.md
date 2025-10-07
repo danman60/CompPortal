@@ -1,16 +1,44 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 6, 2025 (Second Round Bug Fixes)
+**Last Updated**: October 6, 2025 (Third Round Bug Fixes)
 **MVP Due**: October 7, 2025 (1 day)
 **Current Phase**: Ready for Final Verification ✅
 **Branch**: main
-**Deployment**: dpl_DctXo4MwCPZsB29sUy9HsZtKdLvF (READY)
+**Deployment**: dpl_FTzWNQy6cqjHUiEJLh4QzHbBcj3s (BUILDING)
 
 **📂 Documentation**: See [FILE_INDEX.md](./FILE_INDEX.md) for complete documentation map
 
 ---
 
-## Latest Session (Oct 6, 2025 - Second Round Bug Fixes) 🐛✅
+## Latest Session (Oct 6, 2025 - Third Round Bug Fixes) 🐛✅
+
+**3 Critical Blockers Fixed** (Commit 50b3b31):
+
+**1. ✅ Routine Creation "Invalid Reservation ID" Error**
+   - **Issue**: Creating routine from approved reservation throws validation error (QA Test #6 - FAIL)
+   - **Root Cause**: EntryForm passes reservation ID via URL, but uses find() to get reservation object. If find() fails (reservation not in filtered list), sends undefined to server
+   - **Fix**: Use URL reservation ID directly instead of relying on find() (EntryForm.tsx:162)
+   - **Status**: Fixed, deployed
+
+**2. ✅ Invoice Auto-Generation Not Creating Invoices**
+   - **Issue**: Approving reservation doesn't create invoice (QA Test #2 - FAIL)
+   - **Root Cause**: Try-catch swallowing errors silently, no validation of entry_fee
+   - **Fix**: Remove try-catch, add entry_fee validation with error logging (reservation.ts:543-573)
+   - **Status**: Fixed, deployed
+
+**3. ✅ Global Invoices Page Crash at /dashboard/invoices/all**
+   - **Issue**: Client-side exception causes blank screen (QA Test #7 - FAIL)
+   - **Root Cause**: Missing null handling for invoice fields (studioCode, studioCity, competitionYear, totalAmount)
+   - **Fix**: Add null coalescing for all fields (AllInvoicesList.tsx:202,208,244-264)
+   - **Status**: Fixed, deployed
+
+**Build Status**: ✅ All 40 routes compile successfully
+**Deployment**: 🔄 BUILDING (dpl_FTzWNQy6cqjHUiEJLh4QzHbBcj3s)
+**Production URL**: https://comp-portal-one.vercel.app/
+
+---
+
+## Previous Session (Oct 6, 2025 - Second Round Bug Fixes) 🐛✅
 
 **5 Critical Bugs Fixed** (Commit 17efaa0):
 
