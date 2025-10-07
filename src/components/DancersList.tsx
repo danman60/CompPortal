@@ -7,10 +7,26 @@ import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 
 export default function DancersList() {
-  const { data, isLoading } = trpc.dancer.getAll.useQuery();
+  const { data, isLoading, error } = trpc.dancer.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'male' | 'female'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
+  if (error) {
+    return (
+      <div className="bg-red-500/10 backdrop-blur-md rounded-xl border border-red-500/20 p-8 text-center">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h3 className="text-xl font-semibold text-white mb-2">Error Loading Dancers</h3>
+        <p className="text-gray-300 mb-4">{error.message}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -26,8 +42,9 @@ export default function DancersList() {
     );
   }
 
-  const dancers = data?.dancers || [];
+  const dancers = data?.dancers ?? [];
   const filteredDancers = dancers.filter((dancer) => {
+    if (!dancer) return false;
     const matchesGender = filter === 'all' || dancer.gender?.toLowerCase() === filter;
     const matchesSearch =
       searchTerm === '' ||

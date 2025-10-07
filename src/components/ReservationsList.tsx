@@ -690,7 +690,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                         >
                           {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                             ? '✅ All Routines Allocated'
-                            : '+ Create Routines'}
+                            : 'Create Routines'}
                         </Link>
                       </div>
                     ) : (
