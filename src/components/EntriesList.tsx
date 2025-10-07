@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
+import toast from 'react-hot-toast';
 
 export default function EntriesList() {
   const { data, isLoading } = trpc.entry.getAll.useQuery();
@@ -74,12 +75,21 @@ export default function EntriesList() {
   const handleBulkDelete = async () => {
     if (selectedEntries.size === 0) return;
 
-    const confirmMessage = `Are you sure you want to delete ${selectedEntries.size} routine${selectedEntries.size > 1 ? 's' : ''}?`;
-    if (!confirm(confirmMessage)) return;
+    const count = selectedEntries.size;
+    const entryIds = Array.from(selectedEntries);
 
-    for (const entryId of selectedEntries) {
-      await deleteMutation.mutateAsync({ id: entryId });
-    }
+    toast.promise(
+      (async () => {
+        for (const entryId of entryIds) {
+          await deleteMutation.mutateAsync({ id: entryId });
+        }
+      })(),
+      {
+        loading: `Deleting ${count} routine${count > 1 ? 's' : ''}...`,
+        success: `${count} routine${count > 1 ? 's' : ''} deleted successfully`,
+        error: 'Failed to delete routines',
+      }
+    );
   };
 
   // Helper function to determine routine completion status
