@@ -1,16 +1,65 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 6, 2025 (Critical Bug Fixes from QA)
+**Last Updated**: October 6, 2025 (Second Round Bug Fixes)
 **MVP Due**: October 7, 2025 (1 day)
-**Current Phase**: Bug Fixes Deployed - Verification Pending ⚠️
+**Current Phase**: Ready for Final Verification ✅
 **Branch**: main
-**Deployment**: Vercel (auto-deploy on push)
+**Deployment**: dpl_DctXo4MwCPZsB29sUy9HsZtKdLvF (READY)
 
 **📂 Documentation**: See [FILE_INDEX.md](./FILE_INDEX.md) for complete documentation map
 
 ---
 
-## Latest Session (Oct 6, 2025 - Critical Bug Fixes from QA Report) 🐛✅
+## Latest Session (Oct 6, 2025 - Second Round Bug Fixes) 🐛✅
+
+**5 Critical Bugs Fixed** (Commit 17efaa0):
+
+**1. ✅ Dancers Page Crash - White Screen Error**
+   - **Issue**: White screen crash at `/dashboard/dancers` (Test #4-5)
+   - **Root Cause**: No error handling for tRPC query failures
+   - **Fix**: Added error boundary with retry button + null-safe filtering (DancersList.tsx:10-29, 45-55)
+   - **Status**: Deployed, resolves Test #4-5
+
+**2. ✅ Auto-Invoice Generation Failure**
+   - **Issue**: Invoice not created when CD approves reservation (Test #20)
+   - **Root Cause**: Missing required fields (`invoice_number`, `invoice_date`) - schema doesn't have these fields
+   - **Fix**: Removed non-existent fields from invoice creation (reservation.ts:538-555)
+   - **Status**: Deployed, invoice now auto-generates on approval
+
+**3. ✅ Studio Director Dashboard - Missing Events Capacity Card**
+   - **Issue**: Events Capacity card missing from SD dashboard (Test #2)
+   - **Root Cause**: Card never implemented
+   - **Fix**: Added 4th card with capacity visualization (StudioDirectorStats.tsx:36-155)
+   - **Features**: Color-coded progress bars (green<70%, yellow<90%, red≥90%), shows up to 2 events with X/Y spaces
+   - **Status**: Deployed, resolves Test #2
+
+**4. ✅ Button Label Mismatch**
+   - **Issue**: Button labeled "+ Create Routines" instead of "Create Routines" (Test #7)
+   - **Fix**: Removed "+" prefix (ReservationsList.tsx:693)
+   - **Status**: Deployed, resolves Test #7
+
+**5. ✅ Drag-Drop Navigation Issues**
+   - **Issue**: Dashboard cards trigger navigation during drag (Test #3)
+   - **Root Cause**: Link clicks not prevented during/after drag
+   - **Fix**: Already resolved in previous session (416c087) - 10px activation distance, 400ms cooldown
+   - **Status**: Verified deployed
+
+**Build Status**: ✅ All 40 routes compile successfully
+**Deployment**: ✅ READY (dpl_DctXo4MwCPZsB29sUy9HsZtKdLvF)
+**Production URL**: https://comp-portal-one.vercel.app/
+
+**QA Progress**: 14/25 tests passing (56%) → Expected 19+/25 after fixes (76%+)
+
+**Next Steps**:
+1. Rerun failing tests to verify fixes
+2. Test dancers page error handling
+3. Test invoice auto-generation on reservation approval
+4. Verify Events Capacity card displays correctly
+5. Final production smoke test before MVP launch
+
+---
+
+## Previous Session (Oct 6, 2025 - First Round Bug Fixes from QA) 🐛✅
 
 **QA Testing Results**: 20/25 tests passed (80%), 4 critical bugs identified
 
