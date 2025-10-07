@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
@@ -42,7 +43,7 @@ export default function AllInvoicesList() {
       toast.success('Payment status updated to paid');
     },
     onError: (error) => {
-      toast.error(`Failed to update payment: ${error.message}`);
+      toast.error(getFriendlyErrorMessage(error.message));
       setProcessingId(null);
     },
   });
@@ -53,7 +54,7 @@ export default function AllInvoicesList() {
       toast.success(`Reminder email sent to ${data.email}`);
     },
     onError: (error) => {
-      toast.error(`Failed to send reminder: ${error.message}`);
+      toast.error(getFriendlyErrorMessage(error.message));
     },
   });
 

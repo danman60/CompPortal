@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import { uploadLogoFile } from '@/lib/storage';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 
 interface StudiosListProps {
   studioId?: string; // If provided, show edit mode for this studio only (studio director)
@@ -50,7 +51,7 @@ export default function StudiosList({ studioId }: StudiosListProps) {
       toast.success('Studio information updated successfully!');
     },
     onError: (error) => {
-      toast.error(`Error updating studio: ${error.message}`);
+      toast.error(getFriendlyErrorMessage(error.message));
     },
   });
 

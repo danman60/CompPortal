@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ManualReservationModal from './ManualReservationModal';
 import toast from 'react-hot-toast';
+import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -40,7 +41,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
       toast.success('Reservation approved successfully');
     },
     onError: (error) => {
-      toast.error(`Approval failed: ${error.message}`);
+      toast.error(getFriendlyErrorMessage(error.message));
       setProcessingId(null);
     },
   });
@@ -53,7 +54,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
       toast.success('Reservation rejected');
     },
     onError: (error) => {
-      toast.error(`Rejection failed: ${error.message}`);
+      toast.error(getFriendlyErrorMessage(error.message));
       setProcessingId(null);
     },
   });
@@ -83,7 +84,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
         }
       } catch {
         // Not a JSON warning, show regular error
-        toast.error(`Capacity reduction failed: ${error.message}`);
+        toast.error(getFriendlyErrorMessage(error.message));
       }
       setProcessingId(null);
     },
