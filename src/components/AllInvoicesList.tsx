@@ -213,6 +213,44 @@ export default function AllInvoicesList() {
 
       {/* Invoices Table */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+        {/* Table Header with Download Button */}
+        <div className="bg-white/5 border-b border-white/20 px-6 py-4 flex justify-between items-center">
+          <h3 className="text-xl font-bold text-white">Invoices</h3>
+          <button
+            onClick={() => {
+              // Generate CSV from current invoices
+              const csvHeaders = ['Studio', 'Code', 'City', 'Event', 'Year', 'Routines', 'Total Amount', 'Payment Status'];
+              const csvRows = sortedInvoices.map(inv => [
+                inv.studioName || 'N/A',
+                inv.studioCode || 'N/A',
+                inv.studioCity || 'N/A',
+                inv.competitionName || 'N/A',
+                inv.competitionYear || 0,
+                inv.entryCount || 0,
+                (inv.totalAmount || 0).toFixed(2),
+                inv.reservation?.paymentStatus || 'pending',
+              ]);
+
+              const csvContent = [
+                csvHeaders.join(','),
+                ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+              ].join('\n');
+
+              const blob = new Blob([csvContent], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `invoices-${new Date().toISOString().split('T')[0]}.csv`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold text-sm"
+          >
+            📥 Download CSV
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-white/5 border-b border-white/20">

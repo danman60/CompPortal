@@ -33,23 +33,8 @@ export default function StudioDirectorStats() {
   const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
   const pendingReservations = myReservations?.reservations?.filter(r => r.status === 'pending').length || 0;
 
-  // Calculate events capacity for approved reservations
-  const approvedReservationsWithCapacity = myReservations?.reservations
-    ?.filter(r => r.status === 'approved' && r.spaces_confirmed && r.spaces_confirmed > 0)
-    ?.map(r => {
-      const spacesConfirmed = r.spaces_confirmed || 0;
-      const spacesUsed = myEntries?.entries?.filter(e => e.reservation_id === r.id).length || 0;
-      const utilizationPercent = spacesConfirmed > 0 ? Math.round((spacesUsed / spacesConfirmed) * 100) : 0;
-      return {
-        competitionName: r.competitions?.name || 'Competition',
-        spacesConfirmed,
-        spacesUsed,
-        utilizationPercent,
-      };
-    }) || [];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* My Dancers Card */}
       <Link
         href="/dashboard/dancers"
@@ -113,44 +98,6 @@ export default function StudioDirectorStats() {
             <span>Pending:</span>
             <span className="font-semibold text-yellow-400">{pendingReservations}</span>
           </div>
-        </div>
-      </Link>
-
-      {/* Events Capacity Card */}
-      <Link
-        href="/dashboard/reservations"
-        className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-md rounded-xl border border-orange-400/30 p-6 hover:from-orange-500/30 hover:to-red-500/30 transition-all duration-200 cursor-pointer"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Events Capacity</h3>
-          <div className="text-3xl">📊</div>
-        </div>
-        <div className="text-4xl font-bold text-white mb-2">{approvedReservationsWithCapacity.length}</div>
-        <div className="space-y-2 text-sm">
-          {approvedReservationsWithCapacity.length === 0 ? (
-            <p className="text-gray-400">No approved events yet</p>
-          ) : (
-            approvedReservationsWithCapacity.slice(0, 2).map((event, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-gray-300 text-xs">
-                  <span className="truncate max-w-[120px]">{event.competitionName}</span>
-                  <span className="font-semibold">{event.spacesUsed}/{event.spacesConfirmed}</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${
-                      event.utilizationPercent >= 90
-                        ? 'bg-red-500'
-                        : event.utilizationPercent >= 70
-                        ? 'bg-yellow-500'
-                        : 'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min(event.utilizationPercent, 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))
-          )}
         </div>
       </Link>
     </div>

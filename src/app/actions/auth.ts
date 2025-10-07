@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 export async function signOutAction() {
   const supabase = await createServerSupabaseClient();
@@ -39,6 +40,9 @@ export async function demoLoginAction(role: 'studio_director' | 'competition_dir
     console.error('Demo login error:', error);
     redirect('/login?error=demo_login_failed');
   }
+
+  // Force Next.js to refetch all data (equivalent to router.refresh())
+  revalidatePath('/', 'layout');
 
   redirect('/dashboard');
 }

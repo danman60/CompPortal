@@ -9,18 +9,18 @@ interface CompetitionDirectorDashboardProps {
 
 const CD_DASHBOARD_CARDS: DashboardCard[] = [
   {
+    id: 'invoices',
+    href: '/dashboard/invoices/all',
+    icon: '💰',
+    title: 'Invoices',
+    description: 'Studio invoices',
+  },
+  {
     id: 'events',
     href: '/dashboard/competitions',
     icon: '🎪',
     title: 'Events',
     description: 'Reservations & capacity',
-  },
-  {
-    id: 'invoices',
-    href: '/dashboard/invoices',
-    icon: '💰',
-    title: 'Invoices',
-    description: 'Studio invoices',
   },
   {
     id: 'studios',
