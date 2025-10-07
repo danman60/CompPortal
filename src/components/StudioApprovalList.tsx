@@ -150,7 +150,9 @@ export default function StudioApprovalList() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-400">
                     {studio.email && (
                       <div>
-                        📧 <span className="text-gray-300">{studio.email}</span>
+                        📧 <a href={`mailto:${studio.email}`} className="text-blue-400 hover:underline">
+                          {studio.email}
+                        </a>
                       </div>
                     )}
                     {studio.phone && (

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ManualReservationModal from './ManualReservationModal';
+import toast from 'react-hot-toast';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -36,9 +37,10 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     onSuccess: () => {
       utils.reservation.getAll.invalidate();
       setProcessingId(null);
+      toast.success('Reservation approved successfully');
     },
     onError: (error) => {
-      alert(`Approval failed: ${error.message}`);
+      toast.error(`Approval failed: ${error.message}`);
       setProcessingId(null);
     },
   });
@@ -48,9 +50,10 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     onSuccess: () => {
       utils.reservation.getAll.invalidate();
       setProcessingId(null);
+      toast.success('Reservation rejected');
     },
     onError: (error) => {
-      alert(`Rejection failed: ${error.message}`);
+      toast.error(`Rejection failed: ${error.message}`);
       setProcessingId(null);
     },
   });
@@ -62,7 +65,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
       setProcessingId(null);
       setReduceModalData(null);
       setNewCapacity(0);
-      alert(`Capacity reduced successfully. ${data.impact}`);
+      toast.success(`Capacity reduced successfully. ${data.impact}`);
     },
     onError: (error) => {
       // Try to parse warning JSON
@@ -80,7 +83,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
         }
       } catch {
         // Not a JSON warning, show regular error
-        alert(`Capacity reduction failed: ${error.message}`);
+        toast.error(`Capacity reduction failed: ${error.message}`);
       }
       setProcessingId(null);
     },
@@ -379,7 +382,9 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                         </div>
                         {reservation.agent_email && (
                           <div className="text-sm text-gray-400">
-                            📧 {reservation.agent_email}
+                            📧 <a href={`mailto:${reservation.agent_email}`} className="text-blue-400 hover:underline">
+                              {reservation.agent_email}
+                            </a>
                           </div>
                         )}
                         {reservation.agent_phone && (

@@ -3,6 +3,7 @@
 import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import { uploadLogoFile } from '@/lib/storage';
+import toast from 'react-hot-toast';
 
 interface StudiosListProps {
   studioId?: string; // If provided, show edit mode for this studio only (studio director)
@@ -46,10 +47,10 @@ export default function StudiosList({ studioId }: StudiosListProps) {
   const updateMutation = trpc.studio.update.useMutation({
     onSuccess: () => {
       setIsEditing(false);
-      alert('Studio information updated successfully!');
+      toast.success('Studio information updated successfully!');
     },
     onError: (error) => {
-      alert(`Error updating studio: ${error.message}`);
+      toast.error(`Error updating studio: ${error.message}`);
     },
   });
 
@@ -126,12 +127,12 @@ export default function StudiosList({ studioId }: StudiosListProps) {
 
         if (result.success && result.publicUrl) {
           setEditData({ ...editData, logo_url: result.publicUrl });
-          alert('✅ Logo uploaded successfully!');
+          toast.success('Logo uploaded successfully!');
         } else {
-          alert(`❌ Upload failed: ${result.error || 'Unknown error'}`);
+          toast.error(`Upload failed: ${result.error || 'Unknown error'}`);
         }
       } catch (error) {
-        alert(`❌ Upload error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        toast.error(`Upload error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setIsUploadingLogo(false);
       }
@@ -215,7 +216,15 @@ export default function StudiosList({ studioId }: StudiosListProps) {
               </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Email</label>
-              <div className="text-white">{studio.email || 'Not set'}</div>
+              <div className="text-white">
+                {studio.email ? (
+                  <a href={`mailto:${studio.email}`} className="text-blue-400 hover:underline">
+                    {studio.email}
+                  </a>
+                ) : (
+                  'Not set'
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Phone</label>
@@ -581,7 +590,9 @@ export default function StudiosList({ studioId }: StudiosListProps) {
                   {studio.email && (
                     <div className="flex items-center gap-2 text-gray-400 text-sm">
                       <span>📧</span>
-                      <span className="truncate">{studio.email}</span>
+                      <a href={`mailto:${studio.email}`} className="text-blue-400 hover:underline truncate">
+                        {studio.email}
+                      </a>
                     </div>
                   )}
                   {studio.phone && (
