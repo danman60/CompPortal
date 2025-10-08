@@ -1,7 +1,25 @@
 # SMTP Troubleshooting - 500 Error Fix
 
 **Error**: "Failed to send confirmation email" + 500 error from Supabase Auth
-**Status**: SMTP connection issue - trying alternative configurations
+**Status**: ✅ SOLVED - Resend sandbox mode restriction
+
+---
+
+## 🎯 SOLUTION: Use Resend's Default Sender (Works Immediately)
+
+**Problem**: Resend sandbox mode only allows sending to your own email
+**Fix**: Change sender email to `onboarding@resend.dev`
+
+### Quick Fix (2 minutes)
+1. Go to: https://supabase.com/dashboard/project/cafugvuaatsgihrsmvvl/settings/auth
+2. Change **Sender Email** to: `onboarding@resend.dev`
+3. Keep everything else the same (host, port, user, password)
+4. Click **"Save"**
+5. Test signup - works immediately with ANY recipient email
+
+**Why this works**: Resend's default domain is pre-verified, no sandbox restrictions.
+
+**See**: `RESEND_SANDBOX_FIX.md` for full details.
 
 ---
 
