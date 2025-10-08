@@ -46,24 +46,52 @@ export default function OnboardingPage() {
         throw new Error(`Failed to update profile: ${profileError.message}`);
       }
 
-      // Create studio
-      const { error: studioError } = await supabase
+      // Check if studio already exists
+      const { data: existingStudio } = await supabase
         .from('studios')
-        .insert({
-          owner_id: user.id,
-          name: formData.studioName,
-          address1: formData.address1,
-          city: formData.city,
-          province: formData.province,
-          postal_code: formData.postalCode,
-          phone: formData.phone,
-          email: formData.email || user.email,
-          status: 'approved', // Auto-approve for now
-          country: 'Canada',
-        });
+        .select('id')
+        .eq('owner_id', user.id)
+        .single();
+
+      let studioError;
+      if (existingStudio) {
+        // Update existing studio
+        const { error } = await supabase
+          .from('studios')
+          .update({
+            name: formData.studioName,
+            address1: formData.address1,
+            city: formData.city,
+            province: formData.province,
+            postal_code: formData.postalCode,
+            phone: formData.phone,
+            email: formData.email || user.email,
+            status: 'approved',
+            country: 'Canada',
+          })
+          .eq('owner_id', user.id);
+        studioError = error;
+      } else {
+        // Create new studio
+        const { error } = await supabase
+          .from('studios')
+          .insert({
+            owner_id: user.id,
+            name: formData.studioName,
+            address1: formData.address1,
+            city: formData.city,
+            province: formData.province,
+            postal_code: formData.postalCode,
+            phone: formData.phone,
+            email: formData.email || user.email,
+            status: 'approved',
+            country: 'Canada',
+          });
+        studioError = error;
+      }
 
       if (studioError) {
-        throw new Error(`Failed to create studio: ${studioError.message}`);
+        throw new Error(`Failed to save studio: ${studioError.message}`);
       }
 
       // Redirect to dashboard
