@@ -7,6 +7,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -108,7 +109,13 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 10, // Require 10px movement before drag starts
+        distance: 8, // Require 8px movement before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // 200ms press before drag starts (prevents accidental drags)
+        tolerance: 5, // 5px tolerance for movement during delay
       },
     }),
     useSensor(KeyboardSensor, {
