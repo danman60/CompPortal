@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { uploadLogoFile } from '@/lib/storage';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
+import { copyToClipboard } from '@/lib/clipboard';
 
 interface StudiosListProps {
   studioId?: string; // If provided, show edit mode for this studio only (studio director)
@@ -171,6 +172,15 @@ export default function StudiosList({ studioId }: StudiosListProps) {
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-400 border border-purple-400/30">
                 Studio Code: {studio.code}
               </span>
+              {studio.code && (
+                <button
+                  onClick={() => copyToClipboard(studio.code!, 'Studio code')}
+                  className="text-gray-400 hover:text-white transition-colors p-1"
+                  title="Copy studio code"
+                >
+                  📋
+                </button>
+              )}
               <span
                 className={`px-3 py-1 rounded-full text-xs font-semibold ${
                   studio.status === 'approved'
@@ -577,7 +587,18 @@ export default function StudiosList({ studioId }: StudiosListProps) {
                 >
                   {studio.status?.toUpperCase()}
                 </span>
-                <div className="text-gray-400 text-xs">#{studio.code}</div>
+                {studio.code && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(studio.code!, 'Studio code');
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors text-xs"
+                    title="Copy studio code"
+                  >
+                    📋 {studio.code}
+                  </button>
+                )}
               </div>
 
               {/* Studio Name */}

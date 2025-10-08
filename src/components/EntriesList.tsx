@@ -626,7 +626,7 @@ export default function EntriesList() {
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead>
+              <thead className="sticky top-0 z-10 backdrop-blur-md">
                 <tr className="border-b border-white/20 bg-white/5">
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white w-12">
                     <input

@@ -244,7 +244,7 @@ export default function AllInvoicesList() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-white/5 border-b border-white/20">
+            <thead className="bg-white/5 border-b border-white/20 sticky top-0 z-10 backdrop-blur-md">
               <tr>
                 <SortableHeader label="Studio" sortKey="studioName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
