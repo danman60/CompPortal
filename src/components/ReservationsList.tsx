@@ -1,7 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ManualReservationModal from './ManualReservationModal';
@@ -128,6 +128,24 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     setRejectionReason('');
   };
 
+  // Keyboard shortcuts for rejection modal
+  useEffect(() => {
+    if (!rejectModalData) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setRejectModalData(null);
+        setRejectionReason('');
+      }
+      if (e.key === 'Enter' && e.ctrlKey) {
+        confirmReject();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [rejectModalData, rejectionReason]);
+
   const handleReduceCapacity = (
     reservationId: string,
     studioName: string,
@@ -153,6 +171,25 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
       confirmed: !!reduceModalData.warning, // Confirm if we've seen the warning
     });
   };
+
+  // Keyboard shortcuts for reduce capacity modal
+  useEffect(() => {
+    if (!reduceModalData) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setReduceModalData(null);
+        setNewCapacity(0);
+        setProcessingId(null);
+      }
+      if (e.key === 'Enter' && e.ctrlKey && newCapacity >= 0 && newCapacity < reduceModalData.currentCapacity) {
+        confirmReduceCapacity();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [reduceModalData, newCapacity]);
 
   if (isLoading) {
     return (
@@ -803,13 +840,13 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                 }}
                 className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
               >
-                Cancel
+                Cancel <span className="text-xs text-gray-500">(Esc)</span>
               </button>
               <button
                 onClick={confirmReject}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg transition-all"
               >
-                ❌ Reject Reservation
+                ❌ Reject Reservation <span className="text-xs opacity-70">(Ctrl+Enter)</span>
               </button>
             </div>
           </div>
@@ -883,14 +920,14 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                 }}
                 className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
               >
-                Cancel
+                Cancel <span className="text-xs text-gray-500">(Esc)</span>
               </button>
               <button
                 onClick={confirmReduceCapacity}
                 disabled={newCapacity < 0 || newCapacity >= reduceModalData.currentCapacity}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-orange-500/50 disabled:to-orange-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
               >
-                {reduceModalData.warning ? '✅ Confirm Reduction' : '🔽 Reduce Capacity'}
+                {reduceModalData.warning ? '✅ Confirm Reduction' : '🔽 Reduce Capacity'} <span className="text-xs opacity-70">(Ctrl+Enter)</span>
               </button>
             </div>
           </div>
