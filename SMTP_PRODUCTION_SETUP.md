@@ -13,15 +13,15 @@
 ### Step 1: Get Resend SMTP Credentials
 
 **You already have**:
-- ✅ Resend API Key: `re_UfJoFnVW_B5wVx4YWbsPexSgKmAc9A33N`
-- ✅ Resend configured for custom emails (invoices, reservations, etc.)
+- ✅ Resend API Key: `re_RY89G5sR_6xYgH12W135RGuJYE16NgAAL`
+- ✅ Resend account active and ready to use
 
 **Resend SMTP Details**:
 ```
 SMTP Host: smtp.resend.com
 SMTP Port: 465 (SSL) or 587 (TLS)
 SMTP Username: resend
-SMTP Password: re_UfJoFnVW_B5wVx4YWbsPexSgKmAc9A33N (same as API key!)
+SMTP Password: re_RY89G5sR_6xYgH12W135RGuJYE16NgAAL (same as API key!)
 From Email: noreply@[YOUR_VERIFIED_DOMAIN]
 ```
 
@@ -42,7 +42,7 @@ From Email: noreply@[YOUR_VERIFIED_DOMAIN]
    SMTP Host: smtp.resend.com
    SMTP Port: 465
    SMTP User: resend
-   SMTP Password: re_UfJoFnVW_B5wVx4YWbsPexSgKmAc9A33N
+   SMTP Password: re_RY89G5sR_6xYgH12W135RGuJYE16NgAAL
    ```
 
 4. **Sender Details**:
@@ -254,7 +254,7 @@ From Email: noreply@glowdance.com
 Host: smtp.resend.com
 Port: 465 (SSL) or 587 (TLS)
 User: resend
-Pass: re_UfJoFnVW_B5wVx4YWbsPexSgKmAc9A33N
+Pass: re_RY89G5sR_6xYgH12W135RGuJYE16NgAAL
 From: noreply@glowdance.com (or verified domain)
 ```
 
