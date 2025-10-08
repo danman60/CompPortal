@@ -65,12 +65,12 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
       <Link
         href={card.href}
         onClick={handleClick}
-        className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block ${
+        className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block animate-fade-in ${
           isActiveCard ? 'pointer-events-none' : ''
         }`}
       >
         <div className="flex items-center gap-4">
-          <div className="text-4xl">{card.icon}</div>
+          <div className="text-4xl inline-block hover:scale-110 transition-transform">{card.icon}</div>
           <div className="flex-1">
             <h3 className="text-xl font-semibold text-white">{card.title}</h3>
             <p className="text-gray-400 text-sm">{card.description}</p>
