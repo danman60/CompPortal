@@ -4,6 +4,7 @@ import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards'
 
 interface StudioDirectorDashboardProps {
   userEmail: string;
+  firstName: string;
   studioName?: string;
   studioStatus?: string | null;
 }
@@ -53,7 +54,7 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   },
 ];
 
-export default function StudioDirectorDashboard({ userEmail, studioName, studioStatus }: StudioDirectorDashboardProps) {
+export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
   return (
     <div className="space-y-8">
       {/* Pending Approval Banner */}
@@ -81,11 +82,10 @@ export default function StudioDirectorDashboard({ userEmail, studioName, studioS
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-bold text-white mb-2">
-            My Studio Dashboard
+            Welcome Back, {firstName}! 👋
           </h1>
           <p className="text-gray-400">
-            Welcome back, {userEmail}
-            {studioName && <span className="text-purple-400"> • {studioName}</span>}
+            {studioName && <span className="text-purple-400">{studioName}</span>}
           </p>
         </div>
         <Link

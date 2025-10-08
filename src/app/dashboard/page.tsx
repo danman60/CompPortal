@@ -30,6 +30,11 @@ export default async function DashboardPage() {
     });
     studioName = studio?.name;
     studioStatus = studio?.status;
+
+    // Redirect to onboarding if no studio or no first name
+    if (!studio || !userProfile?.first_name) {
+      redirect('/onboarding');
+    }
   }
 
   const role = userProfile?.role || 'studio_director';
@@ -58,6 +63,7 @@ export default async function DashboardPage() {
         {role === 'studio_director' ? (
           <StudioDirectorDashboard
             userEmail={user.email || ''}
+            firstName={userProfile?.first_name || ''}
             studioName={studioName}
             studioStatus={studioStatus}
           />
