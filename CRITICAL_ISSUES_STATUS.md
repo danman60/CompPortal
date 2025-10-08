@@ -265,19 +265,20 @@ Space limit enforcement has been confirmed working in production with multiple t
 
 ## 🚀 Deployment Checklist
 
-### Immediate Actions (10 minutes total)
-- [ ] Set `NEXT_PUBLIC_APP_URL` in Vercel environment variables
-- [ ] Update Supabase Auth URL configuration
-- [ ] Redeploy from Vercel (or wait for auto-deploy from git)
+### Configuration Complete ✅
+- [x] `NEXT_PUBLIC_APP_URL` in Vercel environment variables (already set)
+- [x] Supabase Auth URL configuration (handled by Vercel integration)
+- [x] Auto-deploy from git push (deployment in progress)
 
 ### Testing Required (35 minutes total)
-- [ ] Test account confirmation email links (5 min)
-- [ ] Regression test: Invoice auto-generation (15 min)
-- [ ] Regression test: Routine creation validation (15 min)
+- [ ] **RECOMMENDED**: Test account confirmation email links (5 min) - verify integration working
+- [ ] **REQUIRED**: Regression test: Invoice auto-generation (15 min)
+- [ ] **REQUIRED**: Regression test: Routine creation validation (15 min)
 
 ### No Action Required
 - [x] Email template branding (verified complete)
 - [x] Space-limit enforcement (verified working)
+- [x] Supabase Auth URLs (Vercel integration managing)
 
 ---
 
