@@ -492,7 +492,9 @@ export default function AllInvoicesList() {
             )}
           </div>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-white/5 border-b border-white/20 sticky top-0 z-10 backdrop-blur-md">
               <tr>
@@ -628,6 +630,114 @@ export default function AllInvoicesList() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4 p-4">
+          {sortedInvoices.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4">📋</div>
+              <h3 className="text-xl font-bold text-white mb-2">No Invoices Found</h3>
+              <p className="text-gray-400 mb-4">
+                {paymentStatusFilter !== 'all'
+                  ? `No ${paymentStatusFilter} invoices match your filters.`
+                  : 'Invoices will appear here once studios create reservations.'}
+              </p>
+            </div>
+          ) : (
+            sortedInvoices.map((invoice) => {
+              const invoiceKey = `${invoice.studioId}-${invoice.competitionId}`;
+              const isSelected = selectedInvoices.has(invoiceKey);
+              return (
+                <div
+                  key={invoiceKey}
+                  className={`bg-white/5 backdrop-blur-md rounded-xl border border-white/20 p-4 ${
+                    isSelected ? 'ring-2 ring-purple-500 bg-purple-500/10' : ''
+                  }`}
+                >
+                  {/* Card Header with Checkbox */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleInvoiceSelection(invoiceKey)}
+                          className="w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-purple-500 cursor-pointer"
+                        />
+                        <h4 className="text-lg font-bold text-white">{invoice.studioName || 'N/A'}</h4>
+                      </div>
+                      <p className="text-sm text-gray-400">{invoice.studioCode || 'N/A'}</p>
+                      <p className="text-xs text-gray-500">
+                        {invoice.studioCity || 'N/A'}, {invoice.studioProvince || 'N/A'}
+                      </p>
+                    </div>
+                    {getPaymentStatusBadge(invoice.reservation?.paymentStatus)}
+                  </div>
+
+                  {/* Event Info */}
+                  <div className="mb-3 pb-3 border-b border-white/10">
+                    <div className="text-sm text-gray-400">Event</div>
+                    <div className="text-white font-semibold">{invoice.competitionName || 'N/A'}</div>
+                    <div className="text-xs text-gray-500">
+                      {invoice.competitionYear || 0} • {formatDate(invoice.competitionStartDate)} -{' '}
+                      {formatDate(invoice.competitionEndDate)}
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <div className="text-sm text-gray-400">Routines</div>
+                      <div className="text-xl font-bold text-white">{invoice.entryCount || 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Total Amount</div>
+                      <div className="text-xl font-bold text-green-400">
+                        {formatCurrency(invoice.totalAmount || 0)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href={`/dashboard/invoices/${invoice.studioId}/${invoice.competitionId}`}
+                      className="w-full text-center px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg font-semibold transition-all border border-blue-400/30"
+                    >
+                      View Details
+                    </Link>
+                    {invoice.reservation && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() =>
+                            handleMarkAsPaid(
+                              invoice.reservation!.id,
+                              invoice.reservation!.paymentStatus || 'pending',
+                              invoice.studioName
+                            )
+                          }
+                          disabled={processingId === invoice.reservation?.id}
+                          className="px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30 disabled:opacity-50"
+                        >
+                          {processingId === invoice.reservation?.id ? 'Processing...' : 'Mark Paid'}
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleSendReminder(invoice.studioId, invoice.competitionId, invoice.studioName)
+                          }
+                          disabled={sendReminderMutation.isPending}
+                          className="px-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg font-semibold transition-all border border-purple-400/30 disabled:opacity-50"
+                        >
+                          {sendReminderMutation.isPending ? 'Sending...' : 'Reminder'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
