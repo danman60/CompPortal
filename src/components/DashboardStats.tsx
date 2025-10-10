@@ -151,10 +151,10 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
             <h3 className="text-lg font-semibold text-white">Events Capacity</h3>
             <div className="text-3xl">🏆</div>
           </div>
-          <div className="text-4xl font-bold text-white mb-4">{competitionStats?.total || 0}</div>
+          <div className="text-4xl font-bold text-white mb-2">{competitionStats?.total || 0}</div>
 
           {/* Upcoming Competitions with Capacity Bars */}
-          <div className="space-y-3">
+          <div className="space-y-1 text-sm flex-1">
             {upcomingCompetitions?.competitions && upcomingCompetitions.competitions.length > 0 ? (
               upcomingCompetitions.competitions.slice(0, 3).map((comp) => {
                 const totalEntries = comp._count?.competition_entries || 0;
@@ -185,10 +185,6 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
             ) : (
               <div className="text-sm text-gray-400">No upcoming events</div>
             )}
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-1 text-blue-400 text-xs">
-            <span>View all events →</span>
           </div>
         </div>
       </Link>

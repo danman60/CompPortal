@@ -75,14 +75,6 @@ export default async function DashboardPage() {
           />
         )}
 
-        {/* Footer with Build Version and Date */}
-        <footer className="mt-12 pt-6 border-t border-white/10">
-          <div className="flex justify-center items-center gap-4 text-xs text-gray-500">
-            <span>CompPortal v1.0.0</span>
-            <span>•</span>
-            <span>Built {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          </div>
-        </footer>
       </div>
     </main>
   );

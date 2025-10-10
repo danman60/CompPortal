@@ -18,14 +18,8 @@ const QUOTES = [
 ];
 
 export default function MotivationalQuote() {
-  const [quote, setQuote] = useState(QUOTES[0]);
-
-  useEffect(() => {
-    // Select a consistent quote based on the day of the year
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    const quoteIndex = dayOfYear % QUOTES.length;
-    setQuote(QUOTES[quoteIndex]);
-  }, []);
+  // Random quote on each page load (login)
+  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
 
   return (
     <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-md rounded-xl border border-purple-400/30 p-4">
