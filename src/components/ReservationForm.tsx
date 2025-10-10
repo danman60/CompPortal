@@ -4,6 +4,8 @@ import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSmartDefaults } from '@/hooks/useSmartDefaults';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import AutoSaveIndicator from '@/components/AutoSaveIndicator';
 
 interface ReservationFormProps {
   studioId: string;
@@ -28,15 +30,27 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
     enabled: true,
   });
 
-  // Load smart defaults on mount
+  // Auto-save integration
+  const autoSave = useAutoSave(formData, {
+    key: `reservation-form-draft-${studioId}`,
+    debounceMs: 2000,
+    enabled: true,
+  });
+
+  // Load saved draft on mount (takes priority over smart defaults)
   useEffect(() => {
-    if (smartDefaults.defaults) {
+    const savedData = autoSave.loadSaved();
+    if (savedData) {
+      setFormData(savedData);
+    } else if (smartDefaults.defaults) {
+      // Fall back to smart defaults if no draft
       setFormData((prev) => ({
         ...prev,
         competition_id: smartDefaults.defaults.competition_id || prev.competition_id,
       }));
     }
-  }, [smartDefaults.defaults]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch competitions
   const { data: competitionsData } = trpc.competition.getAll.useQuery({
@@ -46,6 +60,8 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
 
   const createReservation = trpc.reservation.create.useMutation({
     onSuccess: () => {
+      // Clear draft on successful creation
+      autoSave.clearSaved();
       // Save smart defaults for next reservation
       smartDefaults.saveDefaults({
         competition_id: formData.competition_id,
@@ -322,6 +338,9 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
           <p className="text-red-400 text-sm">{createReservation.error.message}</p>
         </div>
       )}
+
+      {/* Auto-save Indicator */}
+      <AutoSaveIndicator status={autoSave.status.status} lastSaved={autoSave.status.lastSaved} />
     </form>
   );
 }
