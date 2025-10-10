@@ -74,7 +74,7 @@ export default function CompetitionsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -83,7 +83,7 @@ export default function CompetitionsPage() {
             </div>
           ))}
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -93,7 +93,7 @@ export default function CompetitionsPage() {
     : competitions.filter(c => c.status === filter);
 
   return (
-    <div className="p-6">
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
       {/* Header */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -297,6 +297,6 @@ export default function CompetitionsPage() {
           })}
         </div>
       )}
-    </div>
+    </main>
   );
 }
