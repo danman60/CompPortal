@@ -8,6 +8,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
@@ -21,6 +22,9 @@ export default function AllInvoicesList() {
   // Bulk selection state
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
 
+  // Data refresh tracking
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
   // Read URL query parameters on mount
   useEffect(() => {
     const paymentStatus = searchParams.get('paymentStatus');
@@ -30,10 +34,17 @@ export default function AllInvoicesList() {
   }, [searchParams]);
 
   // Fetch all invoices with optional filters
-  const { data, isLoading } = trpc.invoice.getAllInvoices.useQuery({
+  const { data, isLoading, dataUpdatedAt, refetch } = trpc.invoice.getAllInvoices.useQuery({
     competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
     paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
   });
+
+  // Update lastUpdated when data changes
+  useEffect(() => {
+    if (dataUpdatedAt) {
+      setLastUpdated(new Date(dataUpdatedAt));
+    }
+  }, [dataUpdatedAt]);
 
   // Fetch competitions for filter dropdown
   const { data: competitionsData } = trpc.competition.getAll.useQuery();
@@ -293,7 +304,24 @@ export default function AllInvoicesList() {
         {/* Table Header with Bulk Selection and Actions */}
         <div className="bg-white/5 border-b border-white/20 px-6 py-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-white">Invoices</h3>
+            <div>
+              <h3 className="text-xl font-bold text-white">Invoices</h3>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-xs text-gray-400">
+                  Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+                </span>
+                <button
+                  onClick={() => refetch()}
+                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
+                  title="Refresh data"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </button>
+              </div>
+            </div>
             <button
               onClick={() => {
               // Generate CSV from current invoices
