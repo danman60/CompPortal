@@ -6,6 +6,11 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+
+  /* Tenant-specific theme colors (dynamically updated) */
+  --tenant-primary: #6366F1;
+  --tenant-secondary: #8B5CF6;
+  --tenant-accent: #F59E0B;
 }
 
 @media (prefers-color-scheme: dark) {
