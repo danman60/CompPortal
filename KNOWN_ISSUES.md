@@ -42,38 +42,56 @@
 ---
 
 ### 2. Table View UI Issues (RESOLVED)
-**Status:** ✅ FIXED - Commit 4fba46c (2025-01-10)
+**Status:** ✅ FIXED - Commits 4fba46c + 499247f (2025-01-10)
 **First Reported:** 2025-01-10
-**Severity:** Medium - Table completely invisible in production
+**Severity:** High - Table headers missing, columns misaligned
 **Resolution Date:** 2025-01-10
 
 **Problem:**
 - Table view rendering but invisible due to insufficient background contrast
-- User feedback: "table layout is still broken"
-- Table container had `bg-white/10` (nearly transparent against dark gradient)
-- Header and rows barely visible with `bg-white/5` backgrounds
+- User feedback: "TABLE VIEW COLUMNS STILL MISALIGNED" (all caps)
+- Table headers positioned below viewport, not visible on page load
+- Data columns showing without header labels, making columns unidentifiable
+- User reported: "all the data is completely shifted to the left of the columns its totally broken"
 
-**Root Cause:**
-- Glassmorphic design using very transparent backgrounds
-- Light backgrounds (`bg-white/10`, `bg-white/5`) invisible against page gradient
-- Insufficient contrast for table visibility
+**Root Causes:**
+1. **Visibility Issue (4fba46c):**
+   - Glassmorphic design using very transparent backgrounds
+   - Light backgrounds (`bg-white/10`, `bg-white/5`) invisible against page gradient
+   - Insufficient contrast for table visibility
 
-**Solution Applied:**
+2. **Header Positioning Issue (499247f):**
+   - Table container had no max-height constraint
+   - Sticky thead only works within scrolling container
+   - Headers existed in DOM but positioned ~438px below viewport
+   - No scroll container = sticky positioning ineffective
+
+**Solutions Applied:**
+
+**Fix 1 - Visibility (4fba46c):**
 - Table container: `bg-white/10` → `bg-gray-900/90` (solid dark background)
 - Header row: `bg-white/5` → `bg-gray-800/90` (strong contrast)
 - Body rows: alternating `bg-gray-800/40` and `bg-gray-900/20` (zebra striping)
 - Added `shadow-2xl` for depth
 - Stronger borders: `border-white/30` (was `border-white/20`)
 
+**Fix 2 - Header Visibility (499247f):**
+- Added `max-h-[600px] overflow-y-auto` to `.overflow-x-auto` container
+- Creates proper scroll container for sticky positioning
+- Headers now always visible at top of table
+- Sticky header remains in place when scrolling rows
+
 **Files Modified:**
-- `src/components/EntriesList.tsx` (lines 777, 781, 809-810)
+- `src/components/EntriesList.tsx` (lines 777-778, 781, 809-810)
 
 **Production Verification:**
 - ✅ Table visible with clear contrast
+- ✅ Column headers visible at top of table on page load
+- ✅ Headers stick to top when scrolling table content
 - ✅ Column headers properly aligned with data columns
 - ✅ Zebra striping provides row distinction
 - ✅ All text readable against dark background
-- ✅ Screenshot captured: `table-view-fixed-alignment-verified.png`
+- ✅ Screenshots: `table-header-fix-verified.png`, `table-header-sticky-verified.png`
 
 ---
 
