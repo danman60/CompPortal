@@ -385,6 +385,16 @@ export const reservationRouter = router({
         );
       }
 
+      // Get tenant_id from studio
+      const studio = await prisma.studios.findUnique({
+        where: { id: input.studio_id },
+        select: { tenant_id: true },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
       // Build data object without relation fields
       const { competition_id, studio_id, location_id, ...restData } = data;
 
@@ -403,7 +413,7 @@ export const reservationRouter = router({
             },
           }),
           tenants: {
-            connect: { id: ctx.tenantId! },
+            connect: { id: studio.tenant_id },
           },
           ...(payment_due_date && { payment_due_date: new Date(payment_due_date) }),
           ...(deposit_amount !== undefined && { deposit_amount: deposit_amount.toString() }),
