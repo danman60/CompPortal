@@ -2,10 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+/* Light Theme (default) */
+:root,
+html.light {
+  --foreground-rgb: 15, 23, 42; /* slate-900 */
+  --background-start-rgb: 248, 250, 252; /* slate-50 */
+  --background-end-rgb: 241, 245, 249; /* slate-100 */
 
   /* Tenant-specific theme colors (dynamically updated) */
   --tenant-primary: #6366F1;
@@ -13,12 +15,16 @@
   --tenant-accent: #F59E0B;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+/* Dark Theme */
+html.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+
+  /* Tenant-specific theme colors (dynamically updated) */
+  --tenant-primary: #6366F1;
+  --tenant-secondary: #8B5CF6;
+  --tenant-accent: #F59E0B;
 }
 
 body {
