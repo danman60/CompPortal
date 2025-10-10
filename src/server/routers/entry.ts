@@ -361,10 +361,19 @@ export const entryRouter = router({
         }
       }
 
+      // Get tenant_id from studio (this is a publicProcedure, so ctx.tenantId might be null)
+      const studio = await prisma.studios.findUnique({
+        where: { id: data.studio_id },
+        select: { tenant_id: true },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
       // Create entry with participants
       // Build Prisma data object using relation connect syntax (not foreign key IDs)
       const createData: any = {
-        tenant_id: ctx.tenantId!,
         title: data.title,
         status: data.status,
         is_title_upgrade: data.is_title_upgrade,
@@ -373,6 +382,7 @@ export const entryRouter = router({
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
         // Use Prisma relation connect syntax for foreign keys
+        tenants: { connect: { id: studio.tenant_id } },
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },
         age_groups: { connect: { id: data.age_group_id } },
