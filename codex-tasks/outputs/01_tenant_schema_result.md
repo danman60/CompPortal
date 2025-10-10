@@ -1,118 +1,61 @@
-# Multi-Tenant Schema Implementation - Complete
+# 01_tenant_schema_result
 
-## Summary
+Summary
+- Multi-tenancy is already implemented in `prisma/schema.prisma` at project root.
+- `public.tenants` model exists; `tenant_id` with FK + indexes exists on: `competitions`, `studios`, `user_profiles`, `reservations`, `competition_entries`, `invoices`, `dancers`.
+- Per `.codexrc` database policy, I did not modify the Prisma schema. Instead, I created a migration SQL to seed required tenants and assign existing competitions.
 
-Successfully added multi-tenant architecture to CompPortal database schema. All existing models now support tenant-based data isolation.
+Files
+- Migration (copy-paste to real migration if desired): `codex-tasks/migrations/20251010_seed_tenants_and_assign.sql`
 
-## Schema Changes
+Migration SQL
+```sql
+-- Multi-tenancy seed and assignment migration (copy into prisma migration if needed)
+-- Safe for re-run: uses ON CONFLICT and non-destructive updates
 
-### 1. New Tenant Model (prisma/schema.prisma:559-578)
+-- 1) Seed tenants 'demo' and 'empwr'
+INSERT INTO public.tenants (id, slug, subdomain, name, branding)
+VALUES
+  (gen_random_uuid(), 'demo', 'demo', 'Demo Competition Portal',
+   '{"primaryColor": "#6366F1", "secondaryColor": "#8B5CF6", "logo": null, "tagline": "Dance Competition Management"}'::jsonb),
+  (gen_random_uuid(), 'empwr', 'empwr', 'EMPWR Dance',
+   '{"primaryColor": "#8B5CF6", "secondaryColor": "#EC4899", "logo": null, "tagline": "Empowering Dance Excellence"}'::jsonb)
+ON CONFLICT (slug) DO NOTHING;
 
-```prisma
-model tenants {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug        String   @unique @db.VarChar(50)
-  subdomain   String   @unique @db.VarChar(50)
-  name        String   @db.VarChar(255)
-  branding    Json     @default("{}")
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @default(now()) @db.Timestamp(6)
+-- 2) Ensure useful indexes exist (idempotent)
+CREATE INDEX IF NOT EXISTS idx_competitions_tenant ON public.competitions(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_studios_tenant ON public.studios(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_tenant ON public.user_profiles(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_tenant ON public.reservations(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_competition_entries_tenant ON public.competition_entries(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_tenant ON public.invoices(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_dancers_tenant ON public.dancers(tenant_id);
 
-  // Relations to all tenant-scoped models
-  competitions         competitions[]
-  studios              studios[]
-  user_profiles        user_profiles[]
-  reservations         reservations[]
-  competition_entries  competition_entries[]
-  invoices             invoices[]
-  dancers              dancers[]
-}
+-- 3) Assign existing competitions by name pattern
+--   - Names containing 'GLOW' -> demo
+--   - All others -> empwr
+UPDATE public.competitions c
+SET tenant_id = t.id
+FROM public.tenants t
+WHERE t.slug = 'demo'
+  AND c.name ILIKE '%GLOW%'
+  AND c.tenant_id IS DISTINCT FROM t.id;
+
+UPDATE public.competitions c
+SET tenant_id = t.id
+FROM public.tenants t
+WHERE t.slug = 'empwr'
+  AND (c.name IS NULL OR c.name NOT ILIKE '%GLOW%')
+  AND c.tenant_id IS DISTINCT FROM t.id;
 ```
 
-### 2. Models with tenant_id Added
+Validation Checklist
+- Prisma schema compiles: no changes were introduced to schema in this step. `npx prisma validate` should continue to pass.
+- Relations preserved: all existing FKs remain; migration only seeds and updates data.
+- Indexes present: idempotent `CREATE INDEX IF NOT EXISTS` added for each tenant column.
+- Cascade delete: existing relations in schema already use `onDelete: Cascade` where defined (e.g., tenants -> studios, competitions, etc.).
 
-| Model | Line | Field Type | Nullable | Indexed |
-|-------|------|------------|----------|---------|
-| competitions | 572 | UUID | No | Yes |
-| studios | 323 | UUID | No | Yes |
-| user_profiles | 438 | UUID | Yes* | Yes |
-| reservations | 860 | UUID | No | Yes |
-| competition_entries | 439 | UUID | No | Yes |
-| invoices | 906 | UUID | No | Yes |
-| dancers | 656 | UUID | No | Yes |
+Notes
+- Request asked to update `prisma/schema.prisma`, but `.codexrc` forbids schema edits for junior tasks. If you want me to also update the Prisma schema, please confirm and I’ll proceed in a follow-up.
+- If you prefer fixed UUIDs for tenants, I can adjust the seed to use provided constants instead of `gen_random_uuid()`.
 
-*Nullable for super_admin users
-
-### 3. Foreign Key Relations
-
-All models use CASCADE delete for referential integrity:
-```prisma
-tenants @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-```
-
-### 4. Performance Indexes
-
-Created indexes on all tenant_id columns:
-- `idx_competitions_tenant`
-- `idx_studios_tenant`
-- `idx_user_profiles_tenant`
-- `idx_reservations_tenant`
-- `idx_entries_tenant`
-- `idx_invoices_tenant`
-- `idx_dancers_tenant`
-
-## Migration File
-
-**Location**: `prisma/migrations/20251009000001_add_multi_tenancy/migration.sql`
-
-**Operations**:
-1. Create tenants table with unique constraints
-2. Add tenant_id columns to 7 models
-3. Seed Demo and EMPWR tenants with fixed UUIDs
-4. Assign existing data to appropriate tenants:
-   - GLOW competitions → Demo tenant
-   - Other competitions → EMPWR tenant
-   - All studios → EMPWR tenant
-   - User profiles inherit from studio ownership
-   - Related records (reservations, entries, invoices, dancers) cascade from parent records
-5. Create foreign key constraints
-6. Create performance indexes
-
-## Seeded Tenants
-
-### Demo Tenant
-- UUID: `00000000-0000-0000-0000-000000000001`
-- Slug: `demo`
-- Subdomain: `demo`
-- Name: Demo Competition Portal
-- Branding: Indigo/Purple theme
-
-### EMPWR Tenant
-- UUID: `00000000-0000-0000-0000-000000000002`
-- Slug: `empwr`
-- Subdomain: `empwr`
-- Name: EMPWR Dance
-- Branding: Purple/Pink theme
-
-## Quality Gates
-
-✅ Prisma schema structure valid
-✅ All models have tenant_id field
-✅ All relations properly configured
-✅ Indexes created for performance
-✅ Foreign key constraints with CASCADE
-✅ Migration SQL includes data assignment logic
-✅ Two tenants seeded with fixed UUIDs for predictability
-
-## Next Steps
-
-1. Apply migration to database using Supabase MCP
-2. Create middleware for subdomain detection (Phase 1.2)
-3. Implement RLS policies for tenant isolation (Phase 1.3)
-
-## Files Modified
-
-1. `prisma/schema.prisma` - Added tenants model, tenant_id to 7 models
-2. `prisma/migrations/20251009000001_add_multi_tenancy/migration.sql` - New migration
-
-**Status**: ✅ Complete and ready for database deployment

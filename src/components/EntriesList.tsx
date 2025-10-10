@@ -618,13 +618,13 @@ export default function EntriesList() {
         </div>
       ) : viewMode === 'cards' ? (
         /* Cards View */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[200px] items-stretch">
           {filteredEntries.map((entry) => {
             const routineStatus = getRoutineStatus(entry);
             return (
             <div
               key={entry.id}
-              className={`min-h-[200px] bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all ${
+              className={`min-h-[200px] bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all flex flex-col ${
                 routineStatus.status === 'ready'
                   ? 'border-green-400/40'
                   : routineStatus.status === 'in-progress'

@@ -23,6 +23,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
     waiver_consent: false,
     media_consent: false,
   });
+  const [showErrors, setShowErrors] = useState(false);
 
   // Smart defaults integration
   const smartDefaults = useSmartDefaults({
@@ -75,6 +76,12 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate current step; if invalid, show error feedback
+    if (!isStepValid()) {
+      setShowErrors(true);
+      return;
+    }
 
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
@@ -172,7 +179,9 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               required
               value={formData.competition_id}
               onChange={(e) => setFormData({ ...formData, competition_id: e.target.value })}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                showErrors && currentStep === 1 && formData.competition_id === '' ? 'border-red-500' : 'border-white/20'
+              }`}
             >
               <option value="" className="bg-gray-900 text-white">Select a competition</option>
               {competitions.map((comp) => (
@@ -181,6 +190,9 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
                 </option>
               ))}
             </select>
+            {showErrors && currentStep === 1 && formData.competition_id === '' && (
+              <p className="text-red-400 text-sm mt-1">Please select a competition</p>
+            )}
           </div>
         </div>
       )}
@@ -202,9 +214,14 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               max="1000"
               value={formData.spaces_requested}
               onChange={(e) => setFormData({ ...formData, spaces_requested: parseInt(e.target.value) || 1 })}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                showErrors && currentStep === 2 && (!formData.spaces_requested || formData.spaces_requested < 1) ? 'border-red-500' : 'border-white/20'
+              }`}
               placeholder="Enter number of routines"
             />
+            {showErrors && currentStep === 2 && (!formData.spaces_requested || formData.spaces_requested < 1) && (
+              <p className="text-red-400 text-sm mt-1">Please enter a valid number of routines</p>
+            )}
             <p className="mt-2 text-sm text-gray-400">
               Number of performance entries you plan to register for this competition.
             </p>

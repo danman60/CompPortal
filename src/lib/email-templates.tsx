@@ -8,6 +8,7 @@ import StudioApproved from '@/emails/StudioApproved';
 import StudioRejected from '@/emails/StudioRejected';
 import PaymentConfirmed from '@/emails/PaymentConfirmed';
 import MissingMusicReminder from '@/emails/MissingMusicReminder';
+import WelcomeEmail from '@/emails/WelcomeEmail';
 
 /**
  * Render email templates to HTML
@@ -115,6 +116,13 @@ export interface MissingMusicReminderData {
   tenantBranding?: TenantBranding;
 }
 
+export interface WelcomeEmailData {
+  name: string;
+  email: string;
+  dashboardUrl?: string;
+  tenantBranding?: TenantBranding;
+}
+
 /**
  * Render registration confirmation email
  */
@@ -176,6 +184,13 @@ export async function renderPaymentConfirmed(data: PaymentConfirmedData) {
  */
 export async function renderMissingMusicReminder(data: MissingMusicReminderData) {
   return render(<MissingMusicReminder {...data} />);
+}
+
+/**
+ * Render welcome email
+ */
+export async function renderWelcomeEmail(data: WelcomeEmailData) {
+  return render(<WelcomeEmail {...data} />);
 }
 
 /**

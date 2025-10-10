@@ -22,6 +22,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
     email: '',
     phone: '',
   });
+  const [showErrors, setShowErrors] = useState(false);
 
   // Fetch existing dancer data for edit mode
   const { data: existingDancer, isLoading: isLoadingDancer } = trpc.dancer.getById.useQuery(
@@ -62,6 +63,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Basic client-side validation
+    const emailValid = !formData.email || /.+@.+\..+/.test(formData.email);
+    const hasRequired = formData.first_name.trim() !== '' && formData.last_name.trim() !== '';
+    if (!hasRequired || !emailValid) {
+      setShowErrors(true);
+      return;
+    }
 
     if (!isEditMode && !studioId) {
       alert('Studio ID is required. Please make sure you are logged in.');
@@ -132,9 +141,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
               maxLength={100}
               value={formData.first_name}
               onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                showErrors && formData.first_name.trim() === '' ? 'border-red-500' : 'border-white/20'
+              }`}
               placeholder="Enter first name"
             />
+            {showErrors && formData.first_name.trim() === '' && (
+              <p className="text-red-400 text-sm mt-1">First name is required</p>
+            )}
           </div>
 
           {/* Last Name */}
@@ -149,9 +163,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
               maxLength={100}
               value={formData.last_name}
               onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                showErrors && formData.last_name.trim() === '' ? 'border-red-500' : 'border-white/20'
+              }`}
               placeholder="Enter last name"
             />
+            {showErrors && formData.last_name.trim() === '' && (
+              <p className="text-red-400 text-sm mt-1">Last name is required</p>
+            )}
           </div>
 
           {/* Date of Birth */}
@@ -195,9 +214,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
               id="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                showErrors && formData.email && !/.+@.+\..+/.test(formData.email) ? 'border-red-500' : 'border-white/20'
+              }`}
               placeholder="dancer@example.com"
             />
+            {showErrors && formData.email && !/.+@.+\..+/.test(formData.email) && (
+              <p className="text-red-400 text-sm mt-1">Please enter a valid email</p>
+            )}
           </div>
 
           {/* Phone */}
@@ -211,9 +235,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
               maxLength={50}
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                showErrors && formData.phone && formData.phone.length < 7 ? 'border-red-500' : 'border-white/20'
+              }`}
               placeholder="(555) 123-4567"
             />
+            {showErrors && formData.phone && formData.phone.length < 7 && (
+              <p className="text-red-400 text-sm mt-1">Please enter a valid phone number</p>
+            )}
           </div>
         </div>
       </div>
