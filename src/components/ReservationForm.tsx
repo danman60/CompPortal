@@ -55,7 +55,6 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
 
   // Fetch competitions
   const { data: competitionsData } = trpc.competition.getAll.useQuery({
-    status: 'registration_open',
     isPublic: true,
   });
 
