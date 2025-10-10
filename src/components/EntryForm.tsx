@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import AutoSaveIndicator from '@/components/AutoSaveIndicator';
 
 type Step = 'basic' | 'details' | 'participants' | 'props' | 'review';
 
@@ -35,6 +37,23 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
   // Props state
   const [propsUsed, setPropsUsed] = useState<'no' | 'yes'>('no');
+
+  // Auto-save integration
+  const autoSave = useAutoSave(formData, {
+    key: `entry-form-draft-${entryId || 'new'}`,
+    debounceMs: 2000,
+    enabled: !isEditMode, // Only auto-save for new entries
+  });
+
+  // Load saved draft on mount
+  useEffect(() => {
+    if (!isEditMode) {
+      const savedData = autoSave.loadSaved();
+      if (savedData) {
+        setFormData(savedData);
+      }
+    }
+  }, [isEditMode]);
 
   // Fetch all necessary data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -112,6 +131,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
   const createMutation = trpc.entry.create.useMutation({
     onSuccess: async (data) => {
+      autoSave.clearSaved(); // Clear draft on successful creation
       router.push('/dashboard/entries');
     },
     onError: (error) => {
@@ -688,6 +708,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
           )}
         </div>
       </div>
+      <AutoSaveIndicator status={autoSave.status.status} lastSaved={autoSave.status.lastSaved} />
     </div>
   );
 }
