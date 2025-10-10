@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 export default function DanceQuote({ className = '' }: { className?: string }) {
   const quotes: { text: string; author: string }[] = [
     { text: 'There are shortcuts to happiness, and dancing is one of them.', author: 'Vicki Baum' },
@@ -55,13 +57,12 @@ export default function DanceQuote({ className = '' }: { className?: string }) {
     { text: 'Dance is the art of the soul moving.', author: 'Anonymous' },
   ];
 
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / 86400000);
-  const quote = quotes[dayOfYear % quotes.length];
+  // Random quote on each component mount (login/page load)
+  const [quoteIndex] = useState(() => Math.floor(Math.random() * quotes.length));
+  const quote = quotes[quoteIndex];
 
   const emojis = ['💃', '🩰', '🕺', '✨', '🎵', '🎶', '🌟'];
-  const emoji = emojis[dayOfYear % emojis.length];
+  const emoji = emojis[quoteIndex % emojis.length];
 
   return (
     <div

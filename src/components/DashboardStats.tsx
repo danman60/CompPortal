@@ -46,7 +46,7 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {/* Reservations Card */}
       <Link href="/dashboard/competitions">
-        <div className="bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md rounded-xl border border-orange-400/40 p-6 hover:from-orange-500/40 hover:to-red-500/40 transition-all duration-200 cursor-pointer shadow-lg">
+        <div className="bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md rounded-xl border border-orange-400/40 p-6 hover:from-orange-500/40 hover:to-red-500/40 transition-all duration-200 cursor-pointer shadow-lg min-h-[280px] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Reservations</h3>
             <div className="text-3xl">📋</div>
@@ -71,7 +71,7 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
 
       {/* Studios Card */}
       <Link href="/dashboard/studios">
-        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer">
+        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer min-h-[280px] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Studios</h3>
             <div className="text-3xl">🏢</div>
@@ -96,7 +96,7 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
 
       {/* Dancers Card - Studio Directors Only */}
       {role === 'studio_director' && (
-        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
+        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6 min-h-[280px] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Dancers</h3>
             <div className="text-3xl">💃</div>
@@ -121,7 +121,7 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
 
       {/* Invoices Card */}
       <Link href="/dashboard/invoices/all">
-        <div className="bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-red-400/30 p-6 hover:from-red-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer">
+        <div className="bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-red-400/30 p-6 hover:from-red-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer min-h-[280px] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Invoices</h3>
             <div className="text-3xl">💰</div>
@@ -146,7 +146,7 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
 
       {/* Competitions Card with Capacity Meters */}
       <Link href="/dashboard/competitions">
-        <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all duration-200 cursor-pointer">
+        <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all duration-200 cursor-pointer min-h-[280px] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Events Capacity</h3>
             <div className="text-3xl">🏆</div>

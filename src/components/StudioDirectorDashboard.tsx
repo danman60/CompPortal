@@ -98,11 +98,11 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
           <MotivationalQuote />
         </div>
         <Link
-          href="/dashboard/studios"
+          href="/dashboard/settings/profile"
           className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 px-4 py-2 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
         >
           <span className="text-xl">⚙️</span>
-          <span className="text-white font-semibold">Studio Settings</span>
+          <span className="text-white font-semibold">Profile Settings</span>
         </Link>
       </div>
 
