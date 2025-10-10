@@ -9,6 +9,7 @@ import SortableHeader from '@/components/SortableHeader';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { formatDistanceToNow } from 'date-fns';
+import { showUndoToast } from '@/lib/undoToast';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
@@ -73,11 +74,27 @@ export default function AllInvoicesList() {
   });
 
   const handleMarkAsPaid = (reservationId: string, currentStatus: string, studioName: string) => {
-    // Immediately mark as paid without popup
+    // Store previous status for undo
+    const previousStatus = currentStatus as 'pending' | 'cancelled' | 'partial' | 'paid' | 'refunded';
+
     setProcessingId(reservationId);
     markAsPaidMutation.mutate({
       id: reservationId,
       paymentStatus: 'paid',
+    }, {
+      onSuccess: () => {
+        // Show undo toast
+        showUndoToast({
+          message: `${studioName} invoice marked as paid`,
+          onUndo: () => {
+            // Revert the change
+            markAsPaidMutation.mutate({
+              id: reservationId,
+              paymentStatus: previousStatus,
+            });
+          },
+        });
+      },
     });
   };
 
@@ -128,6 +145,12 @@ export default function AllInvoicesList() {
       selectedArray.includes(`${inv.studioId}-${inv.competitionId}`) && inv.reservation
     );
 
+    // Store previous states for undo
+    const previousStates = selectedInvoiceData.map(inv => ({
+      id: inv.reservation!.id,
+      previousStatus: (inv.reservation!.paymentStatus || 'pending') as 'pending' | 'cancelled' | 'partial' | 'paid' | 'refunded',
+    }));
+
     let completed = 0;
     selectedInvoiceData.forEach(inv => {
       if (inv.reservation) {
@@ -138,7 +161,19 @@ export default function AllInvoicesList() {
           onSuccess: () => {
             completed++;
             if (completed === selectedInvoiceData.length) {
-              toast.success(`${completed} invoices marked as paid`);
+              // Show undo toast
+              showUndoToast({
+                message: `${completed} invoices marked as paid`,
+                onUndo: () => {
+                  // Revert all changes
+                  previousStates.forEach(state => {
+                    markAsPaidMutation.mutate({
+                      id: state.id,
+                      paymentStatus: state.previousStatus,
+                    });
+                  });
+                },
+              });
               setSelectedInvoices(new Set());
             }
           },
