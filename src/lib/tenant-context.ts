@@ -47,47 +47,27 @@ export async function getTenantId(): Promise<string | null> {
 export async function getTenantData(): Promise<TenantData | null> {
   const headersList = await headers();
   const hostname = headersList.get('host') || '';
-
-  console.log('[getTenantData] hostname:', hostname);
-
   const subdomain = extractSubdomain(hostname);
-
-  console.log('[getTenantData] extracted subdomain:', subdomain);
 
   const supabase = await createServerSupabaseClient();
 
   // Query by subdomain if present
   if (subdomain) {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('tenants')
       .select('id, slug, subdomain, name, branding')
       .eq('subdomain', subdomain)
       .single();
 
-    console.log('[getTenantData] subdomain query result:', {
-      subdomain,
-      found: !!data,
-      error: error?.message,
-      data: data ? { name: data.name, subdomain: data.subdomain } : null
-    });
-
     if (data) return data as TenantData;
   }
 
   // Fallback to demo tenant
-  console.log('[getTenantData] Falling back to demo tenant');
-
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('tenants')
     .select('id, slug, subdomain, name, branding')
     .eq('slug', 'demo')
     .single();
-
-  console.log('[getTenantData] fallback query result:', {
-    found: !!data,
-    error: error?.message,
-    data: data ? { name: data.name, slug: data.slug } : null
-  });
 
   return data as TenantData | null;
 }
