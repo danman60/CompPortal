@@ -11,6 +11,7 @@ import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { showUndoToast } from '@/lib/undoToast';
 import PullToRefresh from 'react-pull-to-refresh';
+import { SkeletonTable } from '@/components/Skeleton';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
@@ -298,17 +299,7 @@ export default function AllInvoicesList() {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
-            <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-white/20 rounded w-2/3"></div>
-          </div>
-        ))}
-      </div>
-    );
+    return <SkeletonTable rows={5} />;
   }
 
   const invoices = data?.invoices || [];

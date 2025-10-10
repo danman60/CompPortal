@@ -6,6 +6,7 @@ import { uploadLogoFile } from '@/lib/storage';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { copyToClipboard } from '@/lib/clipboard';
+import { SkeletonCard, SkeletonList } from '@/components/Skeleton';
 
 interface StudiosListProps {
   studioId?: string; // If provided, show edit mode for this studio only (studio director)
@@ -88,24 +89,14 @@ export default function StudiosList({ studioId }: StudiosListProps) {
 
   // Handle loading states
   if (studioId && isSingleLoading) {
-    return (
-      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
-        <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
-        <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
-        <div className="h-4 bg-white/20 rounded w-2/3"></div>
-      </div>
-    );
+    return <SkeletonList items={1} />;
   }
 
   if (!studioId && isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
-            <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-white/20 rounded w-2/3"></div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <SkeletonCard key={i} />
         ))}
       </div>
     );

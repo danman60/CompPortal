@@ -8,6 +8,7 @@ import SortableHeader from '@/components/SortableHeader';
 import PullToRefresh from 'react-pull-to-refresh';
 import { highlightText } from '@/lib/highlightText';
 import HoverPreview from '@/components/HoverPreview';
+import { SkeletonCard } from '@/components/Skeleton';
 
 export default function DancersList() {
   const { data, isLoading, error, refetch } = trpc.dancer.getAll.useQuery();
@@ -33,13 +34,9 @@ export default function DancersList() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
-            <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-white/20 rounded w-2/3"></div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <SkeletonCard key={i} />
         ))}
       </div>
     );

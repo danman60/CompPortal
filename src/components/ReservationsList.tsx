@@ -7,6 +7,7 @@ import Link from 'next/link';
 import ManualReservationModal from './ManualReservationModal';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
+import { SkeletonList } from '@/components/Skeleton';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -192,17 +193,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   }, [reduceModalData, newCapacity]);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
-            <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-white/20 rounded w-2/3"></div>
-          </div>
-        ))}
-      </div>
-    );
+    return <SkeletonList items={3} />;
   }
 
   const reservations = data?.reservations || [];
