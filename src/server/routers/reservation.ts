@@ -7,10 +7,12 @@ import {
   renderReservationApproved,
   renderReservationRejected,
   renderPaymentConfirmed,
+  renderInvoiceDelivery,
   getEmailSubject,
   type ReservationApprovedData,
   type ReservationRejectedData,
   type PaymentConfirmedData,
+  type InvoiceDeliveryData,
 } from '@/lib/email-templates';
 
 // Validation schema for reservation input
@@ -552,7 +554,7 @@ export const reservationRouter = router({
         } else {
           const subtotal = Number(routinesFee) * spacesConfirmed;
 
-          await prisma.invoices.create({
+          const invoice = await prisma.invoices.create({
             data: {
               studio_id: reservation.studio_id,
               competition_id: reservation.competition_id,
@@ -571,6 +573,41 @@ export const reservationRouter = router({
               status: 'UNPAID',
             },
           });
+
+          // Send invoice delivery email
+          if (reservation.studios?.email) {
+            try {
+              const invoiceEmailData: InvoiceDeliveryData = {
+                studioName: reservation.studios.name,
+                competitionName: reservation.competitions?.name || 'Competition',
+                competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+                invoiceNumber: invoice.id,
+                totalAmount: subtotal,
+                routineCount: spacesConfirmed,
+                invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices/${reservation.studio_id}/${reservation.competition_id}`,
+                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                }),
+              };
+
+              const invoiceHtml = await renderInvoiceDelivery(invoiceEmailData);
+              const invoiceSubject = getEmailSubject('invoice', {
+                competitionName: invoiceEmailData.competitionName,
+                competitionYear: invoiceEmailData.competitionYear,
+              });
+
+              await sendEmail({
+                to: reservation.studios.email,
+                subject: invoiceSubject,
+                html: invoiceHtml,
+              });
+            } catch (error) {
+              console.error('Failed to send invoice delivery email:', error);
+              // Don't throw - email failure shouldn't block the approval
+            }
+          }
         }
       }
 
