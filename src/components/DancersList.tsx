@@ -110,33 +110,54 @@ export default function DancersList() {
           {/* Gender Filters */}
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'all'
                 ? 'bg-purple-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            All ({dancers.length})
+            All
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'all'
+                ? 'bg-white/30 text-white'
+                : 'bg-purple-500 text-white'
+            }`}>
+              {dancers.length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('male')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'male'
                 ? 'bg-blue-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Male ({dancers.filter((d) => d.gender === 'Male').length})
+            Male
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'male'
+                ? 'bg-white/30 text-white'
+                : 'bg-blue-500 text-white'
+            }`}>
+              {dancers.filter((d) => d.gender === 'Male').length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('female')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'female'
                 ? 'bg-pink-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Female ({dancers.filter((d) => d.gender === 'Female').length})
+            Female
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'female'
+                ? 'bg-white/30 text-white'
+                : 'bg-pink-500 text-white'
+            }`}>
+              {dancers.filter((d) => d.gender === 'Female').length}
+            </span>
           </button>
         </div>
       </div>

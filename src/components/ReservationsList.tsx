@@ -319,43 +319,71 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
         <div className="flex gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'all'
                 ? 'bg-purple-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            All ({reservations.length})
+            All
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'all'
+                ? 'bg-white/30 text-white'
+                : 'bg-purple-500 text-white'
+            }`}>
+              {reservations.length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'pending'
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Pending ({reservations.filter((r) => r.status === 'pending').length})
+            Pending
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'pending'
+                ? 'bg-white/30 text-white'
+                : 'bg-yellow-500 text-black'
+            }`}>
+              {reservations.filter((r) => r.status === 'pending').length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('approved')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'approved'
                 ? 'bg-green-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Approved ({reservations.filter((r) => r.status === 'approved').length})
+            Approved
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'approved'
+                ? 'bg-white/30 text-white'
+                : 'bg-green-500 text-black'
+            }`}>
+              {reservations.filter((r) => r.status === 'approved').length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('rejected')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'rejected'
                 ? 'bg-red-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Rejected ({reservations.filter((r) => r.status === 'rejected').length})
+            Rejected
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'rejected'
+                ? 'bg-white/30 text-white'
+                : 'bg-red-500 text-white'
+            }`}>
+              {reservations.filter((r) => r.status === 'rejected').length}
+            </span>
           </button>
         </div>
       </div>

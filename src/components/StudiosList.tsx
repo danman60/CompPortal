@@ -518,33 +518,54 @@ export default function StudiosList({ studioId }: StudiosListProps) {
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg transition-all ${
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
             filter === 'all'
               ? 'bg-purple-500 text-white'
               : 'bg-white/10 text-gray-300 hover:bg-white/20'
           }`}
         >
-          All ({studios.length})
+          All
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            filter === 'all'
+              ? 'bg-white/30 text-white'
+              : 'bg-purple-500 text-white'
+          }`}>
+            {studios.length}
+          </span>
         </button>
         <button
           onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg transition-all ${
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
             filter === 'pending'
               ? 'bg-yellow-500 text-white'
               : 'bg-white/10 text-gray-300 hover:bg-white/20'
           }`}
         >
-          Pending ({studios.filter((s) => s.status === 'pending').length})
+          Pending
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            filter === 'pending'
+              ? 'bg-white/30 text-white'
+              : 'bg-yellow-500 text-black'
+          }`}>
+            {studios.filter((s) => s.status === 'pending').length}
+          </span>
         </button>
         <button
           onClick={() => setFilter('approved')}
-          className={`px-4 py-2 rounded-lg transition-all ${
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
             filter === 'approved'
               ? 'bg-green-500 text-white'
               : 'bg-white/10 text-gray-300 hover:bg-white/20'
           }`}
         >
-          Approved ({studios.filter((s) => s.status === 'approved').length})
+          Approved
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            filter === 'approved'
+              ? 'bg-white/30 text-white'
+              : 'bg-green-500 text-black'
+          }`}>
+            {studios.filter((s) => s.status === 'approved').length}
+          </span>
         </button>
       </div>
 

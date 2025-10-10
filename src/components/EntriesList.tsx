@@ -306,53 +306,88 @@ export default function EntriesList() {
 
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'all'
                 ? 'bg-purple-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            All ({entries.length})
+            All
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'all'
+                ? 'bg-white/30 text-white'
+                : 'bg-purple-500 text-white'
+            }`}>
+              {entries.length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('draft')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'draft'
                 ? 'bg-gray-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Draft ({entries.filter((e) => e.status === 'draft').length})
+            Draft
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'draft'
+                ? 'bg-white/30 text-white'
+                : 'bg-gray-500 text-white'
+            }`}>
+              {entries.filter((e) => e.status === 'draft').length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('registered')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'registered'
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Registered ({entries.filter((e) => e.status === 'registered').length})
+            Registered
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'registered'
+                ? 'bg-white/30 text-white'
+                : 'bg-yellow-500 text-black'
+            }`}>
+              {entries.filter((e) => e.status === 'registered').length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('confirmed')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'confirmed'
                 ? 'bg-green-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Confirmed ({entries.filter((e) => e.status === 'confirmed').length})
+            Confirmed
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'confirmed'
+                ? 'bg-white/30 text-white'
+                : 'bg-green-500 text-black'
+            }`}>
+              {entries.filter((e) => e.status === 'confirmed').length}
+            </span>
           </button>
           <button
             onClick={() => setFilter('cancelled')}
-            className={`px-4 py-2 rounded-lg transition-all ${
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'cancelled'
                 ? 'bg-red-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Cancelled ({entries.filter((e) => e.status === 'cancelled').length})
+            Cancelled
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'cancelled'
+                ? 'bg-white/30 text-white'
+                : 'bg-red-500 text-white'
+            }`}>
+              {entries.filter((e) => e.status === 'cancelled').length}
+            </span>
           </button>
         </div>
       </div>
