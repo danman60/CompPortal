@@ -10,6 +10,7 @@ import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { SkeletonList } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import PullToRefresh from 'react-pull-to-refresh';
+import { hapticMedium } from '@/lib/haptics';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -36,8 +37,9 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   } | null>(null);
   const [newCapacity, setNewCapacity] = useState<number>(0);
 
-  // Pull-to-refresh handler
+  // Pull-to-refresh handler with haptic feedback
   const handleRefresh = async () => {
+    hapticMedium();
     await refetch();
   };
 

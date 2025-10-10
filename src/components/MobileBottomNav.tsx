@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { hapticLight } from '@/lib/haptics';
 
 /**
  * Mobile bottom navigation bar
@@ -10,6 +11,10 @@ import { usePathname } from 'next/navigation';
  */
 export default function MobileBottomNav() {
   const pathname = usePathname();
+
+  const handleNavClick = () => {
+    hapticLight();
+  };
 
   const navItems = [
     {
@@ -69,6 +74,7 @@ export default function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={handleNavClick}
               className={`flex flex-col items-center justify-center gap-1 transition-colors ${
                 isActive ? 'text-purple-400' : 'text-gray-400 hover:text-white'
               }`}
