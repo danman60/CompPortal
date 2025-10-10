@@ -239,7 +239,7 @@ export default function EmailManager() {
           </ul>
           <div className="mt-4 p-4 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
             <p className="text-yellow-200 text-sm">
-              ⚠️ <strong>Note:</strong> Email sending requires a valid RESEND_API_KEY in your environment variables.
+              ⚠️ <strong>Note:</strong> Email sending requires SMTP configuration (SMTP_HOST, SMTP_USER, SMTP_PASS) in your environment variables.
               Without it, emails will fail silently.
             </p>
           </div>
