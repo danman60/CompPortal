@@ -124,17 +124,13 @@ export default function EntriesList() {
     );
   };
 
-  // Helper function to determine routine completion status
-  const getRoutineStatus = (entry: any) => {
-    const hasDancers = entry.entry_participants && entry.entry_participants.length > 0;
+  // Helper function to get music upload status only
+  const getMusicStatus = (entry: any) => {
     const hasMusic = !!entry.music_file_url;
-
-    if (hasDancers && hasMusic) {
-      return { status: 'ready', color: 'green', label: 'Ready', icon: '✅' };
-    } else if (hasDancers) {
-      return { status: 'in-progress', color: 'yellow', label: 'In Progress', icon: '⚠️' };
+    if (hasMusic) {
+      return { status: 'uploaded', color: 'green', label: 'Music Uploaded', icon: '✅' };
     } else {
-      return { status: 'draft', color: 'gray', label: 'Draft', icon: '📝' };
+      return { status: 'pending', color: 'yellow', label: 'Music Pending', icon: '🎵' };
     }
   };
 
@@ -618,23 +614,25 @@ export default function EntriesList() {
         </div>
       ) : viewMode === 'cards' ? (
         /* Cards View */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[200px] items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEntries.map((entry) => {
-            const routineStatus = getRoutineStatus(entry);
+            const musicStatus = getMusicStatus(entry);
             return (
             <div
               key={entry.id}
-              className={`min-h-[200px] bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all flex flex-col ${
-                routineStatus.status === 'ready'
+              className={`bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all flex flex-col ${
+                entry.status === 'confirmed'
                   ? 'border-green-400/40'
-                  : routineStatus.status === 'in-progress'
+                  : entry.status === 'registered'
                   ? 'border-yellow-400/40'
+                  : entry.status === 'cancelled'
+                  ? 'border-red-400/40'
                   : 'border-gray-400/40'
               }`}
             >
-              {/* Routine Number Badge + Completion Status */}
-              <div className="flex justify-between items-start mb-2">
-                {entry.entry_number && (
+              {/* Routine Number Badge + Registration Status */}
+              <div className="flex justify-between items-start mb-3">
+                {entry.entry_number ? (
                   <div>
                     <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-bold rounded-lg shadow-md">
                       #{entry.entry_number}{entry.entry_suffix || ''}
@@ -645,31 +643,13 @@ export default function EntriesList() {
                       </span>
                     )}
                   </div>
+                ) : (
+                  <span className="text-gray-500 text-sm">Pending Assignment</span>
                 )}
 
-                {/* Completion Status Indicator */}
-                <div className={`px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
-                  routineStatus.status === 'ready'
-                    ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                    : routineStatus.status === 'in-progress'
-                    ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                    : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                }`}>
-                  <span>{routineStatus.icon}</span>
-                  <span>{routineStatus.label}</span>
-                </div>
-              </div>
-
-              {/* Header */}
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-1">{entry.title}</h3>
-                  <p className="text-sm text-gray-400">
-                    {entry.competitions?.name} ({entry.competitions?.year})
-                  </p>
-                </div>
+                {/* Registration Status */}
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
                     entry.status === 'confirmed'
                       ? 'bg-green-500/20 text-green-400 border border-green-400/30'
                       : entry.status === 'registered'
@@ -679,8 +659,16 @@ export default function EntriesList() {
                       : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
                   }`}
                 >
-                  {entry.status?.toUpperCase()}
+                  {entry.status}
                 </span>
+              </div>
+
+              {/* Header */}
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-white mb-1">{entry.title}</h3>
+                <p className="text-sm text-gray-400">
+                  {entry.competitions?.name} ({entry.competitions?.year})
+                </p>
               </div>
 
               {/* Details */}
@@ -746,17 +734,18 @@ export default function EntriesList() {
               )}
 
               {/* Music Upload Status */}
-              {entry.music_file_url ? (
-                <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-green-500/20 border border-green-400/30 rounded-lg">
-                  <span className="text-green-400">✅</span>
-                  <span className="text-sm text-green-300">Music uploaded</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
-                  <span className="text-yellow-400">⚠️</span>
-                  <span className="text-sm text-yellow-300">Music not uploaded</span>
-                </div>
-              )}
+              <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border ${
+                musicStatus.status === 'uploaded'
+                  ? 'bg-green-500/20 border-green-400/30'
+                  : 'bg-yellow-500/20 border-yellow-400/30'
+              }`}>
+                <span className={musicStatus.status === 'uploaded' ? 'text-green-400' : 'text-yellow-400'}>
+                  {musicStatus.icon}
+                </span>
+                <span className={`text-sm ${musicStatus.status === 'uploaded' ? 'text-green-300' : 'text-yellow-300'}`}>
+                  {musicStatus.label}
+                </span>
+              </div>
 
               {/* Actions */}
               <div className="grid grid-cols-3 gap-2 mt-4">
@@ -810,7 +799,7 @@ export default function EntriesList() {
               </thead>
               <tbody>
                 {sortedEntries.map((entry, index) => {
-                  const routineStatus = getRoutineStatus(entry);
+                  const musicStatus = getMusicStatus(entry);
                   return (
                   <HoverPreview
                     key={entry.id}
@@ -873,44 +862,29 @@ export default function EntriesList() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      {entry.music_file_url ? (
-                        <span className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-400">
-                          ✅ Uploaded
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-400">
-                          ⚠️ Pending
-                        </span>
-                      )}
+                      <span className={`px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
+                        musicStatus.status === 'uploaded'
+                          ? 'bg-green-500/20 text-green-400 border border-green-400/30'
+                          : 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
+                      }`}>
+                        <span>{musicStatus.icon}</span>
+                        <span>{musicStatus.status === 'uploaded' ? 'Uploaded' : 'Pending'}</span>
+                      </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        {/* Completion Status */}
-                        <div className={`px-2 py-1 rounded text-xs font-semibold inline-flex items-center gap-1 w-fit ${
-                          routineStatus.status === 'ready'
-                            ? 'bg-green-500/20 text-green-400'
-                            : routineStatus.status === 'in-progress'
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          <span>{routineStatus.icon}</span>
-                          <span>{routineStatus.label}</span>
-                        </div>
-                        {/* Registration Status */}
-                        <span
-                          className={`px-2 py-1 rounded text-xs uppercase font-semibold inline-block w-fit ${
-                            entry.status === 'confirmed'
-                              ? 'bg-green-500/20 text-green-400'
-                              : entry.status === 'registered'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : entry.status === 'cancelled'
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'bg-gray-500/20 text-gray-400'
-                          }`}
-                        >
-                          {entry.status}
-                        </span>
-                      </div>
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-xs uppercase font-semibold inline-block ${
+                          entry.status === 'confirmed'
+                            ? 'bg-green-500/20 text-green-400 border border-green-400/30'
+                            : entry.status === 'registered'
+                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
+                            : entry.status === 'cancelled'
+                            ? 'bg-red-500/20 text-red-400 border border-red-400/30'
+                            : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
+                        }`}
+                      >
+                        {entry.status}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
@@ -1001,33 +975,19 @@ export default function EntriesList() {
 
                         <div className="pt-3 border-t border-white/10 space-y-2">
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-400">Completion</div>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                              routineStatus.status === 'ready'
+                            <div className="text-xs text-gray-400">Music</div>
+                            <span className={`px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
+                              musicStatus.status === 'uploaded'
                                 ? 'bg-green-500/20 text-green-400'
-                                : routineStatus.status === 'in-progress'
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : 'bg-gray-500/20 text-gray-400'
+                                : 'bg-yellow-500/20 text-yellow-400'
                             }`}>
-                              {routineStatus.icon} {routineStatus.label}
+                              <span>{musicStatus.icon}</span>
+                              <span>{musicStatus.status === 'uploaded' ? 'Uploaded' : 'Pending'}</span>
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-400">Music</div>
-                            {entry.music_file_url ? (
-                              <span className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-400">
-                                ✅ Uploaded
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-400">
-                                ⚠️ Pending
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-400">Status</div>
+                            <div className="text-xs text-gray-400">Registration Status</div>
                             <span className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
                               entry.status === 'confirmed'
                                 ? 'bg-green-500/20 text-green-400'

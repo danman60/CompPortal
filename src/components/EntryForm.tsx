@@ -245,7 +245,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
       reservation_id: urlReservationId || approvedReservation?.id, // Use URL reservation ID directly if provided
       entry_fee: totalFee,
       total_fee: totalFee,
-      status: 'draft' as const,
+      status: 'registered' as const, // Set to registered by default (music can be added later)
       participants: formData.participants.map((p, index) => ({
         ...p,
         display_order: index + 1,
