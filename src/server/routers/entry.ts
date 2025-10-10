@@ -362,30 +362,36 @@ export const entryRouter = router({
       }
 
       // Create entry with participants
+      // Build data object and remove undefined fields (Prisma doesn't handle them well)
+      const createData: any = {
+        ...data,
+        tenant_id: ctx.tenantId!,
+      };
+
+      // Only add optional fields if they have values
+      if (performance_date) createData.performance_date = new Date(performance_date);
+      if (performance_time) createData.performance_time = new Date(`1970-01-01T${performance_time}`);
+      if (warm_up_time) createData.warm_up_time = new Date(`1970-01-01T${warm_up_time}`);
+      if (entry_fee !== undefined) createData.entry_fee = entry_fee.toString();
+      if (late_fee !== undefined) createData.late_fee = late_fee.toString();
+      if (total_fee !== undefined) createData.total_fee = total_fee.toString();
+
+      if (participants && participants.length > 0) {
+        createData.entry_participants = {
+          create: participants.map((p) => ({
+            dancer_id: p.dancer_id,
+            dancer_name: p.dancer_name,
+            dancer_age: p.dancer_age,
+            role: p.role,
+            display_order: p.display_order,
+            costume_size: p.costume_size,
+            special_needs: p.special_needs,
+          })),
+        };
+      }
+
       const entry = await prisma.competition_entries.create({
-        data: {
-          ...data,
-          tenant_id: ctx.tenantId!,
-          performance_date: performance_date ? new Date(performance_date) : undefined,
-          performance_time: performance_time ? new Date(`1970-01-01T${performance_time}`) : undefined,
-          warm_up_time: warm_up_time ? new Date(`1970-01-01T${warm_up_time}`) : undefined,
-          entry_fee: entry_fee?.toString(),
-          late_fee: late_fee?.toString(),
-          total_fee: total_fee?.toString(),
-          entry_participants: participants
-            ? {
-                create: participants.map((p) => ({
-                  dancer_id: p.dancer_id,
-                  dancer_name: p.dancer_name,
-                  dancer_age: p.dancer_age,
-                  role: p.role,
-                  display_order: p.display_order,
-                  costume_size: p.costume_size,
-                  special_needs: p.special_needs,
-                })),
-              }
-            : undefined,
-        },
+        data: createData,
         include: {
           entry_participants: {
             include: {
