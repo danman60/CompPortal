@@ -376,7 +376,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
         <div className="flex gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'all'
                 ? 'bg-purple-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
@@ -393,7 +393,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </button>
           <button
             onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'pending'
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
@@ -410,7 +410,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </button>
           <button
             onClick={() => setFilter('approved')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'approved'
                 ? 'bg-green-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
@@ -427,7 +427,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </button>
           <button
             onClick={() => setFilter('rejected')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
               filter === 'rejected'
                 ? 'bg-red-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
@@ -479,7 +479,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           ) : filter !== 'all' ? (
             <button
               onClick={() => setFilter('all')}
-              className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg transition-all border border-purple-400/30"
+              className="min-h-[44px] px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg transition-all border border-purple-400/30"
             >
               Clear Filters
             </button>
@@ -722,7 +722,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                     <button
                       onClick={() => handleApprove(reservation.id, reservation.spaces_requested)}
                       disabled={processingId === reservation.id}
-                      className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+                      className="flex-1 min-h-[44px] bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
                     >
                       {processingId === reservation.id && approveMutation.isPending
                         ? '⚙️ Approving...'
@@ -731,7 +731,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                     <button
                       onClick={() => handleReject(reservation.id, reservation.studios?.name || 'studio')}
                       disabled={processingId === reservation.id}
-                      className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+                      className="flex-1 min-h-[44px] bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
                     >
                       {processingId === reservation.id && rejectMutation.isPending
                         ? '⚙️ Rejecting...'
@@ -935,13 +935,13 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                   setRejectModalData(null);
                   setRejectionReason('');
                 }}
-                className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
               >
                 Cancel <span className="text-xs text-gray-500">(Esc)</span>
               </button>
               <button
                 onClick={confirmReject}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg transition-all"
+                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg transition-all"
               >
                 ❌ Reject Reservation <span className="text-xs opacity-70">(Ctrl+Enter)</span>
               </button>
@@ -1015,14 +1015,14 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                   setNewCapacity(0);
                   setProcessingId(null);
                 }}
-                className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
               >
                 Cancel <span className="text-xs text-gray-500">(Esc)</span>
               </button>
               <button
                 onClick={confirmReduceCapacity}
                 disabled={newCapacity < 0 || newCapacity >= reduceModalData.currentCapacity}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-orange-500/50 disabled:to-orange-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-orange-500/50 disabled:to-orange-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
               >
                 {reduceModalData.warning ? '✅ Confirm Reduction' : '🔽 Reduce Capacity'} <span className="text-xs opacity-70">(Ctrl+Enter)</span>
               </button>
