@@ -429,7 +429,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Age Group</option>
-                {lookupData?.ageGroups.map((age) => (
+                {Array.from(new Map(lookupData?.ageGroups.map(age => [age.name, age]))).map(([_, age]) => (
                   <option key={age.id} value={age.id} className="bg-gray-900 text-white">
                     {age.name} ({age.min_age}-{age.max_age} years)
                   </option>
@@ -448,7 +448,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Routine Size</option>
-                {lookupData?.entrySizeCategories.map((size) => (
+                {Array.from(new Map(lookupData?.entrySizeCategories.map(size => [size.name, size]))).map(([_, size]) => (
                   <option key={size.id} value={size.id} className="bg-gray-900 text-white">
                     {size.name} ({size.min_participants}-{size.max_participants} dancers)
                     {size.base_fee && ` - $${size.base_fee}`}
