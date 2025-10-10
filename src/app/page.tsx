@@ -3,7 +3,16 @@ import { demoLoginAction } from './actions/auth';
 import { getTenantData } from '@/lib/tenant-context';
 
 export default async function Home() {
-  const tenant = await getTenantData();
+  // TEMPORARY: Hardcoded EMPWR branding for demo (Oct 11, 2025)
+  // TODO: Fix getTenantData() subdomain detection (see PHASE_7_TESTING_BLOCKER.md)
+  const tenant = {
+    name: 'EMPWR Dance',
+    branding: {
+      tagline: 'Empowering Dance Excellence',
+      primaryColor: '#8B5CF6',
+      secondaryColor: '#EC4899',
+    },
+  };
 
   // Extract tenant branding
   const tenantName = tenant?.name || 'Competition Portal';
