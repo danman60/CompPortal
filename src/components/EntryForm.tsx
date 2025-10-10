@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useSmartDefaults } from '@/hooks/useSmartDefaults';
 import AutoSaveIndicator from '@/components/AutoSaveIndicator';
 
 type Step = 'basic' | 'details' | 'participants' | 'props' | 'review';
@@ -45,6 +46,12 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     enabled: !isEditMode, // Only auto-save for new entries
   });
 
+  // Smart defaults integration
+  const smartDefaults = useSmartDefaults({
+    key: 'entry-form-smart-defaults',
+    enabled: !isEditMode,
+  });
+
   // Load saved draft on mount
   useEffect(() => {
     if (!isEditMode) {
@@ -54,6 +61,20 @@ export default function EntryForm({ entryId }: EntryFormProps) {
       }
     }
   }, [isEditMode]);
+
+  // Load smart defaults on mount (if no saved draft)
+  useEffect(() => {
+    if (!isEditMode && !autoSave.loadSaved() && smartDefaults.defaults) {
+      setFormData((prev) => ({
+        ...prev,
+        competition_id: smartDefaults.defaults.competition_id || prev.competition_id,
+        category_id: smartDefaults.defaults.category_id || prev.category_id,
+        classification_id: smartDefaults.defaults.classification_id || prev.classification_id,
+        age_group_id: smartDefaults.defaults.age_group_id || prev.age_group_id,
+        entry_size_category_id: smartDefaults.defaults.entry_size_category_id || prev.entry_size_category_id,
+      }));
+    }
+  }, [isEditMode, smartDefaults.defaults]);
 
   // Fetch all necessary data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -132,6 +153,14 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   const createMutation = trpc.entry.create.useMutation({
     onSuccess: async (data) => {
       autoSave.clearSaved(); // Clear draft on successful creation
+      // Save smart defaults for next entry
+      smartDefaults.saveDefaults({
+        competition_id: formData.competition_id,
+        category_id: formData.category_id,
+        classification_id: formData.classification_id,
+        age_group_id: formData.age_group_id,
+        entry_size_category_id: formData.entry_size_category_id,
+      });
       router.push('/dashboard/entries');
     },
     onError: (error) => {
