@@ -1,7 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
@@ -109,6 +109,40 @@ export default function EntriesList() {
       return { status: 'draft', color: 'gray', label: 'Draft', icon: '📝' };
     }
   };
+
+  // Bulk selection shortcuts
+  const handleSelectAllFiltered = () => {
+    setSelectedEntries(new Set(sortedEntries.map(e => e.id)));
+    toast.success(`${sortedEntries.length} routines selected`);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedEntries(new Set());
+    toast.success('Selection cleared');
+  };
+
+  // Keyboard shortcuts for bulk selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only in table mode
+      if (viewMode !== 'table') return;
+
+      // Ctrl+A / Cmd+A - Select All Filtered
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedEntries.length > 0) {
+        e.preventDefault();
+        handleSelectAllFiltered();
+      }
+
+      // Escape - Clear Selection
+      if (e.key === 'Escape' && selectedEntries.size > 0) {
+        e.preventDefault();
+        handleClearSelection();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, sortedEntries, selectedEntries]);
 
   // Pull-to-refresh handler
   const handleRefresh = async () => {
@@ -487,6 +521,53 @@ export default function EntriesList() {
               </>
             );
           })()}
+        </div>
+      )}
+
+      {/* Bulk Selection Toolbar (Table Mode Only) */}
+      {viewMode === 'table' && filteredEntries.length > 0 && (
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span>Quick Select:</span>
+          </div>
+
+          <button
+            onClick={handleSelectAllFiltered}
+            className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 text-purple-300 rounded-lg text-xs transition-all flex items-center gap-1.5"
+            title="Select all filtered routines (Ctrl/Cmd + A)"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Select All Filtered ({sortedEntries.length})
+          </button>
+
+          {selectedEntries.size > 0 && (
+            <button
+              onClick={handleClearSelection}
+              className="px-3 py-1.5 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-400/30 text-gray-300 rounded-lg text-xs transition-all flex items-center gap-1.5"
+              title="Clear selection (Escape)"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear Selection
+            </button>
+          )}
+
+          {selectedEntries.size > 0 && (
+            <div className="ml-auto px-3 py-1.5 bg-blue-500/20 border border-blue-400/30 text-blue-300 rounded-lg text-xs font-semibold">
+              {selectedEntries.size} selected
+            </div>
+          )}
+
+          <div className="text-xs text-gray-500">
+            <kbd className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Ctrl+A</kbd> to select all,
+            <kbd className="ml-1 px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Esc</kbd> to clear
+          </div>
         </div>
       )}
 
