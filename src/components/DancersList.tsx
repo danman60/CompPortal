@@ -1,7 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
@@ -16,6 +16,19 @@ export default function DancersList() {
   const [filter, setFilter] = useState<'all' | 'male' | 'female'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
+  // Force cards view on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) { // md breakpoint
+        setViewMode('cards');
+      }
+    };
+
+    handleResize(); // Check on mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (error) {
     return (
@@ -77,8 +90,8 @@ export default function DancersList() {
         />
 
         <div className="flex gap-2 flex-wrap">
-          {/* View Mode Toggle */}
-          <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+          {/* View Mode Toggle - Hidden on mobile */}
+          <div className="hidden md:flex gap-1 bg-white/5 rounded-lg p-1">
             <button
               onClick={() => setViewMode('cards')}
               className={`px-3 py-2 rounded-lg transition-all ${

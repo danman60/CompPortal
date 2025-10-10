@@ -249,7 +249,9 @@ export default function JudgesPage() {
         <div className="mt-8 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
           <h2 className="text-2xl font-semibold text-white mb-4">All Judges Database</h2>
           {allJudges && allJudges.length > 0 ? (
-            <div className="overflow-x-auto">
+            <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-white/10">
@@ -273,6 +275,33 @@ export default function JudgesPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {allJudges.map((judge) => (
+                <div
+                  key={judge.id}
+                  className="bg-white/5 rounded-lg border border-white/10 p-4"
+                >
+                  <h3 className="text-white font-semibold mb-2">{judge.name}</h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Email:</span>
+                      <span className="text-gray-300">{judge.email || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Credentials:</span>
+                      <span className="text-gray-300">{judge.credentials || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Competition:</span>
+                      <span className="text-gray-300">{judge.competitions?.name || 'Unassigned'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           ) : (
             <p className="text-gray-400 text-center py-4">No judges in database</p>
           )}
