@@ -55,12 +55,22 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     enabled: !isEditMode,
   });
 
-  // Load saved draft on mount
+  // Load saved draft on mount (with UUID validation)
   useEffect(() => {
     if (!isEditMode) {
       const savedData = autoSave.loadSaved();
       if (savedData) {
-        setFormData(savedData);
+        // Validate UUIDs before loading saved data
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        // If saved data has invalid UUIDs, clear it
+        if ((savedData.studio_id && !uuidRegex.test(savedData.studio_id)) ||
+            (savedData.competition_id && !uuidRegex.test(savedData.competition_id))) {
+          console.warn('Saved draft has invalid UUIDs - clearing');
+          autoSave.clearSaved();
+        } else {
+          setFormData(savedData);
+        }
       }
     }
   }, [isEditMode]);
