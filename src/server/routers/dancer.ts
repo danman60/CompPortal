@@ -451,6 +451,16 @@ export const dancerRouter = router({
         }
       }
 
+      // Fetch studio to get tenant_id
+      const studio = await prisma.studios.findUnique({
+        where: { id: input.studio_id },
+        select: { tenant_id: true },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
       // Process each dancer in batch
       const results = await Promise.allSettled(
         input.dancers.map(async (dancerData) => {
@@ -458,8 +468,8 @@ export const dancerRouter = router({
 
           return prisma.dancers.create({
             data: {
-              studio_id: input.studio_id,
-              tenant_id: ctx.tenantId!,
+              studios: { connect: { id: input.studio_id } },
+              tenants: { connect: { id: studio.tenant_id } },
               ...data,
               date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
               status: 'active',
