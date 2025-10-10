@@ -1,10 +1,22 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 10, 2025 (Codex Integration Session)
+**Last Updated**: October 10, 2025 (Demo Prep)
 **Demo Date**: October 11, 2025
-**Current Phase**: UX Polish & Advanced Features
+**Current Phase**: Demo Ready
 **Branch**: main
-**Build**: ✅ All 41 routes compile
+**Build**: ✅ All 40 routes compile
+
+---
+
+## Known Issues (To Address Post-Demo)
+
+**🔴 Corrupted Demo Data - Studio ID Truncation**
+- **Issue**: Demo data has truncated studio_id: `ffcb26b3-1ac6-49da-b4b1-7dc2e176108` (35 chars instead of 36)
+- **Impact**: Routine creation fails with Prisma UUID validation error
+- **Workaround**: Added client-side UUID validation (EntryForm:208-219) to catch and show clear error
+- **Fix Needed**: Correct the studio_id in database OR use different studio for demo
+- **Priority**: Low (demo uses judge scoring demo, not routine creation)
+- **Tracked**: Commit 1a5565f
 
 ---
 

@@ -96,19 +96,19 @@ export default async function Home() {
 
           <div className="mt-8 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-emerald-400/30 p-6">
             <h2 className="text-xl font-semibold text-emerald-400 mb-3">
-              📱 Judge Tablet Interface
+              📱 Judge Tablet Interface Demo
             </h2>
             <p className="text-gray-300 text-sm mb-4">
-              Tablet-optimized scoring interface for live competitions
+              Interactive scoring demo with live sliders - no login required
             </p>
             <Link
-              href="/dashboard/scoring"
+              href="/demo/judge-scoring"
               className="inline-block bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-8 py-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold"
             >
-              🎯 Open Judge Scoring Interface
+              🎯 Try Judge Scoring Demo
             </Link>
             <div className="mt-3 text-xs text-gray-400">
-              ✓ Real-time scoring • ✓ Offline capable • ✓ Touch-optimized
+              ✓ Interactive sliders • ✓ Instant feedback • ✓ Touch-optimized
             </div>
           </div>
         </div>
