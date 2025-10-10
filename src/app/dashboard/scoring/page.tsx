@@ -30,6 +30,19 @@ export default function ScoringPage() {
     { enabled: !!selectedCompetition }
   );
 
+  // DEMO MODE: Auto-select first comp and judge for demo purposes
+  useEffect(() => {
+    if (competitions?.competitions && competitions.competitions.length > 0 && !selectedCompetition) {
+      setSelectedCompetition(competitions.competitions[0].id);
+    }
+  }, [competitions, selectedCompetition]);
+
+  useEffect(() => {
+    if (judges && judges.length > 0 && !selectedJudge && selectedCompetition) {
+      setSelectedJudge(judges[0].id);
+    }
+  }, [judges, selectedJudge, selectedCompetition]);
+
   // Fetch entries for selected competition
   const { data: entriesData } = trpc.entry.getAll.useQuery(
     { competitionId: selectedCompetition },

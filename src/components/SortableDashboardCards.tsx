@@ -70,20 +70,23 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
         }`}
       >
         <div className="flex items-center gap-4">
+          {/* Large visible drag handle on the LEFT */}
+          <div
+            {...listeners}
+            className="text-gray-300 hover:text-white cursor-grab active:cursor-grabbing p-3 -ml-2 touch-none"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </div>
           <div className="text-4xl inline-block hover:scale-110 transition-transform">{card.icon}</div>
           <div className="flex-1">
             <h3 className="text-xl font-semibold text-white">{card.title}</h3>
             <p className="text-gray-400 text-sm">{card.description}</p>
-          </div>
-          {/* Drag handle - separated from link */}
-          <div
-            {...listeners}
-            className="text-gray-400 hover:text-white cursor-grab active:cursor-grabbing p-2 -mr-2"
-            onClick={(e) => e.preventDefault()} // Prevent navigation when clicking drag handle
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-            </svg>
           </div>
         </div>
       </Link>
