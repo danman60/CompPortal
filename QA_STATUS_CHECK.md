@@ -44,19 +44,22 @@
 
 ---
 
-### ⏭️ 3. Create Reservation - No Competitions - PENDING
+### ✅ 3. Create Reservation - No Competitions - FIXED
 **Location:** My Reservations → Create Reservation
-**Issue:** Dropdown lists only "Select a competition" with no actual competitions
-**Severity:** High
-**Status:** ⏭️ **NOT STARTED**
+**Original Issue:** Dropdown lists only "Select a competition" with no actual competitions
+**Status:** ✅ **RESOLVED** (Commit ead2ad6)
 
-**Impact:** Reservation workflow completely unusable - users cannot book competitions
+**Root Cause:** Query filter mismatch - frontend filtering for `status: 'registration_open'` but all competitions have `status: 'upcoming'`
 
-**Required Fix:**
-- Investigate competition fetching logic in reservation creation flow
-- Check if competitions query is filtering incorrectly
-- Ensure all available competitions are loaded for the studio
-- Test that competitions appear in dropdown
+**Fix Applied:**
+- Removed status filter from query (ReservationForm:57-59)
+- Changed from `{ status: 'registration_open', isPublic: true }` to `{ isPublic: true }`
+- Query now fetches all public competitions regardless of registration status
+
+**Production Verification:**
+- ✅ Dropdown now shows 4 competitions: QA Automation Event 2026, EMPWR Dance - St. Catharines #2 2026, EMPWR Dance - St. Catharines #1 2026, EMPWR Dance - London 2026
+- ✅ Next button enables when competition selected
+- ✅ Workflow unblocked - users can now create reservations
 
 ---
 
@@ -170,27 +173,27 @@
 
 ## Summary
 
-**Progress:** 2/8 Critical Issues Resolved (25%)
+**Progress:** 3/8 Critical Issues Resolved (37.5%)
 
 **Fixed:**
 - ✅ Dancer creation backend error
 - ✅ Gender/skill dropdown visibility
+- ✅ Reservation creation - competitions now loading
 
 **Remaining High Priority:**
-1. **Reservation creation** - no competitions (blocks entire reservation workflow)
-2. **Profile settings persistence** - email notifications don't save
+1. **Profile settings persistence** - email notifications don't save
+2. **Missing feedback** - silent saves reduce confidence (system-wide impact)
 3. **Duplicate dropdown entries** - confusing UX in routine forms
-4. **Missing feedback** - silent saves reduce confidence
+4. **Truncated labels** - may be partially fixed by dropdown styling
 
 **Recommended Next Steps:**
-1. Fix reservation competitions dropdown (highest priority - blocks workflow)
-2. Add toast notifications system (improves all forms)
-3. Clean up duplicate entries (quick win - better UX)
-4. Remove drag hint or implement drag-and-drop (quick fix if removing)
-5. Fix profile settings persistence
-6. Check for remaining truncated labels
+1. Add toast notifications system (highest impact - improves all forms)
+2. Clean up duplicate entries (quick win - better UX)
+3. Fix profile settings persistence
+4. Check for remaining truncated labels
+5. Remove drag hint or implement drag-and-drop (quick fix if removing)
 
 **Estimated Impact:**
-- Fixing #3 (reservations): Unblocks major workflow
 - Fixing #8 (feedback): Improves perceived quality across entire app
 - Fixing #6 (duplicates): Quick polish win
+- Fixing #4 (settings): Builds user trust in system
