@@ -17,6 +17,18 @@ export default function ProfileSettingsPage() {
     },
   });
 
+  const updateNotificationsMutation = trpc.user.updateProfile.useMutation({
+    onSuccess: () => {
+      utils.user.getCurrentUser.invalidate();
+      toast.success('Notification preferences updated');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update notifications: ${error.message}`);
+      // Revert toggle on error
+      setNotificationsEnabled(!notificationsEnabled);
+    },
+  });
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -135,8 +147,18 @@ export default function ProfileSettingsPage() {
           </div>
           <button
             type="button"
-            onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            disabled={updateNotificationsMutation.isPending}
+            onClick={() => {
+              const newValue = !notificationsEnabled;
+              setNotificationsEnabled(newValue);
+              updateNotificationsMutation.mutate({
+                first_name: firstName,
+                last_name: lastName,
+                phone: phone || undefined,
+                notificationsEnabled: newValue,
+              });
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               notificationsEnabled ? 'bg-purple-500' : 'bg-gray-600'
             }`}
           >
