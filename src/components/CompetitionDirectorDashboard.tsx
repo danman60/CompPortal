@@ -1,7 +1,11 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import DashboardStats from './DashboardStats';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
+import BalletLoadingAnimation from './BalletLoadingAnimation';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -104,6 +108,7 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
 ];
 
 export default function CompetitionDirectorDashboard({ userEmail, firstName, role }: CompetitionDirectorDashboardProps) {
+  const [showLoading, setShowLoading] = useState(true);
   const isAdmin = role === 'super_admin';
 
   // Add settings card for super admins
@@ -121,7 +126,15 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
     : CD_DASHBOARD_CARDS;
 
   return (
-    <div className="space-y-8">
+    <>
+      {showLoading && (
+        <BalletLoadingAnimation
+          onAnimationComplete={() => setShowLoading(false)}
+          minDuration={1500}
+        />
+      )}
+
+      <div className="space-y-8">
       {/* Header */}
       <div className="flex-1">
         <h1 className="text-4xl font-bold text-white mb-2">
@@ -181,5 +194,6 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -1,7 +1,11 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
+import BalletLoadingAnimation from './BalletLoadingAnimation';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -63,8 +67,18 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
 ];
 
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
+  const [showLoading, setShowLoading] = useState(true);
+
   return (
-    <div className="space-y-8">
+    <>
+      {showLoading && (
+        <BalletLoadingAnimation
+          onAnimationComplete={() => setShowLoading(false)}
+          minDuration={1500}
+        />
+      )}
+
+      <div className="space-y-8">
       {/* Pending Approval Banner */}
       {studioStatus === 'pending' && (
         <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border-2 border-yellow-400/50 p-6">
@@ -139,5 +153,6 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
         </div>
       </div>
     </div>
+    </>
   );
 }
