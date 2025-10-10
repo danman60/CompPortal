@@ -7,13 +7,14 @@ import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { copyToClipboard } from '@/lib/clipboard';
 import { SkeletonCard, SkeletonList } from '@/components/Skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
 interface StudiosListProps {
   studioId?: string; // If provided, show edit mode for this studio only (studio director)
 }
 
 export default function StudiosList({ studioId }: StudiosListProps) {
-  const { data, isLoading } = trpc.studio.getAll.useQuery(undefined, {
+  const { data, isLoading, dataUpdatedAt } = trpc.studio.getAll.useQuery(undefined, {
     enabled: !studioId, // Only fetch all studios if not locked to one
   });
 
@@ -559,6 +560,18 @@ export default function StudiosList({ studioId }: StudiosListProps) {
           </span>
         </button>
       </div>
+
+      {/* Data Refresh Indicator */}
+      {dataUpdatedAt && (
+        <div className="flex justify-end mb-4">
+          <div className="text-xs text-gray-400/80 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Updated {formatDistanceToNow(dataUpdatedAt, { addSuffix: true })}
+          </div>
+        </div>
+      )}
 
       {/* Studios Grid */}
       {filteredStudios.length === 0 ? (

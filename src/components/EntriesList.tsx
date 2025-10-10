@@ -9,9 +9,10 @@ import toast from 'react-hot-toast';
 import PullToRefresh from 'react-pull-to-refresh';
 import HoverPreview from '@/components/HoverPreview';
 import { SkeletonCard } from '@/components/Skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function EntriesList() {
-  const { data, isLoading, refetch } = trpc.entry.getAll.useQuery();
+  const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -389,6 +390,18 @@ export default function EntriesList() {
           </button>
         </div>
       </div>
+
+      {/* Data Refresh Indicator */}
+      {dataUpdatedAt && (
+        <div className="flex justify-end mb-4">
+          <div className="text-xs text-gray-400/80 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Updated {formatDistanceToNow(dataUpdatedAt, { addSuffix: true })}
+          </div>
+        </div>
+      )}
 
       {/* Space Limit Counter (for selected competition with approved reservation) */}
       {selectedCompetition !== 'all' && reservationData?.reservations?.[0] && (

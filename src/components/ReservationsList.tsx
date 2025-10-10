@@ -8,6 +8,7 @@ import ManualReservationModal from './ManualReservationModal';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { SkeletonList } from '@/components/Skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -16,7 +17,7 @@ interface ReservationsListProps {
 export default function ReservationsList({ isStudioDirector = false }: ReservationsListProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.reservation.getAll.useQuery();
+  const { data, isLoading, dataUpdatedAt } = trpc.reservation.getAll.useQuery();
   const { data: studiosData } = trpc.studio.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
@@ -378,6 +379,18 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </button>
         </div>
       </div>
+
+      {/* Data Refresh Indicator */}
+      {dataUpdatedAt && (
+        <div className="flex justify-end mb-4">
+          <div className="text-xs text-gray-400/80 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Updated {formatDistanceToNow(dataUpdatedAt, { addSuffix: true })}
+          </div>
+        </div>
+      )}
 
       {/* Reservations Grid */}
       {filteredReservations.length === 0 ? (

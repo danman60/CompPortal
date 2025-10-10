@@ -9,9 +9,10 @@ import PullToRefresh from 'react-pull-to-refresh';
 import { highlightText } from '@/lib/highlightText';
 import HoverPreview from '@/components/HoverPreview';
 import { SkeletonCard } from '@/components/Skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function DancersList() {
-  const { data, isLoading, error, refetch } = trpc.dancer.getAll.useQuery();
+  const { data, isLoading, error, refetch, dataUpdatedAt } = trpc.dancer.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'male' | 'female'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -160,6 +161,18 @@ export default function DancersList() {
           </button>
         </div>
       </div>
+
+      {/* Data Refresh Indicator */}
+      {dataUpdatedAt && (
+        <div className="flex justify-end mb-4">
+          <div className="text-xs text-gray-400/80 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Updated {formatDistanceToNow(dataUpdatedAt, { addSuffix: true })}
+          </div>
+        </div>
+      )}
 
       {/* Dancers Display */}
       {filteredDancers.length === 0 ? (
