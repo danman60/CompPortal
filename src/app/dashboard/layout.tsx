@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export const metadata: Metadata = {
   title: 'Dashboard | CompPortal',
@@ -10,5 +11,10 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <div className="pb-20 md:pb-0">{children}</div>
+      <MobileBottomNav />
+    </>
+  );
 }
