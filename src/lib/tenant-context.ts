@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { createServerSupabaseClient } from './supabase-server-client';
 
 /**
  * Tenant context data structure
@@ -17,31 +18,58 @@ export interface TenantData {
 }
 
 /**
+ * Extract subdomain from hostname
+ */
+function extractSubdomain(hostname: string): string | null {
+  const host = hostname.split(':')[0];
+  const parts = host.split('.');
+
+  if (parts.length <= 1 || host === 'localhost') return null;
+  if (parts.length === 2) return null;
+  if (parts.length >= 3) return parts[0];
+
+  return null;
+}
+
+/**
  * Get tenant ID from request headers (server-side only)
- * Injected by middleware
+ * Fetches from database based on subdomain
  */
 export async function getTenantId(): Promise<string | null> {
-  const headersList = await headers();
-  return headersList.get('x-tenant-id');
+  const tenantData = await getTenantData();
+  return tenantData?.id || null;
 }
 
 /**
  * Get full tenant data from request headers (server-side only)
- * Injected by middleware
+ * Fetches from database based on subdomain
  */
 export async function getTenantData(): Promise<TenantData | null> {
   const headersList = await headers();
-  const tenantDataStr = headersList.get('x-tenant-data');
+  const hostname = headersList.get('host') || '';
+  const subdomain = extractSubdomain(hostname);
 
-  if (!tenantDataStr) {
-    return null;
+  const supabase = await createServerSupabaseClient();
+
+  // Query by subdomain if present
+  if (subdomain) {
+    const { data } = await supabase
+      .from('tenants')
+      .select('id, slug, subdomain, name, branding')
+      .eq('subdomain', subdomain)
+      .single();
+
+    if (data) return data as TenantData;
   }
 
-  try {
-    return JSON.parse(tenantDataStr) as TenantData;
-  } catch {
-    return null;
-  }
+  // Fallback to demo tenant
+  const { data } = await supabase
+    .from('tenants')
+    .select('id, slug, subdomain, name, branding')
+    .eq('slug', 'demo')
+    .single();
+
+  return data as TenantData | null;
 }
 
 /**
