@@ -436,6 +436,7 @@ model classifications {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model competition_entries {
   id                                                                                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                                                                            String                   @db.Uuid
   competition_id                                                                       String                   @db.Uuid
   reservation_id                                                                       String?                  @db.Uuid
   studio_id                                                                            String                   @db.Uuid
@@ -486,6 +487,7 @@ model competition_entries {
   classifications                                                                      classifications          @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   competitions                                                                         competitions             @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   entry_size_categories                                                                entry_size_categories    @relation(fields: [entry_size_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                                                                              tenants                  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competition_entries_competition_entries_next_entry_idTocompetition_entries           competition_entries?     @relation("competition_entries_next_entry_idTocompetition_entries", fields: [next_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   other_competition_entries_competition_entries_next_entry_idTocompetition_entries     competition_entries[]    @relation("competition_entries_next_entry_idTocompetition_entries")
   competition_entries_competition_entries_previous_entry_idTocompetition_entries       competition_entries?     @relation("competition_entries_previous_entry_idTocompetition_entries", fields: [previous_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -507,6 +509,7 @@ model competition_entries {
   @@index([calculated_score(sort: Desc)], map: "idx_entries_calculated_score")
   @@index([award_level], map: "idx_entries_award_level")
   @@index([category_placement], map: "idx_entries_placement")
+  @@index([tenant_id], map: "idx_entries_tenant")
   @@schema("public")
 }
 
@@ -569,6 +572,7 @@ model competition_sessions {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model competitions {
   id                           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                    String                  @db.Uuid
   name                         String                  @db.VarChar(255)
   year                         Int
   description                  String?
@@ -601,6 +605,7 @@ model competitions {
   scoring_ranges               Json?                   @default("{\"platinum\": [95, 100], \"high_gold\": [90, 94.9], \"gold\": [85, 89.9], \"silver\": [80, 84.9], \"bronze\": [70, 79.9]}")
   created_at                   DateTime?               @default(now()) @db.Timestamp(6)
   updated_at                   DateTime?               @default(now()) @db.Timestamp(6)
+  tenants                      tenants                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   awards                       awards[]
   competition_entries          competition_entries[]
   competition_locations        competition_locations[]
@@ -615,6 +620,7 @@ model competitions {
   title_rounds                 title_rounds[]
   vip_events                   vip_events[]
 
+  @@index([tenant_id], map: "idx_competitions_tenant")
   @@index([competition_start_date, competition_end_date], map: "idx_competitions_dates")
   @@index([status], map: "idx_competitions_status")
   @@index([year], map: "idx_competitions_year")
@@ -647,6 +653,7 @@ model dance_categories {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model dancers {
   id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id               String               @db.Uuid
   studio_id               String               @db.Uuid
   first_name              String               @db.VarChar(100)
   last_name               String               @db.VarChar(100)
@@ -675,9 +682,11 @@ model dancers {
   created_at              DateTime?            @default(now()) @db.Timestamp(6)
   updated_at              DateTime?            @default(now()) @db.Timestamp(6)
   studios                 studios              @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants                 tenants              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   entry_participants      entry_participants[]
 
   @@index([date_of_birth], map: "idx_dancers_age")
+  @@index([tenant_id], map: "idx_dancers_tenant")
   @@index([first_name, last_name], map: "idx_dancers_name")
   @@index([studio_id], map: "idx_dancers_studio")
   @@schema("public")
@@ -848,6 +857,7 @@ model rankings {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model reservations {
   id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String                 @db.Uuid
   studio_id             String                 @db.Uuid
   competition_id        String                 @db.Uuid
   location_id           String?                @db.Uuid
@@ -881,8 +891,10 @@ model reservations {
   competitions          competitions           @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   competition_locations competition_locations? @relation(fields: [location_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   studios               studios                @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants               tenants                @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
   @@index([competition_id], map: "idx_reservations_competition")
+  @@index([tenant_id], map: "idx_reservations_tenant")
   @@index([status], map: "idx_reservations_status")
   @@index([studio_id], map: "idx_reservations_studio")
   @@schema("public")
@@ -891,6 +903,7 @@ model reservations {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model invoices {
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String       @db.Uuid
   studio_id      String       @db.Uuid
   competition_id String       @db.Uuid
   reservation_id String?      @db.Uuid
@@ -903,8 +916,10 @@ model invoices {
   competitions   competitions @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   reservations   reservations? @relation(fields: [reservation_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   studios        studios      @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
   @@index([competition_id], map: "idx_invoices_competition")
+  @@index([tenant_id], map: "idx_invoices_tenant")
   @@index([reservation_id], map: "idx_invoices_reservation")
   @@index([status], map: "idx_invoices_status")
   @@index([studio_id], map: "idx_invoices_studio")
@@ -943,6 +958,7 @@ model scores {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model studios {
   id                               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                        String                @db.Uuid
   owner_id                         String                @db.Uuid
   code                             String?               @unique @db.VarChar(5)
   name                             String                @db.VarChar(255)
@@ -975,6 +991,7 @@ model studios {
   settings                         Json?                 @default("{}")
   created_at                       DateTime?             @default(now()) @db.Timestamp(6)
   updated_at                       DateTime?             @default(now()) @db.Timestamp(6)
+  tenants                          tenants               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competition_entries              competition_entries[]
   dancers                          dancers[]
   documents                        documents[]
@@ -984,6 +1001,7 @@ model studios {
   users_studios_owner_idTousers    users                 @relation("studios_owner_idTousers", fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users_studios_verified_byTousers users?                @relation("studios_verified_byTousers", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([tenant_id], map: "idx_studios_tenant")
   @@index([code], map: "idx_studios_code")
   @@index([owner_id], map: "idx_studios_owner")
   @@index([status], map: "idx_studios_status")
@@ -1055,6 +1073,7 @@ model title_rounds {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user_profiles {
   id                       String     @id @db.Uuid
+  tenant_id                String?    @db.Uuid
   role                     user_role? @default(studio_director)
   first_name               String?    @db.VarChar(100)
   last_name                String?    @db.VarChar(100)
@@ -1064,7 +1083,9 @@ model user_profiles {
   created_at               DateTime?  @default(now()) @db.Timestamp(6)
   updated_at               DateTime?  @default(now()) @db.Timestamp(6)
   users                    users      @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants                  tenants?   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
+  @@index([tenant_id], map: "idx_user_profiles_tenant")
   @@schema("public")
 }
 
@@ -1168,6 +1189,32 @@ enum user_role {
   studio_director
   competition_director
   super_admin
+
+  @@schema("public")
+}
+
+/// Multi-tenant table for client isolation
+model tenants {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String   @unique @db.VarChar(50)  // URL-safe name (e.g., "empwr", "demo")
+  subdomain   String   @unique @db.VarChar(50)  // Subdomain (e.g., "empwr", "demo")
+  name        String   @db.VarChar(255)         // Display name (e.g., "EMPWR Dance")
+
+  // Branding Configuration
+  branding    Json     @default("{}")           // { primaryColor, secondaryColor, logo, tagline }
+
+  // Timestamps
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  competitions         competitions[]
+  studios              studios[]
+  user_profiles        user_profiles[]
+  reservations         reservations[]
+  competition_entries  competition_entries[]
+  invoices             invoices[]
+  dancers              dancers[]
 
   @@schema("public")
 }

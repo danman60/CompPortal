@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 import { user_role } from '@prisma/client';
+import type { TenantData } from '@/lib/tenant-context';
 
 /**
  * Context type for tRPC procedures
@@ -10,6 +11,8 @@ export interface Context {
   userId: string | null;
   userRole: user_role | null;
   studioId: string | null;
+  tenantId: string | null;
+  tenantData: TenantData | null;
 }
 
 /**

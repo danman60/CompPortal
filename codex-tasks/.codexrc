@@ -1,0 +1,225 @@
+{
+  "name": "compportal-junior-dev",
+  "description": "Codex configuration for CompPortal - Junior dev for boilerplate, CRUD, and scaffolding tasks",
+  "sandbox_mode": "danger-full-access",
+  "network_access": "enabled",
+  "approval_policy": "on-request",
+  "entry": "codex-tasks/",
+  "instructions": [
+    "You are a Junior Developer working on CompPortal with Claude (Senior Dev)",
+    "When user says 'continue': Check these directories: codex-tasks/answers/ (for Claude's responses), codex-tasks/ (for new tasks)",
+    "If you have a question in codex-tasks/questions/: Check codex-tasks/answers/ for response from Claude",
+    "Read each task file completely - it will specify file to create, requirements, patterns",
+    "Generate complete working code following ALL rules and patterns below",
+    "Output to: codex-tasks/outputs/[TASK_NAME]_result.md with full code ready to copy-paste",
+    "Update status: Create codex-tasks/status/STATUS_[TASK_NAME].md with progress (started/in-progress/completed/blocked)",
+    "DESIGN: Use glassmorphic pattern: bg-white/10 backdrop-blur-md rounded-xl border border-white/20",
+    "DESIGN: Use gradient backgrounds: bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900",
+    "DESIGN: Use emoji icons ONLY (🎭 🎪 💃 🏆) - NO external icon libraries",
+    "FORMS: Use React Hook Form + Zod validation for all forms",
+    "FORMS: Show toast notifications (react-hot-toast at top-right) for success/error",
+    "FORMS: Add loading states for all async operations",
+    "API: Use tRPC procedures with proper input validation",
+    "DATABASE: Use EXACT Prisma field names from prisma_models section - never guess",
+    "DATABASE: NEVER modify Prisma schema - create migration file in codex-tasks/migrations/ instead",
+    "ROUTERS: If creating new tRPC router, include instructions to add to src/server/routers/_app.ts",
+    "SECURITY: NEVER modify /generated or /node_modules",
+    "OUTPUT FORMAT: Include file path, complete code, validation checklist, and router registration if needed",
+    "IF UNCLEAR: Create question in codex-tasks/questions/QUESTION_[topic].md, then wait for answer in codex-tasks/answers/",
+    "IF BLOCKED: Create blocker in codex-tasks/blockers/BLOCKER_[issue].md with details for Claude",
+    "QUALITY: Ensure code compiles, follows patterns, has validation, error handling, and loading states"
+  ],
+  "environment": {
+    "NODE_ENV": "development",
+    "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
+    "PROD_URL": "http://compsync.net",
+    "VERCEL_URL": "https://comp-portal-one.vercel.app",
+    "SUPABASE_PROJECT_ID": "cafugvuaatsgihrsmvvl",
+    "SUPABASE_URL": "https://cafugvuaatsgihrsmvvl.supabase.co",
+    "DATABASE_URL": "env:DATABASE_URL"
+  },
+  "git": {
+    "repository": "https://github.com/danman60/CompPortal.git",
+    "branch": "main",
+    "remote": "origin"
+  },
+  "startup": {
+    "scripts": [
+      "npm run postinstall"
+    ],
+    "enforce": true,
+    "flags": [
+      "--sandbox",
+      "danger-full-access"
+    ]
+  },
+  "paths": {
+    "components": "src/components/",
+    "routers": "src/server/routers/",
+    "lib": "src/lib/",
+    "prisma": "prisma/",
+    "tasks": "codex-tasks/",
+    "outputs": "codex-tasks/outputs/",
+    "migrations": "codex-tasks/migrations/",
+    "blockers": "codex-tasks/blockers/",
+    "questions": "codex-tasks/questions/",
+    "answers": "codex-tasks/answers/",
+    "status": "codex-tasks/status/",
+    "logs": "codex-tasks/logs/"
+  },
+  "communication": {
+    "codex_to_claude": {
+      "questions": "codex-tasks/questions/QUESTION_[topic].md - Ask Claude for clarification",
+      "blockers": "codex-tasks/blockers/BLOCKER_[issue].md - Report blocking issues",
+      "status": "codex-tasks/status/STATUS_[task].md - Report progress/completion"
+    },
+    "claude_to_codex": {
+      "tasks": "codex-tasks/[task_name].md - New task assignments",
+      "answers": "codex-tasks/answers/ANSWER_[topic].md - Responses to questions",
+      "feedback": "codex-tasks/feedback/FEEDBACK_[task].md - Code review feedback"
+    },
+    "workflow": [
+      "Codex checks questions/ and answers/ directories on every 'continue'",
+      "If question answered, Codex resumes task with new info",
+      "If new task found, Codex processes it",
+      "Codex updates status/ with progress",
+      "Claude checks outputs/, status/, questions/, blockers/ in CADENCE loop"
+    ]
+  },
+  "patterns": {
+    "glassmorphic_card": {
+      "description": "Standard card component with glassmorphic design",
+      "template": "<div className=\"bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6\">{children}</div>"
+    },
+    "gradient_background": {
+      "description": "Full-page gradient background",
+      "template": "<div className=\"min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900\">{children}</div>"
+    },
+    "trpc_router": {
+      "description": "tRPC router with list and create procedures",
+      "template": "import { router, publicProcedure } from '../trpc';\nimport { z } from 'zod';\n\nexport const exampleRouter = router({\n  list: publicProcedure.query(async ({ ctx }) => {\n    return await ctx.prisma.model.findMany();\n  }),\n  create: publicProcedure\n    .input(z.object({ field: z.string() }))\n    .mutation(async ({ ctx, input }) => {\n      return await ctx.prisma.model.create({ data: input });\n    })\n});"
+    },
+    "form_component": {
+      "description": "React Hook Form component with validation",
+      "template": "import { useForm } from 'react-hook-form';\nimport { toast } from 'react-hot-toast';\nimport { api } from '~/utils/api';\n\nexport default function ExampleForm() {\n  const { register, handleSubmit, formState: { errors } } = useForm();\n  const createMutation = api.example.create.useMutation({\n    onSuccess: () => toast.success('Created successfully'),\n    onError: (err) => toast.error(err.message)\n  });\n\n  const onSubmit = (data) => createMutation.mutate(data);\n\n  return (\n    <form onSubmit={handleSubmit(onSubmit)} className=\"space-y-4\">\n      <input {...register('field', { required: true })} className=\"bg-white/10 backdrop-blur-md rounded-lg px-4 py-2\" />\n      {errors.field && <span className=\"text-red-400\">Required</span>}\n      <button type=\"submit\" className=\"bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg\">Submit</button>\n    </form>\n  );\n}"
+    },
+    "toast_notification": {
+      "description": "Success/error toast pattern",
+      "template": "toast.success('Action completed', { position: 'top-right' });\ntoast.error('Error occurred', { position: 'top-right' });"
+    }
+  },
+  "prisma_models": {
+    "competitions": {
+      "fields": "id, competition_name, competition_year, competition_start_date, competition_end_date, competition_location, registration_deadline, music_submission_deadline, total_reservation_tokens, available_reservation_tokens, session_count, number_of_judges, registration_fee, late_registration_fee, schedule_published_at, schedule_locked, status, created_at"
+    },
+    "competition_entries": {
+      "fields": "id, competition_id, studio_id, routine_title, routine_description, entry_fee, late_fee, total_fee, music_file_url, music_title, music_artist, entry_number, entry_number_suffix, is_late_entry, scheduled_date, scheduled_time, heat_number, running_order, status, created_at"
+    },
+    "studios": {
+      "fields": "id, owner_id, studio_name, contact_email, contact_phone, address, city, state_province, postal_code, country, created_at"
+    },
+    "dancers": {
+      "fields": "id, studio_id, first_name, last_name, date_of_birth, costume_size, parent_guardian_name, emergency_contact, emergency_phone, medical_notes, active, created_at"
+    },
+    "reservations": {
+      "fields": "id, competition_id, studio_id, spaces_requested, spaces_confirmed, status, approved_by, approved_at, rejected_by, rejected_at, payment_confirmed_at, payment_confirmed_by, agent_name, agent_email, age_of_consent, liability_waiver_signed, media_consent, created_at"
+    },
+    "judges": {
+      "fields": "id, first_name, last_name, email, phone, credentials, years_experience, certification_level, specialization, judge_number, panel_assignment, created_at"
+    },
+    "competition_settings": {
+      "fields": "id, setting_category, setting_key, setting_value, is_active, display_order, created_at"
+    }
+  },
+  "project_constants": {
+    "competition_scale": {
+      "studios": "26+",
+      "performances": "387+",
+      "format": "6-day multi-venue",
+      "tokens_per_competition": 600
+    },
+    "award_tiers": {
+      "platinum": "95-100",
+      "high_gold": "90-94.9",
+      "gold": "85-89.9",
+      "silver": "80-84.9",
+      "bronze": "70-79.9"
+    },
+    "file_limits": {
+      "music_max_size": "50MB",
+      "music_formats": ["MP3", "WAV", "M4A", "AAC"]
+    },
+    "entry_numbering": {
+      "start": 100,
+      "format": "3-digit + optional letter suffix (e.g., 156a)"
+    }
+  },
+  "tasks": {
+    "allowed": [
+      "boilerplate_generation",
+      "crud_operations",
+      "component_scaffolding",
+      "migration_file_creation",
+      "test_file_generation",
+      "form_components",
+      "router_creation",
+      "ui_components"
+    ],
+    "forbidden": [
+      "architecture_decisions",
+      "complex_state_management",
+      "api_design",
+      "security_critical_code",
+      "performance_optimization",
+      "system_integration"
+    ]
+  },
+  "output": {
+    "format": "markdown",
+    "location": "codex-tasks/outputs/",
+    "include_tests": false,
+    "include_docs": false
+  },
+  "validation": {
+    "pre_commit": [
+      "npm run build",
+      "Check Prisma field names match schema.prisma",
+      "Verify new router added to _app.ts if applicable",
+      "Ensure glassmorphic pattern used in UI components"
+    ]
+  },
+  "delegation_workflow": {
+    "1_receive_task": "Read task from codex-tasks/TASK_NAME.md",
+    "2_implement": "Generate code following patterns and instructions",
+    "3_validate": "Run pre_commit validation checks",
+    "4_output": "Write result to codex-tasks/outputs/TASK_NAME_result.md",
+    "5_handoff": "Create summary in codex-tasks/logs/TASK_NAME_log.md for Claude to review"
+  },
+  "stack": {
+    "framework": "Next.js 15",
+    "api": "tRPC 11",
+    "database": "Prisma + PostgreSQL (Supabase)",
+    "styling": "Tailwind CSS",
+    "forms": "React Hook Form + Zod",
+    "auth": "NextAuth v5",
+    "state": "TanStack Query (React Query)",
+    "notifications": "react-hot-toast"
+  },
+  "quality_gates": {
+    "before_output": [
+      "Build succeeds (npm run build)",
+      "All Prisma field names exact",
+      "UI follows glassmorphic pattern",
+      "Forms have validation and error handling",
+      "Loading states present for async ops",
+      "Toast notifications for user feedback"
+    ]
+  },
+  "notes": [
+    "This is a JUNIOR DEV config - handle simple, well-defined tasks only",
+    "For complex decisions, create BLOCKER in codex-tasks/blockers/ for Claude",
+    "Always reference existing similar code as patterns",
+    "Never guess - if uncertain about schema/patterns, ask in blocker",
+    "Output should be ready to copy-paste with minimal changes"
+  ]
+}
