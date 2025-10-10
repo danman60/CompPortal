@@ -7,6 +7,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import PullToRefresh from 'react-pull-to-refresh';
 import { highlightText } from '@/lib/highlightText';
+import HoverPreview from '@/components/HoverPreview';
 
 export default function DancersList() {
   const { data, isLoading, error, refetch } = trpc.dancer.getAll.useQuery();
@@ -266,9 +267,17 @@ export default function DancersList() {
                 </tr>
               </thead>
               <tbody>
-                {sortedDancers.map((dancer, index) => (
-                  <tr
+                {sortedDancers.map((dancer, index) => {
+                  const age = dancer.date_of_birth
+                    ? new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()
+                    : null;
+
+                  return (
+                  <HoverPreview
                     key={dancer.id}
+                    delay={400}
+                    trigger={
+                  <tr
                     className={`border-b border-white/10 hover:bg-white/5 transition-colors ${
                       index % 2 === 0 ? 'bg-black/20' : ''
                     }`}
@@ -331,7 +340,86 @@ export default function DancersList() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                    }
+                    content={
+                      <div className="space-y-3 min-w-[300px]">
+                        <div>
+                          <div className="text-xs text-gray-400 mb-1">Dancer Details</div>
+                          <div className="text-lg font-bold text-white">
+                            {dancer.first_name} {dancer.last_name}
+                          </div>
+                          {dancer.registration_number && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              Registration: #{dancer.registration_number}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Gender</div>
+                            <div className={`text-sm font-semibold ${
+                              dancer.gender === 'Male'
+                                ? 'text-blue-400'
+                                : dancer.gender === 'Female'
+                                ? 'text-pink-400'
+                                : 'text-gray-400'
+                            }`}>
+                              {dancer.gender || 'Unknown'}
+                            </div>
+                          </div>
+
+                          {age && (
+                            <div>
+                              <div className="text-xs text-gray-400 mb-1">Age</div>
+                              <div className="text-sm font-semibold text-white">
+                                {age} years
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {dancer.studios && (
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Studio</div>
+                            <div className="text-sm text-white">
+                              {dancer.studios.name}
+                            </div>
+                          </div>
+                        )}
+
+                        {dancer.date_of_birth && (
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Date of Birth</div>
+                            <div className="text-sm text-gray-300">
+                              {new Date(dancer.date_of_birth).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {dancer.status && (
+                          <div className="pt-3 border-t border-white/10">
+                            <div className="text-xs text-gray-400 mb-1">Status</div>
+                            <span
+                              className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
+                                dancer.status === 'active'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-gray-500/20 text-gray-400'
+                              }`}
+                            >
+                              {dancer.status}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
+                  );
+                })}
               </tbody>
             </table>
           </div>

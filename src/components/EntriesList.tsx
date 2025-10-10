@@ -7,6 +7,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import toast from 'react-hot-toast';
 import PullToRefresh from 'react-pull-to-refresh';
+import HoverPreview from '@/components/HoverPreview';
 
 export default function EntriesList() {
   const { data, isLoading, refetch } = trpc.entry.getAll.useQuery();
@@ -692,8 +693,11 @@ export default function EntriesList() {
                 {sortedEntries.map((entry, index) => {
                   const routineStatus = getRoutineStatus(entry);
                   return (
-                  <tr
+                  <HoverPreview
                     key={entry.id}
+                    delay={400}
+                    trigger={
+                  <tr
                     className={`border-b border-white/10 hover:bg-white/5 transition-colors ${
                       index % 2 === 0 ? 'bg-black/20' : ''
                     }`}
@@ -812,6 +816,115 @@ export default function EntriesList() {
                       </div>
                     </td>
                   </tr>
+                    }
+                    content={
+                      <div className="space-y-3 min-w-[350px]">
+                        <div>
+                          <div className="text-xs text-gray-400 mb-1">Routine Details</div>
+                          <div className="text-lg font-bold text-white">{entry.title}</div>
+                          {entry.entry_number && (
+                            <div className="text-sm text-purple-400 mt-1">
+                              Routine #{entry.entry_number}{entry.entry_suffix || ''}
+                              {entry.is_late_entry && <span className="ml-2 text-xs text-orange-400">(LATE)</span>}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Competition</div>
+                            <div className="text-sm text-white">
+                              {entry.competitions?.name}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Year</div>
+                            <div className="text-sm text-white">
+                              {entry.competitions?.year}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Category</div>
+                            <div className="text-sm text-white">
+                              {entry.dance_categories?.name || 'N/A'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Age Group</div>
+                            <div className="text-sm text-white">
+                              {entry.age_groups?.name || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {entry.entry_participants && entry.entry_participants.length > 0 && (
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">
+                              Dancers ({entry.entry_participants.length})
+                            </div>
+                            <div className="space-y-1">
+                              {entry.entry_participants.slice(0, 3).map((p) => (
+                                <div key={p.id} className="text-sm text-gray-300">
+                                  • {p.dancers?.first_name} {p.dancers?.last_name}
+                                </div>
+                              ))}
+                              {entry.entry_participants.length > 3 && (
+                                <div className="text-xs text-gray-500">
+                                  +{entry.entry_participants.length - 3} more
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="pt-3 border-t border-white/10 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-gray-400">Completion</div>
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              routineStatus.status === 'ready'
+                                ? 'bg-green-500/20 text-green-400'
+                                : routineStatus.status === 'in-progress'
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : 'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {routineStatus.icon} {routineStatus.label}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-gray-400">Music</div>
+                            {entry.music_file_url ? (
+                              <span className="px-2 py-1 rounded text-xs bg-green-500/20 text-green-400">
+                                ✅ Uploaded
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-400">
+                                ⚠️ Pending
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-gray-400">Status</div>
+                            <span className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
+                              entry.status === 'confirmed'
+                                ? 'bg-green-500/20 text-green-400'
+                                : entry.status === 'registered'
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : entry.status === 'cancelled'
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {entry.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  />
                   );
                 })}
               </tbody>
