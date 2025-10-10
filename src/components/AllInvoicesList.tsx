@@ -18,6 +18,9 @@ export default function AllInvoicesList() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  // Bulk selection state
+  const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
+
   // Read URL query parameters on mount
   useEffect(() => {
     const paymentStatus = searchParams.get('paymentStatus');
@@ -73,6 +76,89 @@ export default function AllInvoicesList() {
     sendReminderMutation.mutate({
       studioId,
       competitionId,
+    });
+  };
+
+  // Bulk selection handlers
+  const toggleInvoiceSelection = (invoiceKey: string) => {
+    const newSelection = new Set(selectedInvoices);
+    if (newSelection.has(invoiceKey)) {
+      newSelection.delete(invoiceKey);
+    } else {
+      newSelection.add(invoiceKey);
+    }
+    setSelectedInvoices(newSelection);
+  };
+
+  const selectAllInvoices = () => {
+    const allKeys = sortedInvoices.map(inv => `${inv.studioId}-${inv.competitionId}`);
+    setSelectedInvoices(new Set(allKeys));
+  };
+
+  const deselectAllInvoices = () => {
+    setSelectedInvoices(new Set());
+  };
+
+  const selectFilteredInvoices = () => {
+    // Select only pending invoices
+    const filteredKeys = sortedInvoices
+      .filter(inv => inv.reservation?.paymentStatus === 'pending' || !inv.reservation?.paymentStatus)
+      .map(inv => `${inv.studioId}-${inv.competitionId}`);
+    setSelectedInvoices(new Set(filteredKeys));
+  };
+
+  // Bulk action handlers
+  const handleBulkMarkAsPaid = () => {
+    if (selectedInvoices.size === 0) return;
+    if (!confirm(`Mark ${selectedInvoices.size} selected invoices as paid?`)) return;
+
+    const selectedArray = Array.from(selectedInvoices);
+    const selectedInvoiceData = sortedInvoices.filter(inv =>
+      selectedArray.includes(`${inv.studioId}-${inv.competitionId}`) && inv.reservation
+    );
+
+    let completed = 0;
+    selectedInvoiceData.forEach(inv => {
+      if (inv.reservation) {
+        markAsPaidMutation.mutate({
+          id: inv.reservation.id,
+          paymentStatus: 'paid',
+        }, {
+          onSuccess: () => {
+            completed++;
+            if (completed === selectedInvoiceData.length) {
+              toast.success(`${completed} invoices marked as paid`);
+              setSelectedInvoices(new Set());
+            }
+          },
+        });
+      }
+    });
+  };
+
+  const handleBulkSendReminders = () => {
+    if (selectedInvoices.size === 0) return;
+    if (!confirm(`Send payment reminders for ${selectedInvoices.size} selected invoices?`)) return;
+
+    const selectedArray = Array.from(selectedInvoices);
+    const selectedInvoiceData = sortedInvoices.filter(inv =>
+      selectedArray.includes(`${inv.studioId}-${inv.competitionId}`)
+    );
+
+    let completed = 0;
+    selectedInvoiceData.forEach(inv => {
+      sendReminderMutation.mutate({
+        studioId: inv.studioId,
+        competitionId: inv.competitionId,
+      }, {
+        onSuccess: () => {
+          completed++;
+          if (completed === selectedInvoiceData.length) {
+            toast.success(`Reminders sent to ${completed} studios`);
+            setSelectedInvoices(new Set());
+          }
+        },
+      });
     });
   };
 
@@ -204,11 +290,12 @@ export default function AllInvoicesList() {
 
       {/* Invoices Table */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-        {/* Table Header with Download Button */}
-        <div className="bg-white/5 border-b border-white/20 px-6 py-4 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-white">Invoices</h3>
-          <button
-            onClick={() => {
+        {/* Table Header with Bulk Selection and Actions */}
+        <div className="bg-white/5 border-b border-white/20 px-6 py-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-white">Invoices</h3>
+            <button
+              onClick={() => {
               // Generate CSV from current invoices
               const csvHeaders = ['Studio', 'Code', 'City', 'Event', 'Year', 'Routines', 'Total Amount', 'Payment Status'];
               const csvRows = sortedInvoices.map(inv => [
@@ -241,11 +328,65 @@ export default function AllInvoicesList() {
           >
             📥 Download CSV
           </button>
+          </div>
+
+          {/* Bulk Selection Controls */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-gray-300">
+              {selectedInvoices.size > 0 ? `${selectedInvoices.size} selected` : 'Select:'}
+            </span>
+            <button
+              onClick={selectAllInvoices}
+              className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm border border-white/20 transition-all"
+            >
+              All ({sortedInvoices.length})
+            </button>
+            <button
+              onClick={selectFilteredInvoices}
+              className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm border border-white/20 transition-all"
+            >
+              Pending Only
+            </button>
+            <button
+              onClick={deselectAllInvoices}
+              disabled={selectedInvoices.size === 0}
+              className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm border border-white/20 transition-all disabled:opacity-50"
+            >
+              Clear
+            </button>
+
+            {/* Bulk Actions - Show only when items selected */}
+            {selectedInvoices.size > 0 && (
+              <>
+                <div className="h-6 w-px bg-white/20 mx-2"></div>
+                <button
+                  onClick={handleBulkMarkAsPaid}
+                  className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg text-sm font-semibold border border-green-400/30 transition-all"
+                >
+                  ✓ Mark Paid ({selectedInvoices.size})
+                </button>
+                <button
+                  onClick={handleBulkSendReminders}
+                  className="px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-lg text-sm font-semibold border border-purple-400/30 transition-all"
+                >
+                  📧 Send Reminders ({selectedInvoices.size})
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-white/5 border-b border-white/20 sticky top-0 z-10 backdrop-blur-md">
               <tr>
+                <th className="px-6 py-4 w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedInvoices.size === sortedInvoices.length && sortedInvoices.length > 0}
+                    onChange={(e) => e.target.checked ? selectAllInvoices() : deselectAllInvoices()}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 checked:bg-purple-500 cursor-pointer"
+                  />
+                </th>
                 <SortableHeader label="Studio" sortKey="studioName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Routines" sortKey="entryCount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
@@ -259,7 +400,7 @@ export default function AllInvoicesList() {
             <tbody className="divide-y divide-white/10">
               {sortedInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center">
+                  <td colSpan={7} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center">
                       <div className="text-6xl mb-4">📋</div>
                       <h3 className="text-xl font-bold text-white mb-2">No Invoices Found</h3>
@@ -283,8 +424,19 @@ export default function AllInvoicesList() {
                   </td>
                 </tr>
               ) : (
-                sortedInvoices.map((invoice) => (
-                  <tr key={`${invoice.studioId}-${invoice.competitionId}`} className="hover:bg-white/5 transition-colors">
+                sortedInvoices.map((invoice) => {
+                  const invoiceKey = `${invoice.studioId}-${invoice.competitionId}`;
+                  const isSelected = selectedInvoices.has(invoiceKey);
+                  return (
+                  <tr key={invoiceKey} className={`hover:bg-white/5 transition-colors ${isSelected ? 'bg-purple-500/10' : ''}`}>
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleInvoiceSelection(invoiceKey)}
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 checked:bg-purple-500 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div>
                         <div className="text-white font-semibold">{invoice.studioName || 'N/A'}</div>
@@ -354,7 +506,8 @@ export default function AllInvoicesList() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
