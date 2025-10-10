@@ -623,7 +623,7 @@ export default function EntriesList() {
             return (
             <div
               key={entry.id}
-              className={`bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all ${
+              className={`min-h-[200px] bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all ${
                 routineStatus.status === 'ready'
                   ? 'border-green-400/40'
                   : routineStatus.status === 'in-progress'
