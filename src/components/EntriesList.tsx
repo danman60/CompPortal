@@ -27,10 +27,37 @@ export default function EntriesList() {
     { enabled: selectedCompetition !== 'all' }
   );
 
-  // Delete mutation
-  const utils = trpc.useContext();
+  // Delete mutation with optimistic updates
+  const utils = trpc.useUtils();
   const deleteMutation = trpc.entry.delete.useMutation({
-    onSuccess: () => {
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches
+      await utils.entry.getAll.cancel();
+
+      // Snapshot previous value
+      const previousData = utils.entry.getAll.getData();
+
+      // Optimistically update cache - remove deleted entry
+      utils.entry.getAll.setData(undefined, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          entries: old.entries.filter((entry) => entry.id !== variables.id),
+        };
+      });
+
+      // Return context with snapshot for potential rollback
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousData) {
+        utils.entry.getAll.setData(undefined, context.previousData);
+      }
+      toast.error('Failed to delete routine');
+    },
+    onSettled: () => {
+      // Refetch to ensure sync with server
       utils.entry.getAll.invalidate();
       setSelectedEntries(new Set());
     },

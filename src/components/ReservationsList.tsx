@@ -35,29 +35,94 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   } | null>(null);
   const [newCapacity, setNewCapacity] = useState<number>(0);
 
-  // Approval mutation
+  // Approval mutation with optimistic updates
   const approveMutation = trpc.reservation.approve.useMutation({
-    onSuccess: () => {
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches
+      await utils.reservation.getAll.cancel();
+
+      // Snapshot previous value
+      const previousData = utils.reservation.getAll.getData();
+
+      // Optimistically update reservation status
+      utils.reservation.getAll.setData(undefined, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          reservations: old.reservations.map((reservation) => {
+            if (reservation.id !== variables.id) return reservation;
+
+            return {
+              ...reservation,
+              status: 'approved' as const,
+              spaces_confirmed: variables.spacesConfirmed ?? null,
+              approved_at: new Date().toISOString() as any,
+            };
+          }),
+        };
+      });
+
+      // Return context with snapshot for potential rollback
+      return { previousData };
+    },
+    onError: (error, variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousData) {
+        utils.reservation.getAll.setData(undefined, context.previousData);
+      }
+      toast.error(getFriendlyErrorMessage(error.message));
+      setProcessingId(null);
+    },
+    onSettled: () => {
+      // Refetch to ensure sync with server
       utils.reservation.getAll.invalidate();
       setProcessingId(null);
       toast.success('Reservation approved successfully');
     },
-    onError: (error) => {
+  });
+
+  // Rejection mutation with optimistic updates
+  const rejectMutation = trpc.reservation.reject.useMutation({
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches
+      await utils.reservation.getAll.cancel();
+
+      // Snapshot previous value
+      const previousData = utils.reservation.getAll.getData();
+
+      // Optimistically update reservation status
+      utils.reservation.getAll.setData(undefined, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          reservations: old.reservations.map((reservation) => {
+            if (reservation.id !== variables.id) return reservation;
+
+            return {
+              ...reservation,
+              status: 'rejected' as const,
+              internal_notes: variables.reason || reservation.internal_notes,
+            };
+          }),
+        };
+      });
+
+      // Return context with snapshot for potential rollback
+      return { previousData };
+    },
+    onError: (error, variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousData) {
+        utils.reservation.getAll.setData(undefined, context.previousData);
+      }
       toast.error(getFriendlyErrorMessage(error.message));
       setProcessingId(null);
     },
-  });
-
-  // Rejection mutation
-  const rejectMutation = trpc.reservation.reject.useMutation({
-    onSuccess: () => {
+    onSettled: () => {
+      // Refetch to ensure sync with server
       utils.reservation.getAll.invalidate();
       setProcessingId(null);
       toast.success('Reservation rejected');
-    },
-    onError: (error) => {
-      toast.error(getFriendlyErrorMessage(error.message));
-      setProcessingId(null);
     },
   });
 
