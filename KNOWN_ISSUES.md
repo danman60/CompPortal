@@ -95,9 +95,44 @@
 
 ---
 
+### 3. Dancer Creation Backend Error (RESOLVED)
+**Status:** ✅ FIXED - Commit a25ec1f (2025-01-10)
+**First Reported:** 2025-01-10 (QA Report #1)
+**Severity:** High - Blocked dancer creation for demo
+**Resolution Date:** 2025-01-10
+
+**Problem:**
+- Dancer creation failing with Prisma error: `Argument 'studios' is missing`
+- Error showed `tenant_id: null` and `studio_id` passed as foreign key
+- 0 dancers saved when submitting batch form
+
+**Root Cause:**
+- Same issue as routine creation (Issue #1)
+- Frontend passing `studio_id` as foreign key instead of Prisma relation syntax
+- `batchCreate` mutation not fetching tenant_id from studio
+- Prisma requires explicit relation connect syntax
+
+**Solution Applied:**
+- Fetch studio to get tenant_id before creating dancers (dancer.ts:454-462)
+- Use relation connect syntax: `studios: { connect: { id: input.studio_id } }`
+- Use relation connect syntax: `tenants: { connect: { id: studio.tenant_id } }`
+
+**Files Modified:**
+- `src/server/routers/dancer.ts` (lines 454-477) - batchCreate mutation
+
+**Production Verification:**
+- ✅ Dancer created successfully in production (empwr.compsync.net)
+- ✅ Test dancer: "VERIFIED FIX"
+- ✅ Success message: "Successfully created 1 dancer(s)!"
+- ✅ Screenshot: `dancer-creation-verified.png`
+
+**Note:** Dancers list page has separate React hydration error (minified #419/#310) - under investigation
+
+---
+
 ## Minor Issues
 
-### 3. Animation Description Inaccuracy
+### 4. Animation Description Inaccuracy
 **Status:** Cosmetic
 **Severity:** Low
 
