@@ -39,6 +39,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   // Props state
   const [propsUsed, setPropsUsed] = useState<'no' | 'yes'>('no');
 
+  // Success animation state
+  const [showSuccess, setShowSuccess] = useState(false);
+
   // Auto-save integration
   const autoSave = useAutoSave(formData, {
     key: `entry-form-draft-${entryId || 'new'}`,
@@ -161,7 +164,11 @@ export default function EntryForm({ entryId }: EntryFormProps) {
         age_group_id: formData.age_group_id,
         entry_size_category_id: formData.entry_size_category_id,
       });
-      router.push('/dashboard/entries');
+      // Show success animation before redirect
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push('/dashboard/entries');
+      }, 1500);
     },
     onError: (error) => {
       alert(`Error creating entry: ${error.message}`);
@@ -170,7 +177,11 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
   const updateMutation = trpc.entry.update.useMutation({
     onSuccess: async (data) => {
-      router.push(`/dashboard/entries/${entryId}`);
+      // Show success animation before redirect
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push(`/dashboard/entries/${entryId}`);
+      }, 1500);
     },
     onError: (error) => {
       alert(`Error updating entry: ${error.message}`);
@@ -727,12 +738,22 @@ export default function EntryForm({ entryId }: EntryFormProps) {
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              disabled={createMutation.isPending || updateMutation.isPending || showSuccess}
+              className={`px-6 py-2 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ${
+                showSuccess
+                  ? 'bg-green-600 scale-105'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-500'
+              }`}
             >
-              {isEditMode
-                ? (updateMutation.isPending ? 'Updating...' : 'Update Routine')
-                : (createMutation.isPending ? 'Creating...' : 'Create Routine')}
+              {showSuccess ? (
+                <span className="flex items-center gap-2">
+                  ✅ {isEditMode ? 'Updated!' : 'Created!'}
+                </span>
+              ) : isEditMode ? (
+                updateMutation.isPending ? 'Updating...' : 'Update Routine'
+              ) : (
+                createMutation.isPending ? 'Creating...' : 'Create Routine'
+              )}
             </button>
           )}
         </div>
