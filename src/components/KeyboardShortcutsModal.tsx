@@ -13,6 +13,8 @@ const shortcuts: Shortcut[] = [
   // Global shortcuts
   { keys: ['?'], description: 'Show keyboard shortcuts', context: 'Global' },
   { keys: ['Esc'], description: 'Close modal / Clear selection', context: 'Global' },
+  { keys: ['Ctrl', 'Z'], description: 'Undo action', context: 'Global' },
+  { keys: ['Ctrl', 'Y'], description: 'Redo action', context: 'Global' },
 
   // Table shortcuts
   { keys: ['Ctrl', 'A'], description: 'Select all items', context: 'Table View' },

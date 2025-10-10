@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { hapticLight } from '@/lib/haptics';
 
 interface UseUndoRedoOptions {
   maxHistory?: number;
@@ -39,12 +40,14 @@ export function useUndoRedo<T>(initialState: T, options: UseUndoRedoOptions = {}
 
   const undo = useCallback(() => {
     if (canUndo) {
+      hapticLight();
       setCurrentIndex((prev) => prev - 1);
     }
   }, [canUndo]);
 
   const redo = useCallback(() => {
     if (canRedo) {
+      hapticLight();
       setCurrentIndex((prev) => prev + 1);
     }
   }, [canRedo]);
@@ -54,6 +57,33 @@ export function useUndoRedo<T>(initialState: T, options: UseUndoRedoOptions = {}
     setHistory([resetState]);
     setCurrentIndex(0);
   }, [initialState]);
+
+  // Keyboard shortcuts: Ctrl+Z (undo), Ctrl+Y or Ctrl+Shift+Z (redo)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger in input fields unless user explicitly wants it
+      const target = e.target as HTMLElement;
+      const isEditable = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+      // Only allow in editable fields if they explicitly support undo
+      if (isEditable && !target.dataset.undoEnabled) return;
+
+      // Ctrl+Z or Cmd+Z = Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && canUndo) {
+        e.preventDefault();
+        undo();
+      }
+
+      // Ctrl+Y or Cmd+Y or Ctrl+Shift+Z = Redo
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey)) && canRedo) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo, canUndo, canRedo]);
 
   return {
     state: currentState,
