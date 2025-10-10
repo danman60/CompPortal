@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { SkeletonList } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
+import PullToRefresh from 'react-pull-to-refresh';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -17,7 +18,7 @@ interface ReservationsListProps {
 export default function ReservationsList({ isStudioDirector = false }: ReservationsListProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const { data, isLoading, dataUpdatedAt } = trpc.reservation.getAll.useQuery();
+  const { data, isLoading, dataUpdatedAt, refetch } = trpc.reservation.getAll.useQuery();
   const { data: studiosData } = trpc.studio.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
@@ -34,6 +35,11 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     warning?: string;
   } | null>(null);
   const [newCapacity, setNewCapacity] = useState<number>(0);
+
+  // Pull-to-refresh handler
+  const handleRefresh = async () => {
+    await refetch();
+  };
 
   // Approval mutation with optimistic updates
   const approveMutation = trpc.reservation.approve.useMutation({
@@ -286,6 +292,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   };
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div>
       {/* Header with Create Button (Studio Directors Only - Issue #18) */}
       <div className="flex justify-between items-center mb-6">
@@ -1042,5 +1049,6 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
         }}
       />
     </div>
+    </PullToRefresh>
   );
 }
