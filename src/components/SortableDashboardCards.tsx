@@ -176,7 +176,6 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-white">Quick Actions</h2>
-        <p className="text-sm text-gray-400">💡 Drag cards to reorder</p>
       </div>
 
       <DndContext
