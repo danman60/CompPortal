@@ -31,8 +31,8 @@ export default function BalletLoadingAnimation({
         {/* Stage floor */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-1 bg-gradient-to-r from-transparent via-purple-500/50 to-transparent rounded-full blur-sm" />
 
-        {/* Ballet dancer */}
-        <div className="ballet-dancer text-8xl">
+        {/* Ballet shoes */}
+        <div className="ballet-shoes text-8xl">
           🩰
         </div>
 
@@ -92,7 +92,7 @@ export default function BalletLoadingAnimation({
           }
         }
 
-        .ballet-dancer {
+        .ballet-shoes {
           animation: balletJump 1.5s ease-in-out infinite;
           display: inline-block;
         }

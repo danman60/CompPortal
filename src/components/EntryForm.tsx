@@ -42,11 +42,11 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   // Success animation state
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Auto-save integration
+  // Auto-save integration (DISABLED - routine creation breaks with corrupted localStorage)
   const autoSave = useAutoSave(formData, {
     key: `entry-form-draft-${entryId || 'new'}`,
     debounceMs: 2000,
-    enabled: !isEditMode, // Only auto-save for new entries
+    enabled: false, // DISABLED: Auto-save causes studio_id corruption
   });
 
   // Smart defaults integration
@@ -781,7 +781,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
           )}
         </div>
       </div>
-      <AutoSaveIndicator status={autoSave.status.status} lastSaved={autoSave.status.lastSaved} />
+      {/* <AutoSaveIndicator status={autoSave.status.status} lastSaved={autoSave.status.lastSaved} /> */}
     </div>
   );
 }
