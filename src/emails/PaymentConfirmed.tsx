@@ -18,6 +18,10 @@ interface PaymentConfirmedProps {
   paymentStatus: 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled';
   invoiceNumber?: string;
   paymentDate: string;
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function PaymentConfirmed({
@@ -28,7 +32,10 @@ export default function PaymentConfirmed({
   paymentStatus,
   invoiceNumber,
   paymentDate,
+  tenantBranding,
 }: PaymentConfirmedProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
+
   const statusEmoji = {
     pending: '⏳',
     partial: '💵',
@@ -51,7 +58,7 @@ export default function PaymentConfirmed({
       <Preview>{statusText} for {competitionName}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>{statusEmoji} {statusText}!</Heading>
+          <Heading style={{...h1, color: primaryColor}}>{statusEmoji} {statusText}!</Heading>
 
           <Text style={text}>
             Hello <strong>{studioName}</strong>,
@@ -61,7 +68,7 @@ export default function PaymentConfirmed({
             Your payment status for <strong>{competitionName} ({competitionYear})</strong> has been updated.
           </Text>
 
-          <Section style={detailsBox}>
+          <Section style={{...detailsBox, borderLeft: `4px solid ${primaryColor}`}}>
             {invoiceNumber && (
               <>
                 <Text style={detailLabel}>Invoice Number</Text>

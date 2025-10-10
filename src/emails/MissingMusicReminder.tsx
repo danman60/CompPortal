@@ -22,6 +22,10 @@ interface MissingMusicReminderProps {
   }>;
   portalUrl: string;
   daysUntilCompetition?: number;
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function MissingMusicReminder({
@@ -31,7 +35,10 @@ export default function MissingMusicReminder({
   routinesWithoutMusic,
   portalUrl,
   daysUntilCompetition,
+  tenantBranding,
 }: MissingMusicReminderProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
+  const secondaryColor = tenantBranding?.secondaryColor || '#1e40af';
   return (
     <Html>
       <Head />
@@ -70,14 +77,14 @@ export default function MissingMusicReminder({
             ))}
           </Section>
 
-          <Section style={actionBox}>
-            <Text style={actionTitle}>📤 Upload Your Music Now</Text>
+          <Section style={{...actionBox, backgroundColor: `${primaryColor}0d`, border: `1px solid ${primaryColor}33`}}>
+            <Text style={{...actionTitle, color: secondaryColor}}>📤 Upload Your Music Now</Text>
             <Text style={actionText}>
               Log in to the competition portal and upload your music files for each routine.
               Music files must be in MP3, WAV, M4A, or AAC format.
             </Text>
             <div style={buttonContainer}>
-              <Link href={portalUrl} style={button}>
+              <Link href={portalUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
                 Go to Portal
               </Link>
             </div>

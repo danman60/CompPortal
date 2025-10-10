@@ -16,6 +16,10 @@ interface RegistrationConfirmationProps {
   competitionYear: number;
   competitionDate?: string;
   contactEmail: string;
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function RegistrationConfirmation({
@@ -24,7 +28,10 @@ export default function RegistrationConfirmation({
   competitionYear,
   competitionDate,
   contactEmail,
+  tenantBranding,
 }: RegistrationConfirmationProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#5e6ad2';
+
   return (
     <Html>
       <Head />
@@ -61,7 +68,7 @@ export default function RegistrationConfirmation({
 
           <Text style={footer}>
             If you have any questions, please contact us at{' '}
-            <a href={`mailto:${contactEmail}`} style={link}>
+            <a href={`mailto:${contactEmail}`} style={{...link, color: primaryColor}}>
               {contactEmail}
             </a>
           </Text>

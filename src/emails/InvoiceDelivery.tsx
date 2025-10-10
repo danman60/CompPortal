@@ -20,6 +20,10 @@ interface InvoiceDeliveryProps {
   routineCount: number;
   invoiceUrl: string;
   dueDate?: string;
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function InvoiceDelivery({
@@ -31,7 +35,11 @@ export default function InvoiceDelivery({
   routineCount,
   invoiceUrl,
   dueDate,
+  tenantBranding,
 }: InvoiceDeliveryProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
+  const secondaryColor = tenantBranding?.secondaryColor || '#ec4899';
+
   return (
     <Html>
       <Head />
@@ -48,7 +56,7 @@ export default function InvoiceDelivery({
             Your invoice for <strong>{competitionName} ({competitionYear})</strong> is ready for review.
           </Text>
 
-          <Section style={invoiceBox}>
+          <Section style={{...invoiceBox, backgroundColor: `${primaryColor}05`, border: `1px solid ${primaryColor}33`}}>
             <Text style={invoiceLabel}>Invoice Number</Text>
             <Text style={invoiceValue}>{invoiceNumber}</Text>
 
@@ -77,7 +85,7 @@ export default function InvoiceDelivery({
           </Section>
 
           <Section style={{textAlign: 'center', padding: '20px 40px'}}>
-            <Button href={invoiceUrl} style={button}>
+            <Button href={invoiceUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
               View Invoice
             </Button>
           </Section>

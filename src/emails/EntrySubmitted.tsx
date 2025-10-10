@@ -20,6 +20,10 @@ interface EntrySubmittedProps {
   sizeCategory: string;
   participantCount: number;
   entryFee: number;
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function EntrySubmitted({
@@ -32,7 +36,10 @@ export default function EntrySubmitted({
   sizeCategory,
   participantCount,
   entryFee,
+  tenantBranding,
 }: EntrySubmittedProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#7c3aed';
+  const secondaryColor = tenantBranding?.secondaryColor || '#1e40af';
   return (
     <Html>
       <Head />
@@ -50,11 +57,11 @@ export default function EntrySubmitted({
             <strong>{competitionName} ({competitionYear})</strong>.
           </Text>
 
-          <Section style={entryBox}>
+          <Section style={{...entryBox, border: `1px solid ${primaryColor}33`}}>
             {entryNumber && (
               <>
                 <Text style={entryLabel}>Routine Number</Text>
-                <Text style={entryNumberStyle}>#{entryNumber}</Text>
+                <Text style={{...entryNumberStyle, color: primaryColor}}>#{entryNumber}</Text>
                 <Hr style={hr} />
               </>
             )}
@@ -91,8 +98,8 @@ export default function EntrySubmitted({
             </div>
           </Section>
 
-          <Section style={reminderBox}>
-            <Text style={reminderTitle}>📝 Important Reminders</Text>
+          <Section style={{...reminderBox, backgroundColor: `${primaryColor}0d`, border: `1px solid ${primaryColor}33`}}>
+            <Text style={{...reminderTitle, color: secondaryColor}}>📝 Important Reminders</Text>
             <ul style={list}>
               <li>Upload your music file through the portal</li>
               <li>Review your routine details for accuracy</li>

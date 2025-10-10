@@ -18,6 +18,10 @@ interface ReservationRejectedProps {
   reason?: string;
   portalUrl: string;
   contactEmail: string;
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function ReservationRejected({
@@ -27,7 +31,11 @@ export default function ReservationRejected({
   reason,
   portalUrl,
   contactEmail,
+  tenantBranding,
 }: ReservationRejectedProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
+  const secondaryColor = tenantBranding?.secondaryColor || '#ec4899';
+
   return (
     <Html>
       <Head />
@@ -58,21 +66,21 @@ export default function ReservationRejected({
 
           <Section style={stepsBox}>
             <div style={stepItem}>
-              <div style={stepNumber}>1</div>
+              <div style={{...stepNumber, backgroundColor: primaryColor}}>1</div>
               <Text style={stepText}>Review the reason for rejection above</Text>
             </div>
             <div style={stepItem}>
-              <div style={stepNumber}>2</div>
+              <div style={{...stepNumber, backgroundColor: primaryColor}}>2</div>
               <Text style={stepText}>Contact us if you have questions or need clarification</Text>
             </div>
             <div style={stepItem}>
-              <div style={stepNumber}>3</div>
+              <div style={{...stepNumber, backgroundColor: primaryColor}}>3</div>
               <Text style={stepText}>Consider submitting a new reservation if circumstances change</Text>
             </div>
           </Section>
 
           <Section style={{ textAlign: 'center', padding: '20px 40px' }}>
-            <Button href={portalUrl} style={button}>
+            <Button href={portalUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
               Go to Portal
             </Button>
           </Section>
@@ -81,7 +89,7 @@ export default function ReservationRejected({
 
           <Text style={footer}>
             If you have any questions, please contact us at{' '}
-            <a href={`mailto:${contactEmail}`} style={link}>
+            <a href={`mailto:${contactEmail}`} style={{...link, color: primaryColor}}>
               {contactEmail}
             </a>
           </Text>
