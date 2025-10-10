@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface DancerRow {
   first_name: string;
@@ -46,18 +47,21 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
 
   const batchCreateMutation = trpc.dancer.batchCreate.useMutation({
     onSuccess: (data) => {
-      alert(
-        `Successfully created ${data.successful} dancer(s)!` +
-        (data.failed > 0 ? `\n${data.failed} failed.` : '') +
-        (data.errors ? `\n\nErrors:\n${data.errors.join('\n')}` : '')
-      );
       if (data.successful > 0) {
+        toast.success(
+          `Successfully created ${data.successful} dancer(s)!` +
+          (data.failed > 0 ? ` ${data.failed} failed.` : ''),
+          { duration: 5000 }
+        );
         router.push('/dashboard/dancers');
+      }
+      if (data.errors && data.errors.length > 0) {
+        data.errors.forEach((err) => toast.error(err, { duration: 6000 }));
       }
       setIsSubmitting(false);
     },
     onError: (error) => {
-      alert(`Batch create failed: ${error.message}`);
+      toast.error(`Batch create failed: ${error.message}`);
       setIsSubmitting(false);
     },
   });
@@ -69,7 +73,7 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
     );
 
     if (validDancers.length === 0) {
-      alert('Please enter at least one dancer.');
+      toast.error('Please enter at least one dancer.');
       return;
     }
 
@@ -79,7 +83,7 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
     );
 
     if (incompleteRows.length > 0) {
-      alert('All dancers must have both first name and last name.');
+      toast.error('All dancers must have both first name and last name.');
       return;
     }
 

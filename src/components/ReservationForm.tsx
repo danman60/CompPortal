@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSmartDefaults } from '@/hooks/useSmartDefaults';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import AutoSaveIndicator from '@/components/AutoSaveIndicator';
+import toast from 'react-hot-toast';
 
 interface ReservationFormProps {
   studioId: string;
@@ -60,6 +61,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
 
   const createReservation = trpc.reservation.create.useMutation({
     onSuccess: () => {
+      toast.success('Reservation submitted successfully! Awaiting approval.');
       // Clear draft on successful creation
       autoSave.clearSaved();
       // Save smart defaults for next reservation
@@ -68,6 +70,9 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
       });
       utils.reservation.getAll.invalidate();
       router.push('/dashboard/reservations');
+    },
+    onError: (error) => {
+      toast.error(`Failed to create reservation: ${error.message}`);
     },
   });
 
@@ -100,7 +105,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
       });
     } catch (error) {
       console.error('Error creating reservation:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create reservation');
+      // Error toast already shown in onError handler
     }
   };
 

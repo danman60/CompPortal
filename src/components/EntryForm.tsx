@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useSmartDefaults } from '@/hooks/useSmartDefaults';
 import AutoSaveIndicator from '@/components/AutoSaveIndicator';
+import toast from 'react-hot-toast';
 
 type Step = 'basic' | 'details' | 'participants' | 'props' | 'review';
 
@@ -165,6 +166,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
   const createMutation = trpc.entry.create.useMutation({
     onSuccess: async (data) => {
+      toast.success('Routine created successfully!');
       autoSave.clearSaved(); // Clear draft on successful creation
       // Save smart defaults for next entry
       smartDefaults.saveDefaults({
@@ -181,12 +183,13 @@ export default function EntryForm({ entryId }: EntryFormProps) {
       }, 1500);
     },
     onError: (error) => {
-      alert(`Error creating entry: ${error.message}`);
+      toast.error(`Error creating entry: ${error.message}`);
     },
   });
 
   const updateMutation = trpc.entry.update.useMutation({
     onSuccess: async (data) => {
+      toast.success('Routine updated successfully!');
       // Show success animation before redirect
       setShowSuccess(true);
       setTimeout(() => {
@@ -194,7 +197,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
       }, 1500);
     },
     onError: (error) => {
-      alert(`Error updating entry: ${error.message}`);
+      toast.error(`Error updating entry: ${error.message}`);
     },
   });
 
@@ -219,12 +222,12 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     if (!uuidRegex.test(formData.studio_id)) {
-      alert(`Invalid studio ID format. Please refresh the page and try again.\n\nStudio ID: ${formData.studio_id}`);
+      toast.error(`Invalid studio ID format. Please refresh the page and try again.`);
       return;
     }
 
     if (!uuidRegex.test(formData.competition_id)) {
-      alert(`Invalid competition ID format. Please refresh the page and try again.`);
+      toast.error(`Invalid competition ID format. Please refresh the page and try again.`);
       return;
     }
 
