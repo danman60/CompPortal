@@ -275,20 +275,27 @@ export default function DancersList() {
           ))}
         </div>
       ) : (
-        /* Table View */
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl max-h-[700px] flex flex-col">
-          <div className="overflow-x-auto overflow-y-auto flex-1 [scrollbar-gutter:stable]">
-            <table className="w-full">
-              <thead className="sticky top-0 z-10 bg-gray-800 border-b border-white/30">
+        /* Table View - Completely Rebuilt with Fixed Headers */
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl overflow-hidden">
+          {/* Fixed Header Table */}
+          <div className="overflow-x-auto bg-gray-800 border-b border-white/30">
+            <table className="w-full table-fixed">
+              <thead>
                 <tr className="bg-gray-800">
-                  <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Studio</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Actions</th>
+                  <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '250px' }} />
+                  <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
+                  <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '200px' }} />
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '180px' }}>Studio</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '120px' }}>Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '150px' }}>Actions</th>
                 </tr>
               </thead>
+            </table>
+          </div>
+
+          {/* Scrollable Body Table */}
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+            <table className="w-full table-fixed">
               <tbody>
                 {sortedDancers.map((dancer, index) => {
                   const age = dancer.date_of_birth
@@ -305,7 +312,7 @@ export default function DancersList() {
                       index % 2 === 0 ? 'bg-black/20' : ''
                     }`}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '250px' }}>
                       <div className="text-white font-medium">
                         {highlightText(`${dancer.first_name} ${dancer.last_name}`, searchTerm)}
                       </div>
@@ -313,7 +320,7 @@ export default function DancersList() {
                         <div className="text-xs text-gray-400 mt-1">#{dancer.registration_number}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '120px' }}>
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           dancer.gender === 'Male'
@@ -326,7 +333,7 @@ export default function DancersList() {
                         {dancer.gender || 'Unknown'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '200px' }}>
                       {dancer.date_of_birth ? (
                         <div className="text-white">
                           {new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()} yrs
@@ -338,10 +345,10 @@ export default function DancersList() {
                         <span className="text-gray-500">N/A</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-300">
+                    <td className="px-6 py-4 text-gray-300" style={{ width: '180px' }}>
                       {dancer.studios?.name || 'N/A'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '120px' }}>
                       {dancer.status && (
                         <span
                           className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
@@ -354,7 +361,7 @@ export default function DancersList() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '150px' }}>
                       <Link
                         href={`/dashboard/dancers/${dancer.id}`}
                         className="inline-block px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm rounded-lg hover:shadow-lg transition-all duration-200"

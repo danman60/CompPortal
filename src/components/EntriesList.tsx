@@ -773,13 +773,14 @@ export default function EntriesList() {
           })}
         </div>
       ) : (
-        /* Table View */
-        <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl max-h-[700px] flex flex-col">
-          <div className="overflow-x-auto overflow-y-auto flex-1 [scrollbar-gutter:stable]">
-            <table className="w-full">
-              <thead className="sticky top-0 z-10 bg-gray-800 border-b border-white/30">
+        /* Table View - Completely Rebuilt with Fixed Headers */
+        <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl overflow-hidden">
+          {/* Fixed Header Table */}
+          <div className="overflow-x-auto bg-gray-800 border-b border-white/30">
+            <table className="w-full table-fixed">
+              <thead>
                 <tr className="bg-gray-800">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white w-12 bg-gray-800">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white" style={{ width: '60px' }}>
                     <input
                       type="checkbox"
                       checked={selectedEntries.size === sortedEntries.length && sortedEntries.length > 0}
@@ -787,16 +788,22 @@ export default function EntriesList() {
                       className="w-4 h-4 cursor-pointer"
                     />
                   </th>
-                  <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Age Group" sortKey="age_groups.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Music" sortKey="music_file_url" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Actions</th>
+                  <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
+                  <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '250px' }} />
+                  <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '150px' }} />
+                  <SortableHeader label="Age Group" sortKey="age_groups.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '150px' }} />
+                  <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '200px' }} />
+                  <SortableHeader label="Music" sortKey="music_file_url" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
+                  <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '200px' }}>Actions</th>
                 </tr>
               </thead>
+            </table>
+          </div>
+
+          {/* Scrollable Body Table */}
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+            <table className="w-full table-fixed">
               <tbody>
                 {sortedEntries.map((entry, index) => {
                   const musicStatus = getMusicStatus(entry);
@@ -810,7 +817,7 @@ export default function EntriesList() {
                       index % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-900/20'
                     }`}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '60px' }}>
                       <input
                         type="checkbox"
                         checked={selectedEntries.has(entry.id)}
@@ -818,7 +825,7 @@ export default function EntriesList() {
                         className="w-4 h-4 cursor-pointer"
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '120px' }}>
                       {entry.entry_number ? (
                         <div>
                           <span className="text-white font-bold">
@@ -832,19 +839,19 @@ export default function EntriesList() {
                         <span className="text-gray-500">Pending</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '250px' }}>
                       <div className="text-white font-medium">{entry.title}</div>
                       <div className="text-xs text-gray-400 mt-1">
                         {entry.competitions?.name} ({entry.competitions?.year})
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-300">
+                    <td className="px-6 py-4 text-gray-300" style={{ width: '150px' }}>
                       {entry.dance_categories?.name || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-gray-300">
+                    <td className="px-6 py-4 text-gray-300" style={{ width: '150px' }}>
                       {entry.age_groups?.name || 'N/A'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '200px' }}>
                       <div className="text-white">
                         {entry.entry_participants?.length || 0} dancer{entry.entry_participants?.length !== 1 ? 's' : ''}
                       </div>
@@ -861,7 +868,7 @@ export default function EntriesList() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '120px' }}>
                       <span className={`px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
                         musicStatus.status === 'uploaded'
                           ? 'bg-green-500/20 text-green-400 border border-green-400/30'
@@ -871,7 +878,7 @@ export default function EntriesList() {
                         <span>{musicStatus.status === 'uploaded' ? 'Uploaded' : 'Pending'}</span>
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '120px' }}>
                       <span
                         className={`px-3 py-1.5 rounded-full text-xs uppercase font-semibold inline-block ${
                           entry.status === 'confirmed'
@@ -886,7 +893,7 @@ export default function EntriesList() {
                         {entry.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" style={{ width: '200px' }}>
                       <div className="flex gap-2">
                         <Link
                           href={`/dashboard/entries/${entry.id}`}
