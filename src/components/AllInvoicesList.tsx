@@ -50,16 +50,70 @@ export default function AllInvoicesList() {
   // Fetch competitions for filter dropdown
   const { data: competitionsData } = trpc.competition.getAll.useQuery();
 
-  // Mark as paid mutation
+  // Mark as paid mutation with optimistic updates
   const markAsPaidMutation = trpc.reservation.markAsPaid.useMutation({
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches to prevent overwriting optimistic update
+      await utils.invoice.getAllInvoices.cancel();
+
+      // Snapshot the previous value
+      const previousData = utils.invoice.getAllInvoices.getData({
+        competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
+        paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+      });
+
+      // Optimistically update the cache
+      utils.invoice.getAllInvoices.setData(
+        {
+          competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
+          paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+        },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            invoices: old.invoices.map((inv) =>
+              inv.reservation?.id === variables.id
+                ? {
+                    ...inv,
+                    reservation: inv.reservation
+                      ? {
+                          ...inv.reservation,
+                          paymentStatus: variables.paymentStatus,
+                          paymentConfirmedAt: variables.paymentStatus === 'paid' ? new Date() : inv.reservation.paymentConfirmedAt,
+                        }
+                      : inv.reservation,
+                  }
+                : inv
+            ),
+          };
+        }
+      );
+
+      // Return context with snapshot
+      return { previousData };
+    },
+    onError: (error, variables, context) => {
+      // Rollback to previous data on error
+      if (context?.previousData) {
+        utils.invoice.getAllInvoices.setData(
+          {
+            competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
+            paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+          },
+          context.previousData
+        );
+      }
+      toast.error(getFriendlyErrorMessage(error.message));
+      setProcessingId(null);
+    },
     onSuccess: () => {
-      utils.invoice.getAllInvoices.invalidate();
       setProcessingId(null);
       toast.success('Payment status updated to paid');
     },
-    onError: (error) => {
-      toast.error(getFriendlyErrorMessage(error.message));
-      setProcessingId(null);
+    onSettled: () => {
+      // Refetch to ensure consistency with server
+      utils.invoice.getAllInvoices.invalidate();
     },
   });
 
