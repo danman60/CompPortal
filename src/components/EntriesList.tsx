@@ -774,11 +774,11 @@ export default function EntriesList() {
         </div>
       ) : (
         /* Table View */
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+        <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="sticky top-0 z-10 backdrop-blur-md">
-                <tr className="border-b border-white/20 bg-white/5">
+                <tr className="border-b border-white/30 bg-gray-800/90">
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white w-12">
                     <input
                       type="checkbox"
@@ -806,8 +806,8 @@ export default function EntriesList() {
                     delay={400}
                     trigger={
                   <tr
-                    className={`border-b border-white/10 hover:bg-white/5 transition-colors ${
-                      index % 2 === 0 ? 'bg-black/20' : ''
+                    className={`border-b border-white/10 hover:bg-gray-700/50 transition-colors ${
+                      index % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-900/20'
                     }`}
                   >
                     <td className="px-6 py-4">
