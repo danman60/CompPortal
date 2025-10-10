@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { showUndoToast } from '@/lib/undoToast';
+import PullToRefresh from 'react-pull-to-refresh';
 
 export default function AllInvoicesList() {
   const utils = trpc.useUtils();
@@ -316,7 +317,13 @@ export default function AllInvoicesList() {
   // Sort invoices for table view
   const { sortedData: sortedInvoices, sortConfig, requestSort } = useTableSort(invoices);
 
+  // Pull-to-refresh handler
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -741,5 +748,6 @@ export default function AllInvoicesList() {
         </div>
       </div>
     </div>
+    </PullToRefresh>
   );
 }

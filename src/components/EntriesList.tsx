@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import toast from 'react-hot-toast';
+import PullToRefresh from 'react-pull-to-refresh';
 
 export default function EntriesList() {
-  const { data, isLoading } = trpc.entry.getAll.useQuery();
+  const { data, isLoading, refetch } = trpc.entry.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -106,6 +107,11 @@ export default function EntriesList() {
     }
   };
 
+  // Pull-to-refresh handler
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
   // Loading state check AFTER all hooks
   if (isLoading) {
     return (
@@ -131,7 +137,8 @@ export default function EntriesList() {
   const isAtLimit = hasSelectedCompetition && selectedReservation && usedSpaces >= confirmedSpaces;
 
   return (
-    <div>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -783,5 +790,6 @@ export default function EntriesList() {
         Showing {filteredEntries.length} of {entries.length} routines
       </div>
     </div>
+    </PullToRefresh>
   );
 }

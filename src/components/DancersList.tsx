@@ -5,9 +5,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
+import PullToRefresh from 'react-pull-to-refresh';
 
 export default function DancersList() {
-  const { data, isLoading, error } = trpc.dancer.getAll.useQuery();
+  const { data, isLoading, error, refetch } = trpc.dancer.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'male' | 'female'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -57,7 +58,13 @@ export default function DancersList() {
   // Sort dancers for table view
   const { sortedData: sortedDancers, sortConfig, requestSort } = useTableSort(filteredDancers);
 
+  // Pull-to-refresh handler
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div>
       {/* Search, Filter, and View Toggle */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -316,5 +323,6 @@ export default function DancersList() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }
