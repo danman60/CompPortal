@@ -43,23 +43,26 @@ export default function ProfileSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
-          <div className="h-8 bg-white/20 rounded w-1/3 mb-6"></div>
-          <div className="space-y-4">
-            <div className="h-12 bg-white/20 rounded"></div>
-            <div className="h-12 bg-white/20 rounded"></div>
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
+            <div className="h-8 bg-white/20 rounded w-1/3 mb-6"></div>
+            <div className="space-y-4">
+              <div className="h-12 bg-white/20 rounded"></div>
+              <div className="h-12 bg-white/20 rounded"></div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
-      </div>
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
+        </div>
 
       <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 space-y-6">
         {/* First Name */}
@@ -176,5 +179,6 @@ export default function ProfileSettingsPage() {
         </div>
       )}
     </div>
+  </main>
   );
 }
