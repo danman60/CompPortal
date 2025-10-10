@@ -1,6 +1,14 @@
 import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
+import MotivationalQuote from './MotivationalQuote';
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
 interface StudioDirectorDashboardProps {
   userEmail: string;
@@ -80,13 +88,14 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
 
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-4xl font-bold text-white mb-2">
-            Welcome Back, {firstName}! 👋
+            {getGreeting()}, {firstName}! 👋
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 mb-4">
             {studioName && <span className="text-purple-400">{studioName}</span>}
           </p>
+          <MotivationalQuote />
         </div>
         <Link
           href="/dashboard/studios"

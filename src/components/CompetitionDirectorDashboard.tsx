@@ -1,9 +1,18 @@
 import Link from 'next/link';
 import DashboardStats from './DashboardStats';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
+import MotivationalQuote from './MotivationalQuote';
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
 interface CompetitionDirectorDashboardProps {
   userEmail: string;
+  firstName: string;
   role: 'competition_director' | 'super_admin';
 }
 
@@ -94,7 +103,7 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
   },
 ];
 
-export default function CompetitionDirectorDashboard({ userEmail, role }: CompetitionDirectorDashboardProps) {
+export default function CompetitionDirectorDashboard({ userEmail, firstName, role }: CompetitionDirectorDashboardProps) {
   const isAdmin = role === 'super_admin';
 
   // Add settings card for super admins
@@ -116,14 +125,15 @@ export default function CompetitionDirectorDashboard({ userEmail, role }: Compet
       {/* Header */}
       <div className="flex-1">
         <h1 className="text-4xl font-bold text-white mb-2">
-          {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
+          {getGreeting()}, {firstName}! 👋
         </h1>
-        <p className="text-gray-400">
-          Welcome back, {userEmail}
+        <p className="text-gray-400 mb-4">
+          {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
           <span className="ml-2 px-2 py-1 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-semibold">
             {isAdmin ? 'SUPER ADMIN' : 'DIRECTOR'}
           </span>
         </p>
+        <MotivationalQuote />
       </div>
 
       {/* Global Stats */}

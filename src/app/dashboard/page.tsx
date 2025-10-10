@@ -70,6 +70,7 @@ export default async function DashboardPage() {
         ) : (
           <CompetitionDirectorDashboard
             userEmail={user.email || ''}
+            firstName={userProfile?.first_name || ''}
             role={role as 'competition_director' | 'super_admin'}
           />
         )}
