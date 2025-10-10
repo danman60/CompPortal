@@ -276,17 +276,17 @@ export default function DancersList() {
         </div>
       ) : (
         /* Table View */
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl max-h-[700px] flex flex-col">
+          <div className="overflow-x-auto overflow-y-auto flex-1 [scrollbar-gutter:stable]">
             <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/20 bg-white/5">
-                  <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} />
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Studio</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
+              <thead className="sticky top-0 z-10 bg-gray-800 border-b border-white/30">
+                <tr className="bg-gray-800">
+                  <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Studio</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Actions</th>
                 </tr>
               </thead>
               <tbody>

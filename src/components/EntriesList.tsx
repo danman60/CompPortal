@@ -774,8 +774,8 @@ export default function EntriesList() {
         </div>
       ) : (
         /* Table View */
-        <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden shadow-2xl">
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto [scrollbar-gutter:stable]">
+        <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl max-h-[700px] flex flex-col">
+          <div className="overflow-x-auto overflow-y-auto flex-1 [scrollbar-gutter:stable]">
             <table className="w-full">
               <thead className="sticky top-0 z-10 bg-gray-800 border-b border-white/30">
                 <tr className="bg-gray-800">
