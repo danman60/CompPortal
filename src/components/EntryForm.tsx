@@ -205,6 +205,19 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   };
 
   const handleSubmit = () => {
+    // Validate UUIDs before submission
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(formData.studio_id)) {
+      alert(`Invalid studio ID format. Please refresh the page and try again.\n\nStudio ID: ${formData.studio_id}`);
+      return;
+    }
+
+    if (!uuidRegex.test(formData.competition_id)) {
+      alert(`Invalid competition ID format. Please refresh the page and try again.`);
+      return;
+    }
+
     // Calculate entry fee based on entry size category
     const sizeCategory = lookupData?.entrySizeCategories.find(s => s.id === formData.entry_size_category_id);
     const baseFee = Number(sizeCategory?.base_fee || 0);
