@@ -1,8 +1,9 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSmartDefaults } from '@/hooks/useSmartDefaults';
 
 interface ReservationFormProps {
   studioId: string;
@@ -21,6 +22,22 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
     media_consent: false,
   });
 
+  // Smart defaults integration
+  const smartDefaults = useSmartDefaults({
+    key: 'reservation-form-smart-defaults',
+    enabled: true,
+  });
+
+  // Load smart defaults on mount
+  useEffect(() => {
+    if (smartDefaults.defaults) {
+      setFormData((prev) => ({
+        ...prev,
+        competition_id: smartDefaults.defaults.competition_id || prev.competition_id,
+      }));
+    }
+  }, [smartDefaults.defaults]);
+
   // Fetch competitions
   const { data: competitionsData } = trpc.competition.getAll.useQuery({
     status: 'registration_open',
@@ -29,6 +46,10 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
 
   const createReservation = trpc.reservation.create.useMutation({
     onSuccess: () => {
+      // Save smart defaults for next reservation
+      smartDefaults.saveDefaults({
+        competition_id: formData.competition_id,
+      });
       utils.reservation.getAll.invalidate();
       router.push('/dashboard/reservations');
     },
