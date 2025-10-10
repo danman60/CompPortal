@@ -385,13 +385,29 @@ export const reservationRouter = router({
         );
       }
 
+      // Build data object without relation fields
+      const { competition_id, studio_id, location_id, ...restData } = data;
+
       const reservation = await prisma.reservations.create({
         data: {
-          ...data,
-          tenant_id: ctx.tenantId!,
-          payment_due_date: payment_due_date ? new Date(payment_due_date) : undefined,
-          deposit_amount: deposit_amount?.toString(),
-          total_amount: total_amount?.toString(),
+          ...restData,
+          competitions: {
+            connect: { id: competition_id },
+          },
+          studios: {
+            connect: { id: studio_id },
+          },
+          ...(location_id && {
+            competition_locations: {
+              connect: { id: location_id },
+            },
+          }),
+          tenants: {
+            connect: { id: ctx.tenantId! },
+          },
+          ...(payment_due_date && { payment_due_date: new Date(payment_due_date) }),
+          ...(deposit_amount !== undefined && { deposit_amount: deposit_amount.toString() }),
+          ...(total_amount !== undefined && { total_amount: total_amount.toString() }),
         },
         include: {
           studios: {
