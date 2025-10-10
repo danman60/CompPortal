@@ -362,24 +362,53 @@ export const entryRouter = router({
       }
 
       // Create entry with participants
-      // Remove undefined values from data object (Prisma doesn't handle them well)
-      const cleanedData = Object.fromEntries(
-        Object.entries(data).filter(([_, value]) => value !== undefined)
-      );
-
+      // Build Prisma data object using relation connect syntax (not foreign key IDs)
       const createData: any = {
-        ...cleanedData,
         tenant_id: ctx.tenantId!,
+        title: data.title,
+        status: data.status,
+        is_title_upgrade: data.is_title_upgrade,
+        is_title_interview: data.is_title_interview,
+        is_improvisation: data.is_improvisation,
+        is_glow_off_round: data.is_glow_off_round,
+        is_overall_competition: data.is_overall_competition,
+        // Use Prisma relation connect syntax for foreign keys
+        competitions: { connect: { id: data.competition_id } },
+        studios: { connect: { id: data.studio_id } },
+        age_groups: { connect: { id: data.age_group_id } },
+        dance_categories: { connect: { id: data.category_id } },
+        classifications: { connect: { id: data.classification_id } },
+        entry_size_categories: { connect: { id: data.entry_size_category_id } },
       };
 
-      // Only add optional fields if they have values
+      // Optional relation fields
+      if (data.reservation_id) createData.reservations = { connect: { id: data.reservation_id } };
+      if (data.session_id) createData.competition_sessions = { connect: { id: data.session_id } };
+
+      // Optional string fields
+      if (data.choreographer) createData.choreographer = data.choreographer;
+      if (data.props_required) createData.props_required = data.props_required;
+      if (data.special_requirements) createData.special_requirements = data.special_requirements;
+      if (data.costume_description) createData.costume_description = data.costume_description;
+      if (data.accessibility_needs) createData.accessibility_needs = data.accessibility_needs;
+      if (data.music_title) createData.music_title = data.music_title;
+      if (data.music_artist) createData.music_artist = data.music_artist;
+      if (data.music_file_url) createData.music_file_url = data.music_file_url;
+      if (data.heat) createData.heat = data.heat;
+      if (data.running_order !== undefined) createData.running_order = data.running_order;
+      if (data.duration) createData.duration = data.duration;
+
+      // Date/time fields
       if (performance_date) createData.performance_date = new Date(performance_date);
       if (performance_time) createData.performance_time = new Date(`1970-01-01T${performance_time}`);
       if (warm_up_time) createData.warm_up_time = new Date(`1970-01-01T${warm_up_time}`);
+
+      // Fee fields
       if (entry_fee !== undefined) createData.entry_fee = entry_fee.toString();
       if (late_fee !== undefined) createData.late_fee = late_fee.toString();
       if (total_fee !== undefined) createData.total_fee = total_fee.toString();
 
+      // Participants (nested create)
       if (participants && participants.length > 0) {
         createData.entry_participants = {
           create: participants.map((p) =>
