@@ -314,7 +314,7 @@ export const entryRouter = router({
   // Create a new entry with participants
   create: publicProcedure
     .input(entryInputSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const {
         performance_date,
         performance_time,
@@ -365,6 +365,7 @@ export const entryRouter = router({
       const entry = await prisma.competition_entries.create({
         data: {
           ...data,
+          tenant_id: ctx.tenantId!,
           performance_date: performance_date ? new Date(performance_date) : undefined,
           performance_time: performance_time ? new Date(`1970-01-01T${performance_time}`) : undefined,
           warm_up_time: warm_up_time ? new Date(`1970-01-01T${warm_up_time}`) : undefined,

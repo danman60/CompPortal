@@ -96,6 +96,7 @@ export const adminRouter = router({
               name: studio.studioName,
               code: studio.studioCode,
               owner_id: authData.user.id,
+              tenant_id: ctx.tenantId!,
               status: 'approved',
               contact_email: studio.ownerEmail,
               contact_phone: studio.phone,
@@ -107,6 +108,7 @@ export const adminRouter = router({
             data: {
               studio_id: newStudio.id,
               competition_id: studio.competitionId,
+              tenant_id: ctx.tenantId!,
               status: 'approved',
               spaces_requested: studio.spaces,
               spaces_confirmed: studio.spaces,

@@ -15,13 +15,20 @@ interface StudioApprovedProps {
   studioName: string;
   ownerName?: string;
   portalUrl: string;
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function StudioApproved({
   studioName,
   ownerName,
   portalUrl,
+  tenantBranding,
 }: StudioApprovedProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
+  const secondaryColor = tenantBranding?.secondaryColor || '#ec4899';
   return (
     <Html>
       <Head />
@@ -47,27 +54,27 @@ export default function StudioApproved({
             You now have full access to all platform features:
           </Text>
 
-          <Section style={stepsBox}>
+          <Section style={{...stepsBox, border: `1px solid ${primaryColor}33`}}>
             <div style={stepItem}>
-              <div style={stepNumber}>1</div>
+              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>1</div>
               <Text style={stepText}>Register dancers for your studio</Text>
             </div>
             <div style={stepItem}>
-              <div style={stepNumber}>2</div>
+              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>2</div>
               <Text style={stepText}>Request reservations for competitions</Text>
             </div>
             <div style={stepItem}>
-              <div style={stepNumber}>3</div>
+              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>3</div>
               <Text style={stepText}>Submit competition routines</Text>
             </div>
             <div style={stepItem}>
-              <div style={stepNumber}>4</div>
+              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>4</div>
               <Text style={stepText}>Manage your studio profile and settings</Text>
             </div>
           </Section>
 
           <Section style={{ textAlign: 'center', padding: '20px 40px' }}>
-            <Button href={portalUrl} style={button}>
+            <Button href={portalUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
               Go to Portal
             </Button>
           </Section>
@@ -141,7 +148,6 @@ const infoValue = {
 
 const stepsBox = {
   backgroundColor: 'rgba(139, 92, 246, 0.05)',
-  border: '1px solid rgba(139, 92, 246, 0.2)',
   borderRadius: '8px',
   padding: '20px',
   margin: '20px 40px',
@@ -157,9 +163,6 @@ const stepNumber = {
   width: '32px',
   height: '32px',
   borderRadius: '50%',
-  backgroundColor: 'rgba(139, 92, 246, 0.2)',
-  border: '2px solid rgba(139, 92, 246, 0.4)',
-  color: '#a78bfa',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -178,7 +181,6 @@ const stepText = {
 };
 
 const button = {
-  backgroundColor: '#8b5cf6',
   borderRadius: '8px',
   color: '#ffffff',
   fontSize: '16px',

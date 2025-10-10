@@ -18,6 +18,19 @@ async function main() {
   // Clean existing data (optional - comment out if you want to keep existing data)
   console.log('📝 Cleaning existing test data...');
 
+  // Fetch tenants (created in migration)
+  console.log('🏢 Fetching tenants...');
+  const demoTenant = await prisma.tenants.findUnique({
+    where: { slug: 'demo' },
+  });
+  const empwrTenant = await prisma.tenants.findUnique({
+    where: { slug: 'empwr' },
+  });
+
+  if (!demoTenant || !empwrTenant) {
+    throw new Error('Tenants not found. Run migrations first.');
+  }
+
   // Create test users first (required for studio owner_id foreign key)
   console.log('👥 Creating test users...');
   const testUser1 = await prisma.users.upsert({
@@ -185,6 +198,7 @@ async function main() {
       name: 'Starlight Dance Academy',
       code: 'SDA',
       owner_id: testUser1.id,
+      tenant_id: demoTenant.id,
       email: 'info@starlightdance.com',
       phone: '604-555-0100',
       city: 'Vancouver',
@@ -199,6 +213,7 @@ async function main() {
       name: 'Elite Performance Studio',
       code: 'EPS',
       owner_id: testUser2.id,
+      tenant_id: demoTenant.id,
       email: 'contact@eliteperformance.com',
       phone: '604-555-0200',
       city: 'Burnaby',
@@ -213,6 +228,7 @@ async function main() {
       name: 'Rhythm & Motion Dance',
       code: 'RMD',
       owner_id: testUser3.id,
+      tenant_id: demoTenant.id,
       email: 'hello@rhythmmotion.com',
       phone: '604-555-0300',
       city: 'Surrey',
@@ -228,6 +244,7 @@ async function main() {
     data: {
       name: 'EMPWR Dance - London',
       year: 2026,
+      tenant_id: empwrTenant.id,
       description: 'EMPWR Dance Competition in London, Ontario',
       registration_opens: new Date('2026-01-15'),
       registration_closes: new Date('2026-04-01'),
@@ -250,6 +267,7 @@ async function main() {
     data: {
       name: 'EMPWR Dance - St. Catharines #1',
       year: 2026,
+      tenant_id: empwrTenant.id,
       description: 'EMPWR Dance Competition in St. Catharines, Ontario',
       registration_opens: new Date('2026-01-15'),
       registration_closes: new Date('2026-04-07'),
@@ -272,6 +290,7 @@ async function main() {
     data: {
       name: 'EMPWR Dance - St. Catharines #2',
       year: 2026,
+      tenant_id: empwrTenant.id,
       description: 'EMPWR Dance Competition in St. Catharines, Ontario',
       registration_opens: new Date('2026-01-15'),
       registration_closes: new Date('2026-04-28'),
@@ -296,6 +315,7 @@ async function main() {
     data: {
       name: 'GLOW Dance - Orlando',
       year: 2026,
+      tenant_id: demoTenant.id,
       description: 'GLOW Dance Championship Tour - Orlando, Florida',
       registration_opens: new Date('2025-12-01'),
       registration_closes: new Date('2026-02-10'),
@@ -319,6 +339,7 @@ async function main() {
     data: {
       name: 'GLOW Dance - St. Catharines (Spring)',
       year: 2026,
+      tenant_id: demoTenant.id,
       description: 'GLOW Dance Championship Tour - St. Catharines, Ontario',
       registration_opens: new Date('2026-01-15'),
       registration_closes: new Date('2026-03-30'),
@@ -342,6 +363,7 @@ async function main() {
     data: {
       name: 'GLOW Dance - Blue Mountain (April)',
       year: 2026,
+      tenant_id: demoTenant.id,
       description: 'GLOW Dance Championship Tour - Blue Mountain, Ontario',
       registration_opens: new Date('2026-01-15'),
       registration_closes: new Date('2026-04-14'),
@@ -365,6 +387,7 @@ async function main() {
     data: {
       name: 'GLOW Dance - Toronto',
       year: 2026,
+      tenant_id: demoTenant.id,
       description: 'GLOW Dance Championship Tour - Toronto, Ontario',
       registration_opens: new Date('2026-02-01'),
       registration_closes: new Date('2026-04-29'),
@@ -388,6 +411,7 @@ async function main() {
     data: {
       name: 'GLOW Dance - St. Catharines (May)',
       year: 2026,
+      tenant_id: demoTenant.id,
       description: 'GLOW Dance Championship Tour - St. Catharines, Ontario',
       registration_opens: new Date('2026-02-01'),
       registration_closes: new Date('2026-05-05'),
@@ -411,6 +435,7 @@ async function main() {
     data: {
       name: 'GLOW Dance - Blue Mountain (June)',
       year: 2026,
+      tenant_id: demoTenant.id,
       description: 'GLOW Dance Championship Tour - Blue Mountain, Ontario',
       registration_opens: new Date('2026-02-15'),
       registration_closes: new Date('2026-05-26'),
@@ -481,6 +506,7 @@ async function main() {
     const dancer = await prisma.dancers.create({
       data: {
         studio_id: studioId,
+        tenant_id: demoTenant.id,
         first_name: dancerData.first,
         last_name: dancerData.last,
         date_of_birth: new Date(`${2025 - dancerData.age}-${3 + (i % 9)}-${10 + (i % 20)}`),
@@ -507,6 +533,7 @@ async function main() {
     data: {
       studio_id: studio1.id,
       competition_id: competition.id,
+      tenant_id: demoTenant.id,
       spaces_requested: 20,
       spaces_confirmed: 20,
       agent_first_name: 'Sarah',
@@ -528,6 +555,7 @@ async function main() {
     data: {
       studio_id: studio2.id,
       competition_id: competition.id,
+      tenant_id: demoTenant.id,
       spaces_requested: 15,
       spaces_confirmed: 15,
       agent_first_name: 'Michael',
@@ -549,6 +577,7 @@ async function main() {
     data: {
       studio_id: studio3.id,
       competition_id: competition.id,
+      tenant_id: demoTenant.id,
       spaces_requested: 10,
       agent_first_name: 'Emily',
       agent_last_name: 'Rodriguez',
@@ -574,6 +603,7 @@ async function main() {
         competition_id: competition.id,
         reservation_id: reservation1.id,
         studio_id: studio1.id,
+        tenant_id: demoTenant.id,
         title: `${dancer.primary_style} Solo - ${dancer.first_name}`,
         category_id: soloCategories[i % 3].id,
         classification_id: competitiveClass.id,
@@ -603,6 +633,7 @@ async function main() {
       competition_id: competition.id,
       reservation_id: reservation1.id,
       studio_id: studio1.id,
+      tenant_id: demoTenant.id,
       title: 'Ballet Duet - Elegance',
       category_id: jazzCategory.id,
       classification_id: eliteClass.id,
@@ -640,6 +671,7 @@ async function main() {
         competition_id: competition.id,
         reservation_id: reservation2.id,
         studio_id: studio2.id,
+        tenant_id: demoTenant.id,
         title: `${dancer.primary_style} Solo - ${dancer.first_name}`,
         category_id: soloCategories[(i - 10) % 3].id,
         classification_id: i < 13 ? competitiveClass.id : eliteClass.id,
@@ -668,6 +700,7 @@ async function main() {
       competition_id: competition.id,
       reservation_id: reservation2.id,
       studio_id: studio2.id,
+      tenant_id: demoTenant.id,
       title: 'Contemporary Trio - Flow',
       category_id: contemporaryCategory.id,
       classification_id: eliteClass.id,
@@ -708,6 +741,7 @@ async function main() {
       competition_id: competition.id,
       reservation_id: reservation2.id,
       studio_id: studio2.id,
+      tenant_id: demoTenant.id,
       title: 'Hip Hop Trio - Urban Beat',
       category_id: hipHopCategory.id,
       classification_id: competitiveClass.id,
@@ -749,6 +783,7 @@ async function main() {
       competition_id: competition.id,
       reservation_id: reservation2.id,
       studio_id: studio2.id,
+      tenant_id: demoTenant.id,
       title: 'Elite Ensemble - Unity',
       category_id: jazzCategory.id,
       classification_id: eliteClass.id,
@@ -778,6 +813,7 @@ async function main() {
         competition_id: competition.id,
         reservation_id: reservation3.id,
         studio_id: studio3.id,
+        tenant_id: demoTenant.id,
         title: `${dancer.primary_style} Solo - ${dancer.first_name}`,
         category_id: soloCategories[(i - 25) % 3].id,
         classification_id: competitiveClass.id,
@@ -806,6 +842,7 @@ async function main() {
       competition_id: competition.id,
       reservation_id: reservation3.id,
       studio_id: studio3.id,
+      tenant_id: demoTenant.id,
       title: 'Jazz Duo - Synergy',
       category_id: jazzCategory.id,
       classification_id: competitiveClass.id,

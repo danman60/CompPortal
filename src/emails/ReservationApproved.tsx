@@ -18,6 +18,10 @@ interface ReservationApprovedProps {
   spacesConfirmed: number;
   portalUrl: string;
   nextSteps?: string[];
+  tenantBranding?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
 }
 
 export default function ReservationApproved({
@@ -31,7 +35,10 @@ export default function ReservationApproved({
     'Upload music files for your routines',
     'Review and pay your invoice',
   ],
+  tenantBranding,
 }: ReservationApprovedProps) {
+  const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
+  const secondaryColor = tenantBranding?.secondaryColor || '#ec4899';
   return (
     <Html>
       <Head />
@@ -48,7 +55,7 @@ export default function ReservationApproved({
             Your reservation for <strong>{competitionName} ({competitionYear})</strong> has been approved.
           </Text>
 
-          <Section style={confirmBox}>
+          <Section style={{...confirmBox, border: `2px solid ${primaryColor}`}}>
             <Text style={confirmLabel}>Confirmed Spaces</Text>
             <Text style={confirmValue}>{spacesConfirmed}</Text>
           </Section>
@@ -60,14 +67,14 @@ export default function ReservationApproved({
           <Section style={stepsBox}>
             {nextSteps.map((step, index) => (
               <div key={index} style={stepItem}>
-                <div style={stepNumber}>{index + 1}</div>
+                <div style={{...stepNumber, backgroundColor: primaryColor}}>{index + 1}</div>
                 <Text style={stepText}>{step}</Text>
               </div>
             ))}
           </Section>
 
           <Section style={{textAlign: 'center', padding: '20px 40px'}}>
-            <Button href={portalUrl} style={button}>
+            <Button href={portalUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
               Go to Portal
             </Button>
           </Section>
@@ -118,7 +125,6 @@ const confirmBox = {
   padding: '30px',
   margin: '20px 40px',
   textAlign: 'center' as const,
-  border: '2px solid #10b981',
 };
 
 const confirmLabel = {
@@ -149,7 +155,6 @@ const stepItem = {
 };
 
 const stepNumber = {
-  backgroundColor: '#8b5cf6',
   color: '#ffffff',
   borderRadius: '50%',
   width: '32px',
@@ -171,7 +176,6 @@ const stepText = {
 };
 
 const button = {
-  backgroundColor: '#8b5cf6',
   borderRadius: '8px',
   color: '#fff',
   fontSize: '16px',

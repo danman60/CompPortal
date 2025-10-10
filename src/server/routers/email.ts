@@ -180,7 +180,14 @@ export const emailRouter = router({
             select: { name: true, email: true },
           },
           competitions: {
-            select: { name: true, year: true },
+            include: {
+              tenants: {
+                select: {
+                  name: true,
+                  branding: true,
+                },
+              },
+            },
           },
         },
       });
@@ -193,12 +200,22 @@ export const emailRouter = router({
         throw new Error('Studio email not found');
       }
 
+      // Extract tenant branding
+      const branding = reservation.competitions.tenants?.branding as any;
+      const tenantBranding = {
+        primaryColor: branding?.primaryColor || '#8b5cf6',
+        secondaryColor: branding?.secondaryColor || '#ec4899',
+        logo: branding?.logo || null,
+        tenantName: reservation.competitions.tenants?.name || 'Competition Portal',
+      };
+
       const data: ReservationApprovedData = {
         studioName: reservation.studios.name,
         competitionName: reservation.competitions.name,
         competitionYear: reservation.competitions.year,
         spacesConfirmed: reservation.spaces_confirmed || 0,
         portalUrl: input.portalUrl,
+        tenantBranding,
       };
 
       const html = await renderReservationApproved(data);

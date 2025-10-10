@@ -13,12 +13,20 @@ import MissingMusicReminder from '@/emails/MissingMusicReminder';
  * Render email templates to HTML
  */
 
+export interface TenantBranding {
+  primaryColor?: string;
+  secondaryColor?: string;
+  logo?: string | null;
+  tenantName?: string;
+}
+
 export interface RegistrationConfirmationData {
   studioName: string;
   competitionName: string;
   competitionYear: number;
   competitionDate?: string;
   contactEmail: string;
+  tenantBranding?: TenantBranding;
 }
 
 export interface InvoiceDeliveryData {
@@ -30,6 +38,7 @@ export interface InvoiceDeliveryData {
   routineCount: number;
   invoiceUrl: string;
   dueDate?: string;
+  tenantBranding?: TenantBranding;
 }
 
 export interface ReservationApprovedData {
@@ -39,6 +48,7 @@ export interface ReservationApprovedData {
   spacesConfirmed: number;
   portalUrl: string;
   nextSteps?: string[];
+  tenantBranding?: TenantBranding;
 }
 
 export interface ReservationRejectedData {
@@ -48,6 +58,7 @@ export interface ReservationRejectedData {
   reason?: string;
   portalUrl: string;
   contactEmail: string;
+  tenantBranding?: TenantBranding;
 }
 
 export interface EntrySubmittedData {
@@ -60,12 +71,14 @@ export interface EntrySubmittedData {
   sizeCategory: string;
   participantCount: number;
   entryFee: number;
+  tenantBranding?: TenantBranding;
 }
 
 export interface StudioApprovedData {
   studioName: string;
   ownerName?: string;
   portalUrl: string;
+  tenantBranding?: TenantBranding;
 }
 
 export interface StudioRejectedData {
@@ -74,6 +87,7 @@ export interface StudioRejectedData {
   reason?: string;
   portalUrl: string;
   contactEmail: string;
+  tenantBranding?: TenantBranding;
 }
 
 export interface PaymentConfirmedData {
@@ -84,6 +98,7 @@ export interface PaymentConfirmedData {
   paymentStatus: 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled';
   invoiceNumber?: string;
   paymentDate: string;
+  tenantBranding?: TenantBranding;
 }
 
 export interface MissingMusicReminderData {
@@ -97,6 +112,7 @@ export interface MissingMusicReminderData {
   }>;
   portalUrl: string;
   daysUntilCompetition?: number;
+  tenantBranding?: TenantBranding;
 }
 
 /**

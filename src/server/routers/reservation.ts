@@ -386,6 +386,7 @@ export const reservationRouter = router({
       const reservation = await prisma.reservations.create({
         data: {
           ...data,
+          tenant_id: ctx.tenantId!,
           payment_due_date: payment_due_date ? new Date(payment_due_date) : undefined,
           deposit_amount: deposit_amount?.toString(),
           total_amount: total_amount?.toString(),
@@ -556,6 +557,7 @@ export const reservationRouter = router({
               studio_id: reservation.studio_id,
               competition_id: reservation.competition_id,
               reservation_id: reservation.id,
+              tenant_id: ctx.tenantId!,
               line_items: [
                 {
                   description: `Routine reservations (${spacesConfirmed} routines @ $${Number(routinesFee).toFixed(2)} each)`,
@@ -943,6 +945,7 @@ export const reservationRouter = router({
         data: {
           studio_id: input.studioId,
           competition_id: input.competitionId,
+          tenant_id: ctx.tenantId!,
           spaces_requested: input.spacesAllocated,
           spaces_confirmed: input.spacesAllocated,
           status: 'approved',

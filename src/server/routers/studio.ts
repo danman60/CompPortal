@@ -105,7 +105,7 @@ export const studioRouter = router({
         country: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // For now, using a dummy owner_id - will be replaced with actual auth
       const dummyOwnerId = '00000000-0000-0000-0000-000000000000';
 
@@ -118,6 +118,7 @@ export const studioRouter = router({
           province: input.province,
           country: input.country ?? 'Canada',
           owner_id: dummyOwnerId,
+          tenant_id: ctx.tenantId!,
           status: 'pending',
         },
       });

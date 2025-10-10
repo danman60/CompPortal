@@ -233,7 +233,7 @@ export const competitionRouter = router({
   // Create a new competition
   create: publicProcedure
     .input(competitionInputSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const {
         registration_opens,
         registration_closes,
@@ -247,6 +247,7 @@ export const competitionRouter = router({
       const competition = await prisma.competitions.create({
         data: {
           ...data,
+          tenant_id: ctx.tenantId!,
           registration_opens: registration_opens
             ? new Date(registration_opens)
             : undefined,
@@ -426,7 +427,7 @@ export const competitionRouter = router({
         newName: z.string().min(1).max(255).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Fetch original competition with all related data
       const original = await prisma.competitions.findUnique({
         where: { id: input.id },
@@ -452,6 +453,7 @@ export const competitionRouter = router({
         data: {
           name: newName,
           year: input.newYear,
+          tenant_id: ctx.tenantId!,
           description: original.description,
           registration_opens: original.registration_opens,
           registration_closes: original.registration_closes,

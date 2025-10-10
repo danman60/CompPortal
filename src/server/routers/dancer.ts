@@ -236,6 +236,7 @@ export const dancerRouter = router({
       const dancer = await prisma.dancers.create({
         data: {
           ...data,
+          tenant_id: ctx.tenantId!,
           date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
         },
         include: {
@@ -400,6 +401,7 @@ export const dancerRouter = router({
           return prisma.dancers.create({
             data: {
               ...data,
+              tenant_id: ctx.tenantId!,
               date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
             },
           });
@@ -457,6 +459,7 @@ export const dancerRouter = router({
           return prisma.dancers.create({
             data: {
               studio_id: input.studio_id,
+              tenant_id: ctx.tenantId!,
               ...data,
               date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
               status: 'active',
@@ -555,6 +558,7 @@ export const dancerRouter = router({
           return prisma.dancers.create({
             data: {
               studio_id,
+              tenant_id: ctx.tenantId!,
               ...data,
               date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
               gender: data.gender ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1).toLowerCase() : undefined,
