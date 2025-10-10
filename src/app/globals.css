@@ -235,3 +235,27 @@ body {
     box-shadow: none !important;
   }
 }
+
+/* Font Size Preferences - Accessibility */
+html.font-size-small {
+  font-size: 14px;
+}
+
+html.font-size-medium {
+  font-size: 16px; /* Default */
+}
+
+html.font-size-large {
+  font-size: 18px;
+}
+
+/* Apply responsive scaling with font size preferences */
+@media (max-width: 768px) {
+  html.font-size-small {
+    font-size: 13px;
+  }
+
+  html.font-size-large {
+    font-size: 17px;
+  }
+}
