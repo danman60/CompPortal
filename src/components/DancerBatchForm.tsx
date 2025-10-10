@@ -230,13 +230,13 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                   <td className="px-4 py-2">
                     <select
                       {...register(`dancers.${index}.gender` as const)}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent [&>option]:bg-gray-800 [&>option]:text-white"
                     >
-                      <option value="">Select...</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Non-binary">Non-binary</option>
-                      <option value="Other">Other</option>
+                      <option value="" className="bg-gray-800 text-white">Select...</option>
+                      <option value="Male" className="bg-gray-800 text-white">Male</option>
+                      <option value="Female" className="bg-gray-800 text-white">Female</option>
+                      <option value="Non-binary" className="bg-gray-800 text-white">Non-binary</option>
+                      <option value="Other" className="bg-gray-800 text-white">Other</option>
                     </select>
                   </td>
                   <td className="px-4 py-2">
@@ -258,14 +258,14 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                   <td className="px-4 py-2">
                     <select
                       {...register(`dancers.${index}.skill_level` as const)}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent [&>option]:bg-gray-800 [&>option]:text-white"
                     >
-                      <option value="">Select...</option>
-                      <option value="Beginner">Beginner</option>
-                      <option value="Novice">Novice</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Advanced">Advanced</option>
-                      <option value="Elite">Elite</option>
+                      <option value="" className="bg-gray-800 text-white">Select...</option>
+                      <option value="Beginner" className="bg-gray-800 text-white">Beginner</option>
+                      <option value="Novice" className="bg-gray-800 text-white">Novice</option>
+                      <option value="Intermediate" className="bg-gray-800 text-white">Intermediate</option>
+                      <option value="Advanced" className="bg-gray-800 text-white">Advanced</option>
+                      <option value="Elite" className="bg-gray-800 text-white">Elite</option>
                     </select>
                   </td>
                   <td className="px-4 py-2">

@@ -777,9 +777,9 @@ export default function EntriesList() {
         <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden shadow-2xl">
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="w-full">
-              <thead className="sticky top-0 z-10 backdrop-blur-md">
-                <tr className="border-b border-white/30 bg-gray-800/90">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white w-12">
+              <thead className="sticky top-0 z-10 bg-gray-800 border-b border-white/30">
+                <tr className="bg-gray-800">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white w-12 bg-gray-800">
                     <input
                       type="checkbox"
                       checked={selectedEntries.size === sortedEntries.length && sortedEntries.length > 0}
@@ -787,14 +787,14 @@ export default function EntriesList() {
                       className="w-4 h-4 cursor-pointer"
                     />
                   </th>
-                  <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Age Group" sortKey="age_groups.name" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Music" sortKey="music_file_url" sortConfig={sortConfig} onSort={requestSort} />
-                  <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} />
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
+                  <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Age Group" sortKey="age_groups.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Music" sortKey="music_file_url" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" />
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800">Actions</th>
                 </tr>
               </thead>
               <tbody>
