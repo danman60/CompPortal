@@ -10,6 +10,7 @@ import PullToRefresh from 'react-pull-to-refresh';
 import HoverPreview from '@/components/HoverPreview';
 import { SkeletonCard } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
+import FloatingActionButton from '@/components/FloatingActionButton';
 
 export default function EntriesList() {
   const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery();
@@ -1056,6 +1057,14 @@ export default function EntriesList() {
         Showing {filteredEntries.length} of {entries.length} routines
       </div>
     </div>
+
+    {/* Floating Action Button for Mobile */}
+    <FloatingActionButton
+      href="/dashboard/entries/create"
+      icon="➕"
+      label="Create Routine"
+    />
+
     </PullToRefresh>
   );
 }
