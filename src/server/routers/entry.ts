@@ -362,9 +362,13 @@ export const entryRouter = router({
       }
 
       // Create entry with participants
-      // Build data object and remove undefined fields (Prisma doesn't handle them well)
+      // Remove undefined values from data object (Prisma doesn't handle them well)
+      const cleanedData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined)
+      );
+
       const createData: any = {
-        ...data,
+        ...cleanedData,
         tenant_id: ctx.tenantId!,
       };
 
@@ -378,15 +382,20 @@ export const entryRouter = router({
 
       if (participants && participants.length > 0) {
         createData.entry_participants = {
-          create: participants.map((p) => ({
-            dancer_id: p.dancer_id,
-            dancer_name: p.dancer_name,
-            dancer_age: p.dancer_age,
-            role: p.role,
-            display_order: p.display_order,
-            costume_size: p.costume_size,
-            special_needs: p.special_needs,
-          })),
+          create: participants.map((p) =>
+            // Remove undefined values from each participant
+            Object.fromEntries(
+              Object.entries({
+                dancer_id: p.dancer_id,
+                dancer_name: p.dancer_name,
+                dancer_age: p.dancer_age,
+                role: p.role,
+                display_order: p.display_order,
+                costume_size: p.costume_size,
+                special_needs: p.special_needs,
+              }).filter(([_, value]) => value !== undefined)
+            )
+          ),
         };
       }
 
