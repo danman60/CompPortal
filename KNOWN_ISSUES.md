@@ -41,9 +41,45 @@
 
 ---
 
+### 2. Table View UI Issues (RESOLVED)
+**Status:** ✅ FIXED - Commit 4fba46c (2025-01-10)
+**First Reported:** 2025-01-10
+**Severity:** Medium - Table completely invisible in production
+**Resolution Date:** 2025-01-10
+
+**Problem:**
+- Table view rendering but invisible due to insufficient background contrast
+- User feedback: "table layout is still broken"
+- Table container had `bg-white/10` (nearly transparent against dark gradient)
+- Header and rows barely visible with `bg-white/5` backgrounds
+
+**Root Cause:**
+- Glassmorphic design using very transparent backgrounds
+- Light backgrounds (`bg-white/10`, `bg-white/5`) invisible against page gradient
+- Insufficient contrast for table visibility
+
+**Solution Applied:**
+- Table container: `bg-white/10` → `bg-gray-900/90` (solid dark background)
+- Header row: `bg-white/5` → `bg-gray-800/90` (strong contrast)
+- Body rows: alternating `bg-gray-800/40` and `bg-gray-900/20` (zebra striping)
+- Added `shadow-2xl` for depth
+- Stronger borders: `border-white/30` (was `border-white/20`)
+
+**Files Modified:**
+- `src/components/EntriesList.tsx` (lines 777, 781, 809-810)
+
+**Production Verification:**
+- ✅ Table visible with clear contrast
+- ✅ Column headers properly aligned with data columns
+- ✅ Zebra striping provides row distinction
+- ✅ All text readable against dark background
+- ✅ Screenshot captured: `table-view-fixed-alignment-verified.png`
+
+---
+
 ## Minor Issues
 
-### 2. Animation Description Inaccuracy
+### 3. Animation Description Inaccuracy
 **Status:** Cosmetic
 **Severity:** Low
 
