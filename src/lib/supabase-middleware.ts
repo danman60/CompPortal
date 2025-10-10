@@ -6,9 +6,9 @@ import { NextResponse, type NextRequest } from 'next/server';
  * Handles session refresh, authentication state, and multi-tenant context
  */
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  // Extract subdomain from hostname FIRST
+  const hostname = request.headers.get('host') || '';
+  const subdomain = extractSubdomain(hostname);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,23 +19,11 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+          // No-op in middleware - cookies are set on response below
         },
       },
     }
   );
-
-  // Extract subdomain from hostname
-  const hostname = request.headers.get('host') || '';
-  const subdomain = extractSubdomain(hostname);
 
   // Query tenant by subdomain
   let tenantId: string | null = null;
@@ -54,18 +42,25 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Fallback to default tenant (empwr) if no subdomain or tenant not found
+  // Fallback to default tenant (demo) if no subdomain or tenant not found
   if (!tenantId) {
     const { data } = await supabase
       .from('tenants')
       .select('id, slug, subdomain, name, branding')
-      .eq('slug', 'empwr')
+      .eq('slug', 'demo')
       .single();
 
     if (data) {
       tenantId = data.id;
       tenantData = data;
     }
+  }
+
+  // Create modified request headers with tenant context
+  const requestHeaders = new Headers(request.headers);
+  if (tenantId && tenantData) {
+    requestHeaders.set('x-tenant-id', tenantId);
+    requestHeaders.set('x-tenant-data', JSON.stringify(tenantData));
   }
 
   // Refresh session if expired
@@ -80,11 +75,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Inject tenant context into headers for downstream use
-  if (tenantId && tenantData) {
-    supabaseResponse.headers.set('x-tenant-id', tenantId);
-    supabaseResponse.headers.set('x-tenant-data', JSON.stringify(tenantData));
-  }
+  // Return response with modified request headers
+  const supabaseResponse = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   return supabaseResponse;
 }
