@@ -119,6 +119,31 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
         </div>
       )}
 
+      {/* Invoices Card */}
+      <Link href="/dashboard/invoices/all">
+        <div className="bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-red-400/30 p-6 hover:from-red-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Invoices</h3>
+            <div className="text-3xl">💰</div>
+          </div>
+          <div className="text-4xl font-bold text-white mb-2">{totalInvoices}</div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between text-gray-300">
+              <span>Sent:</span>
+              <span className="font-semibold text-blue-400">{sentCount}</span>
+            </div>
+            <div className="flex justify-between text-gray-300">
+              <span>Paid:</span>
+              <span className="font-semibold text-green-400">{paidCount}</span>
+            </div>
+            <div className="flex justify-between text-gray-300">
+              <span>Unpaid:</span>
+              <span className="font-semibold text-yellow-400">{unpaidCount}</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+
       {/* Competitions Card with Capacity Meters */}
       <Link href="/dashboard/competitions">
         <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all duration-200 cursor-pointer">
@@ -164,31 +189,6 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
 
           <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-1 text-blue-400 text-xs">
             <span>View all events →</span>
-          </div>
-        </div>
-      </Link>
-
-      {/* Invoices Card */}
-      <Link href="/dashboard/invoices/all">
-        <div className="bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-red-400/30 p-6 hover:from-red-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Invoices</h3>
-            <div className="text-3xl">💰</div>
-          </div>
-          <div className="text-4xl font-bold text-white mb-2">{totalInvoices}</div>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between text-gray-300">
-              <span>Sent:</span>
-              <span className="font-semibold text-blue-400">{sentCount}</span>
-            </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Paid:</span>
-              <span className="font-semibold text-green-400">{paidCount}</span>
-            </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Unpaid:</span>
-              <span className="font-semibold text-yellow-400">{unpaidCount}</span>
-            </div>
           </div>
         </div>
       </Link>

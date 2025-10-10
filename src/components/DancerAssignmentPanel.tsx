@@ -101,14 +101,16 @@ function DraggableDancerCard({ dancer, age, isAssigned, isAssigning, onQuickAssi
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex justify-between items-center border rounded-lg p-3 transition-all duration-300 ${
+      className={`flex justify-between items-center border rounded-lg p-3 ${
         isDragging
           ? 'opacity-50 cursor-grabbing'
-          : isAssigning
-          ? 'bg-blue-500/20 border-blue-400/50 scale-95 opacity-75'
-          : isAssigned
-          ? 'bg-green-500/10 border-green-400/30 cursor-not-allowed'
-          : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-grab active:cursor-grabbing'
+          : `transition-all duration-300 ${
+              isAssigning
+                ? 'bg-blue-500/20 border-blue-400/50 scale-95 opacity-75'
+                : isAssigned
+                ? 'bg-green-500/10 border-green-400/30 cursor-not-allowed'
+                : 'bg-white/5 hover:bg-white/10 border-white/10 cursor-grab active:cursor-grabbing'
+            }`
       }`}
       onClick={() => !isAssigned && !isDragging && !isAssigning && onQuickAssign(dancer.id)}
     >

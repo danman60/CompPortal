@@ -39,6 +39,7 @@ export default function SignupPage() {
   const supabase = createClient();
 
   const updateFormData = (field: keyof SignupFormData, value: string) => {
+    if (field === 'email') setError(null);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -117,7 +118,12 @@ export default function SignupPage() {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        const msg = signUpError.message || '';
+        if (/already/i.test(msg) || /exists/i.test(msg) || /registered/i.test(msg)) {
+          setError('This email is already registered.');
+        } else {
+          setError(msg);
+        }
         return;
       }
 
@@ -230,15 +236,30 @@ export default function SignupPage() {
                   <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
                     Email
                   </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateFormData('email', e.target.value)}
-                    required
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="you@example.com"
-                  />
+              <input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateFormData('email', e.target.value)}
+                required
+                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="you@example.com"
+              />
+              {error && (
+                <div className="text-red-400 text-sm mt-1">
+                  {error}
+                  <p className="mt-2">
+                    Already have an account?{' '}
+                    <Link href="/login" className="text-purple-400 hover:text-purple-300 underline">
+                      Sign in here
+                    </Link>{' '}
+                    or{' '}
+                    <Link href="/reset-password" className="text-purple-400 hover:text-purple-300 underline">
+                      reset your password
+                    </Link>
+                  </p>
+                </div>
+              )}
                 </div>
 
                 <div>

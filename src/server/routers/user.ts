@@ -17,6 +17,13 @@ export const userRouter = router({
         role: true,
         first_name: true,
         last_name: true,
+        phone: true,
+        notification_preferences: true,
+        users: {
+          select: {
+            email: true,
+          },
+        },
       },
     });
 
@@ -33,8 +40,17 @@ export const userRouter = router({
       });
     }
 
+    const notificationsEnabled = Boolean((userProfile?.notification_preferences as any)?.email ?? true);
+
     return {
-      ...userProfile,
+      id: userProfile?.id,
+      role: userProfile?.role,
+      first_name: userProfile?.first_name,
+      last_name: userProfile?.last_name,
+      phone: userProfile?.phone,
+      email: userProfile?.users?.email,
+      notification_preferences: userProfile?.notification_preferences,
+      notificationsEnabled,
       studio,
     };
   }),
@@ -82,6 +98,43 @@ export const userRouter = router({
       await prisma.user_profiles.update({
         where: { id: ctx.userId! },
         data: {
+          notification_preferences: updatedPrefs,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Update current user's profile
+   */
+  updateProfile: protectedProcedure
+    .input(
+      z.object({
+        first_name: z.string().min(1),
+        last_name: z.string().min(1),
+        phone: z.string().optional().or(z.literal('')),
+        notificationsEnabled: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Fetch current prefs
+      const existing = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId! },
+        select: { notification_preferences: true },
+      });
+      const prefs = (existing?.notification_preferences as any) || {};
+      const updatedPrefs =
+        typeof input.notificationsEnabled === 'boolean'
+          ? { ...prefs, email: input.notificationsEnabled }
+          : prefs;
+
+      await prisma.user_profiles.update({
+        where: { id: ctx.userId! },
+        data: {
+          first_name: input.first_name,
+          last_name: input.last_name,
+          phone: input.phone || null,
           notification_preferences: updatedPrefs,
         },
       });
