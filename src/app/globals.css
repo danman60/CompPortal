@@ -31,8 +31,44 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+@layer components {
+  /* Mobile-first touch targets - minimum 44px height for accessibility */
+  .btn {
+    @apply min-h-[44px] px-4 py-3 rounded-lg font-semibold transition-all;
+  }
+
+  .btn-sm {
+    @apply min-h-[44px] px-3 py-2.5 rounded-lg font-semibold transition-all;
+  }
+
+  /* Ensure all interactive elements meet touch target guidelines */
+  button,
+  a[role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    @apply min-h-[44px];
+  }
+
+  /* Form inputs with proper touch targets */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    @apply min-h-[44px];
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Touch-friendly spacing utilities */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
   }
 }
