@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import PullToRefresh from 'react-pull-to-refresh';
+import { highlightText } from '@/lib/highlightText';
 
 export default function DancersList() {
   const { data, isLoading, error, refetch } = trpc.dancer.getAll.useQuery();
@@ -203,7 +204,7 @@ export default function DancersList() {
 
               {/* Dancer Name */}
               <h3 className="text-xl font-bold text-white mb-2">
-                {dancer.first_name} {dancer.last_name}
+                {highlightText(`${dancer.first_name} ${dancer.last_name}`, searchTerm)}
               </h3>
 
               {/* Studio */}
@@ -274,7 +275,7 @@ export default function DancersList() {
                   >
                     <td className="px-6 py-4">
                       <div className="text-white font-medium">
-                        {dancer.first_name} {dancer.last_name}
+                        {highlightText(`${dancer.first_name} ${dancer.last_name}`, searchTerm)}
                       </div>
                       {dancer.registration_number && (
                         <div className="text-xs text-gray-400 mt-1">#{dancer.registration_number}</div>
