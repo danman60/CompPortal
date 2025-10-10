@@ -1,23 +1,37 @@
 import Link from 'next/link';
 import { demoLoginAction } from './actions/auth';
+import { getTenantData } from '@/lib/tenant-context';
 
-export default function Home() {
+export default async function Home() {
+  const tenant = await getTenantData();
+
+  // Extract tenant branding
+  const tenantName = tenant?.name || 'Competition Portal';
+  const tagline = tenant?.branding?.tagline || 'Professional dance competition management platform';
+  const primaryColor = tenant?.branding?.primaryColor || '#8B5CF6';
+  const secondaryColor = tenant?.branding?.secondaryColor || '#EC4899';
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-8 flex justify-center">
-            <div className="h-20 w-20 bg-gradient-to-br from-pink-500 via-purple-500 to-yellow-500 rounded-2xl flex items-center justify-center">
+            <div
+              className="h-20 w-20 rounded-2xl flex items-center justify-center"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+              }}
+            >
               <span className="text-4xl">✨</span>
             </div>
           </div>
 
           <h1 className="text-5xl font-bold text-white mb-4">
-            GlowDance Competition Portal
+            {tenantName}
           </h1>
 
           <p className="text-xl text-gray-300 mb-8">
-            Professional dance competition management platform
+            {tagline}
           </p>
 
           <div className="bg-yellow-500/20 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6 mb-8">
@@ -64,7 +78,10 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/login"
-              className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+              className="text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+              style={{
+                background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
+              }}
             >
               Sign In
             </Link>
