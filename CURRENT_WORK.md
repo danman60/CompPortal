@@ -401,5 +401,9 @@ All post-demo deliverables integrated and deployed:
   - Added INBOUND_EMAIL_SECRET for webhook security
   - Added TWO_FACTOR_ENCRYPTION_KEY for 2FA
   - ✅ All environment variables now documented in .env.example
+- Bug fix (commit be29311):
+  - Registered missing chat router in _app.ts
+  - Support chat functionality now accessible via tRPC
+  - ✅ All 28 routers now registered
 
 **Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17 when ready.
