@@ -74,7 +74,7 @@ export const liveCompetitionRouter = router({
         dancers: entry.entry_participants.map(p =>
           `${p.dancers?.first_name || ''} ${p.dancers?.last_name || ''}`.trim()
         ).filter(Boolean),
-        duration: 180, // TODO: Convert interval duration to seconds
+        duration: entry.duration_seconds || 180, // Duration in seconds from database
         order: entry.running_order || index + 1, // Use running_order from schema
         liveStatus: entry.live_status || 'queued', // Track routine state during live competition
       }));

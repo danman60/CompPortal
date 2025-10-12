@@ -453,6 +453,7 @@ model competition_entries {
   performance_date                                                                     DateTime?                @db.Date
   performance_time                                                                     DateTime?                @db.Time(6)
   duration                                                                             Unsupported("interval")?
+  duration_seconds                                                                     Int?
   warm_up_time                                                                         DateTime?                @db.Time(6)
   heat                                                                                 String?                  @db.VarChar(50)
   running_order                                                                        Int?
