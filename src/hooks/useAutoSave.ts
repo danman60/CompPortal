@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { logger } from '@/lib/logger';
 
 interface UseAutoSaveOptions {
   key: string;
@@ -28,7 +29,7 @@ export function useAutoSave<T>(data: T, options: UseAutoSaveOptions) {
       const parsed = JSON.parse(saved);
       return parsed.data as T;
     } catch (error) {
-      console.error('Failed to load auto-saved data:', error);
+      logger.error('Failed to load auto-saved data', { error: error instanceof Error ? error : new Error(String(error)) });
       return null;
     }
   };
@@ -50,7 +51,7 @@ export function useAutoSave<T>(data: T, options: UseAutoSaveOptions) {
         lastSaved: new Date(),
       });
     } catch (error) {
-      console.error('Failed to auto-save data:', error);
+      logger.error('Failed to auto-save data', { error: error instanceof Error ? error : new Error(String(error)) });
       setStatus({ status: 'error' });
     }
   };
@@ -63,7 +64,7 @@ export function useAutoSave<T>(data: T, options: UseAutoSaveOptions) {
       localStorage.removeItem(key);
       setStatus({ status: 'idle' });
     } catch (error) {
-      console.error('Failed to clear auto-saved data:', error);
+      logger.error('Failed to clear auto-saved data', { error: error instanceof Error ? error : new Error(String(error)) });
     }
   };
 

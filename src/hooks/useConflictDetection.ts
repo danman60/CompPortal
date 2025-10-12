@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { logger } from '@/lib/logger';
 
 export type ConflictSeverity = 'error' | 'warning' | 'info';
 
@@ -58,7 +59,7 @@ export function useConflictDetection<T>({
         const ruleConflicts = rule.check(items);
         detectedConflicts.push(...ruleConflicts);
       } catch (error) {
-        console.error(`Conflict detection rule "${rule.name}" failed:`, error);
+        logger.error(`Conflict detection rule "${rule.name}" failed`, { error: error instanceof Error ? error : new Error(String(error)), ruleName: rule.name });
       }
     }
 

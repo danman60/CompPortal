@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 export interface Notification {
   id: string;
@@ -42,7 +43,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
         setNotifications(parsed.slice(0, maxNotifications));
       }
     } catch (error) {
-      console.error('Failed to load notifications:', error);
+      logger.error('Failed to load notifications', { error: error instanceof Error ? error : new Error(String(error)) });
     }
 
     // Check desktop notification permission
@@ -94,7 +95,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
         desktopNotif.close();
       };
     } catch (error) {
-      console.error('Failed to show desktop notification:', error);
+      logger.error('Failed to show desktop notification', { error: error instanceof Error ? error : new Error(String(error)) });
     }
   }, [enableDesktop, desktopPermission]);
 
@@ -113,7 +114,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (error) {
-        console.error('Failed to save notifications:', error);
+        logger.error('Failed to save notifications', { error: error instanceof Error ? error : new Error(String(error)) });
       }
 
       return updated;
@@ -135,7 +136,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (error) {
-        console.error('Failed to save notifications:', error);
+        logger.error('Failed to save notifications', { error: error instanceof Error ? error : new Error(String(error)) });
       }
 
       return updated;
@@ -150,7 +151,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (error) {
-        console.error('Failed to save notifications:', error);
+        logger.error('Failed to save notifications', { error: error instanceof Error ? error : new Error(String(error)) });
       }
 
       return updated;
@@ -165,7 +166,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (error) {
-        console.error('Failed to save notifications:', error);
+        logger.error('Failed to save notifications', { error: error instanceof Error ? error : new Error(String(error)) });
       }
 
       return updated;
@@ -178,7 +179,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     try {
       localStorage.removeItem(storageKey);
     } catch (error) {
-      console.error('Failed to clear notifications:', error);
+      logger.error('Failed to clear notifications', { error: error instanceof Error ? error : new Error(String(error)) });
     }
   }, [storageKey]);
 
