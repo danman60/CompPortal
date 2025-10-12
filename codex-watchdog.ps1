@@ -29,15 +29,11 @@ public static class Keyboard {
 }
 "@ | Out-Null
 
-# Resolve and normalize the exact target directory; default to codex-tasks subdirectory
+# Resolve and normalize the exact target directory; default to script directory (CompPortal root)
 if (-not $TargetDir -or $TargetDir.Trim().Length -eq 0) {
   try {
-    # Default to codex-tasks subdirectory where Codex runs
-    $scriptRoot = (Resolve-Path -LiteralPath $PSScriptRoot).Path
-    $TargetDir = Join-Path $scriptRoot "codex-tasks"
-    if (-not (Test-Path $TargetDir)) {
-      $TargetDir = $scriptRoot
-    }
+    # Default to script's directory (CompPortal root where Codex runs)
+    $TargetDir = (Resolve-Path -LiteralPath $PSScriptRoot).Path
   } catch {
     $TargetDir = (Resolve-Path -LiteralPath (Get-Location)).Path
   }
@@ -86,6 +82,8 @@ function Find-CodexHost {
             if ($cmd -or $title) {
                 $inDir = (Contains-Path -Text $cmd -Path $Dir) -or
                          (Contains-Path -Text $title -Path $Dir) -or
+                         ($cmd -and $cmd.Contains("CompPortal")) -or
+                         ($title -and $title.Contains("CompPortal")) -or
                          ($cmd -and $cmd.Contains("codex-tasks")) -or
                          ($title -and $title.Contains("codex-tasks"))
             }
@@ -129,6 +127,8 @@ function Find-CodexHost {
             # More lenient path matching
             $inDir = (Contains-Path -Text $cmd -Path $Dir) -or
                      (Contains-Path -Text $title -Path $Dir) -or
+                     ($cmd -and $cmd.Contains("CompPortal")) -or
+                     ($title -and $title.Contains("CompPortal")) -or
                      ($cmd -and $cmd.Contains("codex-tasks")) -or
                      ($title -and $title.Contains("codex-tasks"))
 
