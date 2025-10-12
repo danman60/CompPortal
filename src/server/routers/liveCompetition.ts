@@ -76,7 +76,7 @@ export const liveCompetitionRouter = router({
         ).filter(Boolean),
         duration: 180, // TODO: Convert interval duration to seconds
         order: entry.running_order || index + 1, // Use running_order from schema
-        status: entry.status || 'queued', // TODO: Add live_status field to schema
+        liveStatus: entry.live_status || 'queued', // Track routine state during live competition
       }));
 
       return {
@@ -158,11 +158,11 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // Update status (TODO: Add live_status field to schema)
+      // Update live status
       await prisma.competition_entries.update({
         where: { id: input.routineId },
         data: {
-          status: input.status, // Using status field for now
+          live_status: input.status,
         },
       });
 
@@ -325,7 +325,7 @@ export const liveCompetitionRouter = router({
           competition_id: input.competitionId,
           tenant_id: ctx.tenantId,
           status: 'registered', // Schema uses 'registered'
-          // TODO: Filter by completion status when live_status field exists
+          live_status: 'completed', // Only show completed routines in standings
           ...(input.category ? {
             dance_categories: {
               name: input.category,
@@ -411,10 +411,9 @@ export const liveCompetitionRouter = router({
       }
 
       const entries = competition.competition_entries;
-      // TODO: Track completion status when live_status field exists
-      const completedCount = 0; // Placeholder
-      const currentEntry = null; // Placeholder
-      const queuedCount = entries.length; // All entries are queued for now
+      const completedCount = entries.filter(e => e.live_status === 'completed').length;
+      const currentEntry = entries.find(e => e.live_status === 'current');
+      const queuedCount = entries.filter(e => e.live_status === 'queued').length;
 
       // Calculate total scores submitted
       const totalScores = entries.reduce((sum, entry) => {

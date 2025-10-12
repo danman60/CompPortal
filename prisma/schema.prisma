@@ -472,6 +472,7 @@ model competition_entries {
   late_fee                                                                             Decimal?                 @default(0) @db.Decimal(10, 2)
   total_fee                                                                            Decimal?                 @db.Decimal(10, 2)
   status                                                                               String?                  @default("registered") @db.VarChar(50)
+  live_status                                                                          String?                  @default("queued") @db.VarChar(20)
   choreographer                                                                        String?                  @db.VarChar(255)
   costume_description                                                                  String?
   props_required                                                                       String?
@@ -510,6 +511,8 @@ model competition_entries {
   @@index([award_level], map: "idx_entries_award_level")
   @@index([category_placement], map: "idx_entries_placement")
   @@index([tenant_id], map: "idx_entries_tenant")
+  @@index([live_status], map: "idx_competition_entries_live_status")
+  @@index([competition_id, live_status], map: "idx_competition_entries_comp_live_status")
   @@schema("public")
 }
 
