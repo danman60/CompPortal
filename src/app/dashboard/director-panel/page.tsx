@@ -81,6 +81,8 @@ export default function DirectorPanelPage() {
   const [breakReason, setBreakReason] = useState('');
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerStartTime, setTimerStartTime] = useState<number | null>(null);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [backupData, setBackupData] = useState<any>(null);
 
   // Mock initial data - TODO: Load from API
   useEffect(() => {
@@ -126,6 +128,90 @@ export default function DirectorPanelPage() {
       },
     ]);
   }, []);
+
+  // Check for backup on mount
+  useEffect(() => {
+    const backup = localStorage.getItem(`competition-backup-${competitionId}`);
+    if (backup) {
+      try {
+        const data = JSON.parse(backup);
+        setBackupData(data);
+        setShowRecovery(true);
+      } catch (e) {
+        console.error('Failed to parse backup:', e);
+      }
+    }
+  }, [competitionId]);
+
+  // Auto-save state to localStorage
+  useEffect(() => {
+    if (!currentRoutine && routines.length === 0) return; // Don't save empty state
+
+    const state = {
+      timestamp: Date.now(),
+      competitionId,
+      routines,
+      currentRoutine,
+      scores,
+      judges,
+      isBreak,
+      breakReason,
+      timerSeconds,
+      timerStartTime,
+    };
+
+    localStorage.setItem(`competition-backup-${competitionId}`, JSON.stringify(state));
+  }, [competitionId, routines, currentRoutine, scores, judges, isBreak, breakReason, timerSeconds, timerStartTime]);
+
+  // Restore from backup
+  const handleRestore = useCallback(() => {
+    if (!backupData) return;
+
+    setRoutines(backupData.routines || []);
+    setCurrentRoutineState(backupData.currentRoutine || null);
+    setScores(backupData.scores || []);
+    setJudges(backupData.judges || []);
+    setIsBreak(backupData.isBreak || false);
+    setBreakReason(backupData.breakReason || '');
+    setTimerSeconds(backupData.timerSeconds || 0);
+    setTimerStartTime(backupData.timerStartTime || null);
+
+    setShowRecovery(false);
+    toast.success('State restored from backup', { icon: '♻️', duration: 3000 });
+  }, [backupData]);
+
+  // Dismiss backup
+  const handleDismissBackup = useCallback(() => {
+    setShowRecovery(false);
+    localStorage.removeItem(`competition-backup-${competitionId}`);
+    toast('Backup dismissed', { duration: 2000 });
+  }, [competitionId]);
+
+  // Export backup
+  const handleExport = useCallback(() => {
+    const state = {
+      timestamp: Date.now(),
+      competitionId,
+      routines,
+      currentRoutine,
+      scores,
+      judges,
+      isBreak,
+      breakReason,
+    };
+
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `competition-${competitionId}-backup-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success('Backup exported', { icon: '💾', duration: 2000 });
+  }, [competitionId, routines, currentRoutine, scores, judges, isBreak, breakReason]);
 
   // Listen for judge events
   useEffect(() => {
@@ -314,6 +400,42 @@ export default function DirectorPanelPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-4 md:p-8">
+      {/* Recovery Banner */}
+      {showRecovery && backupData && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-yellow-500/20 backdrop-blur-md rounded-2xl border border-yellow-500/30 p-6"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-yellow-300 mb-2 flex items-center gap-2">
+                ♻️ Backup Found
+              </h3>
+              <p className="text-white/80 mb-3">
+                A previous session backup was found from{' '}
+                {new Date(backupData.timestamp).toLocaleString()}.
+                Would you like to restore it?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRestore}
+                  className="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  Restore Backup
+                </button>
+                <button
+                  onClick={handleDismissBackup}
+                  className="px-6 py-3 rounded-xl font-medium bg-white/10 text-white hover:bg-white/20 transition-all"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -622,6 +744,14 @@ export default function DirectorPanelPage() {
                 <span className="font-bold">{scores.length}</span>
               </div>
             </div>
+            {/* Export Button */}
+            <button
+              onClick={handleExport}
+              className="w-full mt-4 py-3 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 font-medium transition-all flex items-center justify-center gap-2"
+            >
+              <span>💾</span>
+              Export Backup
+            </button>
           </div>
         </div>
       </div>
