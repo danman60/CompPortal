@@ -176,7 +176,7 @@ All post-demo deliverables integrated and deployed:
 4. Test workflows end-to-end
 
 **After MEDIUM Priority Complete**:
-- Move to LOW priority (16 remaining items, ~58-78 hours)
+- Move to LOW priority (14 remaining items, ~50-68 hours)
 - ✅ Task #18: Multi-Tenant Domain Detection (verified complete)
 - ✅ Task #19: Documentation Consolidation (verified complete)
 - ✅ Task #21: Form Validation Feedback (commit 1aac638)
@@ -187,6 +187,12 @@ All post-demo deliverables integrated and deployed:
   - SDK installed: stripe + @stripe/stripe-js
   - Docs: STRIPE_SETUP.md created
   - **Remaining**: User must add Stripe credentials (2-3 hours)
+- ✅ Task #33: IP Whitelisting for Admin Actions (commit 998e2b8)
+  - ip_whitelist table + RLS policies
+  - IP matching: individual, CIDR, ranges
+  - tRPC router for management
+  - Proxy-aware IP extraction
+  - Docs: IP_WHITELIST.md
 - ✅ Task #34: Audit Logging Enhancement (commit 22ef995)
   - IP address tracking for security audit trail
   - extractIpAddress() function with proxy/CDN support
@@ -224,7 +230,7 @@ All post-demo deliverables integrated and deployed:
 **Deploy**: ✅ Production ready and live
 **Next**: 2 Codex tasks queued (6-9 hours estimated)
 **Remaining**: 1/39 total tasks to complete MEDIUM priority (Task #11 or #17)
-**Bonus**: 5 LOW priority tasks complete (Tasks #18, #19, #21, #34, #39)
+**Bonus**: 6 LOW priority tasks complete (Tasks #18, #19, #21, #33, #34, #39)
 
 **Discovered**:
 - Task #18: Multi-tenant detection already fully implemented
@@ -232,7 +238,7 @@ All post-demo deliverables integrated and deployed:
 
 ---
 
-**Status**: ✅ Outstanding progress. 16 of 17 HIGH+MEDIUM tasks complete (94%). Only 1 MEDIUM task remaining after Codex completes. Bonus: 5 LOW priority tasks complete (Tasks #18, #19, #21, #34, #39).
+**Status**: ✅ Outstanding progress. 16 of 17 HIGH+MEDIUM tasks complete (94%). Only 1 MEDIUM task remaining after Codex completes. Bonus: 6 LOW priority tasks complete (Tasks #18, #19, #21, #33, #34, #39).
 
 **Completed This Session** (Jan 12-13):
 - Task #18: Multi-Tenant Domain Detection verified complete (commit 2bfc249)
@@ -248,5 +254,12 @@ All post-demo deliverables integrated and deployed:
   - 70-80% file size reduction with WebP conversion
   - Multiple size generation (thumbnail, medium, large)
   - Docs: IMAGE_OPTIMIZATION.md
+- Task #33: IP Whitelisting for Admin Actions (commit 998e2b8)
+  - ip_whitelist table with RLS policies
+  - Core library with IP matching (individual, CIDR, ranges)
+  - tRPC router (add/remove/toggle/list/stats)
+  - Proxy-aware IP extraction
+  - Development mode auto-allows localhost
+  - Docs: IP_WHITELIST.md
 
-**Recommendation**: Run Codex on both remaining tasks in parallel. After completion, project will be at 100% HIGH+MEDIUM priority with only 16 LOW priority enhancements remaining (Task #39 complete).
+**Recommendation**: Run Codex on both remaining tasks in parallel. After completion, project will be at 100% HIGH+MEDIUM priority with only 14 LOW priority enhancements remaining (Tasks #33, #39 complete).
