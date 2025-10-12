@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
 import { render as renderEmail } from '@react-email/render';
 import WelcomeEmail from '@/emails/WelcomeEmail';
 import {
@@ -206,7 +207,7 @@ export const studioRouter = router({
           },
         });
       } catch (err) {
-        console.error('Failed to log activity (studio.approve):', err);
+        logger.error('Failed to log activity (studio.approve)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
       // Send approval email to studio owner
@@ -247,7 +248,7 @@ export const studioRouter = router({
             html: welcomeHtml,
           });
         } catch (error) {
-          console.error('Failed to send approval email:', error);
+          logger.error('Failed to send approval email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the approval
         }
       }
@@ -308,7 +309,7 @@ export const studioRouter = router({
           },
         });
       } catch (err) {
-        console.error('Failed to log activity (studio.reject):', err);
+        logger.error('Failed to log activity (studio.reject)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
       // Send rejection email to studio owner
@@ -336,7 +337,7 @@ export const studioRouter = router({
             html,
           });
         } catch (error) {
-          console.error('Failed to send rejection email:', error);
+          logger.error('Failed to send rejection email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the rejection
         }
       }

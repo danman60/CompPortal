@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { renderEntrySubmitted, getEmailSubject, type EntrySubmittedData } from '@/lib/email-templates';
 import { logActivity } from '@/lib/activity';
+import { logger } from '@/lib/logger';
 
 // Validation schema for entry participant
 const entryParticipantSchema = z.object({
@@ -474,7 +475,7 @@ export const entryRouter = router({
             },
           });
         } catch (err) {
-          console.error('Failed to log activity (entry.create):', err);
+          logger.error('Failed to log activity (entry.create)', { error: err instanceof Error ? err : new Error(String(err)) });
         }
       }
 
@@ -526,7 +527,7 @@ export const entryRouter = router({
           });
         }
       } catch (emailError) {
-        console.error('Failed to send entry submission email:', emailError);
+        logger.error('Failed to send entry submission email', { error: emailError instanceof Error ? emailError : new Error(String(emailError)) });
         // Don't fail the mutation if email fails
       }
 

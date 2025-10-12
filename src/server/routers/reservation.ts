@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
 import { sendEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
 import {
   renderReservationApproved,
   renderReservationRejected,
@@ -577,7 +578,7 @@ export const reservationRouter = router({
           },
         });
       } catch (err) {
-        console.error('Failed to log activity (reservation.approve):', err);
+        logger.error('Failed to log activity (reservation.approve)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
       // Auto-generate invoice on approval
@@ -593,7 +594,7 @@ export const reservationRouter = router({
         const routinesFee = reservation.competitions?.entry_fee;
 
         if (!routinesFee || Number(routinesFee) <= 0) {
-          console.error('Cannot create invoice: Invalid entry fee for competition', {
+          logger.error('Cannot create invoice: Invalid entry fee for competition', {
             competitionId: reservation.competition_id,
             entryFee: routinesFee,
           });
@@ -650,7 +651,7 @@ export const reservationRouter = router({
                 html: invoiceHtml,
               });
             } catch (error) {
-              console.error('Failed to send invoice delivery email:', error);
+              logger.error('Failed to send invoice delivery email', { error: error instanceof Error ? error : new Error(String(error)) });
               // Don't throw - email failure shouldn't block the approval
             }
           }
@@ -680,7 +681,7 @@ export const reservationRouter = router({
             html,
           });
         } catch (error) {
-          console.error('Failed to send approval email:', error);
+          logger.error('Failed to send approval email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the approval
         }
       }
@@ -775,7 +776,7 @@ export const reservationRouter = router({
             html,
           });
         } catch (error) {
-          console.error('Failed to send rejection email:', error);
+          logger.error('Failed to send rejection email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the rejection
         }
       }
@@ -795,7 +796,7 @@ export const reservationRouter = router({
           },
         });
       } catch (err) {
-        console.error('Failed to log activity (reservation.reject):', err);
+        logger.error('Failed to log activity (reservation.reject)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
       return reservation;
@@ -943,7 +944,7 @@ export const reservationRouter = router({
           },
         });
       } catch (err) {
-        console.error('Failed to log activity (invoice.markAsPaid):', err);
+        logger.error('Failed to log activity (invoice.markAsPaid)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
       // Send payment confirmation email
@@ -989,7 +990,7 @@ export const reservationRouter = router({
           });
         }
       } catch (emailError) {
-        console.error('Failed to send payment confirmation email:', emailError);
+        logger.error('Failed to send payment confirmation email', { error: emailError instanceof Error ? emailError : new Error(String(emailError)) });
         // Don't fail the mutation if email fails
       }
 

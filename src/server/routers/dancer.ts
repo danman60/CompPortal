@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
+import { logger } from '@/lib/logger';
 
 // Validation schema for dancer input
 const dancerInputSchema = z.object({
@@ -267,7 +268,7 @@ export const dancerRouter = router({
           },
         });
       } catch (err) {
-        console.error('Failed to log activity (dancer.create):', err);
+        logger.error('Failed to log activity (dancer.create)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
       return dancer;
@@ -523,7 +524,7 @@ export const dancerRouter = router({
           },
         });
       } catch (err) {
-        console.error('Failed to log activity (dancer.batchCreate):', err);
+        logger.error('Failed to log activity (dancer.batchCreate)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
       return {
