@@ -24,6 +24,7 @@ import { twoFactorRouter } from './twoFactor';
 import { gdprRouter } from './gdpr';
 import { cdnRouter } from './cdn';
 import { cacheRouter } from './cache';
+import { liveCompetitionRouter } from './liveCompetition';
 
 /**
  * Main tRPC router
@@ -55,6 +56,7 @@ export const appRouter = router({
   gdpr: gdprRouter,
   cdn: cdnRouter,
   cache: cacheRouter,
+  liveCompetition: liveCompetitionRouter,
 });
 
 // Export type definition of API
