@@ -3,6 +3,9 @@ import { createClient } from './supabase';
 /**
  * Storage utilities for Supabase file uploads
  * Handles music files for competition entries
+ *
+ * NOTE: Image optimization is handled server-side via /api/optimize-image
+ * This file remains client-side compatible
  */
 
 const MUSIC_BUCKET = 'competition-music';
@@ -133,6 +136,7 @@ export async function deleteMusicFile(filePath: string): Promise<{ success: bool
 
 /**
  * Upload logo file to Supabase Storage
+ * For optimized uploads, use /api/upload-optimized-logo endpoint
  */
 export async function uploadLogoFile({
   file,
