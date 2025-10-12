@@ -393,5 +393,13 @@ All post-demo deliverables integrated and deployed:
   - @prisma/adapter-pg (not used in prisma.ts)
   - @trpc/next (no imports in source)
   - next-auth (no imports in source)
+- Cleanup (commit fa7163d):
+  - Removed judges/page.tsx.bak backup file
+- Environment documentation (commit dc1c3b6):
+  - Added missing SMTP configuration variables
+  - Added email address variables (EMAIL_FROM, SUPPORT_EMAIL, CONTACT_EMAIL)
+  - Added INBOUND_EMAIL_SECRET for webhook security
+  - Added TWO_FACTOR_ENCRYPTION_KEY for 2FA
+  - ✅ All environment variables now documented in .env.example
 
 **Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17 when ready.
