@@ -3,6 +3,9 @@ const nextConfig = {
   // Use standalone output for better deployment
   output: 'standalone',
 
+  // Fix workspace root warning with multiple lockfiles
+  outputFileTracingRoot: __dirname,
+
   // Ensure static HTML files in root still work
   trailingSlash: false,
 
