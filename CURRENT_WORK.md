@@ -389,5 +389,9 @@ All post-demo deliverables integrated and deployed:
 - nodemailer: 6.10.1 → 7.0.9 (security fix GHSA-mm7p-fcc7-pg87)
 - Removed deprecated Prisma preview features
 - ✅ 0 security vulnerabilities remaining
+- Removed unused dependencies (commit 15a0640):
+  - @prisma/adapter-pg (not used in prisma.ts)
+  - @trpc/next (no imports in source)
+  - next-auth (no imports in source)
 
 **Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17 when ready.
