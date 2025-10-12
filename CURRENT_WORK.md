@@ -421,5 +421,10 @@ All post-demo deliverables integrated and deployed:
   - Type-safe access to all configuration values
   - Graceful handling of optional variables
   - ✅ Prevents runtime errors from missing config
+- Security headers (commit 0c1e990):
+  - Added 7 production security headers to Next.js config
+  - HSTS, X-Frame-Options, X-Content-Type-Options
+  - XSS Protection, Referrer Policy, Permissions Policy
+  - ✅ Hardens against clickjacking, MIME sniffing, XSS
 
 **Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17 when ready.
