@@ -19,6 +19,7 @@ import { musicRouter } from './music';
 import { adminRouter } from './admin';
 import { activityRouter } from './activity';
 import { ipWhitelistRouter } from './ipWhitelist';
+import { performanceRouter } from './performance';
 
 /**
  * Main tRPC router
@@ -45,6 +46,7 @@ export const appRouter = router({
   admin: adminRouter,
   activity: activityRouter,
   ipWhitelist: ipWhitelistRouter,
+  performance: performanceRouter,
 });
 
 // Export type definition of API
