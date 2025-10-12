@@ -1,11 +1,11 @@
-# CompPortal - Future Work TODO List
+# CompPortal - Unified TODO List
 
 **Last Updated**: January 11, 2025
 **Status**: Demo Ready - Post-Demo Implementation Phase
 
 ---
 
-## 🔴 HIGH PRIORITY - Post-Demo Round (Previous Demo Deliverables)
+## 🔴 HIGH PRIORITY - Post-Demo Round (5 items, ~5-7 hours)
 
 ### 1. Apply Activity Logging Migrations
 - **Task**: Apply database migrations for activity logging system
@@ -67,7 +67,7 @@
 
 ---
 
-## 🟡 MEDIUM PRIORITY - Workflow Redesign (New Requirements)
+## 🟡 MEDIUM PRIORITY - Workflow Redesign & Enhancements (12 items, ~18-24 hours)
 
 ### 6. Merge Routine Creation Forms
 - **Current**: Separate Basic + Details + Props screens
@@ -138,46 +138,185 @@
 - **Estimate**: 2-3 hours
 - **Source**: PostDemoChanges10_10.md Section 6
 
+### 15. Personalized Dashboard Layout
+- **Feature**: Drag/drop widgets to customize dashboard
+- **Implementation**: Save layout preferences per user
+- **Estimate**: 3-4 hours
+- **Source**: BUGS_AND_FEATURES.md Dashboard Enhancements
+
+### 16. Draggable Dashboard Button Reordering
+- **Feature**: Allow users to reorder dashboard action cards
+- **Storage**: LocalStorage or user preferences table
+- **Estimate**: 1-2 hours
+- **Source**: BUGS_AND_FEATURES.md Dashboard Enhancements
+
+### 17. Multi-User Studio Accounts
+- **Feature**: Allow multiple logins per studio (owner + staff)
+- **Requirements**: Role management, permissions system
+- **Estimate**: 4-6 hours
+- **Source**: BUGS_AND_FEATURES.md Studio Management
+
 ---
 
-## 🟢 LOW PRIORITY - Future Enhancements
+## 🟢 LOW PRIORITY - Future Enhancements (22 items, ~70-90 hours)
 
-### 15. Multi-Tenant Domain Detection
+### 18. Multi-Tenant Domain Detection
 - **Issue**: Hardcoded tenant detection (empwr.compsync.net)
 - **Required**: Dynamic subdomain detection from request headers
 - **Implementation**: Query `tenants` table by slug
 - **Estimate**: 1 hour
 - **Source**: POST_DEMO_CHANGELOG.md #8
 
-### 16. Documentation Consolidation
+### 19. Documentation Consolidation
 - **Task**: Update cross-references in active docs after archive
 - **Status**: FILE_INDEX.md updated, oct-2025-* archived
 - **Estimate**: 30 minutes
 - **Source**: POST_DEMO_CHANGELOG.md #9
 
-### 17. Stripe Invoice Payment Integration
+### 20. Stripe Invoice Payment Integration
 - **Feature**: Allow online invoice payments
 - **Requirements**: CD connects Stripe account, auto-update payment status
 - **Estimate**: 4-6 hours (external API integration)
 - **Source**: PostDemoChanges10_10.md Section 8
 
+### 21. Form Validation Feedback
+- **Feature**: React-hook-form integration with visual error states
+- **Files**: DancerForm.tsx, ReservationForm.tsx, EntryForm.tsx
+- **Implementation**: Red borders + error messages for invalid fields
+- **Status**: 8/9 quick wins complete, this remaining
+- **Estimate**: 1-2 hours
+- **Source**: QUICK_WINS_TODO.md
+
+### 22-31. At Competition Mode (MAJOR FEATURE)
+Real-time live competition management system (10 technical requirements):
+
+#### 22. WebSocket Server for Real-Time Sync
+- **Feature**: Real-time communication between CD control panel and judge tablets
+- **Tech**: Socket.io or native WebSockets
+- **Estimate**: 4-6 hours
+
+#### 23. Judge Tablet Responsive Interface
+- **Feature**: Mobile-optimized scoring interface for judges
+- **Requirements**: Auto-refresh with current routine, touch-friendly scoring
+- **Estimate**: 6-8 hours
+
+#### 24. RTMP Overlay API Integration
+- **Feature**: Feed routine data to livestream overlay system
+- **Data**: Routine title, studio name, dancers, category
+- **Estimate**: 3-4 hours
+
+#### 25. Offline Mode with Sync Queue
+- **Feature**: Handle brief network interruptions gracefully
+- **Implementation**: IndexedDB queue, sync on reconnect
+- **Estimate**: 4-6 hours
+
+#### 26. Competition Director Control Panel
+- **Feature**: Playlist-style controls (▶ Next, ⏸ Pause, ⏮ Back)
+- **Layout**: Routine list (left), judge scores (bottom), notes (right)
+- **Estimate**: 6-8 hours
+
+#### 27. Routine State Machine
+- **States**: queued → current → completed
+- **Triggers**: CD control panel actions
+- **Estimate**: 2-3 hours
+
+#### 28. Multi-Judge Score Aggregation
+- **Feature**: Real-time score collection and calculation
+- **Display**: Live scores as judges submit
+- **Estimate**: 3-4 hours
+
+#### 29. Break/Intermission Scheduling System
+- **Feature**: Auto-detect breaks, awards blocks, intermissions
+- **Display**: Visual timers between routines
+- **Estimate**: 3-4 hours
+
+#### 30. Live Notes Database Schema
+- **Feature**: Add notes to routines during competition
+- **Use Cases**: Prop issues, timing, judging anomalies
+- **Estimate**: 1-2 hours
+
+#### 31. Mobile-First Judge Tablet UI
+- **Feature**: Touch-optimized interface for tablets
+- **Requirements**: Large tap targets, swipe gestures
+- **Estimate**: 4-6 hours
+
+**Total At Competition Mode Estimate**: 36-51 hours (6 phases)
+**Source**: BUGS_AND_FEATURES.md At Competition Mode
+
+---
+
+### 32. Two-Factor Authentication
+- **Feature**: 2FA for admin accounts
+- **Methods**: TOTP (Google Authenticator), SMS backup
+- **Estimate**: 4-6 hours
+- **Source**: BUGS_AND_FEATURES.md Security
+
+### 33. IP Whitelisting for Admin Actions
+- **Feature**: Restrict sensitive actions to approved IP ranges
+- **Use Case**: Prevent unauthorized access from compromised accounts
+- **Estimate**: 2-3 hours
+- **Source**: BUGS_AND_FEATURES.md Security
+
+### 34. Audit Logging for Sensitive Operations
+- **Feature**: Log all admin actions with timestamps and IP addresses
+- **Already Partial**: Activity logging in place (Task #3)
+- **Enhancement**: Extend to security-critical operations
+- **Estimate**: 2-3 hours
+- **Source**: BUGS_AND_FEATURES.md Security
+
+### 35. GDPR Compliance (Data Export/Deletion)
+- **Feature**: User data export and right-to-be-forgotten
+- **Requirements**: Export all user data as JSON/PDF, permanent deletion
+- **Estimate**: 6-8 hours
+- **Source**: BUGS_AND_FEATURES.md Security
+
+### 36. Database Query Optimization
+- **Feature**: Identify and optimize slow queries
+- **Tools**: Prisma query analysis, database indexes
+- **Estimate**: 4-6 hours
+- **Source**: BUGS_AND_FEATURES.md Performance
+
+### 37. CDN Integration for Static Assets
+- **Feature**: Serve images, CSS, JS from CDN
+- **Providers**: Cloudflare, AWS CloudFront
+- **Estimate**: 2-3 hours
+- **Source**: BUGS_AND_FEATURES.md Performance
+
+### 38. Redis Caching Layer
+- **Feature**: Cache frequent queries (competitions, studios, routines)
+- **Implementation**: Redis + cache invalidation strategy
+- **Estimate**: 4-6 hours
+- **Source**: BUGS_AND_FEATURES.md Performance
+
+### 39. Image Optimization Pipeline
+- **Feature**: Auto-resize/compress uploaded images
+- **Tools**: Sharp, next/image optimization
+- **Estimate**: 3-4 hours
+- **Source**: BUGS_AND_FEATURES.md Performance
+
 ---
 
 ## 📊 Summary Statistics
 
-**Total Items**: 17 todos
-**High Priority (Post-Demo)**: 5 items (~5-7 hours)
-**Medium Priority (Workflow Redesign)**: 9 items (~16-21 hours)
-**Low Priority (Future)**: 3 items (~5-6 hours)
+**Total Items**: 39 todos
+- **High Priority (Post-Demo)**: 5 items (~5-7 hours)
+- **Medium Priority (Workflow + Enhancements)**: 12 items (~18-24 hours)
+- **Low Priority (Future)**: 22 items (~70-90 hours)
 
-**Immediate Focus - Post-Demo Round** (Week 1):
+**Grand Total Estimate**: ~93-121 hours
+
+---
+
+## 🎯 Immediate Focus - Post-Demo Round (Week 1)
+
+**Priority**: Complete HIGH priority items first (5-7 hours)
 1. Apply migrations (30 min)
 2. Integrate 5 Codex components (1.5 hours)
 3. Add activity logging to mutations (1-2 hours)
 4. Integrate welcome email (30 min)
 5. Production verification testing (1 hour)
 
-**Total Immediate**: ~5-7 hours
+**After Week 1**: Move to MEDIUM priority workflow redesign
 
 ---
 
@@ -185,8 +324,9 @@
 
 - **POST_DEMO_CHANGELOG.md** - Post-demo tasks with estimates
 - **PostDemoChanges10_10.md** - Workflow redesign requirements
+- **BUGS_AND_FEATURES.md** - Complete feature backlog
+- **QUICK_WINS_TODO.md** - Quick wins (8/9 complete)
 - **PROJECT_STATUS.md** - Current state tracker
-- **BUGS_AND_FEATURES.md** - Active bug/feature tracker
 
 ---
 
