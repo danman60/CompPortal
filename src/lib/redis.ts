@@ -4,6 +4,7 @@
  */
 
 import Redis from 'ioredis';
+import { logger } from './logger';
 
 /**
  * Redis Configuration
@@ -85,7 +86,7 @@ export function getRedisClient(): Redis | null {
 
     // Error handling
     redisClient.on('error', (err) => {
-      console.error('Redis error:', err);
+      logger.error('Redis error', { error: err instanceof Error ? err : new Error(String(err)) });
     });
 
     redisClient.on('connect', () => {
@@ -102,7 +103,7 @@ export function getRedisClient(): Redis | null {
 
     // Connect
     redisClient.connect().catch((err) => {
-      console.error('Redis connection failed:', err);
+      logger.error('Redis connection failed', { error: err instanceof Error ? err : new Error(String(err)) });
       redisClient = null;
     });
   }
@@ -163,7 +164,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 
     return JSON.parse(value) as T;
   } catch (error) {
-    console.error(`Cache get error for key ${key}:`, error);
+    logger.error('Cache get error', { key, error: error instanceof Error ? error : new Error(String(error)) });
     return null;
   }
 }
@@ -193,7 +194,7 @@ export async function cacheSet<T>(
 
     return true;
   } catch (error) {
-    console.error(`Cache set error for key ${key}:`, error);
+    logger.error('Cache set error', { key, error: error instanceof Error ? error : new Error(String(error)) });
     return false;
   }
 }
@@ -212,7 +213,7 @@ export async function cacheDelete(key: string): Promise<boolean> {
     await client.del(key);
     return true;
   } catch (error) {
-    console.error(`Cache delete error for key ${key}:`, error);
+    logger.error('Cache delete error', { key, error: error instanceof Error ? error : new Error(String(error)) });
     return false;
   }
 }
@@ -256,7 +257,7 @@ export async function cacheDeletePattern(pattern: string): Promise<number> {
     await client.del(...keys);
     return keys.length;
   } catch (error) {
-    console.error(`Cache delete pattern error for ${pattern}:`, error);
+    logger.error('Cache delete pattern error', { pattern, error: error instanceof Error ? error : new Error(String(error)) });
     return 0;
   }
 }
@@ -275,7 +276,7 @@ export async function cacheFlush(): Promise<boolean> {
     await client.flushdb();
     return true;
   } catch (error) {
-    console.error('Cache flush error:', error);
+    logger.error('Cache flush error', { error: error instanceof Error ? error : new Error(String(error)) });
     return false;
   }
 }
@@ -337,7 +338,7 @@ export async function getCacheStats(): Promise<CacheStats | null> {
       connections: parseInt(stats['connected_clients'] || '0', 10),
     };
   } catch (error) {
-    console.error('Cache stats error:', error);
+    logger.error('Cache stats error', { error: error instanceof Error ? error : new Error(String(error)) });
     return null;
   }
 }

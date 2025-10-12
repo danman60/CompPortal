@@ -7,6 +7,7 @@ import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { logger } from './logger';
 
 /**
  * Configuration
@@ -40,7 +41,7 @@ export function verifyToken(token: string, secret: string): boolean {
   try {
     return authenticator.verify({ token, secret });
   } catch (error) {
-    console.error('2FA token verification failed:', error);
+    logger.error('2FA token verification failed', { error: error instanceof Error ? error : new Error(String(error)) });
     return false;
   }
 }
@@ -136,7 +137,7 @@ export function decryptSecret(encrypted: string, key: string): string {
 
     return decrypted;
   } catch (error) {
-    console.error('2FA secret decryption failed:', error);
+    logger.error('2FA secret decryption failed', { error: error instanceof Error ? error : new Error(String(error)) });
     throw new Error('Failed to decrypt 2FA secret');
   }
 }
@@ -334,7 +335,7 @@ export async function log2FAAction(options: Log2FAActionOptions): Promise<void> 
       VALUES (${userId}::uuid, ${action}, ${success}, ${ipAddress}, ${userAgent})
     `;
   } catch (error) {
-    console.error('Failed to log 2FA action:', error);
+    logger.error('Failed to log 2FA action', { error: error instanceof Error ? error : new Error(String(error)) });
     // Don't throw - logging failure shouldn't block 2FA operation
   }
 }

@@ -1,4 +1,5 @@
 import { createClient } from './supabase';
+import { logger } from './logger';
 
 /**
  * Storage utilities for Supabase file uploads
@@ -79,7 +80,7 @@ export async function uploadMusicFile({
       });
 
     if (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error', { error: error instanceof Error ? error : new Error(String(error)) });
       return {
         success: false,
         error: error.message || 'Failed to upload file',
@@ -97,7 +98,7 @@ export async function uploadMusicFile({
       filePath,
     };
   } catch (error) {
-    console.error('Upload exception:', error);
+    logger.error('Upload exception', { error: error instanceof Error ? error : new Error(String(error)) });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -117,7 +118,7 @@ export async function deleteMusicFile(filePath: string): Promise<{ success: bool
       .remove([filePath]);
 
     if (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error', { error: error instanceof Error ? error : new Error(String(error)) });
       return {
         success: false,
         error: error.message || 'Failed to delete file',
@@ -126,7 +127,7 @@ export async function deleteMusicFile(filePath: string): Promise<{ success: bool
 
     return { success: true };
   } catch (error) {
-    console.error('Delete exception:', error);
+    logger.error('Delete exception', { error: error instanceof Error ? error : new Error(String(error)) });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -169,7 +170,7 @@ export async function uploadLogoFile({
     const filePath = `studios/${studioId}/${timestamp}-${sanitizedFileName}`;
 
     // Upload file
-    const { data, error } = await supabase.storage
+    const { data, error} = await supabase.storage
       .from(LOGOS_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -177,7 +178,7 @@ export async function uploadLogoFile({
       });
 
     if (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error', { error: error instanceof Error ? error : new Error(String(error)) });
       return {
         success: false,
         error: error.message || 'Failed to upload file',
@@ -195,7 +196,7 @@ export async function uploadLogoFile({
       filePath,
     };
   } catch (error) {
-    console.error('Upload exception:', error);
+    logger.error('Upload exception', { error: error instanceof Error ? error : new Error(String(error)) });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -215,7 +216,7 @@ export async function deleteLogoFile(filePath: string): Promise<{ success: boole
       .remove([filePath]);
 
     if (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error', { error: error instanceof Error ? error : new Error(String(error)) });
       return {
         success: false,
         error: error.message || 'Failed to delete file',
@@ -224,7 +225,7 @@ export async function deleteLogoFile(filePath: string): Promise<{ success: boole
 
     return { success: true };
   } catch (error) {
-    console.error('Delete exception:', error);
+    logger.error('Delete exception', { error: error instanceof Error ? error : new Error(String(error)) });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

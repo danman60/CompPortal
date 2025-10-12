@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast';
+import { logger } from './logger';
 
 /**
  * Copy text to clipboard with toast notification
@@ -9,6 +10,6 @@ export async function copyToClipboard(text: string, label?: string): Promise<voi
     toast.success(`${label || 'Text'} copied to clipboard!`);
   } catch (error) {
     toast.error('Failed to copy to clipboard');
-    console.error('Clipboard error:', error);
+    logger.error('Clipboard error', { error: error instanceof Error ? error : new Error(String(error)) });
   }
 }

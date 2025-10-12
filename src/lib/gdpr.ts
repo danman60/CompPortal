@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { logger } from './logger';
 
 /**
  * User data export format
@@ -207,7 +208,7 @@ export async function exportUserData(userId: string): Promise<UserDataExport> {
       LIMIT 1000
     `;
   } catch (error) {
-    console.warn('Activity logs table not found or query failed');
+    logger.warn('Activity logs table not found or query failed', { error: error instanceof Error ? error : new Error(String(error)) });
   }
 
   return {
@@ -381,7 +382,7 @@ export async function deleteUserData(userId: string): Promise<DeletionResult> {
       `;
       deletionCounts.activity_logs = Number(activityResult);
     } catch (error) {
-      console.warn('Activity logs deletion failed (table may not exist)');
+      logger.warn('Activity logs deletion failed (table may not exist)', { error: error instanceof Error ? error : new Error(String(error)) });
     }
 
     // 9. Delete 2FA audit logs
@@ -392,7 +393,7 @@ export async function deleteUserData(userId: string): Promise<DeletionResult> {
       `;
       deletionCounts.two_factor_audit = Number(twoFactorResult);
     } catch (error) {
-      console.warn('2FA audit logs deletion failed (table may not exist)');
+      logger.warn('2FA audit logs deletion failed (table may not exist)', { error: error instanceof Error ? error : new Error(String(error)) });
     }
 
     // 10. Delete user profile (will cascade to some relations)
@@ -410,7 +411,7 @@ export async function deleteUserData(userId: string): Promise<DeletionResult> {
       deleted_records: deletionCounts,
     };
   } catch (error: any) {
-    console.error('User data deletion failed:', error);
+    logger.error('User data deletion failed', { error: error instanceof Error ? error : new Error(String(error)) });
     return {
       success: false,
       deleted_records: {
@@ -537,7 +538,7 @@ export async function logGDPRAction(
       VALUES (${userId}::uuid, ${`gdpr_${action}`}, ${details || null}, NOW())
     `;
   } catch (error) {
-    console.error('Failed to log GDPR action:', error);
+    logger.error('Failed to log GDPR action', { error: error instanceof Error ? error : new Error(String(error)) });
     // Don't throw - logging failure shouldn't block GDPR operations
   }
 }

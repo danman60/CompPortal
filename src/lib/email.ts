@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
+import { logger } from './logger';
 
 /**
  * Email service using SMTP (PrivateEmail)
@@ -52,7 +53,7 @@ export async function sendEmail({ to, subject, html, from = process.env.EMAIL_FR
   let errorMessage: string | undefined;
 
   if (!smtp) {
-    console.error('Email sending disabled: SMTP not configured');
+    logger.error('Email sending disabled: SMTP not configured');
     errorMessage = 'Email service not configured';
   } else {
     try {
@@ -65,7 +66,7 @@ export async function sendEmail({ to, subject, html, from = process.env.EMAIL_FR
       });
       success = true;
     } catch (error) {
-      console.error('Email send error:', error);
+      logger.error('Email send error', { error: error instanceof Error ? error : new Error(String(error)) });
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
   }
@@ -85,7 +86,7 @@ export async function sendEmail({ to, subject, html, from = process.env.EMAIL_FR
         },
       });
     } catch (logError) {
-      console.error('Failed to log email:', logError);
+      logger.error('Failed to log email', { error: logError instanceof Error ? logError : new Error(String(logError)) });
       // Don't fail the email send if logging fails
     }
   }

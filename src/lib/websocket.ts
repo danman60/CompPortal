@@ -5,6 +5,7 @@
 
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
+import { logger } from './logger';
 
 // Import shared types
 import {
@@ -62,7 +63,7 @@ export class WebSocketManager {
    */
   initialize(httpServer: HTTPServer): void {
     if (this.io) {
-      console.warn('WebSocket server already initialized');
+      logger.warn('WebSocket server already initialized');
       return;
     }
 
@@ -77,7 +78,7 @@ export class WebSocketManager {
 
     this.setupEventHandlers();
 
-    console.log('✅ WebSocket server initialized');
+    logger.info('WebSocket server initialized');
   }
 
   /**
@@ -87,7 +88,7 @@ export class WebSocketManager {
     if (!this.io) return;
 
     this.io.on('connection', (socket) => {
-      console.log(`🔌 Client connected: ${socket.id}`);
+      logger.info('Client connected', { socketId: socket.id });
 
       // Authenticate connection
       socket.on('authenticate', async (data: { userId: string; competitionId: string; role: string; token: string }) => {
@@ -120,7 +121,7 @@ export class WebSocketManager {
                 judgeName = judge.name;
               }
             } catch (err) {
-              console.warn('Failed to fetch judge name:', err);
+              logger.warn('Failed to fetch judge name', { error: err instanceof Error ? err : new Error(String(err)) });
             }
 
             // Notify director of judge connection
@@ -146,9 +147,9 @@ export class WebSocketManager {
             role: data.role,
           });
 
-          console.log(`✅ User ${data.userId} authenticated as ${data.role} for competition ${data.competitionId}`);
+          logger.info('User authenticated', { userId: data.userId, role: data.role, competitionId: data.competitionId });
         } catch (error) {
-          console.error('Authentication error:', error);
+          logger.error('WebSocket authentication error', { error: error instanceof Error ? error : new Error(String(error)) });
           socket.emit('error', { message: 'Authentication failed' });
           socket.disconnect();
         }
@@ -159,7 +160,7 @@ export class WebSocketManager {
         const user = this.connectedUsers.get(socket.id);
 
         if (user) {
-          console.log(`🔌 User disconnected: ${user.userId} (${user.role})`);
+          logger.info('User disconnected', { userId: user.userId, role: user.role });
 
           if (user.role === 'judge') {
             this.broadcast(WSEvent.JUDGE_LEFT, user.competitionId, {
@@ -186,7 +187,7 @@ export class WebSocketManager {
           return;
         }
 
-        console.log(`📢 Director command: ${payload.command}`);
+        logger.info('Director command', { command: payload.command, userId: user.userId });
 
         this.broadcast(WSEvent.DIRECTOR_COMMAND, user.competitionId, {
           ...payload,
@@ -203,7 +204,7 @@ export class WebSocketManager {
           return;
         }
 
-        console.log(`▶️  Routine now current: ${payload.title}`);
+        logger.info('Routine now current', { routineId: payload.routineId, title: payload.title });
 
         this.broadcast(WSEvent.ROUTINE_CURRENT, user.competitionId, {
           ...payload,
@@ -216,7 +217,7 @@ export class WebSocketManager {
 
         if (!user) return;
 
-        console.log(`✅ Routine completed: ${payload.title}`);
+        logger.info('Routine completed', { routineId: payload.routineId, title: payload.title });
 
         this.broadcast(WSEvent.ROUTINE_COMPLETED, user.competitionId, {
           ...payload,
@@ -233,7 +234,7 @@ export class WebSocketManager {
           return;
         }
 
-        console.log(`📊 Score submitted by judge ${user.userId} for routine ${payload.routineId}: ${payload.score}`);
+        logger.info('Score submitted', { judgeId: user.userId, routineId: payload.routineId, score: payload.score });
 
         // Broadcast to director
         this.broadcast(WSEvent.SCORE_SUBMITTED, user.competitionId, {
@@ -248,7 +249,7 @@ export class WebSocketManager {
 
         if (!user || user.role !== 'judge') return;
 
-        console.log(`✅ Judge ready: ${user.userId}`);
+        logger.info('Judge ready', { judgeId: user.userId });
 
         this.broadcast(WSEvent.JUDGE_READY, user.competitionId, {
           ...payload,
@@ -262,7 +263,7 @@ export class WebSocketManager {
 
         if (!user || user.role !== 'judge') return;
 
-        console.log(`❌ Judge not ready: ${user.userId}`);
+        logger.info('Judge not ready', { judgeId: user.userId });
 
         this.broadcast(WSEvent.JUDGE_NOT_READY, user.competitionId, {
           ...payload,
@@ -277,7 +278,7 @@ export class WebSocketManager {
 
         if (!user) return;
 
-        console.log(`📝 Note added for routine ${payload.routineId}: ${payload.note}`);
+        logger.info('Note added', { routineId: payload.routineId, note: payload.note });
 
         this.broadcast(WSEvent.NOTE_ADDED, user.competitionId, {
           ...payload,
@@ -294,7 +295,7 @@ export class WebSocketManager {
           return;
         }
 
-        console.log(`⏸️  Break started: ${payload.reason} (${payload.duration}s)`);
+        logger.info('Break started', { reason: payload.reason, duration: payload.duration });
 
         this.broadcast(WSEvent.BREAK_START, user.competitionId, {
           ...payload,
@@ -307,7 +308,7 @@ export class WebSocketManager {
 
         if (!user || user.role !== 'director') return;
 
-        console.log(`▶️  Break ended`);
+        logger.info('Break ended');
 
         this.broadcast(WSEvent.BREAK_END, user.competitionId, {
           timestamp: Date.now(),
@@ -362,7 +363,7 @@ export class WebSocketManager {
       this.io = null;
       this.activeCompetitions.clear();
       this.connectedUsers.clear();
-      console.log('WebSocket server closed');
+      logger.info('WebSocket server closed');
     }
   }
 }

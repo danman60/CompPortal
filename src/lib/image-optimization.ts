@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { logger } from './logger';
 
 /**
  * Image optimization utilities using Sharp
@@ -102,7 +103,7 @@ export async function optimizeImage(
       size: buffer.length,
     };
   } catch (error) {
-    console.error('Image optimization error:', error);
+    logger.error('Image optimization error', { error: error instanceof Error ? error : new Error(String(error)) });
     throw new Error(
       `Failed to optimize image: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -142,7 +143,7 @@ export async function optimizeImageMultipleSizes(
 
     return { thumbnail, medium, large };
   } catch (error) {
-    console.error('Multiple sizes optimization error:', error);
+    logger.error('Multiple sizes optimization error', { error: error instanceof Error ? error : new Error(String(error)) });
     throw new Error(
       `Failed to generate multiple sizes: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -199,7 +200,7 @@ export async function getImageDimensions(
       format: metadata.format || 'unknown',
     };
   } catch (error) {
-    console.error('Get dimensions error:', error);
+    logger.error('Get dimensions error', { error: error instanceof Error ? error : new Error(String(error)) });
     throw new Error(
       `Failed to get image dimensions: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
