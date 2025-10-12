@@ -247,7 +247,7 @@ do {
 
 Write-Host ""
 Write-Host "============================================"
-Write-Host "[WATCHDOG] ✓ Found Codex window!"
+Write-Host "[WATCHDOG] [OK] Found Codex window!"
 Write-Host "[WATCHDOG]   PID: $($proc.Id)"
 Write-Host "[WATCHDOG]   Title: '$($proc.MainWindowTitle)'"
 Write-Host "[WATCHDOG]   Process: $($proc.ProcessName)"
@@ -273,9 +273,9 @@ if (Set-Foreground -Hwnd $proc.MainWindowHandle) {
 }
 
 if ($initialSent) {
-  Write-Host ("[WATCHDOG] ✓ Initial 'continue' sent at {0}" -f (Get-Date -Format "HH:mm:ss"))
+  Write-Host ("[WATCHDOG] [OK] Initial 'continue' sent at {0}" -f (Get-Date -Format "HH:mm:ss"))
 } else {
-  Write-Warning "[WATCHDOG] ✗ Initial send failed; will retry on next interval"
+  Write-Warning "[WATCHDOG] [FAIL] Initial send failed; will retry on next interval"
 }
 
 Write-Host ""
@@ -318,9 +318,9 @@ while ($true) {
       }
 
       if ($sent) {
-        Write-Host ("[WATCHDOG] ✓ Sent 'continue' at {0} to PID {1}" -f (Get-Date -Format "HH:mm:ss"), $proc.Id)
+        Write-Host ("[WATCHDOG] [OK] Sent 'continue' at {0} to PID {1}" -f (Get-Date -Format "HH:mm:ss"), $proc.Id)
       } else {
-        Write-Warning "[WATCHDOG] ✗ Failed to send 'continue', will retry next cycle"
+        Write-Warning "[WATCHDOG] [FAIL] Failed to send 'continue', will retry next cycle"
       }
     } else {
       Write-Warning "[WATCHDOG] Target window not ready or exited, searching again..."
