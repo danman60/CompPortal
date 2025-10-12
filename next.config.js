@@ -14,6 +14,34 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
 
+  // CDN configuration
+  ...(process.env.NEXT_PUBLIC_CDN_ENABLED === 'true' && process.env.NEXT_PUBLIC_CDN_URL
+    ? {
+        assetPrefix: process.env.NEXT_PUBLIC_CDN_URL,
+        images: {
+          domains: [
+            new URL(process.env.NEXT_PUBLIC_CDN_URL).hostname,
+            'compsync.net',
+            'localhost',
+          ],
+          remotePatterns: [
+            {
+              protocol: 'https',
+              hostname: '**.cloudflare.com',
+            },
+            {
+              protocol: 'https',
+              hostname: '**.cloudfront.net',
+            },
+          ],
+        },
+      }
+    : {
+        images: {
+          domains: ['compsync.net', 'localhost'],
+        },
+      }),
+
   // Experimental features
   experimental: {
     serverActions: {

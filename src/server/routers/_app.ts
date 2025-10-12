@@ -22,6 +22,7 @@ import { ipWhitelistRouter } from './ipWhitelist';
 import { performanceRouter } from './performance';
 import { twoFactorRouter } from './twoFactor';
 import { gdprRouter } from './gdpr';
+import { cdnRouter } from './cdn';
 
 /**
  * Main tRPC router
@@ -51,6 +52,7 @@ export const appRouter = router({
   performance: performanceRouter,
   twoFactor: twoFactorRouter,
   gdpr: gdprRouter,
+  cdn: cdnRouter,
 });
 
 // Export type definition of API
