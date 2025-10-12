@@ -187,6 +187,10 @@ All post-demo deliverables integrated and deployed:
   - SDK installed: stripe + @stripe/stripe-js
   - Docs: STRIPE_SETUP.md created
   - **Remaining**: User must add Stripe credentials (2-3 hours)
+- ✅ Task #34: Audit Logging Enhancement (commit 22ef995)
+  - IP address tracking for security audit trail
+  - extractIpAddress() function with proxy/CDN support
+  - Migration + indexes for security investigations
 - Task #22-31: At Competition Mode (36-51 hours major feature)
 
 **Production Testing** (Manual):
