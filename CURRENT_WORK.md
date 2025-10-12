@@ -382,4 +382,12 @@ All post-demo deliverables integrated and deployed:
 - Judge role enum (commit f7afd1a): Added 'judge' to user_role enum
 - Judge names (commit 87dfd9c): Fetch from database on WebSocket auth
 
-**Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17, or proceed to LOW priority tasks.
+**Dependency Updates** (Jan 13):
+- Prisma: 6.16.3 → 6.17.1 (commit 0dbc992)
+- Supabase: 2.58.0 → 2.75.0
+- Playwright: 1.55.1 → 1.56.0
+- nodemailer: 6.10.1 → 7.0.9 (security fix GHSA-mm7p-fcc7-pg87)
+- Removed deprecated Prisma preview features
+- ✅ 0 security vulnerabilities remaining
+
+**Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17 when ready.
