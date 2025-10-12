@@ -98,9 +98,9 @@ All post-demo deliverables integrated and deployed:
 
 - **Production**: http://compsync.net
 - **Vercel**: https://comp-portal-e933n5bwz-danman60s-projects.vercel.app
-- **Commit**: c4c5450 (Task #25 Scoreboard Viewer)
+- **Commit**: 96daaee (Task #26 Backend Integration)
 - **State**: READY ✅
-- **Changes This Session**: Tasks #22, #23, #24, #25, #32, #33, #35, #36, #37, #38, #39 complete
+- **Changes This Session**: Tasks #22, #23, #24, #25, #26, #32, #33, #35, #36, #37, #38, #39 complete
 
 ## Progress Analysis Updates
 
@@ -355,5 +355,13 @@ All post-demo deliverables integrated and deployed:
   - Read-only viewer mode (no controls)
   - Professional glassmorphic design
   - ✅ Build pass (47 routes)
+- Task #26: Backend Integration for Live Competition (commit 96daaee)
+  - liveCompetition tRPC router (liveCompetition.ts:520 lines)
+  - 9 endpoints: getLineup, getJudges, updateRoutineStatus, submitScore, getRoutineScores, getStandings, getStats, startCompetition, endCompetition
+  - Fixed schema mappings (competition_entries not entries, name not competition_name, judges.name not first_name/last_name)
+  - Score persistence via scores table (upsert with entry_id_judge_id unique constraint)
+  - Tenant ID validation on all endpoints
+  - Registered in _app.ts:59
+  - ✅ Build pass (47 routes)
 
-**Recommendation**: At Competition Mode core features complete (WebSocket + 3 UI clients). Continue with additional features (Tasks #26-31) or move to other priority tasks.
+**Recommendation**: At Competition Mode core features complete (WebSocket + 3 UI clients + Backend integration). Continue with additional features (Tasks #27-31: score calculation, timers, backup/recovery, print, export) or move to other priority tasks.
