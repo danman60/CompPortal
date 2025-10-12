@@ -8,6 +8,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { WSEvent, WSPayload } from '@/lib/websocket-types';
+import { logger } from '@/lib/logger';
 
 export interface UseWebSocketOptions {
   competitionId: string;
@@ -87,7 +88,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     });
 
     newSocket.on('connect_error', (err: Error) => {
-      console.error('❌ WebSocket connection error:', err);
+      logger.error('WebSocket connection error', { error: err });
       setError(err.message);
       setConnected(false);
 
@@ -95,7 +96,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     });
 
     newSocket.on('error', (err: any) => {
-      console.error('❌ WebSocket error:', err);
+      logger.error('WebSocket error', { error: err instanceof Error ? err : new Error(String(err)) });
       setError(err.message || 'WebSocket error');
 
       options.onError?.(err);

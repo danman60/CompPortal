@@ -55,6 +55,103 @@ const entryInputSchema = z.object({
 });
 
 export const entryRouter = router({
+  // Get routine summary for a studio & competition
+  getSummary: protectedProcedure
+    .input(z.object({ studioId: z.string().uuid(), competitionId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const { studioId, competitionId } = input;
+
+      const [entries, reservation] = await Promise.all([
+        prisma.competition_entries.findMany({
+          where: { studio_id: studioId, competition_id: competitionId, status: { not: 'cancelled' } },
+          select: { total_fee: true },
+        }),
+        prisma.reservations.findFirst({
+          where: { studio_id: studioId, competition_id: competitionId, status: { in: ['approved', 'pending'] } },
+          select: { spaces_confirmed: true },
+        }),
+      ]);
+
+      const totalRoutines = entries.length;
+      const estimatedCost = entries.reduce((sum: number, e: any) => sum + Number(e.total_fee || 0), 0);
+      const confirmed = reservation?.spaces_confirmed || 0;
+
+      return {
+        totalRoutines,
+        estimatedCost,
+        remainingTokens: Math.max(confirmed - totalRoutines, 0),
+        status: 'draft',
+      };
+    }),
+
+  // Submit routine summary (lock & request invoice) - placeholder no-op
+  submitSummary: protectedProcedure
+    .input(z.object({ studioId: z.string().uuid(), competitionId: z.string().uuid() }))
+    .mutation(async () => {
+      return { success: true };
+    }),
+
+  // Download routine summary PDF - placeholder link
+  downloadSummaryPDF: protectedProcedure
+    .input(z.object({ studioId: z.string().uuid(), competitionId: z.string().uuid() }))
+    .mutation(async () => {
+      return { url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/entries` };
+    }),
+
+  // Bulk import routines from CSV-like input
+  bulkImport: protectedProcedure
+    .input(z.object({
+      competition_id: z.string().uuid(),
+      studio_id: z.string().uuid(),
+      routines: z.array(z.object({
+        routine_title: z.string().min(1),
+        choreographer: z.string().optional(),
+        dance_category: z.string().min(1),
+        classification: z.string().min(1),
+        props: z.string().optional(),
+      })).min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { competition_id, studio_id, routines } = input;
+
+      const defaultAge = await prisma.age_groups.findFirst({ orderBy: { sort_order: 'asc' } });
+      if (!defaultAge) throw new Error('No age groups configured');
+      const defaultSize = await prisma.entry_size_categories.findFirst({ orderBy: { sort_order: 'asc' }, select: { id: true } });
+      if (!defaultSize) throw new Error('No size categories configured');
+
+      const results = await Promise.allSettled(routines.map(async (row) => {
+        const category = await prisma.dance_categories.findFirst({ where: { name: { equals: row.dance_category, mode: 'insensitive' } }, select: { id: true } });
+        const classification = await prisma.classifications.findFirst({ where: { name: { equals: row.classification, mode: 'insensitive' } }, select: { id: true } });
+        if (!category || !classification) {
+          throw new Error(`Lookup failed for category '${row.dance_category}' or classification '${row.classification}'`);
+        }
+        return prisma.competition_entries.create({
+          data: {
+            tenant_id: ctx.tenantId!,
+            competition_id,
+            studio_id,
+            title: row.routine_title,
+            category_id: category.id,
+            classification_id: classification.id,
+            age_group_id: defaultAge.id,
+            entry_size_category_id: defaultSize.id,
+            status: 'draft',
+            choreographer: row.choreographer || undefined,
+            special_requirements: row.props || undefined,
+            entry_fee: new (require('@prisma/client').Prisma.Decimal)(0),
+            total_fee: new (require('@prisma/client').Prisma.Decimal)(0),
+          },
+        });
+      }));
+
+      const successful = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.length - successful;
+      const errors = results
+        .filter((r) => r.status === 'rejected')
+        .map((r: any) => r.reason?.message || 'Unknown error');
+
+      return { successful, failed, total: results.length, errors };
+    }),
   // Get all entries with optional filtering (role-based access)
   getAll: protectedProcedure
     .input(
