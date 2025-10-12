@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useDirectorSocket } from '@/hooks/useWebSocket';
 import { WSEvent } from '@/lib/websocket-types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,9 +51,12 @@ interface ScoreSubmission {
 }
 
 export default function DirectorPanelPage() {
+  // Get competition ID from URL params
+  const searchParams = useSearchParams();
+  const competitionId = searchParams.get('competitionId') || 'comp-demo-2025';
+
   // Mock director ID - TODO: Get from auth context
   const directorId = 'director-' + Math.random().toString(36).substring(7);
-  const competitionId = 'comp-demo-2025'; // TODO: Get from route params or context
 
   // WebSocket connection
   const {

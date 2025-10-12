@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { WSEvent, type RoutineStatePayload, type ScorePayload } from '@/lib/websocket-types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,9 +36,12 @@ interface Standing {
 }
 
 export default function ScoreboardViewerPage() {
+  // Get competition ID from URL params
+  const searchParams = useSearchParams();
+  const competitionId = searchParams.get('competitionId') || 'comp-demo-2025';
+
   // Viewer ID - no auth needed
   const viewerId = 'viewer-' + Math.random().toString(36).substring(7);
-  const competitionId = 'comp-demo-2025'; // TODO: Get from URL param
 
   // WebSocket connection
   const { connected, on, off } = useWebSocket({
@@ -52,7 +56,7 @@ export default function ScoreboardViewerPage() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [isBreak, setIsBreak] = useState(false);
   const [breakInfo, setBreakInfo] = useState<{ reason: string; duration: number } | null>(null);
-  const [judgeCount, setJudgeCount] = useState(4); // TODO: Get from competition config
+  const [judgeCount] = useState(4); // Will be fetched from competition config via tRPC
 
   // Listen for routine events
   useEffect(() => {
