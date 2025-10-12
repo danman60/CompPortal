@@ -44,6 +44,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   // Success animation state
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Error state for validation feedback
+  const [showErrors, setShowErrors] = useState(false);
+
   // Auto-save integration (DISABLED - routine creation breaks with corrupted localStorage)
   const autoSave = useAutoSave(formData, {
     key: `entry-form-draft-${entryId || 'new'}`,
@@ -308,7 +311,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               <select
                 value={formData.competition_id}
                 onChange={(e) => setFormData({ ...formData, competition_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  showErrors && !formData.competition_id ? 'border-red-500' : 'border-white/20'
+                }`}
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Event</option>
@@ -318,6 +323,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   </option>
                 ))}
               </select>
+              {showErrors && !formData.competition_id && (
+                <p className="text-red-400 text-sm mt-1">Event is required</p>
+              )}
             </div>
 
             <div>
@@ -331,19 +339,26 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   <input type="hidden" name="studio_id" value={userStudio.id} />
                 </div>
               ) : (
-                <select
-                  value={formData.studio_id}
-                  onChange={(e) => setFormData({ ...formData, studio_id: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                >
-                  <option value="" className="bg-gray-900 text-white">Select Studio</option>
-                  {studios?.studios.map((studio) => (
-                    <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
-                      {studio.name}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    value={formData.studio_id}
+                    onChange={(e) => setFormData({ ...formData, studio_id: e.target.value })}
+                    className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                      showErrors && !formData.studio_id ? 'border-red-500' : 'border-white/20'
+                    }`}
+                    required
+                  >
+                    <option value="" className="bg-gray-900 text-white">Select Studio</option>
+                    {studios?.studios.map((studio) => (
+                      <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
+                        {studio.name}
+                      </option>
+                    ))}
+                  </select>
+                  {showErrors && !formData.studio_id && (
+                    <p className="text-red-400 text-sm mt-1">Studio is required</p>
+                  )}
+                </>
               )}
             </div>
 
@@ -356,9 +371,14 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g. 'Rise Up', 'Brave', 'Thunderstruck'"
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  showErrors && !formData.title ? 'border-red-500' : 'border-white/20'
+                }`}
                 required
               />
+              {showErrors && !formData.title && (
+                <p className="text-red-400 text-sm mt-1">Routine title is required</p>
+              )}
             </div>
 
             <div>
@@ -388,7 +408,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               <select
                 value={formData.category_id}
                 onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  showErrors && !formData.category_id ? 'border-red-500' : 'border-white/20'
+                }`}
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Category</option>
@@ -398,6 +420,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   </option>
                 ))}
               </select>
+              {showErrors && !formData.category_id && (
+                <p className="text-red-400 text-sm mt-1">Dance category is required</p>
+              )}
             </div>
 
             <div>
@@ -407,7 +432,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               <select
                 value={formData.classification_id}
                 onChange={(e) => setFormData({ ...formData, classification_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  showErrors && !formData.classification_id ? 'border-red-500' : 'border-white/20'
+                }`}
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Classification</option>
@@ -417,6 +444,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   </option>
                 ))}
               </select>
+              {showErrors && !formData.classification_id && (
+                <p className="text-red-400 text-sm mt-1">Classification is required</p>
+              )}
             </div>
 
             <div>
@@ -426,7 +456,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               <select
                 value={formData.age_group_id}
                 onChange={(e) => setFormData({ ...formData, age_group_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  showErrors && !formData.age_group_id ? 'border-red-500' : 'border-white/20'
+                }`}
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Age Group</option>
@@ -436,6 +468,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   </option>
                 ))}
               </select>
+              {showErrors && !formData.age_group_id && (
+                <p className="text-red-400 text-sm mt-1">Age group is required</p>
+              )}
             </div>
 
             <div>
@@ -445,7 +480,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               <select
                 value={formData.entry_size_category_id}
                 onChange={(e) => setFormData({ ...formData, entry_size_category_id: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  showErrors && !formData.entry_size_category_id ? 'border-red-500' : 'border-white/20'
+                }`}
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Routine Size</option>
@@ -456,6 +493,9 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   </option>
                 ))}
               </select>
+              {showErrors && !formData.entry_size_category_id && (
+                <p className="text-red-400 text-sm mt-1">Routine size is required</p>
+              )}
             </div>
           </div>
         )}
@@ -580,9 +620,21 @@ export default function EntryForm({ entryId }: EntryFormProps) {
               </div>
             </div>
 
-            <div className="bg-purple-500/10 border border-purple-400/30 p-4 rounded-lg">
-              <p className="text-purple-300 text-sm">
-                ✓ {formData.participants.length} dancer(s) selected
+            <div className={`p-4 rounded-lg ${
+              showErrors && formData.participants.length === 0
+                ? 'bg-red-500/10 border border-red-400/30'
+                : 'bg-purple-500/10 border border-purple-400/30'
+            }`}>
+              <p className={`text-sm ${
+                showErrors && formData.participants.length === 0
+                  ? 'text-red-400'
+                  : 'text-purple-300'
+              }`}>
+                {showErrors && formData.participants.length === 0 ? (
+                  <span>⚠️ At least one dancer must be selected</span>
+                ) : (
+                  <span>✓ {formData.participants.length} dancer(s) selected</span>
+                )}
               </p>
             </div>
           </div>
@@ -748,6 +800,18 @@ export default function EntryForm({ entryId }: EntryFormProps) {
           {currentStep !== 'review' ? (
             <button
               onClick={() => {
+                // Validate current step
+                const isValid =
+                  (currentStep !== 'basic' || (formData.competition_id && formData.studio_id && formData.title)) &&
+                  (currentStep !== 'details' || (formData.category_id && formData.classification_id && formData.age_group_id && formData.entry_size_category_id)) &&
+                  (currentStep !== 'participants' || formData.participants.length > 0);
+
+                if (!isValid) {
+                  setShowErrors(true);
+                  return;
+                }
+
+                setShowErrors(false);
                 const nextIndex = currentStepIndex + 1;
                 if (nextIndex < steps.length) {
                   setCurrentStep(steps[nextIndex]);

@@ -1,28 +1,45 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
 
 interface DancerFormProps {
   studioId?: string;
   dancerId?: string; // For edit mode
 }
 
+const DancerSchema = z.object({
+  first_name: z.string().min(1, 'First name is required').max(100, 'First name must be less than 100 characters'),
+  last_name: z.string().min(1, 'Last name is required').max(100, 'Last name must be less than 100 characters'),
+  date_of_birth: z.string().optional().or(z.literal('')),
+  gender: z.string().optional().or(z.literal('')),
+  email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
+  phone: z.string().min(7, 'Phone number must be at least 7 characters').max(50, 'Phone number must be less than 50 characters').optional().or(z.literal('')),
+});
+
+type DancerFormValues = z.infer<typeof DancerSchema>;
+
 export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
   const isEditMode = !!dancerId;
 
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    date_of_birth: '',
-    gender: '',
-    email: '',
-    phone: '',
+  const form = useForm<DancerFormValues>({
+    resolver: zodResolver(DancerSchema),
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      date_of_birth: '',
+      gender: '',
+      email: '',
+      phone: '',
+    },
   });
-  const [showErrors, setShowErrors] = useState(false);
 
   // Fetch existing dancer data for edit mode
   const { data: existingDancer, isLoading: isLoadingDancer } = trpc.dancer.getById.useQuery(
@@ -33,7 +50,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   // Pre-populate form data when editing
   useEffect(() => {
     if (existingDancer && isEditMode) {
-      setFormData({
+      form.reset({
         first_name: existingDancer.first_name || '',
         last_name: existingDancer.last_name || '',
         date_of_birth: existingDancer.date_of_birth
@@ -44,36 +61,31 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
         phone: existingDancer.phone || '',
       });
     }
-  }, [existingDancer, isEditMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingDancer?.id]);
 
   const createDancer = trpc.dancer.create.useMutation({
     onSuccess: () => {
       utils.dancer.getAll.invalidate();
+      toast.success('Dancer created successfully');
       router.push('/dashboard/dancers');
     },
+    onError: (err) => toast.error(err.message || 'Failed to create dancer'),
   });
 
   const updateDancer = trpc.dancer.update.useMutation({
     onSuccess: () => {
       utils.dancer.getAll.invalidate();
       utils.dancer.getById.invalidate({ id: dancerId! });
+      toast.success('Dancer updated successfully');
       router.push('/dashboard/dancers');
     },
+    onError: (err) => toast.error(err.message || 'Failed to update dancer'),
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Basic client-side validation
-    const emailValid = !formData.email || /.+@.+\..+/.test(formData.email);
-    const hasRequired = formData.first_name.trim() !== '' && formData.last_name.trim() !== '';
-    if (!hasRequired || !emailValid) {
-      setShowErrors(true);
-      return;
-    }
-
+  const onSubmit = async (values: DancerFormValues) => {
     if (!isEditMode && !studioId) {
-      alert('Studio ID is required. Please make sure you are logged in.');
+      toast.error('Studio ID is required. Please make sure you are logged in.');
       return;
     }
 
@@ -83,30 +95,30 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
         await updateDancer.mutateAsync({
           id: dancerId!,
           data: {
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            date_of_birth: formData.date_of_birth || undefined,
-            gender: formData.gender || undefined,
-            email: formData.email || undefined,
-            phone: formData.phone || undefined,
+            first_name: values.first_name,
+            last_name: values.last_name,
+            date_of_birth: values.date_of_birth || undefined,
+            gender: values.gender || undefined,
+            email: values.email || undefined,
+            phone: values.phone || undefined,
           },
         });
       } else {
         // Create new dancer
         await createDancer.mutateAsync({
           studio_id: studioId!,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          date_of_birth: formData.date_of_birth || undefined,
-          gender: formData.gender || undefined,
-          email: formData.email || undefined,
-          phone: formData.phone || undefined,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          date_of_birth: values.date_of_birth || undefined,
+          gender: values.gender || undefined,
+          email: values.email || undefined,
+          phone: values.phone || undefined,
           status: 'active',
         });
       }
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} dancer:`, error);
-      alert(error instanceof Error ? error.message : `Failed to ${isEditMode ? 'update' : 'create'} dancer`);
+      // Error toast already shown in onError handler
     }
   };
 
@@ -124,7 +136,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
         <h2 className="text-2xl font-bold text-white mb-6">Dancer Information</h2>
 
@@ -137,17 +149,15 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             <input
               type="text"
               id="first_name"
-              required
               maxLength={100}
-              value={formData.first_name}
-              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+              {...form.register('first_name')}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                showErrors && formData.first_name.trim() === '' ? 'border-red-500' : 'border-white/20'
+                form.formState.errors.first_name ? 'border-red-500' : 'border-white/20'
               }`}
               placeholder="Enter first name"
             />
-            {showErrors && formData.first_name.trim() === '' && (
-              <p className="text-red-400 text-sm mt-1">First name is required</p>
+            {form.formState.errors.first_name && (
+              <p className="text-red-400 text-sm mt-1">{form.formState.errors.first_name.message}</p>
             )}
           </div>
 
@@ -159,17 +169,15 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             <input
               type="text"
               id="last_name"
-              required
               maxLength={100}
-              value={formData.last_name}
-              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+              {...form.register('last_name')}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                showErrors && formData.last_name.trim() === '' ? 'border-red-500' : 'border-white/20'
+                form.formState.errors.last_name ? 'border-red-500' : 'border-white/20'
               }`}
               placeholder="Enter last name"
             />
-            {showErrors && formData.last_name.trim() === '' && (
-              <p className="text-red-400 text-sm mt-1">Last name is required</p>
+            {form.formState.errors.last_name && (
+              <p className="text-red-400 text-sm mt-1">{form.formState.errors.last_name.message}</p>
             )}
           </div>
 
@@ -181,8 +189,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             <input
               type="date"
               id="date_of_birth"
-              value={formData.date_of_birth}
-              onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+              {...form.register('date_of_birth')}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
@@ -194,8 +201,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             </label>
             <select
               id="gender"
-              value={formData.gender}
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              {...form.register('gender')}
               className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="">Select gender</option>
@@ -212,15 +218,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             <input
               type="email"
               id="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              {...form.register('email')}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                showErrors && formData.email && !/.+@.+\..+/.test(formData.email) ? 'border-red-500' : 'border-white/20'
+                form.formState.errors.email ? 'border-red-500' : 'border-white/20'
               }`}
               placeholder="dancer@example.com"
             />
-            {showErrors && formData.email && !/.+@.+\..+/.test(formData.email) && (
-              <p className="text-red-400 text-sm mt-1">Please enter a valid email</p>
+            {form.formState.errors.email && (
+              <p className="text-red-400 text-sm mt-1">{form.formState.errors.email.message}</p>
             )}
           </div>
 
@@ -233,15 +238,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
               type="tel"
               id="phone"
               maxLength={50}
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              {...form.register('phone')}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                showErrors && formData.phone && formData.phone.length < 7 ? 'border-red-500' : 'border-white/20'
+                form.formState.errors.phone ? 'border-red-500' : 'border-white/20'
               }`}
               placeholder="(555) 123-4567"
             />
-            {showErrors && formData.phone && formData.phone.length < 7 && (
-              <p className="text-red-400 text-sm mt-1">Please enter a valid phone number</p>
+            {form.formState.errors.phone && (
+              <p className="text-red-400 text-sm mt-1">{form.formState.errors.phone.message}</p>
             )}
           </div>
         </div>
@@ -270,13 +274,6 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             : 'Create Dancer'}
         </button>
       </div>
-
-      {/* Error Message */}
-      {createDancer.error && (
-        <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-4">
-          <p className="text-red-200">{createDancer.error.message}</p>
-        </div>
-      )}
     </form>
   );
 }
