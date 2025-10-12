@@ -1,13 +1,15 @@
-# STATUS: No Active Task
+# STATUS: No Active Task / Waiting on Answers
 
-Date: 2025-10-10
-State: waiting
+Date: 2025-10-12
 
-Summary:
-- Per `.codexrc` continue workflow, scanned for tasks and Q/A; none found.
-- Posted `codex-tasks/questions/QUESTION_new_task_request.md` to request the next assignment.
+Summary
+- Checked `codex-tasks/answers/` and `codex-tasks/*.md` on continue.
+- No new answers or task files detected.
+- Waiting on responses to the following questions:
+  - `codex-tasks/questions/QUESTION_new_task_request.md`
+  - `codex-tasks/questions/QUESTION_support_chat_widget_feedback.md`
 
-Next Steps:
-- Await task in `codex-tasks/[TASK_NAME].md` or an answer in `answers/`.
-- Upon arrival, implement per patterns (tRPC, Prisma exact fields, RHF+Zod, glassmorphic UI) and write outputs/status.
+Next Actions
+- On next "continue", re-check `answers/` and tasks and proceed immediately if found.
+- If guidance arrives for support chat, resume with agreed options and update this status.
 
