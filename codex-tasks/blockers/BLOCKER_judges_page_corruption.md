@@ -1,67 +1,39 @@
-# BLOCKER: Judges Page File Corruption
+# BLOCKER: Judges Page File Corruption [RESOLVED]
 
 **Date**: October 11, 2025
-**Priority**: HIGH
-**Blocking**: Build, all development work
+**Status**: ✅ RESOLVED in commit 8eeac22
+**Resolved by**: Codex
 
-## Issue
+## Original Issue
+`src/app/dashboard/judges/page.tsx` had file corruption with duplicate JSX fragments and binary characters.
 
-`src/app/dashboard/judges/page.tsx` has file corruption:
+## Resolution
+All issues fixed in commit 8eeac22:
+- ✅ Removed duplicate content (lines 1-14)
+- ✅ Added JudgeBulkImportModal import
+- ✅ Added showBulkImportModal state
+- ✅ Fixed corrupted emoji characters
+- ✅ Build passes (41 routes)
 
-1. **Lines 1-14**: Duplicate/broken JSX fragments at start of file
-2. **Missing import**: `JudgeBulkImportModal` is used but not imported
-3. **Missing state**: `showBulkImportModal` is referenced but not declared
-4. **Line 165**: Corrupted text `?z Add Judge` (should be `+ Add Judge`)
-5. **Line 172**: Corrupted text `dY", Bulk Import CSV` (should be `📊 Bulk Import CSV`)
+## Verification
+```bash
+$ grep -n "JudgeBulkImportModal" src/app/dashboard/judges/page.tsx
+5:import JudgeBulkImportModal from '@/components/JudgeBulkImportModal';
+540:        <JudgeBulkImportModal
 
-## Root Cause
+$ head -12 src/app/dashboard/judges/page.tsx
+'use client';
 
-Likely from incomplete Codex task or merge conflict. File has duplicate content from different edits.
-
-## Fix Required
-
-### Step 1: Remove lines 1-14 (broken content)
-Delete everything before the second `'use client';` on line 15.
-
-### Step 2: Add missing import (after line 17)
-```typescript
+import { useState } from 'react';
+import { trpc } from '@/lib/trpc';
 import JudgeBulkImportModal from '@/components/JudgeBulkImportModal';
+
+export default function JudgesPage() {
+  const [selectedCompetition, setSelectedCompetition] = useState<string>('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingJudge, setEditingJudge] = useState<any>(null);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
 ```
 
-### Step 3: Add missing state (after line 22)
-```typescript
-const [showBulkImportModal, setShowBulkImportModal] = useState(false);
-```
-
-### Step 4: Fix line 165 (currently 179 after removing first 14 lines)
-```typescript
-// Before:
-?z Add Judge
-
-// After:
-+ Add Judge
-```
-
-### Step 5: Fix line 172 (currently 186 after removing first 14 lines)
-```typescript
-// Before:
-dY", Bulk Import CSV
-
-// After:
-📊 Bulk Import CSV
-```
-
-## Alternative
-
-If JudgeBulkImportModal component doesn't exist yet:
-1. Comment out lines 6-11 (bulk import button + modal)
-2. Remove `showBulkImportModal` references
-3. Create task for Codex to implement JudgeBulkImportModal later
-
-## Impact
-
-**Build fails** - Cannot commit terminology changes until this is fixed.
-
-## Status
-
-Needs immediate manual intervention or Codex task with explicit fix instructions.
+**Status**: No action needed. File is clean and working.
