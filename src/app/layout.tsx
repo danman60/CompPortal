@@ -7,6 +7,7 @@ import { TenantThemeProvider } from '@/contexts/TenantThemeProvider';
 import { getTenantData } from '@/lib/tenant-context';
 import Script from 'next/script';
 import Footer from '@/components/Footer';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,13 +27,15 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} flex flex-col min-h-screen`}>
-        <TenantThemeProvider initialTenant={tenantData}>
-          <TRPCProvider>
-            <ToastProvider />
-            <div className="flex-1">{children}</div>
-            <Footer />
-          </TRPCProvider>
-        </TenantThemeProvider>
+        <ErrorBoundary>
+          <TenantThemeProvider initialTenant={tenantData}>
+            <TRPCProvider>
+              <ToastProvider />
+              <div className="flex-1">{children}</div>
+              <Footer />
+            </TRPCProvider>
+          </TenantThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
