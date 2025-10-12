@@ -26,7 +26,7 @@ const shortcuts: Shortcut[] = [
 
   // Navigation
   { keys: ['Alt', '1'], description: 'Go to Dashboard', context: 'Navigation' },
-  { keys: ['Alt', '2'], description: 'Go to Entries', context: 'Navigation' },
+  { keys: ['Alt', '2'], description: 'Go to Routines', context: 'Navigation' },
   { keys: ['Alt', '3'], description: 'Go to Dancers', context: 'Navigation' },
   { keys: ['Alt', '4'], description: 'Go to Invoices', context: 'Navigation' },
   { keys: ['Alt', '5'], description: 'Go to Reservations', context: 'Navigation' },

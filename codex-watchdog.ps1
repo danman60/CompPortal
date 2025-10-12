@@ -1,7 +1,7 @@
 param(
   [int]$IntervalMinutes = 5,  # Reduced from 10 to 5 minutes
   [string]$TargetDir,
-  [switch]$CodexOnly = $true,
+  [switch]$CodexOnly = $false,  # Changed to false - don't require "codex" in title
   [switch]$Strict = $false,  # Changed to false - less strict path matching
   [switch]$DryRun,
   [switch]$Verbose
@@ -77,15 +77,31 @@ function Find-CodexHost {
             $title = (Get-Process -Id $p.ProcessId -ErrorAction Stop).MainWindowTitle
             $hasCodex = (($cmd -and ($cmd -match '(?i)codex')) -or ($title -and ($title -match '(?i)codex')))
 
-            # More lenient path matching - check if Dir is substring of path or vice versa
+            # More lenient path matching - check working directory and paths
             $inDir = $false
-            if ($cmd -or $title) {
+
+            # Try to get the process's current directory
+            $procPath = $null
+            try {
+                $procPath = (Get-CimInstance Win32_Process -Filter "ProcessId = $($p.ProcessId)").ExecutablePath
+                if ($procPath) {
+                    $procDir = Split-Path $procPath -Parent
+                    if ($procDir -and $procDir.Contains("CompPortal")) {
+                        $inDir = $true
+                    }
+                }
+            } catch {}
+
+            # Also check command line and title
+            if (-not $inDir -and ($cmd -or $title)) {
                 $inDir = (Contains-Path -Text $cmd -Path $Dir) -or
                          (Contains-Path -Text $title -Path $Dir) -or
                          ($cmd -and $cmd.Contains("CompPortal")) -or
                          ($title -and $title.Contains("CompPortal")) -or
                          ($cmd -and $cmd.Contains("codex-tasks")) -or
-                         ($title -and $title.Contains("codex-tasks"))
+                         ($title -and $title.Contains("codex-tasks")) -or
+                         ($cmd -and $cmd.Contains("D:\ClaudeCode\CompPortal")) -or
+                         ($title -and $title.Contains("D:\ClaudeCode\CompPortal"))
             }
 
             if ($Verbose) {
@@ -130,7 +146,9 @@ function Find-CodexHost {
                      ($cmd -and $cmd.Contains("CompPortal")) -or
                      ($title -and $title.Contains("CompPortal")) -or
                      ($cmd -and $cmd.Contains("codex-tasks")) -or
-                     ($title -and $title.Contains("codex-tasks"))
+                     ($title -and $title.Contains("codex-tasks")) -or
+                     ($cmd -and $cmd.Contains("D:\ClaudeCode\CompPortal")) -or
+                     ($title -and $title.Contains("D:\ClaudeCode\CompPortal"))
 
             if ($Verbose) {
                 Write-Host "[WATCHDOG]   Host PID $($proc.Id): Codex=$hasCodex InDir=$inDir Visible=$visible Title='$title'"

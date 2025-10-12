@@ -1,0 +1,126 @@
+{
+  "project": "CompPortal",
+  "tasks_dir": "codex-tasks",
+  "outputs_dir": "codex-tasks/outputs",
+  "logs_dir": "codex-tasks/logs",
+  "blockers_dir": "codex-tasks/blockers",
+  "router_registration_file": "src/server/routers/_app.ts",
+  "patterns": {
+    "glassmorphic_card": {
+      "class": "bg-white/10 backdrop-blur-md rounded-xl border border-white/20"
+    },
+    "gradient_background": {
+      "class": "bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900"
+    },
+    "trpc_router": {
+      "template": "docs/patterns/trpc_router_pattern.ts"
+    },
+    "form_component": {
+      "template": "docs/patterns/component_pattern.tsx"
+    },
+    "toast_notification": {
+      "library": "react-hot-toast",
+      "position": "top-right"
+    }
+  },
+  "prisma_models": {
+    "competitions": [
+      "id",
+      "competition_name",
+      "competition_year",
+      "competition_start_date",
+      "competition_end_date",
+      "competition_location",
+      "registration_deadline",
+      "music_submission_deadline",
+      "total_reservation_tokens",
+      "available_reservation_tokens",
+      "session_count",
+      "number_of_judges",
+      "registration_fee",
+      "late_registration_fee",
+      "schedule_published_at",
+      "schedule_locked",
+      "status"
+    ],
+    "competition_entries": [
+      "id",
+      "competition_id",
+      "studio_id",
+      "routine_title",
+      "routine_description",
+      "entry_fee",
+      "late_fee",
+      "total_fee",
+      "music_file_url",
+      "music_title",
+      "music_artist",
+      "entry_number",
+      "entry_number_suffix",
+      "is_late_entry",
+      "scheduled_date",
+      "scheduled_time",
+      "heat_number",
+      "running_order",
+      "status"
+    ],
+    "studios": [
+      "id",
+      "owner_id",
+      "studio_name",
+      "contact_email",
+      "contact_phone",
+      "address",
+      "city",
+      "state_province",
+      "postal_code",
+      "country"
+    ],
+    "dancers": [
+      "id",
+      "studio_id",
+      "first_name",
+      "last_name",
+      "date_of_birth",
+      "costume_size",
+      "parent_guardian_name",
+      "emergency_contact",
+      "emergency_phone",
+      "medical_notes",
+      "active"
+    ],
+    "reservations": [
+      "id",
+      "competition_id",
+      "studio_id",
+      "spaces_requested",
+      "spaces_confirmed",
+      "status",
+      "approved_by",
+      "approved_at",
+      "rejected_by",
+      "rejected_at",
+      "payment_confirmed_at",
+      "payment_confirmed_by",
+      "agent_name",
+      "agent_email",
+      "age_of_consent",
+      "liability_waiver_signed",
+      "media_consent"
+    ],
+    "judges": [
+      "id",
+      "first_name",
+      "last_name",
+      "email",
+      "phone",
+      "credentials",
+      "years_experience",
+      "certification_level",
+      "specialization",
+      "judge_number",
+      "panel_assignment"
+    ]
+  }
+}
+

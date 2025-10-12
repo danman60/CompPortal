@@ -11,6 +11,8 @@ import HoverPreview from '@/components/HoverPreview';
 import { SkeletonCard } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import { CompetitionFilter } from './CompetitionFilter';
+import { EntryEditModal } from './EntryEditModal';
 
 export default function EntriesList() {
   const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery();
@@ -18,6 +20,15 @@ export default function EntriesList() {
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const updateMutation = trpc.entry.update.useMutation({
+    onSuccess: () => {
+      refetch();
+      setShowEditModal(false);
+      setEditingEntry(null);
+    },
+  });
 
   // Fetch reservation data for space limit tracking
   const { data: reservationData } = trpc.reservation.getAll.useQuery(
@@ -316,18 +327,7 @@ export default function EntriesList() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Event Filter */}
-        <select
-          value={selectedCompetition}
-          onChange={(e) => setSelectedCompetition(e.target.value)}
-          className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          <option value="all" className="bg-gray-900 text-white">All Competitions</option>
-          {competitions.map((comp) => comp && (
-            <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
-              {comp.name} ({comp.year})
-            </option>
-          ))}
-        </select>
+        <CompetitionFilter competitions={competitions.filter(Boolean).map((comp: any) => ({ id: comp.id, competition_name: comp.name, competition_start_date: comp.competition_start_date || (comp.year ? new Date(`${comp.year}-01-01`) : new Date()), }))} selectedId={selectedCompetition === "all" ? null : selectedCompetition} onSelect={(id) => setSelectedCompetition(id || "all")} />
 
         {/* Status Filter */}
         <div className="flex gap-2 flex-wrap">
@@ -748,7 +748,7 @@ export default function EntriesList() {
               </div>
 
               {/* Actions */}
-              <div className="grid grid-cols-3 gap-2 mt-4">
+              <div className="grid grid-cols-4 gap-2 mt-4">
                 <Link
                   href={`/dashboard/entries/${entry.id}`}
                   className="text-center bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-all"
@@ -1032,6 +1032,20 @@ export default function EntriesList() {
       label="Create Routine"
     />
 
+
+      {/* Quick Edit Modal */}
+      {showEditModal && editingEntry && (
+        <EntryEditModal
+          entry={editingEntry}
+          isOpen={showEditModal}
+          onClose={() => { setShowEditModal(false); setEditingEntry(null); }}
+          onSave={async (updates) => {
+            await updateMutation.mutateAsync({ id: editingEntry.id, data: updates as any } as any);
+          }}
+        />
+      )}
     </PullToRefresh>
   );
 }
+
+

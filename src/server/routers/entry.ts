@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { renderEntrySubmitted, getEmailSubject, type EntrySubmittedData } from '@/lib/email-templates';
+import { logActivity } from '@/lib/activity';
 
 // Validation schema for entry participant
 const entryParticipantSchema = z.object({
@@ -454,6 +455,28 @@ export const entryRouter = router({
           },
         },
       });
+
+      // Activity logging (non-blocking, only if user is authenticated)
+      if (ctx.userId) {
+        try {
+          await logActivity({
+            userId: ctx.userId,
+            studioId: ctx.studioId || input.studio_id,
+            action: 'entry.create',
+            entityType: 'entry',
+            entityId: entry.id,
+            details: {
+              title: entry.title,
+              competition_id: entry.competition_id,
+              studio_id: entry.studio_id,
+              category_id: entry.category_id,
+              classification_id: entry.classification_id,
+            },
+          });
+        } catch (err) {
+          console.error('Failed to log activity (entry.create):', err);
+        }
+      }
 
       // Send email notification
       try {

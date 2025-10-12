@@ -81,6 +81,8 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
     ? singleStudio
     : studios?.studios.find(s => s.id === selectedStudioId);
 
+  const isDirectorView = !studioId; // Competition Director or Super Admin
+
   return (
     <div>
       {/* Studio Selector - only show for competition directors */}
@@ -157,12 +159,23 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-green-400">
-                      ${invoice.totalAmount.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {invoice.entryCount} {invoice.entryCount === 1 ? 'routine' : 'routines'}
-                    </div>
+                    {isDirectorView ? (
+                      <>
+                        <div className="text-2xl font-bold text-green-400">
+                          ${invoice.totalAmount.toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {invoice.entryCount} {invoice.entryCount === 1 ? 'routine' : 'routines'}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm text-gray-400 mb-1">Payment Status</div>
+                        <div className="inline-flex items-center px-2 py-1 rounded bg-white/10 border border-white/20 text-white">
+                          pending
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -213,6 +226,7 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
           </div>
 
           {/* Total Summary */}
+          {isDirectorView && (
           <div className="mt-6 bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
             <div className="flex justify-between items-center">
               <div>
@@ -229,6 +243,7 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
               </div>
             </div>
           </div>
+          )}
         </>
       )}
     </div>

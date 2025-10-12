@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import Link from 'next/link';
 import EntryDetails from '@/components/EntryDetails';
+import EntryStatusTimelineWrapper from '@/components/EntryStatusTimelineWrapper';
 
 interface EntryPageProps {
   params: Promise<{
@@ -52,6 +53,9 @@ export default async function EntryPage({ params }: EntryPageProps) {
 
         {/* Routine Details Component */}
         <EntryDetails entryId={id} />
+        <div className="mt-6">
+          <EntryStatusTimelineWrapper entryId={id} />
+        </div>
       </div>
     </main>
   );

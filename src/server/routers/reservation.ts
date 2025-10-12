@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
 import { sendEmail } from '@/lib/email';
 import {
@@ -560,6 +561,25 @@ export const reservationRouter = router({
         },
       });
 
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: reservation.studio_id,
+          action: 'reservation.approve',
+          entityType: 'reservation',
+          entityId: reservation.id,
+          details: {
+            studio_id: reservation.studio_id,
+            competition_id: reservation.competition_id,
+            routines_requested: reservation.spaces_requested,
+            routines_confirmed: reservation.spaces_confirmed,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log activity (reservation.approve):', err);
+      }
+
       // Auto-generate invoice on approval
       const existingInvoice = await prisma.invoices.findFirst({
         where: {
@@ -760,6 +780,24 @@ export const reservationRouter = router({
         }
       }
 
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: reservation.studio_id,
+          action: 'reservation.reject',
+          entityType: 'reservation',
+          entityId: reservation.id,
+          details: {
+            studio_id: reservation.studio_id,
+            competition_id: reservation.competition_id,
+            rejection_reason: input.reason || 'No reason provided',
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log activity (reservation.reject):', err);
+      }
+
       return reservation;
     }),
 
@@ -889,6 +927,24 @@ export const reservationRouter = router({
           },
         },
       });
+
+      // Activity logging for payment (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: reservation.studio_id,
+          action: 'invoice.markAsPaid',
+          entityType: 'invoice',
+          entityId: reservation.id,
+          details: {
+            studio_id: reservation.studio_id,
+            competition_id: reservation.competition_id,
+            payment_status: reservation.payment_status,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log activity (invoice.markAsPaid):', err);
+      }
 
       // Send payment confirmation email
       try {

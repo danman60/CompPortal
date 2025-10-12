@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
 
 // Validation schema for dancer input
@@ -250,6 +251,25 @@ export const dancerRouter = router({
         },
       });
 
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: ctx.studioId || input.studio_id,
+          action: 'dancer.create',
+          entityType: 'dancer',
+          entityId: dancer.id,
+          details: {
+            first_name: dancer.first_name,
+            last_name: dancer.last_name,
+            studio_id: dancer.studio_id,
+            date_of_birth: dancer.date_of_birth,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log activity (dancer.create):', err);
+      }
+
       return dancer;
     }),
 
@@ -488,6 +508,23 @@ export const dancerRouter = router({
       const createdDancers = results
         .filter((r) => r.status === 'fulfilled')
         .map((r: any) => r.value);
+
+      // Batch activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: ctx.studioId || input.studio_id,
+          action: 'dancer.batchCreate',
+          entityType: 'dancer',
+          entityId: 'batch',
+          details: {
+            count: createdDancers.length,
+            studio_id: input.studio_id,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log activity (dancer.batchCreate):', err);
+      }
 
       return {
         successful,

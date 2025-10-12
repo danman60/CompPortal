@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
+import { render as renderEmail } from '@react-email/render';
+import WelcomeEmail from '@/emails/WelcomeEmail';
 import {
   renderStudioApproved,
   renderStudioRejected,
@@ -189,6 +192,23 @@ export const studioRouter = router({
         },
       });
 
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: studio.id,
+          action: 'studio.approve',
+          entityType: 'studio',
+          entityId: studio.id,
+          details: {
+            studio_name: studio.name,
+            owner_id: studio.owner_id,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log activity (studio.approve):', err);
+      }
+
       // Send approval email to studio owner
       if (studio.users_studios_owner_idTousers?.email) {
         try {
@@ -210,6 +230,21 @@ export const studioRouter = router({
             to: studio.users_studios_owner_idTousers.email,
             subject,
             html,
+          });
+
+          // Also send welcome email
+          const welcomeHtml = await renderEmail(
+            WelcomeEmail({
+              name: ownerName || 'Studio Owner',
+              email: studio.users_studios_owner_idTousers.email,
+              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+              tenantBranding: undefined,
+            })
+          );
+          await sendEmail({
+            to: studio.users_studios_owner_idTousers.email,
+            subject: 'Welcome to CompPortal - Studio Approved!',
+            html: welcomeHtml,
           });
         } catch (error) {
           console.error('Failed to send approval email:', error);
@@ -257,6 +292,24 @@ export const studioRouter = router({
           },
         },
       });
+
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: studio.id,
+          action: 'studio.reject',
+          entityType: 'studio',
+          entityId: studio.id,
+          details: {
+            studio_name: studio.name,
+            owner_id: studio.owner_id,
+            rejection_reason: input.reason || 'No reason provided',
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log activity (studio.reject):', err);
+      }
 
       // Send rejection email to studio owner
       if (studio.users_studios_owner_idTousers?.email) {

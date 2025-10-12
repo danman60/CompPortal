@@ -662,7 +662,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                       </div>
                     )}
 
-                    {(reservation.deposit_amount || reservation.total_amount) && (
+                    {!isStudioDirector && (reservation.deposit_amount || reservation.total_amount) && (
                       <div className="pt-3 border-t border-white/10 space-y-1">
                         {reservation.deposit_amount && (
                           <div className="flex justify-between text-sm">

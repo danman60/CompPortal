@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
+import QuickStatsWidget from './QuickStatsWidget';
+import { trpc } from '@/lib/trpc';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
@@ -25,9 +27,10 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   {
     id: 'dancers',
     href: '/dashboard/dancers',
-    icon: '💃',
+    icon: '🩰',
     title: 'My Dancers',
     description: 'Register and manage dancers',
+    tooltip: 'Add or import your dancers',
   },
   {
     id: 'routines',
@@ -35,13 +38,15 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
     icon: '🎭',
     title: 'My Routines',
     description: 'Create and edit routines',
+    tooltip: 'Create your routines',
   },
   {
     id: 'reservations',
     href: '/dashboard/reservations',
-    icon: '📋',
+    icon: '📅',
     title: 'My Reservations',
     description: 'Reserve routines for events',
+    tooltip: 'Reserve routine slots',
   },
   {
     id: 'results',
@@ -49,13 +54,15 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
     icon: '🏆',
     title: 'Results',
     description: 'View competition scores',
+    tooltip: 'Check your scores and rankings',
   },
   {
     id: 'invoices',
     href: '/dashboard/invoices',
-    icon: '💰',
+    icon: '🧾',
     title: 'My Invoices',
     description: 'View studio billing',
+    tooltip: 'View and pay invoices',
   },
   {
     id: 'music',
@@ -63,11 +70,15 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
     icon: '🎵',
     title: 'Music Tracking',
     description: 'Monitor music file uploads',
+    tooltip: 'Upload routine music files',
   },
 ];
 
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
+  const { data: myDancers } = trpc.dancer.getAll.useQuery();
+  const { data: myEntries } = trpc.entry.getAll.useQuery();
+  const { data: myReservations } = trpc.reservation.getAll.useQuery();
 
   return (
     <>
@@ -116,7 +127,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
           className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 px-4 py-2 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
         >
           <span className="text-xl">⚙️</span>
-          <span className="text-white font-semibold">Profile Settings</span>
+          <span className="text-white font-semibold">My Studio</span>
         </Link>
       </div>
 
@@ -126,32 +137,16 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       {/* Quick Actions - Studio Director View */}
       <SortableDashboardCards cards={STUDIO_DIRECTOR_CARDS} />
 
-      {/* Recent Activity */}
-      <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">
-        <h2 className="text-2xl font-bold text-white mb-4">💡 Getting Started</h2>
-        <div className="space-y-3 text-gray-300">
-          <div className="flex items-start gap-3">
-            <span className="text-purple-400 font-bold">1.</span>
-            <p>Reserve your routines in <Link href="/dashboard/reservations" className="text-purple-400 hover:underline">Reservations</Link></p>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-purple-400 font-bold">2.</span>
-            <p>Turn approved reservations into routines in <Link href="/dashboard/entries" className="text-purple-400 hover:underline">My Routines</Link></p>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-purple-400 font-bold">3.</span>
-            <p>Upload music for each routine</p>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-purple-400 font-bold">4.</span>
-            <p>Add your dancers in the <Link href="/dashboard/dancers" className="text-purple-400 hover:underline">Dancers</Link> section</p>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-purple-400 font-bold">5.</span>
-            <p>Assign dancers to routines</p>
-          </div>
-        </div>
-      </div>
+      {/* Quick Stats */}
+      <QuickStatsWidget
+        className="mt-4"
+        stats={[
+          { icon: '🩰', value: myDancers?.dancers?.length || 0, label: 'Dancers', color: 'text-purple-300' },
+          { icon: '🎟️', value: myEntries?.entries?.length || 0, label: 'Routines', color: 'text-pink-300' },
+          { icon: '📦', value: myReservations?.reservations?.length || 0, label: 'Reservations', color: 'text-blue-300' },
+          { icon: '✅', value: (myEntries?.entries?.filter(e => e.status === 'confirmed').length) || 0, label: 'Confirmed', color: 'text-green-300' },
+        ]}
+      />
     </div>
     </>
   );

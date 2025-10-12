@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * React Component Pattern for CompPortal
  *

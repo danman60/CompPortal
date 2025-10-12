@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * tRPC Router Pattern for CompPortal
  *

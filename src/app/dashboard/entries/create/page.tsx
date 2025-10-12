@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import Link from 'next/link';
-import EntryForm from '@/components/EntryForm';
+import UnifiedRoutineForm from '@/components/UnifiedRoutineForm';
 
 export default async function CreateEntryPage() {
   const supabase = await createServerSupabaseClient();
@@ -27,8 +27,8 @@ export default async function CreateEntryPage() {
           <p className="text-gray-400">Create a new routine for your event</p>
         </div>
 
-        {/* Entry Form */}
-        <EntryForm />
+        {/* Unified Routine Form */}
+        <UnifiedRoutineForm />
       </div>
     </main>
   );
