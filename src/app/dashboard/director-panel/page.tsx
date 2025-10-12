@@ -79,6 +79,8 @@ export default function DirectorPanelPage() {
   const [isBreak, setIsBreak] = useState(false);
   const [breakDuration, setBreakDuration] = useState(900); // 15 minutes default
   const [breakReason, setBreakReason] = useState('');
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [timerStartTime, setTimerStartTime] = useState<number | null>(null);
 
   // Mock initial data - TODO: Load from API
   useEffect(() => {
@@ -206,6 +208,18 @@ export default function DirectorPanelPage() {
     };
   }, [on, off]);
 
+  // Timer update loop
+  useEffect(() => {
+    if (!timerStartTime || !currentRoutine) return;
+
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
+      setTimerSeconds(elapsed);
+    }, 100); // Update every 100ms for smooth display
+
+    return () => clearInterval(interval);
+  }, [timerStartTime, currentRoutine]);
+
   // Start next routine
   const handleStartRoutine = useCallback((routine: Routine) => {
     setCurrentRoutineState(routine);
@@ -213,6 +227,8 @@ export default function DirectorPanelPage() {
       prev.map(r => (r.id === routine.id ? { ...r, status: 'current' } : r))
     );
     setScores([]); // Clear scores for new routine
+    setTimerSeconds(0); // Reset timer
+    setTimerStartTime(Date.now()); // Start timer
 
     // Broadcast to all judges
     setCurrentRoutine({
@@ -259,6 +275,7 @@ export default function DirectorPanelPage() {
     }
 
     setCurrentRoutineState(null);
+    setTimerStartTime(null); // Stop timer
   }, [currentRoutine, scores, markRoutineCompleted]);
 
   // Start break
@@ -348,6 +365,59 @@ export default function DirectorPanelPage() {
                   <div className="bg-indigo-500/20 text-indigo-300 px-6 py-3 rounded-xl border border-indigo-500/30">
                     <div className="text-sm text-indigo-300/70 mb-1">Order</div>
                     <div className="text-3xl font-bold">#{currentRoutine.order}</div>
+                  </div>
+                </div>
+
+                {/* Routine Timer */}
+                <div className="bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-xl p-6 mb-6 border border-purple-500/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="text-white/60 text-sm uppercase tracking-wider mb-2">
+                        Elapsed Time
+                      </div>
+                      <div className={`text-6xl font-bold font-mono ${
+                        timerSeconds > currentRoutine.duration + 10
+                          ? 'text-red-400 animate-pulse'
+                          : timerSeconds > currentRoutine.duration - 10
+                          ? 'text-yellow-400'
+                          : 'text-white'
+                      }`}>
+                        {Math.floor(timerSeconds / 60)}:{(timerSeconds % 60).toString().padStart(2, '0')}
+                      </div>
+                      <div className="text-white/60 text-sm mt-1">
+                        Target: {Math.floor(currentRoutine.duration / 60)}:{(currentRoutine.duration % 60).toString().padStart(2, '0')}
+                        {timerSeconds > currentRoutine.duration && (
+                          <span className="text-red-400 ml-2 font-medium">
+                            (+{timerSeconds - currentRoutine.duration}s overtime)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-white/60 text-sm mb-2">Progress</div>
+                      <div className={`text-4xl font-bold ${
+                        timerSeconds > currentRoutine.duration
+                          ? 'text-red-400'
+                          : timerSeconds >= currentRoutine.duration - 10
+                          ? 'text-yellow-400'
+                          : 'text-green-400'
+                      }`}>
+                        {Math.min(100, Math.round((timerSeconds / currentRoutine.duration) * 100))}%
+                      </div>
+                    </div>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="mt-4 w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                    <motion.div
+                      animate={{ width: `${Math.min(100, (timerSeconds / currentRoutine.duration) * 100)}%` }}
+                      className={`h-full transition-colors ${
+                        timerSeconds > currentRoutine.duration
+                          ? 'bg-gradient-to-r from-red-500 to-red-700'
+                          : timerSeconds >= currentRoutine.duration - 10
+                          ? 'bg-gradient-to-r from-yellow-500 to-orange-600'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-600'
+                      }`}
+                    />
                   </div>
                 </div>
 
