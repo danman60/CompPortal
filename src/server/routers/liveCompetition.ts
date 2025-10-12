@@ -339,24 +339,18 @@ export const liveCompetitionRouter = router({
         },
       });
 
-      // Calculate average scores and rank
+      // Use calculated scores for rankings
       const standings = entries
-        .map(entry => {
-          const scores = entry.scores;
-          const averageScore = scores.length > 0
-            ? scores.reduce((sum, s) => sum + Number(s.total_score), 0) / scores.length
-            : 0;
-
-          return {
-            routineId: entry.id,
-            routineTitle: entry.title,
-            studioName: entry.studios?.name || 'Unknown',
-            category: entry.dance_categories?.name || 'Uncategorized',
-            averageScore,
-            scoresCount: scores.length,
-          };
-        })
-        .filter(s => s.averageScore > 0) // Only entries with scores
+        .map(entry => ({
+          routineId: entry.id,
+          routineTitle: entry.title,
+          studioName: entry.studios?.name || 'Unknown',
+          category: entry.dance_categories?.name || 'Uncategorized',
+          averageScore: Number(entry.calculated_score) || 0,
+          awardLevel: entry.award_level || 'pending',
+          scoresCount: entry.scores.length,
+        }))
+        .filter(s => s.averageScore > 0) // Only entries with calculated scores
         .sort((a, b) => b.averageScore - a.averageScore) // Highest first
         .map((standing, index) => ({
           ...standing,
@@ -368,6 +362,104 @@ export const liveCompetitionRouter = router({
         category: input.category || 'All Categories',
         standings,
         totalEntries: standings.length,
+      };
+    }),
+
+  /**
+   * Calculate score and award level for a routine
+   */
+  calculateScore: publicProcedure
+    .input(z.object({
+      routineId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Get entry with scores and competition
+      const entry = await prisma.competition_entries.findFirst({
+        where: {
+          id: input.routineId,
+          tenant_id: ctx.tenantId,
+        },
+        include: {
+          scores: true,
+          competitions: {
+            select: {
+              id: true,
+              scoring_ranges: true,
+            },
+          },
+        },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Routine not found',
+        });
+      }
+
+      // Calculate average score
+      const scores = entry.scores;
+      if (scores.length === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No scores submitted for this routine',
+        });
+      }
+
+      const total = scores.reduce((sum, s) => sum + Number(s.total_score), 0);
+      const average = total / scores.length;
+
+      // Get scoring ranges from competition
+      const scoringRanges = entry.competitions.scoring_ranges as {
+        platinum?: [number, number];
+        high_gold?: [number, number];
+        gold?: [number, number];
+        silver?: [number, number];
+        bronze?: [number, number];
+      } || {
+        platinum: [95, 100],
+        high_gold: [90, 94.9],
+        gold: [85, 89.9],
+        silver: [80, 84.9],
+        bronze: [70, 79.9],
+      };
+
+      // Determine award level
+      let awardLevel = 'participation';
+      if (average >= scoringRanges.platinum![0] && average <= scoringRanges.platinum![1]) {
+        awardLevel = 'platinum';
+      } else if (average >= scoringRanges.high_gold![0] && average <= scoringRanges.high_gold![1]) {
+        awardLevel = 'high_gold';
+      } else if (average >= scoringRanges.gold![0] && average <= scoringRanges.gold![1]) {
+        awardLevel = 'gold';
+      } else if (average >= scoringRanges.silver![0] && average <= scoringRanges.silver![1]) {
+        awardLevel = 'silver';
+      } else if (average >= scoringRanges.bronze![0] && average <= scoringRanges.bronze![1]) {
+        awardLevel = 'bronze';
+      }
+
+      // Update entry with calculated score and award level
+      await prisma.competition_entries.update({
+        where: { id: input.routineId },
+        data: {
+          calculated_score: average,
+          award_level: awardLevel,
+        },
+      });
+
+      return {
+        success: true,
+        routineId: input.routineId,
+        calculatedScore: average,
+        awardLevel,
+        scoresCount: scores.length,
       };
     }),
 
