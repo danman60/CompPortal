@@ -161,31 +161,33 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 /**
  * Hook for judge scoring interface
  */
-export function useJudgeSocket(competitionId: string, judgeId: string) {
+export function useJudgeSocket(competitionId: string, judgeId: string, judgeName?: string) {
   const ws = useWebSocket({
     competitionId,
     userId: judgeId,
     role: 'judge',
   });
 
+  const displayName = judgeName || 'Judge';
+
   const submitScore = useCallback((routineId: string, score: number, notes?: string) => {
     ws.emit(WSEvent.SCORE_SUBMITTED, {
       routineId,
       judgeId,
-      judgeName: 'Judge', // TODO: Get from user context
+      judgeName: displayName,
       score,
       notes,
     });
-  }, [ws, judgeId]);
+  }, [ws, judgeId, displayName]);
 
   const setReady = useCallback((ready: boolean) => {
     ws.emit(ready ? WSEvent.JUDGE_READY : WSEvent.JUDGE_NOT_READY, {
       judgeId,
-      judgeName: 'Judge',
+      judgeName: displayName,
       ready,
       connected: ws.connected,
     });
-  }, [ws, judgeId]);
+  }, [ws, judgeId, displayName]);
 
   return {
     ...ws,

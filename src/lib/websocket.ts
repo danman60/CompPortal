@@ -92,7 +92,7 @@ export class WebSocketManager {
       // Authenticate connection
       socket.on('authenticate', async (data: { userId: string; competitionId: string; role: string; token: string }) => {
         try {
-          // TODO: Verify JWT token
+          // TODO: Verify JWT token (requires auth architecture decision)
           // For now, trust the client (add authentication in production)
 
           this.connectedUsers.set(socket.id, {
@@ -108,10 +108,25 @@ export class WebSocketManager {
           if (data.role === 'judge') {
             await socket.join(WSRoom.judges(data.competitionId));
 
+            // Get judge name from database
+            let judgeName = 'Judge';
+            try {
+              const { prisma } = await import('@/lib/prisma');
+              const judge = await prisma.judges.findFirst({
+                where: { id: data.userId },
+                select: { name: true },
+              });
+              if (judge?.name) {
+                judgeName = judge.name;
+              }
+            } catch (err) {
+              console.warn('Failed to fetch judge name:', err);
+            }
+
             // Notify director of judge connection
             this.broadcast(WSEvent.JUDGE_JOINED, data.competitionId, {
               judgeId: data.userId,
-              judgeName: 'Judge', // TODO: Get from database
+              judgeName,
               timestamp: Date.now(),
             }, WSRoom.director(data.competitionId));
           } else if (data.role === 'director') {
