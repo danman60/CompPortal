@@ -7,7 +7,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { WSEvent, WSPayload } from '@/lib/websocket';
+import { WSEvent, WSPayload } from '@/lib/websocket-types';
 
 export interface UseWebSocketOptions {
   competitionId: string;
