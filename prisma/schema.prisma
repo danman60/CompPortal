@@ -1203,6 +1203,7 @@ enum one_time_token_type {
 enum user_role {
   studio_director
   competition_director
+  judge
   super_admin
 
   @@schema("public")

@@ -103,26 +103,35 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // For now, return judges who have the 'judge' role in the tenant
-      // TODO: Add proper judge assignment table/relationship
-      const judges = await prisma.user_profiles.findMany({
+      // Get judges assigned to this competition from judges table
+      const judges = await prisma.judges.findMany({
         where: {
-          tenant_id: ctx.tenantId,
-          role: 'super_admin', // TODO: Add 'judge' role to enum
+          competition_id: input.competitionId,
         },
         select: {
           id: true,
-          first_name: true,
-          last_name: true,
+          name: true,
+          judge_number: true,
+          panel_assignment: true,
+          confirmed: true,
+          checked_in: true,
+          _count: {
+            select: {
+              scores: true, // Count scores submitted by this judge
+            },
+          },
         },
       });
 
       return judges.map(judge => ({
         judgeId: judge.id,
-        judgeName: `${judge.first_name || ''} ${judge.last_name || ''}`.trim() || 'Judge',
-        ready: false, // Will be tracked via WebSocket
+        judgeName: judge.name || 'Judge',
+        judgeNumber: judge.judge_number,
+        panelAssignment: judge.panel_assignment,
+        confirmed: judge.confirmed || false,
+        ready: judge.checked_in || false, // Use checked_in status for ready state
         connected: false, // Will be tracked via WebSocket
-        scoresSubmitted: 0, // Will be counted from scores table
+        scoresSubmitted: judge._count.scores,
       }));
     }),
 
