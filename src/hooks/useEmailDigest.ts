@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { trpc } from '@/lib/trpc';
 
 export interface EmailDigestPreferences {
   enabled: boolean;
@@ -44,10 +45,24 @@ export function useEmailDigest(options: UseEmailDigestOptions = {}) {
   const [preferences, setPreferences] = useState<EmailDigestPreferences>(defaultPreferences);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load preferences from localStorage on mount
+  // tRPC hooks
+  const { data: dbPreferences } = trpc.user.getEmailDigestPreferences.useQuery();
+  const saveToDb = trpc.user.saveEmailDigestPreferences.useMutation();
+
+  // Load preferences from database OR localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Priority 1: Use database preferences if available
+    if (dbPreferences) {
+      setPreferences({
+        ...defaultPreferences,
+        ...dbPreferences,
+      });
+      return;
+    }
+
+    // Priority 2: Fallback to localStorage
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
@@ -60,26 +75,27 @@ export function useEmailDigest(options: UseEmailDigestOptions = {}) {
     } catch (error) {
       console.error('Failed to load email digest preferences:', error);
     }
-  }, [storageKey]);
+  }, [storageKey, dbPreferences]);
 
-  // Save preferences to localStorage
+  // Save preferences to both localStorage AND database
   const savePreferences = useCallback(
     async (newPreferences: EmailDigestPreferences) => {
       setIsSaving(true);
       setPreferences(newPreferences);
 
       try {
+        // Save to localStorage (immediate fallback)
         localStorage.setItem(storageKey, JSON.stringify(newPreferences));
 
-        // TODO: Call backend API to save preferences to database
-        // await trpc.emailDigest.updatePreferences.mutate(newPreferences);
+        // Save to database (persistent, cross-device)
+        await saveToDb.mutateAsync(newPreferences);
       } catch (error) {
         console.error('Failed to save email digest preferences:', error);
       } finally {
         setIsSaving(false);
       }
     },
-    [storageKey]
+    [storageKey, saveToDb]
   );
 
   // Update a specific preference

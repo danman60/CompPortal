@@ -106,6 +106,65 @@ export const userRouter = router({
     }),
 
   /**
+   * Get email digest preferences
+   */
+  getEmailDigestPreferences: protectedProcedure.query(async ({ ctx }) => {
+    const userProfile = await prisma.user_profiles.findUnique({
+      where: { id: ctx.userId! },
+      select: {
+        notification_preferences: true,
+      },
+    });
+
+    const prefs = userProfile?.notification_preferences as any;
+    return prefs?.email_digest || null;
+  }),
+
+  /**
+   * Save email digest preferences
+   */
+  saveEmailDigestPreferences: protectedProcedure
+    .input(z.object({
+      enabled: z.boolean(),
+      frequency: z.enum(['daily', 'weekly', 'monthly']),
+      dayOfWeek: z.number().min(0).max(6).optional(),
+      dayOfMonth: z.number().min(1).max(31).optional(),
+      time: z.string().regex(/^\d{2}:\d{2}$/),
+      includeActivities: z.boolean(),
+      includeNotifications: z.boolean(),
+      includeUpcomingEvents: z.boolean(),
+      includePendingActions: z.boolean(),
+      minimumActivityCount: z.number().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Get current preferences
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId! },
+        select: {
+          notification_preferences: true,
+        },
+      });
+
+      const currentPrefs = (userProfile?.notification_preferences as any) || {};
+
+      // Update with new email digest preferences
+      const updatedPrefs = {
+        ...currentPrefs,
+        email_digest: input,
+      };
+
+      // Save back to database
+      await prisma.user_profiles.update({
+        where: { id: ctx.userId! },
+        data: {
+          notification_preferences: updatedPrefs,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
    * Update current user's profile
    */
   updateProfile: protectedProcedure
