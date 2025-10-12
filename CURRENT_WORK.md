@@ -426,5 +426,10 @@ All post-demo deliverables integrated and deployed:
   - HSTS, X-Frame-Options, X-Content-Type-Options
   - XSS Protection, Referrer Policy, Permissions Policy
   - ✅ Hardens against clickjacking, MIME sniffing, XSS
+- Health check endpoint (commit 5fbe54d):
+  - Created /api/health for monitoring and load balancers
+  - Checks database connectivity via Prisma
+  - Returns JSON with status, timestamp, uptime
+  - ✅ Enables uptime monitoring and health probes
 
 **Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17 when ready.
