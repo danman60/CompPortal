@@ -1,0 +1,27 @@
+# feat|fix|docs|style|refactor|test|chore: Brief title (50 chars)
+
+# What changed (file:lines):
+-
+-
+
+# ✅ Build: pass|fail
+# 🤖 Claude Code
+
+# --- Template Guidelines ---
+# Line 1: Type + brief title (imperative mood)
+# Line 3-4: Changes with file:line references (NOT code)
+# Line 6: Build status
+# Line 7: Attribution
+#
+# Types:
+#   feat: New feature
+#   fix: Bug fix
+#   docs: Documentation only
+#   style: Formatting, missing semicolons, etc
+#   refactor: Code change that neither fixes a bug nor adds a feature
+#   test: Adding missing tests
+#   chore: Updating build tasks, configs, etc
+#
+# Keep changes to 2-3 bullets max
+# Reference file:line, NOT full code examples
+# Total: 8 lines max (33% reduction)
