@@ -376,4 +376,10 @@ All post-demo deliverables integrated and deployed:
 - Task #30: Routine timer with visual alerts (commit 3b7745d)
 - Task #31: Backup/recovery mechanisms (commit 68ff336)
 
+**TODO Fixes Complete** (Jan 13):
+- Duration conversion fix (commit d413104): Added duration_seconds field to competition_entries
+- Judge assignment (commit f7afd1a): Use judges table filtered by competition_id
+- Judge role enum (commit f7afd1a): Added 'judge' to user_role enum
+- Judge names (commit 87dfd9c): Fetch from database on WebSocket auth
+
 **Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17, or proceed to LOW priority tasks.
