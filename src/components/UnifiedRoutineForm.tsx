@@ -2,17 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 export default function UnifiedRoutineForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Read URL params for event locking (MVP requirement)
+  const competitionParam = searchParams.get('competition');
+  const reservationParam = searchParams.get('reservation');
 
   // Lookups and user
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
   const { data: competitions } = trpc.competition.getAll.useQuery();
   const { data: studios } = trpc.studio.getAll.useQuery();
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
+
+  // Fetch reservation data to display routine counter (MVP requirement)
+  const { data: reservation } = trpc.reservation.getById.useQuery(
+    { id: reservationParam! },
+    { enabled: !!reservationParam }
+  );
 
   const [form, setForm] = useState({
     studio_id: '',
@@ -32,6 +43,13 @@ export default function UnifiedRoutineForm() {
       setForm((f) => ({ ...f, studio_id: currentUser.studio!.id }));
     }
   }, [currentUser, form.studio_id]);
+
+  // Auto-populate competition from URL param (MVP requirement: event locking)
+  useEffect(() => {
+    if (competitionParam && !form.competition_id) {
+      setForm((f) => ({ ...f, competition_id: competitionParam }));
+    }
+  }, [competitionParam, form.competition_id]);
 
   const createMutation = trpc.entry.create.useMutation({
     onSuccess: () => {
@@ -64,6 +82,12 @@ export default function UnifiedRoutineForm() {
       return;
     }
 
+    // MVP Requirement: Validate competition matches reservation
+    if (competitionParam && form.competition_id !== competitionParam) {
+      toast.error('Competition must match the approved reservation');
+      return;
+    }
+
     createMutation.mutate({
       competition_id: form.competition_id,
       studio_id: form.studio_id,
@@ -81,8 +105,30 @@ export default function UnifiedRoutineForm() {
     } as any);
   };
 
+  // Calculate routine counter for helper text (MVP requirement)
+  const routinesUsed = reservation?.competition_entries?.length || 0;
+  const routinesConfirmed = reservation?.spaces_confirmed || 0;
+  const routinesRemaining = routinesConfirmed - routinesUsed;
+
   return (
     <div className="max-w-4xl mx-auto">
+      {/* MVP Requirement: Helper text showing routine counter */}
+      {reservation && (
+        <div className="bg-blue-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">ℹ️</div>
+            <div>
+              <div className="text-lg font-semibold text-white">
+                Routines available: {routinesRemaining} of {routinesConfirmed} approved
+              </div>
+              <div className="text-sm text-blue-200 mt-1">
+                {reservation.competitions?.name} ({reservation.competitions?.year}) • {routinesUsed} {routinesUsed === 1 ? 'routine' : 'routines'} already created
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
         <h2 className="text-2xl font-bold text-white mb-4">Basic Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -103,11 +149,15 @@ export default function UnifiedRoutineForm() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Competition *</label>
+            <label className="block text-sm text-gray-300 mb-1">
+              Competition *
+              {competitionParam && <span className="text-xs text-blue-400 ml-2">(Locked to reservation)</span>}
+            </label>
             <select
-              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white disabled:opacity-60 disabled:cursor-not-allowed"
               value={form.competition_id}
               onChange={(e) => setForm({ ...form, competition_id: e.target.value })}
+              disabled={!!competitionParam}
             >
               <option value="" className="bg-gray-900">Select competition</option>
               {competitions?.competitions?.map((c: any) => (
