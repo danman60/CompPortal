@@ -474,3 +474,13 @@ All post-demo deliverables integrated and deployed:
   - ✅ API protection from abuse
 
 **Recommendation**: At Competition Mode feature fully complete. Next: Review Codex outputs for Tasks #11 and #17 when ready.
+
+**Bug Fixes** (Jan 13):
+- Performance fix (commit 24d187c): Added pagination to EntriesList (limit 100)
+  - Fixes slow loading on /dashboard/entries
+  - Reduces initial query from all entries to 100 entries
+- File corruption fix (commit 24d187c): Restored ReservationsList.tsx
+  - Removed 742 lines of duplicate file content
+  - Removed incomplete invoice generation feature (feature freeze)
+  - Restored from commit 8eeac22 (last working version)
+  - ✅ Build pass: 51 routes compiled
