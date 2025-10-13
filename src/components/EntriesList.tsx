@@ -15,7 +15,12 @@ import { CompetitionFilter } from './CompetitionFilter';
 import { EntryEditModal } from './EntryEditModal';
 
 export default function EntriesList() {
-  const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery();
+  // PERFORMANCE FIX: Add pagination to reduce initial load time
+  const [limit] = useState(100); // Load 100 entries at a time
+  const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery({
+    limit,
+    offset: 0,
+  });
   const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
