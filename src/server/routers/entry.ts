@@ -197,7 +197,19 @@ export const entryRouter = router({
       const [entries, total] = await Promise.all([
         prisma.competition_entries.findMany({
           where,
-          include: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            entry_number: true,
+            entry_suffix: true,
+            is_late_entry: true,
+            competition_id: true,
+            studio_id: true,
+            music_file_url: true,
+            music_title: true,
+            music_artist: true,
+            created_at: true,
             studios: {
               select: {
                 id: true,
@@ -212,19 +224,6 @@ export const entryRouter = router({
                 year: true,
               },
             },
-            entry_participants: {
-              include: {
-                dancers: {
-                  select: {
-                    id: true,
-                    first_name: true,
-                    last_name: true,
-                    date_of_birth: true,
-                  },
-                },
-              },
-              orderBy: { display_order: 'asc' },
-            },
             age_groups: {
               select: {
                 id: true,
@@ -236,6 +235,16 @@ export const entryRouter = router({
                 id: true,
                 name: true,
               },
+            },
+            entry_participants: {
+              select: {
+                id: true,
+                dancer_id: true,
+                dancer_name: true,
+                role: true,
+              },
+              orderBy: { display_order: 'asc' },
+              take: 4, // Only fetch first 4 participants for list view
             },
           },
           orderBy: [

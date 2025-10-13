@@ -157,7 +157,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
         special_requirements: existingEntry.special_requirements || '',
         participants: existingEntry.entry_participants?.map((p) => ({
           dancer_id: p.dancer_id,
-          dancer_name: `${p.dancers?.first_name} ${p.dancers?.last_name}`,
+          dancer_name: p.dancer_name,
           role: p.role || undefined,
         })) || [],
       });
@@ -211,7 +211,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     if (sourceEntry?.entry_participants) {
       const copiedParticipants = sourceEntry.entry_participants.map((p) => ({
         dancer_id: p.dancer_id,
-        dancer_name: `${p.dancers?.first_name} ${p.dancers?.last_name}`,
+        dancer_name: p.dancer_name,
         role: p.role || undefined,
       }));
       setFormData({

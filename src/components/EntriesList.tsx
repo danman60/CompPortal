@@ -726,7 +726,7 @@ export default function EntriesList() {
                   <div className="space-y-1">
                     {entry.entry_participants.slice(0, 3).map((participant) => (
                       <div key={participant.id} className="text-sm text-white">
-                        • {participant.dancers?.first_name} {participant.dancers?.last_name}
+                        • {participant.dancer_name}
                       </div>
                     ))}
                     {entry.entry_participants.length > 3 && (
@@ -864,7 +864,7 @@ export default function EntriesList() {
                         <div className="text-xs text-gray-400 mt-1">
                           {entry.entry_participants.slice(0, 2).map((p, i) => (
                             <div key={p.id}>
-                              {p.dancers?.first_name} {p.dancers?.last_name}
+                              {p.dancer_name}
                             </div>
                           ))}
                           {entry.entry_participants.length > 2 && (
@@ -973,7 +973,7 @@ export default function EntriesList() {
                             <div className="space-y-1">
                               {entry.entry_participants.slice(0, 3).map((p) => (
                                 <div key={p.id} className="text-sm text-gray-300">
-                                  • {p.dancers?.first_name} {p.dancers?.last_name}
+                                  • {p.dancer_name}
                                 </div>
                               ))}
                               {entry.entry_participants.length > 3 && (
