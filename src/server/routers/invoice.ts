@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity';
 
 export const invoiceRouter = router({
   // Generate invoice for a studio's entries in a competition
@@ -363,6 +364,96 @@ export const invoiceRouter = router({
       // In production, this would use email router with proper template
       console.log(`Invoice reminder sent to ${studio.contact_email} for ${competition.name} ${competition.year} - $${totalAmount.toFixed(2)}`);
 
-      return { success: true, email: studio.contact_email };
+    return { success: true, email: studio.contact_email };
+    }),
+
+  // Create invoice from a reservation (replaces direct approve flow)
+  createFromReservation: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        spacesConfirmed: z.number().int().min(0).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { reservationId, spacesConfirmed } = input;
+
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: reservationId },
+        include: { studios: true, competitions: true },
+      });
+
+      if (!reservation) throw new Error('Reservation not found');
+
+      // Build line items from all non-cancelled entries for this studio+competition
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          studio_id: reservation.studio_id,
+          competition_id: reservation.competition_id,
+          status: { not: 'cancelled' },
+        },
+        include: { dance_categories: true, entry_size_categories: true },
+        orderBy: { entry_number: 'asc' },
+      });
+
+      const lineItems = entries.map((entry) => ({
+        id: entry.id,
+        entryNumber: entry.entry_number,
+        title: entry.title,
+        category: entry.dance_categories?.name || 'Unknown',
+        sizeCategory: entry.entry_size_categories?.name || 'Unknown',
+        entryFee: Number(entry.entry_fee || 0),
+        lateFee: Number(entry.late_fee || 0),
+        total: Number(entry.entry_fee || 0) + Number(entry.late_fee || 0),
+      }));
+
+      const subtotal = lineItems.reduce((sum, i) => sum + i.total, 0);
+
+      // Create invoice record
+      const invoice = await prisma.invoices.create({
+        data: {
+          tenant_id: reservation.tenant_id,
+          studio_id: reservation.studio_id,
+          competition_id: reservation.competition_id,
+          reservation_id: reservationId,
+          line_items: lineItems as any,
+          subtotal,
+          total: subtotal,
+          status: 'UNPAID',
+        },
+      });
+
+      // Mark reservation approved and set confirmed spaces
+      await prisma.reservations.update({
+        where: { id: reservationId },
+        data: {
+          status: 'approved',
+          spaces_confirmed: spacesConfirmed ?? reservation.spaces_requested,
+          approved_at: new Date(),
+          approved_by: ctx.userId,
+          updated_at: new Date(),
+        },
+      });
+
+      // Activity log (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: reservation.studio_id,
+          action: 'invoice.create',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: {
+            reservation_id: reservationId,
+            competition_id: reservation.competition_id,
+            subtotal,
+            entry_count: entries.length,
+          },
+        });
+      } catch (e) {
+        console.error('Failed to log activity (invoice.create):', e);
+      }
+
+      return { invoiceId: invoice.id };
     }),
 });
