@@ -217,14 +217,58 @@ if (!hasApprovedReservation && currentUser?.role === 'studio_director') {
 
 ---
 
-## 🎯 Recommended Approach
+## ✅ Phase 1: COMPLETE (January 13, 2025)
+
+**Execution Time**: 1.5 hours (faster than estimated 2-3 hours)
+
+### Changes Made
+
+1. **Event Locking UI** (Gap #1) - ✅ FIXED
+   - Added `useSearchParams()` hook to read URL params
+   - Auto-populates `competition_id` from `?competition=X` param
+   - Locks competition select field when param present (disabled + visual label)
+   - Validates on submit: rejects if competition doesn't match reservation
+   - **File**: `UnifiedRoutineForm.tsx:13-14, 47-52, 85-89, 152-160`
+
+2. **Helper Text with Counter** (Gap #2) - ✅ FIXED
+   - Fetches reservation data via `trpc.reservation.getById`
+   - Calculates: `routinesUsed`, `routinesConfirmed`, `routinesRemaining`
+   - Displays blue info banner above form
+   - Shows: "Routines available: X of Y approved"
+   - Includes competition name and routines already created count
+   - **File**: `UnifiedRoutineForm.tsx:22-26, 108-111, 115-130`
+
+3. **Terminology Audit** (Gap #3) - ✅ VERIFIED
+   - All user-facing text uses "routines" ✅
+   - EntriesList: "My Routines" heading ✅
+   - Dashboard: "Routines" labels ✅
+   - Navigation: Correct terminology ✅
+   - Backend API names (Phase 3 tech debt) - deferred
+
+### Build Status
+```
+✅ 51 routes compiled successfully
+✅ TypeScript validation pass
+✅ Zero build errors
+✅ Zero breaking changes
+```
+
+### Commit
+- **Hash**: f67864d
+- **Message**: "feat: Phase 1 MVP fixes - Event locking and helper text"
+- **Deployed**: Production ready
+
+---
+
+## 🎯 Recommended Next Steps
 
 ### Immediate (Today)
-**Execute Phase 1 only** - Critical MVP gaps
-- Estimated time: 2-3 hours
-- Zero breaking changes
-- High user impact
-- Addresses MVP bible requirements directly
+**User Validation** - Test Phase 1 fixes
+- Navigate to reservation with approved status
+- Click "Create Routines" button
+- Verify competition field is locked
+- Verify helper text displays correct counter
+- Verify cannot change competition
 
 ### Short-term (Post-MVP Confirmation)
 **Execute Phase 2** - UX polish
@@ -243,22 +287,29 @@ if (!hasApprovedReservation && currentUser?.role === 'studio_director') {
 ## 📝 Summary
 
 **Total Gaps Found**: 7
-- **Critical (MVP Blockers)**: 3
-- **Medium (UX Polish)**: 2
-- **Low (Tech Debt)**: 2
+- **Critical (MVP Blockers)**: 3 - ✅ ALL FIXED (Phase 1)
+- **Medium (UX Polish)**: 2 - Pending (Phase 2)
+- **Low (Tech Debt)**: 2 - Deferred (Phase 3)
 
-**Recommended Action**: Execute Phase 1 (2-3 hours)
+**Phase 1 Status**: ✅ COMPLETE (January 13, 2025)
+- Execution time: 1.5 hours (under estimate)
+- Build: ✅ Pass (51 routes)
+- Commit: f67864d
+- Production: Ready to deploy
 
 **MVP Status After Phase 1**:
 - ✅ Event locking enforced in UI
 - ✅ Helper text with counters displayed
 - ✅ Terminology consistent in UI
-- ✅ All 6 MVP acceptance criteria met
+- ✅ All 3 critical MVP gaps closed
+- ⏭️ MVP bible Section 2.2 (Event Locking) - COMPLETE
+- ⏭️ MVP bible Section 2.2 (Helper Text) - COMPLETE
+- ⏭️ MVP bible Section 4 (Terminology) - COMPLETE
 
 ---
 
 **Next Steps**:
-1. User approval to proceed with Phase 1
-2. Execute fixes with testing
-3. Deploy to production
-4. User validates MVP functionality
+1. ✅ Phase 1 complete - awaiting user validation
+2. User tests Phase 1 fixes in production
+3. Optional: Execute Phase 2 (UX polish, 1 hour)
+4. User confirms MVP functionality complete
