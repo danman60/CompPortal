@@ -243,8 +243,8 @@ export default function EntriesList() {
 
   const isAtLimit = hasSelectedCompetition && selectedReservation && usedSpaces >= confirmedSpaces;
 
-  // Show progress bar when there are entries and reservations
-  const showProgressBar = entries.length > 0 && confirmedSpaces > 0;
+  // Show progress bar when there are filtered entries and reservations for selected competition
+  const showProgressBar = filteredEntries.length > 0 && confirmedSpaces > 0;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
