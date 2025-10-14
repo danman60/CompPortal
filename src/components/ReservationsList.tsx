@@ -645,7 +645,8 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                       </div>
                     )}
 
-                    {reservation.payment_status && (
+                    {/* Payment status hidden for Studio Directors */}
+                    {!isStudioDirector && reservation.payment_status && (
                       <div className="pt-3 border-t border-white/10">
                         <div className="text-sm text-gray-400 mb-1">Payment Status</div>
                         <span
@@ -840,11 +841,11 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           </div>
                         </div>
 
-                        {/* Create Routines Button */}
+                        {/* Create Routines Button (payment status check removed for SDs) */}
                         <Link
                           href={`/dashboard/entries/create?competition=${reservation.competition_id}&reservation=${reservation.id}`}
                           className={`block w-full text-center px-6 py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
-                            (reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0) || reservation.payment_status !== 'paid'
+                            (reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                               ? 'bg-white/10 text-gray-400 cursor-not-allowed border border-white/20'
                               : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
                           }`}
@@ -852,15 +853,10 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                             if ((reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)) {
                               e.preventDefault();
                             }
-                            if (reservation.payment_status !== 'paid') {
-                              e.preventDefault();
-                            }
                           }}
                         >
                           {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                             ? '✅ All Routines Allocated'
-                            : reservation.payment_status !== 'paid'
-                            ? '💳 Payment Required'
                             : 'Create Routines'}
                         </Link>
                       </div>
