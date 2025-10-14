@@ -74,9 +74,9 @@ export const liveCompetitionRouter = router({
         dancers: entry.entry_participants.map(p =>
           `${p.dancers?.first_name || ''} ${p.dancers?.last_name || ''}`.trim()
         ).filter(Boolean),
-        duration: entry.duration_seconds || 180, // Duration in seconds from database
+        duration: 180, // Default 3 minutes (duration_seconds field removed)
         order: entry.running_order || index + 1, // Use running_order from schema
-        liveStatus: entry.live_status || 'queued', // Track routine state during live competition
+        liveStatus: 'queued', // Default status (live_status field removed)
       }));
 
       return {
@@ -167,13 +167,9 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // Update live status
-      await prisma.competition_entries.update({
-        where: { id: input.routineId },
-        data: {
-          live_status: input.status,
-        },
-      });
+      // Note: live_status field removed from schema
+      // This mutation is deprecated but kept for API compatibility
+      // TODO: Remove or implement with separate live_competition_state table
 
       return {
         success: true,
@@ -334,7 +330,7 @@ export const liveCompetitionRouter = router({
           competition_id: input.competitionId,
           tenant_id: ctx.tenantId,
           status: 'registered', // Schema uses 'registered'
-          live_status: 'completed', // Only show completed routines in standings
+          // live_status field removed - show all entries with calculated scores
           ...(input.category ? {
             dance_categories: {
               name: input.category,
@@ -512,9 +508,9 @@ export const liveCompetitionRouter = router({
       }
 
       const entries = competition.competition_entries;
-      const completedCount = entries.filter(e => e.live_status === 'completed').length;
-      const currentEntry = entries.find(e => e.live_status === 'current');
-      const queuedCount = entries.filter(e => e.live_status === 'queued').length;
+      // Note: live_status field removed - stats based on scores instead
+      const completedCount = entries.filter(e => e.calculated_score && Number(e.calculated_score) > 0).length;
+      const queuedCount = entries.filter(e => !e.calculated_score || Number(e.calculated_score) === 0).length;
 
       // Calculate total scores submitted
       const totalScores = entries.reduce((sum, entry) => {
@@ -525,9 +521,9 @@ export const liveCompetitionRouter = router({
         competitionId: competition.id,
         competitionName: competition.name, // Schema uses 'name'
         totalRoutines: entries.length,
-        completed: completedCount,
-        current: currentEntry ? 1 : 0,
-        queued: queuedCount,
+        completed: completedCount, // Entries with calculated scores
+        current: 0, // Not tracked without live_status
+        queued: queuedCount, // Entries without calculated scores
         totalScoresSubmitted: totalScores,
         progress: entries.length > 0 ? (completedCount / entries.length) * 100 : 0,
       };

@@ -452,7 +452,7 @@ model competition_entries {
   performance_date                                                                     DateTime?                @db.Date
   performance_time                                                                     DateTime?                @db.Time(6)
   duration                                                                             Unsupported("interval")?
-  duration_seconds                                                                     Int?
+  // duration_seconds                                                                     Int?  // REMOVED: Not used by SDs
   warm_up_time                                                                         DateTime?                @db.Time(6)
   heat                                                                                 String?                  @db.VarChar(50)
   running_order                                                                        Int?
@@ -472,7 +472,7 @@ model competition_entries {
   late_fee                                                                             Decimal?                 @default(0) @db.Decimal(10, 2)
   total_fee                                                                            Decimal?                 @db.Decimal(10, 2)
   status                                                                               String?                  @default("registered") @db.VarChar(50)
-  live_status                                                                          String?                  @default("queued") @db.VarChar(20)
+  // live_status                                                                          String?                  @default("queued") @db.VarChar(20)  // REMOVED: Not used by SDs
   choreographer                                                                        String?                  @db.VarChar(255)
   costume_description                                                                  String?
   props_required                                                                       String?
@@ -511,8 +511,8 @@ model competition_entries {
   @@index([award_level], map: "idx_entries_award_level")
   @@index([category_placement], map: "idx_entries_placement")
   @@index([tenant_id], map: "idx_entries_tenant")
-  @@index([live_status], map: "idx_competition_entries_live_status")
-  @@index([competition_id, live_status], map: "idx_competition_entries_comp_live_status")
+  // @@index([live_status], map: "idx_competition_entries_live_status")  // REMOVED: live_status field removed
+  // @@index([competition_id, live_status], map: "idx_competition_entries_comp_live_status")  // REMOVED: live_status field removed
   @@schema("public")
 }
 

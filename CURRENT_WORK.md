@@ -1,9 +1,69 @@
 # Current Work Status
 
-**Date**: January 13, 2025 (Updated)
-**Status**: 🚨 FEATURE FREEZE - MVP Verification Phase
-**Progress**: 94% (16/17 tasks complete from HIGH + MEDIUM)
-**Next**: BLOCKED - Waiting for user MVP confirmation
+**Date**: January 13, 2025 (Evening - Post-MVP User Feedback)
+**Status**: 🔧 BUG FIX MODE - Addressing User Feedback
+**Progress**: 12 bug fixes queued from user testing
+**Next**: Fix critical blockers preventing routine creation/editing
+
+---
+
+## 🚨 ACTIVE TODO LIST (January 13 Evening)
+
+User reported issues after testing production:
+
+1. **[IN PROGRESS]** Remove duration_seconds and live_status from all queries/schemas
+   - Status: Schema fields commented out, liveCompetition router updated
+   - Blocker: Prevents routine creation/editing
+
+2. **[PENDING]** Fix approve/deny on competitions page - add animation and feedback
+   - Add toast notification + animation when SD clicks approve/deny
+   - Pending reservation should disappear/fade with animation
+
+3. **[PENDING]** Add live summary bar to entries page (Remaining/Created/Price/Submit)
+   - Display: Remaining Routines, Created Routines, Price Estimate, Submit Summary button
+   - Position: Along bottom of entries page
+
+4. **[PENDING]** Add CSV import for routines with reservation selection
+   - Fields: routine_title, dance_category, choreographer, props
+   - User selects which approved reservation to assign routines to
+
+5. **[PENDING]** Fix table alignment in entries page (verify with Playwright)
+   - Table data shifted left within columns
+   - Use Playwright MCP to verify alignment
+
+6. **[PENDING]** Remove hover popup, add click popup for routine details
+   - Replace HoverPreview with click-based modal/popup
+
+7. **[PENDING]** Make entire routine card clickable to edit
+   - Click anywhere on card → open edit page
+   - Keep Edit button as well
+
+8. **[PENDING]** Fix create routine - lock to reservation, remove size/age fields, add auto-detect
+   - Lock competition dropdown to approved reservation's event
+   - Remove classification, size, age fields (auto-detect from dancers)
+   - Validation: routine.competition_id must match reservation.competition_id
+
+9. **[PENDING]** Fix edit routine - data not loading, remove live review bar
+   - Current data not pre-filled when opening edit page
+   - Remove RoutineReviewBar from edit page
+   - Error: duration_seconds column doesn't exist
+
+10. **[PENDING]** Create CD Routine Summaries page for invoice creation with discounts
+    - New page: /dashboard/routine-summaries
+    - CDs can review routine submissions per studio/competition
+    - Add discounts before generating invoice
+    - Replaces auto-invoice on approval workflow
+
+11. **[PENDING]** Optimize invoices page performance (similar to entries fix)
+    - Apply same N+1 query optimization as entries page
+
+12. **[PENDING]** Remove payment_status from reservations page for SDs
+    - SDs shouldn't see "payment required" status
+    - Business logic changed: invoices sent later by CD
+
+---
+
+## Previous Status
 
 ---
 
