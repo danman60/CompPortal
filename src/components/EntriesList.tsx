@@ -30,6 +30,8 @@ export default function EntriesList() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [detailEntry, setDetailEntry] = useState<any>(null);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [summarySubmitted, setSummarySubmitted] = useState(false);
+  const [submittedEntriesSnapshot, setSubmittedEntriesSnapshot] = useState<string>('');
   const updateMutation = trpc.entry.update.useMutation({
     onSuccess: () => {
       refetch();
@@ -187,6 +189,22 @@ export default function EntriesList() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewMode, sortedEntries, selectedEntries]);
 
+  // Detect changes in filtered entries to re-enable submit button
+  useEffect(() => {
+    if (!summarySubmitted) return;
+
+    // Create snapshot of current filtered entries (sorted by ID for consistency)
+    const currentSnapshot = filteredEntries
+      .map(e => e.id)
+      .sort()
+      .join(',');
+
+    // If entries have changed, reset submitted state
+    if (currentSnapshot !== submittedEntriesSnapshot) {
+      setSummarySubmitted(false);
+    }
+  }, [filteredEntries, summarySubmitted, submittedEntriesSnapshot]);
+
   // Pull-to-refresh handler
   const handleRefresh = async () => {
     await refetch();
@@ -272,7 +290,13 @@ export default function EntriesList() {
             </div>
           ) : (
             <Link
-              href={hasSelectedCompetition && selectedReservation ? `/dashboard/entries/create?competition=${selectedCompetition}&reservation=${selectedReservation.id}` : '/dashboard/entries/create'}
+              href={
+                hasSelectedCompetition
+                  ? selectedReservation
+                    ? `/dashboard/entries/create?competition=${selectedCompetition}&reservation=${selectedReservation.id}`
+                    : `/dashboard/entries/create?competition=${selectedCompetition}`
+                  : '/dashboard/entries/create'
+              }
               className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
             >
               ➕ Create Routine
@@ -875,6 +899,41 @@ export default function EntriesList() {
                     </div>
                   </div>
                 )}
+
+                {/* Space Usage Progress Bar (when competition selected) */}
+                {hasSelectedCompetition && selectedReservation && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <span className="text-2xl">📊</span>
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="text-xs text-gray-300 font-semibold uppercase mb-1">
+                        Space Usage
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              usedSpaces >= confirmedSpaces
+                                ? 'bg-gradient-to-r from-red-500 to-orange-500'
+                                : usedSpaces / confirmedSpaces > 0.8
+                                ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                                : 'bg-gradient-to-r from-green-500 to-cyan-500'
+                            }`}
+                            style={{ width: `${Math.min((usedSpaces / confirmedSpaces) * 100, 100)}%` }}
+                          />
+                        </div>
+                        <div className={`text-sm font-bold whitespace-nowrap ${
+                          usedSpaces >= confirmedSpaces
+                            ? 'text-red-400'
+                            : usedSpaces / confirmedSpaces > 0.8
+                            ? 'text-yellow-400'
+                            : 'text-green-400'
+                        }`}>
+                          {usedSpaces} / {confirmedSpaces}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -890,16 +949,29 @@ export default function EntriesList() {
 
                 <button
                   onClick={() => {
+                    // Create snapshot of current filtered entries
+                    const snapshot = filteredEntries
+                      .map(e => e.id)
+                      .sort()
+                      .join(',');
+
+                    setSubmittedEntriesSnapshot(snapshot);
+                    setSummarySubmitted(true);
+
                     toast.success('Summary submitted to Competition Director! They will create your invoice.', {
                       duration: 4000,
                       position: 'top-right',
                     });
                   }}
-                  disabled={filteredEntries.length === 0}
-                  className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                  disabled={filteredEntries.length === 0 || summarySubmitted}
+                  className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
+                    summarySubmitted
+                      ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
+                  }`}
                 >
-                  <span>📤</span>
-                  <span>Submit Summary</span>
+                  <span>{summarySubmitted ? '✓' : '📤'}</span>
+                  <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
                 </button>
               </div>
             </div>

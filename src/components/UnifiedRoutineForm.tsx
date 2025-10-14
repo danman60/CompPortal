@@ -42,6 +42,7 @@ export default function UnifiedRoutineForm() {
 
   // Dancers state
   const [selectedDancers, setSelectedDancers] = useState<SelectedDancer[]>([]);
+  const [dancerSortBy, setDancerSortBy] = useState<'name' | 'age'>('name');
 
   // Overrides for inferred values (Step 3)
   const [overrides, setOverrides] = useState({
@@ -112,10 +113,6 @@ export default function UnifiedRoutineForm() {
 
   // Create mutation
   const createMutation = trpc.entry.create.useMutation({
-    onSuccess: (data) => {
-      toast.success('Routine created successfully!');
-      router.push('/dashboard/entries');
-    },
     onError: (error) => {
       toast.error(`Error creating routine: ${error.message}`);
     },
@@ -133,7 +130,7 @@ export default function UnifiedRoutineForm() {
   const canProceedToStep3 = selectedDancers.length > 0;
 
   // Final submission
-  const handleSubmit = () => {
+  const handleSubmit = (destination: 'dashboard' | 'another') => {
     const ageGroupId = overrides.age_group_id || inferredAgeGroup?.id;
     const sizeCategoryId = overrides.entry_size_category_id || inferredSizeCategory?.id;
 
@@ -157,7 +154,26 @@ export default function UnifiedRoutineForm() {
       total_fee: 0,
       status: 'draft',
       participants: selectedDancers,
-    } as any);
+    } as any, {
+      onSuccess: () => {
+        toast.success('Routine created successfully!');
+        if (destination === 'dashboard') {
+          router.push('/dashboard/entries');
+        } else {
+          // Reset form for another entry
+          setForm({
+            ...form,
+            title: '',
+            choreographer: '',
+            special_requirements: '',
+          });
+          setSelectedDancers([]);
+          setOverrides({ age_group_id: '', entry_size_category_id: '' });
+          setCurrentStep(1);
+          toast.success('Ready to create another routine!', { duration: 2000 });
+        }
+      },
+    });
   };
 
   // Calculate capacity
@@ -332,11 +348,42 @@ export default function UnifiedRoutineForm() {
             <h1 className="text-3xl font-bold text-white">Add Dancers</h1>
 
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Select Dancers for "{form.title}"</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-white">Select Dancers for "{form.title}"</h2>
+                {dancersData?.dancers && dancersData.dancers.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-300">Sort by:</label>
+                    <select
+                      value={dancerSortBy}
+                      onChange={(e) => setDancerSortBy(e.target.value as 'name' | 'age')}
+                      className="px-3 py-1.5 bg-white/5 border border-white/20 rounded-lg text-white text-sm"
+                    >
+                      <option value="name" className="bg-gray-900">Name (A-Z)</option>
+                      <option value="age" className="bg-gray-900">Age (Youngest First)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
 
               {dancersData?.dancers && dancersData.dancers.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {dancersData.dancers.map((dancer: any) => {
+                  {[...dancersData.dancers]
+                    .sort((a, b) => {
+                      if (dancerSortBy === 'name') {
+                        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+                        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+                        return nameA.localeCompare(nameB);
+                      } else {
+                        const ageA = a.date_of_birth
+                          ? Math.floor((Date.now() - new Date(a.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+                          : 999;
+                        const ageB = b.date_of_birth
+                          ? Math.floor((Date.now() - new Date(b.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+                          : 999;
+                        return ageA - ageB;
+                      }
+                    })
+                    .map((dancer: any) => {
                     const isSelected = selectedDancers.some(d => d.dancer_id === dancer.id);
                     const age = dancer.date_of_birth
                       ? Math.floor((Date.now() - new Date(dancer.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -540,17 +587,15 @@ export default function UnifiedRoutineForm() {
                     value={overrides.entry_size_category_id || inferredSizeCategory?.id || ''}
                     onChange={(e) => setOverrides({ ...overrides, entry_size_category_id: e.target.value })}
                   >
-                    {!overrides.entry_size_category_id && inferredSizeCategory && (
-                      <option value={inferredSizeCategory.id} className="bg-gray-900">
-                        ✨ {inferredSizeCategory.name} (auto-detected)
-                      </option>
-                    )}
-                    <option value="" className="bg-gray-900">Select size</option>
-                    {lookupData?.entrySizeCategories?.map((sc: any) => (
-                      <option key={sc.id} value={sc.id} className="bg-gray-900">
-                        {sc.name}
-                      </option>
-                    ))}
+                    {!inferredSizeCategory && <option value="" className="bg-gray-900">Select size</option>}
+                    {lookupData?.entrySizeCategories?.map((sc: any) => {
+                      const isInferred = !overrides.entry_size_category_id && inferredSizeCategory?.id === sc.id;
+                      return (
+                        <option key={sc.id} value={sc.id} className="bg-gray-900">
+                          {isInferred ? `✨ ${sc.name} (auto-detected)` : sc.name}
+                        </option>
+                      );
+                    })}
                   </select>
                   {inferredSizeCategory && !overrides.entry_size_category_id && (
                     <div className="text-xs text-green-400 mt-1">
@@ -568,13 +613,22 @@ export default function UnifiedRoutineForm() {
               >
                 ← Back
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={createMutation.isPending || (!inferredAgeGroup && !overrides.age_group_id) || (!inferredSizeCategory && !overrides.entry_size_category_id)}
-                className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-              >
-                {createMutation.isPending ? 'Creating...' : 'Create Routine ✓'}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleSubmit('another')}
+                  disabled={createMutation.isPending || (!inferredAgeGroup && !overrides.age_group_id) || (!inferredSizeCategory && !overrides.entry_size_category_id)}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  {createMutation.isPending ? 'Creating...' : '➕ Create & Start Another'}
+                </button>
+                <button
+                  onClick={() => handleSubmit('dashboard')}
+                  disabled={createMutation.isPending || (!inferredAgeGroup && !overrides.age_group_id) || (!inferredSizeCategory && !overrides.entry_size_category_id)}
+                  className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  {createMutation.isPending ? 'Creating...' : '✓ Create & Back to Dashboard'}
+                </button>
+              </div>
             </div>
           </div>
         )}
