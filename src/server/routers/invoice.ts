@@ -143,51 +143,58 @@ export const invoiceRouter = router({
   getByStudio: publicProcedure
     .input(z.object({ studioId: z.string().uuid() }))
     .query(async ({ input }) => {
-      // Get all competitions this studio has entries in
-      const competitions = await prisma.competition_entries.groupBy({
-        by: ['competition_id'],
+      // PERFORMANCE FIX: Fetch all data in parallel instead of N+1 queries
+      // Get all entries for this studio (non-cancelled)
+      const entries = await prisma.competition_entries.findMany({
         where: {
           studio_id: input.studioId,
+          status: { not: 'cancelled' },
         },
-        _count: {
-          id: true,
+        select: {
+          competition_id: true,
+          total_fee: true,
         },
       });
 
-      const invoices = await Promise.all(
-        competitions.map(async (comp) => {
-          const competition = await prisma.competitions.findUnique({
-            where: { id: comp.competition_id },
-            select: {
-              id: true,
-              name: true,
-              year: true,
-              competition_start_date: true,
-            },
+      // Get unique competition IDs
+      const competitionIds = [...new Set(entries.map(e => e.competition_id))];
+
+      // Fetch all competitions at once
+      const competitions = await prisma.competitions.findMany({
+        where: {
+          id: { in: competitionIds },
+        },
+        select: {
+          id: true,
+          name: true,
+          year: true,
+          competition_start_date: true,
+        },
+      });
+
+      // Create a map for fast lookup
+      const competitionMap = new Map(competitions.map(c => [c.id, c]));
+
+      // Group entries by competition and calculate totals
+      const invoiceMap = new Map<string, any>();
+      entries.forEach(entry => {
+        if (!invoiceMap.has(entry.competition_id)) {
+          const comp = competitionMap.get(entry.competition_id);
+          invoiceMap.set(entry.competition_id, {
+            competitionId: entry.competition_id,
+            competitionName: comp?.name || 'Unknown',
+            competitionYear: comp?.year,
+            startDate: comp?.competition_start_date,
+            entryCount: 0,
+            totalAmount: 0,
           });
+        }
+        const invoice = invoiceMap.get(entry.competition_id)!;
+        invoice.entryCount++;
+        invoice.totalAmount += Number(entry.total_fee || 0);
+      });
 
-          const entries = await prisma.competition_entries.findMany({
-            where: {
-              studio_id: input.studioId,
-              competition_id: comp.competition_id,
-              status: { not: 'cancelled' },
-            },
-          });
-
-          const totalAmount = entries.reduce((sum, entry) => {
-            return sum + Number(entry.total_fee || 0);
-          }, 0);
-
-          return {
-            competitionId: comp.competition_id,
-            competitionName: competition?.name || 'Unknown',
-            competitionYear: competition?.year,
-            startDate: competition?.competition_start_date,
-            entryCount: entries.length,
-            totalAmount,
-          };
-        })
-      );
+      const invoices = Array.from(invoiceMap.values());
 
       return { invoices };
     }),
@@ -203,6 +210,7 @@ export const invoiceRouter = router({
     .query(async ({ input = {} }) => {
       const { competitionId, paymentStatus } = input;
 
+      // PERFORMANCE FIX: Fetch all data in bulk instead of N+1 queries
       // Get all studio × competition combinations with entries
       const entryGroups = await prisma.competition_entries.groupBy({
         by: ['studio_id', 'competition_id'],
@@ -214,51 +222,70 @@ export const invoiceRouter = router({
         _sum: { total_fee: true },
       });
 
-      // Fetch all invoices with studio/competition/reservation details
-      const invoices = await Promise.all(
-        entryGroups.map(async (group) => {
-          const [studio, competition, reservation] = await Promise.all([
-            prisma.studios.findUnique({
-              where: { id: group.studio_id },
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                city: true,
-                province: true,
-                email: true,
-                phone: true,
-              },
-            }),
-            prisma.competitions.findUnique({
-              where: { id: group.competition_id },
-              select: {
-                id: true,
-                name: true,
-                year: true,
-                competition_start_date: true,
-                competition_end_date: true,
-              },
-            }),
-            prisma.reservations.findFirst({
-              where: {
-                studio_id: group.studio_id,
-                competition_id: group.competition_id,
-              },
-              select: {
-                id: true,
-                spaces_requested: true,
-                spaces_confirmed: true,
-                deposit_amount: true,
-                total_amount: true,
-                payment_status: true,
-                payment_due_date: true,
-                payment_confirmed_at: true,
-                payment_confirmed_by: true,
-                status: true,
-              },
-            }),
-          ]);
+      // Extract unique studio and competition IDs
+      const studioIds = [...new Set(entryGroups.map(g => g.studio_id))];
+      const competitionIds = [...new Set(entryGroups.map(g => g.competition_id))];
+
+      // Fetch all studios, competitions, and reservations in parallel
+      const [studios, competitions, reservations] = await Promise.all([
+        prisma.studios.findMany({
+          where: { id: { in: studioIds } },
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            city: true,
+            province: true,
+            email: true,
+            phone: true,
+          },
+        }),
+        prisma.competitions.findMany({
+          where: { id: { in: competitionIds } },
+          select: {
+            id: true,
+            name: true,
+            year: true,
+            competition_start_date: true,
+            competition_end_date: true,
+          },
+        }),
+        prisma.reservations.findMany({
+          where: {
+            studio_id: { in: studioIds },
+            competition_id: { in: competitionIds },
+          },
+          select: {
+            id: true,
+            studio_id: true,
+            competition_id: true,
+            spaces_requested: true,
+            spaces_confirmed: true,
+            deposit_amount: true,
+            total_amount: true,
+            payment_status: true,
+            payment_due_date: true,
+            payment_confirmed_at: true,
+            payment_confirmed_by: true,
+            status: true,
+          },
+        }),
+      ]);
+
+      // Create maps for fast lookup
+      const studioMap = new Map(studios.map(s => [s.id, s]));
+      const competitionMap = new Map(competitions.map(c => [c.id, c]));
+      const reservationMap = new Map<string, typeof reservations[0]>();
+      reservations.forEach(r => {
+        reservationMap.set(`${r.studio_id}-${r.competition_id}`, r);
+      });
+
+      // Build invoices from grouped data
+      const invoices = entryGroups
+        .map((group) => {
+          const studio = studioMap.get(group.studio_id);
+          const competition = competitionMap.get(group.competition_id);
+          const reservation = reservationMap.get(`${group.studio_id}-${group.competition_id}`);
 
           // Skip if studio or competition not found
           if (!studio || !competition) {
@@ -299,10 +326,6 @@ export const invoiceRouter = router({
             } : null,
           };
         })
-      );
-
-      // Filter out null entries and sort by competition year (desc) and studio name (asc)
-      const validInvoices = invoices
         .filter((inv): inv is NonNullable<typeof inv> => inv !== null)
         .sort((a, b) => {
           // Sort by year descending first
@@ -314,8 +337,8 @@ export const invoiceRouter = router({
         });
 
       return {
-        invoices: validInvoices,
-        total: validInvoices.length,
+        invoices,
+        total: invoices.length,
       };
     }),
 
