@@ -2,6 +2,7 @@
 
 import { trpc } from '@/lib/trpc';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface CompetitionReservationsPanelProps {
   competitionId: string;
@@ -15,6 +16,7 @@ export default function CompetitionReservationsPanel({
   maxRoutines = 600,
 }: CompetitionReservationsPanelProps) {
   const [spacesInput, setSpacesInput] = useState<Record<string, number>>({});
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const utils = trpc.useContext();
 
   const { data, isLoading } = trpc.reservation.getAll.useQuery({
@@ -23,15 +25,35 @@ export default function CompetitionReservationsPanel({
 
   const approveMutation = trpc.reservation.approve.useMutation({
     onSuccess: () => {
+      toast.success('Reservation approved successfully! ✅', {
+        duration: 3000,
+        position: 'top-right',
+      });
       utils.reservation.getAll.invalidate();
       utils.competition.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to approve: ${error.message}`, {
+        duration: 4000,
+        position: 'top-right',
+      });
     },
   });
 
   const rejectMutation = trpc.reservation.reject.useMutation({
     onSuccess: () => {
+      toast.success('Reservation rejected', {
+        duration: 3000,
+        position: 'top-right',
+      });
       utils.reservation.getAll.invalidate();
       utils.competition.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reject: ${error.message}`, {
+        duration: 4000,
+        position: 'top-right',
+      });
     },
   });
 
@@ -45,33 +67,47 @@ export default function CompetitionReservationsPanel({
   const handleApprove = async (reservationId: string, studioId: string) => {
     const spaces = spacesInput[reservationId];
     if (!spaces || spaces <= 0) {
-      alert('Please enter number of spaces to approve');
+      toast.error('Please enter number of spaces to approve');
       return;
     }
 
     if (spaces > remaining) {
-      alert(`Only ${remaining} spaces remaining`);
+      toast.error(`Only ${remaining} spaces remaining`);
       return;
     }
 
-    await approveMutation.mutateAsync({
-      id: reservationId,
-      spacesConfirmed: spaces,
-    });
+    // Trigger slide-out animation
+    setRemovingId(reservationId);
 
-    setSpacesInput(prev => {
-      const next = { ...prev };
-      delete next[reservationId];
-      return next;
-    });
+    // Wait for animation before mutating
+    setTimeout(async () => {
+      await approveMutation.mutateAsync({
+        id: reservationId,
+        spacesConfirmed: spaces,
+      });
+
+      setSpacesInput(prev => {
+        const next = { ...prev };
+        delete next[reservationId];
+        return next;
+      });
+      setRemovingId(null);
+    }, 300); // Match animation duration
   };
 
   const handleReject = async (reservationId: string) => {
     if (!confirm('Are you sure you want to reject this reservation?')) return;
 
-    await rejectMutation.mutateAsync({
-      id: reservationId,
-    });
+    // Trigger slide-out animation
+    setRemovingId(reservationId);
+
+    // Wait for animation before mutating
+    setTimeout(async () => {
+      await rejectMutation.mutateAsync({
+        id: reservationId,
+      });
+      setRemovingId(null);
+    }, 300); // Match animation duration
   };
 
   if (isLoading) {
@@ -111,44 +147,51 @@ export default function CompetitionReservationsPanel({
       {pending.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-yellow-400 mb-2">Pending Approval</h4>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {pending.map((reservation) => (
               <div
                 key={reservation.id}
-                className="bg-yellow-500/10 border border-yellow-400/30 rounded-lg p-3 flex items-center justify-between"
+                className={`
+                  bg-yellow-500/10 border border-yellow-400/30 rounded-lg p-2
+                  flex items-center justify-between gap-2
+                  transition-all duration-300 ease-in-out
+                  ${removingId === reservation.id
+                    ? 'opacity-0 translate-x-full h-0 p-0 border-0 overflow-hidden'
+                    : 'opacity-100 translate-x-0 h-auto'
+                  }
+                `}
               >
-                <div className="flex-1">
-                  <div className="text-white font-medium">{reservation.studios?.name}</div>
-                  <div className="text-xs text-gray-400">
-                    Requested {reservation.spaces_requested} spaces{reservation.created_at && ` • ${new Date(reservation.created_at).toLocaleDateString()}`}
-                  </div>
+                <div className="text-white font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis min-w-0 flex-shrink">
+                  {reservation.studios?.name} ({reservation.spaces_requested} req)
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <input
                     type="number"
                     min="1"
                     max={remaining}
-                    placeholder="Spaces"
+                    placeholder="#"
                     value={spacesInput[reservation.id] || ''}
                     onChange={(e) => setSpacesInput(prev => ({
                       ...prev,
                       [reservation.id]: parseInt(e.target.value) || 0
                     }))}
-                    className="w-20 px-2 py-1 bg-gray-900 text-white border border-white/20 rounded text-sm"
+                    className="w-14 px-1.5 py-0.5 bg-gray-900 text-white border border-white/20 rounded text-xs"
                   />
                   <button
                     onClick={() => handleApprove(reservation.id, reservation.studio_id)}
-                    disabled={approveMutation.isPending || rejectMutation.isPending}
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+                    disabled={approveMutation.isPending || rejectMutation.isPending || removingId === reservation.id}
+                    className="bg-green-500 hover:bg-green-600 text-white px-2 py-0.5 rounded text-xs disabled:opacity-50"
+                    title="Approve reservation"
                   >
-                    Approve
+                    ✓
                   </button>
                   <button
                     onClick={() => handleReject(reservation.id)}
-                    disabled={approveMutation.isPending || rejectMutation.isPending}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+                    disabled={approveMutation.isPending || rejectMutation.isPending || removingId === reservation.id}
+                    className="bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 rounded text-xs disabled:opacity-50"
+                    title="Reject reservation"
                   >
-                    Reject
+                    ✗
                   </button>
                 </div>
               </div>
@@ -161,15 +204,17 @@ export default function CompetitionReservationsPanel({
       {approved.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-green-400 mb-2">Approved</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="space-y-1">
             {approved.map((reservation) => (
               <div
                 key={reservation.id}
-                className="bg-green-500/10 border border-green-400/30 rounded-lg p-3"
+                className="bg-green-500/10 border border-green-400/30 rounded-lg p-2 flex items-center justify-between"
               >
-                <div className="text-white font-medium">{reservation.studios?.name}</div>
-                <div className="text-xs text-gray-400">
-                  {reservation.spaces_confirmed} spaces allocated
+                <div className="text-white font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+                  {reservation.studios?.name}
+                </div>
+                <div className="text-xs text-green-400 font-semibold flex-shrink-0">
+                  {reservation.spaces_confirmed} spaces
                 </div>
               </div>
             ))}
