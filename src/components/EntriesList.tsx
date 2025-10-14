@@ -295,6 +295,14 @@ export default function EntriesList() {
             <span>Assign Dancers</span>
           </Link>
 
+          <Link
+            href="/dashboard/entries/import"
+            className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+          >
+            <span>📤</span>
+            <span>Import CSV</span>
+          </Link>
+
           {viewMode === 'table' && selectedEntries.size > 0 && (
             <button
               onClick={handleBulkDelete}
