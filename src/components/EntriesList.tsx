@@ -8,7 +8,6 @@ import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import toast from 'react-hot-toast';
 import PullToRefresh from 'react-pull-to-refresh';
-import HoverPreview from '@/components/HoverPreview';
 import { SkeletonCard } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import FloatingActionButton from '@/components/FloatingActionButton';
@@ -29,6 +28,7 @@ export default function EntriesList() {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [detailEntry, setDetailEntry] = useState<any>(null);
   const updateMutation = trpc.entry.update.useMutation({
     onSuccess: () => {
       refetch();
@@ -816,12 +816,10 @@ export default function EntriesList() {
                 {sortedEntries.map((entry, index) => {
                   const musicStatus = getMusicStatus(entry);
                   return (
-                  <HoverPreview
-                    key={entry.id}
-                    delay={400}
-                    trigger={
                   <tr
-                    className={`border-b border-white/10 hover:bg-gray-700/50 transition-colors ${
+                    key={entry.id}
+                    onClick={() => setDetailEntry(entry)}
+                    className={`border-b border-white/10 hover:bg-gray-700/50 transition-colors cursor-pointer ${
                       index % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-900/20'
                     }`}
                   >
@@ -829,7 +827,10 @@ export default function EntriesList() {
                       <input
                         type="checkbox"
                         checked={selectedEntries.has(entry.id)}
-                        onChange={() => handleSelectEntry(entry.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleSelectEntry(entry.id);
+                        }}
                         className="w-4 h-4 cursor-pointer"
                       />
                     </td>
@@ -902,7 +903,7 @@ export default function EntriesList() {
                       </span>
                     </td>
                     <td className="px-6 py-4" style={{ width: '200px' }}>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         <Link
                           href={`/dashboard/entries/${entry.id}`}
                           className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs transition-all"
@@ -924,101 +925,6 @@ export default function EntriesList() {
                       </div>
                     </td>
                   </tr>
-                    }
-                    content={
-                      <div className="space-y-3 min-w-[350px]">
-                        <div>
-                          <div className="text-xs text-gray-400 mb-1">Routine Details</div>
-                          <div className="text-lg font-bold text-white">{entry.title}</div>
-                          {entry.entry_number && (
-                            <div className="text-sm text-purple-400 mt-1">
-                              Routine #{entry.entry_number}{entry.entry_suffix || ''}
-                              {entry.is_late_entry && <span className="ml-2 text-xs text-orange-400">(LATE)</span>}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Competition</div>
-                            <div className="text-sm text-white">
-                              {entry.competitions?.name}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Year</div>
-                            <div className="text-sm text-white">
-                              {entry.competitions?.year}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Category</div>
-                            <div className="text-sm text-white">
-                              {entry.dance_categories?.name || 'N/A'}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Age Group</div>
-                            <div className="text-sm text-white">
-                              {entry.age_groups?.name || 'N/A'}
-                            </div>
-                          </div>
-                        </div>
-
-                        {entry.entry_participants && entry.entry_participants.length > 0 && (
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">
-                              Dancers ({entry.entry_participants.length})
-                            </div>
-                            <div className="space-y-1">
-                              {entry.entry_participants.slice(0, 3).map((p) => (
-                                <div key={p.id} className="text-sm text-gray-300">
-                                  • {p.dancer_name}
-                                </div>
-                              ))}
-                              {entry.entry_participants.length > 3 && (
-                                <div className="text-xs text-gray-500">
-                                  +{entry.entry_participants.length - 3} more
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="pt-3 border-t border-white/10 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-400">Music</div>
-                            <span className={`px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
-                              musicStatus.status === 'uploaded'
-                                ? 'bg-green-500/20 text-green-400'
-                                : 'bg-yellow-500/20 text-yellow-400'
-                            }`}>
-                              <span>{musicStatus.icon}</span>
-                              <span>{musicStatus.status === 'uploaded' ? 'Uploaded' : 'Pending'}</span>
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-400">Registration Status</div>
-                            <span className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
-                              entry.status === 'confirmed'
-                                ? 'bg-green-500/20 text-green-400'
-                                : entry.status === 'registered'
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : entry.status === 'cancelled'
-                                ? 'bg-red-500/20 text-red-400'
-                                : 'bg-gray-500/20 text-gray-400'
-                            }`}>
-                              {entry.status}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    }
-                  />
                   );
                 })}
               </tbody>
@@ -1120,6 +1026,118 @@ export default function EntriesList() {
             await updateMutation.mutateAsync({ id: editingEntry.id, data: updates as any } as any);
           }}
         />
+      )}
+
+      {/* Routine Detail Modal (Click Popup) */}
+      {detailEntry && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setDetailEntry(null)}
+        >
+          <div
+            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/20 p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs text-gray-400 mb-1">Routine Details</div>
+                <div className="text-lg font-bold text-white">{detailEntry.title}</div>
+                {detailEntry.entry_number && (
+                  <div className="text-sm text-purple-400 mt-1">
+                    Routine #{detailEntry.entry_number}{detailEntry.entry_suffix || ''}
+                    {detailEntry.is_late_entry && <span className="ml-2 text-xs text-orange-400">(LATE)</span>}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Competition</div>
+                  <div className="text-sm text-white">
+                    {detailEntry.competitions?.name}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Year</div>
+                  <div className="text-sm text-white">
+                    {detailEntry.competitions?.year}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Category</div>
+                  <div className="text-sm text-white">
+                    {detailEntry.dance_categories?.name || 'N/A'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Age Group</div>
+                  <div className="text-sm text-white">
+                    {detailEntry.age_groups?.name || 'N/A'}
+                  </div>
+                </div>
+              </div>
+
+              {detailEntry.entry_participants && detailEntry.entry_participants.length > 0 && (
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">
+                    Dancers ({detailEntry.entry_participants.length})
+                  </div>
+                  <div className="space-y-1">
+                    {detailEntry.entry_participants.slice(0, 3).map((p: any) => (
+                      <div key={p.id} className="text-sm text-gray-300">
+                        • {p.dancer_name}
+                      </div>
+                    ))}
+                    {detailEntry.entry_participants.length > 3 && (
+                      <div className="text-xs text-gray-500">
+                        +{detailEntry.entry_participants.length - 3} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-gray-400">Music</div>
+                  <span className={`px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
+                    detailEntry.music_file_url
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-yellow-500/20 text-yellow-400'
+                  }`}>
+                    <span>{detailEntry.music_file_url ? '✅' : '🎵'}</span>
+                    <span>{detailEntry.music_file_url ? 'Uploaded' : 'Pending'}</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-gray-400">Registration Status</div>
+                  <span className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
+                    detailEntry.status === 'confirmed'
+                      ? 'bg-green-500/20 text-green-400'
+                      : detailEntry.status === 'registered'
+                      ? 'bg-yellow-500/20 text-yellow-400'
+                      : detailEntry.status === 'cancelled'
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {detailEntry.status}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setDetailEntry(null)}
+                className="w-full mt-4 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </PullToRefresh>
   );
