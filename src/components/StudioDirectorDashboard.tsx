@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
 import QuickStatsWidget from './QuickStatsWidget';
 import { trpc } from '@/lib/trpc';
@@ -82,6 +83,60 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
           { icon: '✅', value: (myEntries?.entries?.filter(e => e.status === 'confirmed').length) || 0, label: 'Confirmed', color: 'text-green-300', tooltip: 'Routines confirmed by director' },
         ]}
       />
+
+      {/* Action BUTTONS (navigation only - no duplicates of stats CARDS) */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-white mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="w-full">
+            <div className="text-xs text-purple-300 font-medium mb-2 px-2">Check your scores and rankings</div>
+            <Link
+              href="/dashboard/scoreboard"
+              className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block h-32 w-full"
+            >
+              <div className="flex items-center gap-4 h-full">
+                <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">🏆</div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-semibold text-white truncate">Results</h3>
+                  <p className="text-gray-400 text-sm line-clamp-2">View competition scores</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <div className="w-full">
+            <div className="text-xs text-purple-300 font-medium mb-2 px-2">View and pay invoices</div>
+            <Link
+              href="/dashboard/invoices"
+              className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block h-32 w-full"
+            >
+              <div className="flex items-center gap-4 h-full">
+                <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">🧾</div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-semibold text-white truncate">My Invoices</h3>
+                  <p className="text-gray-400 text-sm line-clamp-2">View studio billing</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <div className="w-full">
+            <div className="text-xs text-purple-300 font-medium mb-2 px-2">Upload routine music files</div>
+            <Link
+              href="/dashboard/music"
+              className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block h-32 w-full"
+            >
+              <div className="flex items-center gap-4 h-full">
+                <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">🎵</div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-semibold text-white truncate">Music Tracking</h3>
+                  <p className="text-gray-400 text-sm line-clamp-2">Monitor music file uploads</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
     </>
   );
