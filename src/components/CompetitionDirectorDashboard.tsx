@@ -31,6 +31,13 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     description: 'Studio invoices',
   },
   {
+    id: 'summaries',
+    href: '/dashboard/routine-summaries',
+    icon: '📋',
+    title: 'Routine Summaries',
+    description: 'Review & create invoices',
+  },
+  {
     id: 'events',
     href: '/dashboard/competitions',
     icon: '🎪',
