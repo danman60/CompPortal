@@ -45,8 +45,7 @@ export default function EntriesList() {
     {
       competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
       status: 'approved',
-    },
-    { enabled: selectedCompetition !== 'all' }
+    }
   );
 
   // Delete mutation with optimistic updates
@@ -222,13 +221,22 @@ export default function EntriesList() {
   }
 
   // Calculate space limit for "Create Routine" button
-  const selectedReservation = reservationData?.reservations?.[0];
   const hasSelectedCompetition = selectedCompetition !== 'all';
-  const confirmedSpaces = selectedReservation?.spaces_confirmed || 0;
+  const selectedReservation = hasSelectedCompetition ? reservationData?.reservations?.[0] : null;
+
+  // Calculate total confirmed spaces and used spaces
+  const confirmedSpaces = hasSelectedCompetition
+    ? selectedReservation?.spaces_confirmed || 0
+    : reservationData?.reservations?.reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+
   const usedSpaces = hasSelectedCompetition
     ? entries.filter(e => e.competition_id === selectedCompetition && e.status !== 'cancelled').length
-    : 0;
+    : entries.filter(e => e.status !== 'cancelled').length;
+
   const isAtLimit = hasSelectedCompetition && selectedReservation && usedSpaces >= confirmedSpaces;
+
+  // Show progress bar when there are entries and reservations
+  const showProgressBar = entries.length > 0 && confirmedSpaces > 0;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -844,17 +852,6 @@ export default function EntriesList() {
                   </div>
                 </div>
 
-                {/* Dancers Count */}
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">👥</span>
-                  <div>
-                    <div className="text-xs text-gray-300 font-semibold uppercase">Dancers</div>
-                    <div className="text-2xl font-bold text-cyan-400">
-                      {filteredEntries.reduce((sum, e) => sum + (e.entry_participants?.length || 0), 0)}
-                    </div>
-                  </div>
-                </div>
-
                 {/* Price Estimate */}
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">💰</span>
@@ -862,17 +859,6 @@ export default function EntriesList() {
                     <div className="text-xs text-gray-300 font-semibold uppercase">Est. Total</div>
                     <div className="text-2xl font-bold text-purple-400">
                       ${(filteredEntries.length * 50).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Music Status */}
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🎵</span>
-                  <div>
-                    <div className="text-xs text-gray-300 font-semibold uppercase">Music Uploaded</div>
-                    <div className="text-2xl font-bold text-green-400">
-                      {filteredEntries.filter(e => e.music_file_url).length} / {filteredEntries.length}
                     </div>
                   </div>
                 </div>
@@ -900,8 +886,8 @@ export default function EntriesList() {
                   </div>
                 )}
 
-                {/* Space Usage Progress Bar (when competition selected) */}
-                {hasSelectedCompetition && selectedReservation && (
+                {/* Space Usage Progress Bar */}
+                {showProgressBar && (
                   <div className="flex items-center gap-2 ml-4">
                     <span className="text-2xl">📊</span>
                     <div className="flex-1 min-w-[200px]">

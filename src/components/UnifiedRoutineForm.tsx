@@ -561,17 +561,15 @@ export default function UnifiedRoutineForm() {
                     value={overrides.age_group_id || inferredAgeGroup?.id || ''}
                     onChange={(e) => setOverrides({ ...overrides, age_group_id: e.target.value })}
                   >
-                    {!overrides.age_group_id && inferredAgeGroup && (
-                      <option value={inferredAgeGroup.id} className="bg-gray-900">
-                        ✨ {inferredAgeGroup.name} (auto-detected)
-                      </option>
-                    )}
-                    <option value="" className="bg-gray-900">Select age group</option>
-                    {lookupData?.ageGroups?.map((ag: any) => (
-                      <option key={ag.id} value={ag.id} className="bg-gray-900">
-                        {ag.name}
-                      </option>
-                    ))}
+                    {!inferredAgeGroup && <option value="" className="bg-gray-900">Select age group</option>}
+                    {lookupData?.ageGroups?.map((ag: any) => {
+                      const isInferred = !overrides.age_group_id && inferredAgeGroup?.id === ag.id;
+                      return (
+                        <option key={ag.id} value={ag.id} className="bg-gray-900">
+                          {isInferred ? `✨ ${ag.name} (auto-detected)` : ag.name}
+                        </option>
+                      );
+                    })}
                   </select>
                   {inferredAgeGroup && !overrides.age_group_id && (
                     <div className="text-xs text-green-400 mt-1">
