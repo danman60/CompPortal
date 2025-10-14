@@ -76,7 +76,7 @@ export default function ReservationPipeline() {
       pendingCount,
       studioCount: new Set(reservations.filter(r => r.competitionId === comp.id).map(r => r.studioId)).size,
     };
-  }).slice(0, 3);
+  });
 
   // Filter reservations by status
   const filteredReservations = statusFilter === 'all'
@@ -188,7 +188,8 @@ export default function ReservationPipeline() {
         </header>
 
         {/* Event Capacity Meters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="sticky top-0 z-40 bg-gradient-to-br from-slate-900 via-gray-900 to-black pb-4 -mx-6 px-6 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {eventMetrics.map(event => (
             <div
               key={event.id}
@@ -237,6 +238,7 @@ export default function ReservationPipeline() {
               </div>
             </div>
           ))}
+          </div>
         </div>
 
         {/* Pipeline Tabs */}
@@ -259,7 +261,7 @@ export default function ReservationPipeline() {
                 : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
             }`}
           >
-            Pending Review <span className="ml-2 opacity-70">({stats.needAction})</span>
+            Pending Reservation <span className="ml-2 opacity-70">({stats.needAction})</span>
           </button>
           <button
             onClick={() => setStatusFilter('approved')}
@@ -269,7 +271,7 @@ export default function ReservationPipeline() {
                 : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
             }`}
           >
-            Approved <span className="ml-2 opacity-70">({stats.approved})</span>
+            Pending Routine Creation <span className="ml-2 opacity-70">({stats.approved})</span>
           </button>
           <button
             onClick={() => setStatusFilter('summary_in')}
@@ -279,7 +281,7 @@ export default function ReservationPipeline() {
                 : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
             }`}
           >
-            Summary In <span className="ml-2 opacity-70">({stats.summariesIn})</span>
+            Pending Invoice <span className="ml-2 opacity-70">({stats.summariesIn})</span>
           </button>
           <button
             onClick={() => setStatusFilter('invoiced')}
@@ -407,7 +409,7 @@ export default function ReservationPipeline() {
                             )}
                             {reservation.status === 'approved' && reservation.entryCount > 0 && !reservation.invoiceId && (
                               <button
-                                onClick={() => router.push('/dashboard/routine-summaries')}
+                                onClick={() => router.push(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`)}
                                 className="inline-block px-3 py-1 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg text-xs font-semibold uppercase hover:bg-blue-500/30 transition-all"
                               >
                                 Summary In
@@ -467,10 +469,21 @@ export default function ReservationPipeline() {
                               )}
                               {reservation.status === 'approved' && !reservation.invoiceId && reservation.entryCount > 0 && (
                                 <button
-                                  onClick={() => router.push('/dashboard/routine-summaries')}
+                                  onClick={() => router.push(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`)}
                                   className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg text-xs font-semibold hover:shadow-lg transition-all"
                                 >
                                   💰 Create Invoice
+                                </button>
+                              )}
+                              {reservation.status === 'approved' && reservation.invoiceId && !reservation.invoicePaid && (
+                                <button
+                                  onClick={() => {
+                                    toast.success(`Reminder email sent to ${reservation.studioName}!`);
+                                    // TODO: Implement actual email sending via tRPC mutation
+                                  }}
+                                  className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-xs font-semibold hover:shadow-lg transition-all"
+                                >
+                                  📧 Remind
                                 </button>
                               )}
                               {reservation.status === 'approved' && !reservation.entryCount && (

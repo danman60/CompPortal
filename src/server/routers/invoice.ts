@@ -297,6 +297,12 @@ export const invoiceRouter = router({
             return null;
           }
 
+          // CRITICAL: Only show studios that have completed ALL their routines
+          // Skip if they haven't created all confirmed routines yet
+          if (reservation && group._count.id < (reservation.spaces_confirmed || 0)) {
+            return null;
+          }
+
           return {
             studioId: studio.id,
             studioName: studio.name,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { generateInvoicePDF } from '@/lib/pdf-reports';
 
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export default function InvoiceDetail({ studioId, competitionId }: Props) {
+  const [discountPercent, setDiscountPercent] = useState(0);
+
   const { data: invoice, isLoading } = trpc.invoice.generateForStudio.useQuery({
     studioId,
     competitionId,
@@ -51,8 +54,13 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         <div className="text-right">
           <div className="text-sm text-gray-400 mb-1">Total Amount</div>
           <div className="text-4xl font-bold text-green-400">
-            ${invoice.summary.totalAmount.toFixed(2)}
+            ${((invoice.summary.subtotal * (1 - discountPercent / 100)) * (1 + invoice.summary.taxRate)).toFixed(2)}
           </div>
+          {discountPercent > 0 && (
+            <div className="text-xs text-green-400 mt-1">
+              ({discountPercent}% discount applied)
+            </div>
+          )}
         </div>
       </div>
 
@@ -176,6 +184,51 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         </div>
       </div>
 
+      {/* Discount Buttons */}
+      <div className="mb-6 flex justify-end">
+        <div className="flex gap-2">
+          <span className="text-gray-300 self-center mr-2">Apply Discount:</span>
+          <button
+            onClick={() => setDiscountPercent(discountPercent === 5 ? 0 : 5)}
+            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              discountPercent === 5
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+            }`}
+          >
+            5%
+          </button>
+          <button
+            onClick={() => setDiscountPercent(discountPercent === 10 ? 0 : 10)}
+            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              discountPercent === 10
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+            }`}
+          >
+            10%
+          </button>
+          <button
+            onClick={() => setDiscountPercent(discountPercent === 15 ? 0 : 15)}
+            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              discountPercent === 15
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+            }`}
+          >
+            15%
+          </button>
+          {discountPercent > 0 && (
+            <button
+              onClick={() => setDiscountPercent(0)}
+              className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Totals */}
       <div className="flex justify-end">
         <div className="w-full md:w-1/2 lg:w-1/3 space-y-2">
@@ -184,17 +237,24 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <span className="text-white font-semibold">${invoice.summary.subtotal.toFixed(2)}</span>
           </div>
 
+          {discountPercent > 0 && (
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-green-400">Discount ({discountPercent}%)</span>
+              <span className="text-green-400">-${((invoice.summary.subtotal * discountPercent) / 100).toFixed(2)}</span>
+            </div>
+          )}
+
           {invoice.summary.taxAmount > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
               <span className="text-gray-300">Tax ({(invoice.summary.taxRate * 100).toFixed(2)}%)</span>
-              <span className="text-white">${invoice.summary.taxAmount.toFixed(2)}</span>
+              <span className="text-white">${(((invoice.summary.subtotal * (1 - discountPercent / 100)) * invoice.summary.taxRate)).toFixed(2)}</span>
             </div>
           )}
 
           <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
             <span className="text-white font-bold text-lg">TOTAL</span>
             <span className="text-green-400 font-bold text-2xl">
-              ${invoice.summary.totalAmount.toFixed(2)}
+              ${((invoice.summary.subtotal * (1 - discountPercent / 100)) * (1 + invoice.summary.taxRate)).toFixed(2)}
             </span>
           </div>
         </div>

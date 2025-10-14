@@ -27,7 +27,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/dashboard/invoices"
+            href="/dashboard/invoices/all"
             className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
           >
             ← Back to Invoices
