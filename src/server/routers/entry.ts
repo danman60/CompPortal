@@ -25,8 +25,8 @@ const entryInputSchema = z.object({
   title: z.string().min(1).max(255),
   category_id: z.string().uuid(),
   classification_id: z.string().uuid(),
-  age_group_id: z.string().uuid(),
-  entry_size_category_id: z.string().uuid(),
+  age_group_id: z.string().uuid().optional(), // Optional - auto-detected from dancers
+  entry_size_category_id: z.string().uuid().optional(), // Optional - auto-detected from dancers
   session_id: z.string().uuid().optional(),
   performance_date: z.string().optional(), // ISO date string
   performance_time: z.string().optional(), // ISO time string
@@ -493,13 +493,13 @@ export const entryRouter = router({
         tenants: { connect: { id: studio.tenant_id } },
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },
-        age_groups: { connect: { id: data.age_group_id } },
         dance_categories: { connect: { id: data.category_id } },
         classifications: { connect: { id: data.classification_id } },
-        entry_size_categories: { connect: { id: data.entry_size_category_id } },
       };
 
       // Optional relation fields
+      if (data.age_group_id) createData.age_groups = { connect: { id: data.age_group_id } };
+      if (data.entry_size_category_id) createData.entry_size_categories = { connect: { id: data.entry_size_category_id } };
       if (data.reservation_id) createData.reservations = { connect: { id: data.reservation_id } };
       if (data.session_id) createData.competition_sessions = { connect: { id: data.session_id } };
 
@@ -601,13 +601,14 @@ export const entryRouter = router({
             where: { id: input.category_id },
             select: { name: true },
           }),
-          prisma.entry_size_categories.findUnique({
+          // Size category is optional now (auto-detected from dancers)
+          input.entry_size_category_id ? prisma.entry_size_categories.findUnique({
             where: { id: input.entry_size_category_id },
             select: { name: true },
-          }),
+          }) : Promise.resolve(null),
         ]);
 
-        if (studio?.email && competition && category && sizeCategory) {
+        if (studio?.email && competition && category) {
           const emailData: EntrySubmittedData = {
             studioName: studio.name,
             competitionName: competition.name,
@@ -615,7 +616,7 @@ export const entryRouter = router({
             entryTitle: entry.title,
             entryNumber: entry.entry_number || undefined,
             category: category.name,
-            sizeCategory: sizeCategory.name,
+            sizeCategory: sizeCategory?.name || 'TBD', // TBD if not set (auto-detected later)
             participantCount: entry.entry_participants?.length || 0,
             entryFee: entry_fee || 0,
           };

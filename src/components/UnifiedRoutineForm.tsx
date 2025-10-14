@@ -32,8 +32,7 @@ export default function UnifiedRoutineForm() {
     choreographer: '',
     category_id: '',
     classification_id: '',
-    age_group_id: '',
-    entry_size_category_id: '',
+    // age_group_id and entry_size_category_id removed - auto-detected from dancers
     special_requirements: '',
   });
 
@@ -61,19 +60,15 @@ export default function UnifiedRoutineForm() {
     },
   });
 
-  const sizeCategory = lookupData?.entrySizeCategories.find((s: any) => s.id === form.entry_size_category_id);
-  const baseFee = Number(sizeCategory?.base_fee || 0);
-  const perParticipantFee = Number(sizeCategory?.per_participant_fee || 0);
-  const totalFee = baseFee; // Participants selected later; set base for now
+  // Fee calculation removed - will be calculated after dancers are added
+  const totalFee = 0;
 
   const canSubmit =
     !!form.title &&
     !!form.studio_id &&
     !!form.competition_id &&
     !!form.category_id &&
-    !!form.classification_id &&
-    !!form.age_group_id &&
-    !!form.entry_size_category_id;
+    !!form.classification_id;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,8 +89,7 @@ export default function UnifiedRoutineForm() {
       title: form.title,
       category_id: form.category_id,
       classification_id: form.classification_id,
-      age_group_id: form.age_group_id,
-      entry_size_category_id: form.entry_size_category_id,
+      // age_group_id and entry_size_category_id will be auto-detected from dancers
       choreographer: form.choreographer || undefined,
       special_requirements: form.special_requirements || undefined,
       entry_fee: totalFee,
@@ -219,36 +213,7 @@ export default function UnifiedRoutineForm() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Age Group *</label>
-            <select
-              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
-              value={form.age_group_id}
-              onChange={(e) => setForm({ ...form, age_group_id: e.target.value })}
-            >
-              <option value="" className="bg-gray-900">Select age group</option>
-              {lookupData?.ageGroups?.map((ag: any) => (
-                <option key={ag.id} value={ag.id} className="bg-gray-900">
-                  {ag.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Size Category *</label>
-            <select
-              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
-              value={form.entry_size_category_id}
-              onChange={(e) => setForm({ ...form, entry_size_category_id: e.target.value })}
-            >
-              <option value="" className="bg-gray-900">Select size</option>
-              {lookupData?.entrySizeCategories?.map((sz: any) => (
-                <option key={sz.id} value={sz.id} className="bg-gray-900">
-                  {sz.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Age Group and Size Category removed - auto-detected from dancers after creation */}
         </div>
       </div>
 
