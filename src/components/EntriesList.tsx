@@ -1028,6 +1028,75 @@ export default function EntriesList() {
       <div className="mt-6 text-center text-gray-400 text-sm">
         Showing {filteredEntries.length} of {entries.length} routines
       </div>
+
+      {/* Live Summary Bar (Fixed at bottom when competition selected) */}
+      {hasSelectedCompetition && selectedReservation && usedSpaces > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 border-t-2 border-purple-400/50 shadow-2xl z-50">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between gap-6">
+              {/* Summary Stats */}
+              <div className="flex items-center gap-8">
+                {/* Remaining Routines */}
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">📊</span>
+                  <div>
+                    <div className="text-xs text-gray-300 font-semibold uppercase">Remaining</div>
+                    <div className={`text-2xl font-bold ${
+                      isAtLimit ? 'text-red-400' :
+                      (confirmedSpaces - usedSpaces) <= 3 ? 'text-yellow-400' :
+                      'text-green-400'
+                    }`}>
+                      {confirmedSpaces - usedSpaces}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Created Routines */}
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">✅</span>
+                  <div>
+                    <div className="text-xs text-gray-300 font-semibold uppercase">Created</div>
+                    <div className="text-2xl font-bold text-blue-400">
+                      {usedSpaces}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price Estimate */}
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">💰</span>
+                  <div>
+                    <div className="text-xs text-gray-300 font-semibold uppercase">Est. Total</div>
+                    <div className="text-2xl font-bold text-purple-400">
+                      ${(usedSpaces * 50).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Summary Button */}
+              <button
+                onClick={() => {
+                  toast.success('Summary submitted to Competition Director! They will create your invoice.', {
+                    duration: 4000,
+                    position: 'top-right',
+                  });
+                }}
+                disabled={usedSpaces === 0}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              >
+                <span>📤</span>
+                <span>Submit Summary</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spacer for fixed bottom bar */}
+      {hasSelectedCompetition && selectedReservation && usedSpaces > 0 && (
+        <div className="h-24"></div>
+      )}
     </div>
 
     {/* Floating Action Button for Mobile */}
