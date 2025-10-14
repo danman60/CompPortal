@@ -3,6 +3,7 @@
 import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import toast from 'react-hot-toast';
@@ -15,6 +16,7 @@ import { CompetitionFilter } from './CompetitionFilter';
 import { EntryEditModal } from './EntryEditModal';
 
 export default function EntriesList() {
+  const router = useRouter();
   // PERFORMANCE FIX: Add pagination to reduce initial load time
   const [limit] = useState(100); // Load 100 entries at a time
   const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery({
@@ -625,7 +627,8 @@ export default function EntriesList() {
             return (
             <div
               key={entry.id}
-              className={`bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all flex flex-col ${
+              onClick={() => router.push(`/dashboard/entries/${entry.id}/edit`)}
+              className={`bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all flex flex-col cursor-pointer ${
                 entry.status === 'confirmed'
                   ? 'border-green-400/40'
                   : entry.status === 'registered'
@@ -753,7 +756,7 @@ export default function EntriesList() {
               </div>
 
               {/* Actions */}
-              <div className="grid grid-cols-4 gap-2 mt-4">
+              <div className="grid grid-cols-4 gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
                 <Link
                   href={`/dashboard/entries/${entry.id}`}
                   className="text-center bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-all"
