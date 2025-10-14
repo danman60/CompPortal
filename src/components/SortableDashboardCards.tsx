@@ -68,11 +68,11 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
     <Link
       href={card.href}
       onClick={handleClick}
-      className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block animate-fade-in ${
+      className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block animate-fade-in h-32 ${
         isActiveCard ? 'pointer-events-none' : ''
       }`}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 h-full">
         {/* Large visible drag handle on the LEFT */}
         <div
           {...listeners}

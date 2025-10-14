@@ -47,8 +47,17 @@ export default async function DashboardPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Header with Sign Out */}
-        <div className="flex justify-end mb-4">
+        {/* Header with Studio Profile and Sign Out */}
+        <div className="flex justify-end gap-3 mb-4">
+          {role === 'studio_director' && (
+            <a
+              href="/dashboard/settings/profile"
+              className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
+            >
+              <span className="text-xl">⚙️</span>
+              <span>Studio Profile</span>
+            </a>
+          )}
           <form action={signOutAction}>
             <button
               type="submit"

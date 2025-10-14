@@ -113,9 +113,8 @@ export default function UnifiedRoutineForm() {
   // Create mutation
   const createMutation = trpc.entry.create.useMutation({
     onSuccess: (data) => {
-      // After creating entry, redirect to assign dancers page
-      toast.success('Routine created! Redirecting to assign dancers...');
-      router.push(`/dashboard/entries/${data.id}/edit`);
+      toast.success('Routine created successfully!');
+      router.push('/dashboard/entries');
     },
     onError: (error) => {
       toast.error(`Error creating routine: ${error.message}`);
@@ -427,36 +426,76 @@ export default function UnifiedRoutineForm() {
         {currentStep === 3 && (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-white">Review & Submit</h1>
+            <p className="text-gray-400">Review and edit any details before creating the routine</p>
 
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Routine Details</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Routine Name:</span>
-                  <span className="text-white font-semibold">{form.title}</span>
+              <h2 className="text-xl font-bold text-white mb-4">Routine Details (Editable)</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm text-gray-300 mb-1">Routine Name</label>
+                  <input
+                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  />
                 </div>
-                {form.choreographer && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Choreographer:</span>
-                    <span className="text-white">{form.choreographer}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Dance Category:</span>
-                  <span className="text-white">
-                    {lookupData?.categories?.find((c: any) => c.id === form.category_id)?.name}
-                  </span>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-1">Choreographer</label>
+                  <input
+                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                    value={form.choreographer}
+                    onChange={(e) => setForm({ ...form, choreographer: e.target.value })}
+                    placeholder="Optional"
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Classification:</span>
-                  <span className="text-white">
-                    {lookupData?.classifications?.find((c: any) => c.id === form.classification_id)?.name}
-                  </span>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-1">Dance Category</label>
+                  <select
+                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                    value={form.category_id}
+                    onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                  >
+                    <option value="" className="bg-gray-900">Select category</option>
+                    {lookupData?.categories?.map((cat: any) => (
+                      <option key={cat.id} value={cat.id} className="bg-gray-900">
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Dancers:</span>
-                  <span className="text-white font-semibold">{selectedDancers.length}</span>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-1">Classification</label>
+                  <select
+                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                    value={form.classification_id}
+                    onChange={(e) => setForm({ ...form, classification_id: e.target.value })}
+                  >
+                    <option value="" className="bg-gray-900">Select classification</option>
+                    {lookupData?.classifications?.map((cl: any) => (
+                      <option key={cl.id} value={cl.id} className="bg-gray-900">
+                        {cl.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-sm text-gray-300 mb-1">Props / Special Requirements</label>
+                  <textarea
+                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                    rows={2}
+                    value={form.special_requirements}
+                    onChange={(e) => setForm({ ...form, special_requirements: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Selected Dancers</h2>
+              <div className="text-sm text-gray-300">
+                {selectedDancers.map(d => d.dancer_name).join(', ')}
+                <span className="ml-2 text-white font-semibold">({selectedDancers.length} total)</span>
               </div>
             </div>
 
@@ -475,16 +514,19 @@ export default function UnifiedRoutineForm() {
                     value={overrides.age_group_id || inferredAgeGroup?.id || ''}
                     onChange={(e) => setOverrides({ ...overrides, age_group_id: e.target.value })}
                   >
-                    <option value="" className="bg-gray-900">
-                      {inferredAgeGroup ? `✨ ${inferredAgeGroup.name} (auto-detected)` : 'Select age group'}
-                    </option>
+                    {!overrides.age_group_id && inferredAgeGroup && (
+                      <option value={inferredAgeGroup.id} className="bg-gray-900">
+                        ✨ {inferredAgeGroup.name} (auto-detected)
+                      </option>
+                    )}
+                    <option value="" className="bg-gray-900">Select age group</option>
                     {lookupData?.ageGroups?.map((ag: any) => (
                       <option key={ag.id} value={ag.id} className="bg-gray-900">
                         {ag.name}
                       </option>
                     ))}
                   </select>
-                  {inferredAgeGroup && (
+                  {inferredAgeGroup && !overrides.age_group_id && (
                     <div className="text-xs text-green-400 mt-1">
                       ✓ Based on average dancer age
                     </div>
@@ -498,16 +540,19 @@ export default function UnifiedRoutineForm() {
                     value={overrides.entry_size_category_id || inferredSizeCategory?.id || ''}
                     onChange={(e) => setOverrides({ ...overrides, entry_size_category_id: e.target.value })}
                   >
-                    <option value="" className="bg-gray-900">
-                      {inferredSizeCategory ? `✨ ${inferredSizeCategory.name} (auto-detected)` : 'Select size'}
-                    </option>
+                    {!overrides.entry_size_category_id && inferredSizeCategory && (
+                      <option value={inferredSizeCategory.id} className="bg-gray-900">
+                        ✨ {inferredSizeCategory.name} (auto-detected)
+                      </option>
+                    )}
+                    <option value="" className="bg-gray-900">Select size</option>
                     {lookupData?.entrySizeCategories?.map((sc: any) => (
                       <option key={sc.id} value={sc.id} className="bg-gray-900">
                         {sc.name}
                       </option>
                     ))}
                   </select>
-                  {inferredSizeCategory && (
+                  {inferredSizeCategory && !overrides.entry_size_category_id && (
                     <div className="text-xs text-green-400 mt-1">
                       ✓ Based on {selectedDancers.length} dancers selected
                     </div>

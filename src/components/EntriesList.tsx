@@ -29,6 +29,7 @@ export default function EntriesList() {
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [detailEntry, setDetailEntry] = useState<any>(null);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const updateMutation = trpc.entry.update.useMutation({
     onSuccess: () => {
       refetch();
@@ -808,51 +809,6 @@ export default function EntriesList() {
             <div className="flex items-center justify-between gap-6">
               {/* Summary Stats */}
               <div className="flex items-center gap-8">
-                {/* Progress Bar (only show if competition selected with reservation) */}
-                {hasSelectedCompetition && selectedReservation && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">📊</span>
-                        <div>
-                          <div className="text-xs text-gray-300 font-semibold uppercase">Space Usage</div>
-                          <div className="text-sm text-white font-semibold">
-                            {usedSpaces} / {confirmedSpaces}
-                          </div>
-                        </div>
-                      </div>
-                      {/* Mini Progress Bar */}
-                      <div className="w-48 h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-500 ${
-                            isAtLimit ? 'bg-red-500' :
-                            (usedSpaces / confirmedSpaces) >= 0.8 ? 'bg-yellow-500' :
-                            'bg-green-500'
-                          }`}
-                          style={{ width: `${Math.min((usedSpaces / confirmedSpaces) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Remaining Routines */}
-                {hasSelectedCompetition && selectedReservation && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🎯</span>
-                    <div>
-                      <div className="text-xs text-gray-300 font-semibold uppercase">Remaining</div>
-                      <div className={`text-2xl font-bold ${
-                        isAtLimit ? 'text-red-400' :
-                        (confirmedSpaces - usedSpaces) <= 3 ? 'text-yellow-400' :
-                        'text-green-400'
-                      }`}>
-                        {confirmedSpaces - usedSpaces}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Created Routines */}
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">✅</span>
@@ -864,6 +820,17 @@ export default function EntriesList() {
                   </div>
                 </div>
 
+                {/* Dancers Count */}
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">👥</span>
+                  <div>
+                    <div className="text-xs text-gray-300 font-semibold uppercase">Dancers</div>
+                    <div className="text-2xl font-bold text-cyan-400">
+                      {filteredEntries.reduce((sum, e) => sum + (e.entry_participants?.length || 0), 0)}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Price Estimate */}
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">💰</span>
@@ -871,6 +838,17 @@ export default function EntriesList() {
                     <div className="text-xs text-gray-300 font-semibold uppercase">Est. Total</div>
                     <div className="text-2xl font-bold text-purple-400">
                       ${(filteredEntries.length * 50).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Music Status */}
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🎵</span>
+                  <div>
+                    <div className="text-xs text-gray-300 font-semibold uppercase">Music Uploaded</div>
+                    <div className="text-2xl font-bold text-green-400">
+                      {filteredEntries.filter(e => e.music_file_url).length} / {filteredEntries.length}
                     </div>
                   </div>
                 </div>
@@ -899,20 +877,31 @@ export default function EntriesList() {
                 )}
               </div>
 
-              {/* Submit Summary Button */}
-              <button
-                onClick={() => {
-                  toast.success('Summary submitted to Competition Director! They will create your invoice.', {
-                    duration: 4000,
-                    position: 'top-right',
-                  });
-                }}
-                disabled={filteredEntries.length === 0}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-              >
-                <span>📤</span>
-                <span>Submit Summary</span>
-              </button>
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSummaryModal(true)}
+                  disabled={filteredEntries.length === 0}
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  <span>📊</span>
+                  <span>View Summary</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    toast.success('Summary submitted to Competition Director! They will create your invoice.', {
+                      duration: 4000,
+                      position: 'top-right',
+                    });
+                  }}
+                  disabled={filteredEntries.length === 0}
+                  className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  <span>📤</span>
+                  <span>Submit Summary</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1052,6 +1041,121 @@ export default function EntriesList() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Summary Modal */}
+      {showSummaryModal && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowSummaryModal(false)}
+        >
+          <div
+            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/20 p-6 max-w-4xl w-full shadow-2xl max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold text-white mb-4">
+              Routine Summary
+              {hasSelectedCompetition && (
+                <span className="text-lg text-gray-400 ml-2">
+                  - {competitions.find((c: any) => c.id === selectedCompetition)?.name}
+                </span>
+              )}
+            </h2>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-gray-400 text-sm mb-1">Total Routines</div>
+                <div className="text-3xl font-bold text-white">{filteredEntries.length}</div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-gray-400 text-sm mb-1">Est. Total</div>
+                <div className="text-3xl font-bold text-purple-400">${(filteredEntries.length * 50).toFixed(2)}</div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-gray-400 text-sm mb-1">Music Uploaded</div>
+                <div className="text-3xl font-bold text-green-400">
+                  {filteredEntries.filter(e => e.music_file_url).length}
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-gray-400 text-sm mb-1">Dancers</div>
+                <div className="text-3xl font-bold text-blue-400">
+                  {filteredEntries.reduce((sum, e) => sum + (e.entry_participants?.length || 0), 0)}
+                </div>
+              </div>
+            </div>
+
+            {/* Routines Table */}
+            <div className="bg-white/5 rounded-lg overflow-hidden mb-4">
+              <table className="w-full">
+                <thead className="bg-white/10">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white">Routine</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white">Category</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white">Dancers</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white">Music</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-white">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEntries.map((entry, i) => (
+                    <tr key={entry.id} className={i % 2 === 0 ? 'bg-white/5' : ''}>
+                      <td className="px-4 py-3">
+                        <div className="text-white font-medium">{entry.title}</div>
+                        {entry.entry_number && (
+                          <div className="text-xs text-gray-400">#{entry.entry_number}{entry.entry_suffix || ''}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-300 text-sm">
+                        {entry.dance_categories?.name || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-white text-sm">
+                          {entry.entry_participants?.length || 0} dancer{entry.entry_participants?.length !== 1 ? 's' : ''}
+                        </div>
+                        {entry.entry_participants && entry.entry_participants.length > 0 && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {entry.entry_participants.map((p: any) => p.dancer_name).join(', ')}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          entry.music_file_url
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {entry.music_file_url ? '✅ Uploaded' : '🎵 Pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
+                          entry.status === 'confirmed'
+                            ? 'bg-green-500/20 text-green-400'
+                            : entry.status === 'registered'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : entry.status === 'cancelled'
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {entry.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              onClick={() => setShowSummaryModal(false)}
+              className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

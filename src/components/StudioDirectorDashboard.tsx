@@ -112,23 +112,14 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {getGreeting()}, {firstName}! 👋
-          </h1>
-          <p className="text-gray-400 mb-4">
-            {studioName && <span className="text-purple-400">{studioName}</span>}
-          </p>
-          <MotivationalQuote />
-        </div>
-        <Link
-          href="/dashboard/settings/profile"
-          className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 px-4 py-2 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
-        >
-          <span className="text-xl">⚙️</span>
-          <span className="text-white font-semibold">My Studio</span>
-        </Link>
+      <div className="flex-1">
+        <h1 className="text-4xl font-bold text-white mb-2">
+          {getGreeting()}, {firstName}! 👋
+        </h1>
+        <p className="text-gray-400 mb-4">
+          {studioName && <span className="text-purple-400">{studioName}</span>}
+        </p>
+        <MotivationalQuote />
       </div>
 
       {/* Stats */}
