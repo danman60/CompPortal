@@ -26,12 +26,20 @@ export default async function InvoiceDetailPage({ params }: Props) {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link
-            href="/dashboard/invoices/all"
-            className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
-          >
-            ← Back to Invoices
-          </Link>
+          <div className="flex gap-4 mb-2">
+            <Link
+              href="/dashboard/reservation-pipeline"
+              className="text-blue-400 hover:text-blue-300 text-sm inline-block"
+            >
+              ← Back to Pipeline
+            </Link>
+            <Link
+              href="/dashboard/invoices"
+              className="text-purple-400 hover:text-purple-300 text-sm inline-block"
+            >
+              ← Back to Invoices
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold text-white mb-2">Invoice Detail</h1>
           <p className="text-gray-400">Competition routine invoice and breakdown</p>
         </div>

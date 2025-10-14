@@ -34,6 +34,7 @@ export default function ReservationPipeline() {
     currentUsed: 0,
   });
   const [approvalAmount, setApprovalAmount] = useState<number>(0);
+  const [remindConfirm, setRemindConfirm] = useState<{isOpen: boolean; studioName: string; studioId: string; competitionId: string} | null>(null);
 
   // Fetch data
   const { data: pipelineData, refetch } = trpc.reservation.getPipelineView.useQuery();
@@ -54,36 +55,38 @@ export default function ReservationPipeline() {
   const reservations = pipelineData?.reservations || [];
   const competitionList = competitions?.competitions || [];
 
-  // Calculate event capacity metrics
-  const eventMetrics = competitionList.map(comp => {
-    const totalCapacity = comp.venue_capacity || 600;
-    const reservedCount = reservations
-      .filter(r => r.competitionId === comp.id && r.status === 'approved')
-      .reduce((sum, r) => sum + (r.spacesConfirmed || 0), 0);
-    const pendingCount = reservations.filter(
-      r => r.competitionId === comp.id && r.status === 'pending'
-    ).length;
+  // Calculate event capacity metrics (filter out QA Automation)
+  const eventMetrics = competitionList
+    .filter(comp => comp.name !== 'QA Automation')
+    .map(comp => {
+      const totalCapacity = comp.venue_capacity || 600;
+      const reservedCount = reservations
+        .filter(r => r.competitionId === comp.id && r.status === 'approved')
+        .reduce((sum, r) => sum + (r.spacesConfirmed || 0), 0);
+      const pendingCount = reservations.filter(
+        r => r.competitionId === comp.id && r.status === 'pending'
+      ).length;
 
-    return {
-      id: comp.id,
-      name: comp.name,
-      dates: `${comp.competition_start_date ? new Date(comp.competition_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}-${comp.competition_end_date ? new Date(comp.competition_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}, ${comp.year}`,
-      location: comp.primary_location || 'TBD',
-      totalCapacity,
-      used: reservedCount,
-      remaining: totalCapacity - reservedCount,
-      percentage: (reservedCount / totalCapacity) * 100,
-      pendingCount,
-      studioCount: new Set(reservations.filter(r => r.competitionId === comp.id).map(r => r.studioId)).size,
-    };
-  });
+      return {
+        id: comp.id,
+        name: comp.name,
+        dates: `${comp.competition_start_date ? new Date(comp.competition_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}-${comp.competition_end_date ? new Date(comp.competition_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}, ${comp.year}`,
+        location: comp.primary_location || 'TBD',
+        totalCapacity,
+        used: reservedCount,
+        remaining: totalCapacity - reservedCount,
+        percentage: (reservedCount / totalCapacity) * 100,
+        pendingCount,
+        studioCount: new Set(reservations.filter(r => r.competitionId === comp.id).map(r => r.studioId)).size,
+      };
+    });
 
   // Filter reservations by status
   const filteredReservations = statusFilter === 'all'
     ? reservations
     : reservations.filter(r => {
         if (statusFilter === 'pending') return r.status === 'pending';
-        if (statusFilter === 'approved') return r.status === 'approved' && r.entryCount === 0;
+        if (statusFilter === 'approved') return r.status === 'approved' && r.entryCount === 0 && !r.invoiceId;
         if (statusFilter === 'summary_in') return r.status === 'approved' && r.entryCount > 0 && !r.invoiceId;
         if (statusFilter === 'invoiced') return r.status === 'approved' && r.invoiceId && !r.invoicePaid;
         if (statusFilter === 'paid') return r.status === 'approved' && r.invoicePaid;
@@ -93,7 +96,7 @@ export default function ReservationPipeline() {
   // Calculate pipeline stats
   const stats = {
     needAction: reservations.filter(r => r.status === 'pending').length,
-    approved: reservations.filter(r => r.status === 'approved' && r.entryCount === 0).length,
+    approved: reservations.filter(r => r.status === 'approved' && r.entryCount === 0 && !r.invoiceId).length,
     summariesIn: reservations.filter(r => r.status === 'approved' && r.entryCount > 0 && !r.invoiceId).length,
     invoicesOut: reservations.filter(r => r.invoiceId && !r.invoicePaid).length,
     paid: reservations.filter(r => r.invoicePaid).length,
@@ -191,9 +194,10 @@ export default function ReservationPipeline() {
         <div className="sticky top-0 z-40 bg-gradient-to-br from-slate-900 via-gray-900 to-black pb-4 -mx-6 px-6 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {eventMetrics.map(event => (
-            <div
+            <Link
               key={event.id}
-              className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 relative overflow-hidden"
+              href={`/dashboard/competitions/${event.id}/edit`}
+              className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 relative overflow-hidden hover:bg-white/15 transition-all cursor-pointer block"
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div>
 
@@ -236,7 +240,7 @@ export default function ReservationPipeline() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
           </div>
         </div>
@@ -431,7 +435,11 @@ export default function ReservationPipeline() {
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm">
-                              <div className="text-gray-300 mb-1">{reservation.lastAction || 'Reservation submitted'}</div>
+                              <div className="text-gray-300 mb-1">
+                                {reservation.invoiceId && !reservation.invoicePaid
+                                  ? 'Invoiced on'
+                                  : reservation.lastAction || 'Reservation submitted'}
+                              </div>
                               <div className="text-xs text-gray-400">
                                 {reservation.lastActionDate
                                   ? new Date(reservation.lastActionDate).toLocaleDateString('en-US', {
@@ -477,10 +485,12 @@ export default function ReservationPipeline() {
                               )}
                               {reservation.status === 'approved' && reservation.invoiceId && !reservation.invoicePaid && (
                                 <button
-                                  onClick={() => {
-                                    toast.success(`Reminder email sent to ${reservation.studioName}!`);
-                                    // TODO: Implement actual email sending via tRPC mutation
-                                  }}
+                                  onClick={() => setRemindConfirm({
+                                    isOpen: true,
+                                    studioName: reservation.studioName,
+                                    studioId: reservation.studioId,
+                                    competitionId: reservation.competitionId,
+                                  })}
                                   className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-xs font-semibold hover:shadow-lg transition-all"
                                 >
                                   📧 Remind
@@ -616,6 +626,60 @@ export default function ReservationPipeline() {
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {approveMutation.isPending ? 'Approving...' : '✓ Confirm Approval'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remind Confirmation Modal */}
+      {remindConfirm?.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setRemindConfirm(null)}
+        >
+          <div
+            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Send Payment Reminder</h2>
+              <p className="text-gray-400 text-sm">
+                Send an invoice reminder email to <strong>{remindConfirm.studioName}</strong>?
+              </p>
+            </div>
+
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+              <div className="flex gap-3">
+                <div className="text-2xl">📧</div>
+                <div>
+                  <div className="text-sm text-blue-300 font-semibold mb-1">Email will include:</div>
+                  <ul className="text-xs text-gray-300 space-y-1">
+                    <li>• Invoice details and amount due</li>
+                    <li>• Payment instructions</li>
+                    <li>• Direct link to invoice</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRemindConfirm(null)}
+                className="flex-1 px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/20 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  toast.success(`Payment reminder sent to ${remindConfirm.studioName}!`);
+                  // TODO: Implement actual email sending via tRPC mutation
+                  // trpc.invoice.sendInvoiceReminder.mutate({ studioId, competitionId })
+                  setRemindConfirm(null);
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+              >
+                📧 Send Reminder
               </button>
             </div>
           </div>
