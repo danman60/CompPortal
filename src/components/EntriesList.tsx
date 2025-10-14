@@ -242,6 +242,7 @@ export default function EntriesList() {
     : entries.filter(e => e.status !== 'cancelled').length;
 
   const isAtLimit = hasSelectedCompetition && selectedReservation && usedSpaces >= confirmedSpaces;
+  const isIncomplete = hasSelectedCompetition && selectedReservation && usedSpaces < confirmedSpaces;
 
   // Show progress bar when there are filtered entries and reservations for selected competition
   const showProgressBar = filteredEntries.length > 0 && confirmedSpaces > 0;
@@ -929,32 +930,49 @@ export default function EntriesList() {
                   <span>View Summary</span>
                 </button>
 
-                <button
-                  onClick={() => {
-                    // Create snapshot of current filtered entries
-                    const snapshot = filteredEntries
-                      .map(e => e.id)
-                      .sort()
-                      .join(',');
+                {isIncomplete ? (
+                  <div className="relative group">
+                    <button
+                      disabled
+                      className="bg-gray-600 text-gray-400 px-8 py-3 rounded-lg cursor-not-allowed opacity-50 flex items-center gap-2 font-semibold"
+                    >
+                      <span>📤</span>
+                      <span>Submit Summary</span>
+                    </button>
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-yellow-500/20 border border-yellow-400/30 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                      <div className="text-xs text-yellow-200">
+                        You must create all {confirmedSpaces} allocated routines before submitting. Currently created: {usedSpaces}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      // Create snapshot of current filtered entries
+                      const snapshot = filteredEntries
+                        .map(e => e.id)
+                        .sort()
+                        .join(',');
 
-                    setSubmittedEntriesSnapshot(snapshot);
-                    setSummarySubmitted(true);
+                      setSubmittedEntriesSnapshot(snapshot);
+                      setSummarySubmitted(true);
 
-                    toast.success('Summary submitted to Competition Director! They will create your invoice.', {
-                      duration: 4000,
-                      position: 'top-right',
-                    });
-                  }}
-                  disabled={filteredEntries.length === 0 || summarySubmitted}
-                  className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
-                    summarySubmitted
-                      ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
-                  }`}
-                >
-                  <span>{summarySubmitted ? '✓' : '📤'}</span>
-                  <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
-                </button>
+                      toast.success('Summary submitted to Competition Director! They will create your invoice.', {
+                        duration: 4000,
+                        position: 'top-right',
+                      });
+                    }}
+                    disabled={filteredEntries.length === 0 || summarySubmitted}
+                    className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
+                      summarySubmitted
+                        ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
+                    }`}
+                  >
+                    <span>{summarySubmitted ? '✓' : '📤'}</span>
+                    <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
