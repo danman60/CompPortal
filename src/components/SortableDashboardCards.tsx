@@ -22,7 +22,6 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
-import Tooltip from './Tooltip';
 
 export interface DashboardCard {
   id: string;
@@ -64,44 +63,43 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
     }
   };
 
-  const content = (
-    <Link
-      href={card.href}
-      onClick={handleClick}
-      className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block animate-fade-in h-32 ${
-        isActiveCard ? 'pointer-events-none' : ''
-      }`}
-    >
-      <div className="flex items-center gap-4 h-full">
-        {/* Large visible drag handle on the LEFT */}
-        <div
-          {...listeners}
-          className="text-gray-300 hover:text-white cursor-grab active:cursor-grabbing p-3 -ml-2 touch-none flex-shrink-0"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </div>
-        <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">{card.icon}</div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-xl font-semibold text-white truncate">{card.title}</h3>
-          <p className="text-gray-400 text-sm line-clamp-2">{card.description}</p>
-        </div>
-      </div>
-    </Link>
-  );
-
   return (
-    <div ref={setNodeRef} style={style} {...attributes} className="relative">
-      {card.tooltip ? (
-        <Tooltip text={card.tooltip} position="top">{content}</Tooltip>
-      ) : (
-        content
+    <div ref={setNodeRef} style={style} {...attributes} className="relative w-full">
+      {/* Permanent tooltip text above card */}
+      {card.tooltip && (
+        <div className="text-xs text-purple-300 font-medium mb-2 px-2">
+          {card.tooltip}
+        </div>
       )}
+
+      <Link
+        href={card.href}
+        onClick={handleClick}
+        className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block animate-fade-in h-32 w-full ${
+          isActiveCard ? 'pointer-events-none' : ''
+        }`}
+      >
+        <div className="flex items-center gap-4 h-full">
+          {/* Large visible drag handle on the LEFT */}
+          <div
+            {...listeners}
+            className="text-gray-300 hover:text-white cursor-grab active:cursor-grabbing p-3 -ml-2 touch-none flex-shrink-0"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </div>
+          <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">{card.icon}</div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl font-semibold text-white truncate">{card.title}</h3>
+            <p className="text-gray-400 text-sm line-clamp-2">{card.description}</p>
+          </div>
+        </div>
+      </Link>
     </div>
   );
 }
@@ -145,14 +143,29 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
   // Apply saved layout on load
   useEffect(() => {
     if (savedLayout && Array.isArray(savedLayout)) {
-      // Reorder cards based on saved layout
-      const layoutMap = new Map(savedLayout.map((id, index) => [id, index]));
-      const sortedCards = [...initialCards].sort((a, b) => {
-        const aIndex = layoutMap.get(a.id) ?? 999;
-        const bIndex = layoutMap.get(b.id) ?? 999;
-        return aIndex - bIndex;
-      });
-      setCards(sortedCards);
+      // Check if saved layout has old order (routines before reservations)
+      const routinesIndex = savedLayout.indexOf('routines');
+      const reservationsIndex = savedLayout.indexOf('reservations');
+
+      // If old order detected (routines before reservations), reset to new default
+      if (routinesIndex !== -1 && reservationsIndex !== -1 && routinesIndex < reservationsIndex) {
+        // Use new default order
+        const defaultLayoutIds = initialCards.map((c) => c.id);
+        saveLayoutMutation.mutate({ layout: defaultLayoutIds });
+        setCards(initialCards);
+      } else {
+        // Reorder cards based on saved layout
+        const layoutMap = new Map(savedLayout.map((id, index) => [id, index]));
+        const sortedCards = [...initialCards].sort((a, b) => {
+          const aIndex = layoutMap.get(a.id) ?? 999;
+          const bIndex = layoutMap.get(b.id) ?? 999;
+          return aIndex - bIndex;
+        });
+        setCards(sortedCards);
+      }
+    } else {
+      // No saved layout, use default
+      setCards(initialCards);
     }
   }, [savedLayout, initialCards]);
 
