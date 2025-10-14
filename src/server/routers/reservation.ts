@@ -513,7 +513,8 @@ export const reservationRouter = router({
   approve: protectedProcedure
     .input(
       z.object({
-        id: z.string().uuid(),
+        id: z.string().uuid().optional(),
+        reservationId: z.string().uuid().optional(),
         spacesConfirmed: z.number().int().min(0).optional(),
       })
     )
@@ -523,8 +524,14 @@ export const reservationRouter = router({
         throw new Error('Studio directors cannot approve reservations');
       }
 
+      // Support both id and reservationId for backwards compatibility
+      const reservationId = input.reservationId || input.id;
+      if (!reservationId) {
+        throw new Error('Reservation ID is required');
+      }
+
       const reservation = await prisma.reservations.update({
-        where: { id: input.id },
+        where: { id: reservationId },
         data: {
           status: 'approved',
           spaces_confirmed: input.spacesConfirmed,
@@ -1102,6 +1109,96 @@ export const reservationRouter = router({
 
       return reservation;
     }),
+
+  // Get pipeline view (aggregated data for CRM dashboard)
+  getPipelineView: protectedProcedure.query(async ({ ctx }) => {
+    // Only competition directors and super admins can view pipeline
+    if (isStudioDirector(ctx.userRole)) {
+      throw new Error('Studio directors cannot access the reservation pipeline');
+    }
+
+    // Fetch all reservations with related data
+    const reservations = await prisma.reservations.findMany({
+      include: {
+        studios: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            province: true,
+            email: true,
+            phone: true,
+            address1: true,
+            created_at: true,
+          },
+        },
+        competitions: {
+          select: {
+            id: true,
+            name: true,
+            year: true,
+            competition_start_date: true,
+            competition_end_date: true,
+            primary_location: true,
+            venue_capacity: true,
+          },
+        },
+        invoices: {
+          select: {
+            id: true,
+            total: true,
+            status: true,
+            paid_at: true,
+          },
+          take: 1,
+        },
+        _count: {
+          select: {
+            competition_entries: true,
+          },
+        },
+      },
+      orderBy: [
+        { requested_at: 'desc' },
+      ],
+    });
+
+    // Transform data for frontend
+    const transformedReservations = reservations.map(r => {
+      const invoice = r.invoices?.[0];
+
+      return {
+        id: r.id,
+        studioId: r.studio_id,
+        studioName: r.studios?.name || 'Unknown Studio',
+        studioCity: r.studios?.city || '',
+        studioProvince: r.studios?.province || '',
+        studioAddress: r.studios?.address1 || '',
+        studioCreatedAt: r.studios?.created_at,
+        contactName: r.agent_first_name && r.agent_last_name
+          ? `${r.agent_first_name} ${r.agent_last_name}`
+          : null,
+        contactEmail: r.studios?.email || '',
+        contactPhone: r.studios?.phone || '',
+        competitionId: r.competition_id,
+        competitionName: r.competitions?.name || 'Unknown Competition',
+        competitionYear: r.competitions?.year || new Date().getFullYear(),
+        spacesRequested: r.spaces_requested,
+        spacesConfirmed: r.spaces_confirmed || 0,
+        entryCount: r._count?.competition_entries || 0,
+        status: r.status,
+        invoiceId: invoice?.id || null,
+        totalAmount: invoice?.total ? parseFloat(invoice.total.toString()) : null,
+        invoicePaid: !!invoice?.paid_at,
+        lastAction: r.status === 'approved' ? 'Approved by You' : 'Reservation submitted',
+        lastActionDate: r.approved_at || r.requested_at,
+      };
+    });
+
+    return {
+      reservations: transformedReservations,
+    };
+  }),
 
   // Reduce reservation capacity with routine impact warnings
   reduceCapacity: protectedProcedure

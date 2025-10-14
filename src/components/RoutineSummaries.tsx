@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 interface Discount {
@@ -14,8 +15,11 @@ interface Discount {
 }
 
 export default function RoutineSummaries() {
+  const router = useRouter();
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [discounts, setDiscounts] = useState<Map<string, Discount>>(new Map());
+  const [processingInvoiceKey, setProcessingInvoiceKey] = useState<string | null>(null);
+  const [pendingInvoiceRoute, setPendingInvoiceRoute] = useState<{studioId: string, competitionId: string} | null>(null);
 
   // Fetch all invoices/summaries
   const { data: invoicesData, refetch } = trpc.invoice.getAllInvoices.useQuery({
@@ -26,12 +30,20 @@ export default function RoutineSummaries() {
   const { data: competitionsData } = trpc.competition.getAll.useQuery();
 
   const createInvoiceMutation = trpc.invoice.createFromReservation.useMutation({
-    onSuccess: () => {
-      toast.success('Invoice created successfully!');
-      refetch();
+    onSuccess: (data) => {
+      toast.success('Invoice created! Redirecting to invoice page...');
+      setProcessingInvoiceKey(null);
+
+      // Navigate to the invoice edit page
+      if (pendingInvoiceRoute) {
+        router.push(`/dashboard/invoices/${pendingInvoiceRoute.studioId}/${pendingInvoiceRoute.competitionId}`);
+        setPendingInvoiceRoute(null);
+      }
     },
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
+      setProcessingInvoiceKey(null);
+      setPendingInvoiceRoute(null);
     },
   });
 
@@ -69,6 +81,15 @@ export default function RoutineSummaries() {
       return;
     }
 
+    const key = `${invoice.studioId}-${invoice.competitionId}`;
+    setProcessingInvoiceKey(key);
+
+    // Store the route for navigation after success
+    setPendingInvoiceRoute({
+      studioId: invoice.studioId,
+      competitionId: invoice.competitionId,
+    });
+
     await createInvoiceMutation.mutateAsync({
       reservationId: invoice.reservation.id,
       spacesConfirmed: invoice.reservation.spacesConfirmed,
@@ -76,13 +97,14 @@ export default function RoutineSummaries() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <Link
-        href="/dashboard"
-        className="text-purple-400 hover:text-purple-300 text-sm mb-4 inline-block"
-      >
-        ← Back to Dashboard
-      </Link>
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
+      <div className="max-w-7xl mx-auto">
+        <Link
+          href="/dashboard"
+          className="text-purple-400 hover:text-purple-300 text-sm mb-4 inline-block"
+        >
+          ← Back to Dashboard
+        </Link>
 
       <h1 className="text-4xl font-bold text-white mb-2">Routine Summaries</h1>
       <p className="text-gray-400 mb-8">
@@ -199,10 +221,10 @@ export default function RoutineSummaries() {
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handleCreateInvoice(invoice)}
-                        disabled={createInvoiceMutation.isPending || !invoice.reservation}
+                        disabled={processingInvoiceKey === key || !invoice.reservation}
                         className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
-                        {createInvoiceMutation.isPending ? 'Creating...' : 'Create Invoice'}
+                        {processingInvoiceKey === key ? 'Creating...' : 'Create Invoice'}
                       </button>
                       {!invoice.reservation && (
                         <div className="text-xs text-red-400 mt-1">No reservation</div>
@@ -241,6 +263,7 @@ export default function RoutineSummaries() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </main>
   );
 }

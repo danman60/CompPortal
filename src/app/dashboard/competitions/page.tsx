@@ -96,6 +96,15 @@ export default function CompetitionsPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
       {/* Header */}
       <div className="mb-8">
+        {/* Back to Dashboard */}
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-all mb-4"
+        >
+          <span className="text-xl">←</span>
+          <span>Back to Dashboard</span>
+        </Link>
+
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">🎭 Event Management</h1>

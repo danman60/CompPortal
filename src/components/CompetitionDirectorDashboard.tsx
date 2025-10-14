@@ -159,6 +159,19 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
           </span>
         </p>
         <MotivationalQuote />
+
+        {/* Reservation Pipeline Button */}
+        <Link
+          href="/dashboard/reservation-pipeline"
+          className="mt-6 block w-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 hover:from-pink-600 hover:via-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] text-center"
+        >
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-2xl">🎯</span>
+            <span className="text-xl">Reservation Pipeline</span>
+            <span className="text-sm opacity-80">→</span>
+          </div>
+          <div className="text-xs mt-1 opacity-90">Manage all studio reservations from request to payment in one view</div>
+        </Link>
       </div>
 
       {/* Global Stats */}

@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CD Pipeline Dashboard - Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0c4a6e 100%);
+      color: #f1f5f9;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    header p {
+      color: #94a3b8;
+      font-size: 1rem;
+    }
+
+    /* Event Capacity Meters */
+    .capacity-meters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .event-capacity-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .event-capacity-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ec4899, #8b5cf6);
+    }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 1rem;
+    }
+
+    .event-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.25rem;
+    }
+
+    .event-dates {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .event-status {
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .capacity-visual {
+      margin-bottom: 0.75rem;
+    }
+
+    .capacity-numbers {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 0.5rem;
+    }
+
+    .capacity-numbers .used {
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    .capacity-bar-large {
+      height: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .capacity-bar-large .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #34d399, #22c55e);
+      transition: width 0.5s ease;
+      position: relative;
+    }
+
+    .capacity-bar-large .fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .capacity-bar-large .fill.warning {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    }
+
+    .capacity-bar-large .fill.critical {
+      background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    .event-meta {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.75rem;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-label {
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+    }
+
+    .meta-value {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .meta-value.warning {
+      color: #fbbf24;
+    }
+
+    /* Mini Capacity Bar in Requested Column */
+    .requested-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .mini-capacity-bar {
+      width: 100%;
+      max-width: 150px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mini-capacity-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #34d399, #22c55e);
+      transition: width 0.3s ease;
+      position: relative;
+    }
+
+    .mini-capacity-fill.warning {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    }
+
+    .mini-capacity-fill.critical {
+      background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    /* Hover preview for approval */
+    .mini-capacity-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(34, 197, 94, 0.3), rgba(34, 211, 153, 0.3));
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+
+    /* Pipeline Filters */
+    .pipeline-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .tab-btn .count {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.125rem 0.5rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+
+    /* Main Pipeline Table */
+    .pipeline-table {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    th {
+      padding: 1rem;
+      text-align: left;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    th.center, td.center {
+      text-align: center;
+    }
+
+    th.right, td.right {
+      text-align: right;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    td {
+      padding: 1rem;
+      font-size: 0.875rem;
+    }
+
+    /* Studio/Competition Info */
+    .studio-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .studio-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .studio-details h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.25rem;
+    }
+
+    .studio-details p {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-badge.pending {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .status-badge.approved {
+      background: rgba(52, 211, 153, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .status-badge.routines-in {
+      background: rgba(96, 165, 250, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .status-badge.invoiced {
+      background: rgba(167, 139, 250, 0.2);
+      color: #a78bfa;
+      border: 1px solid rgba(167, 139, 250, 0.3);
+    }
+
+    .status-badge.paid {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    /* Capacity Indicator */
+    .capacity-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .capacity-progress {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .capacity-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #34d399, #22c55e);
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .capacity-fill.warning {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    }
+
+    .capacity-fill.full {
+      background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    .capacity-text {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      white-space: nowrap;
+      min-width: 60px;
+    }
+
+    /* Action Buttons */
+    .action-btns {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-approve {
+      background: linear-gradient(135deg, #34d399, #22c55e);
+      color: #fff;
+    }
+
+    .btn-approve:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-deny {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-deny:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-invoice {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: #fff;
+    }
+
+    .btn-invoice:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: #fff;
+    }
+
+    .btn-send:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-view {
+      background: rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .btn-view:hover {
+      background: rgba(148, 163, 184, 0.3);
+    }
+
+    /* Expandable Row for Discounts */
+    .expandable-row {
+      background: rgba(0, 0, 0, 0.2);
+      display: none;
+    }
+
+    .expandable-row.show {
+      display: table-row;
+    }
+
+    .discount-panel {
+      padding: 1.5rem;
+    }
+
+    .discount-form {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .discount-form label {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .discount-form select,
+    .discount-form input {
+      padding: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.875rem;
+    }
+
+    .discount-form input[type="number"] {
+      width: 100px;
+    }
+
+    .amount-display {
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .amount-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+    }
+
+    .amount-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .amount-value.discounted {
+      color: #34d399;
+    }
+
+    /* Quick Actions Toggle */
+    .expand-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1.25rem;
+      padding: 0.25rem;
+      transition: transform 0.2s;
+    }
+
+    .expand-btn:hover {
+      color: #fff;
+    }
+
+    .expand-btn.rotated {
+      transform: rotate(180deg);
+    }
+
+    /* Approval Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-header h2 {
+      font-size: 1.5rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-header p {
+      color: #94a3b8;
+      font-size: 0.875rem;
+    }
+
+    .modal-body {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .form-hint {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 0.5rem;
+    }
+
+    .quick-options {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .quick-btn {
+      flex: 1;
+      padding: 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #8b5cf6;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .modal-footer .btn {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    /* Studio Profile Dropdown */
+    .studio-profile-dropdown {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    .studio-profile-dropdown.show {
+      display: block;
+    }
+
+    .profile-section {
+      margin-bottom: 1rem;
+    }
+
+    .profile-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .profile-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .profile-value {
+      color: #fff;
+      font-size: 0.875rem;
+    }
+
+    .profile-value a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    .profile-value a:hover {
+      text-decoration: underline;
+    }
+
+    /* Clickable Status Badges */
+    .status-badge.clickable {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .status-badge.clickable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Last Action Column */
+    .last-action {
+      font-size: 0.875rem;
+    }
+
+    .action-text {
+      color: #cbd5e1;
+      margin-bottom: 0.25rem;
+    }
+
+    .action-date {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    /* Empty State */
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: #94a3b8;
+    }
+
+    .empty-state .icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-state h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1>🎭 Reservation Pipeline</h1>
+      <p>Manage all studio reservations from request to payment in one unified dashboard</p>
+    </header>
+
+    <!-- Event Capacity Meters -->
+    <div class="capacity-meters">
+      <div class="event-capacity-card">
+        <div class="event-header">
+          <div>
+            <div class="event-title">🎭 GlowDance Orlando 2025</div>
+            <div class="event-dates">Feb 14-16, 2025 • Orlando, FL</div>
+          </div>
+          <div class="event-status">Open</div>
+        </div>
+        <div class="capacity-visual">
+          <div class="capacity-numbers">
+            <span><span class="used">387</span> / 600 spaces used</span>
+            <span>213 remaining</span>
+          </div>
+          <div class="capacity-bar-large">
+            <div class="fill" style="width: 64.5%;"></div>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="meta-item">
+            <div class="meta-label">Studios</div>
+            <div class="meta-value">24</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Pending</div>
+            <div class="meta-value warning">5 need action</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Revenue</div>
+            <div class="meta-value">$28,400</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="event-capacity-card">
+        <div class="event-header">
+          <div>
+            <div class="event-title">💫 EMPWR Competition 2025</div>
+            <div class="event-dates">Mar 5-7, 2025 • Toronto, ON</div>
+          </div>
+          <div class="event-status">Open</div>
+        </div>
+        <div class="capacity-visual">
+          <div class="capacity-numbers">
+            <span><span class="used">521</span> / 600 spaces used</span>
+            <span>79 remaining</span>
+          </div>
+          <div class="capacity-bar-large">
+            <div class="fill warning" style="width: 86.8%;"></div>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="meta-item">
+            <div class="meta-label">Studios</div>
+            <div class="meta-value">18</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Pending</div>
+            <div class="meta-value warning">3 need action</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Revenue</div>
+            <div class="meta-value">$34,290</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="event-capacity-card">
+        <div class="event-header">
+          <div>
+            <div class="event-title">🌟 Summer Showcase 2025</div>
+            <div class="event-dates">Jun 12-14, 2025 • Calgary, AB</div>
+          </div>
+          <div class="event-status">Open</div>
+        </div>
+        <div class="capacity-visual">
+          <div class="capacity-numbers">
+            <span><span class="used">142</span> / 500 spaces used</span>
+            <span>358 remaining</span>
+          </div>
+          <div class="capacity-bar-large">
+            <div class="fill" style="width: 28.4%;"></div>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="meta-item">
+            <div class="meta-label">Studios</div>
+            <div class="meta-value">8</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Pending</div>
+            <div class="meta-value">0 need action</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Revenue</div>
+            <div class="meta-value">$8,950</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline Stage Filters -->
+    <div class="pipeline-tabs">
+      <button class="tab-btn active">
+        All <span class="count">50</span>
+      </button>
+      <button class="tab-btn">
+        Pending Review <span class="count">8</span>
+      </button>
+      <button class="tab-btn">
+        Approved <span class="count">12</span>
+      </button>
+      <button class="tab-btn">
+        Summary In <span class="count">7</span>
+      </button>
+      <button class="tab-btn">
+        Invoiced <span class="count">5</span>
+      </button>
+      <button class="tab-btn">
+        Paid <span class="count">18</span>
+      </button>
+    </div>
+
+    <!-- Pipeline Table -->
+    <div class="pipeline-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 40px;"></th>
+            <th>Studio</th>
+            <th>Competition</th>
+            <th class="center">Requested</th>
+            <th class="center">Routines</th>
+            <th class="center">Status</th>
+            <th>Last Action</th>
+            <th class="right">Amount</th>
+            <th class="center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- PENDING RESERVATION -->
+          <tr>
+            <td class="center">
+              <button class="expand-btn" onclick="toggleProfile(this)">▼</button>
+            </td>
+            <td>
+              <div class="studio-info">
+                <div class="studio-avatar">DM</div>
+                <div class="studio-details">
+                  <h3>Dance Masters Studio</h3>
+                  <p>Toronto, ON • demo.studio@gmail.com</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="studio-details">
+                <h3>GlowDance Orlando 2025</h3>
+                <p>Feb 14-16, 2025 • Orlando, FL</p>
+              </div>
+            </td>
+            <td class="center">
+              <div class="requested-cell">
+                <span style="font-weight: 600; color: #fbbf24;">20 spaces</span>
+                <div class="mini-capacity-bar" data-event="glow-orlando" data-requested="20">
+                  <div class="mini-capacity-fill" style="width: 64.5%;"></div>
+                  <div class="mini-capacity-preview" style="width: 67.8%;"></div>
+                </div>
+              </div>
+            </td>
+            <td class="center">
+              <span style="color: #94a3b8; font-size: 0.875rem;">— / —</span>
+            </td>
+            <td class="center">
+              <span class="status-badge pending">Pending</span>
+            </td>
+            <td>
+              <div class="last-action">
+                <div class="action-text">Reservation submitted</div>
+                <div class="action-date">Jan 10, 2025 at 2:34 PM</div>
+              </div>
+            </td>
+            <td class="right">
+              <div style="font-size: 0.875rem; color: #94a3b8;">Not invoiced</div>
+            </td>
+            <td class="center">
+              <div class="action-btns">
+                <button class="btn btn-approve" onclick="showApprovalModal('Dance Masters Studio', 20)">✓ Approve</button>
+                <button class="btn btn-deny">✗ Deny</button>
+              </div>
+            </td>
+          </tr>
+          <!-- Studio Profile Dropdown -->
+          <tr class="expandable-row">
+            <td colspan="9">
+              <div class="studio-profile-dropdown">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                  <div class="profile-section">
+                    <div class="profile-label">Contact Name</div>
+                    <div class="profile-value">Sarah Johnson</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Email</div>
+                    <div class="profile-value"><a href="mailto:demo.studio@gmail.com">demo.studio@gmail.com</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Phone</div>
+                    <div class="profile-value"><a href="tel:+14165551234">(416) 555-1234</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Address</div>
+                    <div class="profile-value">123 Dance St, Toronto, ON M5V 1A1</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Studio Code</div>
+                    <div class="profile-value">DM001</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Member Since</div>
+                    <div class="profile-value">Jan 2024</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- APPROVED - WAITING FOR ROUTINES -->
+          <tr>
+            <td class="center">
+              <button class="expand-btn" onclick="toggleProfile(this)">▼</button>
+            </td>
+            <td>
+              <div class="studio-info">
+                <div class="studio-avatar">ES</div>
+                <div class="studio-details">
+                  <h3>Elite Stars Dance</h3>
+                  <p>Calgary, AB • elite@example.com</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="studio-details">
+                <h3>GlowDance Orlando 2025</h3>
+                <p>Feb 14-16, 2025 • Orlando, FL</p>
+              </div>
+            </td>
+            <td class="center">
+              <div class="requested-cell">
+                <span style="font-weight: 600; color: #34d399;">15 approved</span>
+                <div class="mini-capacity-bar" data-event="glow-orlando">
+                  <div class="mini-capacity-fill" style="width: 64.5%;"></div>
+                </div>
+              </div>
+            </td>
+            <td class="center">
+              <span style="color: #fbbf24; font-weight: 600;">0 / 15</span>
+            </td>
+            <td class="center">
+              <span class="status-badge approved">Approved</span>
+            </td>
+            <td>
+              <div class="last-action">
+                <div class="action-text">Approved by You</div>
+                <div class="action-date">Jan 11, 2025 at 10:15 AM</div>
+              </div>
+            </td>
+            <td class="right">
+              <div style="font-size: 0.875rem; color: #94a3b8;">Waiting for routines</div>
+            </td>
+            <td class="center">
+              <div class="action-btns">
+                <button class="btn btn-view">View Details</button>
+              </div>
+            </td>
+          </tr>
+          <!-- Studio Profile Dropdown -->
+          <tr class="expandable-row">
+            <td colspan="9">
+              <div class="studio-profile-dropdown">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                  <div class="profile-section">
+                    <div class="profile-label">Contact Name</div>
+                    <div class="profile-value">Mike Chen</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Email</div>
+                    <div class="profile-value"><a href="mailto:elite@example.com">elite@example.com</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Phone</div>
+                    <div class="profile-value"><a href="tel:+14035559876">(403) 555-9876</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Address</div>
+                    <div class="profile-value">456 Ballet Ave, Calgary, AB T2P 1B2</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Studio Code</div>
+                    <div class="profile-value">ES002</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Member Since</div>
+                    <div class="profile-value">Mar 2023</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ROUTINES SUBMITTED - READY TO INVOICE -->
+          <tr>
+            <td class="center">
+              <button class="expand-btn" onclick="toggleProfile(this)">▼</button>
+            </td>
+            <td>
+              <div class="studio-info">
+                <div class="studio-avatar">RD</div>
+                <div class="studio-details">
+                  <h3>Rhythm Dance Company</h3>
+                  <p>Vancouver, BC • rhythm@example.com</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="studio-details">
+                <h3>GlowDance Orlando 2025</h3>
+                <p>Feb 14-16, 2025 • Orlando, FL</p>
+              </div>
+            </td>
+            <td class="center">
+              <div class="requested-cell">
+                <span style="font-weight: 600; color: #34d399;">12 approved</span>
+                <div class="mini-capacity-bar" data-event="glow-orlando">
+                  <div class="mini-capacity-fill" style="width: 64.5%;"></div>
+                </div>
+              </div>
+            </td>
+            <td class="center">
+              <span style="color: #34d399; font-weight: 600;">12 / 12</span>
+            </td>
+            <td class="center">
+              <span class="status-badge routines-in clickable" onclick="viewSummary('Rhythm Dance Company')">Summary In</span>
+            </td>
+            <td>
+              <div class="last-action">
+                <div class="action-text">All routines submitted</div>
+                <div class="action-date">Jan 12, 2025 at 4:22 PM</div>
+              </div>
+            </td>
+            <td class="right">
+              <div style="font-size: 1rem; font-weight: 600; color: #fff;">$3,600.00</div>
+            </td>
+            <td class="center">
+              <div class="action-btns">
+                <button class="btn btn-invoice" onclick="createInvoice('Rhythm Dance Company')">💰 Create Invoice</button>
+              </div>
+            </td>
+          </tr>
+          <!-- Studio Profile Dropdown -->
+          <tr class="expandable-row">
+            <td colspan="9">
+              <div class="studio-profile-dropdown">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                  <div class="profile-section">
+                    <div class="profile-label">Contact Name</div>
+                    <div class="profile-value">Lisa Park</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Email</div>
+                    <div class="profile-value"><a href="mailto:rhythm@example.com">rhythm@example.com</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Phone</div>
+                    <div class="profile-value"><a href="tel:+16045554321">(604) 555-4321</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Address</div>
+                    <div class="profile-value">789 Rhythm Rd, Vancouver, BC V6B 4N8</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Studio Code</div>
+                    <div class="profile-value">RD003</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Member Since</div>
+                    <div class="profile-value">Sep 2022</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- INVOICE GENERATED - READY TO SEND -->
+          <tr>
+            <td class="center">
+              <button class="expand-btn" onclick="toggleProfile(this)">▼</button>
+            </td>
+            <td>
+              <div class="studio-info">
+                <div class="studio-avatar">MP</div>
+                <div class="studio-details">
+                  <h3>Motion Pointe Academy</h3>
+                  <p>Ottawa, ON • motion@example.com</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="studio-details">
+                <h3>EMPWR Competition 2025</h3>
+                <p>Mar 5-7, 2025 • Toronto, ON</p>
+              </div>
+            </td>
+            <td class="center">
+              <div class="requested-cell">
+                <span style="font-weight: 600; color: #34d399;">18 approved</span>
+                <div class="mini-capacity-bar" data-event="empwr-toronto">
+                  <div class="mini-capacity-fill warning" style="width: 86.8%;"></div>
+                </div>
+              </div>
+            </td>
+            <td class="center">
+              <span style="color: #34d399; font-weight: 600;">18 / 18</span>
+            </td>
+            <td class="center">
+              <span class="status-badge invoiced clickable" onclick="viewInvoice('Motion Pointe Academy', 'INV-2025-001')">Invoice Ready</span>
+            </td>
+            <td>
+              <div class="last-action">
+                <div class="action-text">Invoice created by You</div>
+                <div class="action-date">Jan 13, 2025 at 9:10 AM</div>
+              </div>
+            </td>
+            <td class="right">
+              <div style="font-size: 1rem; font-weight: 600; color: #a78bfa;">$4,950.00</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">Discount: -$450</div>
+            </td>
+            <td class="center">
+              <div class="action-btns">
+                <button class="btn btn-send">📧 Send Invoice</button>
+                <button class="btn btn-view" onclick="viewInvoice('Motion Pointe Academy', 'INV-2025-001')">Edit</button>
+              </div>
+            </td>
+          </tr>
+          <!-- Studio Profile Dropdown -->
+          <tr class="expandable-row">
+            <td colspan="9">
+              <div class="studio-profile-dropdown">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                  <div class="profile-section">
+                    <div class="profile-label">Contact Name</div>
+                    <div class="profile-value">Jennifer Smith</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Email</div>
+                    <div class="profile-value"><a href="mailto:motion@example.com">motion@example.com</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Phone</div>
+                    <div class="profile-value"><a href="tel:+16135557890">(613) 555-7890</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Address</div>
+                    <div class="profile-value">321 Pointe Dr, Ottawa, ON K1P 5H7</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Studio Code</div>
+                    <div class="profile-value">MP004</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Member Since</div>
+                    <div class="profile-value">Jun 2023</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- INVOICE SENT - AWAITING PAYMENT -->
+          <tr>
+            <td class="center">
+              <button class="expand-btn" onclick="toggleProfile(this)">▼</button>
+            </td>
+            <td>
+              <div class="studio-info">
+                <div class="studio-avatar">SD</div>
+                <div class="studio-details">
+                  <h3>Starlight Dance Studio</h3>
+                  <p>Montreal, QC • starlight@example.com</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="studio-details">
+                <h3>GlowDance Orlando 2025</h3>
+                <p>Feb 14-16, 2025 • Orlando, FL</p>
+              </div>
+            </td>
+            <td class="center">
+              <div class="requested-cell">
+                <span style="font-weight: 600; color: #34d399;">10 approved</span>
+                <div class="mini-capacity-bar" data-event="glow-orlando">
+                  <div class="mini-capacity-fill" style="width: 64.5%;"></div>
+                </div>
+              </div>
+            </td>
+            <td class="center">
+              <span style="color: #34d399; font-weight: 600;">10 / 10</span>
+            </td>
+            <td class="center">
+              <span class="status-badge invoiced clickable" onclick="viewInvoice('Starlight Dance Studio', 'INV-2025-002')">Invoiced</span>
+            </td>
+            <td>
+              <div class="last-action">
+                <div class="action-text">Invoice sent by You</div>
+                <div class="action-date">Jan 13, 2025 at 11:45 AM</div>
+              </div>
+            </td>
+            <td class="right">
+              <div style="font-size: 1rem; font-weight: 600; color: #fbbf24;">$3,000.00</div>
+              <div style="font-size: 0.75rem; color: #fbbf24; margin-top: 0.25rem;">Due: Feb 1, 2025</div>
+            </td>
+            <td class="center">
+              <div class="action-btns">
+                <button class="btn btn-approve">✓ Mark Paid</button>
+                <button class="btn btn-view" onclick="viewInvoice('Starlight Dance Studio', 'INV-2025-002')">View</button>
+              </div>
+            </td>
+          </tr>
+          <!-- Studio Profile Dropdown -->
+          <tr class="expandable-row">
+            <td colspan="9">
+              <div class="studio-profile-dropdown">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                  <div class="profile-section">
+                    <div class="profile-label">Contact Name</div>
+                    <div class="profile-value">Marie Dubois</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Email</div>
+                    <div class="profile-value"><a href="mailto:starlight@example.com">starlight@example.com</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Phone</div>
+                    <div class="profile-value"><a href="tel:+15145556543">(514) 555-6543</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Address</div>
+                    <div class="profile-value">654 Star Blvd, Montreal, QC H3A 1G5</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Studio Code</div>
+                    <div class="profile-value">SD005</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Member Since</div>
+                    <div class="profile-value">Feb 2024</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- PAID - COMPLETE -->
+          <tr style="opacity: 0.7;">
+            <td class="center">
+              <button class="expand-btn" onclick="toggleProfile(this)">▼</button>
+            </td>
+            <td>
+              <div class="studio-info">
+                <div class="studio-avatar">AP</div>
+                <div class="studio-details">
+                  <h3>Apex Performance Studio</h3>
+                  <p>Toronto, ON • apex@example.com</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="studio-details">
+                <h3>GlowDance Orlando 2025</h3>
+                <p>Feb 14-16, 2025 • Orlando, FL</p>
+              </div>
+            </td>
+            <td class="center">
+              <div class="requested-cell">
+                <span style="font-weight: 600; color: #22c55e;">25 approved</span>
+                <div class="mini-capacity-bar" data-event="glow-orlando">
+                  <div class="mini-capacity-fill" style="width: 64.5%;"></div>
+                </div>
+              </div>
+            </td>
+            <td class="center">
+              <span style="color: #22c55e; font-weight: 600;">25 / 25</span>
+            </td>
+            <td class="center">
+              <span class="status-badge paid">Paid ✓</span>
+            </td>
+            <td>
+              <div class="last-action">
+                <div class="action-text">Marked paid by You</div>
+                <div class="action-date">Jan 15, 2025 at 2:30 PM</div>
+              </div>
+            </td>
+            <td class="right">
+              <div style="font-size: 1rem; font-weight: 600; color: #22c55e;">$7,500.00</div>
+              <div style="font-size: 0.75rem; color: #22c55e; margin-top: 0.25rem;">Paid: Jan 15, 2025</div>
+            </td>
+            <td class="center">
+              <div class="action-btns">
+                <button class="btn btn-view" onclick="viewInvoice('Apex Performance Studio', 'INV-2025-003')">View Invoice</button>
+              </div>
+            </td>
+          </tr>
+          <!-- Studio Profile Dropdown -->
+          <tr class="expandable-row">
+            <td colspan="9">
+              <div class="studio-profile-dropdown">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                  <div class="profile-section">
+                    <div class="profile-label">Contact Name</div>
+                    <div class="profile-value">David Wong</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Email</div>
+                    <div class="profile-value"><a href="mailto:apex@example.com">apex@example.com</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Phone</div>
+                    <div class="profile-value"><a href="tel:+14165558765">(416) 555-8765</a></div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Address</div>
+                    <div class="profile-value">987 Peak Rd, Toronto, ON M4W 3L4</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Studio Code</div>
+                    <div class="profile-value">AP006</div>
+                  </div>
+                  <div class="profile-section">
+                    <div class="profile-label">Member Since</div>
+                    <div class="profile-value">Nov 2022</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Approval Modal -->
+  <div id="approvalModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Approve Reservation</h2>
+        <p>Review and approve routine spaces for <strong id="modalStudioName"></strong></p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="approvalAmount">Approve Routines</label>
+          <input
+            type="number"
+            id="approvalAmount"
+            min="0"
+            placeholder="Enter number of routines"
+          />
+          <div class="form-hint">Requested: <span id="modalRequestedAmount"></span> spaces</div>
+          <div class="quick-options">
+            <button class="quick-btn" onclick="setApprovalAmount('all')">All</button>
+            <button class="quick-btn" onclick="setApprovalAmount('half')">Half</button>
+            <button class="quick-btn" onclick="setApprovalAmount('10')">10</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-view" onclick="closeApprovalModal()">Cancel</button>
+        <button class="btn btn-approve" onclick="confirmApproval()">✓ Confirm Approval</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global state
+    let currentRequestedAmount = 0;
+    let currentStudioName = '';
+
+    // Toggle studio profile dropdown
+    function toggleProfile(btn) {
+      btn.classList.toggle('rotated');
+      const tr = btn.closest('tr');
+      const nextRow = tr.nextElementSibling;
+      if (nextRow && nextRow.classList.contains('expandable-row')) {
+        const dropdown = nextRow.querySelector('.studio-profile-dropdown');
+        if (dropdown) {
+          dropdown.classList.toggle('show');
+        }
+      }
+    }
+
+    // Show approval modal
+    function showApprovalModal(studioName, requestedAmount) {
+      currentStudioName = studioName;
+      currentRequestedAmount = requestedAmount;
+
+      document.getElementById('modalStudioName').textContent = studioName;
+      document.getElementById('modalRequestedAmount').textContent = requestedAmount;
+      document.getElementById('approvalAmount').value = requestedAmount;
+      document.getElementById('approvalModal').classList.add('show');
+    }
+
+    // Close approval modal
+    function closeApprovalModal() {
+      document.getElementById('approvalModal').classList.remove('show');
+      currentStudioName = '';
+      currentRequestedAmount = 0;
+    }
+
+    // Set approval amount using quick buttons
+    function setApprovalAmount(type) {
+      const input = document.getElementById('approvalAmount');
+      if (type === 'all') {
+        input.value = currentRequestedAmount;
+      } else if (type === 'half') {
+        input.value = Math.floor(currentRequestedAmount / 2);
+      } else if (type === '10') {
+        input.value = 10;
+      }
+    }
+
+    // Confirm approval
+    function confirmApproval() {
+      const approvedAmount = document.getElementById('approvalAmount').value;
+      alert(`✅ Approved ${approvedAmount} routines for ${currentStudioName}\n\nIn production:\n- Updates reservation status\n- Sends confirmation email\n- Updates capacity counters`);
+      closeApprovalModal();
+    }
+
+    // View routine summary
+    function viewSummary(studioName) {
+      alert(`📋 View Routine Summary for ${studioName}\n\nIn production:\n- Opens summary page\n- Shows all submitted routines\n- Allows review before invoicing`);
+    }
+
+    // Create invoice
+    function createInvoice(studioName) {
+      alert(`💰 Create Invoice for ${studioName}\n\nIn production:\n- Generates invoice from submitted routines\n- Applies any discounts\n- Redirects to invoice edit page`);
+    }
+
+    // View invoice
+    function viewInvoice(studioName, invoiceNumber) {
+      alert(`📄 View Invoice ${invoiceNumber} for ${studioName}\n\nIn production:\n- Opens invoice detail/edit page\n- Shows all line items\n- Allows editing before sending`);
+    }
+
+    // Toggle expandable rows (legacy - kept for compatibility)
+    function toggleRow(btn) {
+      btn.classList.toggle('rotated');
+      const tr = btn.closest('tr');
+      const nextRow = tr.nextElementSibling;
+      if (nextRow && nextRow.classList.contains('expandable-row')) {
+        nextRow.classList.toggle('show');
+      }
+    }
+
+    // Tab filtering (simulated)
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        // In real implementation, this would filter table rows based on status
+      });
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('approvalModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeApprovalModal();
+      }
+    });
+
+    // Enhanced hover preview for capacity bars
+    document.querySelectorAll('.btn-approve').forEach(btn => {
+      btn.addEventListener('mouseenter', function() {
+        const row = this.closest('tr');
+        const capacityBar = row.querySelector('.mini-capacity-bar');
+        if (capacityBar) {
+          const preview = capacityBar.querySelector('.mini-capacity-preview');
+          if (preview) {
+            preview.style.opacity = '1';
+          }
+        }
+      });
+
+      btn.addEventListener('mouseleave', function() {
+        const row = this.closest('tr');
+        const capacityBar = row.querySelector('.mini-capacity-bar');
+        if (capacityBar) {
+          const preview = capacityBar.querySelector('.mini-capacity-preview');
+          if (preview) {
+            preview.style.opacity = '0';
+          }
+        }
+      });
+    });
+
+    // Also show preview when hovering directly on the capacity bar
+    document.querySelectorAll('.mini-capacity-bar').forEach(bar => {
+      bar.addEventListener('mouseenter', function() {
+        const preview = this.querySelector('.mini-capacity-preview');
+        if (preview) {
+          preview.style.opacity = '1';
+        }
+      });
+
+      bar.addEventListener('mouseleave', function() {
+        const preview = this.querySelector('.mini-capacity-preview');
+        if (preview) {
+          preview.style.opacity = '0';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
