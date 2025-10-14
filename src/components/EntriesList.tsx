@@ -810,7 +810,7 @@ export default function EntriesList() {
           </div>
 
           {/* Scrollable Body Table */}
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px]" style={{ scrollbarGutter: 'stable' }}>
             <table className="w-full table-fixed">
               <tbody>
                 {sortedEntries.map((entry, index) => {
