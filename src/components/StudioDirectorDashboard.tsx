@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
 import QuickStatsWidget from './QuickStatsWidget';
 import { trpc } from '@/lib/trpc';
-import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
 
@@ -22,57 +20,6 @@ interface StudioDirectorDashboardProps {
   studioName?: string;
   studioStatus?: string | null;
 }
-
-const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
-  {
-    id: 'dancers',
-    href: '/dashboard/dancers',
-    icon: '🩰',
-    title: 'My Dancers',
-    description: 'Register and manage dancers',
-    tooltip: 'Add or import your dancers',
-  },
-  {
-    id: 'reservations',
-    href: '/dashboard/reservations',
-    icon: '📅',
-    title: 'My Reservations',
-    description: 'Reserve routines for events',
-    tooltip: 'Reserve spaces at events',
-  },
-  {
-    id: 'routines',
-    href: '/dashboard/entries',
-    icon: '🎭',
-    title: 'My Routines',
-    description: 'Create and edit routines',
-    tooltip: 'Create Routines from Approved Reservations',
-  },
-  {
-    id: 'results',
-    href: '/dashboard/scoreboard',
-    icon: '🏆',
-    title: 'Results',
-    description: 'View competition scores',
-    tooltip: 'Check your scores and rankings',
-  },
-  {
-    id: 'invoices',
-    href: '/dashboard/invoices',
-    icon: '🧾',
-    title: 'My Invoices',
-    description: 'View studio billing',
-    tooltip: 'View and pay invoices',
-  },
-  {
-    id: 'music',
-    href: '/dashboard/music',
-    icon: '🎵',
-    title: 'Music Tracking',
-    description: 'Monitor music file uploads',
-    tooltip: 'Upload routine music files',
-  },
-];
 
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
@@ -125,17 +72,14 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       {/* Stats */}
       <StudioDirectorStats />
 
-      {/* Quick Actions - Studio Director View */}
-      <SortableDashboardCards cards={STUDIO_DIRECTOR_CARDS} />
-
-      {/* Quick Stats */}
+      {/* Quick Stats CARDS (not buttons - these show information) */}
       <QuickStatsWidget
         className="mt-4"
         stats={[
-          { icon: '🩰', value: myDancers?.dancers?.length || 0, label: 'Dancers', color: 'text-purple-300' },
-          { icon: '🎟️', value: myEntries?.entries?.length || 0, label: 'Routines', color: 'text-pink-300' },
-          { icon: '📦', value: myReservations?.reservations?.length || 0, label: 'Reservations', color: 'text-blue-300' },
-          { icon: '✅', value: (myEntries?.entries?.filter(e => e.status === 'confirmed').length) || 0, label: 'Confirmed', color: 'text-green-300' },
+          { icon: '🩰', value: myDancers?.dancers?.length || 0, label: 'Dancers', color: 'text-purple-300', tooltip: 'Add or import your dancers' },
+          { icon: '📦', value: myReservations?.reservations?.length || 0, label: 'Reservations', color: 'text-blue-300', tooltip: 'Reserve spaces at events' },
+          { icon: '🎟️', value: myEntries?.entries?.length || 0, label: 'Routines', color: 'text-pink-300', tooltip: 'Create Routines from Approved Reservations' },
+          { icon: '✅', value: (myEntries?.entries?.filter(e => e.status === 'confirmed').length) || 0, label: 'Confirmed', color: 'text-green-300', tooltip: 'Routines confirmed by director' },
         ]}
       />
     </div>

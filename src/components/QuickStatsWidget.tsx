@@ -5,6 +5,7 @@ interface Stat {
   value: string | number;
   label: string;
   color?: string; // Tailwind text color class
+  tooltip?: string; // Tooltip text displayed above CARD
 }
 
 interface QuickStatsWidgetProps {
@@ -18,6 +19,12 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <div key={i} className="text-center">
+            {/* Tooltip above CARD */}
+            {stat.tooltip && (
+              <div className="text-xs text-purple-300 font-medium mb-2">
+                {stat.tooltip}
+              </div>
+            )}
             <div className="text-2xl mb-1" aria-hidden>
               {stat.icon}
             </div>
