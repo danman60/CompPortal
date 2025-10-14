@@ -606,14 +606,35 @@ export const reservationRouter = router({
             entryFee: routinesFee,
           });
         } else {
+          // Get tenant_id from studio
+          const studioData = await prisma.studios.findUnique({
+            where: { id: reservation.studio_id },
+            select: { tenant_id: true },
+          });
+
+          if (!studioData?.tenant_id) {
+            logger.error('Cannot create invoice: Studio has no tenant_id', {
+              studioId: reservation.studio_id,
+            });
+            return reservation; // Skip invoice creation but don't fail the approval
+          }
+
           const subtotal = Number(routinesFee) * spacesConfirmed;
 
           const invoice = await prisma.invoices.create({
             data: {
-              studio_id: reservation.studio_id,
-              competition_id: reservation.competition_id,
-              reservation_id: reservation.id,
-              tenant_id: ctx.tenantId!,
+              studios: {
+                connect: { id: reservation.studio_id },
+              },
+              competitions: {
+                connect: { id: reservation.competition_id },
+              },
+              reservations: {
+                connect: { id: reservation.id },
+              },
+              tenants: {
+                connect: { id: studioData.tenant_id },
+              },
               line_items: [
                 {
                   description: `Routine reservations (${spacesConfirmed} routines @ $${Number(routinesFee).toFixed(2)} each)`,
