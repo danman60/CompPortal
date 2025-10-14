@@ -5,6 +5,7 @@ import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
 import QuickStatsWidget from './QuickStatsWidget';
 import { trpc } from '@/lib/trpc';
+import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
 
@@ -22,11 +23,49 @@ interface StudioDirectorDashboardProps {
   studioStatus?: string | null;
 }
 
+const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
+  {
+    id: 'results',
+    href: '/dashboard/scoreboard',
+    icon: '🏆',
+    title: 'Results',
+    description: 'View competition scores',
+    tooltip: 'Check your scores and rankings',
+  },
+  {
+    id: 'invoices',
+    href: '/dashboard/invoices',
+    icon: '🧾',
+    title: 'My Invoices',
+    description: 'View studio billing',
+    tooltip: 'View and pay invoices',
+  },
+  {
+    id: 'music',
+    href: '/dashboard/music',
+    icon: '🎵',
+    title: 'Music Tracking',
+    description: 'Monitor music file uploads',
+    tooltip: 'Upload routine music files',
+  },
+];
+
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
   const { data: myDancers } = trpc.dancer.getAll.useQuery();
   const { data: myEntries } = trpc.entry.getAll.useQuery();
   const { data: myReservations } = trpc.reservation.getAll.useQuery();
+  const { data: myInvoices } = trpc.invoice.getAllInvoices.useQuery({});
+
+  // Calculate routines left to create
+  const approvedReservationSpaces = myReservations?.reservations
+    ?.filter(r => r.status === 'approved')
+    ?.reduce((total, r) => total + (r.spaces_requested || 0), 0) || 0;
+  const createdRoutines = myEntries?.entries?.length || 0;
+  const routinesLeftToCreate = Math.max(0, approvedReservationSpaces - createdRoutines);
+
+  // Calculate unpaid invoices
+  const unpaidInvoices = myInvoices?.invoices?.filter(inv => inv.reservation?.paymentStatus !== 'paid').length || 0;
 
   return (
     <>
@@ -70,67 +109,42 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
         <MotivationalQuote />
       </div>
 
-      {/* Quick Stats CARDS (not buttons - these show information) */}
-      {/* EXACT ORDER: Dancers, Reservations, Routines, Confirmed */}
+      {/* Stats - 3 large colored cards */}
+      <StudioDirectorStats />
+
+      {/* Quick Actions - 3 cards (Results, Invoices, Music) */}
+      <SortableDashboardCards cards={STUDIO_DIRECTOR_CARDS} />
+
+      {/* Quick Stats - 3 clickable cards */}
       <QuickStatsWidget
         className="mt-4"
         stats={[
-          { icon: '🩰', value: myDancers?.dancers?.length || 0, label: 'Dancers', color: 'text-purple-300', tooltip: 'Add or import your dancers' },
-          { icon: '📦', value: myReservations?.reservations?.length || 0, label: 'Reservations', color: 'text-blue-300', tooltip: 'Reserve spaces at events' },
-          { icon: '🎟️', value: myEntries?.entries?.length || 0, label: 'Routines', color: 'text-pink-300', tooltip: 'Create Routines from Approved Reservations' },
-          { icon: '✅', value: (myEntries?.entries?.filter(e => e.status === 'confirmed').length) || 0, label: 'Confirmed', color: 'text-green-300', tooltip: 'Routines confirmed by director' },
+          {
+            icon: '💰',
+            value: unpaidInvoices,
+            label: 'Unpaid Invoices',
+            color: 'text-red-300',
+            href: '/dashboard/invoices',
+            tooltip: 'Invoices awaiting payment'
+          },
+          {
+            icon: '🎟️',
+            value: routinesLeftToCreate,
+            label: 'Routines Left',
+            color: 'text-yellow-300',
+            href: '/dashboard/entries',
+            tooltip: 'Remaining routines to create from approved reservations'
+          },
+          {
+            icon: '✅',
+            value: (myEntries?.entries?.filter(e => e.status === 'confirmed').length) || 0,
+            label: 'Confirmed',
+            color: 'text-green-300',
+            href: '/dashboard/entries',
+            tooltip: 'Routines confirmed by competition director'
+          },
         ]}
       />
-
-      {/* Action BUTTONS (navigation only - no duplicates of stats CARDS) */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Link
-            href="/dashboard/scoreboard"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block h-32 w-full"
-          >
-            <div className="flex items-center gap-4 h-full">
-              <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">🏆</div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-semibold text-white truncate">Results</h3>
-                <p className="text-gray-400 text-sm line-clamp-2">View competition scores</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/invoices"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block h-32 w-full"
-          >
-            <div className="flex items-center gap-4 h-full">
-              <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">🧾</div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-semibold text-white truncate">My Invoices</h3>
-                <p className="text-gray-400 text-sm line-clamp-2">View studio billing</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/music"
-            className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block h-32 w-full"
-          >
-            <div className="flex items-center gap-4 h-full">
-              <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">🎵</div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-semibold text-white truncate">Music Tracking</h3>
-                <p className="text-gray-400 text-sm line-clamp-2">Monitor music file uploads</p>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* Live Summary (was "Stats") */}
-      <div className="mt-8">
-        <StudioDirectorStats />
-      </div>
     </div>
     </>
   );
