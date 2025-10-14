@@ -257,13 +257,13 @@ export default function UnifiedRoutineForm() {
                 <div>
                   <label className="block text-sm text-gray-300 mb-1">
                     Competition *
-                    {competitionParam && <span className="text-xs text-blue-400 ml-2">(Locked)</span>}
+                    <span className="text-xs text-blue-400 ml-2">(Locked)</span>
                   </label>
                   <select
                     className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white disabled:opacity-60 disabled:cursor-not-allowed"
                     value={form.competition_id}
                     onChange={(e) => setForm({ ...form, competition_id: e.target.value })}
-                    disabled={!!competitionParam}
+                    disabled={true}
                   >
                     <option value="" className="bg-gray-900">Select competition</option>
                     {competitions?.competitions?.map((c: any) => (

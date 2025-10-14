@@ -23,7 +23,7 @@ export default function EntriesList() {
     offset: 0,
   });
   const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
-  const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
+  const [selectedCompetition, setSelectedCompetition] = useState<string>('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [editingEntry, setEditingEntry] = useState<any>(null);
@@ -43,7 +43,7 @@ export default function EntriesList() {
   // Fetch reservation data for space limit tracking
   const { data: reservationData } = trpc.reservation.getAll.useQuery(
     {
-      competitionId: selectedCompetition !== 'all' ? selectedCompetition : undefined,
+      competitionId: selectedCompetition || undefined,
       status: 'approved',
     }
   );
@@ -95,10 +95,17 @@ export default function EntriesList() {
     })
     .filter(Boolean);
 
+  // Auto-select first competition on load
+  useEffect(() => {
+    if (competitions.length > 0 && !selectedCompetition && competitions[0]) {
+      setSelectedCompetition(competitions[0].id);
+    }
+  }, [competitions, selectedCompetition]);
+
   // Filter entries
   const filteredEntries = entries.filter((entry) => {
     const matchesStatus = filter === 'all' || entry.status === filter;
-    const matchesCompetition = selectedCompetition === 'all' || entry.competition_id === selectedCompetition;
+    const matchesCompetition = !selectedCompetition || entry.competition_id === selectedCompetition;
     return matchesStatus && matchesCompetition;
   });
 
@@ -221,13 +228,14 @@ export default function EntriesList() {
   }
 
   // Calculate space limit for "Create Routine" button
-  const hasSelectedCompetition = selectedCompetition !== 'all';
+  const hasSelectedCompetition = !!selectedCompetition;
   const selectedReservation = hasSelectedCompetition ? reservationData?.reservations?.[0] : null;
+  const hasNoReservation = hasSelectedCompetition && !selectedReservation;
 
   // Calculate total confirmed spaces and used spaces
   const confirmedSpaces = hasSelectedCompetition
     ? selectedReservation?.spaces_confirmed || 0
-    : reservationData?.reservations?.reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+    : 0;
 
   const usedSpaces = hasSelectedCompetition
     ? entries.filter(e => e.competition_id === selectedCompetition && e.status !== 'cancelled').length
@@ -282,7 +290,7 @@ export default function EntriesList() {
             </button>
           )}
 
-          {isAtLimit ? (
+          {isAtLimit || hasNoReservation ? (
             <div className="relative group">
               <button
                 disabled
@@ -292,17 +300,17 @@ export default function EntriesList() {
               </button>
               <div className="absolute right-0 top-full mt-2 w-64 bg-red-500/20 border border-red-400/30 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 <div className="text-xs text-red-200">
-                  Space limit reached for this competition. You cannot create more routines.
+                  {isAtLimit
+                    ? 'Space limit reached for this competition. You cannot create more routines.'
+                    : 'No approved reservation found for this competition. Please create and get approval for a reservation first.'}
                 </div>
               </div>
             </div>
           ) : (
             <Link
               href={
-                hasSelectedCompetition
-                  ? selectedReservation
-                    ? `/dashboard/entries/create?competition=${selectedCompetition}&reservation=${selectedReservation.id}`
-                    : `/dashboard/entries/create?competition=${selectedCompetition}`
+                hasSelectedCompetition && selectedReservation
+                  ? `/dashboard/entries/create?competition=${selectedCompetition}&reservation=${selectedReservation.id}`
                   : '/dashboard/entries/create'
               }
               className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
@@ -316,7 +324,7 @@ export default function EntriesList() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Event Filter */}
-        <CompetitionFilter competitions={competitions.filter(Boolean).map((comp: any) => ({ id: comp.id, competition_name: comp.name, competition_start_date: comp.competition_start_date || (comp.year ? new Date(`${comp.year}-01-01`) : new Date()), }))} selectedId={selectedCompetition === "all" ? null : selectedCompetition} onSelect={(id) => setSelectedCompetition(id || "all")} />
+        <CompetitionFilter competitions={competitions.filter(Boolean).map((comp: any) => ({ id: comp.id, competition_name: comp.name, competition_start_date: comp.competition_start_date || (comp.year ? new Date(`${comp.year}-01-01`) : new Date()), }))} selectedId={selectedCompetition || null} onSelect={(id) => setSelectedCompetition(id || '')} />
 
         {/* Status Filter */}
         <div className="flex gap-2 flex-wrap">
@@ -864,27 +872,15 @@ export default function EntriesList() {
                 </div>
 
                 {/* Competition Info (show what's being summarized) */}
-                {hasSelectedCompetition ? (
-                  <div className="flex items-center gap-2 ml-4">
-                    <span className="text-2xl">🎪</span>
-                    <div>
-                      <div className="text-xs text-gray-300 font-semibold uppercase">Viewing</div>
-                      <div className="text-sm font-bold text-white">
-                        {competitions.find((c: any) => c.id === selectedCompetition)?.name || 'Selected Competition'}
-                      </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <span className="text-2xl">🎪</span>
+                  <div>
+                    <div className="text-xs text-gray-300 font-semibold uppercase">Viewing</div>
+                    <div className="text-sm font-bold text-white">
+                      {competitions.find((c: any) => c.id === selectedCompetition)?.name || 'Selected Competition'}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2 ml-4">
-                    <span className="text-2xl">🎪</span>
-                    <div>
-                      <div className="text-xs text-gray-300 font-semibold uppercase">Viewing</div>
-                      <div className="text-sm font-bold text-white">
-                        All Competitions
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 {/* Space Usage Progress Bar */}
                 {showProgressBar && (

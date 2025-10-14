@@ -87,7 +87,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
       return;
     }
 
-    if (currentStep < 5) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
       return;
     }
@@ -137,7 +137,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
       {/* Progress Steps */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
         <div className="flex justify-between items-center mb-6">
-          {[1, 2, 3, 4, 5].map((step) => (
+          {[1, 2, 3, 4].map((step) => (
             <div key={step} className="flex items-center">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
@@ -150,7 +150,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               >
                 {step < currentStep ? '✓' : step}
               </div>
-              {step < 5 && (
+              {step < 4 && (
                 <div
                   className={`w-12 md:w-24 h-1 ${
                     step < currentStep ? 'bg-green-500' : 'bg-white/20'
