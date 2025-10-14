@@ -479,6 +479,22 @@ export const entryRouter = router({
         throw new Error('Studio not found');
       }
 
+      // Get defaults for age_group and entry_size_category if not provided (required by schema)
+      let ageGroupId = data.age_group_id;
+      let entrySizeCategoryId = data.entry_size_category_id;
+
+      if (!ageGroupId) {
+        const defaultAge = await prisma.age_groups.findFirst({ orderBy: { sort_order: 'asc' } });
+        if (!defaultAge) throw new Error('No age groups configured');
+        ageGroupId = defaultAge.id;
+      }
+
+      if (!entrySizeCategoryId) {
+        const defaultSize = await prisma.entry_size_categories.findFirst({ orderBy: { sort_order: 'asc' }, select: { id: true } });
+        if (!defaultSize) throw new Error('No size categories configured');
+        entrySizeCategoryId = defaultSize.id;
+      }
+
       // Create entry with participants
       // Build Prisma data object using relation connect syntax (not foreign key IDs)
       const createData: any = {
@@ -497,9 +513,11 @@ export const entryRouter = router({
         classifications: { connect: { id: data.classification_id } },
       };
 
+      // Required relation fields (use defaults if not provided)
+      createData.age_groups = { connect: { id: ageGroupId } };
+      createData.entry_size_categories = { connect: { id: entrySizeCategoryId } };
+
       // Optional relation fields
-      if (data.age_group_id) createData.age_groups = { connect: { id: data.age_group_id } };
-      if (data.entry_size_category_id) createData.entry_size_categories = { connect: { id: data.entry_size_category_id } };
       if (data.reservation_id) createData.reservations = { connect: { id: data.reservation_id } };
       if (data.session_id) createData.competition_sessions = { connect: { id: data.session_id } };
 
