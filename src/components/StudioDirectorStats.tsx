@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
 
 export default function StudioDirectorStats() {
-  const { data: myDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
+  const { data: myInvoices, isLoading: invoicesLoading } = trpc.invoice.getAllInvoices.useQuery({});
   const { data: myEntries, isLoading: entriesLoading } = trpc.entry.getAll.useQuery();
   const { data: myReservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
 
-  if (dancersLoading || entriesLoading || reservationsLoading) {
+  if (invoicesLoading || entriesLoading || reservationsLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
@@ -22,8 +22,11 @@ export default function StudioDirectorStats() {
     );
   }
 
-  const totalDancers = myDancers?.dancers?.length || 0;
-  const activeDancers = myDancers?.dancers?.filter(d => d.status === 'active').length || 0;
+  const totalInvoices = myInvoices?.invoices?.length || 0;
+  const unpaidInvoices = myInvoices?.invoices?.filter((inv: any) => inv.reservation?.payment_status !== 'paid').length || 0;
+  const unpaidAmount = myInvoices?.invoices
+    ?.filter((inv: any) => inv.reservation?.payment_status !== 'paid')
+    .reduce((sum: number, inv: any) => sum + (inv.reservation?.total_amount || 0), 0) || 0;
 
   const totalEntries = myEntries?.entries?.length || 0;
   const registeredEntries = myEntries?.entries?.filter(e => e.status === 'registered' || e.status === 'confirmed').length || 0;
@@ -35,24 +38,24 @@ export default function StudioDirectorStats() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {/* My Dancers Card */}
+      {/* Unpaid Invoices Card (replaced My Dancers) */}
       <Link
-        href="/dashboard/dancers"
-        className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer"
+        href="/dashboard/invoices"
+        className="bg-gradient-to-br from-red-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-red-400/30 p-6 hover:from-red-500/30 hover:to-orange-500/30 transition-all duration-200 cursor-pointer"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">My Dancers</h3>
-          <div className="text-3xl">💃</div>
+          <h3 className="text-lg font-semibold text-white">Unpaid Invoices</h3>
+          <div className="text-3xl">💰</div>
         </div>
-        <div className="text-4xl font-bold text-white mb-2">{totalDancers}</div>
+        <div className="text-4xl font-bold text-white mb-2">{unpaidInvoices}</div>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between text-gray-300">
-            <span>Active:</span>
-            <span className="font-semibold text-green-400">{activeDancers}</span>
+            <span>Amount Due:</span>
+            <span className="font-semibold text-red-400">${unpaidAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-gray-300">
-            <span>Inactive:</span>
-            <span className="font-semibold text-gray-400">{totalDancers - activeDancers}</span>
+            <span>Total Invoices:</span>
+            <span className="font-semibold text-gray-400">{totalInvoices}</span>
           </div>
         </div>
       </Link>
