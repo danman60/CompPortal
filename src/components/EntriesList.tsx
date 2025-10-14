@@ -227,65 +227,6 @@ export default function EntriesList() {
           <p className="text-gray-400">Manage your competition routines</p>
         </div>
 
-        {/* Routine Capacity Helper Text */}
-        {hasSelectedCompetition && selectedReservation && (
-          <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">📊</span>
-                <div>
-                  <div className="text-sm text-purple-300 font-semibold">
-                    Routines Available
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {usedSpaces} of {confirmedSpaces} routines created
-                  </div>
-                </div>
-              </div>
-              <div className={`text-2xl font-bold ${
-                isAtLimit
-                  ? 'text-red-400'
-                  : (confirmedSpaces - usedSpaces) <= 3
-                  ? 'text-yellow-400'
-                  : 'text-green-400'
-              }`}>
-                {confirmedSpaces - usedSpaces}
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-2">
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${
-                    isAtLimit
-                      ? 'bg-red-500'
-                      : (usedSpaces / confirmedSpaces) >= 0.8
-                      ? 'bg-yellow-500'
-                      : 'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min((usedSpaces / confirmedSpaces) * 100, 100)}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className={`text-xs ${
-              isAtLimit
-                ? 'text-red-300'
-                : (confirmedSpaces - usedSpaces) <= 3
-                ? 'text-yellow-300'
-                : 'text-gray-400'
-            }`}>
-              {isAtLimit
-                ? '⚠️ No routines remaining - capacity reached'
-                : (confirmedSpaces - usedSpaces) === 1
-                ? '⚠️ 1 routine remaining'
-                : `${confirmedSpaces - usedSpaces} routines remaining`
-              }
-            </div>
-          </div>
-        )}
-
         <div className="flex gap-3">
           <Link
             href="/dashboard/entries/assign"
@@ -330,7 +271,7 @@ export default function EntriesList() {
             </div>
           ) : (
             <Link
-              href="/dashboard/entries/create"
+              href={hasSelectedCompetition && selectedReservation ? `/dashboard/entries/create?competition=${selectedCompetition}&reservation=${selectedReservation.id}` : '/dashboard/entries/create'}
               className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
             >
               ➕ Create Routine
@@ -476,92 +417,6 @@ export default function EntriesList() {
         </div>
       )}
 
-      {/* Space Limit Counter (for selected competition with approved reservation) */}
-      {selectedCompetition !== 'all' && reservationData?.reservations?.[0] && (
-        <div className="mb-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-          {(() => {
-            const reservation = reservationData.reservations[0];
-            const confirmedSpaces = reservation.spaces_confirmed || 0;
-            const usedSpaces = entries.filter(
-              e => e.competition_id === selectedCompetition && e.status !== 'cancelled'
-            ).length;
-            const remainingSpaces = confirmedSpaces - usedSpaces;
-            const usagePercent = confirmedSpaces > 0 ? (usedSpaces / confirmedSpaces) * 100 : 0;
-            const isNearLimit = usagePercent >= 80;
-            const isAtLimit = usedSpaces >= confirmedSpaces;
-
-            return (
-              <>
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">
-                      Space Usage for This Competition
-                    </h3>
-                    <p className="text-sm text-gray-400">
-                      Reservation approved for {confirmedSpaces} {confirmedSpaces === 1 ? 'space' : 'spaces'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold text-white">
-                      {usedSpaces} / {confirmedSpaces}
-                    </div>
-                    <div className={`text-sm font-semibold ${
-                      isAtLimit ? 'text-red-400' :
-                      isNearLimit ? 'text-yellow-400' :
-                      'text-green-400'
-                    }`}>
-                      {remainingSpaces} {remainingSpaces === 1 ? 'space' : 'spaces'} remaining
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden border border-white/20">
-                  <div
-                    className={`h-full transition-all duration-500 ${
-                      isAtLimit ? 'bg-red-500' :
-                      isNearLimit ? 'bg-yellow-500' :
-                      'bg-gradient-to-r from-green-500 to-emerald-500'
-                    }`}
-                    style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                  />
-                </div>
-
-                {/* Warning Messages */}
-                {isAtLimit && (
-                  <div className="mt-4 p-3 bg-red-500/20 border border-red-400/30 rounded-lg flex items-start gap-3">
-                    <span className="text-2xl">🚫</span>
-                    <div>
-                      <div className="text-sm font-semibold text-red-300 mb-1">
-                        Space Limit Reached
-                      </div>
-                      <div className="text-xs text-red-200">
-                        You have used all {confirmedSpaces} confirmed {confirmedSpaces === 1 ? 'space' : 'spaces'} for this competition.
-                        You cannot create more routines unless the reservation is updated.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {isNearLimit && !isAtLimit && (
-                  <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg flex items-start gap-3">
-                    <span className="text-2xl">⚠️</span>
-                    <div>
-                      <div className="text-sm font-semibold text-yellow-300 mb-1">
-                        Approaching Space Limit
-                      </div>
-                      <div className="text-xs text-yellow-200">
-                        Only {remainingSpaces} {remainingSpaces === 1 ? 'space' : 'spaces'} remaining.
-                        Plan your remaining routines carefully.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
-      )}
 
       {/* Bulk Selection Toolbar (Table Mode Only) */}
       {viewMode === 'table' && filteredEntries.length > 0 && (
@@ -953,10 +808,38 @@ export default function EntriesList() {
             <div className="flex items-center justify-between gap-6">
               {/* Summary Stats */}
               <div className="flex items-center gap-8">
-                {/* Remaining Routines (only show if competition selected with reservation) */}
+                {/* Progress Bar (only show if competition selected with reservation) */}
+                {hasSelectedCompetition && selectedReservation && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">📊</span>
+                        <div>
+                          <div className="text-xs text-gray-300 font-semibold uppercase">Space Usage</div>
+                          <div className="text-sm text-white font-semibold">
+                            {usedSpaces} / {confirmedSpaces}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Mini Progress Bar */}
+                      <div className="w-48 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${
+                            isAtLimit ? 'bg-red-500' :
+                            (usedSpaces / confirmedSpaces) >= 0.8 ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min((usedSpaces / confirmedSpaces) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Remaining Routines */}
                 {hasSelectedCompetition && selectedReservation && (
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">📊</span>
+                    <span className="text-2xl">🎯</span>
                     <div>
                       <div className="text-xs text-gray-300 font-semibold uppercase">Remaining</div>
                       <div className={`text-2xl font-bold ${
