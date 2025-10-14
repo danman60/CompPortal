@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useSmartDefaults } from '@/hooks/useSmartDefaults';
 import AutoSaveIndicator from '@/components/AutoSaveIndicator';
-import RoutineReviewBar from '@/components/RoutineReviewBar';
 import toast from 'react-hot-toast';
 
 type Step = 'basic' | 'details' | 'participants' | 'props' | 'review';
@@ -850,16 +849,6 @@ export default function EntryForm({ entryId }: EntryFormProps) {
         </div>
       </div>
       {/* <AutoSaveIndicator status={autoSave.status.status} lastSaved={autoSave.status.lastSaved} /> */}
-      <RoutineReviewBar
-        category={lookupData?.categories.find(c => c.id === formData.category_id)?.name}
-        classification={lookupData?.classifications.find(c => c.id === formData.classification_id)?.name}
-        ageGroup={lookupData?.ageGroups.find(a => a.id === formData.age_group_id)?.name}
-        dancers={formData.participants.map((p) => {
-          const full = p.dancer_name || '';
-          const [first, ...rest] = full.split(' ');
-          return { id: p.dancer_id, first_name: first || full, last_name: rest.join(' ') };
-        })}
-      />
     </div>
   );
 }
