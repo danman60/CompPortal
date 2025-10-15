@@ -226,8 +226,8 @@ export const invoiceRouter = router({
       const studioIds = [...new Set(entryGroups.map(g => g.studio_id))];
       const competitionIds = [...new Set(entryGroups.map(g => g.competition_id))];
 
-      // Fetch all studios, competitions, and reservations in parallel
-      const [studios, competitions, reservations] = await Promise.all([
+      // Fetch all studios, competitions, reservations, and invoices in parallel
+      const [studios, competitions, reservations, invoices] = await Promise.all([
         prisma.studios.findMany({
           where: { id: { in: studioIds } },
           select: {
@@ -270,6 +270,18 @@ export const invoiceRouter = router({
             status: true,
           },
         }),
+        prisma.invoices.findMany({
+          where: {
+            studio_id: { in: studioIds },
+            competition_id: { in: competitionIds },
+          },
+          select: {
+            id: true,
+            studio_id: true,
+            competition_id: true,
+            status: true,
+          },
+        }),
       ]);
 
       // Create maps for fast lookup
@@ -279,13 +291,18 @@ export const invoiceRouter = router({
       reservations.forEach(r => {
         reservationMap.set(`${r.studio_id}-${r.competition_id}`, r);
       });
+      const invoiceMap = new Map<string, typeof invoices[0]>();
+      invoices.forEach(inv => {
+        invoiceMap.set(`${inv.studio_id}-${inv.competition_id}`, inv);
+      });
 
       // Build invoices from grouped data
-      const invoices = entryGroups
+      const summaries = entryGroups
         .map((group) => {
           const studio = studioMap.get(group.studio_id);
           const competition = competitionMap.get(group.competition_id);
           const reservation = reservationMap.get(`${group.studio_id}-${group.competition_id}`);
+          const existingInvoice = invoiceMap.get(`${group.studio_id}-${group.competition_id}`);
 
           // Skip if studio or competition not found
           if (!studio || !competition) {
@@ -297,11 +314,9 @@ export const invoiceRouter = router({
             return null;
           }
 
-          // CRITICAL: Only show studios that have completed ALL their routines
-          // Skip if they haven't created all confirmed routines yet
-          if (reservation && group._count.id < (reservation.spaces_confirmed || 0)) {
-            return null;
-          }
+          // NOTE: Removed strict routine completion check to allow partial invoice generation
+          // CDs can now generate invoices even if not all routines are complete
+          // Previously blocked: if (reservation && group._count.id < (reservation.spaces_confirmed || 0))
 
           return {
             studioId: studio.id,
@@ -318,6 +333,9 @@ export const invoiceRouter = router({
             competitionEndDate: competition.competition_end_date,
             entryCount: group._count.id,
             totalAmount: Number(group._sum.total_fee || 0),
+            hasInvoice: !!existingInvoice,
+            invoiceId: existingInvoice?.id || null,
+            invoiceStatus: existingInvoice?.status || null,
             reservation: reservation ? {
               id: reservation.id,
               spacesRequested: reservation.spaces_requested,
@@ -343,8 +361,8 @@ export const invoiceRouter = router({
         });
 
       return {
-        invoices,
-        total: invoices.length,
+        invoices: summaries,
+        total: summaries.length,
       };
     }),
 

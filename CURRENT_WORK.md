@@ -23,6 +23,11 @@
   - UX improvement validation tests
   - Ready for ChatGPT agent execution
 
+**Build Fix** (commit 974fd3c):
+- ✅ Added address1, postal_code, website to studio.getAll query (studio.ts:22-35)
+- ✅ Fixed Vercel build error for expandable studio details
+- ✅ Build pass: 54 routes compiled successfully
+
 ---
 
 ## 🚨 ACTIVE TODO LIST (January 13 Evening - PARTIALLY ADDRESSED)

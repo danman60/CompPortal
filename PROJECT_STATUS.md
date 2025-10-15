@@ -32,20 +32,24 @@
 **Phase**: 100% MVP Complete + UX Polish Complete
 **Confidence Level**: 108.9% (86 tests, 98.9% pass rate)
 **Features**: 16 completed features
-**Last Commit**: 396c408 (UX improvements across 5 pages)
+**Last Commit**: 974fd3c (Fix: Added missing studio fields to getAll query)
 
 ### Recent Work (Last Session)
-**Jan 14, 2025 - UX Improvements + MVP Test Suite** ✨
-- Competitions: Removed reservations dropdown, added clickable cards
-- Studios: Removed status badges, added expandable details
-- Entries (CD): Hidden summary bar and assign/CSV buttons for CDs
-- Dashboard (CD): Removed QuickStats bar and Scoreboard button
-- Routine Summaries: Clickable rows, updated invoice button states
+**Jan 14, 2025 - UX Improvements + MVP Test Suite + Build Fix** ✨
+- **UX Improvements** (commit 396c408):
+  - Competitions: Removed reservations dropdown, added clickable cards
+  - Studios: Removed status badges, added expandable details
+  - Entries (CD): Hidden summary bar and assign/CSV buttons for CDs
+  - Dashboard (CD): Removed QuickStats bar and Scoreboard button
+  - Routine Summaries: Clickable rows, updated invoice button states
 - **MVP Test Suite**: Created comprehensive Playwright test suite (docs/testing/PLAYWRIGHT_TEST_SUITE_JAN14.md)
   - 9 end-to-end business flows (Studio Director + Competition Director + Integration)
   - MVP business requirements checklist
   - Ready for automated testing by ChatGPT agent with Playwright MCP
-- **Result**: 5 pages improved, 14 files changed, test suite created, build pass ✅
+- **Build Fix** (commit 974fd3c):
+  - Added address1, postal_code, website fields to studio.getAll query
+  - Fixed Vercel build error from expandable studio details feature
+- **Result**: 5 pages improved, test suite created, build fix deployed ✅
 
 ### Known Issues
 **🔴 Demo Data - Studio ID Truncation** (Low Priority)
@@ -138,9 +142,9 @@
 
 **Recent Commits**:
 ```bash
+974fd3c - Fix: Add missing studio fields to getAll query
 396c408 - UX improvements across 5 pages
 0333cb4 - Pipeline UX improvements and invoice navigation fixes
-64ad427 - Enforce complete routines before summary submission
 ```
 
 **Production URLs**:

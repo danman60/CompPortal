@@ -289,14 +289,6 @@ export const entryRouter = router({
               competition_start_date: true,
             },
           },
-          reservations: {
-            select: {
-              id: true,
-              spaces_requested: true,
-              spaces_confirmed: true,
-              status: true,
-            },
-          },
           entry_participants: {
             include: {
               dancers: {
