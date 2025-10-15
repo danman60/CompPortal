@@ -74,6 +74,7 @@ export default function DancerCSVImport() {
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [duplicates, setDuplicates] = useState<Array<{ row: number; name: string }>>([]);
+  const [importProgress, setImportProgress] = useState(0);
 
   // Get the user's studio information
   const { data: userStudio } = trpc.studio.getAll.useQuery();
@@ -396,7 +397,7 @@ export default function DancerCSVImport() {
     URL.revokeObjectURL(url);
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (validationErrors.length > 0) return;
     if (!studioId) {
       setImportStatus('error');
@@ -405,10 +406,42 @@ export default function DancerCSVImport() {
     }
 
     setImportStatus('importing');
-    importMutation.mutate({
-      studio_id: studioId,
-      dancers: parsedData,
-    });
+    setImportProgress(0);
+
+    // Import dancers one at a time to track progress
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < parsedData.length; i++) {
+      const dancer = parsedData[i];
+      try {
+        await importMutation.mutateAsync({
+          studio_id: studioId,
+          dancers: [dancer],
+        });
+        successCount++;
+      } catch (error) {
+        console.error(`Error importing ${dancer.first_name} ${dancer.last_name}:`, error);
+        errorCount++;
+      }
+
+      // Update progress
+      setImportProgress(Math.round(((i + 1) / parsedData.length) * 100));
+    }
+
+    // Show success after completion
+    if (errorCount === 0) {
+      setImportStatus('success');
+      setTimeout(() => {
+        router.push('/dashboard/dancers');
+      }, 2000);
+    } else {
+      console.warn(`Import completed with ${errorCount} errors and ${successCount} successes`);
+      setImportStatus('success'); // Still redirect even with some errors
+      setTimeout(() => {
+        router.push('/dashboard/dancers');
+      }, 2000);
+    }
   };
 
   const handleReset = () => {
@@ -556,7 +589,7 @@ export default function DancerCSVImport() {
                     onClick={handleImport}
                     className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                   >
-                    Import {parsedData.length} Dancer(s)
+                    Import
                   </button>
                   <button
                     onClick={handleReset}
@@ -611,10 +644,23 @@ export default function DancerCSVImport() {
 
       {/* Importing */}
       {importStatus === 'importing' && (
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 text-center">
-          <div className="animate-bounce text-6xl mb-4">⬆️</div>
-          <h3 className="text-xl font-semibold text-white mb-2">Importing Dancers...</h3>
-          <p className="text-gray-400">Please wait while we add {parsedData.length} dancer(s) to the database</p>
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
+          <div className="text-center mb-6">
+            <div className="animate-bounce text-6xl mb-4">⬆️</div>
+            <h3 className="text-xl font-semibold text-white mb-2">Importing Dancers...</h3>
+            <p className="text-gray-400">Please wait while we add {parsedData.length} dancer(s) to the database</p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="relative w-full h-8 bg-black/40 rounded-lg overflow-hidden">
+            <div
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-300 ease-out"
+              style={{ width: `${importProgress}%` }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-sm">
+              {importProgress}%
+            </div>
+          </div>
         </div>
       )}
 

@@ -44,6 +44,7 @@ export default function RoutineCSVImport() {
   const [selectedReservationId, setSelectedReservationId] = useState<string>('');
   const [dancerMatches, setDancerMatches] = useState<DancerMatch[]>([]);
   const [noDancersWarning, setNoDancersWarning] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   // Get user and studio data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -336,11 +337,13 @@ export default function RoutineCSVImport() {
 
     setImportStatus('importing');
     setIsProcessing(true);
+    setImportProgress(0);
 
     let successCount = 0;
     let errorCount = 0;
 
-    for (const row of parsedData) {
+    for (let i = 0; i < parsedData.length; i++) {
+      const row = parsedData[i];
       try {
         await createMutation.mutateAsync({
           competition_id: competitionId,
@@ -360,6 +363,9 @@ export default function RoutineCSVImport() {
         console.error(`Error importing ${row.title}:`, error);
         errorCount++;
       }
+
+      // Update progress
+      setImportProgress(Math.round(((i + 1) / parsedData.length) * 100));
     }
 
     setIsProcessing(false);
@@ -506,6 +512,90 @@ export default function RoutineCSVImport() {
       {/* Validated - Ready to Import */}
       {importStatus === 'validated' && (
         <div className="space-y-6">
+          {/* No Dancers Warning */}
+          {noDancersWarning && (
+            <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-4xl">⚠️</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-yellow-400 mb-2">No Dancers Found</h3>
+                  <p className="text-gray-300 mb-3">
+                    You haven't added any dancers yet. Import dancers first to enable automatic dancer matching for routines.
+                  </p>
+                  <a
+                    href="/dashboard/dancers/import"
+                    className="inline-block bg-yellow-500 text-black px-6 py-2 rounded-lg hover:bg-yellow-400 transition-all font-semibold"
+                  >
+                    Import Dancers First
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Few Dancers Warning */}
+          {!noDancersWarning && existingDancers?.dancers && existingDancers.dancers.length < 5 && (
+            <div className="bg-blue-500/10 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">ℹ️</div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-400 mb-2">Limited Dancer Pool</h3>
+                  <p className="text-gray-300 text-sm">
+                    You only have {existingDancers.dancers.length} dancer(s) in your system. Dancer matching may be limited.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Unmatched Dancers Warning */}
+          {dancerMatches.filter(m => !m.matched).length > 0 && (
+            <div className="bg-orange-500/10 backdrop-blur-md rounded-xl border border-orange-400/30 p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-4xl">🔍</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-orange-400 mb-2">
+                    {dancerMatches.filter(m => !m.matched).length} Unmatched Dancer(s)
+                  </h3>
+                  <p className="text-gray-300 mb-3">
+                    These dancers in your CSV don't match any existing dancers. They may need to be added first, or check for typos.
+                  </p>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {dancerMatches.filter(m => !m.matched).map((match, index) => (
+                      <div key={index} className="bg-black/40 p-2 rounded text-sm text-gray-200">
+                        • {match.dancerName} <span className="text-gray-400">(Routine {match.routineIndex + 1})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Low Confidence Matches Warning */}
+          {dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length > 0 && (
+            <div className="bg-purple-500/10 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">🤔</div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-purple-400 mb-2">Fuzzy Matches Detected</h3>
+                  <p className="text-gray-300 text-sm mb-2">
+                    Some dancers were matched with less than 95% confidence. Please verify these are correct:
+                  </p>
+                  <div className="max-h-24 overflow-y-auto space-y-1">
+                    {dancerMatches
+                      .filter(m => m.matched && m.confidence && m.confidence < 0.95)
+                      .map((match, index) => (
+                        <div key={index} className="bg-black/40 p-2 rounded text-xs text-gray-200">
+                          • {match.dancerName} <span className="text-purple-400">({Math.round((match.confidence || 0) * 100)}% match)</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Sheet Selection */}
           {availableSheets.length > 1 && (
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -586,7 +676,7 @@ export default function RoutineCSVImport() {
                     disabled={!selectedReservationId}
                     className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Import {parsedData.length} Routine(s)
+                    Import
                   </button>
                   <button
                     onClick={handleReset}
@@ -632,10 +722,23 @@ export default function RoutineCSVImport() {
 
       {/* Importing */}
       {importStatus === 'importing' && (
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 text-center">
-          <div className="animate-bounce text-6xl mb-4">⬆️</div>
-          <h3 className="text-xl font-semibold text-white mb-2">Importing Routines...</h3>
-          <p className="text-gray-400">Please wait while we add {parsedData.length} routine(s) to the database</p>
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
+          <div className="text-center">
+            <div className="animate-bounce text-6xl mb-4">⬆️</div>
+            <h3 className="text-xl font-semibold text-white mb-2">Importing Routines...</h3>
+            <p className="text-gray-400 mb-6">Please wait while we add {parsedData.length} routine(s) to the database</p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="relative w-full h-8 bg-black/40 rounded-lg overflow-hidden">
+            <div
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300 ease-out"
+              style={{ width: `${importProgress}%` }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-sm">
+              {importProgress}%
+            </div>
+          </div>
         </div>
       )}
 
