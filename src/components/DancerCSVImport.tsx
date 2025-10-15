@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, DANCER_CSV_FIELDS } from '@/lib/csv-utils';
@@ -8,7 +8,6 @@ import { mapCSVHeaders, DANCER_CSV_FIELDS } from '@/lib/csv-utils';
 type ParsedDancer = {
   first_name: string;
   last_name: string;
-  studio_code: string;
   date_of_birth?: string;
   gender?: string;
   email?: string;
@@ -17,7 +16,36 @@ type ParsedDancer = {
   parent_email?: string;
   parent_phone?: string;
   registration_number?: string;
+  skill_level?: string;
 };
+
+// Flexible date parsing utility
+function parseFlexibleDate(dateStr: string): string | null {
+  if (!dateStr) return null;
+
+  const trimmed = dateStr.trim();
+
+  // Already in ISO format (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Try MM/DD/YYYY or M/D/YYYY
+  const usFormat = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (usFormat) {
+    const [, month, day, year] = usFormat;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // Try DD.MM.YYYY (European format)
+  const euFormat = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (euFormat) {
+    const [, day, month, year] = euFormat;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  return null;
+}
 
 type ValidationError = {
   row: number;
@@ -33,8 +61,20 @@ export default function DancerCSVImport() {
   const [headerSuggestions, setHeaderSuggestions] = useState<Array<{ header: string; field: string; confidence: number }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'importing' | 'success' | 'error'>('idle');
+  const [studioId, setStudioId] = useState<string | null>(null);
 
-  const importMutation = trpc.dancer.bulkImport.useMutation({
+  // Get the user's studio information
+  const { data: userStudio } = trpc.studio.getAll.useQuery();
+
+  // Extract studio_id when data loads
+  useEffect(() => {
+    if (userStudio?.studios && userStudio.studios.length > 0) {
+      // For Studio Directors, they'll only have access to their own studio
+      setStudioId(userStudio.studios[0].id);
+    }
+  }, [userStudio]);
+
+  const importMutation = trpc.dancer.batchCreate.useMutation({
     onSuccess: (result) => {
       setImportStatus('success');
       setTimeout(() => {
@@ -73,7 +113,15 @@ export default function DancerCSVImport() {
       csvHeaders.forEach((csvHeader, index) => {
         const canonicalField = mapping[csvHeader];
         if (canonicalField && values[index]) {
-          row[canonicalField] = values[index];
+          // Use flexible date parsing for date_of_birth
+          if (canonicalField === 'date_of_birth') {
+            const parsedDate = parseFlexibleDate(values[index]);
+            if (parsedDate) {
+              row[canonicalField] = parsedDate;
+            }
+          } else {
+            row[canonicalField] = values[index];
+          }
         }
       });
 
@@ -89,34 +137,24 @@ export default function DancerCSVImport() {
     data.forEach((dancer, index) => {
       const rowNum = index + 2; // +2 because row 1 is header, and we're 0-indexed
 
-      // Required fields
-      if (!dancer.first_name) {
+      // Required fields (only first and last name)
+      if (!dancer.first_name || dancer.first_name.trim() === '') {
         errors.push({ row: rowNum, field: 'first_name', message: 'First name is required' });
       }
-      if (!dancer.last_name) {
+      if (!dancer.last_name || dancer.last_name.trim() === '') {
         errors.push({ row: rowNum, field: 'last_name', message: 'Last name is required' });
       }
-      if (!dancer.studio_code) {
-        errors.push({ row: rowNum, field: 'studio_code', message: 'Studio code is required' });
-      } else if (dancer.studio_code.length !== 5) {
-        errors.push({ row: rowNum, field: 'studio_code', message: 'Studio code must be exactly 5 characters' });
-      }
 
-      // Date validation
+      // Date validation (only if provided - already parsed in parseCSV)
       if (dancer.date_of_birth && !/^\d{4}-\d{2}-\d{2}$/.test(dancer.date_of_birth)) {
-        errors.push({ row: rowNum, field: 'date_of_birth', message: 'Date must be in YYYY-MM-DD format' });
+        errors.push({ row: rowNum, field: 'date_of_birth', message: 'Could not parse date. Try MM/DD/YYYY or YYYY-MM-DD' });
       }
 
-      // Gender validation
-      if (dancer.gender && !['Male', 'Female', 'male', 'female'].includes(dancer.gender)) {
-        errors.push({ row: rowNum, field: 'gender', message: 'Gender must be Male or Female' });
-      }
-
-      // Email validation
-      if (dancer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dancer.email)) {
+      // Email validation (only if provided and not empty)
+      if (dancer.email && dancer.email.trim() !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dancer.email)) {
         errors.push({ row: rowNum, field: 'email', message: 'Invalid email format' });
       }
-      if (dancer.parent_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dancer.parent_email)) {
+      if (dancer.parent_email && dancer.parent_email.trim() !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dancer.parent_email)) {
         errors.push({ row: rowNum, field: 'parent_email', message: 'Invalid parent email format' });
       }
     });
@@ -155,9 +193,17 @@ export default function DancerCSVImport() {
 
   const handleImport = () => {
     if (validationErrors.length > 0) return;
+    if (!studioId) {
+      setImportStatus('error');
+      console.error('No studio ID available');
+      return;
+    }
 
     setImportStatus('importing');
-    importMutation.mutate({ dancers: parsedData });
+    importMutation.mutate({
+      studio_id: studioId,
+      dancers: parsedData,
+    });
   };
 
   const handleReset = () => {
@@ -268,6 +314,11 @@ export default function DancerCSVImport() {
           {/* Preview Table */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 overflow-x-auto">
             <h3 className="text-lg font-semibold text-white mb-4">Preview ({parsedData.length} dancers)</h3>
+            {userStudio && (
+              <p className="text-sm text-gray-400 mb-4">
+                Importing to: <span className="text-purple-400 font-semibold">{userStudio.studios[0]?.name}</span>
+              </p>
+            )}
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase bg-black/40 sticky top-0">
@@ -275,10 +326,10 @@ export default function DancerCSVImport() {
                     <th className="px-4 py-3">#</th>
                     <th className="px-4 py-3">First Name</th>
                     <th className="px-4 py-3">Last Name</th>
-                    <th className="px-4 py-3">Studio Code</th>
                     <th className="px-4 py-3">Date of Birth</th>
                     <th className="px-4 py-3">Gender</th>
                     <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Phone</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -287,10 +338,10 @@ export default function DancerCSVImport() {
                       <td className="px-4 py-3 text-gray-400">{index + 1}</td>
                       <td className="px-4 py-3 text-white">{dancer.first_name}</td>
                       <td className="px-4 py-3 text-white">{dancer.last_name}</td>
-                      <td className="px-4 py-3 text-purple-400">{dancer.studio_code}</td>
                       <td className="px-4 py-3 text-gray-300">{dancer.date_of_birth || '-'}</td>
                       <td className="px-4 py-3 text-gray-300">{dancer.gender || '-'}</td>
                       <td className="px-4 py-3 text-gray-300">{dancer.email || '-'}</td>
+                      <td className="px-4 py-3 text-gray-300">{dancer.phone || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
