@@ -1,8 +1,8 @@
 # CompPortal - Project Status
 
-**Last Updated**: January 14, 2025
+**Last Updated**: January 14, 2025 (Late Evening)
 **Current Phase**: 🚨 FEATURE FREEZE - MVP Verification Phase
-**Build**: ✅ All 47 routes compile
+**Build**: ✅ All 54 routes compile
 **Production**: https://comp-portal-one.vercel.app/
 
 ---
@@ -29,27 +29,31 @@
 
 ## 📊 Current State
 
-**Phase**: 100% MVP Complete + UX Polish Complete
+**Phase**: 100% MVP Complete + MVP Blockers Fixed + CSV Enhanced
 **Confidence Level**: 108.9% (86 tests, 98.9% pass rate)
 **Features**: 16 completed features
-**Last Commit**: 974fd3c (Fix: Added missing studio fields to getAll query)
+**Last Commit**: 85c032b (feat: Add flexible CSV header normalization)
 
 ### Recent Work (Last Session)
-**Jan 14, 2025 - UX Improvements + MVP Test Suite + Build Fix** ✨
-- **UX Improvements** (commit 396c408):
-  - Competitions: Removed reservations dropdown, added clickable cards
-  - Studios: Removed status badges, added expandable details
-  - Entries (CD): Hidden summary bar and assign/CSV buttons for CDs
-  - Dashboard (CD): Removed QuickStats bar and Scoreboard button
-  - Routine Summaries: Clickable rows, updated invoice button states
-- **MVP Test Suite**: Created comprehensive Playwright test suite (docs/testing/PLAYWRIGHT_TEST_SUITE_JAN14.md)
-  - 9 end-to-end business flows (Studio Director + Competition Director + Integration)
-  - MVP business requirements checklist
-  - Ready for automated testing by ChatGPT agent with Playwright MCP
-- **Build Fix** (commit 974fd3c):
-  - Added address1, postal_code, website fields to studio.getAll query
-  - Fixed Vercel build error from expandable studio details feature
-- **Result**: 5 pages improved, test suite created, build fix deployed ✅
+**Jan 14, 2025 - MVP Blocker Fixes + CSV Quick Wins** 🚀
+- **MVP Blocker #1 Fixed** (commit fcfb7d9):
+  - Routine summary/invoice generation for Demo Dance Studio working
+  - Removed strict routine completion check (invoice.ts:300-318)
+  - Added invoice status fields (hasInvoice, invoiceId, invoiceStatus)
+  - "Invoice Created" button states working correctly
+- **MVP Blocker #2 Fixed** (commit fcfb7d9):
+  - CD routine detail view error resolved
+  - Removed unused reservations include from entry.getById
+  - Competition Directors can now view routine details
+- **CSV Import Improvements** (commit 85c032b):
+  - Flexible header normalization (handles spaces, dashes, case)
+  - Fuzzy matching with Levenshtein distance (70% threshold)
+  - Field variations mapping ("First Name" → "first_name")
+  - DancerCSVImport updated with smart matching
+- **Previous Session** (commit 974fd3c):
+  - Build fix: Added missing studio fields to getAll query
+  - UX improvements across 5 pages (commit 396c408)
+- **Result**: Both MVP test blockers resolved, CSV import enhanced ✅
 
 ### Known Issues
 **🔴 Demo Data - Studio ID Truncation** (Low Priority)
@@ -63,7 +67,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Routes | 41 (all compiling) |
+| Routes | 54 (all compiling) |
 | Components | 70+ |
 | tRPC Routers | 20 |
 | Database Tables | 38+ |
@@ -142,9 +146,9 @@
 
 **Recent Commits**:
 ```bash
-974fd3c - Fix: Add missing studio fields to getAll query
-396c408 - UX improvements across 5 pages
-0333cb4 - Pipeline UX improvements and invoice navigation fixes
+85c032b - feat: Add flexible CSV header normalization and fuzzy matching
+fcfb7d9 - fix: Resolve MVP test blockers (routine summaries + CD entry view)
+974fd3c - fix: Add missing studio fields to getAll query
 ```
 
 **Production URLs**:

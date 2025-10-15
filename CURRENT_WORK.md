@@ -1,13 +1,39 @@
 # Current Work Status
 
-**Date**: January 14, 2025 (Evening - Post-UX Improvements)
-**Status**: ✅ UX POLISH COMPLETE - MVP Test Suite Created
-**Progress**: UX improvements deployed + Playwright test suite ready
-**Next**: User to execute MVP verification tests
+**Date**: January 14, 2025 (Late Evening - MVP Blockers Fixed + CSV Quick Wins)
+**Status**: ✅ MVP BLOCKERS RESOLVED + CSV IMPROVEMENTS
+**Progress**: Critical production issues fixed, CSV import enhanced
+**Next**: User to verify fixes in production
 
 ---
 
-## ✅ COMPLETED (January 14, 2025)
+## ✅ COMPLETED (January 14, 2025 - Late Session)
+
+**MVP Blocker Fixes** (commit fcfb7d9):
+1. ✅ Fixed routine summary/invoice generation for Demo Dance Studio
+   - Removed strict routine completion check (invoice.ts:300-318)
+   - Added invoice status fields (hasInvoice, invoiceId, invoiceStatus)
+   - Fetched existing invoices in parallel with other data
+   - Demo Dance Studio now appears in summaries, "Invoice Created" button works
+2. ✅ Fixed routine detail view error for Competition Director
+   - Removed unused reservations include from entry.getById (entry.ts:292-313)
+   - CDs can now view routine details without errors
+
+**CSV Import Improvements** (commit 85c032b):
+- ✅ Created flexible CSV header normalization system (csv-utils.ts)
+  - normalizeHeader() handles spaces, dashes, case variations
+  - suggestColumnMatch() uses Levenshtein fuzzy matching
+  - mapCSVHeaders() with 70% confidence threshold
+  - Field variations mapping (e.g., "First Name" → "first_name")
+- ✅ Updated DancerCSVImport to use flexible matching
+  - CSV imports now handle various header formats automatically
+  - Suggestions stored for user review (confidence < 1.0)
+
+**Build Status**: ✅ 54 routes compiled successfully
+
+---
+
+## ✅ COMPLETED (January 14, 2025 - Early Session)
 
 **UX Improvements Deployed** (commit 396c408):
 1. ✅ Competitions: Removed reservations dropdown, added clickable cards
