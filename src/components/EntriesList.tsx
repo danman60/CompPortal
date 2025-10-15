@@ -283,7 +283,7 @@ export default function EntriesList() {
                 className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
               >
                 <span>📤</span>
-                <span>Import CSV</span>
+                <span>Import</span>
               </Link>
             </>
           )}
