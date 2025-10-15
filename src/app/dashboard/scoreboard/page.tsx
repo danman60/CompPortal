@@ -11,8 +11,9 @@ export default function ScoreboardPage() {
   );
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-white">Live Scoreboard</h1>
           {selectedCompetition && (
@@ -99,6 +100,7 @@ export default function ScoreboardPage() {
           No scored routines yet for this competition.
         </div>
       )}
-    </div>
+      </div>
+    </main>
   );
 }

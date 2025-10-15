@@ -46,9 +46,10 @@ export default function MusicTrackingPage() {
   const percentComplete = totalEntries > 0 ? (withMusic / totalEntries) * 100 : 0;
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">🎵 Music Tracking</h1>
@@ -218,6 +219,7 @@ export default function MusicTrackingPage() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </main>
   );
 }
