@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
+import { mapCSVHeaders, DANCER_CSV_FIELDS } from '@/lib/csv-utils';
 
 type ParsedDancer = {
   first_name: string;
@@ -29,6 +30,7 @@ export default function DancerCSVImport() {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedDancer[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [headerSuggestions, setHeaderSuggestions] = useState<Array<{ header: string; field: string; confidence: number }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'importing' | 'success' | 'error'>('idle');
 
@@ -49,16 +51,29 @@ export default function DancerCSVImport() {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
 
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const csvHeaders = lines[0].split(',').map((h) => h.trim());
+
+    // Map CSV headers to canonical field names using flexible matching
+    const { mapping, unmatched, suggestions } = mapCSVHeaders(csvHeaders, DANCER_CSV_FIELDS, 0.7);
+
+    // Store suggestions for display to user
+    setHeaderSuggestions(suggestions);
+
+    // Warn about unmatched headers
+    if (unmatched.length > 0) {
+      console.warn('Unmatched CSV headers:', unmatched);
+    }
+
     const data: ParsedDancer[] = [];
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map((v) => v.trim());
       const row: any = {};
 
-      headers.forEach((header, index) => {
-        if (values[index]) {
-          row[header] = values[index];
+      csvHeaders.forEach((csvHeader, index) => {
+        const canonicalField = mapping[csvHeader];
+        if (canonicalField && values[index]) {
+          row[canonicalField] = values[index];
         }
       });
 
