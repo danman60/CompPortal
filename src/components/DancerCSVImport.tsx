@@ -159,11 +159,44 @@ export default function DancerCSVImport() {
     return data;
   };
 
+  // Proper CSV parsing that handles quoted values
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    // Add last field
+    result.push(current.trim());
+    return result;
+  };
+
   const parseCSV = (text: string): ParsedDancer[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
 
-    const csvHeaders = lines[0].split(',').map((h) => h.trim());
+    const csvHeaders = parseCSVLine(lines[0]);
 
     // Map CSV headers to canonical field names using flexible matching
     const { mapping, unmatched, suggestions } = mapCSVHeaders(csvHeaders, DANCER_CSV_FIELDS, 0.7);
@@ -182,7 +215,7 @@ export default function DancerCSVImport() {
       // Skip empty lines
       if (!lines[i].trim()) continue;
 
-      const values = lines[i].split(',').map((v) => v.trim());
+      const values = parseCSVLine(lines[i]);
       const row: any = {};
 
       csvHeaders.forEach((csvHeader, index) => {

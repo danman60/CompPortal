@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { trpc } from '@/lib/trpc';
+import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, ROUTINE_CSV_FIELDS } from '@/lib/csv-utils';
 import * as XLSX from 'xlsx';
 
@@ -17,16 +19,33 @@ type ValidationError = {
   message: string;
 };
 
-export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: ParsedRoutine[]) => void }) {
+export default function RoutineCSVImport() {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedRoutine[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [headerSuggestions, setHeaderSuggestions] = useState<Array<{ header: string; field: string; confidence: number }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'error'>('idle');
+  const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'importing' | 'success' | 'error'>('idle');
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
+  const [selectedReservationId, setSelectedReservationId] = useState<string>('');
+
+  // Get user and studio data
+  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
+  const studioId = currentUser?.role === 'studio_director' ? currentUser.studio?.id : '';
+
+  // Fetch approved reservations for the studio
+  const { data: reservationsData } = trpc.reservation.getAll.useQuery(
+    { studioId: studioId || '', status: 'approved' },
+    { enabled: !!studioId }
+  );
+
+  // Fetch lookup data for categories and classifications
+  const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
+
+  const createMutation = trpc.entry.create.useMutation();
 
   const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): ParsedRoutine[] => {
     const worksheet = workbook.Sheets[sheetName];
@@ -65,11 +84,44 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
     return data;
   };
 
+  // Proper CSV parsing that handles quoted values
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    // Add last field
+    result.push(current.trim());
+    return result;
+  };
+
   const parseCSV = (text: string): ParsedRoutine[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
 
-    const csvHeaders = lines[0].split(',').map((h) => h.trim());
+    const csvHeaders = parseCSVLine(lines[0]);
     const { mapping, unmatched, suggestions } = mapCSVHeaders(csvHeaders, ROUTINE_CSV_FIELDS, 0.7);
 
     setHeaderSuggestions(suggestions);
@@ -83,7 +135,7 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
 
-      const values = lines[i].split(',').map((v) => v.trim());
+      const values = parseCSVLine(lines[i]);
       const row: any = {};
 
       csvHeaders.forEach((csvHeader, index) => {
@@ -152,7 +204,6 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
 
       if (errors.length === 0) {
         setImportStatus('validated');
-        onParsed?.(parsed);
       } else {
         setImportStatus('error');
       }
@@ -161,6 +212,71 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
       setImportStatus('error');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!selectedReservationId) {
+      setImportStatus('error');
+      return;
+    }
+
+    if (!studioId) {
+      setImportStatus('error');
+      return;
+    }
+
+    const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
+    if (!reservation) {
+      setImportStatus('error');
+      return;
+    }
+
+    const competitionId = reservation.competition_id;
+    const defaultClassification = lookupData?.classifications?.[0]?.id;
+
+    if (!defaultClassification) {
+      setImportStatus('error');
+      return;
+    }
+
+    setImportStatus('importing');
+    setIsProcessing(true);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const row of parsedData) {
+      try {
+        await createMutation.mutateAsync({
+          competition_id: competitionId,
+          studio_id: studioId,
+          title: row.title,
+          classification_id: defaultClassification,
+          choreographer: row.choreographer,
+          special_requirements: row.props,
+          entry_fee: 0,
+          total_fee: 0,
+          status: 'draft',
+          participants: [],
+        } as any);
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error importing ${row.title}:`, error);
+        errorCount++;
+      }
+    }
+
+    setIsProcessing(false);
+
+    if (successCount > 0 && errorCount === 0) {
+      setImportStatus('success');
+      setTimeout(() => {
+        router.push('/dashboard/entries');
+      }, 2000);
+    } else {
+      setImportStatus('error');
     }
   };
 
@@ -179,7 +295,6 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
 
       if (errors.length === 0) {
         setImportStatus('validated');
-        onParsed?.(parsed);
       } else {
         setImportStatus('error');
       }
@@ -291,7 +406,7 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
         </div>
       )}
 
-      {/* Validated - Ready to Use */}
+      {/* Validated - Ready to Import */}
       {importStatus === 'validated' && (
         <div className="space-y-6">
           {/* Sheet Selection */}
@@ -317,21 +432,72 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
             </div>
           )}
 
+          {/* Select Reservation */}
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+            <h3 className="text-lg font-semibold text-white mb-3">🎫 Select Competition</h3>
+            <p className="text-sm text-gray-400 mb-4">Choose which competition to import these routines to:</p>
+            <select
+              value={selectedReservationId}
+              onChange={(e) => setSelectedReservationId(e.target.value)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white"
+            >
+              <option value="" className="bg-gray-900">Select approved reservation</option>
+              {reservationsData?.reservations?.map((res: any) => (
+                <option key={res.id} value={res.id} className="bg-gray-900">
+                  {res.competitions?.name} ({res.competitions?.year}) - {res.spaces_confirmed} spaces
+                </option>
+              ))}
+            </select>
+
+            {selectedReservationId && reservationsData?.reservations?.find(r => r.id === selectedReservationId) && (
+              <div className="mt-4 p-4 bg-white/5 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-sm text-gray-400">Spaces Available</div>
+                    <div className="text-2xl font-bold text-white">
+                      {(() => {
+                        const reservation = reservationsData.reservations.find(r => r.id === selectedReservationId);
+                        const usedSpaces = reservation?._count?.competition_entries || 0;
+                        const confirmedSpaces = reservation?.spaces_confirmed || 0;
+                        return `${confirmedSpaces - usedSpaces} / ${confirmedSpaces}`;
+                      })()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-400">Routines to Import</div>
+                    <div className="text-2xl font-bold text-green-400">
+                      {parsedData.length}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
             <div className="flex items-start gap-4">
               <div className="text-4xl">✅</div>
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-green-400 mb-2">File Validated Successfully</h3>
                 <p className="text-gray-300 mb-4">
-                  Found {parsedData.length} routine(s) ready to use. Review the data below.
+                  Found {parsedData.length} routine(s) ready to import. Review the data below.
                 </p>
 
-                <button
-                  onClick={handleReset}
-                  className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
-                >
-                  Upload Different File
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleImport}
+                    disabled={!selectedReservationId}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Import {parsedData.length} Routine(s)
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
+                  >
+                    Upload Different File
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -364,6 +530,26 @@ export default function RoutineCSVImport({ onParsed }: { onParsed?: (rows: Parse
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Importing */}
+      {importStatus === 'importing' && (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 text-center">
+          <div className="animate-bounce text-6xl mb-4">⬆️</div>
+          <h3 className="text-xl font-semibold text-white mb-2">Importing Routines...</h3>
+          <p className="text-gray-400">Please wait while we add {parsedData.length} routine(s) to the database</p>
+        </div>
+      )}
+
+      {/* Success */}
+      {importStatus === 'success' && (
+        <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-8 text-center">
+          <div className="text-6xl mb-4">🎉</div>
+          <h3 className="text-xl font-semibold text-green-400 mb-2">Import Successful!</h3>
+          <p className="text-gray-300">
+            Successfully imported {parsedData.length} routine(s). Redirecting to entries list...
+          </p>
         </div>
       )}
     </div>
