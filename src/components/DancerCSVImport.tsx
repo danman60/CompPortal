@@ -135,8 +135,11 @@ export default function DancerCSVImport() {
 
       excelHeaders.forEach((excelHeader) => {
         const canonicalField = mapping[excelHeader];
-        if (canonicalField && row[excelHeader]) {
+        if (canonicalField && row[excelHeader] !== undefined && row[excelHeader] !== null) {
           const value = String(row[excelHeader]).trim();
+
+          // Skip completely empty values
+          if (value === '') return;
 
           // Use flexible date parsing for date_of_birth
           if (canonicalField === 'date_of_birth') {
@@ -228,15 +231,20 @@ export default function DancerCSVImport() {
 
       csvHeaders.forEach((csvHeader, index) => {
         const canonicalField = mapping[csvHeader];
-        if (canonicalField && values[index]) {
+        if (canonicalField && values[index] !== undefined && values[index] !== null) {
+          const value = values[index].trim();
+
+          // Skip completely empty values
+          if (value === '') return;
+
           // Use flexible date parsing for date_of_birth
           if (canonicalField === 'date_of_birth') {
-            const parsedDate = parseFlexibleDate(values[index]);
+            const parsedDate = parseFlexibleDate(value);
             if (parsedDate) {
               row[canonicalField] = parsedDate;
             }
           } else {
-            row[canonicalField] = values[index];
+            row[canonicalField] = value;
           }
         }
       });
@@ -592,7 +600,7 @@ export default function DancerCSVImport() {
                     Import
                   </button>
                   <button
-                    onClick={handleReset}
+                    onClick={() => router.push('/dashboard/dancers')}
                     className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
                   >
                     Cancel

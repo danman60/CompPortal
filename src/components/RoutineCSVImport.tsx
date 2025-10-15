@@ -45,6 +45,7 @@ export default function RoutineCSVImport() {
   const [dancerMatches, setDancerMatches] = useState<DancerMatch[]>([]);
   const [noDancersWarning, setNoDancersWarning] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   // Get user and studio data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -338,9 +339,11 @@ export default function RoutineCSVImport() {
     setImportStatus('importing');
     setIsProcessing(true);
     setImportProgress(0);
+    setImportErrors([]);
 
     let successCount = 0;
     let errorCount = 0;
+    const errors: string[] = [];
 
     for (let i = 0; i < parsedData.length; i++) {
       const row = parsedData[i];
@@ -359,9 +362,10 @@ export default function RoutineCSVImport() {
         } as any);
 
         successCount++;
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error importing ${row.title}:`, error);
         errorCount++;
+        errors.push(`${row.title}: ${error?.message || 'Unknown error'}`);
       }
 
       // Update progress
@@ -369,13 +373,16 @@ export default function RoutineCSVImport() {
     }
 
     setIsProcessing(false);
+    setImportErrors(errors);
 
-    if (successCount > 0 && errorCount === 0) {
+    if (successCount > 0) {
+      // Show success even if some failed
       setImportStatus('success');
       setTimeout(() => {
         router.push('/dashboard/entries');
       }, 2000);
     } else {
+      // All failed
       setImportStatus('error');
     }
   };
@@ -503,6 +510,36 @@ export default function RoutineCSVImport() {
                 className="mt-4 bg-white/10 text-white px-6 py-2 rounded-lg hover:bg-white/20 transition-all"
               >
                 Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Errors (all failed) */}
+      {importStatus === 'error' && importErrors.length > 0 && validationErrors.length === 0 && (
+        <div className="bg-red-500/10 backdrop-blur-md rounded-xl border border-red-400/30 p-6">
+          <div className="flex items-start gap-4">
+            <div className="text-4xl">❌</div>
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-red-400 mb-2">Import Failed</h3>
+              <p className="text-gray-300 mb-4">
+                All {importErrors.length} routine(s) failed to import. See errors below:
+              </p>
+
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {importErrors.map((error, index) => (
+                  <div key={index} className="bg-black/40 p-3 rounded-lg text-sm text-gray-200">
+                    {error}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => router.push('/dashboard/entries')}
+                className="mt-4 bg-white/10 text-white px-6 py-2 rounded-lg hover:bg-white/20 transition-all"
+              >
+                Back to Entries
               </button>
             </div>
           </div>
@@ -679,10 +716,10 @@ export default function RoutineCSVImport() {
                     Import
                   </button>
                   <button
-                    onClick={handleReset}
+                    onClick={() => router.push('/dashboard/entries')}
                     className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
                   >
-                    Upload Different File
+                    Cancel
                   </button>
                 </div>
               </div>
@@ -704,15 +741,39 @@ export default function RoutineCSVImport() {
                   </tr>
                 </thead>
                 <tbody>
-                  {parsedData.map((routine, index) => (
-                    <tr key={index} className="border-b border-white/10 hover:bg-white/5">
-                      <td className="px-4 py-3 text-gray-400">{index + 1}</td>
-                      <td className="px-4 py-3 text-white">{routine.title}</td>
-                      <td className="px-4 py-3 text-gray-300">{routine.props || '-'}</td>
-                      <td className="px-4 py-3 text-gray-300">{routine.dancers || '-'}</td>
-                      <td className="px-4 py-3 text-gray-300">{routine.choreographer || '-'}</td>
-                    </tr>
-                  ))}
+                  {parsedData.map((routine, index) => {
+                    // Get matches for this routine
+                    const routineMatches = dancerMatches.filter(m => m.routineIndex === index);
+                    const matched = routineMatches.filter(m => m.matched);
+                    const unmatched = routineMatches.filter(m => !m.matched);
+
+                    return (
+                      <tr key={index} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="px-4 py-3 text-gray-400">{index + 1}</td>
+                        <td className="px-4 py-3 text-white">{routine.title}</td>
+                        <td className="px-4 py-3 text-gray-300">{routine.props || '-'}</td>
+                        <td className="px-4 py-3">
+                          {routineMatches.length > 0 ? (
+                            <div className="space-y-1">
+                              {matched.map((m, i) => (
+                                <div key={i} className="text-green-400 text-xs">
+                                  ✓ {m.dancerName}
+                                </div>
+                              ))}
+                              {unmatched.map((m, i) => (
+                                <div key={i} className="text-orange-400 text-xs">
+                                  ? {m.dancerName}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-300">{routine.choreographer || '-'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -744,12 +805,37 @@ export default function RoutineCSVImport() {
 
       {/* Success */}
       {importStatus === 'success' && (
-        <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-8 text-center">
-          <div className="text-6xl mb-4">🎉</div>
-          <h3 className="text-xl font-semibold text-green-400 mb-2">Import Successful!</h3>
-          <p className="text-gray-300">
-            Successfully imported {parsedData.length} routine(s). Redirecting to entries list...
-          </p>
+        <div className="space-y-6">
+          <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-8 text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h3 className="text-xl font-semibold text-green-400 mb-2">Import Successful!</h3>
+            <p className="text-gray-300">
+              Successfully imported {parsedData.length - importErrors.length} of {parsedData.length} routine(s). Redirecting to entries list...
+            </p>
+          </div>
+
+          {/* Partial Failure Warning */}
+          {importErrors.length > 0 && (
+            <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-4xl">⚠️</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-yellow-400 mb-2">Partial Import</h3>
+                  <p className="text-gray-300 mb-4">
+                    {importErrors.length} routine(s) failed to import:
+                  </p>
+
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {importErrors.map((error, index) => (
+                      <div key={index} className="bg-black/40 p-3 rounded-lg text-sm text-gray-200">
+                        {error}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
