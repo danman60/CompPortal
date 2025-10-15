@@ -60,7 +60,7 @@ export default function RoutineCSVImport() {
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
 
   // Fetch existing dancers for matching
-  const { data: existingDancers } = trpc.dancer.getAll.useQuery(
+  const { data: existingDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery(
     { limit: 1000 },
     { enabled: !!studioId }
   );
@@ -204,7 +204,7 @@ export default function RoutineCSVImport() {
   // Match dancers for all routines
   const matchDancersInRoutines = (routines: ParsedRoutine[]): void => {
     const matches: DancerMatch[] = [];
-    let hasNoDancers = !existingDancers?.dancers || existingDancers.dancers.length === 0;
+    let hasNoDancers = !dancersLoading && (!existingDancers?.dancers || existingDancers.dancers.length === 0);
 
     setNoDancersWarning(hasNoDancers);
 
