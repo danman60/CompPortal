@@ -328,10 +328,23 @@ export default function RoutineCSVImport() {
       return;
     }
 
+    // Check available spaces
+    const usedSpaces = reservation._count?.competition_entries || 0;
+    const confirmedSpaces = reservation.spaces_confirmed || 0;
+    const availableSpaces = confirmedSpaces - usedSpaces;
+
+    if (parsedData.length > availableSpaces) {
+      setImportErrors([`Cannot import ${parsedData.length} routines. Only ${availableSpaces} space(s) available (${confirmedSpaces} confirmed - ${usedSpaces} used).`]);
+      setImportStatus('error');
+      return;
+    }
+
     const competitionId = reservation.competition_id;
     const defaultClassification = lookupData?.classifications?.[0]?.id;
+    const defaultCategory = lookupData?.categories?.[0]?.id;
 
-    if (!defaultClassification) {
+    if (!defaultClassification || !defaultCategory) {
+      setImportErrors(['System configuration error: No categories or classifications available']);
       setImportStatus('error');
       return;
     }
@@ -352,6 +365,7 @@ export default function RoutineCSVImport() {
           competition_id: competitionId,
           studio_id: studioId,
           title: row.title,
+          category_id: defaultCategory,
           classification_id: defaultClassification,
           choreographer: row.choreographer,
           special_requirements: row.props,
@@ -698,6 +712,35 @@ export default function RoutineCSVImport() {
             )}
           </div>
 
+          {/* Space Limit Warning */}
+          {selectedReservationId && (() => {
+            const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
+            if (!reservation) return null;
+            const usedSpaces = reservation._count?.competition_entries || 0;
+            const confirmedSpaces = reservation.spaces_confirmed || 0;
+            const availableSpaces = confirmedSpaces - usedSpaces;
+
+            if (parsedData.length > availableSpaces) {
+              return (
+                <div className="bg-red-500/10 backdrop-blur-md rounded-xl border-2 border-red-400/50 p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">🚫</div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-red-400 mb-2">Insufficient Spaces</h3>
+                      <p className="text-gray-300 mb-2">
+                        Cannot import {parsedData.length} routines. Only {availableSpaces} space(s) available.
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        Confirmed: {confirmedSpaces} | Used: {usedSpaces} | Available: {availableSpaces}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
             <div className="flex items-start gap-4">
               <div className="text-4xl">✅</div>
@@ -710,7 +753,12 @@ export default function RoutineCSVImport() {
                 <div className="flex gap-4">
                   <button
                     onClick={handleImport}
-                    disabled={!selectedReservationId}
+                    disabled={!selectedReservationId || (() => {
+                      const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
+                      if (!reservation) return true;
+                      const availableSpaces = (reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0);
+                      return parsedData.length > availableSpaces;
+                    })()}
                     className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Import
