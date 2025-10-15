@@ -43,11 +43,10 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
   phone: ['phone_number', 'phonenumber', 'tel', 'telephone', 'mobile', 'cell'],
 
   // Routine fields
-  routine_title: ['title', 'routine_name', 'routinename', 'name', 'routine'],
-  dance_category: ['category', 'dancecategory', 'dance', 'style', 'genre'],
-  classification: ['class', 'level', 'division', 'competitive_level', 'competitivelevel'],
-  choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'teacher', 'instructor'],
-  props: ['prop', 'properties', 'prop_list', 'proplist', 'special_requirements'],
+  title: ['routine_title', 'routinetitle', 'routine_name', 'routinename', 'name', 'routine', 'piece', 'dance_title', 'dancetitle', 'dance_name', 'entry_title'],
+  props: ['prop', 'properties', 'prop_list', 'proplist', 'special_requirements', 'items', 'equipment', 'stage_props', 'stageprops'],
+  dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_list'],
+  choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'teacher', 'instructor', 'coach', 'director', 'creator', 'choreography_by'],
 };
 
 /**
@@ -168,12 +167,8 @@ export const DANCER_CSV_FIELDS = [
  * Get expected fields for routine CSV import
  */
 export const ROUTINE_CSV_FIELDS = [
-  'routine_title',
-  'dance_category',
-  'classification',
-  'choreographer',
+  'title',
   'props',
-  'music_title',
-  'music_artist',
-  'costume_description',
+  'dancers',
+  'choreographer',
 ];
