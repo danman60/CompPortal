@@ -55,7 +55,15 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
   const { data: myDancers } = trpc.dancer.getAll.useQuery();
   const { data: myEntries } = trpc.entry.getAll.useQuery();
   const { data: myReservations } = trpc.reservation.getAll.useQuery();
-  const { data: myInvoices } = trpc.invoice.getAllInvoices.useQuery({});
+
+  // Get studio ID for invoice query
+  const { data: userStudio } = trpc.studio.getAll.useQuery();
+  const studioId = userStudio?.studios?.[0]?.id;
+
+  const { data: myInvoices } = trpc.invoice.getByStudio.useQuery(
+    { studioId: studioId! },
+    { enabled: !!studioId }
+  );
 
   // Calculate routines left to create
   const approvedReservationSpaces = myReservations?.reservations
@@ -64,8 +72,8 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
   const createdRoutines = myEntries?.entries?.length || 0;
   const routinesLeftToCreate = Math.max(0, approvedReservationSpaces - createdRoutines);
 
-  // Calculate unpaid invoices
-  const unpaidInvoices = myInvoices?.invoices?.filter(inv => inv.reservation?.paymentStatus !== 'paid').length || 0;
+  // Calculate unpaid invoices (all invoices are unpaid by default - payment tracking is per reservation)
+  const unpaidInvoices = myInvoices?.invoices?.length || 0;
 
   return (
     <>
