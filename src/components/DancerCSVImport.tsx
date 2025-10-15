@@ -31,6 +31,13 @@ function parseFlexibleDate(dateStr: string): string | null {
     return trimmed;
   }
 
+  // Try YYYY/MM/DD or YYYY/M/D
+  const isoSlashFormat = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (isoSlashFormat) {
+    const [, year, month, day] = isoSlashFormat;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
   // Try MM/DD/YYYY or M/D/YYYY
   const usFormat = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (usFormat) {

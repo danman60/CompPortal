@@ -5,18 +5,29 @@ import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, ROUTINE_CSV_FIELDS } from '@/lib/csv-utils';
 import * as XLSX from 'xlsx';
+import levenshtein from 'fast-levenshtein';
 
 type ParsedRoutine = {
   title: string;
   props?: string;
   dancers?: string;
   choreographer?: string;
+  matchedDancers?: string[]; // IDs of matched dancers
+  unmatchedDancers?: string[]; // Names that couldn't be matched
 };
 
 type ValidationError = {
   row: number;
   field: string;
   message: string;
+};
+
+type DancerMatch = {
+  routineIndex: number;
+  dancerName: string;
+  matched: boolean;
+  matchedId?: string;
+  confidence?: number;
 };
 
 export default function RoutineCSVImport() {
@@ -31,6 +42,8 @@ export default function RoutineCSVImport() {
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [selectedReservationId, setSelectedReservationId] = useState<string>('');
+  const [dancerMatches, setDancerMatches] = useState<DancerMatch[]>([]);
+  const [noDancersWarning, setNoDancersWarning] = useState(false);
 
   // Get user and studio data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -45,7 +58,41 @@ export default function RoutineCSVImport() {
   // Fetch lookup data for categories and classifications
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
 
+  // Fetch existing dancers for matching
+  const { data: existingDancers } = trpc.dancer.getAll.useQuery(
+    { limit: 1000 },
+    { enabled: !!studioId }
+  );
+
   const createMutation = trpc.entry.create.useMutation();
+
+  // Fuzzy match dancer name against existing dancers
+  const matchDancerName = (name: string): { id: string; confidence: number } | null => {
+    if (!existingDancers?.dancers) return null;
+
+    const normalized = name.toLowerCase().trim();
+    let bestMatch: { id: string; confidence: number } | null = null;
+
+    for (const dancer of existingDancers.dancers) {
+      const dancerFullName = `${dancer.first_name} ${dancer.last_name}`.toLowerCase();
+
+      // Exact match
+      if (dancerFullName === normalized) {
+        return { id: dancer.id, confidence: 1.0 };
+      }
+
+      // Fuzzy match with Levenshtein distance
+      const distance = levenshtein.get(normalized, dancerFullName);
+      const maxLength = Math.max(normalized.length, dancerFullName.length);
+      const confidence = 1 - (distance / maxLength);
+
+      if (confidence >= 0.8 && (!bestMatch || confidence > bestMatch.confidence)) {
+        bestMatch = { id: dancer.id, confidence };
+      }
+    }
+
+    return bestMatch;
+  };
 
   const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): ParsedRoutine[] => {
     const worksheet = workbook.Sheets[sheetName];
@@ -153,6 +200,50 @@ export default function RoutineCSVImport() {
     return data;
   };
 
+  // Match dancers for all routines
+  const matchDancersInRoutines = (routines: ParsedRoutine[]): void => {
+    const matches: DancerMatch[] = [];
+    let hasNoDancers = !existingDancers?.dancers || existingDancers.dancers.length === 0;
+
+    setNoDancersWarning(hasNoDancers);
+
+    routines.forEach((routine, index) => {
+      if (!routine.dancers) return;
+
+      // Split dancer names by comma
+      const dancerNames = routine.dancers.split(',').map(n => n.trim()).filter(n => n.length > 0);
+
+      const matched: string[] = [];
+      const unmatched: string[] = [];
+
+      dancerNames.forEach(name => {
+        const match = matchDancerName(name);
+        if (match) {
+          matched.push(match.id);
+          matches.push({
+            routineIndex: index,
+            dancerName: name,
+            matched: true,
+            matchedId: match.id,
+            confidence: match.confidence
+          });
+        } else {
+          unmatched.push(name);
+          matches.push({
+            routineIndex: index,
+            dancerName: name,
+            matched: false
+          });
+        }
+      });
+
+      routine.matchedDancers = matched;
+      routine.unmatchedDancers = unmatched;
+    });
+
+    setDancerMatches(matches);
+  };
+
   const validateData = (data: ParsedRoutine[]): ValidationError[] => {
     const errors: ValidationError[] = [];
 
@@ -198,6 +289,9 @@ export default function RoutineCSVImport() {
       }
 
       setParsedData(parsed);
+
+      // Match dancers
+      matchDancersInRoutines(parsed);
 
       const errors = validateData(parsed);
       setValidationErrors(errors);
@@ -289,6 +383,9 @@ export default function RoutineCSVImport() {
     try {
       const parsed = parseExcel(excelWorkbook, sheetName);
       setParsedData(parsed);
+
+      // Match dancers
+      matchDancersInRoutines(parsed);
 
       const errors = validateData(parsed);
       setValidationErrors(errors);
