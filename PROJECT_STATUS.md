@@ -1,6 +1,6 @@
 # CompPortal - Project Status
 
-**Last Updated**: January 13, 2025
+**Last Updated**: January 14, 2025
 **Current Phase**: 🚨 FEATURE FREEZE - MVP Verification Phase
 **Build**: ✅ All 47 routes compile
 **Production**: https://comp-portal-one.vercel.app/
@@ -32,14 +32,20 @@
 **Phase**: 100% MVP Complete + UX Polish Complete
 **Confidence Level**: 108.9% (86 tests, 98.9% pass rate)
 **Features**: 16 completed features
-**Last Commit**: 119514b (Codex Integration Complete)
+**Last Commit**: 396c408 (UX improvements across 5 pages)
 
 ### Recent Work (Last Session)
-**Oct 10, 2025 - Codex Integration Complete** 🤖✅
-- Integrated 14 Codex-generated components (~2,400 lines)
-- Added activity logging backend + email templates
-- Fixed 6+ syntax errors during integration
-- **Result**: 100% success rate, ~13k token savings
+**Jan 14, 2025 - UX Improvements + MVP Test Suite** ✨
+- Competitions: Removed reservations dropdown, added clickable cards
+- Studios: Removed status badges, added expandable details
+- Entries (CD): Hidden summary bar and assign/CSV buttons for CDs
+- Dashboard (CD): Removed QuickStats bar and Scoreboard button
+- Routine Summaries: Clickable rows, updated invoice button states
+- **MVP Test Suite**: Created comprehensive Playwright test suite (docs/testing/PLAYWRIGHT_TEST_SUITE_JAN14.md)
+  - 9 end-to-end business flows (Studio Director + Competition Director + Integration)
+  - MVP business requirements checklist
+  - Ready for automated testing by ChatGPT agent with Playwright MCP
+- **Result**: 5 pages improved, 14 files changed, test suite created, build pass ✅
 
 ### Known Issues
 **🔴 Demo Data - Studio ID Truncation** (Low Priority)
@@ -132,9 +138,9 @@
 
 **Recent Commits**:
 ```bash
-119514b - Codex integration complete (14 tasks)
-0ffe43b - UX Polish Phase 6 complete
-cff8090 - Field validation + conflict detection
+396c408 - UX improvements across 5 pages
+0333cb4 - Pipeline UX improvements and invoice navigation fixes
+64ad427 - Enforce complete routines before summary submission
 ```
 
 **Production URLs**:

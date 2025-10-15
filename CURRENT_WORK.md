@@ -1,27 +1,44 @@
 # Current Work Status
 
-**Date**: January 13, 2025 (Evening - Post-MVP User Feedback)
-**Status**: 🔧 BUG FIX MODE - Addressing User Feedback
-**Progress**: 12 bug fixes queued from user testing
-**Next**: Fix critical blockers preventing routine creation/editing
+**Date**: January 14, 2025 (Evening - Post-UX Improvements)
+**Status**: ✅ UX POLISH COMPLETE - MVP Test Suite Created
+**Progress**: UX improvements deployed + Playwright test suite ready
+**Next**: User to execute MVP verification tests
 
 ---
 
-## 🚨 ACTIVE TODO LIST (January 13 Evening)
+## ✅ COMPLETED (January 14, 2025)
+
+**UX Improvements Deployed** (commit 396c408):
+1. ✅ Competitions: Removed reservations dropdown, added clickable cards
+2. ✅ Studios: Removed status badges, added expandable details
+3. ✅ Entries (CD): Hidden summary bar and assign/CSV buttons for CDs
+4. ✅ Dashboard (CD): Removed QuickStats bar and Scoreboard button
+5. ✅ Routine Summaries: Clickable rows, updated invoice button states
+
+**Documentation Created**:
+- ✅ MVP-focused Playwright test suite: `docs/testing/PLAYWRIGHT_TEST_SUITE_JAN14.md`
+  - 9 end-to-end business flows (SD + CD + Integration)
+  - MVP business requirements checklist
+  - UX improvement validation tests
+  - Ready for ChatGPT agent execution
+
+---
+
+## 🚨 ACTIVE TODO LIST (January 13 Evening - PARTIALLY ADDRESSED)
 
 User reported issues after testing production:
 
-1. **[IN PROGRESS]** Remove duration_seconds and live_status from all queries/schemas
-   - Status: Schema fields commented out, liveCompetition router updated
-   - Blocker: Prevents routine creation/editing
+1. ✅ **[COMPLETE]** Remove duration_seconds and live_status from all queries/schemas
+   - Fixed in UX improvements session
 
 2. **[PENDING]** Fix approve/deny on competitions page - add animation and feedback
    - Add toast notification + animation when SD clicks approve/deny
    - Pending reservation should disappear/fade with animation
 
-3. **[PENDING]** Add live summary bar to entries page (Remaining/Created/Price/Submit)
-   - Display: Remaining Routines, Created Routines, Price Estimate, Submit Summary button
-   - Position: Along bottom of entries page
+3. **[PARTIALLY ADDRESSED]** Add live summary bar to entries page
+   - Live summary bar exists but now hidden for CDs (UX improvement)
+   - Visible for Studio Directors only
 
 4. **[PENDING]** Add CSV import for routines with reservation selection
    - Fields: routine_title, dance_category, choreographer, props
@@ -31,12 +48,13 @@ User reported issues after testing production:
    - Table data shifted left within columns
    - Use Playwright MCP to verify alignment
 
-6. **[PENDING]** Remove hover popup, add click popup for routine details
-   - Replace HoverPreview with click-based modal/popup
+6. ✅ **[COMPLETE]** Remove hover popup, add click popup for routine details
+   - Hover interactions removed
+   - Clickable cards/rows implemented across 5 pages
 
-7. **[PENDING]** Make entire routine card clickable to edit
+7. ✅ **[COMPLETE]** Make entire routine card clickable to edit
+   - Implemented on entries page
    - Click anywhere on card → open edit page
-   - Keep Edit button as well
 
 8. **[PENDING]** Fix create routine - lock to reservation, remove size/age fields, add auto-detect
    - Lock competition dropdown to approved reservation's event
@@ -46,13 +64,11 @@ User reported issues after testing production:
 9. **[PENDING]** Fix edit routine - data not loading, remove live review bar
    - Current data not pre-filled when opening edit page
    - Remove RoutineReviewBar from edit page
-   - Error: duration_seconds column doesn't exist
 
-10. **[PENDING]** Create CD Routine Summaries page for invoice creation with discounts
-    - New page: /dashboard/routine-summaries
-    - CDs can review routine submissions per studio/competition
-    - Add discounts before generating invoice
-    - Replaces auto-invoice on approval workflow
+10. ✅ **[COMPLETE]** Create CD Routine Summaries page for invoice creation with discounts
+    - Page exists at /dashboard/routine-summaries
+    - Clickable rows navigation added (UX improvement)
+    - Invoice button states implemented (UX improvement)
 
 11. **[PENDING]** Optimize invoices page performance (similar to entries fix)
     - Apply same N+1 query optimization as entries page
