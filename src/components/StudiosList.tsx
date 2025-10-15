@@ -27,6 +27,7 @@ export default function StudiosList({ studioId }: StudiosListProps) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [expandedStudioId, setExpandedStudioId] = useState<string | null>(null);
   const [editData, setEditData] = useState({
     name: '',
     email: '',
@@ -594,79 +595,116 @@ export default function StudiosList({ studioId }: StudiosListProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStudios.map((studio) => (
-            <div
-              key={studio.id}
-              className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all"
-            >
-              {/* Status Badge */}
-              <div className="flex justify-between items-start mb-4">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    studio.status === 'approved'
-                      ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                      : studio.status === 'pending'
-                      ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                      : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                  }`}
-                >
-                  {studio.status?.toUpperCase()}
-                </span>
-                {studio.code && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyToClipboard(studio.code!, 'Studio code');
-                    }}
-                    className="text-gray-400 hover:text-white transition-colors text-xs"
-                    title="Copy studio code"
-                  >
-                    📋 {studio.code}
-                  </button>
+          {filteredStudios.map((studio) => {
+            const isExpanded = expandedStudioId === studio.id;
+
+            return (
+              <div
+                key={studio.id}
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all cursor-pointer"
+                onClick={() => setExpandedStudioId(isExpanded ? null : studio.id)}
+              >
+                {/* Header with Studio Code */}
+                <div className="flex justify-between items-start mb-4">
+                  <div></div>
+                  {studio.code && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyToClipboard(studio.code!, 'Studio code');
+                      }}
+                      className="text-gray-400 hover:text-white transition-colors text-xs"
+                      title="Copy studio code"
+                    >
+                      📋 {studio.code}
+                    </button>
+                  )}
+                </div>
+
+                {/* Studio Name */}
+                <h3 className="text-xl font-bold text-white mb-2">{studio.name}</h3>
+
+                {/* Location */}
+                <div className="flex items-center gap-2 text-gray-300 text-sm mb-4">
+                  <span>📍</span>
+                  <span>
+                    {studio.city && studio.province
+                      ? `${studio.city}, ${studio.province}`
+                      : studio.country || 'Location not set'}
+                  </span>
+                </div>
+
+                {/* Contact Info */}
+                {(studio.email || studio.phone) && (
+                  <div className="space-y-2 pt-4 border-t border-white/10">
+                    {studio.email && (
+                      <div className="flex items-center gap-2 text-gray-400 text-sm">
+                        <span>📧</span>
+                        <a
+                          href={`mailto:${studio.email}`}
+                          className="text-blue-400 hover:underline truncate"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {studio.email}
+                        </a>
+                      </div>
+                    )}
+                    {studio.phone && (
+                      <div className="flex items-center gap-2 text-gray-400 text-sm">
+                        <span>📞</span>
+                        <span>{studio.phone}</span>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
 
-              {/* Studio Name */}
-              <h3 className="text-xl font-bold text-white mb-2">{studio.name}</h3>
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+                    {studio.address1 && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Address</label>
+                        <div className="text-white text-sm">{studio.address1}</div>
+                      </div>
+                    )}
+                    {studio.postal_code && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Postal Code</label>
+                        <div className="text-white text-sm">{studio.postal_code}</div>
+                      </div>
+                    )}
+                    {studio.website && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Website</label>
+                        <a
+                          href={studio.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:underline text-sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {studio.website}
+                        </a>
+                      </div>
+                    )}
+                    {studio.created_at && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Registered</label>
+                        <div className="text-white text-sm">
+                          {new Date(studio.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Location */}
-              <div className="flex items-center gap-2 text-gray-300 text-sm mb-4">
-                <span>📍</span>
-                <span>
-                  {studio.city && studio.province
-                    ? `${studio.city}, ${studio.province}`
-                    : studio.country || 'Location not set'}
-                </span>
-              </div>
-
-              {/* Contact Info */}
-              {(studio.email || studio.phone) && (
-                <div className="space-y-2 pt-4 border-t border-white/10">
-                  {studio.email && (
-                    <div className="flex items-center gap-2 text-gray-400 text-sm">
-                      <span>📧</span>
-                      <a href={`mailto:${studio.email}`} className="text-blue-400 hover:underline truncate">
-                        {studio.email}
-                      </a>
-                    </div>
-                  )}
-                  {studio.phone && (
-                    <div className="flex items-center gap-2 text-gray-400 text-sm">
-                      <span>📞</span>
-                      <span>{studio.phone}</span>
-                    </div>
-                  )}
+                {/* Click indicator */}
+                <div className="mt-4 text-center text-xs text-gray-500">
+                  {isExpanded ? '▲ Click to collapse' : '▼ Click for details'}
                 </div>
-              )}
-
-              {/* Created Date */}
-              {studio.created_at && (
-                <div className="mt-4 text-gray-500 text-xs">
-                  Registered: {new Date(studio.created_at).toLocaleDateString()}
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

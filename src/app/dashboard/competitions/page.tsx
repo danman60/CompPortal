@@ -4,14 +4,12 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import CompetitionReservationsPanel from '@/components/CompetitionReservationsPanel';
 
 export default function CompetitionsPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.competition.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'registration_open' | 'in_progress' | 'completed'>('all');
-  const [expandedCompetition, setExpandedCompetition] = useState<string | null>(null);
 
   const deleteMutation = trpc.competition.delete.useMutation({
     onSuccess: () => {
@@ -200,16 +198,11 @@ export default function CompetitionsPage() {
               .reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
             const remainingSlots = totalCapacity - reservedCount;
 
-            // Get pending reservations
-            const pendingReservations = competition.reservations?.filter(r => r.status === 'pending') || [];
-
-            // Get confirmed studios
-            const confirmedStudios = competition.reservations?.filter(r => r.status === 'approved') || [];
-
             return (
               <div
                 key={competition.id}
-                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col"
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col group cursor-pointer"
+                onClick={() => router.push(`/dashboard/competitions/${competition.id}/edit`)}
               >
                 {/* Header */}
                 <div className="mb-4">
@@ -236,65 +229,23 @@ export default function CompetitionsPage() {
                   </div>
                 </div>
 
-                {/* Reservations Summary & Toggle */}
-                <div className="mb-4">
-                  <button
-                    onClick={() => setExpandedCompetition(
-                      expandedCompetition === competition.id ? null : competition.id
-                    )}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 hover:bg-white/10 transition-all text-left"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-semibold text-white mb-1">
-                          📋 Reservations
-                        </h4>
-                        <div className="flex items-center gap-4 text-xs">
-                          {pendingReservations.length > 0 && (
-                            <span className="text-yellow-400">
-                              {pendingReservations.length} Pending
-                            </span>
-                          )}
-                          <span className="text-green-400">
-                            {confirmedStudios.length} Confirmed
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-2xl">
-                        {expandedCompetition === competition.id ? '▼' : '▶'}
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* Expanded Reservations Panel */}
-                  {expandedCompetition === competition.id && (
-                    <div className="mt-2 bg-black/20 rounded-lg p-4 border border-white/10">
-                      <CompetitionReservationsPanel
-                        competitionId={competition.id}
-                        competitionName={competition.name}
-                        maxRoutines={totalCapacity}
-                      />
-                    </div>
-                  )}
-                </div>
-
                 {/* Actions */}
                 <div className="mt-auto space-y-2">
-                  <Link
-                    href={`/dashboard/competitions/${competition.id}/edit`}
-                    className="block w-full px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-400/30 rounded-lg hover:bg-blue-500/30 transition-all text-center font-medium text-sm"
-                  >
-                    View Details
-                  </Link>
                   <button
-                    onClick={() => handleClone(competition.id, competition.name, competition.year)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClone(competition.id, competition.name, competition.year);
+                    }}
                     className="w-full px-4 py-2 bg-green-500/20 text-green-400 border border-green-400/30 rounded-lg hover:bg-green-500/30 transition-all font-medium text-sm"
                     disabled={cloneMutation.isPending}
                   >
                     {cloneMutation.isPending ? 'Cloning...' : '📋 Clone'}
                   </button>
                   <button
-                    onClick={() => handleDelete(competition.id, competition.name)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(competition.id, competition.name);
+                    }}
                     className="w-full px-4 py-2 bg-red-500/20 text-red-400 border border-red-400/30 rounded-lg hover:bg-red-500/30 transition-all font-medium text-sm"
                     disabled={deleteMutation.isPending}
                   >

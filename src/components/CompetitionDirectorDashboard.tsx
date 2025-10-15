@@ -6,7 +6,6 @@ import DashboardStats from './DashboardStats';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
-import QuickStatsWidget from './QuickStatsWidget';
 import { trpc } from '@/lib/trpc';
 
 function getGreeting() {
@@ -78,13 +77,6 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     icon: '💯',
     title: 'Scoring',
     description: 'Judge tablet interface',
-  },
-  {
-    id: 'scoreboard',
-    href: '/dashboard/scoreboard',
-    icon: '🏆',
-    title: 'Scoreboard',
-    description: 'Live scores & rankings',
   },
   {
     id: 'analytics',
@@ -179,17 +171,6 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
 
       {/* Admin Actions */}
       <SortableDashboardCards cards={dashboardCards} />
-
-      {/* Quick Stats */}
-      <QuickStatsWidget
-        className="mt-4"
-        stats={[
-          { icon: '🏫', value: studios?.studios?.length || 0, label: 'Studios', color: 'text-purple-300' },
-          { icon: '🗓️', value: reservations?.reservations?.length || 0, label: 'Reservations', color: 'text-blue-300' },
-          { icon: '📄', value: invoicesData?.invoices?.length || 0, label: 'Invoices', color: 'text-pink-300' },
-          { icon: '✅', value: (reservations?.reservations?.filter(r => r.status === 'approved').length) || 0, label: 'Approved', color: 'text-green-300' },
-        ]}
-      />
 
       {/* Quick Info */}
       <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">

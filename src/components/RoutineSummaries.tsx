@@ -156,8 +156,15 @@ export default function RoutineSummaries() {
                 const discountedTotal = calculateDiscountedTotal(invoice);
                 const discountAmount = invoice.totalAmount - discountedTotal;
 
+                // Check if invoice already exists
+                const hasInvoice = invoice.invoiceId || invoice.hasInvoice;
+
                 return (
-                  <tr key={key} className="border-b border-white/10 hover:bg-white/5">
+                  <tr
+                    key={key}
+                    className="border-b border-white/10 hover:bg-white/5 cursor-pointer transition-all"
+                    onClick={() => router.push(`/dashboard/invoices/${invoice.studioId}/${invoice.competitionId}`)}
+                  >
                     <td className="px-6 py-4">
                       <div className="text-white font-medium">{invoice.studioName}</div>
                       <div className="text-xs text-gray-400">{invoice.studioCity}, {invoice.studioProvince}</div>
@@ -220,13 +227,26 @@ export default function RoutineSummaries() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => handleCreateInvoice(invoice)}
-                        disabled={processingInvoiceKey === key || !invoice.reservation}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!hasInvoice) {
+                            handleCreateInvoice(invoice);
+                          }
+                        }}
+                        disabled={hasInvoice || processingInvoiceKey === key || !invoice.reservation}
+                        className={`px-4 py-2 rounded-lg transition-all text-sm ${
+                          hasInvoice
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
+                        }`}
                       >
-                        {processingInvoiceKey === key ? 'Creating...' : 'Create Invoice'}
+                        {hasInvoice
+                          ? 'Invoice Created'
+                          : processingInvoiceKey === key
+                          ? 'Creating...'
+                          : 'Create Invoice'}
                       </button>
-                      {!invoice.reservation && (
+                      {!invoice.reservation && !hasInvoice && (
                         <div className="text-xs text-red-400 mt-1">No reservation</div>
                       )}
                     </td>

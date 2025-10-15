@@ -16,9 +16,13 @@ import { EntryEditModal } from './EntryEditModal';
 
 export default function EntriesList() {
   const router = useRouter();
+  // Fetch current user to determine role
+  const { data: userData } = trpc.user.getCurrentUser.useQuery();
+  const isStudioDirector = userData?.role === 'studio_director';
+
   // PERFORMANCE FIX: Add pagination to reduce initial load time
   const [limit] = useState(100); // Load 100 entries at a time
-  const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery({
+  const { data, isLoading, refetch, dataUpdatedAt} = trpc.entry.getAll.useQuery({
     limit,
     offset: 0,
   });
@@ -264,21 +268,25 @@ export default function EntriesList() {
         </div>
 
         <div className="flex gap-3">
-          <Link
-            href="/dashboard/entries/assign"
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-          >
-            <span>👥</span>
-            <span>Assign Dancers</span>
-          </Link>
+          {isStudioDirector && (
+            <>
+              <Link
+                href="/dashboard/entries/assign"
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+              >
+                <span>👥</span>
+                <span>Assign Dancers</span>
+              </Link>
 
-          <Link
-            href="/dashboard/entries/import"
-            className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-          >
-            <span>📤</span>
-            <span>Import CSV</span>
-          </Link>
+              <Link
+                href="/dashboard/entries/import"
+                className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+              >
+                <span>📤</span>
+                <span>Import CSV</span>
+              </Link>
+            </>
+          )}
 
           {viewMode === 'table' && selectedEntries.size > 0 && (
             <button
@@ -843,8 +851,8 @@ export default function EntriesList() {
         Showing {filteredEntries.length} of {entries.length} routines
       </div>
 
-      {/* Live Summary Bar (Fixed at bottom - always visible when entries exist) */}
-      {entries.length > 0 && (
+      {/* Live Summary Bar (Fixed at bottom - only for Studio Directors) */}
+      {isStudioDirector && entries.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 border-t-2 border-purple-400/50 shadow-2xl z-50">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between gap-6">
@@ -979,8 +987,8 @@ export default function EntriesList() {
         </div>
       )}
 
-      {/* Spacer for fixed bottom bar */}
-      {entries.length > 0 && (
+      {/* Spacer for fixed bottom bar - only for Studio Directors */}
+      {isStudioDirector && entries.length > 0 && (
         <div className="h-24"></div>
       )}
     </div>
