@@ -6,6 +6,9 @@ import { toast } from 'react-hot-toast';
 import { AgeDivisionSettings } from './components/AgeDivisionSettings';
 import { EntrySizeSettings } from './components/EntrySizeSettings';
 import { PricingSettings } from './components/PricingSettings';
+import { DanceStyleSettings } from './components/DanceStyleSettings';
+import { ScoringRubricSettings } from './components/ScoringRubricSettings';
+import { AwardsSettings } from './components/AwardsSettings';
 import { useRouter } from 'next/navigation';
 
 export default function TenantSettingsPage() {
@@ -182,38 +185,27 @@ export default function TenantSettingsPage() {
           )}
 
           {activeTab === 'dance-styles' && (
-            <div className="space-y-4">
-              <p className="text-gray-300">Dance Styles configuration coming soon...</p>
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                <p className="text-yellow-200 text-sm">
-                  EMPWR Default Dance Styles: Classical Ballet, Acro, Modern, Tap, Open, Pointe, Production
-                </p>
-              </div>
-            </div>
+            <DanceStyleSettings
+              tenantId={tenantId}
+              currentSettings={settingsData?.settings.danceStyles || null}
+              onSave={() => refetch()}
+            />
           )}
 
           {activeTab === 'scoring-rubric' && (
-            <div className="space-y-4">
-              <p className="text-gray-300">Scoring Rubric configuration coming soon...</p>
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                <p className="text-yellow-200 text-sm">
-                  EMPWR Default Scoring: Bronze (≤84.00), Silver (84.00-86.99), Gold (87.00-89.99),
-                  Titanium (90.00-92.99), Platinum (93.00-95.99), Pandora (96.00+)
-                </p>
-              </div>
-            </div>
+            <ScoringRubricSettings
+              tenantId={tenantId}
+              currentSettings={settingsData?.settings.scoringRubric || null}
+              onSave={() => refetch()}
+            />
           )}
 
           {activeTab === 'awards' && (
-            <div className="space-y-4">
-              <p className="text-gray-300">Awards configuration coming soon...</p>
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                <p className="text-yellow-200 text-sm">
-                  EMPWR Overall Awards: Solos (Top 10), Duets/Trios (Top 3), Small Groups (Top 3),
-                  Large Groups (Top 3), Lines (Top 3), Super Lines (Top 3), Productions (Top 3)
-                </p>
-              </div>
-            </div>
+            <AwardsSettings
+              tenantId={tenantId}
+              currentSettings={settingsData?.settings.awards || null}
+              onSave={() => refetch()}
+            />
           )}
         </div>
       </div>

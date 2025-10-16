@@ -1218,6 +1218,15 @@ model tenants {
   // Branding Configuration
   branding    Json     @default("{}")           // { primaryColor, secondaryColor, logo, tagline }
 
+  // Competition Settings (Tenant-wide defaults)
+  age_division_settings     Json?    @db.JsonB
+  classification_settings   Json?    @db.JsonB
+  entry_fee_settings        Json?    @db.JsonB
+  dance_category_settings   Json?    @db.JsonB
+  scoring_system_settings   Json?    @db.JsonB
+  entry_size_settings       Json?    @db.JsonB
+  award_settings            Json?    @db.JsonB
+
   // Timestamps
   created_at  DateTime @default(now()) @db.Timestamp(6)
   updated_at  DateTime @default(now()) @db.Timestamp(6)
