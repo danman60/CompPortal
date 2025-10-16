@@ -227,10 +227,27 @@ export const dancerRouter = router({
 
       // Studio directors can only create dancers for their own studio
       if (isStudioDirector(ctx.userRole)) {
-        if (!ctx.studioId) {
+        // If ctx.studioId is not available (due to tRPC context gap),
+        // fetch it from the database using user ID
+        let userStudioId = ctx.studioId;
+
+        if (!userStudioId && ctx.userId) {
+          // Try to find user's studio by owner_id
+          const userStudio = await prisma.studios.findFirst({
+            where: {
+              owner_id: ctx.userId,
+            },
+            select: { id: true },
+          });
+          if (userStudio) {
+            userStudioId = userStudio.id;
+          }
+        }
+
+        if (!userStudioId) {
           throw new Error('Studio director must have an associated studio');
         }
-        if (data.studio_id !== ctx.studioId) {
+        if (data.studio_id !== userStudioId) {
           throw new Error('Cannot create dancers for other studios');
         }
       }
