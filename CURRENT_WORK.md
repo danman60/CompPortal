@@ -1,9 +1,50 @@
 # Current Work Status
 
-**Date**: October 16, 2025 (Very Late Night - Invoice Pricing Fixes Complete)
-**Status**: ✅ ALL INVOICE PRICING ISSUES RESOLVED
-**Progress**: Auto-calculate entry fees, editable invoices, database wipe script created
-**Next**: Run database wipe script and test complete workflow from scratch
+**Date**: October 16, 2025 (Pre-Testing Sprint - Priority 1 Complete)
+**Status**: ✅ CRITICAL HARDCODED PRICING BUG FIXED
+**Progress**: Refactoring Priority 1 complete, testing prep docs created
+**Next**: Complete Phase 1 of pre-testing action plan (Tasks 1.2-1.5)
+
+---
+
+## ✅ COMPLETED (October 16, 2025 - Pre-Testing Sprint)
+
+### Priority 1 Refactoring: Fixed Hardcoded Pricing (commit 8ad272e)
+
+**Issue**: CRITICAL - Violates "NO SAMPLE DATA" policy
+- EntriesList.tsx had hardcoded `$50 × count` in 2 locations
+- Users saw incorrect pricing estimates instead of actual fees
+- Blocked accurate testing before major testing week
+
+**Solutions Implemented**:
+
+#### 1. Fixed Summary Bar Pricing (EntriesList.tsx:879)
+- **Before**: `${(filteredEntries.length * 50).toFixed(2)}`
+- **After**: `${filteredEntries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0).toFixed(2)}`
+- **Impact**: Summary bar now shows accurate total from database
+
+#### 2. Fixed Summary Modal Pricing (EntriesList.tsx:1145)
+- **Before**: `${(filteredEntries.length * 50).toFixed(2)}`
+- **After**: `${filteredEntries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0).toFixed(2)}`
+- **Impact**: Summary modal now shows accurate total from database
+
+#### 3. Added total_fee to Query (entry.ts:213)
+- **Issue**: tRPC query didn't include `total_fee` field
+- **Fix**: Added `total_fee: true` to getAll select statement
+- **Impact**: Frontend now has access to actual fee data
+
+**Testing Docs Created**:
+- `docs/REFACTORING_RECOMMENDATIONS.md` - 5 priority refactorings with code examples
+- `docs/REFACTORING_PROMPT.txt` - Quick execution prompts
+- `docs/KNOWN_ISSUES.md` - Testing guide + bug report template
+- `docs/TESTING_SETUP_GUIDE.md` - Step-by-step testing setup
+- `PRE_TESTING_ACTION_PLAN.md` - 2-3 hour pre-testing checklist
+
+**Files Modified**:
+- `src/components/EntriesList.tsx` (lines 879, 1145)
+- `src/server/routers/entry.ts` (line 213)
+
+**Build Status**: ✅ Passing (55 routes compiled successfully)
 
 ---
 
@@ -219,6 +260,7 @@ User needs to add to MCP config:
 ## Git Commits This Session
 
 ```bash
+8ad272e - refactor: fix hardcoded pricing in EntriesList (Priority 1)
 7c0d24a - docs: Update PROJECT_STATUS with invoice pricing fixes
 0965203 - feat: Add database wipe script for testing
 0be3b85 - feat: Add editable invoice pricing for Studio Directors
