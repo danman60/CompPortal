@@ -1,7 +1,7 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 16, 2025 (Very Late Night)
-**Current Phase**: 💰 Invoice Pricing + Database Testing Tools
+**Last Updated**: October 16, 2025 (Pre-Testing Sprint)
+**Current Phase**: 🧪 Pre-Testing Sprint (Priority 1 Complete)
 **Build**: ✅ All 55 routes compile
 **Production**: https://comp-portal-one.vercel.app/
 
@@ -9,10 +9,10 @@
 
 ## 📊 Current State
 
-**Phase**: Invoice Pricing Fixes + Database Wipe Script
-**Confidence Level**: 99% (All invoice pricing working, ready for clean test)
+**Phase**: Pre-Testing Sprint (Refactoring + Testing Prep)
+**Confidence Level**: 99% (Critical hardcoded pricing bug fixed, ready for testing week)
 **Features**: 19 completed features (18 previous + Editable Invoice Pricing)
-**Last Commit**: 0965203 (feat: Add database wipe script for testing)
+**Last Commit**: 8ad272e (refactor: fix hardcoded pricing in EntriesList - Priority 1)
 
 ### Recent Work (This Session - Oct 16, 2025)
 **Multi-Tenant Architecture Removal** 🔧
@@ -105,7 +105,29 @@
   - Suggests appropriate action (Archive) to users
 - **Status**: ✅ Fixed, deployed, working correctly
 
-**Invoice Pricing Fixes** 💰 (NEW - Very Late Night)
+**Priority 1 Refactoring: Hardcoded Pricing Bug** 🚨 (NEW - Pre-Testing Sprint)
+- **Commit**: 8ad272e
+- **Issue**: CRITICAL - Violates "NO SAMPLE DATA" policy
+  - EntriesList.tsx showed `$50 × count` instead of actual fees from database
+  - Blocked accurate testing before major testing week starting Monday
+- **Fixes Implemented**:
+  1. **Summary Bar** (EntriesList.tsx:879): Changed to calculate actual total_fee
+  2. **Summary Modal** (EntriesList.tsx:1145): Changed to calculate actual total_fee
+  3. **Backend Query** (entry.ts:213): Added `total_fee: true` to getAll select
+- **Formula**: `filteredEntries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0)`
+- **Status**: ✅ Fixed, build passing, deployed to production
+
+**Testing Documentation Created** 📋 (NEW - Pre-Testing Sprint)
+- **Files Created**:
+  - `docs/REFACTORING_RECOMMENDATIONS.md` - 5 priority refactorings with code examples
+  - `docs/REFACTORING_PROMPT.txt` - Quick execution prompts for implementing priorities
+  - `docs/KNOWN_ISSUES.md` - Testing guide + bug report template for testers
+  - `docs/TESTING_SETUP_GUIDE.md` - Step-by-step testing setup procedures
+  - `PRE_TESTING_ACTION_PLAN.md` - 2-3 hour pre-testing checklist (4 phases)
+- **Purpose**: Prepare for major testing week starting Monday Oct 23, 2025
+- **Status**: ✅ Complete, ready to share with testers
+
+**Invoice Pricing Fixes** 💰 (Earlier Session)
 - **Commits**: a5c250e, 0be3b85, 0965203
 - **Issue**: User reported invoices created with 72 routines but $0 total
 - **Root Cause**: Entries created with hardcoded $0 fees (UnifiedRoutineForm.tsx:153-154)
@@ -154,35 +176,46 @@
 
 ## 🚀 Next Priorities
 
-1. **Clean Test Run** (IMMEDIATE)
+1. **Pre-Testing Action Plan - Phase 1** (IMMEDIATE)
+   - ✅ Task 1.1: Fix hardcoded pricing bug (Priority 1) - COMPLETE
+   - ✅ Task 1.2: Run build verification - COMPLETE
+   - ⏭️ Task 1.3: Check console errors (Chrome DevTools on production)
+   - ⏭️ Task 1.4: Verify demo accounts work (cd@demo.com, sd1@demo.com, sd2@demo.com)
+   - ⏭️ Task 1.5: Self-test critical flow (signup → reservation → entries → invoice)
+   - **See**: `PRE_TESTING_ACTION_PLAN.md` for full 4-phase checklist
+
+2. **Database Wipe + Complete Workflow Test** (HIGH PRIORITY)
    - Run database wipe script: `scripts/wipe-database-keep-demos.sql`
-   - Test complete workflow from scratch:
-     - Sign up new studio → Create dancers → Request reservation
-     - CD approves reservation → SD creates routines → Verify fees calculate correctly
-     - CD creates invoice → Edit prices → Send to SD
-     - SD views invoice → Edit prices if needed → CD marks as paid
-   - Verify all pricing shows correctly (no $0 invoices)
+   - Test complete workflow from scratch with actual pricing verification
+   - Configure tax rate (7%) for invoice testing
+   - Test music upload functionality
 
-2. **Production Verification** (HIGH PRIORITY)
-   - Test Competition Settings pricing is applied to new entries
-   - Verify invoice editing workflow (DRAFT → SENT → PAID)
-   - Test role-based permissions (SD can't see DRAFT invoices)
-   - Verify activity logging for all invoice actions
+3. **Share Testing Docs with Team** (BEFORE MONDAY)
+   - Email testers with credentials and documentation links
+   - Create #compportal-testing Slack channel
+   - Set up GitHub Issues bug tracking with templates
+   - Schedule daily standup during testing week
 
-3. **Future Enhancements** (Backlog)
-   - Multi-tenant re-implementation (if needed, with proper planning)
-   - At Competition Mode improvements
-   - See: BUGS_AND_FEATURES.md
+4. **Optional Quick Wins** (IF TIME ALLOWS)
+   - Priority 2: Extract StatusBadge component (eliminates 300 lines duplication)
+   - Priority 3: Extract Modal component (eliminates 400 lines duplication)
+   - **See**: `docs/REFACTORING_RECOMMENDATIONS.md` for implementation details
 
 ---
 
 ## 📂 Key Documentation
 
 **Start Here**:
-- CURRENT_WORK.md - Today's rollback and Competition Settings work
-- FIXES_TO_PRESERVE.md - Critical commits cherry-picked from multi-tenant branch
+- **CURRENT_WORK.md** - Priority 1 refactoring complete, pre-testing sprint status
+- **PRE_TESTING_ACTION_PLAN.md** - 2-3 hour checklist before testing week (4 phases)
 - BUGS_AND_FEATURES.md - Active bugs/features tracker
 - docs/QUICKSTART_FOR_CLAUDE.md - Session bootstrap guide
+
+**Pre-Testing Sprint** (NEW):
+- **docs/REFACTORING_RECOMMENDATIONS.md** - 5 priority refactorings with code examples
+- **docs/REFACTORING_PROMPT.txt** - Quick execution prompts
+- **docs/KNOWN_ISSUES.md** - Testing guide + bug report template
+- **docs/TESTING_SETUP_GUIDE.md** - Step-by-step testing setup
 
 **User Journeys**:
 - docs/journeys/studio_director_journey.md
@@ -192,6 +225,8 @@
 **Testing**:
 - docs/testing/FINAL_TESTING_REPORT.md (86 tests)
 - TEST_CREDENTIALS.md (demo accounts)
+- scripts/wipe-database-keep-demos.sql (clean test environment)
+- scripts/README_WIPE_DATABASE.md (execution instructions)
 
 **History**:
 - docs/archive/HISTORY.md (all past sessions)
@@ -232,14 +267,14 @@
 
 **Recent Commits**:
 ```bash
+e7ac687 - docs: Update CURRENT_WORK with Priority 1 completion
+8ad272e - refactor: fix hardcoded pricing in EntriesList (Priority 1)
 0965203 - feat: Add database wipe script for testing
 0be3b85 - feat: Add editable invoice pricing for Studio Directors
 a5c250e - fix: Auto-calculate entry fees from Competition Settings
 aaf8a94 - docs: Update PROJECT_STATUS with signup/onboarding fixes
 09b63fc - fix: Improve dancer error messages to show actual server responses
 1a2f3cd - fix: Simplify signup flow and fix onboarding tenant_id constraint
-0d38141 - feat: Implement invoice workflow with DRAFT/SENT/PAID status
-8287f87 - fix: Remove details modal + fix ctx.tenantId references
 ```
 
 **Production URLs**:
