@@ -17,7 +17,6 @@ export default function DancersList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedDancers, setSelectedDancers] = useState<Set<string>>(new Set());
-  const [detailDancer, setDetailDancer] = useState<any>(null);
 
   // Delete mutation
   const utils = trpc.useUtils();
@@ -478,8 +477,7 @@ export default function DancersList() {
                   return (
                   <tr
                     key={dancer.id}
-                    onClick={() => setDetailDancer(dancer)}
-                    className={`border-b border-white/10 hover:bg-gray-700/50 transition-colors cursor-pointer ${
+                    className={`border-b border-white/10 hover:bg-gray-700/50 transition-colors ${
                       index % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-900/20'
                     }`}
                   >
@@ -566,101 +564,6 @@ export default function DancersList() {
       {searchTerm && (
         <div className="mt-6 text-center text-gray-400 text-sm">
           Showing {filteredDancers.length} of {dancers.length} dancers
-        </div>
-      )}
-
-      {/* Dancer Detail Modal (Click Popup) */}
-      {detailDancer && (
-        <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setDetailDancer(null)}
-        >
-          <div
-            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/20 p-6 max-w-md w-full shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="space-y-3">
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Dancer Details</div>
-                <div className="text-lg font-bold text-white">
-                  {detailDancer.first_name} {detailDancer.last_name}
-                </div>
-                {detailDancer.registration_number && (
-                  <div className="text-xs text-gray-400 mt-1">
-                    Registration: #{detailDancer.registration_number}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-gray-400 mb-1">Gender</div>
-                  <div className={`text-sm font-semibold ${
-                    detailDancer.gender === 'Male'
-                      ? 'text-blue-400'
-                      : detailDancer.gender === 'Female'
-                      ? 'text-pink-400'
-                      : 'text-gray-400'
-                  }`}>
-                    {detailDancer.gender || 'Unknown'}
-                  </div>
-                </div>
-
-                {detailDancer.date_of_birth && (
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">Age</div>
-                    <div className="text-sm font-semibold text-white">
-                      {new Date().getFullYear() - new Date(detailDancer.date_of_birth).getFullYear()} years
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {detailDancer.studios && (
-                <div>
-                  <div className="text-xs text-gray-400 mb-1">Studio</div>
-                  <div className="text-sm text-white">
-                    {detailDancer.studios.name}
-                  </div>
-                </div>
-              )}
-
-              {detailDancer.date_of_birth && (
-                <div>
-                  <div className="text-xs text-gray-400 mb-1">Date of Birth</div>
-                  <div className="text-sm text-gray-300">
-                    {new Date(detailDancer.date_of_birth).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {detailDancer.status && (
-                <div className="pt-3 border-t border-white/10">
-                  <div className="text-xs text-gray-400 mb-1">Status</div>
-                  <span
-                    className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
-                      detailDancer.status === 'active'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-gray-500/20 text-gray-400'
-                    }`}
-                  >
-                    {detailDancer.status}
-                  </span>
-                </div>
-              )}
-
-              <button
-                onClick={() => setDetailDancer(null)}
-                className="w-full mt-4 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all"
-              >
-                Close
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
