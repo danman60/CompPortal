@@ -39,7 +39,7 @@ export default function DancersList() {
       if (context?.previousData) {
         utils.dancer.getAll.setData(undefined, context.previousData);
       }
-      toast.error('Failed to delete dancer');
+      toast.error(err.message || 'Failed to delete dancer');
     },
     onSettled: () => {
       utils.dancer.getAll.invalidate();
@@ -129,19 +129,27 @@ export default function DancersList() {
 
     const count = selectedDancers.size;
     const dancerIds = Array.from(selectedDancers);
+    let successCount = 0;
+    let failedCount = 0;
+    let lastError = '';
 
-    toast.promise(
-      (async () => {
-        for (const dancerId of dancerIds) {
-          await deleteMutation.mutateAsync({ id: dancerId });
-        }
-      })(),
-      {
-        loading: `Deleting ${count} dancer${count > 1 ? 's' : ''}...`,
-        success: `${count} dancer${count > 1 ? 's' : ''} deleted successfully`,
-        error: 'Failed to delete dancers',
+    for (const dancerId of dancerIds) {
+      try {
+        await deleteMutation.mutateAsync({ id: dancerId });
+        successCount++;
+      } catch (error: any) {
+        failedCount++;
+        lastError = error.message || 'Unknown error';
       }
-    );
+    }
+
+    if (failedCount === 0) {
+      toast.success(`${successCount} dancer${successCount > 1 ? 's' : ''} deleted successfully`);
+    } else if (successCount === 0) {
+      toast.error(`Failed to delete dancers: ${lastError}`);
+    } else {
+      toast.error(`Deleted ${successCount}, failed ${failedCount}. Last error: ${lastError}`);
+    }
   };
 
   // Bulk selection shortcuts
