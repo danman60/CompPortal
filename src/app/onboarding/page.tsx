@@ -112,6 +112,7 @@ export default function OnboardingPage() {
         const { error } = await supabase
           .from('studios')
           .insert({
+            tenant_id: '00000000-0000-0000-0000-000000000001', // EMPWR tenant
             owner_id: user.id,
             name: formData.studioName,
             address1: formData.address1,

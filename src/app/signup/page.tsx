@@ -9,28 +9,13 @@ interface SignupFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  studioName: string;
-  city: string;
-  province: string;
-  country: string;
 }
 
 export default function SignupPage() {
-  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<SignupFormData>({
     email: '',
     password: '',
     confirmPassword: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    studioName: '',
-    city: '',
-    province: '',
-    country: 'Canada',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +28,7 @@ export default function SignupPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const validateStep1 = () => {
+  const validateForm = () => {
     if (!formData.email) {
       setError('Email is required');
       return false;
@@ -59,68 +44,28 @@ export default function SignupPage() {
     return true;
   };
 
-  const validateStep2 = () => {
-    if (!formData.firstName || !formData.lastName) {
-      setError('First and last name are required');
-      return false;
-    }
-    return true;
-  };
-
-  const validateStep3 = () => {
-    if (!formData.studioName) {
-      setError('Studio name is required');
-      return false;
-    }
-    return true;
-  };
-
-  const handleNext = () => {
-    setError(null);
-
-    if (step === 1 && validateStep1()) {
-      setStep(2);
-    } else if (step === 2 && validateStep2()) {
-      setStep(3);
-    }
-  };
-
-  const handleBack = () => {
-    setError(null);
-    setStep(step - 1);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateStep3()) return;
+    if (!validateForm()) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Create auth account
+      // Create auth account - user will complete profile in onboarding after email confirmation
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone: formData.phone,
-            studio_name: formData.studioName,
-            city: formData.city,
-            province: formData.province,
-            country: formData.country,
-          },
+          emailRedirectTo: `${window.location.origin}/onboarding`,
         },
       });
 
       if (signUpError) {
         const msg = signUpError.message || '';
-        if (/already/i.test(msg) || /exists/i.test(msg) || /registered/i.test(msg)) {
-          setError('This email is already registered.');
+        if (/already/i.test(msg) || /exists/i.test(msg) || /registered/i.test(msg) || /duplicate/i.test(msg)) {
+          setError('This email is already registered. Please sign in or reset your password.');
         } else {
           setError(msg);
         }
@@ -128,9 +73,6 @@ export default function SignupPage() {
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/login');
-      }, 3000);
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {
@@ -164,18 +106,6 @@ export default function SignupPage() {
     );
   }
 
-  const stepTitles = [
-    'Create Account',
-    'Your Information',
-    'Studio Details',
-  ];
-
-  const stepDescriptions = [
-    'Set up your login credentials',
-    'Tell us about yourself',
-    'Register your dance studio',
-  ];
-
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -186,40 +116,9 @@ export default function SignupPage() {
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
-          {/* Step Indicator */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center">
-                  <div
-                    className={`h-10 w-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                      s === step
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white scale-110'
-                        : s < step
-                        ? 'bg-green-500/20 border border-green-400/30 text-green-400'
-                        : 'bg-white/5 border border-white/20 text-gray-400'
-                    }`}
-                  >
-                    {s < step ? '✓' : s}
-                  </div>
-                  {s < 3 && (
-                    <div
-                      className={`h-1 w-16 md:w-24 mx-2 rounded transition-all ${
-                        s < step ? 'bg-green-400' : 'bg-white/10'
-                      }`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-white mb-1">
-                {stepTitles[step - 1]}
-              </h1>
-              <p className="text-gray-300 text-sm">
-                {stepDescriptions[step - 1]}
-              </p>
-            </div>
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-bold text-white mb-1">Create Account</h1>
+            <p className="text-gray-300 text-sm">Join CompPortal today</p>
           </div>
 
           {error && (
@@ -229,13 +128,10 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Step 1: Account */}
-            {step === 1 && (
-              <>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                    Email
-                  </label>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                Email
+              </label>
               <input
                 id="email"
                 type="email"
@@ -244,214 +140,54 @@ export default function SignupPage() {
                 required
                 className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 placeholder="you@example.com"
+                autoFocus
               />
-              {error && (
-                <div className="text-red-400 text-sm mt-1">
-                  {error}
-                  <p className="mt-2">
-                    Already have an account?{' '}
-                    <Link href="/login" className="text-purple-400 hover:text-purple-300 underline">
-                      Sign in here
-                    </Link>{' '}
-                    or{' '}
-                    <Link href="/reset-password" className="text-purple-400 hover:text-purple-300 underline">
-                      reset your password
-                    </Link>
-                  </p>
-                </div>
-              )}
-                </div>
+            </div>
 
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => updateFormData('password', e.target.value)}
-                    required
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="••••••••"
-                  />
-                </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => updateFormData('password', e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="••••••••"
+              />
+              <p className="text-xs text-gray-400 mt-1">Must be at least 6 characters</p>
+            </div>
 
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                    Confirm Password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-                    required
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="••••••••"
-                  />
-                </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="••••••••"
+              />
+            </div>
 
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-                >
-                  Continue →
-                </button>
-              </>
-            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold"
+            >
+              {loading ? 'Creating account...' : 'Create Account'}
+            </button>
 
-            {/* Step 2: Profile Info */}
-            {step === 2 && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
-                      First Name
-                    </label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => updateFormData('firstName', e.target.value)}
-                      required
-                      className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="John"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
-                      Last Name
-                    </label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => updateFormData('lastName', e.target.value)}
-                      required
-                      className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="Doe"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-2">
-                    Phone Number (Optional)
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => updateFormData('phone', e.target.value)}
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    className="flex-1 bg-white/10 text-white py-2 px-4 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-                  >
-                    Continue →
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 3: Studio Info */}
-            {step === 3 && (
-              <>
-                <div>
-                  <label htmlFor="studioName" className="block text-sm font-medium text-gray-300 mb-2">
-                    Studio Name
-                  </label>
-                  <input
-                    id="studioName"
-                    type="text"
-                    value={formData.studioName}
-                    onChange={(e) => updateFormData('studioName', e.target.value)}
-                    required
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="Dance Academy"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-300 mb-2">
-                      City (Optional)
-                    </label>
-                    <input
-                      id="city"
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => updateFormData('city', e.target.value)}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="Vancouver"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="province" className="block text-sm font-medium text-gray-300 mb-2">
-                      Province/State
-                    </label>
-                    <input
-                      id="province"
-                      type="text"
-                      value={formData.province}
-                      onChange={(e) => updateFormData('province', e.target.value)}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="BC"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-300 mb-2">
-                    Country
-                  </label>
-                  <select
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => updateFormData('country', e.target.value)}
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="Canada">Canada</option>
-                    <option value="United States">United States</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    className="flex-1 bg-white/10 text-white py-2 px-4 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
-                    {loading ? 'Creating account...' : 'Complete Signup ✓'}
-                  </button>
-                </div>
-              </>
-            )}
+            <p className="text-xs text-gray-400 text-center">
+              You'll complete your studio profile after confirming your email
+            </p>
           </form>
 
           <div className="mt-6 text-center text-gray-300 text-sm">
