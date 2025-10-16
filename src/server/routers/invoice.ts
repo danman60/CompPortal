@@ -134,7 +134,7 @@ export const invoiceRouter = router({
       });
 
       const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
-      const taxRate = 0; // No tax for now, can be configured per jurisdiction
+      const taxRate = Number(competition.tax_rate || 0); // Tax rate from competition settings
       const taxAmount = subtotal * taxRate;
       const totalAmount = subtotal + taxAmount;
 

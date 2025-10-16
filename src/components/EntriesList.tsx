@@ -36,6 +36,7 @@ export default function EntriesList() {
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [summarySubmitted, setSummarySubmitted] = useState(false);
   const [submittedEntriesSnapshot, setSubmittedEntriesSnapshot] = useState<string>('');
+  const [showIncompleteConfirm, setShowIncompleteConfirm] = useState(false);
   const updateMutation = trpc.entry.update.useMutation({
     onSuccess: () => {
       refetch();
@@ -875,7 +876,7 @@ export default function EntriesList() {
                   <div>
                     <div className="text-xs text-gray-300 font-semibold uppercase">Est. Total</div>
                     <div className="text-2xl font-bold text-purple-400">
-                      ${(filteredEntries.length * 50).toFixed(2)}
+                      ${filteredEntries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0).toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -938,49 +939,38 @@ export default function EntriesList() {
                   <span>View Summary</span>
                 </button>
 
-                {isIncomplete ? (
-                  <div className="relative group">
-                    <button
-                      disabled
-                      className="bg-gray-600 text-gray-400 px-8 py-3 rounded-lg cursor-not-allowed opacity-50 flex items-center gap-2 font-semibold"
-                    >
-                      <span>📤</span>
-                      <span>Submit Summary</span>
-                    </button>
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-yellow-500/20 border border-yellow-400/30 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                      <div className="text-xs text-yellow-200">
-                        You must create all {confirmedSpaces} allocated routines before submitting. Currently created: {usedSpaces}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      // Create snapshot of current filtered entries
-                      const snapshot = filteredEntries
-                        .map(e => e.id)
-                        .sort()
-                        .join(',');
+                <button
+                  onClick={() => {
+                    // Check if incomplete - show confirmation dialog
+                    if (isIncomplete) {
+                      setShowIncompleteConfirm(true);
+                      return;
+                    }
 
-                      setSubmittedEntriesSnapshot(snapshot);
-                      setSummarySubmitted(true);
+                    // Create snapshot of current filtered entries
+                    const snapshot = filteredEntries
+                      .map(e => e.id)
+                      .sort()
+                      .join(',');
 
-                      toast.success('Summary submitted to Competition Director! They will create your invoice.', {
-                        duration: 4000,
-                        position: 'top-right',
-                      });
-                    }}
-                    disabled={filteredEntries.length === 0 || summarySubmitted}
-                    className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
-                      summarySubmitted
-                        ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
-                    }`}
-                  >
-                    <span>{summarySubmitted ? '✓' : '📤'}</span>
-                    <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
-                  </button>
-                )}
+                    setSubmittedEntriesSnapshot(snapshot);
+                    setSummarySubmitted(true);
+
+                    toast.success('Summary submitted to Competition Director! They will create your invoice.', {
+                      duration: 4000,
+                      position: 'top-right',
+                    });
+                  }}
+                  disabled={filteredEntries.length === 0 || summarySubmitted}
+                  className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
+                    summarySubmitted
+                      ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
+                  }`}
+                >
+                  <span>{summarySubmitted ? '✓' : '📤'}</span>
+                  <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1152,7 +1142,7 @@ export default function EntriesList() {
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-gray-400 text-sm mb-1">Est. Total</div>
-                <div className="text-3xl font-bold text-purple-400">${(filteredEntries.length * 50).toFixed(2)}</div>
+                <div className="text-3xl font-bold text-purple-400">${filteredEntries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0).toFixed(2)}</div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-gray-400 text-sm mb-1">Music Uploaded</div>
@@ -1236,6 +1226,86 @@ export default function EntriesList() {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Incomplete Submission Confirmation Modal */}
+      {showIncompleteConfirm && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowIncompleteConfirm(false)}
+        >
+          <div
+            className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-xl border-2 border-yellow-400/50 p-8 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h2 className="text-2xl font-bold text-white mb-2">Incomplete Reservation</h2>
+              <p className="text-yellow-200 text-sm">
+                You're about to submit with fewer routines than reserved
+              </p>
+            </div>
+
+            <div className="bg-black/30 rounded-lg p-4 mb-6 space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">📊</span>
+                <div>
+                  <div className="text-white font-semibold">Reservation Status</div>
+                  <div className="text-yellow-200 text-sm">
+                    Reserved: {confirmedSpaces} routines<br/>
+                    Created: {usedSpaces} routines<br/>
+                    Unused: {confirmedSpaces - usedSpaces} spaces
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-yellow-400/20 pt-3 space-y-2 text-sm text-yellow-100">
+                <div className="flex items-start gap-2">
+                  <span>•</span>
+                  <span>Unused spaces ({confirmedSpaces - usedSpaces}) will be forfeited</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span>•</span>
+                  <span>Released spaces return to event's available capacity</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span>•</span>
+                  <span>You can create a new reservation if you need to add entries later</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowIncompleteConfirm(false)}
+                className="flex-1 px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/20 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Proceed with submission
+                  const snapshot = filteredEntries
+                    .map(e => e.id)
+                    .sort()
+                    .join(',');
+
+                  setSubmittedEntriesSnapshot(snapshot);
+                  setSummarySubmitted(true);
+                  setShowIncompleteConfirm(false);
+
+                  toast.success(`Summary submitted with ${usedSpaces} routines! ${confirmedSpaces - usedSpaces} unused spaces released.`, {
+                    duration: 5000,
+                    position: 'top-right',
+                  });
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+              >
+                Submit Anyway
+              </button>
+            </div>
           </div>
         </div>
       )}

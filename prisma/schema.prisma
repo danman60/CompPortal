@@ -590,6 +590,7 @@ model competitions {
   number_of_judges             Int?                    @default(3)
   entry_fee                    Decimal?                @db.Decimal(10, 2)
   late_fee                     Decimal?                @db.Decimal(10, 2)
+  tax_rate                     Decimal?                @default(0.0000) @db.Decimal(5, 4)
   allow_age_overrides          Boolean?                @default(true)
   allow_multiple_entries       Boolean?                @default(true)
   require_video_submissions    Boolean?                @default(false)

@@ -40,6 +40,10 @@ export default function UnifiedRoutineForm() {
     special_requirements: '',
   });
 
+  // Title upgrade (for solos only)
+  const [isTitleEntry, setIsTitleEntry] = useState(false);
+  const TITLE_SURCHARGE = 30; // $30 for Title upgrade
+
   // Dancers state
   const [selectedDancers, setSelectedDancers] = useState<SelectedDancer[]>([]);
   const [dancerSortBy, setDancerSortBy] = useState<'name' | 'age'>('name');
@@ -143,7 +147,8 @@ export default function UnifiedRoutineForm() {
     const sizeCategory = lookupData?.entrySizeCategories?.find((sc: any) => sc.id === sizeCategoryId);
     const baseFee = sizeCategory?.base_fee ? Number(sizeCategory.base_fee) : 0;
     const perParticipantFee = sizeCategory?.per_participant_fee ? Number(sizeCategory.per_participant_fee) : 0;
-    const calculatedFee = baseFee + (perParticipantFee * selectedDancers.length);
+    const titleFee = (selectedDancers.length === 1 && isTitleEntry) ? TITLE_SURCHARGE : 0;
+    const calculatedFee = baseFee + (perParticipantFee * selectedDancers.length) + titleFee;
 
     createMutation.mutate({
       competition_id: form.competition_id,
@@ -552,6 +557,34 @@ export default function UnifiedRoutineForm() {
               </div>
             </div>
 
+            {/* Title Upgrade (Solos Only) */}
+            {selectedDancers.length === 1 && (
+              <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
+                <div className="flex items-start gap-4">
+                  <input
+                    type="checkbox"
+                    id="titleUpgrade"
+                    checked={isTitleEntry}
+                    onChange={(e) => setIsTitleEntry(e.target.checked)}
+                    className="w-5 h-5 mt-1 rounded border-yellow-400/30 bg-white/10 checked:bg-yellow-500 focus:ring-yellow-500"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="titleUpgrade" className="text-lg font-bold text-white cursor-pointer block mb-2">
+                      🏆 Title Routine Upgrade (+$30.00)
+                    </label>
+                    <p className="text-sm text-gray-300 mb-2">
+                      Upgrade this solo routine to compete for Title awards at this competition.
+                    </p>
+                    <div className="text-xs text-yellow-300">
+                      • Available for solo routines only<br/>
+                      • Competes in Title division with enhanced recognition<br/>
+                      • ${TITLE_SURCHARGE.toFixed(2)} surcharge applies
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Pricing Preview */}
             <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
               <h2 className="text-xl font-bold text-white mb-4">Routine Fee</h2>
@@ -560,7 +593,8 @@ export default function UnifiedRoutineForm() {
                 const sizeCategory = lookupData?.entrySizeCategories?.find((sc: any) => sc.id === sizeCategoryId);
                 const baseFee = sizeCategory?.base_fee ? Number(sizeCategory.base_fee) : 0;
                 const perParticipantFee = sizeCategory?.per_participant_fee ? Number(sizeCategory.per_participant_fee) : 0;
-                const totalFee = baseFee + (perParticipantFee * selectedDancers.length);
+                const titleFee = (selectedDancers.length === 1 && isTitleEntry) ? TITLE_SURCHARGE : 0;
+                const totalFee = baseFee + (perParticipantFee * selectedDancers.length) + titleFee;
 
                 return (
                   <div className="space-y-2">
@@ -572,6 +606,12 @@ export default function UnifiedRoutineForm() {
                       <div className="flex justify-between text-gray-300">
                         <span>Per Dancer ({selectedDancers.length} × ${perParticipantFee.toFixed(2)})</span>
                         <span>${(perParticipantFee * selectedDancers.length).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {titleFee > 0 && (
+                      <div className="flex justify-between text-yellow-300">
+                        <span>🏆 Title Upgrade</span>
+                        <span>+${titleFee.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-xl font-bold text-green-400 pt-2 border-t border-green-400/30">

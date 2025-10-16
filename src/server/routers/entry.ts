@@ -210,6 +210,7 @@ export const entryRouter = router({
             music_title: true,
             music_artist: true,
             created_at: true,
+            total_fee: true,
             studios: {
               select: {
                 id: true,
