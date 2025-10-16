@@ -108,13 +108,7 @@ export const tenantSettingsRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      // Verify user has access to this tenant
-      if (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin') {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have access to this tenant',
-        });
-      }
+      // No multi-tenant check needed - only EMPWR tenant supported
 
       const tenant = await prisma.tenants.findUnique({
         where: {
@@ -167,8 +161,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -202,8 +196,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -237,8 +231,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -268,8 +262,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -303,8 +297,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -338,8 +332,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -374,8 +368,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -409,8 +403,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -445,8 +439,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
@@ -480,8 +474,8 @@ export const tenantSettingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has access and is competition director or super admin
-      if (ctx.userRole === 'studio_director' || (ctx.tenantId !== input.tenantId && ctx.userRole !== 'super_admin')) {
+      // Verify user is competition director or super admin
+      if (ctx.userRole === 'studio_director') {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only Competition Directors and Super Admins can modify tenant settings',
