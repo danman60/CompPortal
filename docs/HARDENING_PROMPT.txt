@@ -1,0 +1,86 @@
+# HARDENING EXECUTION PROMPT
+
+Copy and paste the prompt below to execute any priority from HARDENING_RECOMMENDATIONS.md
+
+---
+
+## PROMPT TEMPLATE:
+
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority [NUMBER].
+
+Follow these rules:
+1. Read the full Priority [NUMBER] section from the doc
+2. Create all files exactly as specified in the "Solution" section
+3. Modify files exactly as shown in "Implementation Steps"
+4. Run `npm run build` after each file change to catch errors early
+5. Follow the testing checklist for this priority
+6. Commit with format: "harden: [brief description] (Priority [NUMBER])"
+
+Do NOT ask for confirmation. Execute the hardening directly.
+
+---
+
+## EXAMPLE USAGE:
+
+To add business logic status guards:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority 1.
+
+To add error boundaries:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority 2.
+
+To add server-side validation:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority 3.
+
+To add transaction boundaries:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority 4.
+
+To add silent failure detection:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority 5.
+
+To add health checks & monitoring:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority 6.
+
+---
+
+## MULTI-PRIORITY EXECUTION:
+
+To execute multiple priorities in sequence:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priorities 1, 2, and 3 in order.
+
+---
+
+## PARTIAL EXECUTION:
+
+To add only status guards without applying them everywhere:
+Read docs/HARDENING_RECOMMENDATIONS.md, implement Priority 1 Phase 1 only (create statusGuards.ts), then apply only to invoice.ts.
+
+---
+
+## VERIFICATION PROMPT:
+
+After implementation, use this to verify:
+Read docs/HARDENING_RECOMMENDATIONS.md and run the testing checklist for Priority [NUMBER]. Report any failures.
+
+---
+
+## ROLLBACK PROMPT:
+
+If something breaks:
+Rollback the last hardening commit. Then read docs/HARDENING_RECOMMENDATIONS.md and re-implement Priority [NUMBER] more carefully.
+
+---
+
+## COMBINED EXECUTION WITH REFACTORING:
+
+To implement both hardening and refactoring together:
+Read docs/HARDENING_RECOMMENDATIONS.md and implement Priority [NUMBER], then read docs/REFACTORING_RECOMMENDATIONS.md and implement Priority [NUMBER].
+
+---
+
+## NOTES:
+
+- Hardening priorities are designed to be incremental (can implement one at a time)
+- Each priority is independent (no dependencies between them)
+- Testing checklists MUST be completed before marking as done
+- Build must pass before committing
+- Production testing with Playwright MCP recommended for Priorities 1-4
