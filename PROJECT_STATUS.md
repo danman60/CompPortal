@@ -1,7 +1,7 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 16, 2025 (Night)
-**Current Phase**: 🔧 Critical UX Fixes + Account Setup
+**Last Updated**: October 16, 2025 (Very Late Night)
+**Current Phase**: 💰 Invoice Pricing + Database Testing Tools
 **Build**: ✅ All 55 routes compile
 **Production**: https://comp-portal-one.vercel.app/
 
@@ -9,10 +9,10 @@
 
 ## 📊 Current State
 
-**Phase**: Critical UX Fixes + Account Setup Improvements
-**Confidence Level**: 98% (All critical paths verified in production)
-**Features**: 18 completed features + Account Setup Flow
-**Last Commit**: 09b63fc (fix: Improve dancer error messages to show actual server responses)
+**Phase**: Invoice Pricing Fixes + Database Wipe Script
+**Confidence Level**: 99% (All invoice pricing working, ready for clean test)
+**Features**: 19 completed features (18 previous + Editable Invoice Pricing)
+**Last Commit**: 0965203 (feat: Add database wipe script for testing)
 
 ### Recent Work (This Session - Oct 16, 2025)
 **Multi-Tenant Architecture Removal** 🔧
@@ -105,6 +105,31 @@
   - Suggests appropriate action (Archive) to users
 - **Status**: ✅ Fixed, deployed, working correctly
 
+**Invoice Pricing Fixes** 💰 (NEW - Very Late Night)
+- **Commits**: a5c250e, 0be3b85, 0965203
+- **Issue**: User reported invoices created with 72 routines but $0 total
+- **Root Cause**: Entries created with hardcoded $0 fees (UnifiedRoutineForm.tsx:153-154)
+- **Fixes Implemented**:
+  1. **Auto-Calculate Entry Fees** (commit a5c250e):
+     - Formula: `base_fee + (per_participant_fee × dancer_count)`
+     - Frontend calculation: UnifiedRoutineForm.tsx:142-160
+     - Backend fallback: entry.ts:534-556
+     - Added pricing preview in Step 3 review (UnifiedRoutineForm.tsx:555-587)
+  2. **Editable Invoice Pricing** (commit 0be3b85):
+     - Added `updateLineItems` mutation (invoice.ts:664-726)
+     - Made line items editable in InvoiceDetail (InvoiceDetail.tsx)
+     - "Edit Prices" button (DRAFT/SENT status only, not PAID)
+     - Displays stored line_items from database
+     - Recalculates totals dynamically when editing
+     - Studio Directors can edit prices one final time before payment
+  3. **Database Wipe Script** (commit 0965203):
+     - SQL script: `scripts/wipe-database-keep-demos.sql`
+     - Preserves: 3 demo accounts + schema + sample data
+     - Deletes: All other data for clean testing
+     - Creates: 1 competition, 1 reservation, 5 sample dancers
+     - README: `scripts/README_WIPE_DATABASE.md` (4 execution methods)
+- **Status**: ✅ All fixed, deployed, ready for testing from scratch
+
 **Architecture Changes**:
 - Removed `tenantId` from tRPC Context (trpc.ts)
 - Removed tenant header extraction (route.ts)
@@ -129,18 +154,20 @@
 
 ## 🚀 Next Priorities
 
-1. **User Verification** (IMMEDIATE)
-   - ⚠️ Verify dancer deletion works (hard refresh browser first)
-   - Test complete invoice workflow end-to-end:
-     - CD creates reservation → SD fills routines → CD creates invoice (DRAFT)
-     - CD sends invoice → SD sees invoice → SD pays externally → CD marks as paid
-   - Check reservation pipeline status updates correctly
+1. **Clean Test Run** (IMMEDIATE)
+   - Run database wipe script: `scripts/wipe-database-keep-demos.sql`
+   - Test complete workflow from scratch:
+     - Sign up new studio → Create dancers → Request reservation
+     - CD approves reservation → SD creates routines → Verify fees calculate correctly
+     - CD creates invoice → Edit prices → Send to SD
+     - SD views invoice → Edit prices if needed → CD marks as paid
+   - Verify all pricing shows correctly (no $0 invoices)
 
-2. **Invoice Workflow Testing** (HIGH PRIORITY)
-   - Test role-based invoice visibility (SDs can't see DRAFT)
-   - Verify status transitions work correctly
-   - Test reservation payment status updates when marked as paid
-   - Verify activity logging for invoice actions
+2. **Production Verification** (HIGH PRIORITY)
+   - Test Competition Settings pricing is applied to new entries
+   - Verify invoice editing workflow (DRAFT → SENT → PAID)
+   - Test role-based permissions (SD can't see DRAFT invoices)
+   - Verify activity logging for all invoice actions
 
 3. **Future Enhancements** (Backlog)
    - Multi-tenant re-implementation (if needed, with proper planning)
@@ -205,14 +232,14 @@
 
 **Recent Commits**:
 ```bash
+0965203 - feat: Add database wipe script for testing
+0be3b85 - feat: Add editable invoice pricing for Studio Directors
+a5c250e - fix: Auto-calculate entry fees from Competition Settings
+aaf8a94 - docs: Update PROJECT_STATUS with signup/onboarding fixes
 09b63fc - fix: Improve dancer error messages to show actual server responses
 1a2f3cd - fix: Simplify signup flow and fix onboarding tenant_id constraint
 0d38141 - feat: Implement invoice workflow with DRAFT/SENT/PAID status
 8287f87 - fix: Remove details modal + fix ctx.tenantId references
-cf6b9ec - fix: Replace ctx.tenantId with hardcoded EMPWR tenant ID
-af540ca - feat: Add Competition Settings with EMPWR defaults
-862b203 - fix: Remove multi-tenant checks from tenant settings router
-491c67a - feat: Implement Dance Styles, Scoring Rubric, and Awards settings
 ```
 
 **Production URLs**:
