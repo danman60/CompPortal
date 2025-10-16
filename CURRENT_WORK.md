@@ -113,6 +113,56 @@
 
 ---
 
+### Unified Implementation Plan Created
+
+**Documentation Created**:
+- `docs/UNIFIED_IMPLEMENTATION_PLAN.md` - Strategic roadmap weaving hardening + refactoring
+
+**Strategic Approach**:
+- **6 Waves**: 74 hours (~2 weeks) total
+- **Alternating pattern**: Harden → refactor → harden → refactor
+- **Risk mitigation**: Safety nets before major refactors
+- **Synergies**: Email Service + Failure Detection, StatusBadge + Modal
+
+**Wave Structure**:
+
+**Wave 1: Foundation & Quick Wins** (14h)
+- Status Guards → StatusBadge → Error Boundaries
+- Establishes safety + delivers visible improvements
+
+**Wave 2: Validation & UI Polish** (14h)
+- Modal extraction → Server-side validation
+- Completes UI components + backend safety
+
+**Wave 3: Services & Observability** (14h)
+- Email Service refactor → Failure Detection
+- Synergy: Both touch email code
+
+**Wave 4: Data Integrity** (10h)
+- Transaction boundaries (atomic operations)
+
+**Wave 5: Major Refactor** (16h)
+- EntriesList split (NOW protected by all safety nets)
+
+**Wave 6: Production Monitoring** (6h)
+- Health checks + status page
+
+**Test Checkpoints**: After each wave with mandatory smoke tests
+
+**Rollback Strategy**: Git tags at wave start/end for safe rollback
+
+**Success Metrics**:
+- -2,400 lines removed (10% reduction)
+- 90% reduction in crashes
+- 100% validation coverage
+- Zero partial updates
+- <2min incident detection
+
+**Files Created**:
+- `docs/UNIFIED_IMPLEMENTATION_PLAN.md`
+
+---
+
 ## ✅ COMPLETED (October 16, 2025 - Pre-Testing Sprint)
 
 ### Priority 1 Refactoring: Fixed Hardcoded Pricing (commit 8ad272e)
