@@ -52,6 +52,21 @@ export default function ReservationPipeline() {
     },
   });
 
+  const createInvoiceMutation = trpc.invoice.createFromReservation.useMutation({
+    onSuccess: (data, variables) => {
+      toast.success('Invoice created! Click to view and send.');
+      refetch();
+      // Find the reservation to get studioId and competitionId
+      const reservation = reservations.find(r => r.id === variables.reservationId);
+      if (reservation) {
+        router.push(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to create invoice: ${error.message}`);
+    },
+  });
+
   const reservations = pipelineData?.reservations || [];
   const competitionList = competitions?.competitions || [];
 
@@ -477,10 +492,11 @@ export default function ReservationPipeline() {
                               )}
                               {reservation.status === 'approved' && !reservation.invoiceId && reservation.entryCount > 0 && (
                                 <button
-                                  onClick={() => router.push(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`)}
-                                  className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg text-xs font-semibold hover:shadow-lg transition-all"
+                                  onClick={() => createInvoiceMutation.mutate({ reservationId: reservation.id })}
+                                  disabled={createInvoiceMutation.isPending}
+                                  className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg text-xs font-semibold hover:shadow-lg transition-all disabled:opacity-50"
                                 >
-                                  💰 Create Invoice
+                                  {createInvoiceMutation.isPending ? '⏳ Creating...' : '💰 Create Invoice'}
                                 </button>
                               )}
                               {reservation.status === 'approved' && reservation.invoiceId && !reservation.invoicePaid && (

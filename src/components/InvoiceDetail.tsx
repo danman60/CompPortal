@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { generateInvoicePDF } from '@/lib/pdf-reports';
+import toast from 'react-hot-toast';
 
 type Props = {
   studioId: string;
@@ -12,9 +13,35 @@ type Props = {
 export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [discountPercent, setDiscountPercent] = useState(0);
 
-  const { data: invoice, isLoading } = trpc.invoice.generateForStudio.useQuery({
+  // Check if there's an existing invoice in the database
+  const { data: existingInvoice } = trpc.invoice.getByStudioAndCompetition.useQuery({
     studioId,
     competitionId,
+  });
+
+  const { data: invoice, isLoading, refetch } = trpc.invoice.generateForStudio.useQuery({
+    studioId,
+    competitionId,
+  });
+
+  const sendInvoiceMutation = trpc.invoice.sendInvoice.useMutation({
+    onSuccess: () => {
+      toast.success('Invoice sent to studio!');
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to send invoice: ${error.message}`);
+    },
+  });
+
+  const markAsPaidMutation = trpc.invoice.markAsPaid.useMutation({
+    onSuccess: () => {
+      toast.success('Invoice marked as paid!');
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to mark as paid: ${error.message}`);
+    },
   });
 
   if (isLoading) {
@@ -261,7 +288,44 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       </div>
 
       {/* Actions */}
-      <div className="mt-8 pt-8 border-t border-white/20 flex gap-4">
+      <div className="mt-8 pt-8 border-t border-white/20 space-y-4">
+        {/* Invoice Status Actions (Competition Directors only) */}
+        {existingInvoice && (
+          <div className="flex gap-4 mb-4">
+            {existingInvoice.status === 'DRAFT' && (
+              <button
+                onClick={() => sendInvoiceMutation.mutate({ invoiceId: existingInvoice.id })}
+                disabled={sendInvoiceMutation.isPending}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
+              >
+                {sendInvoiceMutation.isPending ? '📤 Sending...' : '📤 Send Invoice to Studio'}
+              </button>
+            )}
+            {existingInvoice.status === 'SENT' && (
+              <>
+                <div className="flex-1 bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 px-6 py-3 rounded-lg font-semibold text-center">
+                  ⏳ Awaiting Payment from Studio
+                </div>
+                <button
+                  onClick={() => markAsPaidMutation.mutate({ invoiceId: existingInvoice.id, paymentMethod: 'manual' })}
+                  disabled={markAsPaidMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
+                >
+                  {markAsPaidMutation.isPending ? '✓ Confirming...' : '✓ Mark as Paid'}
+                </button>
+              </>
+            )}
+            {existingInvoice.status === 'PAID' && (
+              <div className="flex-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 px-6 py-3 rounded-lg font-semibold text-center flex items-center justify-center gap-2">
+                <span className="text-2xl">✓</span>
+                <span>Invoice Paid - {existingInvoice.paid_at ? new Date(existingInvoice.paid_at).toLocaleDateString() : 'Recently'}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Export Actions */}
+        <div className="flex gap-4">
         <button
           onClick={() => window.print()}
           className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all"
@@ -325,6 +389,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         >
           📊 Export CSV
         </button>
+      </div>
       </div>
 
       {/* Footer */}

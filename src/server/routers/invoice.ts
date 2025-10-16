@@ -4,6 +4,35 @@ import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 
 export const invoiceRouter = router({
+  // Get invoice by studio and competition (returns existing invoice or null)
+  getByStudioAndCompetition: publicProcedure
+    .input(z.object({
+      studioId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Studio Directors can only see SENT or PAID invoices
+      // Competition Directors and Super Admins can see all invoices (including DRAFT)
+      const isStudioDirector = ctx.userRole === 'studio_director';
+
+      const invoice = await prisma.invoices.findFirst({
+        where: {
+          studio_id: input.studioId,
+          competition_id: input.competitionId,
+          ...(isStudioDirector && {
+            status: {
+              in: ['SENT', 'PAID'],
+            },
+          }),
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
+
+      return invoice;
+    }),
+
   // Generate invoice for a studio's entries in a competition
   generateForStudio: publicProcedure
     .input(
@@ -12,8 +41,29 @@ export const invoiceRouter = router({
         competitionId: z.string().uuid(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const { studioId, competitionId } = input;
+
+      // Studio Directors can only view invoices that have been SENT or PAID
+      // Competition Directors and Super Admins can view all invoices (including DRAFT)
+      const isStudioDirector = ctx.userRole === 'studio_director';
+
+      if (isStudioDirector) {
+        // Check if there's a SENT or PAID invoice for this studio+competition
+        const existingInvoice = await prisma.invoices.findFirst({
+          where: {
+            studio_id: studioId,
+            competition_id: competitionId,
+            status: {
+              in: ['SENT', 'PAID'],
+            },
+          },
+        });
+
+        if (!existingInvoice) {
+          throw new Error('Invoice not available yet. Please wait for the competition director to send it.');
+        }
+      }
 
       // Fetch studio details
       const studio = await prisma.studios.findUnique({
@@ -456,7 +506,7 @@ export const invoiceRouter = router({
 
       const subtotal = lineItems.reduce((sum, i) => sum + i.total, 0);
 
-      // Create invoice record
+      // Create invoice record with DRAFT status (not visible to studio yet)
       const invoice = await prisma.invoices.create({
         data: {
           tenant_id: reservation.tenant_id,
@@ -466,7 +516,7 @@ export const invoiceRouter = router({
           line_items: lineItems as any,
           subtotal,
           total: subtotal,
-          status: 'UNPAID',
+          status: 'DRAFT',
         },
       });
 
@@ -502,5 +552,112 @@ export const invoiceRouter = router({
       }
 
       return { invoiceId: invoice.id };
+    }),
+
+  // Send invoice to studio (change status from DRAFT to SENT)
+  sendInvoice: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.status !== 'DRAFT') {
+        throw new Error('Can only send invoices with DRAFT status');
+      }
+
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          status: 'SENT',
+          updated_at: new Date(),
+        },
+      });
+
+      // Activity log (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          action: 'invoice.send',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: {
+            competition_id: invoice.competition_id,
+          },
+        });
+      } catch (e) {
+        console.error('Failed to log activity (invoice.send):', e);
+      }
+
+      return { success: true };
+    }),
+
+  // Mark invoice as paid
+  markAsPaid: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      paymentMethod: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.status === 'PAID') {
+        throw new Error('Invoice is already paid');
+      }
+
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          status: 'PAID',
+          paid_at: new Date(),
+          payment_method: input.paymentMethod || 'manual',
+          updated_at: new Date(),
+        },
+      });
+
+      // Also update reservation payment status
+      if (invoice.reservation_id) {
+        await prisma.reservations.update({
+          where: { id: invoice.reservation_id },
+          data: {
+            payment_status: 'paid',
+            payment_confirmed_at: new Date(),
+            payment_confirmed_by: ctx.userId,
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      // Activity log (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          action: 'invoice.markPaid',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: {
+            competition_id: invoice.competition_id,
+            payment_method: input.paymentMethod,
+          },
+        });
+      } catch (e) {
+        console.error('Failed to log activity (invoice.markPaid):', e);
+      }
+
+      return { success: true };
     }),
 });
