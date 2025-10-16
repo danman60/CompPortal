@@ -660,4 +660,67 @@ export const invoiceRouter = router({
 
       return { success: true };
     }),
+
+  // Update invoice line items (editable pricing - Competition Directors and Studio Directors)
+  updateLineItems: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      lineItems: z.array(z.object({
+        id: z.string().uuid(),
+        entryNumber: z.number().optional().nullable(),
+        title: z.string(),
+        category: z.string(),
+        sizeCategory: z.string(),
+        participantCount: z.number().optional(),
+        entryFee: z.number(),
+        lateFee: z.number(),
+        total: z.number(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      // Only allow edits when status is DRAFT or SENT (not PAID)
+      if (invoice.status === 'PAID') {
+        throw new Error('Cannot edit paid invoices');
+      }
+
+      // Recalculate subtotal and total from line items
+      const subtotal = input.lineItems.reduce((sum, item) => sum + item.total, 0);
+
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          line_items: input.lineItems as any,
+          subtotal,
+          total: subtotal,
+          updated_at: new Date(),
+        },
+      });
+
+      // Activity log (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          action: 'invoice.updateLineItems',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: {
+            competition_id: invoice.competition_id,
+            new_total: subtotal,
+          },
+        });
+      } catch (e) {
+        console.error('Failed to log activity (invoice.updateLineItems):', e);
+      }
+
+      return { success: true };
+    }),
 });

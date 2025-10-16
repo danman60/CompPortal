@@ -12,6 +12,8 @@ type Props = {
 
 export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [isEditingPrices, setIsEditingPrices] = useState(false);
+  const [editableLineItems, setEditableLineItems] = useState<any[]>([]);
 
   // Check if there's an existing invoice in the database
   const { data: existingInvoice } = trpc.invoice.getByStudioAndCompetition.useQuery({
@@ -43,6 +45,56 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       toast.error(`Failed to mark as paid: ${error.message}`);
     },
   });
+
+  const updateLineItemsMutation = trpc.invoice.updateLineItems.useMutation({
+    onSuccess: () => {
+      toast.success('Invoice prices updated!');
+      setIsEditingPrices(false);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update prices: ${error.message}`);
+    },
+  });
+
+  // Use stored line items if invoice exists, otherwise use generated ones
+  const displayLineItems = existingInvoice?.line_items ?
+    (existingInvoice.line_items as any[]) :
+    (invoice?.lineItems || []);
+
+  const canEditPrices = existingInvoice && existingInvoice.status !== 'PAID';
+
+  const handleStartEditing = () => {
+    setEditableLineItems(displayLineItems.map((item: any) => ({ ...item })));
+    setIsEditingPrices(true);
+  };
+
+  const handleSaveEdits = () => {
+    if (!existingInvoice) return;
+    updateLineItemsMutation.mutate({
+      invoiceId: existingInvoice.id,
+      lineItems: editableLineItems,
+    });
+  };
+
+  const handleCancelEditing = () => {
+    setIsEditingPrices(false);
+    setEditableLineItems([]);
+  };
+
+  const updateLineItem = (index: number, field: 'entryFee' | 'lateFee', value: number) => {
+    const updated = [...editableLineItems];
+    updated[index][field] = value;
+    updated[index].total = updated[index].entryFee + updated[index].lateFee;
+    setEditableLineItems(updated);
+  };
+
+  // Calculate subtotal from current line items (editable or display)
+  const currentLineItems = isEditingPrices ? editableLineItems : displayLineItems;
+  const currentSubtotal = currentLineItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
+  const taxRate = invoice?.summary.taxRate || 0;
+  const taxAmount = currentSubtotal * taxRate;
+  const totalAmount = currentSubtotal * (1 - discountPercent / 100) * (1 + taxRate);
 
   if (isLoading) {
     return (
@@ -81,7 +133,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         <div className="text-right">
           <div className="text-sm text-gray-400 mb-1">Total Amount</div>
           <div className="text-4xl font-bold text-green-400">
-            ${((invoice.summary.subtotal * (1 - discountPercent / 100)) * (1 + invoice.summary.taxRate)).toFixed(2)}
+            ${totalAmount.toFixed(2)}
           </div>
           {discountPercent > 0 && (
             <div className="text-xs text-green-400 mt-1">
@@ -174,7 +226,34 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Line Items */}
       <div className="mb-8">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">ROUTINES</h3>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-sm font-semibold text-gray-400">ROUTINES</h3>
+          {canEditPrices && !isEditingPrices && (
+            <button
+              onClick={handleStartEditing}
+              className="px-4 py-2 bg-blue-500/20 border border-blue-400/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-sm font-semibold"
+            >
+              ✏️ Edit Prices
+            </button>
+          )}
+          {isEditingPrices && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancelEditing}
+                className="px-4 py-2 bg-white/10 border border-white/20 text-gray-300 rounded-lg hover:bg-white/20 transition-all text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdits}
+                disabled={updateLineItemsMutation.isPending}
+                className="px-4 py-2 bg-green-500/20 border border-green-400/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-sm font-semibold disabled:opacity-50"
+              >
+                {updateLineItemsMutation.isPending ? 'Saving...' : '✓ Save Changes'}
+              </button>
+            </div>
+          )}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-xs text-gray-400 uppercase bg-black/40">
@@ -190,16 +269,40 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               </tr>
             </thead>
             <tbody>
-              {invoice.lineItems.map((item, index) => (
+              {(isEditingPrices ? editableLineItems : displayLineItems).map((item, index) => (
                 <tr key={item.id} className="border-b border-white/10 hover:bg-white/5">
                   <td className="px-4 py-3 text-gray-400">{item.entryNumber || index + 1}</td>
                   <td className="px-4 py-3 text-white font-semibold">{item.title}</td>
                   <td className="px-4 py-3 text-gray-300">{item.category}</td>
                   <td className="px-4 py-3 text-gray-300">{item.sizeCategory}</td>
                   <td className="px-4 py-3 text-gray-300">{item.participantCount}</td>
-                  <td className="px-4 py-3 text-right text-white">${item.entryFee.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-white">
+                    {isEditingPrices ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.entryFee}
+                        onChange={(e) => updateLineItem(index, 'entryFee', parseFloat(e.target.value) || 0)}
+                        className="w-24 px-2 py-1 bg-white/10 border border-white/30 rounded text-right text-white"
+                      />
+                    ) : (
+                      `$${item.entryFee.toFixed(2)}`
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right text-yellow-400">
-                    {item.lateFee > 0 ? `$${item.lateFee.toFixed(2)}` : '-'}
+                    {isEditingPrices ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.lateFee}
+                        onChange={(e) => updateLineItem(index, 'lateFee', parseFloat(e.target.value) || 0)}
+                        className="w-24 px-2 py-1 bg-white/10 border border-white/30 rounded text-right text-white"
+                      />
+                    ) : (
+                      item.lateFee > 0 ? `$${item.lateFee.toFixed(2)}` : '-'
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right text-white font-semibold">
                     ${item.total.toFixed(2)}
@@ -260,28 +363,28 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       <div className="flex justify-end">
         <div className="w-full md:w-1/2 lg:w-1/3 space-y-2">
           <div className="flex justify-between py-2 border-b border-white/10">
-            <span className="text-gray-300">Subtotal ({invoice.summary.entryCount} routines)</span>
-            <span className="text-white font-semibold">${invoice.summary.subtotal.toFixed(2)}</span>
+            <span className="text-gray-300">Subtotal ({currentLineItems.length} routines)</span>
+            <span className="text-white font-semibold">${currentSubtotal.toFixed(2)}</span>
           </div>
 
           {discountPercent > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
               <span className="text-green-400">Discount ({discountPercent}%)</span>
-              <span className="text-green-400">-${((invoice.summary.subtotal * discountPercent) / 100).toFixed(2)}</span>
+              <span className="text-green-400">-${((currentSubtotal * discountPercent) / 100).toFixed(2)}</span>
             </div>
           )}
 
-          {invoice.summary.taxAmount > 0 && (
+          {taxAmount > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-gray-300">Tax ({(invoice.summary.taxRate * 100).toFixed(2)}%)</span>
-              <span className="text-white">${(((invoice.summary.subtotal * (1 - discountPercent / 100)) * invoice.summary.taxRate)).toFixed(2)}</span>
+              <span className="text-gray-300">Tax ({(taxRate * 100).toFixed(2)}%)</span>
+              <span className="text-white">${(((currentSubtotal * (1 - discountPercent / 100)) * taxRate)).toFixed(2)}</span>
             </div>
           )}
 
           <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
             <span className="text-white font-bold text-lg">TOTAL</span>
             <span className="text-green-400 font-bold text-2xl">
-              ${((invoice.summary.subtotal * (1 - discountPercent / 100)) * (1 + invoice.summary.taxRate)).toFixed(2)}
+              ${totalAmount.toFixed(2)}
             </span>
           </div>
         </div>
