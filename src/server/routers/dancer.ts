@@ -286,7 +286,28 @@ export const dancerRouter = router({
       const { date_of_birth, ...data } = input.data;
 
       // Studio directors can only update dancers from their own studio
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // If ctx.studioId is not available (due to tRPC context gap),
+        // fetch it from the database using user ID
+        let userStudioId = ctx.studioId;
+
+        if (!userStudioId && ctx.userId) {
+          // Try to find user's studio by owner_id
+          const userStudio = await prisma.studios.findFirst({
+            where: {
+              owner_id: ctx.userId,
+            },
+            select: { id: true },
+          });
+          if (userStudio) {
+            userStudioId = userStudio.id;
+          }
+        }
+
+        if (!userStudioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+
         const existingDancer = await prisma.dancers.findUnique({
           where: { id: input.id },
           select: { studio_id: true },
@@ -296,12 +317,12 @@ export const dancerRouter = router({
           throw new Error('Dancer not found');
         }
 
-        if (existingDancer.studio_id !== ctx.studioId) {
+        if (existingDancer.studio_id !== userStudioId) {
           throw new Error('Cannot update dancers from other studios');
         }
 
         // Prevent changing studio_id to another studio
-        if (data.studio_id && data.studio_id !== ctx.studioId) {
+        if (data.studio_id && data.studio_id !== userStudioId) {
           throw new Error('Cannot transfer dancers to other studios');
         }
       }
@@ -332,7 +353,28 @@ export const dancerRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Studio directors can only delete dancers from their own studio
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // If ctx.studioId is not available (due to tRPC context gap),
+        // fetch it from the database using user ID
+        let userStudioId = ctx.studioId;
+
+        if (!userStudioId && ctx.userId) {
+          // Try to find user's studio by owner_id
+          const userStudio = await prisma.studios.findFirst({
+            where: {
+              owner_id: ctx.userId,
+            },
+            select: { id: true },
+          });
+          if (userStudio) {
+            userStudioId = userStudio.id;
+          }
+        }
+
+        if (!userStudioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+
         const existingDancer = await prisma.dancers.findUnique({
           where: { id: input.id },
           select: { studio_id: true },
@@ -342,7 +384,7 @@ export const dancerRouter = router({
           throw new Error('Dancer not found');
         }
 
-        if (existingDancer.studio_id !== ctx.studioId) {
+        if (existingDancer.studio_id !== userStudioId) {
           throw new Error('Cannot delete dancers from other studios');
         }
       }
@@ -370,7 +412,28 @@ export const dancerRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Studio directors can only archive dancers from their own studio
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // If ctx.studioId is not available (due to tRPC context gap),
+        // fetch it from the database using user ID
+        let userStudioId = ctx.studioId;
+
+        if (!userStudioId && ctx.userId) {
+          // Try to find user's studio by owner_id
+          const userStudio = await prisma.studios.findFirst({
+            where: {
+              owner_id: ctx.userId,
+            },
+            select: { id: true },
+          });
+          if (userStudio) {
+            userStudioId = userStudio.id;
+          }
+        }
+
+        if (!userStudioId) {
+          throw new Error('Studio director must have an associated studio');
+        }
+
         const existingDancer = await prisma.dancers.findUnique({
           where: { id: input.id },
           select: { studio_id: true },
@@ -380,7 +443,7 @@ export const dancerRouter = router({
           throw new Error('Dancer not found');
         }
 
-        if (existingDancer.studio_id !== ctx.studioId) {
+        if (existingDancer.studio_id !== userStudioId) {
           throw new Error('Cannot archive dancers from other studios');
         }
       }

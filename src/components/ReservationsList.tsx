@@ -513,10 +513,10 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white mb-1">
-                          {reservation.studios?.name || 'Unknown Studio'}
+                          {reservation.competitions?.name || 'Unknown Competition'}
                         </h3>
                         <p className="text-gray-400 text-sm">
-                          {reservation.competitions?.name || 'Unknown Competition'}
+                          {reservation.studios?.name || 'Unknown Studio'}
                         </p>
                       </div>
                       <span
