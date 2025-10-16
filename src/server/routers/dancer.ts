@@ -485,7 +485,7 @@ export const dancerRouter = router({
       // Process each dancer in batch
       const results = await Promise.allSettled(
         input.dancers.map(async (dancerData) => {
-          const { date_of_birth, ...data } = dancerData;
+          const { date_of_birth, gender, ...data } = dancerData;
 
           return prisma.dancers.create({
             data: {
@@ -493,6 +493,7 @@ export const dancerRouter = router({
               tenants: { connect: { id: studio.tenant_id } },
               ...data,
               date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+              gender: gender ? gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase() : undefined,
               status: 'active',
             },
           });

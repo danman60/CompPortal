@@ -75,6 +75,7 @@ export default function DancerCSVImport() {
   const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [duplicates, setDuplicates] = useState<Array<{ row: number; name: string }>>([]);
   const [importProgress, setImportProgress] = useState(0);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Get the user's studio information
   const { data: userStudio } = trpc.studio.getAll.useQuery();
@@ -409,46 +410,36 @@ export default function DancerCSVImport() {
     if (validationErrors.length > 0) return;
     if (!studioId) {
       setImportStatus('error');
-      console.error('No studio ID available');
+      setImportError('No studio ID available. Please try logging out and back in.');
       return;
     }
 
     setImportStatus('importing');
-    setImportProgress(0);
+    setImportProgress(50);
+    setImportError(null);
 
-    // Import dancers one at a time to track progress
-    let successCount = 0;
-    let errorCount = 0;
+    try {
+      const result = await importMutation.mutateAsync({
+        studio_id: studioId,
+        dancers: parsedData,
+      });
 
-    for (let i = 0; i < parsedData.length; i++) {
-      const dancer = parsedData[i];
-      try {
-        await importMutation.mutateAsync({
-          studio_id: studioId,
-          dancers: [dancer],
-        });
-        successCount++;
-      } catch (error) {
-        console.error(`Error importing ${dancer.first_name} ${dancer.last_name}:`, error);
-        errorCount++;
+      setImportProgress(100);
+
+      if (result.failed > 0) {
+        const errorMsg = `Import completed with ${result.failed} errors and ${result.successful} successes. Errors: ${result.errors?.join(', ') || 'Unknown'}`;
+        setImportError(errorMsg);
+        setImportStatus('error');
+        return;
       }
 
-      // Update progress
-      setImportProgress(Math.round(((i + 1) / parsedData.length) * 100));
-    }
-
-    // Show success after completion
-    if (errorCount === 0) {
       setImportStatus('success');
       setTimeout(() => {
         router.push('/dashboard/dancers');
       }, 2000);
-    } else {
-      console.warn(`Import completed with ${errorCount} errors and ${successCount} successes`);
-      setImportStatus('success'); // Still redirect even with some errors
-      setTimeout(() => {
-        router.push('/dashboard/dancers');
-      }, 2000);
+    } catch (error) {
+      setImportStatus('error');
+      setImportError(error instanceof Error ? error.message : 'An unknown error occurred during import');
     }
   };
 
@@ -523,6 +514,26 @@ export default function DancerCSVImport() {
                   </div>
                 ))}
               </div>
+
+              <button
+                onClick={handleReset}
+                className="mt-4 bg-white/10 text-white px-6 py-2 rounded-lg hover:bg-white/20 transition-all"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Errors (non-validation errors) */}
+      {importStatus === 'error' && importError && validationErrors.length === 0 && (
+        <div className="bg-red-500/10 backdrop-blur-md rounded-xl border border-red-400/30 p-6">
+          <div className="flex items-start gap-4">
+            <div className="text-4xl">❌</div>
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-red-400 mb-2">Import Failed</h3>
+              <p className="text-gray-300 mb-4">{importError}</p>
 
               <button
                 onClick={handleReset}

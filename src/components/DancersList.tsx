@@ -7,25 +7,56 @@ import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import PullToRefresh from 'react-pull-to-refresh';
 import { highlightText } from '@/lib/highlightText';
-import HoverPreview from '@/components/HoverPreview';
 import { SkeletonCard } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export default function DancersList() {
   const { data, isLoading, error, refetch, dataUpdatedAt } = trpc.dancer.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'male' | 'female'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [selectedDancers, setSelectedDancers] = useState<Set<string>>(new Set());
+  const [detailDancer, setDetailDancer] = useState<any>(null);
+
+  // Delete mutation
+  const utils = trpc.useUtils();
+  const deleteMutation = trpc.dancer.delete.useMutation({
+    onMutate: async (variables) => {
+      await utils.dancer.getAll.cancel();
+      const previousData = utils.dancer.getAll.getData();
+
+      utils.dancer.getAll.setData(undefined, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          dancers: old.dancers.filter((dancer) => dancer.id !== variables.id),
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousData) {
+        utils.dancer.getAll.setData(undefined, context.previousData);
+      }
+      toast.error('Failed to delete dancer');
+    },
+    onSettled: () => {
+      utils.dancer.getAll.invalidate();
+      setSelectedDancers(new Set());
+    },
+  });
 
   // Force cards view on mobile
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) { // md breakpoint
+      if (window.innerWidth < 768) {
         setViewMode('cards');
       }
     };
 
-    handleResize(); // Check on mount
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -70,6 +101,82 @@ export default function DancersList() {
 
   // Sort dancers for table view
   const { sortedData: sortedDancers, sortConfig, requestSort } = useTableSort(filteredDancers);
+
+  // Checkbox handlers
+  const handleSelectAll = () => {
+    if (selectedDancers.size === sortedDancers.length) {
+      setSelectedDancers(new Set());
+    } else {
+      setSelectedDancers(new Set(sortedDancers.map(d => d.id)));
+    }
+  };
+
+  const handleSelectDancer = (dancerId: string) => {
+    const newSelected = new Set(selectedDancers);
+    if (newSelected.has(dancerId)) {
+      newSelected.delete(dancerId);
+    } else {
+      newSelected.add(dancerId);
+    }
+    setSelectedDancers(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDancers.size === 0) return;
+
+    if (!confirm(`Are you sure you want to delete ${selectedDancers.size} dancer${selectedDancers.size > 1 ? 's' : ''}?`)) {
+      return;
+    }
+
+    const count = selectedDancers.size;
+    const dancerIds = Array.from(selectedDancers);
+
+    toast.promise(
+      (async () => {
+        for (const dancerId of dancerIds) {
+          await deleteMutation.mutateAsync({ id: dancerId });
+        }
+      })(),
+      {
+        loading: `Deleting ${count} dancer${count > 1 ? 's' : ''}...`,
+        success: `${count} dancer${count > 1 ? 's' : ''} deleted successfully`,
+        error: 'Failed to delete dancers',
+      }
+    );
+  };
+
+  // Bulk selection shortcuts
+  const handleSelectAllFiltered = () => {
+    setSelectedDancers(new Set(sortedDancers.map(d => d.id)));
+    toast.success(`${sortedDancers.length} dancers selected`);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedDancers(new Set());
+    toast.success('Selection cleared');
+  };
+
+  // Keyboard shortcuts for bulk selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (viewMode !== 'table') return;
+
+      // Ctrl+A / Cmd+A - Select All Filtered
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedDancers.length > 0) {
+        e.preventDefault();
+        handleSelectAllFiltered();
+      }
+
+      // Escape - Clear Selection
+      if (e.key === 'Escape' && selectedDancers.size > 0) {
+        e.preventDefault();
+        handleClearSelection();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, sortedDancers, selectedDancers]);
 
   // Pull-to-refresh handler
   const handleRefresh = async () => {
@@ -187,6 +294,64 @@ export default function DancersList() {
         </div>
       )}
 
+      {/* Bulk Selection Toolbar (Table Mode Only) */}
+      {viewMode === 'table' && filteredDancers.length > 0 && (
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span>Quick Select:</span>
+          </div>
+
+          <button
+            onClick={handleSelectAllFiltered}
+            className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 text-purple-300 rounded-lg text-xs transition-all flex items-center gap-1.5"
+            title="Select all filtered dancers (Ctrl/Cmd + A)"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Select All Filtered ({sortedDancers.length})
+          </button>
+
+          {selectedDancers.size > 0 && (
+            <>
+              <button
+                onClick={handleClearSelection}
+                className="px-3 py-1.5 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-400/30 text-gray-300 rounded-lg text-xs transition-all flex items-center gap-1.5"
+                title="Clear selection (Escape)"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear Selection
+              </button>
+
+              <button
+                onClick={handleBulkDelete}
+                disabled={deleteMutation.isPending}
+                className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-300 rounded-lg text-xs transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete Selected
+              </button>
+
+              <div className="ml-auto px-3 py-1.5 bg-blue-500/20 border border-blue-400/30 text-blue-300 rounded-lg text-xs font-semibold">
+                {selectedDancers.size} selected
+              </div>
+            </>
+          )}
+
+          <div className="text-xs text-gray-500">
+            <kbd className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Ctrl+A</kbd> to select all,
+            <kbd className="ml-1 px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Esc</kbd> to clear
+          </div>
+        </div>
+      )}
+
       {/* Dancers Display */}
       {filteredDancers.length === 0 ? (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
@@ -275,13 +440,21 @@ export default function DancersList() {
           ))}
         </div>
       ) : (
-        /* Table View - Completely Rebuilt with Fixed Headers */
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl overflow-hidden">
+        /* Table View - Completely Rebuilt with Fixed Headers and Checkboxes */
+        <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl overflow-hidden">
           {/* Fixed Header Table */}
           <div className="overflow-x-auto bg-gray-800 border-b border-white/30">
             <table className="w-full table-fixed">
               <thead>
                 <tr className="bg-gray-800">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white" style={{ width: '60px' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedDancers.size === sortedDancers.length && sortedDancers.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                  </th>
                   <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '250px' }} />
                   <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
                   <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '200px' }} />
@@ -294,7 +467,7 @@ export default function DancersList() {
           </div>
 
           {/* Scrollable Body Table */}
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px]" style={{ scrollbarGutter: 'stable' }}>
             <table className="w-full table-fixed">
               <tbody>
                 {sortedDancers.map((dancer, index) => {
@@ -303,15 +476,24 @@ export default function DancersList() {
                     : null;
 
                   return (
-                  <HoverPreview
-                    key={dancer.id}
-                    delay={400}
-                    trigger={
                   <tr
-                    className={`border-b border-white/10 hover:bg-white/5 transition-colors ${
-                      index % 2 === 0 ? 'bg-black/20' : ''
+                    key={dancer.id}
+                    onClick={() => setDetailDancer(dancer)}
+                    className={`border-b border-white/10 hover:bg-gray-700/50 transition-colors cursor-pointer ${
+                      index % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-900/20'
                     }`}
                   >
+                    <td className="px-6 py-4" style={{ width: '60px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDancers.has(dancer.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleSelectDancer(dancer.id);
+                        }}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-6 py-4" style={{ width: '250px' }}>
                       <div className="text-white font-medium">
                         {highlightText(`${dancer.first_name} ${dancer.last_name}`, searchTerm)}
@@ -362,92 +544,16 @@ export default function DancersList() {
                       )}
                     </td>
                     <td className="px-6 py-4" style={{ width: '150px' }}>
-                      <Link
-                        href={`/dashboard/dancers/${dancer.id}`}
-                        className="inline-block px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm rounded-lg hover:shadow-lg transition-all duration-200"
-                      >
-                        Edit
-                      </Link>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Link
+                          href={`/dashboard/dancers/${dancer.id}`}
+                          className="inline-block px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm rounded-lg hover:shadow-lg transition-all duration-200"
+                        >
+                          Edit
+                        </Link>
+                      </div>
                     </td>
                   </tr>
-                    }
-                    content={
-                      <div className="space-y-3 min-w-[300px]">
-                        <div>
-                          <div className="text-xs text-gray-400 mb-1">Dancer Details</div>
-                          <div className="text-lg font-bold text-white">
-                            {dancer.first_name} {dancer.last_name}
-                          </div>
-                          {dancer.registration_number && (
-                            <div className="text-xs text-gray-400 mt-1">
-                              Registration: #{dancer.registration_number}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Gender</div>
-                            <div className={`text-sm font-semibold ${
-                              dancer.gender === 'Male'
-                                ? 'text-blue-400'
-                                : dancer.gender === 'Female'
-                                ? 'text-pink-400'
-                                : 'text-gray-400'
-                            }`}>
-                              {dancer.gender || 'Unknown'}
-                            </div>
-                          </div>
-
-                          {age && (
-                            <div>
-                              <div className="text-xs text-gray-400 mb-1">Age</div>
-                              <div className="text-sm font-semibold text-white">
-                                {age} years
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {dancer.studios && (
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Studio</div>
-                            <div className="text-sm text-white">
-                              {dancer.studios.name}
-                            </div>
-                          </div>
-                        )}
-
-                        {dancer.date_of_birth && (
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Date of Birth</div>
-                            <div className="text-sm text-gray-300">
-                              {new Date(dancer.date_of_birth).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {dancer.status && (
-                          <div className="pt-3 border-t border-white/10">
-                            <div className="text-xs text-gray-400 mb-1">Status</div>
-                            <span
-                              className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
-                                dancer.status === 'active'
-                                  ? 'bg-green-500/20 text-green-400'
-                                  : 'bg-gray-500/20 text-gray-400'
-                              }`}
-                            >
-                              {dancer.status}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    }
-                  />
                   );
                 })}
               </tbody>
@@ -460,6 +566,101 @@ export default function DancersList() {
       {searchTerm && (
         <div className="mt-6 text-center text-gray-400 text-sm">
           Showing {filteredDancers.length} of {dancers.length} dancers
+        </div>
+      )}
+
+      {/* Dancer Detail Modal (Click Popup) */}
+      {detailDancer && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setDetailDancer(null)}
+        >
+          <div
+            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/20 p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs text-gray-400 mb-1">Dancer Details</div>
+                <div className="text-lg font-bold text-white">
+                  {detailDancer.first_name} {detailDancer.last_name}
+                </div>
+                {detailDancer.registration_number && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    Registration: #{detailDancer.registration_number}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Gender</div>
+                  <div className={`text-sm font-semibold ${
+                    detailDancer.gender === 'Male'
+                      ? 'text-blue-400'
+                      : detailDancer.gender === 'Female'
+                      ? 'text-pink-400'
+                      : 'text-gray-400'
+                  }`}>
+                    {detailDancer.gender || 'Unknown'}
+                  </div>
+                </div>
+
+                {detailDancer.date_of_birth && (
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">Age</div>
+                    <div className="text-sm font-semibold text-white">
+                      {new Date().getFullYear() - new Date(detailDancer.date_of_birth).getFullYear()} years
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {detailDancer.studios && (
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Studio</div>
+                  <div className="text-sm text-white">
+                    {detailDancer.studios.name}
+                  </div>
+                </div>
+              )}
+
+              {detailDancer.date_of_birth && (
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Date of Birth</div>
+                  <div className="text-sm text-gray-300">
+                    {new Date(detailDancer.date_of_birth).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {detailDancer.status && (
+                <div className="pt-3 border-t border-white/10">
+                  <div className="text-xs text-gray-400 mb-1">Status</div>
+                  <span
+                    className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
+                      detailDancer.status === 'active'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}
+                  >
+                    {detailDancer.status}
+                  </span>
+                </div>
+              )}
+
+              <button
+                onClick={() => setDetailDancer(null)}
+                className="w-full mt-4 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
