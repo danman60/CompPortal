@@ -77,8 +77,8 @@ export default function DancerCSVImport() {
   const [importProgress, setImportProgress] = useState(0);
   const [importError, setImportError] = useState<string | null>(null);
 
-  // Get the user's studio information
-  const { data: userStudio } = trpc.studio.getAll.useQuery();
+  // Get the current user's studio information
+  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
 
   // Get existing dancers for duplicate detection
   const { data: existingDancers } = trpc.dancer.getAll.useQuery(
@@ -86,13 +86,13 @@ export default function DancerCSVImport() {
     { enabled: !!studioId }
   );
 
-  // Extract studio_id when data loads
+  // Extract studio_id when user data loads
   useEffect(() => {
-    if (userStudio?.studios && userStudio.studios.length > 0) {
-      // For Studio Directors, they'll only have access to their own studio
-      setStudioId(userStudio.studios[0].id);
+    if (currentUser?.studio?.id) {
+      // Use the studio from the current user's profile
+      setStudioId(currentUser.studio.id);
     }
-  }, [userStudio]);
+  }, [currentUser]);
 
   const importMutation = trpc.dancer.batchCreate.useMutation({
     onSuccess: (result) => {
@@ -624,9 +624,9 @@ export default function DancerCSVImport() {
           {/* Preview Table */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 overflow-x-auto">
             <h3 className="text-lg font-semibold text-white mb-4">Preview ({parsedData.length} dancers)</h3>
-            {userStudio && (
+            {currentUser?.studio && (
               <p className="text-sm text-gray-400 mb-4">
-                Importing to: <span className="text-purple-400 font-semibold">{userStudio.studios[0]?.name}</span>
+                Importing to: <span className="text-purple-400 font-semibold">{currentUser.studio.name}</span>
               </p>
             )}
             <div className="max-h-96 overflow-y-auto">
