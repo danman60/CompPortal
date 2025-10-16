@@ -531,10 +531,29 @@ export const entryRouter = router({
       if (performance_time) createData.performance_time = new Date(`1970-01-01T${performance_time}`);
       if (warm_up_time) createData.warm_up_time = new Date(`1970-01-01T${warm_up_time}`);
 
-      // Fee fields
-      if (entry_fee !== undefined) createData.entry_fee = entry_fee.toString();
+      // Fee fields - calculate from size category if not provided
+      let finalEntryFee = entry_fee;
+      let finalTotalFee = total_fee;
+
+      if (finalEntryFee === undefined || finalEntryFee === 0) {
+        // Auto-calculate from entry_size_category pricing
+        const sizeCategory = await prisma.entry_size_categories.findUnique({
+          where: { id: entrySizeCategoryId },
+          select: { base_fee: true, per_participant_fee: true },
+        });
+
+        if (sizeCategory) {
+          const baseFee = Number(sizeCategory.base_fee || 0);
+          const perParticipantFee = Number(sizeCategory.per_participant_fee || 0);
+          const participantCount = participants?.length || 0;
+          finalEntryFee = baseFee + (perParticipantFee * participantCount);
+          finalTotalFee = finalEntryFee + (late_fee || 0);
+        }
+      }
+
+      if (finalEntryFee !== undefined) createData.entry_fee = finalEntryFee.toString();
       if (late_fee !== undefined) createData.late_fee = late_fee.toString();
-      if (total_fee !== undefined) createData.total_fee = total_fee.toString();
+      if (finalTotalFee !== undefined) createData.total_fee = finalTotalFee.toString();
 
       // Participants (nested create)
       if (participants && participants.length > 0) {

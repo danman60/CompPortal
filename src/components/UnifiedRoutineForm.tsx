@@ -139,6 +139,12 @@ export default function UnifiedRoutineForm() {
       return;
     }
 
+    // Calculate fee from Competition Settings pricing
+    const sizeCategory = lookupData?.entrySizeCategories?.find((sc: any) => sc.id === sizeCategoryId);
+    const baseFee = sizeCategory?.base_fee ? Number(sizeCategory.base_fee) : 0;
+    const perParticipantFee = sizeCategory?.per_participant_fee ? Number(sizeCategory.per_participant_fee) : 0;
+    const calculatedFee = baseFee + (perParticipantFee * selectedDancers.length);
+
     createMutation.mutate({
       competition_id: form.competition_id,
       studio_id: form.studio_id,
@@ -150,8 +156,8 @@ export default function UnifiedRoutineForm() {
       entry_size_category_id: sizeCategoryId,
       choreographer: form.choreographer || undefined,
       special_requirements: form.special_requirements || undefined,
-      entry_fee: 0,
-      total_fee: 0,
+      entry_fee: calculatedFee,
+      total_fee: calculatedFee,
       status: 'draft',
       participants: selectedDancers,
     } as any, {
@@ -544,6 +550,40 @@ export default function UnifiedRoutineForm() {
                 {selectedDancers.map(d => d.dancer_name).join(', ')}
                 <span className="ml-2 text-white font-semibold">({selectedDancers.length} total)</span>
               </div>
+            </div>
+
+            {/* Pricing Preview */}
+            <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Routine Fee</h2>
+              {(() => {
+                const sizeCategoryId = overrides.entry_size_category_id || inferredSizeCategory?.id;
+                const sizeCategory = lookupData?.entrySizeCategories?.find((sc: any) => sc.id === sizeCategoryId);
+                const baseFee = sizeCategory?.base_fee ? Number(sizeCategory.base_fee) : 0;
+                const perParticipantFee = sizeCategory?.per_participant_fee ? Number(sizeCategory.per_participant_fee) : 0;
+                const totalFee = baseFee + (perParticipantFee * selectedDancers.length);
+
+                return (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-gray-300">
+                      <span>Base Fee ({sizeCategory?.name || 'Unknown'})</span>
+                      <span>${baseFee.toFixed(2)}</span>
+                    </div>
+                    {perParticipantFee > 0 && (
+                      <div className="flex justify-between text-gray-300">
+                        <span>Per Dancer ({selectedDancers.length} × ${perParticipantFee.toFixed(2)})</span>
+                        <span>${(perParticipantFee * selectedDancers.length).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-xl font-bold text-green-400 pt-2 border-t border-green-400/30">
+                      <span>Total</span>
+                      <span>${totalFee.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      * Pricing from Competition Settings
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Inferred Values with Override Option */}
