@@ -1,7 +1,7 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 17, 2025 (Wave 3 Complete)
-**Current Phase**: 🧪 Pre-Testing Sprint + Wave 3 Completion
+**Last Updated**: October 17, 2025 (Wave 4 Complete)
+**Current Phase**: 🧪 Pre-Testing Sprint + Wave 4 Completion
 **Build**: ✅ All 56 routes compile
 **Production**: https://comp-portal-one.vercel.app/
 
@@ -49,6 +49,14 @@
 - Built admin failures management page with retry UI (failures/page.tsx:1-309)
 - Registered failure tRPC router (_app.ts:30,65; failure.ts:1-68)
 
+**✅ Wave 4 COMPLETE** (2 hours):
+- Wrapped multi-step operations in Prisma transactions for atomicity
+- createFromReservation (invoice.ts:389-418): Invoice + reservation update
+- markAsPaid (invoice.ts:645-670): Invoice + reservation payment status
+- entry delete (entry.ts:778-784): Entry deletion with cascade safety
+- Pattern: prisma.$transaction(async (tx) => {...})
+- Activity logs kept outside transactions (non-blocking)
+
 **Impact So Far**:
 - ✅ Zero business logic violations possible (Status Guards)
 - ✅ Component crashes isolated (Error Boundaries)
@@ -57,10 +65,11 @@
 - ✅ Accessibility improvements (Escape key, ARIA)
 - ✅ Email logic centralized for testability
 - ✅ 100% visibility into failed operations (Failure Tracking)
+- ✅ Critical operations protected by transactions (Data Integrity)
 
-**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete, wave-2.2-partial, wave-3.1-complete, wave-3.2-complete
+**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete, wave-2.2-partial, wave-3.1-complete, wave-3.2-complete, wave-4-start, wave-4-complete
 
-**Next**: Wave 4 (Transactions), Wave 5 (EntriesList Refactor), Wave 6 (Health Checks)
+**Next**: Wave 5 (EntriesList Refactor), Wave 6 (Health Checks)
 
 **Multi-Tenant Architecture Removal** 🔧
 - **Rollback Executed**: Reset to commit b3ab89d (pre-multi-tenant)
