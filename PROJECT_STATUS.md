@@ -15,6 +15,20 @@
 **Last Commit**: 8ad272e (refactor: fix hardcoded pricing in EntriesList - Priority 1)
 
 ### Recent Work (This Session - Oct 16, 2025)
+
+**Wave 1 Complete: Foundation & Quick Wins** 🌊 (NEW)
+- **Status**: ✅ COMPLETE (14 hours)
+- **Waves Completed**:
+  1. **Wave 1.1**: Status Guards (4h) - Business logic protection
+  2. **Wave 1.2**: StatusBadge Component (4h) - UI consistency
+  3. **Wave 1.3**: Error Boundaries (6h) - Graceful error handling
+- **Impact**:
+  - Zero business logic violations possible
+  - -300 lines of duplication removed
+  - Component crashes don't break app
+- **Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete
+- **Next**: Wave 2.1 - Modal Component extraction
+
 **Multi-Tenant Architecture Removal** 🔧
 - **Rollback Executed**: Reset to commit b3ab89d (pre-multi-tenant)
 - **Critical Fixes Preserved** (4 commits cherry-picked):
@@ -176,7 +190,13 @@
 
 ## 🚀 Next Priorities
 
-1. **Pre-Testing Action Plan - Phase 1** (IMMEDIATE)
+1. **Wave 2: Validation & UI Polish** (CURRENT - 14 hours)
+   - ✅ Wave 1 Complete (Status Guards + StatusBadge + Error Boundaries)
+   - 🔄 Wave 2.1: Modal Component extraction (6h) - IN PROGRESS
+   - ⏳ Wave 2.2: Server-Side Validation with Zod (8h)
+   - **See**: `docs/UNIFIED_IMPLEMENTATION_PLAN.md` for full roadmap
+
+2. **Pre-Testing Action Plan - Phase 1** (PARALLEL)
    - ✅ Task 1.1: Fix hardcoded pricing bug (Priority 1) - COMPLETE
    - ✅ Task 1.2: Run build verification - COMPLETE
    - ⏭️ Task 1.3: Check console errors (Chrome DevTools on production)
@@ -184,7 +204,7 @@
    - ⏭️ Task 1.5: Self-test critical flow (signup → reservation → entries → invoice)
    - **See**: `PRE_TESTING_ACTION_PLAN.md` for full 4-phase checklist
 
-2. **Database Wipe + Complete Workflow Test** (HIGH PRIORITY)
+3. **Database Wipe + Complete Workflow Test** (HIGH PRIORITY)
    - Run database wipe script: `scripts/wipe-database-keep-demos.sql`
    - Test complete workflow from scratch with actual pricing verification
    - Configure tax rate (7%) for invoice testing
