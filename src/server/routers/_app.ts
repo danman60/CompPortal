@@ -28,6 +28,7 @@ import { liveCompetitionRouter } from './liveCompetition';
 import { chatRouter } from './chat';
 import { tenantSettingsRouter } from './tenantSettings';
 import { failureRouter } from './failure';
+import { testingRouter } from './testing';
 
 /**
  * Main tRPC router
@@ -35,6 +36,7 @@ import { failureRouter } from './failure';
  */
 export const appRouter = router({
   test: testRouter,
+  testing: testingRouter,
   user: userRouter,
   studio: studioRouter,
   dancer: dancerRouter,

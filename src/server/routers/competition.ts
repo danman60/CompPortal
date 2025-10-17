@@ -328,34 +328,63 @@ export const competitionRouter = router({
       return competition;
     }),
 
-  // Delete a competition
+  // Delete a competition (Testing - allows deletion with entries/reservations)
   delete: publicProcedure
-    .input(z.object({ id: z.string().uuid() }))
+    .input(z.object({
+      id: z.string().uuid(),
+      hardDelete: z.boolean().default(false),
+    }))
     .mutation(async ({ input }) => {
-      // Check if competition has entries
-      const entriesCount = await prisma.competition_entries.count({
-        where: { competition_id: input.id },
-      });
+      await prisma.$transaction(async (tx) => {
+        // 1. Return entries to draft (preserve entry data for studios)
+        await tx.competition_entries.updateMany({
+          where: { competition_id: input.id },
+          data: {
+            status: 'draft',
+            session_id: null,
+            performance_date: null,
+            performance_time: null,
+          },
+        });
 
-      if (entriesCount > 0) {
-        throw new Error(
-          `Cannot delete competition with ${entriesCount} entries. Cancel instead.`
-        );
-      }
+        // 2. Cancel reservations
+        await tx.reservations.updateMany({
+          where: { competition_id: input.id },
+          data: {
+            status: 'cancelled',
+            internal_notes: 'Event deleted by CD (testing)',
+          },
+        });
 
-      // Check if competition has reservations
-      const reservationsCount = await prisma.reservations.count({
-        where: { competition_id: input.id },
-      });
+        // 3. Hard delete scheduling data (testing only)
+        await tx.competition_sessions.deleteMany({
+          where: { competition_id: input.id },
+        });
 
-      if (reservationsCount > 0) {
-        throw new Error(
-          `Cannot delete competition with ${reservationsCount} reservations. Cancel instead.`
-        );
-      }
+        await tx.judges.deleteMany({
+          where: { competition_id: input.id },
+        });
 
-      await prisma.competitions.delete({
-        where: { id: input.id },
+        // 4. Handle invoices (void them)
+        await tx.invoices.updateMany({
+          where: { competition_id: input.id },
+          data: { status: 'void' },
+        });
+
+        // 5. Delete or soft-delete competition
+        if (input.hardDelete) {
+          // Nuclear option: truly delete everything
+          await tx.invoices.deleteMany({ where: { competition_id: input.id } });
+          await tx.reservations.deleteMany({ where: { competition_id: input.id } });
+          await tx.competition_entries.deleteMany({ where: { competition_id: input.id } });
+          await tx.competitions.delete({ where: { id: input.id } });
+        } else {
+          // Soft delete (recommended)
+          await tx.competitions.update({
+            where: { id: input.id },
+            data: { status: 'deleted' },
+          });
+        }
       });
 
       return { success: true, message: 'Competition deleted successfully' };
