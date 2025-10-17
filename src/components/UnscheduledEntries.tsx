@@ -79,6 +79,7 @@ export default function UnscheduledEntries({
     <>
       {showSuffixModal && selectedForSuffix && (
         <LateSuffixModal
+          isOpen={!!showSuffixModal}
           entryId={showSuffixModal}
           entryTitle={selectedForSuffix.title}
           onClose={() => setShowSuffixModal(null)}

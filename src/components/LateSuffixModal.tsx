@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
+import { Modal } from '@/components/ui/Modal';
 
 interface LateSuffixModalProps {
+  isOpen: boolean;
   entryId: string;
   entryTitle: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function LateSuffixModal({ entryId, entryTitle, onClose, onSuccess }: LateSuffixModalProps) {
+export function LateSuffixModal({ isOpen, entryId, entryTitle, onClose, onSuccess }: LateSuffixModalProps) {
   const [baseNumber, setBaseNumber] = useState<number>(100);
   const [suffix, setSuffix] = useState<string>('a');
 
@@ -30,43 +32,14 @@ export function LateSuffixModal({ entryId, entryTitle, onClose, onSuccess }: Lat
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 w-96">
-        <h3 className="text-xl font-bold text-white mb-4">Assign Late Routine Suffix</h3>
-        <p className="text-sm text-gray-300 mb-4">{entryTitle}</p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Base Routine Number</label>
-            <input
-              type="number"
-              min="100"
-              value={baseNumber}
-              onChange={(e) => setBaseNumber(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Suffix (single letter)</label>
-            <input
-              type="text"
-              maxLength={1}
-              pattern="[a-z]"
-              value={suffix}
-              onChange={(e) => setSuffix(e.target.value.toLowerCase())}
-              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
-            />
-          </div>
-
-          <div className="p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg">
-            <p className="text-center text-lg font-bold text-white">
-              Display: #{baseNumber}{suffix}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-3 mt-6">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Assign Late Routine Suffix"
+      description={entryTitle}
+      size="sm"
+      footer={
+        <>
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
@@ -80,8 +53,39 @@ export function LateSuffixModal({ entryId, entryTitle, onClose, onSuccess }: Lat
           >
             {assignMutation.isPending ? 'Assigning...' : 'Assign'}
           </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Base Routine Number</label>
+          <input
+            type="number"
+            min="100"
+            value={baseNumber}
+            onChange={(e) => setBaseNumber(parseInt(e.target.value))}
+            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Suffix (single letter)</label>
+          <input
+            type="text"
+            maxLength={1}
+            pattern="[a-z]"
+            value={suffix}
+            onChange={(e) => setSuffix(e.target.value.toLowerCase())}
+            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white"
+          />
+        </div>
+
+        <div className="p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+          <p className="text-center text-lg font-bold text-white">
+            Display: #{baseNumber}{suffix}
+          </p>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

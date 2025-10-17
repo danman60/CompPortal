@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { Modal } from '@/components/ui/Modal';
 
 interface BulkJudgeImportModalProps {
   isOpen: boolean;
@@ -73,85 +74,15 @@ export default function JudgeBulkImportModal({ isOpen, onClose, onImportComplete
   const validCount = judges.filter(j => !j.errors).length;
   const errorCount = judges.filter(j => j.errors).length;
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-white/20 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-white/20">
-          <h2 className="text-2xl font-bold text-white">Bulk Import Judges</h2>
-          <p className="text-sm text-gray-400 mt-1">Upload CSV file with judge information</p>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          {/* File upload */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-200 mb-2">
-              CSV File
-            </label>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-              className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white"
-            />
-            <p className="text-xs text-gray-400 mt-2">
-              Format: firstName, lastName, email, phone, certification
-            </p>
-          </div>
-
-          {/* Preview table */}
-          {judges.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/20">
-                    <th className="text-left p-2 text-gray-400 text-sm">First Name</th>
-                    <th className="text-left p-2 text-gray-400 text-sm">Last Name</th>
-                    <th className="text-left p-2 text-gray-400 text-sm">Email</th>
-                    <th className="text-left p-2 text-gray-400 text-sm">Phone</th>
-                    <th className="text-left p-2 text-gray-400 text-sm">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {judges.map((judge, i) => (
-                    <tr key={i} className={`border-b border-white/10 ${judge.errors ? 'bg-red-500/10' : 'bg-green-500/10'}`}>
-                      <td className="p-2 text-white text-sm">{judge.firstName}</td>
-                      <td className="p-2 text-white text-sm">{judge.lastName}</td>
-                      <td className="p-2 text-white text-sm">{judge.email}</td>
-                      <td className="p-2 text-gray-400 text-sm">{judge.phone || '-'}</td>
-                      <td className="p-2 text-sm">
-                        {judge.errors ? (
-                          <span className="text-red-400">{judge.errors.join(', ')}</span>
-                        ) : (
-                          <span className="text-green-400">Valid</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Summary */}
-          {judges.length > 0 && (
-            <div className="mt-4 p-4 rounded-lg bg-white/5 border border-white/10">
-              <p className="text-sm text-gray-300">
-                <span className="text-green-400 font-medium">{validCount} valid</span>
-                {' • '}
-                <span className="text-red-400 font-medium">{errorCount} errors</span>
-                {' • '}
-                <span className="text-gray-400">{judges.length} total</span>
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-between p-6 border-t border-white/20 bg-white/5">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Bulk Import Judges"
+      description="Upload CSV file with judge information"
+      size="4xl"
+      footer={
+        <>
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10">
             Cancel
           </button>
@@ -162,8 +93,71 @@ export default function JudgeBulkImportModal({ isOpen, onClose, onImportComplete
           >
             {isImporting ? 'Importing...' : `Import ${validCount} Judges`}
           </button>
-        </div>
+        </>
+      }
+    >
+      {/* File upload */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-200 mb-2">
+          CSV File
+        </label>
+        <input
+          type="file"
+          accept=".csv"
+          onChange={handleFileChange}
+          className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white"
+        />
+        <p className="text-xs text-gray-400 mt-2">
+          Format: firstName, lastName, email, phone, certification
+        </p>
       </div>
-    </div>
+
+      {/* Preview table */}
+      {judges.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/20">
+                <th className="text-left p-2 text-gray-400 text-sm">First Name</th>
+                <th className="text-left p-2 text-gray-400 text-sm">Last Name</th>
+                <th className="text-left p-2 text-gray-400 text-sm">Email</th>
+                <th className="text-left p-2 text-gray-400 text-sm">Phone</th>
+                <th className="text-left p-2 text-gray-400 text-sm">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {judges.map((judge, i) => (
+                <tr key={i} className={`border-b border-white/10 ${judge.errors ? 'bg-red-500/10' : 'bg-green-500/10'}`}>
+                  <td className="p-2 text-white text-sm">{judge.firstName}</td>
+                  <td className="p-2 text-white text-sm">{judge.lastName}</td>
+                  <td className="p-2 text-white text-sm">{judge.email}</td>
+                  <td className="p-2 text-gray-400 text-sm">{judge.phone || '-'}</td>
+                  <td className="p-2 text-sm">
+                    {judge.errors ? (
+                      <span className="text-red-400">{judge.errors.join(', ')}</span>
+                    ) : (
+                      <span className="text-green-400">Valid</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Summary */}
+      {judges.length > 0 && (
+        <div className="mt-4 p-4 rounded-lg bg-white/5 border border-white/10">
+          <p className="text-sm text-gray-300">
+            <span className="text-green-400 font-medium">{validCount} valid</span>
+            {' • '}
+            <span className="text-red-400 font-medium">{errorCount} errors</span>
+            {' • '}
+            <span className="text-gray-400">{judges.length} total</span>
+          </p>
+        </div>
+      )}
+    </Modal>
   );
 }
