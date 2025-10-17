@@ -21,13 +21,24 @@ export function SupportChatWrapper() {
     setMounted(true);
   }, []);
 
+  // Don't query until mounted
+  if (!mounted) {
+    return null;
+  }
+
+  return <SupportChatWrapperInner />;
+}
+
+function SupportChatWrapperInner() {
   // Get current user
-  const { data: currentUser } = trpc.user.getCurrentUser.useQuery(undefined, {
-    enabled: mounted,
+  const { data: currentUser, error, isLoading } = trpc.user.getCurrentUser.useQuery(undefined, {
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
-  if (!mounted || !currentUser) {
+  // Don't render on error, loading, or no user data
+  if (isLoading || error || !currentUser) {
     return null;
   }
 
