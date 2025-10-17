@@ -49,7 +49,14 @@ export function ChatwootWidget({
   useEffect(() => {
     // Skip if no token
     if (!websiteToken || !baseUrl) {
-      console.warn('ChatwootWidget: Missing websiteToken or baseUrl');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('ChatwootWidget: Missing websiteToken or baseUrl');
+      }
+      return;
+    }
+
+    // Prevent duplicate script loading
+    if (document.querySelector(`script[src="${baseUrl}/packs/js/sdk.js"]`)) {
       return;
     }
 

@@ -1,10 +1,16 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
-import { SupportChatWrapper } from '@/components/SupportChatWrapper';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+
+// Dynamically import SupportChatWrapper with no SSR to prevent hydration issues
+const SupportChatWrapper = dynamic(
+  () => import('@/components/SupportChatWrapper').then((mod) => ({ default: mod.SupportChatWrapper })),
+  { ssr: false }
+);
 
 export default function DashboardLayout({
   children,

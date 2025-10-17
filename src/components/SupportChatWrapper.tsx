@@ -16,12 +16,14 @@ import { trpc } from '@/lib/trpc';
 export function SupportChatWrapper() {
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch
+  // Prevent hydration mismatch - wait for client mount
   useEffect(() => {
-    setMounted(true);
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => setMounted(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Don't query until mounted
+  // Don't render anything until mounted on client
   if (!mounted) {
     return null;
   }
@@ -35,21 +37,11 @@ function SupportChatWrapperInner() {
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    staleTime: Infinity, // Prevent refetching
   });
 
-  // Don't render on error, loading, or no user data
-  if (isLoading) {
-    console.log('SupportChatWrapper: Loading user data...');
-    return null;
-  }
-
-  if (error) {
-    console.error('SupportChatWrapper: Error loading user', error);
-    return null;
-  }
-
-  if (!currentUser) {
-    console.warn('SupportChatWrapper: No user data');
+  // Don't render while loading or on error
+  if (isLoading || error || !currentUser) {
     return null;
   }
 
@@ -58,11 +50,8 @@ function SupportChatWrapperInner() {
     currentUser.role !== 'studio_director' &&
     currentUser.role !== 'competition_director'
   ) {
-    console.log('SupportChatWrapper: User role not SD/CD', currentUser.role);
     return null;
   }
-
-  console.log('SupportChatWrapper: Rendering chat button for', currentUser.role);
 
   return (
     <SupportChatButton
