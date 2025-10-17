@@ -5,6 +5,12 @@ import { sendEmail } from '@/lib/email';
 import { renderEntrySubmitted, getEmailSubject, type EntrySubmittedData } from '@/lib/email-templates';
 import { logActivity } from '@/lib/activity';
 import { logger } from '@/lib/logger';
+import {
+  validateEntrySizeCategory,
+  validateMinimumParticipants,
+  validateMaximumParticipants,
+  validateFeeRange
+} from '@/lib/validators/businessRules';
 
 // Validation schema for entry participant
 const entryParticipantSchema = z.object({
@@ -488,6 +494,20 @@ export const entryRouter = router({
         entrySizeCategoryId = defaultSize.id;
       }
 
+      // 🔐 BUSINESS RULE VALIDATIONS (Wave 2.2)
+      const participantCount = participants?.length || 0;
+
+      // Validate minimum participants
+      validateMinimumParticipants(participantCount);
+
+      // Validate participant count matches size category constraints
+      if (entrySizeCategoryId && participantCount > 0) {
+        await validateEntrySizeCategory(entrySizeCategoryId, participantCount);
+      }
+
+      // Validate maximum participants limit
+      validateMaximumParticipants(participantCount);
+
       // Create entry with participants
       // Build Prisma data object using relation connect syntax (not foreign key IDs)
       const createData: any = {
@@ -550,6 +570,14 @@ export const entryRouter = router({
           finalEntryFee = baseFee + (perParticipantFee * participantCount);
           finalTotalFee = finalEntryFee + (late_fee || 0);
         }
+      }
+
+      // Validate fee ranges
+      if (finalEntryFee !== undefined) {
+        validateFeeRange(finalEntryFee, 0, 10000);
+      }
+      if (finalTotalFee !== undefined) {
+        validateFeeRange(finalTotalFee, 0, 10000);
       }
 
       if (finalEntryFee !== undefined) createData.entry_fee = finalEntryFee.toString();

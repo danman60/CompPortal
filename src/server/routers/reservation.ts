@@ -17,6 +17,7 @@ import {
   type InvoiceDeliveryData,
 } from '@/lib/email-templates';
 import { guardReservationStatus } from '@/lib/guards/statusGuards';
+import { validateReservationCapacity } from '@/lib/validators/businessRules';
 
 // Validation schema for reservation input
 const reservationInputSchema = z.object({
@@ -387,6 +388,14 @@ export const reservationRouter = router({
           `Not enough space available. Requested: ${input.spaces_requested}, Available: ${available}`
         );
       }
+
+      // 🔐 BUSINESS RULE VALIDATIONS (Wave 2.2)
+      // Validate reservation capacity against competition limits
+      await validateReservationCapacity(
+        input.competition_id,
+        input.studio_id,
+        input.spaces_requested
+      );
 
       // Get tenant_id from studio
       const studio = await prisma.studios.findUnique({
