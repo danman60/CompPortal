@@ -48,7 +48,13 @@ export function SupportChatButton({
 
   // Validate configuration
   if (!baseUrl || !tokens.sd_tech || !tokens.sd_cd || !tokens.cd_tech) {
-    console.warn('SupportChatButton: Missing Chatwoot configuration');
+    console.error('SupportChatButton: Missing Chatwoot configuration', {
+      baseUrl: !!baseUrl,
+      sd_tech: !!tokens.sd_tech,
+      sd_cd: !!tokens.sd_cd,
+      cd_tech: !!tokens.cd_tech,
+      userRole,
+    });
     return null;
   }
 

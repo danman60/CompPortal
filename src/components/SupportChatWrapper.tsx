@@ -38,7 +38,18 @@ function SupportChatWrapperInner() {
   });
 
   // Don't render on error, loading, or no user data
-  if (isLoading || error || !currentUser) {
+  if (isLoading) {
+    console.log('SupportChatWrapper: Loading user data...');
+    return null;
+  }
+
+  if (error) {
+    console.error('SupportChatWrapper: Error loading user', error);
+    return null;
+  }
+
+  if (!currentUser) {
+    console.warn('SupportChatWrapper: No user data');
     return null;
   }
 
@@ -47,8 +58,11 @@ function SupportChatWrapperInner() {
     currentUser.role !== 'studio_director' &&
     currentUser.role !== 'competition_director'
   ) {
+    console.log('SupportChatWrapper: User role not SD/CD', currentUser.role);
     return null;
   }
+
+  console.log('SupportChatWrapper: Rendering chat button for', currentUser.role);
 
   return (
     <SupportChatButton

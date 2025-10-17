@@ -90,6 +90,14 @@ export function ChatwootWidget({
       }
     };
 
+    script.onerror = () => {
+      console.error('ChatwootWidget: Failed to load Chatwoot SDK', {
+        scriptSrc: script.src,
+        possibleCause: 'Mixed content (HTTP on HTTPS page) or server unavailable',
+        solution: 'Ensure Chatwoot server is accessible via HTTPS',
+      });
+    };
+
     document.body.appendChild(script);
 
     // Cleanup function
