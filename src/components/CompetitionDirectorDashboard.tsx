@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DashboardStats from './DashboardStats';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
@@ -110,10 +110,16 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
 
 export default function CompetitionDirectorDashboard({ userEmail, firstName, role }: CompetitionDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
+  const [greeting, setGreeting] = useState('Hello');
   const isAdmin = role === 'super_admin';
   const { data: studios } = trpc.studio.getAll.useQuery();
   const { data: reservations } = trpc.reservation.getAll.useQuery();
   const { data: invoicesData } = trpc.invoice.getAllInvoices.useQuery({});
+
+  // Set greeting on client mount to prevent hydration mismatch
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
 
   // Add settings card for super admins
   const dashboardCards = isAdmin
@@ -142,7 +148,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       {/* Header */}
       <div className="flex-1">
         <h1 className="text-4xl font-bold text-white mb-2">
-          {getGreeting()}, {firstName}! 👋
+          {greeting}, {firstName}! 👋
         </h1>
         <p className="text-gray-400 mb-4">
           {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
