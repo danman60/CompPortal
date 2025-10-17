@@ -11,6 +11,7 @@ import { SkeletonList } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import PullToRefresh from 'react-pull-to-refresh';
 import { hapticMedium } from '@/lib/haptics';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
@@ -519,19 +520,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           {reservation.studios?.name || 'Unknown Studio'}
                         </p>
                       </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          reservation.status === 'approved'
-                            ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                            : reservation.status === 'pending'
-                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                            : reservation.status === 'rejected'
-                            ? 'bg-red-500/20 text-red-400 border border-red-400/30'
-                            : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                        }`}
-                      >
-                        {reservation.status?.toUpperCase()}
-                      </span>
+                      <StatusBadge status={(reservation.status || 'pending') as any} />
                     </div>
 
                     {/* Agent Info - Competition Directors Only */}

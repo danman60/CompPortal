@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 type PipelineStatus = 'all' | 'pending' | 'approved' | 'summary_in' | 'invoiced' | 'paid';
 
@@ -457,14 +458,10 @@ export default function ReservationPipeline() {
                           </td>
                           <td className="px-4 py-4 text-center">
                             {reservation.status === 'pending' && (
-                              <span className="inline-block px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 rounded-lg text-xs font-semibold uppercase">
-                                Pending
-                              </span>
+                              <StatusBadge status="pending" />
                             )}
                             {reservation.status === 'approved' && !reservation.entryCount && (
-                              <span className="inline-block px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg text-xs font-semibold uppercase">
-                                Approved
-                              </span>
+                              <StatusBadge status="approved" />
                             )}
                             {reservation.status === 'approved' && reservation.entryCount > 0 && !reservation.invoiceId && (
                               <button

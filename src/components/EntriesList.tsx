@@ -13,6 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { CompetitionFilter } from './CompetitionFilter';
 import { EntryEditModal } from './EntryEditModal';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export default function EntriesList() {
   const router = useRouter();
@@ -570,19 +571,7 @@ export default function EntriesList() {
                 )}
 
                 {/* Registration Status */}
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
-                    entry.status === 'confirmed'
-                      ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                      : entry.status === 'registered'
-                      ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                      : entry.status === 'cancelled'
-                      ? 'bg-red-500/20 text-red-400 border border-red-400/30'
-                      : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                  }`}
-                >
-                  {entry.status}
-                </span>
+                <StatusBadge status={(entry.status || 'draft') as any} />
               </div>
 
               {/* Header */}
@@ -802,19 +791,7 @@ export default function EntriesList() {
                       </span>
                     </td>
                     <td className="px-6 py-4" style={{ width: '120px' }}>
-                      <span
-                        className={`px-3 py-1.5 rounded-full text-xs uppercase font-semibold inline-block ${
-                          entry.status === 'confirmed'
-                            ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                            : entry.status === 'registered'
-                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                            : entry.status === 'cancelled'
-                            ? 'bg-red-500/20 text-red-400 border border-red-400/30'
-                            : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                        }`}
-                      >
-                        {entry.status}
-                      </span>
+                      <StatusBadge status={(entry.status || 'draft') as any} />
                     </td>
                     <td className="px-6 py-4" style={{ width: '200px' }}>
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1090,17 +1067,7 @@ export default function EntriesList() {
 
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-gray-400">Registration Status</div>
-                  <span className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
-                    detailEntry.status === 'confirmed'
-                      ? 'bg-green-500/20 text-green-400'
-                      : detailEntry.status === 'registered'
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : detailEntry.status === 'cancelled'
-                      ? 'bg-red-500/20 text-red-400'
-                      : 'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {detailEntry.status}
-                  </span>
+                  <StatusBadge status={(detailEntry.status || 'draft') as any} size="sm" />
                 </div>
               </div>
 
