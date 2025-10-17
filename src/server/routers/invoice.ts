@@ -525,30 +525,35 @@ export const invoiceRouter = router({
 
       const subtotal = lineItems.reduce((sum, i) => sum + i.total, 0);
 
-      // Create invoice record with DRAFT status (not visible to studio yet)
-      const invoice = await prisma.invoices.create({
-        data: {
-          tenant_id: reservation.tenant_id,
-          studio_id: reservation.studio_id,
-          competition_id: reservation.competition_id,
-          reservation_id: reservationId,
-          line_items: lineItems as any,
-          subtotal,
-          total: subtotal,
-          status: 'DRAFT',
-        },
-      });
+      // 🔐 TRANSACTION: Wrap invoice creation + reservation update for atomicity
+      const invoice = await prisma.$transaction(async (tx) => {
+        // Create invoice record with DRAFT status (not visible to studio yet)
+        const newInvoice = await tx.invoices.create({
+          data: {
+            tenant_id: reservation.tenant_id,
+            studio_id: reservation.studio_id,
+            competition_id: reservation.competition_id,
+            reservation_id: reservationId,
+            line_items: lineItems as any,
+            subtotal,
+            total: subtotal,
+            status: 'DRAFT',
+          },
+        });
 
-      // Mark reservation approved and set confirmed spaces
-      await prisma.reservations.update({
-        where: { id: reservationId },
-        data: {
-          status: 'approved',
-          spaces_confirmed: spacesConfirmed ?? reservation.spaces_requested,
-          approved_at: new Date(),
-          approved_by: ctx.userId,
-          updated_at: new Date(),
-        },
+        // Mark reservation approved and set confirmed spaces
+        await tx.reservations.update({
+          where: { id: reservationId },
+          data: {
+            status: 'approved',
+            spaces_confirmed: spacesConfirmed ?? reservation.spaces_requested,
+            approved_at: new Date(),
+            approved_by: ctx.userId,
+            updated_at: new Date(),
+          },
+        });
+
+        return newInvoice;
       });
 
       // Activity log (non-blocking)
@@ -637,30 +642,34 @@ export const invoiceRouter = router({
         throw new Error('Invoice is already paid');
       }
 
-      await prisma.invoices.update({
-        where: { id: input.invoiceId },
-        data: {
-          status: 'PAID',
-          paid_at: new Date(),
-          payment_method: input.paymentMethod || 'manual',
-          updated_at: new Date(),
-        },
-      });
-
-      // Also update reservation payment status
-      if (invoice.reservation_id) {
-        await prisma.reservations.update({
-          where: { id: invoice.reservation_id },
+      // 🔐 TRANSACTION: Wrap invoice update + reservation update for atomicity
+      await prisma.$transaction(async (tx) => {
+        // Update invoice to PAID status
+        await tx.invoices.update({
+          where: { id: input.invoiceId },
           data: {
-            payment_status: 'paid',
-            payment_confirmed_at: new Date(),
-            payment_confirmed_by: ctx.userId,
+            status: 'PAID',
+            paid_at: new Date(),
+            payment_method: input.paymentMethod || 'manual',
             updated_at: new Date(),
           },
         });
-      }
 
-      // Activity log (non-blocking)
+        // Also update reservation payment status
+        if (invoice.reservation_id) {
+          await tx.reservations.update({
+            where: { id: invoice.reservation_id },
+            data: {
+              payment_status: 'paid',
+              payment_confirmed_at: new Date(),
+              payment_confirmed_by: ctx.userId,
+              updated_at: new Date(),
+            },
+          });
+        }
+      });
+
+      // Activity log (non-blocking, outside transaction)
       try {
         await logActivity({
           userId: ctx.userId,

@@ -775,9 +775,12 @@ export const entryRouter = router({
   delete: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      // Delete entry (participants will cascade delete)
-      await prisma.competition_entries.delete({
-        where: { id: input.id },
+      // 🔐 TRANSACTION: Wrap delete operation for atomicity and consistency
+      await prisma.$transaction(async (tx) => {
+        // Delete entry (participants will cascade delete via DB constraints)
+        await tx.competition_entries.delete({
+          where: { id: input.id },
+        });
       });
 
       return { success: true, message: 'Entry deleted successfully' };
