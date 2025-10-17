@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
+import { guardInvoiceStatus } from '@/lib/guards/statusGuards';
 
 export const invoiceRouter = router({
   // Get invoice by studio and competition (returns existing invoice or null)
@@ -482,6 +483,19 @@ export const invoiceRouter = router({
 
       if (!reservation) throw new Error('Reservation not found');
 
+      // 🛡️ GUARD: Check for existing invoice
+      const existingInvoice = await prisma.invoices.findFirst({
+        where: {
+          studio_id: reservation.studio_id,
+          competition_id: reservation.competition_id,
+          reservation_id: reservationId,
+        },
+      });
+
+      if (existingInvoice) {
+        throw new Error('Invoice already exists for this reservation');
+      }
+
       // Build line items from all non-cancelled entries for this studio+competition
       const entries = await prisma.competition_entries.findMany({
         where: {
@@ -492,6 +506,11 @@ export const invoiceRouter = router({
         include: { dance_categories: true, entry_size_categories: true },
         orderBy: { entry_number: 'asc' },
       });
+
+      // 🛡️ GUARD: Must have entries to create invoice
+      if (entries.length === 0) {
+        throw new Error('Cannot create invoice: no entries submitted yet');
+      }
 
       const lineItems = entries.map((entry) => ({
         id: entry.id,
@@ -686,10 +705,12 @@ export const invoiceRouter = router({
         throw new Error('Invoice not found');
       }
 
-      // Only allow edits when status is DRAFT or SENT (not PAID)
-      if (invoice.status === 'PAID') {
-        throw new Error('Cannot edit paid invoices');
-      }
+      // 🛡️ GUARD: Only allow edits when status is DRAFT or SENT (not PAID)
+      guardInvoiceStatus(
+        invoice.status as 'DRAFT' | 'SENT' | 'PAID',
+        ['DRAFT', 'SENT'],
+        'edit invoice prices'
+      );
 
       // Recalculate subtotal and total from line items
       const subtotal = input.lineItems.reduce((sum, item) => sum + item.total, 0);

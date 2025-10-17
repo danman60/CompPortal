@@ -16,6 +16,7 @@ import {
   type PaymentConfirmedData,
   type InvoiceDeliveryData,
 } from '@/lib/email-templates';
+import { guardReservationStatus } from '@/lib/guards/statusGuards';
 
 // Validation schema for reservation input
 const reservationInputSchema = z.object({
@@ -529,6 +530,22 @@ export const reservationRouter = router({
       if (!reservationId) {
         throw new Error('Reservation ID is required');
       }
+
+      // 🛡️ GUARD: Check current status before approving
+      const existingReservation = await prisma.reservations.findUnique({
+        where: { id: reservationId },
+        select: { status: true },
+      });
+
+      if (!existingReservation) {
+        throw new Error('Reservation not found');
+      }
+
+      guardReservationStatus(
+        existingReservation.status as 'pending' | 'approved' | 'rejected',
+        ['pending'],
+        'approve reservation'
+      );
 
       const reservation = await prisma.reservations.update({
         where: { id: reservationId },
