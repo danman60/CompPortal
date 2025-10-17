@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import nodemailer from 'nodemailer';
 
 /**
  * Health check endpoint for monitoring and load balancers
@@ -11,6 +12,8 @@ import { prisma } from '@/lib/prisma';
  * - Monitoring systems (Datadog, New Relic, etc.)
  * - Uptime monitoring services
  * - Container orchestration health probes
+ *
+ * Wave 6: Production Monitoring
  */
 export async function GET() {
   const checks = {
@@ -18,14 +21,15 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     checks: {
       database: 'unknown',
+      email: 'unknown',
       application: 'healthy',
     },
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
   };
 
+  // Check database connectivity
   try {
-    // Check database connectivity with a simple query
     // Uses $queryRaw to avoid model dependencies
     await prisma.$queryRaw`SELECT 1`;
     checks.checks.database = 'healthy';
@@ -33,12 +37,38 @@ export async function GET() {
     console.error('Health check database error:', error);
     checks.status = 'unhealthy';
     checks.checks.database = 'unhealthy';
+  }
 
-    // Return 503 Service Unavailable for unhealthy state
+  // Check email service (SMTP)
+  try {
+    const host = process.env.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const secure = String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
+
+    if (!host || !user || !pass) {
+      // Email not configured (non-critical for health check)
+      checks.checks.email = 'not_configured';
+    } else {
+      // Verify SMTP connection
+      const transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+      await transporter.verify();
+      checks.checks.email = 'healthy';
+    }
+  } catch (error) {
+    console.error('Health check email error:', error);
+    // Email failures are logged but don't mark system as unhealthy
+    // since email is non-critical for core app functionality
+    checks.checks.email = 'degraded';
+  }
+
+  // Return 503 only if critical services are down (database)
+  if (checks.status === 'unhealthy') {
     return NextResponse.json(checks, { status: 503 });
   }
 
-  // All checks passed
+  // All checks passed (or email is degraded/not_configured, which is acceptable)
   return NextResponse.json(checks, {
     status: 200,
     headers: {
@@ -55,6 +85,7 @@ export async function GET() {
  */
 export async function HEAD() {
   try {
+    // Only check database for HEAD (critical service)
     await prisma.$queryRaw`SELECT 1`;
     return new NextResponse(null, { status: 200 });
   } catch (error) {

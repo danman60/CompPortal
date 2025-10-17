@@ -13,6 +13,16 @@ export default function Footer() {
         <p className="text-gray-300 text-sm">
           © {currentYear} <span className="font-semibold text-white">CompSync</span> for {tenantName}
         </p>
+        <p className="text-gray-400 text-xs mt-2">
+          <a
+            href="/status"
+            className="hover:text-white transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            System Status
+          </a>
+        </p>
       </div>
     </footer>
   );
