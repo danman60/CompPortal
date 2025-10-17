@@ -1,7 +1,7 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 17, 2025 (Wave 4 Complete)
-**Current Phase**: 🧪 Pre-Testing Sprint + Wave 4 Completion
+**Last Updated**: October 17, 2025 (Wave 5 Complete)
+**Current Phase**: 🧪 Wave 5 Complete - EntriesList Refactored
 **Build**: ✅ All 56 routes compile
 **Production**: https://comp-portal-one.vercel.app/
 
@@ -9,14 +9,14 @@
 
 ## 📊 Current State
 
-**Phase**: Pre-Testing Sprint (Refactoring + Testing Prep)
-**Confidence Level**: 99% (Critical hardcoded pricing bug fixed, ready for testing week)
+**Phase**: Wave 5 Complete (Major Component Refactor)
+**Confidence Level**: 99% (EntriesList successfully split, all features preserved)
 **Features**: 19 completed features (18 previous + Editable Invoice Pricing)
-**Last Commit**: 8ad272e (refactor: fix hardcoded pricing in EntriesList - Priority 1)
+**Last Commit**: 750c2d4 (refactor: Wave 5 - EntriesList Component Split)
 
-### Recent Work (This Session - Oct 16, 2025)
+### Recent Work (This Session - Oct 17, 2025)
 
-**Waves 1-3 Progress: Foundation & Services** 🌊 (NEW)
+**Waves 1-5 Progress: Foundation → Major Refactor** 🌊 (UPDATED)
 
 **✅ Wave 1 COMPLETE** (14 hours):
 1. Wave 1.1: Status Guards - Business logic protection
@@ -57,19 +57,38 @@
 - Pattern: prisma.$transaction(async (tx) => {...})
 - Activity logs kept outside transactions (non-blocking)
 
+**✅ Wave 5 COMPLETE** (16 hours):
+- **Phase 1**: Extracted 4 custom hooks (8 hours)
+  - useEntries.ts: tRPC data fetching + mutations (hooks/useEntries.ts:1-64)
+  - useEntryFilters.ts: Filter state management (hooks/useEntryFilters.ts:1-51)
+  - useEntrySelection.ts: Bulk selection + Ctrl+A/Escape shortcuts (hooks/useEntrySelection.ts:1-106)
+  - useSpaceUsage.ts: Reservation space calculations (hooks/useSpaceUsage.ts:1-35)
+- **Phase 2**: Created 4 view components (4 hours)
+  - EntryCard.tsx: Individual card layout (entries/EntryCard.tsx:1-175)
+  - EntryTableRow.tsx: Individual table row (entries/EntryTableRow.tsx:1-139)
+  - EntriesCardView.tsx: Card grid container (entries/EntriesCardView.tsx:1-19)
+  - EntriesTableView.tsx: Table layout with sortable headers (entries/EntriesTableView.tsx:1-77)
+- **Phase 3**: Refactored main component (4 hours)
+  - Updated EntriesList.tsx to use extracted hooks/components (1,282 → 868 lines)
+  - Preserved ALL existing functionality (card/table views, bulk selection, filters, modals)
+  - Maintained keyboard shortcuts (Ctrl+A, Escape)
+  - Build verified successfully (56 routes)
+
 **Impact So Far**:
 - ✅ Zero business logic violations possible (Status Guards)
 - ✅ Component crashes isolated (Error Boundaries)
 - ✅ -450 lines of duplication removed (StatusBadge + Modal)
+- ✅ -414 lines removed from EntriesList (32.3% reduction)
 - ✅ Consistent UI patterns across app
 - ✅ Accessibility improvements (Escape key, ARIA)
 - ✅ Email logic centralized for testability
 - ✅ 100% visibility into failed operations (Failure Tracking)
 - ✅ Critical operations protected by transactions (Data Integrity)
+- ✅ EntriesList refactored into testable, reusable units
 
-**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete, wave-2.2-partial, wave-3.1-complete, wave-3.2-complete, wave-4-start, wave-4-complete
+**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete, wave-2.2-partial, wave-3.1-complete, wave-3.2-complete, wave-4-start, wave-4-complete, wave-5-start, wave-5-complete
 
-**Next**: Wave 5 (EntriesList Refactor), Wave 6 (Health Checks)
+**Next**: Wave 6 (Health Checks & Monitoring)
 
 **Multi-Tenant Architecture Removal** 🔧
 - **Rollback Executed**: Reset to commit b3ab89d (pre-multi-tenant)
