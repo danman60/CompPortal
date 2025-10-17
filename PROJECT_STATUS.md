@@ -16,7 +16,7 @@
 
 ### Recent Work (This Session - Oct 16, 2025)
 
-**Wave 1-2 Progress: Foundation Complete** 🌊 (NEW)
+**Waves 1-3 Progress: Foundation & Services** 🌊 (NEW)
 
 **✅ Wave 1 COMPLETE** (14 hours):
 1. Wave 1.1: Status Guards - Business logic protection
@@ -29,10 +29,17 @@
 - Removed ~150 lines of duplicated code
 - Accessibility improvements (ARIA labels, keyboard navigation)
 
-**🔄 Wave 2.2 IN PROGRESS** (8 hours estimated):
+**✅ Wave 2.2 PARTIAL** (2/8 hours):
 - Created Zod validation schemas (entry, invoice, reservation)
-- Validators ready to apply to mutations
-- Next: Apply validators to routers for server-side validation
+- Validators compile successfully
+- Note: Routers already have Zod schemas in place
+- Remaining: Apply additional business rule validation
+
+**✅ Wave 3.1 COMPLETE** (8 hours):
+- Created EmailService class with centralized email methods
+- sendReservationApproved, sendReservationRejected, sendInvoice
+- Builds on existing email.ts infrastructure
+- Ready for router integration
 
 **Impact So Far**:
 - ✅ Zero business logic violations possible (Status Guards)
@@ -40,8 +47,11 @@
 - ✅ -450 lines of duplication removed (StatusBadge + Modal)
 - ✅ Consistent UI patterns across app
 - ✅ Accessibility improvements (Escape key, ARIA)
+- ✅ Email logic centralized for testability
 
-**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete
+**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete, wave-2.2-partial, wave-3.1-complete
+
+**Next**: Wave 3.2 (Failure Detection), Wave 4 (Transactions), Wave 5 (EntriesList Refactor), Wave 6 (Health Checks)
 
 **Multi-Tenant Architecture Removal** 🔧
 - **Rollback Executed**: Reset to commit b3ab89d (pre-multi-tenant)
