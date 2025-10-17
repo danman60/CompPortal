@@ -16,18 +16,32 @@
 
 ### Recent Work (This Session - Oct 16, 2025)
 
-**Wave 1 Complete: Foundation & Quick Wins** 🌊 (NEW)
-- **Status**: ✅ COMPLETE (14 hours)
-- **Waves Completed**:
-  1. **Wave 1.1**: Status Guards (4h) - Business logic protection
-  2. **Wave 1.2**: StatusBadge Component (4h) - UI consistency
-  3. **Wave 1.3**: Error Boundaries (6h) - Graceful error handling
-- **Impact**:
-  - Zero business logic violations possible
-  - -300 lines of duplication removed
-  - Component crashes don't break app
-- **Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete
-- **Next**: Wave 2.1 - Modal Component extraction
+**Wave 1-2 Progress: Foundation Complete** 🌊 (NEW)
+
+**✅ Wave 1 COMPLETE** (14 hours):
+1. Wave 1.1: Status Guards - Business logic protection
+2. Wave 1.2: StatusBadge Component - UI consistency
+3. Wave 1.3: Error Boundaries - Graceful error handling
+
+**✅ Wave 2.1 COMPLETE** (6 hours):
+- Created reusable Modal component with Escape key support
+- Converted 3 modals: EntryEditModal, JudgeBulkImportModal, LateSuffixModal
+- Removed ~150 lines of duplicated code
+- Accessibility improvements (ARIA labels, keyboard navigation)
+
+**🔄 Wave 2.2 IN PROGRESS** (8 hours estimated):
+- Created Zod validation schemas (entry, invoice, reservation)
+- Validators ready to apply to mutations
+- Next: Apply validators to routers for server-side validation
+
+**Impact So Far**:
+- ✅ Zero business logic violations possible (Status Guards)
+- ✅ Component crashes isolated (Error Boundaries)
+- ✅ -450 lines of duplication removed (StatusBadge + Modal)
+- ✅ Consistent UI patterns across app
+- ✅ Accessibility improvements (Escape key, ARIA)
+
+**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete
 
 **Multi-Tenant Architecture Removal** 🔧
 - **Rollback Executed**: Reset to commit b3ab89d (pre-multi-tenant)
