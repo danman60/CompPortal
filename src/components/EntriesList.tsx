@@ -1,11 +1,8 @@
 'use client';
 
-import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useTableSort } from '@/hooks/useTableSort';
-import SortableHeader from '@/components/SortableHeader';
+import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import PullToRefresh from 'react-pull-to-refresh';
 import { SkeletonCard } from '@/components/Skeleton';
@@ -13,24 +10,68 @@ import { formatDistanceToNow } from 'date-fns';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { CompetitionFilter } from './CompetitionFilter';
 import { EntryEditModal } from './EntryEditModal';
+import { useTableSort } from '@/hooks/useTableSort';
+import { useEntries } from '@/hooks/useEntries';
+import { useEntryFilters } from '@/hooks/useEntryFilters';
+import { useEntrySelection } from '@/hooks/useEntrySelection';
+import { useSpaceUsage } from '@/hooks/useSpaceUsage';
+import { EntriesCardView } from '@/components/entries/EntriesCardView';
+import { EntriesTableView } from '@/components/entries/EntriesTableView';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export default function EntriesList() {
-  const router = useRouter();
   // Fetch current user to determine role
   const { data: userData } = trpc.user.getCurrentUser.useQuery();
   const isStudioDirector = userData?.role === 'studio_director';
 
-  // PERFORMANCE FIX: Add pagination to reduce initial load time
-  const [limit] = useState(100); // Load 100 entries at a time
-  const { data, isLoading, refetch, dataUpdatedAt} = trpc.entry.getAll.useQuery({
-    limit,
-    offset: 0,
-  });
-  const [filter, setFilter] = useState<'all' | 'draft' | 'registered' | 'confirmed' | 'cancelled'>('all');
-  const [selectedCompetition, setSelectedCompetition] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  // Use custom hooks
+  const {
+    entries,
+    isLoading,
+    refetch,
+    dataUpdatedAt,
+    reservationData,
+    deleteMutation,
+    updateMutation,
+  } = useEntries();
+
+  const {
+    filter,
+    setFilter,
+    selectedCompetition,
+    setSelectedCompetition,
+    viewMode,
+    setViewMode,
+    competitions,
+    filteredEntries,
+  } = useEntryFilters(entries);
+
+  // Sort entries for table view
+  const { sortedData: sortedEntries, sortConfig, requestSort } = useTableSort(filteredEntries);
+
+  // Bulk selection with keyboard shortcuts
+  const {
+    selectedEntries,
+    setSelectedEntries,
+    handleSelectAll,
+    handleSelectEntry,
+    handleBulkDelete,
+    handleSelectAllFiltered,
+    handleClearSelection,
+  } = useEntrySelection(sortedEntries, viewMode, deleteMutation);
+
+  // Space usage calculations
+  const {
+    hasSelectedCompetition,
+    selectedReservation,
+    hasNoReservation,
+    confirmedSpaces,
+    usedSpaces,
+    isAtLimit,
+    isIncomplete,
+  } = useSpaceUsage(entries, selectedCompetition, reservationData);
+
+  // Modal states
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [detailEntry, setDetailEntry] = useState<any>(null);
@@ -38,168 +79,6 @@ export default function EntriesList() {
   const [summarySubmitted, setSummarySubmitted] = useState(false);
   const [submittedEntriesSnapshot, setSubmittedEntriesSnapshot] = useState<string>('');
   const [showIncompleteConfirm, setShowIncompleteConfirm] = useState(false);
-  const updateMutation = trpc.entry.update.useMutation({
-    onSuccess: () => {
-      refetch();
-      setShowEditModal(false);
-      setEditingEntry(null);
-    },
-  });
-
-  // Fetch reservation data for space limit tracking
-  const { data: reservationData } = trpc.reservation.getAll.useQuery(
-    {
-      competitionId: selectedCompetition || undefined,
-      status: 'approved',
-    }
-  );
-
-  // Delete mutation with optimistic updates
-  const utils = trpc.useUtils();
-  const deleteMutation = trpc.entry.delete.useMutation({
-    onMutate: async (variables) => {
-      // Cancel outgoing refetches
-      await utils.entry.getAll.cancel();
-
-      // Snapshot previous value
-      const previousData = utils.entry.getAll.getData();
-
-      // Optimistically update cache - remove deleted entry
-      utils.entry.getAll.setData(undefined, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          entries: old.entries.filter((entry) => entry.id !== variables.id),
-        };
-      });
-
-      // Return context with snapshot for potential rollback
-      return { previousData };
-    },
-    onError: (err, variables, context) => {
-      // Rollback to previous value on error
-      if (context?.previousData) {
-        utils.entry.getAll.setData(undefined, context.previousData);
-      }
-      toast.error('Failed to delete routine');
-    },
-    onSettled: () => {
-      // Refetch to ensure sync with server
-      utils.entry.getAll.invalidate();
-      setSelectedEntries(new Set());
-    },
-  });
-
-  // Process data before any conditional returns (hooks must be called in consistent order)
-  const entries = data?.entries || [];
-
-  // Get unique competitions for filter
-  const competitions = Array.from(new Set(entries.map(e => e.competition_id)))
-    .map(id => {
-      const entry = entries.find(e => e.competition_id === id);
-      return entry?.competitions;
-    })
-    .filter(Boolean);
-
-  // Auto-select first competition on load
-  useEffect(() => {
-    if (competitions.length > 0 && !selectedCompetition && competitions[0]) {
-      setSelectedCompetition(competitions[0].id);
-    }
-  }, [competitions, selectedCompetition]);
-
-  // Filter entries
-  const filteredEntries = entries.filter((entry) => {
-    const matchesStatus = filter === 'all' || entry.status === filter;
-    const matchesCompetition = !selectedCompetition || entry.competition_id === selectedCompetition;
-    return matchesStatus && matchesCompetition;
-  });
-
-  // Sort entries for table view (must be called before any conditional returns)
-  const { sortedData: sortedEntries, sortConfig, requestSort } = useTableSort(filteredEntries);
-
-  // Checkbox handlers
-  const handleSelectAll = () => {
-    if (selectedEntries.size === sortedEntries.length) {
-      setSelectedEntries(new Set());
-    } else {
-      setSelectedEntries(new Set(sortedEntries.map(e => e.id)));
-    }
-  };
-
-  const handleSelectEntry = (entryId: string) => {
-    const newSelected = new Set(selectedEntries);
-    if (newSelected.has(entryId)) {
-      newSelected.delete(entryId);
-    } else {
-      newSelected.add(entryId);
-    }
-    setSelectedEntries(newSelected);
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedEntries.size === 0) return;
-
-    const count = selectedEntries.size;
-    const entryIds = Array.from(selectedEntries);
-
-    toast.promise(
-      (async () => {
-        for (const entryId of entryIds) {
-          await deleteMutation.mutateAsync({ id: entryId });
-        }
-      })(),
-      {
-        loading: `Deleting ${count} routine${count > 1 ? 's' : ''}...`,
-        success: `${count} routine${count > 1 ? 's' : ''} deleted successfully`,
-        error: 'Failed to delete routines',
-      }
-    );
-  };
-
-  // Helper function to get music upload status only
-  const getMusicStatus = (entry: any) => {
-    const hasMusic = !!entry.music_file_url;
-    if (hasMusic) {
-      return { status: 'uploaded', color: 'green', label: 'Music Uploaded', icon: '✅' };
-    } else {
-      return { status: 'pending', color: 'yellow', label: 'Music Pending', icon: '🎵' };
-    }
-  };
-
-  // Bulk selection shortcuts
-  const handleSelectAllFiltered = () => {
-    setSelectedEntries(new Set(sortedEntries.map(e => e.id)));
-    toast.success(`${sortedEntries.length} routines selected`);
-  };
-
-  const handleClearSelection = () => {
-    setSelectedEntries(new Set());
-    toast.success('Selection cleared');
-  };
-
-  // Keyboard shortcuts for bulk selection
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only in table mode
-      if (viewMode !== 'table') return;
-
-      // Ctrl+A / Cmd+A - Select All Filtered
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedEntries.length > 0) {
-        e.preventDefault();
-        handleSelectAllFiltered();
-      }
-
-      // Escape - Clear Selection
-      if (e.key === 'Escape' && selectedEntries.size > 0) {
-        e.preventDefault();
-        handleClearSelection();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode, sortedEntries, selectedEntries]);
 
   // Detect changes in filtered entries to re-enable submit button
   useEffect(() => {
@@ -232,23 +111,6 @@ export default function EntriesList() {
       </div>
     );
   }
-
-  // Calculate space limit for "Create Routine" button
-  const hasSelectedCompetition = !!selectedCompetition;
-  const selectedReservation = hasSelectedCompetition ? reservationData?.reservations?.[0] : null;
-  const hasNoReservation = hasSelectedCompetition && !selectedReservation;
-
-  // Calculate total confirmed spaces and used spaces
-  const confirmedSpaces = hasSelectedCompetition
-    ? selectedReservation?.spaces_confirmed || 0
-    : 0;
-
-  const usedSpaces = hasSelectedCompetition
-    ? entries.filter(e => e.competition_id === selectedCompetition && e.status !== 'cancelled').length
-    : entries.filter(e => e.status !== 'cancelled').length;
-
-  const isAtLimit = hasSelectedCompetition && selectedReservation && usedSpaces >= confirmedSpaces;
-  const isIncomplete = hasSelectedCompetition && selectedReservation && usedSpaces < confirmedSpaces;
 
   // Show progress bar when there are filtered entries and reservations for selected competition
   const showProgressBar = filteredEntries.length > 0 && confirmedSpaces > 0;
@@ -535,293 +397,17 @@ export default function EntriesList() {
           </Link>
         </div>
       ) : viewMode === 'cards' ? (
-        /* Cards View */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEntries.map((entry) => {
-            const musicStatus = getMusicStatus(entry);
-            return (
-            <div
-              key={entry.id}
-              onClick={() => router.push(`/dashboard/entries/${entry.id}/edit`)}
-              className={`bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all flex flex-col cursor-pointer ${
-                entry.status === 'confirmed'
-                  ? 'border-green-400/40'
-                  : entry.status === 'registered'
-                  ? 'border-yellow-400/40'
-                  : entry.status === 'cancelled'
-                  ? 'border-red-400/40'
-                  : 'border-gray-400/40'
-              }`}
-            >
-              {/* Routine Number Badge + Registration Status */}
-              <div className="flex justify-between items-start mb-3">
-                {entry.entry_number ? (
-                  <div>
-                    <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-bold rounded-lg shadow-md">
-                      #{entry.entry_number}{entry.entry_suffix || ''}
-                    </span>
-                    {entry.is_late_entry && (
-                      <span className="ml-2 px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
-                        LATE
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-gray-500 text-sm">Pending Assignment</span>
-                )}
-
-                {/* Registration Status */}
-                <StatusBadge status={(entry.status || 'draft') as any} />
-              </div>
-
-              {/* Header */}
-              <div className="mb-4">
-                <h3 className="text-xl font-bold text-white mb-1">{entry.title}</h3>
-                <p className="text-sm text-gray-400">
-                  {entry.competitions?.name} ({entry.competitions?.year})
-                </p>
-              </div>
-
-              {/* Details */}
-              <div className="space-y-2 mb-4">
-                {/* Routine Number (if assigned) */}
-                {entry.entry_number && (
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <span>🔢</span>
-                    <span className="text-purple-400">
-                      Routine #{entry.entry_number}{entry.entry_suffix || ''}
-                      {entry.is_late_entry && <span className="ml-2 text-xs text-yellow-400">(Late Routine)</span>}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 text-sm text-gray-300">
-                  <span>🏢</span>
-                  <span>{entry.studios?.name}</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-300">
-                  <span>🎭</span>
-                  <span>{entry.dance_categories?.name}</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-300">
-                  <span>👥</span>
-                  <span>{entry.entry_participants?.length || 0} Dancer(s)</span>
-                </div>
-
-                {entry.age_groups && (
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <span>📅</span>
-                    <span>{entry.age_groups.name}</span>
-                  </div>
-                )}
-
-                {entry.entry_number && (
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <span>#️⃣</span>
-                    <span>Routine #{entry.entry_number}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Participants */}
-              {entry.entry_participants && entry.entry_participants.length > 0 && (
-                <div className="pt-4 border-t border-white/10 mb-4">
-                  <div className="text-xs text-gray-400 mb-2">Dancers:</div>
-                  <div className="space-y-1">
-                    {entry.entry_participants.slice(0, 3).map((participant) => (
-                      <div key={participant.id} className="text-sm text-white">
-                        • {participant.dancer_name}
-                      </div>
-                    ))}
-                    {entry.entry_participants.length > 3 && (
-                      <div className="text-sm text-gray-400">
-                        +{entry.entry_participants.length - 3} more
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Music Upload Status */}
-              <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border ${
-                musicStatus.status === 'uploaded'
-                  ? 'bg-green-500/20 border-green-400/30'
-                  : 'bg-yellow-500/20 border-yellow-400/30'
-              }`}>
-                <span className={musicStatus.status === 'uploaded' ? 'text-green-400' : 'text-yellow-400'}>
-                  {musicStatus.icon}
-                </span>
-                <span className={`text-sm ${musicStatus.status === 'uploaded' ? 'text-green-300' : 'text-yellow-300'}`}>
-                  {musicStatus.label}
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="grid grid-cols-4 gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
-                <Link
-                  href={`/dashboard/entries/${entry.id}`}
-                  className="text-center bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-all"
-                >
-                  View
-                </Link>
-                <Link
-                  href={`/dashboard/entries/${entry.id}/edit`}
-                  className="text-center bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-3 py-2 rounded-lg text-sm transition-all"
-                >
-                  Edit
-                </Link>
-                <Link
-                  href={`/dashboard/entries/${entry.id}/music`}
-                  className="text-center bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-3 py-2 rounded-lg text-sm transition-all"
-                >
-                  🎵 Music
-                </Link>
-              </div>
-            </div>
-            );
-          })}
-        </div>
+        <EntriesCardView entries={filteredEntries} />
       ) : (
-        /* Table View - Completely Rebuilt with Fixed Headers */
-        <div className="bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl overflow-hidden">
-          {/* Fixed Header Table */}
-          <div className="overflow-x-auto bg-gray-800 border-b border-white/30">
-            <table className="w-full table-fixed">
-              <thead>
-                <tr className="bg-gray-800">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white" style={{ width: '60px' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedEntries.size === sortedEntries.length && sortedEntries.length > 0}
-                      onChange={handleSelectAll}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                  </th>
-                  <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
-                  <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '250px' }} />
-                  <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '150px' }} />
-                  <SortableHeader label="Age Group" sortKey="age_groups.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '150px' }} />
-                  <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '200px' }} />
-                  <SortableHeader label="Music" sortKey="music_file_url" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
-                  <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '200px' }}>Actions</th>
-                </tr>
-              </thead>
-            </table>
-          </div>
-
-          {/* Scrollable Body Table */}
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px]" style={{ scrollbarGutter: 'stable' }}>
-            <table className="w-full table-fixed">
-              <tbody>
-                {sortedEntries.map((entry, index) => {
-                  const musicStatus = getMusicStatus(entry);
-                  return (
-                  <tr
-                    key={entry.id}
-                    onClick={() => setDetailEntry(entry)}
-                    className={`border-b border-white/10 hover:bg-gray-700/50 transition-colors cursor-pointer ${
-                      index % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-900/20'
-                    }`}
-                  >
-                    <td className="px-6 py-4" style={{ width: '60px' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedEntries.has(entry.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleSelectEntry(entry.id);
-                        }}
-                        className="w-4 h-4 cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-6 py-4" style={{ width: '120px' }}>
-                      {entry.entry_number ? (
-                        <div>
-                          <span className="text-white font-bold">
-                            #{entry.entry_number}{entry.entry_suffix || ''}
-                          </span>
-                          {entry.is_late_entry && (
-                            <div className="text-xs text-orange-400 mt-1">LATE</div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500">Pending</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4" style={{ width: '250px' }}>
-                      <div className="text-white font-medium">{entry.title}</div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {entry.competitions?.name} ({entry.competitions?.year})
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-300" style={{ width: '150px' }}>
-                      {entry.dance_categories?.name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 text-gray-300" style={{ width: '150px' }}>
-                      {entry.age_groups?.name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4" style={{ width: '200px' }}>
-                      <div className="text-white">
-                        {entry.entry_participants?.length || 0} dancer{entry.entry_participants?.length !== 1 ? 's' : ''}
-                      </div>
-                      {entry.entry_participants && entry.entry_participants.length > 0 && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          {entry.entry_participants.slice(0, 2).map((p, i) => (
-                            <div key={p.id}>
-                              {p.dancer_name}
-                            </div>
-                          ))}
-                          {entry.entry_participants.length > 2 && (
-                            <div>+{entry.entry_participants.length - 2} more</div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4" style={{ width: '120px' }}>
-                      <span className={`px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${
-                        musicStatus.status === 'uploaded'
-                          ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                          : 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                      }`}>
-                        <span>{musicStatus.icon}</span>
-                        <span>{musicStatus.status === 'uploaded' ? 'Uploaded' : 'Pending'}</span>
-                      </span>
-                    </td>
-                    <td className="px-6 py-4" style={{ width: '120px' }}>
-                      <StatusBadge status={(entry.status || 'draft') as any} />
-                    </td>
-                    <td className="px-6 py-4" style={{ width: '200px' }}>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Link
-                          href={`/dashboard/entries/${entry.id}`}
-                          className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs transition-all"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          href={`/dashboard/entries/${entry.id}/edit`}
-                          className="px-3 py-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded text-xs transition-all"
-                        >
-                          Edit
-                        </Link>
-                        <Link
-                          href={`/dashboard/entries/${entry.id}/music`}
-                          className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded text-xs transition-all"
-                        >
-                          🎵
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <EntriesTableView
+          sortedEntries={sortedEntries}
+          selectedEntries={selectedEntries}
+          sortConfig={sortConfig}
+          onRequestSort={requestSort}
+          onSelectAll={handleSelectAll}
+          onSelectEntry={handleSelectEntry}
+          onDetailClick={setDetailEntry}
+        />
       )}
 
       {/* Results Count */}
