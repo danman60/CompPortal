@@ -349,6 +349,7 @@ model users {
   studios_studios_owner_idTousers    studios[]              @relation("studios_owner_idTousers")
   studios_studios_verified_byTousers studios[]              @relation("studios_verified_byTousers")
   user_profiles                      user_profiles?
+  failure_log                        failure_log[]
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -1240,6 +1241,35 @@ model tenants {
   competition_entries  competition_entries[]
   invoices             invoices[]
   dancers              dancers[]
+  failure_log          failure_log[]
 
+  @@schema("public")
+}
+
+/// Tracks silent failures (email, API calls, etc.) for visibility and retry capability
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model failure_log {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  operation_type String    @db.VarChar(50)       // e.g., "email", "api_call", "file_upload"
+  operation_name String    @db.VarChar(100)      // e.g., "sendReservationApproved", "uploadMusicFile"
+  entity_type    String?   @db.VarChar(50)       // e.g., "reservation", "entry", "invoice"
+  entity_id      String?   @db.Uuid
+  error_message  String                          // Human-readable error message
+  error_details  Json?     @db.JsonB             // Full error object for debugging
+  retry_count    Int       @default(0)           // Number of retry attempts
+  status         String    @default("pending") @db.VarChar(20)  // pending, retrying, resolved, failed_permanently
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  resolved_at    DateTime? @db.Timestamptz(6)
+  created_by     String?   @db.Uuid
+  tenant_id      String?   @db.Uuid
+
+  // Relations
+  users   users?   @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "failure_log_created_by_fkey")
+  tenants tenants? @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "failure_log_tenant_id_fkey")
+
+  @@index([status], map: "failure_log_status_idx")
+  @@index([operation_type], map: "failure_log_operation_type_idx")
+  @@index([entity_type, entity_id], map: "failure_log_entity_idx")
+  @@index([created_at(sort: Desc)], map: "failure_log_created_at_idx")
   @@schema("public")
 }

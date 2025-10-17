@@ -27,6 +27,7 @@ import { cacheRouter } from './cache';
 import { liveCompetitionRouter } from './liveCompetition';
 import { chatRouter } from './chat';
 import { tenantSettingsRouter } from './tenantSettings';
+import { failureRouter } from './failure';
 
 /**
  * Main tRPC router
@@ -61,6 +62,7 @@ export const appRouter = router({
   liveCompetition: liveCompetitionRouter,
   chat: chatRouter,
   tenantSettings: tenantSettingsRouter,
+  failure: failureRouter,
 });
 
 // Export type definition of API

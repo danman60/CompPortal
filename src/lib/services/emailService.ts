@@ -5,9 +5,11 @@
  * Centralizes email sending logic from routers.
  *
  * Created: Wave 3.1 (Email Service Refactor)
+ * Updated: Wave 3.2 (Failure Tracking)
  */
 
 import { sendEmail } from '../email';
+import { trackFailure } from './failureTracker';
 
 export interface ReservationApprovedEmailParams {
   studioEmail: string;
@@ -58,14 +60,28 @@ export class EmailService {
       </div>
     `;
 
-    return sendEmail({
-      to: studioEmail,
-      subject: `Reservation Approved - ${competitionName}`,
-      html,
-      templateType: 'reservation-approved',
-      studioId,
-      competitionId,
-    });
+    try {
+      return await sendEmail({
+        to: studioEmail,
+        subject: `Reservation Approved - ${competitionName}`,
+        html,
+        templateType: 'reservation-approved',
+        studioId,
+        competitionId,
+      });
+    } catch (error) {
+      // Track failure for visibility and retry capability
+      await trackFailure({
+        operationType: 'email',
+        operationName: 'sendReservationApproved',
+        entityType: 'reservation',
+        entityId: studioId,
+        error,
+      });
+
+      // Re-throw so caller knows email failed
+      throw error;
+    }
   }
 
   /**
@@ -85,14 +101,28 @@ export class EmailService {
       </div>
     `;
 
-    return sendEmail({
-      to: studioEmail,
-      subject: `Reservation Status - ${competitionName}`,
-      html,
-      templateType: 'reservation-declined',
-      studioId,
-      competitionId,
-    });
+    try {
+      return await sendEmail({
+        to: studioEmail,
+        subject: `Reservation Status - ${competitionName}`,
+        html,
+        templateType: 'reservation-declined',
+        studioId,
+        competitionId,
+      });
+    } catch (error) {
+      // Track failure for visibility and retry capability
+      await trackFailure({
+        operationType: 'email',
+        operationName: 'sendReservationRejected',
+        entityType: 'reservation',
+        entityId: studioId,
+        error,
+      });
+
+      // Re-throw so caller knows email failed
+      throw error;
+    }
   }
 
   /**
@@ -116,13 +146,27 @@ export class EmailService {
       </div>
     `;
 
-    return sendEmail({
-      to: studioEmail,
-      subject: `Invoice - ${competitionName}`,
-      html,
-      templateType: 'invoice-delivery',
-      studioId,
-      competitionId,
-    });
+    try {
+      return await sendEmail({
+        to: studioEmail,
+        subject: `Invoice - ${competitionName}`,
+        html,
+        templateType: 'invoice-delivery',
+        studioId,
+        competitionId,
+      });
+    } catch (error) {
+      // Track failure for visibility and retry capability
+      await trackFailure({
+        operationType: 'email',
+        operationName: 'sendInvoice',
+        entityType: 'invoice',
+        entityId: competitionId,
+        error,
+      });
+
+      // Re-throw so caller knows email failed
+      throw error;
+    }
   }
 }

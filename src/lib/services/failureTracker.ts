@@ -1,0 +1,267 @@
+/**
+ * Failure Tracking Service
+ *
+ * Tracks silent failures (email, API calls, file uploads) for visibility and retry capability.
+ *
+ * Usage:
+ * ```typescript
+ * import { trackFailure, markResolved, retryFailure } from '@/lib/services/failureTracker'
+ *
+ * try {
+ *   await sendEmail(...)
+ * } catch (error) {
+ *   await trackFailure({
+ *     operationType: 'email',
+ *     operationName: 'sendReservationApproved',
+ *     entityType: 'reservation',
+ *     entityId: reservationId,
+ *     error
+ *   })
+ * }
+ * ```
+ */
+
+import { prisma } from '@/lib/prisma'
+
+export interface TrackFailureOptions {
+  operationType: 'email' | 'api_call' | 'file_upload' | 'database' | 'other'
+  operationName: string
+  entityType?: string
+  entityId?: string
+  error: Error | unknown
+  userId?: string
+  tenantId?: string
+}
+
+export interface FailureLog {
+  id: string
+  operation_type: string
+  operation_name: string
+  entity_type: string | null
+  entity_id: string | null
+  error_message: string
+  error_details: any
+  retry_count: number
+  status: 'pending' | 'retrying' | 'resolved' | 'failed_permanently'
+  created_at: Date
+  resolved_at: Date | null
+  created_by: string | null
+  tenant_id: string | null
+}
+
+/**
+ * Track a failed operation
+ */
+export async function trackFailure(options: TrackFailureOptions): Promise<FailureLog> {
+  const errorMessage = options.error instanceof Error
+    ? options.error.message
+    : String(options.error)
+
+  const errorDetails = options.error instanceof Error
+    ? {
+        name: options.error.name,
+        message: options.error.message,
+        stack: options.error.stack,
+        ...(options.error as any), // Capture additional properties
+      }
+    : { error: String(options.error) }
+
+  try {
+    const failure = await prisma.failure_log.create({
+      data: {
+        operation_type: options.operationType,
+        operation_name: options.operationName,
+        entity_type: options.entityType,
+        entity_id: options.entityId,
+        error_message: errorMessage.substring(0, 500), // Limit message length
+        error_details: errorDetails,
+        retry_count: 0,
+        status: 'pending',
+        created_by: options.userId,
+        tenant_id: options.tenantId,
+      },
+    })
+
+    console.error('[FailureTracker] Logged failure:', {
+      id: failure.id,
+      operation: `${options.operationType}.${options.operationName}`,
+      entity: options.entityType ? `${options.entityType}:${options.entityId}` : 'N/A',
+    })
+
+    return failure as FailureLog
+  } catch (error) {
+    // If tracking fails, log to console but don't throw (avoid cascading failures)
+    console.error('[FailureTracker] Failed to track failure:', error)
+    throw error
+  }
+}
+
+/**
+ * Mark a failure as resolved
+ */
+export async function markResolved(failureId: string): Promise<FailureLog> {
+  const failure = await prisma.failure_log.update({
+    where: { id: failureId },
+    data: {
+      status: 'resolved',
+      resolved_at: new Date(),
+    },
+  })
+
+  console.log('[FailureTracker] Marked failure as resolved:', failureId)
+  return failure as FailureLog
+}
+
+/**
+ * Mark a failure as permanently failed (after max retries)
+ */
+export async function markPermanentlyFailed(failureId: string): Promise<FailureLog> {
+  const failure = await prisma.failure_log.update({
+    where: { id: failureId },
+    data: {
+      status: 'failed_permanently',
+      resolved_at: new Date(),
+    },
+  })
+
+  console.error('[FailureTracker] Marked failure as permanently failed:', failureId)
+  return failure as FailureLog
+}
+
+/**
+ * Increment retry count
+ */
+export async function incrementRetryCount(failureId: string): Promise<FailureLog> {
+  const failure = await prisma.failure_log.update({
+    where: { id: failureId },
+    data: {
+      retry_count: {
+        increment: 1,
+      },
+      status: 'retrying',
+    },
+  })
+
+  return failure as FailureLog
+}
+
+/**
+ * Get pending failures (for admin dashboard)
+ */
+export async function getPendingFailures(tenantId?: string): Promise<FailureLog[]> {
+  const where: any = {
+    status: {
+      in: ['pending', 'retrying'],
+    },
+  }
+
+  if (tenantId) {
+    where.tenant_id = tenantId
+  }
+
+  const failures = await prisma.failure_log.findMany({
+    where,
+    orderBy: {
+      created_at: 'desc',
+    },
+    take: 100, // Limit to most recent 100
+  })
+
+  return failures as FailureLog[]
+}
+
+/**
+ * Get failure by ID
+ */
+export async function getFailureById(failureId: string): Promise<FailureLog | null> {
+  const failure = await prisma.failure_log.findUnique({
+    where: { id: failureId },
+  })
+
+  return failure as FailureLog | null
+}
+
+/**
+ * Get failures for a specific entity
+ */
+export async function getFailuresForEntity(
+  entityType: string,
+  entityId: string
+): Promise<FailureLog[]> {
+  const failures = await prisma.failure_log.findMany({
+    where: {
+      entity_type: entityType,
+      entity_id: entityId,
+    },
+    orderBy: {
+      created_at: 'desc',
+    },
+  })
+
+  return failures as FailureLog[]
+}
+
+/**
+ * Retry a failed operation
+ *
+ * This is a helper that:
+ * 1. Increments retry count
+ * 2. Returns the failure details so the caller can re-execute the operation
+ * 3. Caller should then markResolved() or trackFailure() again based on result
+ */
+export async function retryFailure(failureId: string): Promise<FailureLog> {
+  const failure = await getFailureById(failureId)
+
+  if (!failure) {
+    throw new Error(`Failure ${failureId} not found`)
+  }
+
+  if (failure.status === 'resolved') {
+    throw new Error(`Failure ${failureId} is already resolved`)
+  }
+
+  if (failure.status === 'failed_permanently') {
+    throw new Error(`Failure ${failureId} is permanently failed`)
+  }
+
+  // Increment retry count
+  const updated = await incrementRetryCount(failureId)
+
+  // Check if max retries reached (3 retries)
+  if (updated.retry_count >= 3) {
+    await markPermanentlyFailed(failureId)
+    throw new Error(`Failure ${failureId} has reached max retries (3)`)
+  }
+
+  return updated
+}
+
+/**
+ * Get failure count by status (for admin dashboard stats)
+ */
+export async function getFailureCountByStatus(tenantId?: string): Promise<{
+  pending: number
+  retrying: number
+  resolved: number
+  failed_permanently: number
+}> {
+  const where: any = {}
+
+  if (tenantId) {
+    where.tenant_id = tenantId
+  }
+
+  const [pending, retrying, resolved, failedPermanently] = await Promise.all([
+    prisma.failure_log.count({ where: { ...where, status: 'pending' } }),
+    prisma.failure_log.count({ where: { ...where, status: 'retrying' } }),
+    prisma.failure_log.count({ where: { ...where, status: 'resolved' } }),
+    prisma.failure_log.count({ where: { ...where, status: 'failed_permanently' } }),
+  ])
+
+  return {
+    pending,
+    retrying,
+    resolved,
+    failed_permanently: failedPermanently,
+  }
+}
