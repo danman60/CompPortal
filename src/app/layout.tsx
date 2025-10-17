@@ -7,7 +7,7 @@ import { TenantThemeProvider } from '@/contexts/TenantThemeProvider';
 import { getTenantData } from '@/lib/tenant-context';
 import Script from 'next/script';
 import Footer from '@/components/Footer';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const inter = Inter({ subsets: ['latin'] });
 

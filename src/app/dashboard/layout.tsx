@@ -3,6 +3,7 @@
 import MobileBottomNav from '@/components/MobileBottomNav';
 import KeyboardShortcutsModal from '@/components/KeyboardShortcutsModal';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function DashboardLayout({
   children,
@@ -14,9 +15,11 @@ export default function DashboardLayout({
 
   return (
     <>
-      <div className="pb-20 md:pb-0">{children}</div>
-      <MobileBottomNav />
-      <KeyboardShortcutsModal />
+      <ErrorBoundary boundaryName="Dashboard">
+        <div className="pb-20 md:pb-0">{children}</div>
+        <MobileBottomNav />
+        <KeyboardShortcutsModal />
+      </ErrorBoundary>
     </>
   );
 }
