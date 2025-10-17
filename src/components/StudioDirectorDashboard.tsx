@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import StudioDirectorStats from './StudioDirectorStats';
 import QuickStatsWidget from './QuickStatsWidget';
@@ -52,9 +52,15 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
 
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
+  const [greeting, setGreeting] = useState('Hello');
   const { data: myDancers } = trpc.dancer.getAll.useQuery();
   const { data: myEntries } = trpc.entry.getAll.useQuery();
   const { data: myReservations } = trpc.reservation.getAll.useQuery();
+
+  // Set greeting on client mount to prevent hydration mismatch
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
 
   // Get studio ID for invoice query
   const { data: userStudio } = trpc.studio.getAll.useQuery();
@@ -109,7 +115,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       {/* Header */}
       <div className="flex-1">
         <h1 className="text-4xl font-bold text-white mb-2">
-          {getGreeting()}, {firstName}! 👋
+          {greeting}, {firstName}! 👋
         </h1>
         <p className="text-gray-400 mb-4">
           {studioName && <span className="text-purple-400">{studioName}</span>}
