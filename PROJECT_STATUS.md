@@ -30,11 +30,12 @@
 - Removed ~150 lines of duplicated code
 - Accessibility improvements (ARIA labels, keyboard navigation)
 
-**✅ Wave 2.2 PARTIAL** (2/8 hours):
-- Created Zod validation schemas (entry, invoice, reservation)
-- Validators compile successfully
-- Note: Routers already have Zod schemas in place
-- Remaining: Apply additional business rule validation
+**✅ Wave 2.2 COMPLETE** (8 hours):
+- Created businessRules.ts with domain-specific validators (businessRules.ts:1-270)
+- Applied entry validators: participant count + fee range checks (entry.ts:8-13,496-574)
+- Applied reservation validators: capacity + request validation (reservation.ts:20,391)
+- Business rules enforce: size category constraints, participant limits, fee ranges
+- Note: Separate from Zod type validation (runs after type checking passes)
 
 **✅ Wave 3.1 COMPLETE** (8 hours):
 - Created EmailService class with centralized email methods
@@ -110,7 +111,7 @@
 - ✅ Public status page for transparency
 - ✅ <2 minute incident detection (with UptimeRobot)
 
-**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete, wave-2.2-partial, wave-3.1-complete, wave-3.2-complete, wave-4-start, wave-4-complete, wave-5-start, wave-5-complete, wave-6-start, wave-6-complete
+**Git Tags**: wave-1.1-complete, wave-1.2-complete, wave-1.3-complete, wave-2.1-complete, wave-2.2-complete, wave-3.1-complete, wave-3.2-complete, wave-4-start, wave-4-complete, wave-5-start, wave-5-complete, wave-6-start, wave-6-complete
 
 **Status**: ✅ All 6 Waves Complete - Production Ready
 
