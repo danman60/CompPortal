@@ -8,6 +8,7 @@ import { getTenantData } from '@/lib/tenant-context';
 import Script from 'next/script';
 import Footer from '@/components/Footer';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Analytics } from '@vercel/analytics/react';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -87,6 +88,7 @@ export default async function RootLayout({
             </TRPCProvider>
           </TenantThemeProvider>
         </ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   );
