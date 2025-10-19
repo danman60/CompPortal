@@ -12,14 +12,13 @@ type Props = {
 
 export default async function InvoiceDetailPage({ params }: Props) {
   const supabase = await createServerSupabaseClient();
+  const { studioId, competitionId } = await params;
 
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
     redirect('/login');
   }
-
-  const { studioId, competitionId } = await params;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
