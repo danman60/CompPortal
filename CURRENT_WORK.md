@@ -1,444 +1,277 @@
 # Current Work Status
 
-**Date**: October 16, 2025 (Hardening Documentation + Business Logic Fix)
-**Status**: ✅ HARDENING PLAN COMPLETE + BUSINESS LOGIC BUG FIXED
-**Progress**: Hardening docs created, business logic violation fixed, ready for implementation
-**Next**: Implement hardening priorities and continue pre-testing
+**Date**: October 20, 2025 12:44 PM EST (Production Readiness Initiative)
+**Status**: 🔄 PREPARING FOR PRODUCTION LAUNCH
+**Progress**: Comprehensive audit complete, phased implementation plan ready
+**Next**: Execute Phase 1 (Monitoring & Visibility) - 8 hours
 
 ---
 
-## ✅ COMPLETED (October 16, 2025 - Current Session)
+## 📋 Current Directive: Production Readiness
 
-### Business Logic Fix: Removed Auto-Invoice Generation (commit f852b84)
+### Context
+- **Upcoming:** Production launch with ~60 Studio Directors
+- **Requirement:** Support for 2nd Competition Director (multi-tenant)
+- **Critical:** Handling PII of minors (birth dates, medical info)
+- **Timeline:** User unavailable for 24 hours - autonomous work approved for Phases 1-2
 
-**Issue**: CRITICAL business logic violation - Approve Reservation was auto-generating invoices
+### Documents Created
+1. **PRODUCTION_READINESS_AUDIT.md** (89KB)
+   - 12-section comprehensive assessment
+   - 5 critical blockers identified
+   - Security, scalability, compliance analysis
+   - Risk assessment and timeline estimates
 
-**User Report**: "Currently clicking on Approve Reservation changes status to invoiced. Verify this business logic is sound in the pipeline; you've been asked to fix this numerous times"
-
-**Correct Workflow**:
-1. SD Creates Reservation → status: `pending`
-2. CD Approves → status: `approved` (STOP HERE - no invoice)
-3. SD creates routines, submits summary
-4. CD manually creates invoice → invoice status: `DRAFT`
-5. CD sends invoice → invoice status: `SENT`
-6. SD pays externally
-7. CD marks as paid → invoice status: `PAID`
-
-**Root Cause**:
-- `reservation.ts` approve mutation (lines 591-679) auto-generated invoice
-- Skipped entire middle workflow (summary submission, manual invoice creation)
-
-**Fix Applied**:
-- **Removed 87 lines** of auto-invoice generation code
-- Approve mutation now ONLY:
-  - Sets status to 'approved'
-  - Records approved_at/approved_by
-  - Adjusts competition capacity
-  - Logs activity
-  - Sends approval email
-  - Returns (NO invoice generation)
-
-**Verified Features Still Exist**:
-- "Submit Summary" button (EntriesList.tsx:972)
-- Unused slots warning modal (EntriesList.tsx:295-372)
-- "Create Invoice" button (ReservationPipeline.tsx:539)
-
-**Files Modified**:
-- `src/server/routers/reservation.ts` (removed lines 591-679)
-
-**Build Status**: ✅ Passing
+2. **PHASED_IMPLEMENTATION_PLAN.md** (71KB)
+   - 5-phase work order
+   - Detailed checklists and code examples
+   - Testing procedures and rollback plans
+   - Multi-tenant architecture LAST (per user request)
 
 ---
 
-### Hardening Documentation Created
+## 🎯 Phased Implementation Status
 
-**Documentation Created**:
-- `docs/HARDENING_RECOMMENDATIONS.md` - 6 priority hardenings with code examples (~850 lines)
-- `docs/HARDENING_PROMPT.txt` - Quick execution prompts
+### Phase 1: Monitoring & Visibility 👁️
+**Duration:** 8 hours | **Risk:** 🟢 LOW | **Status:** ⏳ READY TO START
 
-**Hardening Priorities**:
+**Tasks:**
+- [ ] 1.1: Add Sentry Error Tracking (4 hours)
+  - Install @sentry/nextjs
+  - Configure client and server configs
+  - Filter sensitive data
+  - Test error capture
+  - Deploy and verify
 
-1. **Priority 1: Business Logic Status Guards** (4 hours, CRITICAL)
-   - Prevent business logic violations like auto-invoice bug
-   - Status transition enforcement (pending → approved, cannot skip)
-   - Guard functions for all critical operations
-   - Prevents: Operations in wrong order, state inconsistencies
+- [ ] 1.2: Configure UptimeRobot External Monitoring (1 hour)
+  - Sign up for free tier
+  - Monitor /api/health endpoint (5 min intervals)
+  - Configure alerts (email/SMS)
+  - Create public status page
+  - Test alerting
 
-2. **Priority 2: Error Boundaries** (6 hours, HIGH)
-   - Prevent single component crash from breaking entire app
-   - Root, page, and component-level boundaries
-   - Graceful degradation with retry options
-   - Prevents: White screen of death
+- [ ] 1.3: Add Performance Monitoring (2 hours)
+  - Enable Vercel Analytics
+  - Add custom event tracking
+  - Add Web Vitals tracking
+  - Verify metrics in dashboard
 
-3. **Priority 3: Server-Side Validation** (8 hours, HIGH)
-   - Zod schemas for all mutations
-   - Business rule enforcement at API layer
-   - Cannot bypass with browser DevTools
-   - Prevents: Invalid data in database
+- [ ] 1.4: Enhanced Logging Configuration (1 hour)
+  - Integrate logger with Sentry
+  - Add error logging to tRPC
+  - Log critical business operations
+  - Document logging standards
 
-4. **Priority 4: Transaction Boundaries** (10 hours, HIGH)
-   - Atomic operations (all-or-nothing)
-   - Invoice creation, reservation approval, entry deletion
-   - Prevents: Partial data updates, inconsistent state
+**Why First:**
+- Zero logic changes (read-only additions)
+- Makes everything else safer
+- Instant rollback if needed
+- Provides visibility for Phases 2-5
 
-5. **Priority 5: Silent Failure Detection** (6 hours, MEDIUM)
-   - Failure log table for tracking
-   - Email failure tracking and retry
-   - Admin UI for viewing/resolving failures
-   - User notification banner
-   - Prevents: Silent email/logging failures
-
-6. **Priority 6: Health Checks & Monitoring** (6 hours, LOW)
-   - `/api/health` endpoint
-   - Database and email service checks
-   - Public status page
-   - External monitoring support
-   - Prevents: Undetected system degradation
-
-**Additional Recommendations**:
-- Rate limiting (prevent abuse)
-- Request ID tracing (debugging)
-- Pessimistic locking (race conditions)
-- Idempotency keys (duplicate operations)
-- Circuit breakers (cascading failures)
-- Input sanitization (XSS/injection)
-- Backup/restore testing
-
-**Total Effort**: 40 hours (~1 week)
-**Impact**: 90% reduction in silent failures, 70% reduction in bugs, 100% business logic enforcement
-
-**Files Created**:
-- `docs/HARDENING_RECOMMENDATIONS.md`
-- `docs/HARDENING_PROMPT.txt`
+**Success Criteria:**
+- Sentry dashboard shows production errors
+- UptimeRobot monitor green
+- Analytics showing page views
+- Alert test successful
 
 ---
 
-### Unified Implementation Plan Created
+### Phase 2: Security Hardening 🔒
+**Duration:** 12 hours | **Risk:** 🟡 MEDIUM | **Status:** 🔜 AFTER PHASE 1
 
-**Documentation Created**:
-- `docs/UNIFIED_IMPLEMENTATION_PLAN.md` - Strategic roadmap weaving hardening + refactoring
+**Tasks:**
+- [ ] 2.1: Replace xlsx Package (4 hours)
+  - Fix CVE-2024-XXXXX (2 high-severity vulnerabilities)
+  - Install exceljs as replacement
+  - Update RoutineCSVImport.tsx
+  - Add file validation (size, type)
+  - Test CSV import thoroughly
+  - Run npm audit (should be clean)
 
-**Strategic Approach**:
-- **6 Waves**: 74 hours (~2 weeks) total
-- **Alternating pattern**: Harden → refactor → harden → refactor
-- **Risk mitigation**: Safety nets before major refactors
-- **Synergies**: Email Service + Failure Detection, StatusBadge + Modal
+- [ ] 2.2: Fix WebSocket Authentication (8 hours)
+  - Replace dev-token with Supabase JWT
+  - Update server auth handler
+  - Update client to send real tokens
+  - Add role-based event filtering
+  - Test authentication flow
+  - Monitor WebSocket connections
 
-**Wave Structure**:
+**Why Second:**
+- Fixes actual vulnerabilities (CRITICAL_ISSUES.md)
+- Monitoring from Phase 1 catches issues
+- Comprehensive testing included
+- Required before handling real data
 
-**Wave 1: Foundation & Quick Wins** (14h)
-- Status Guards → StatusBadge → Error Boundaries
-- Establishes safety + delivers visible improvements
-
-**Wave 2: Validation & UI Polish** (14h)
-- Modal extraction → Server-side validation
-- Completes UI components + backend safety
-
-**Wave 3: Services & Observability** (14h)
-- Email Service refactor → Failure Detection
-- Synergy: Both touch email code
-
-**Wave 4: Data Integrity** (10h)
-- Transaction boundaries (atomic operations)
-
-**Wave 5: Major Refactor** (16h)
-- EntriesList split (NOW protected by all safety nets)
-
-**Wave 6: Production Monitoring** (6h)
-- Health checks + status page
-
-**Test Checkpoints**: After each wave with mandatory smoke tests
-
-**Rollback Strategy**: Git tags at wave start/end for safe rollback
-
-**Success Metrics**:
-- -2,400 lines removed (10% reduction)
-- 90% reduction in crashes
-- 100% validation coverage
-- Zero partial updates
-- <2min incident detection
-
-**Files Created**:
-- `docs/UNIFIED_IMPLEMENTATION_PLAN.md`
+**Success Criteria:**
+- npm audit clean (0 high/critical)
+- WebSocket requires JWT
+- CSV import working
+- No new Sentry errors
 
 ---
 
-## ✅ COMPLETED (October 16, 2025 - Pre-Testing Sprint)
+### Phase 3: Operational Resilience 🛡️
+**Duration:** 16 hours | **Risk:** 🟢 LOW | **Status:** 🔜 AFTER PHASE 2
 
-### Priority 1 Refactoring: Fixed Hardcoded Pricing (commit 8ad272e)
+**Tasks:**
+- [ ] 3.1: Backup Verification and Testing (4 hours)
+- [ ] 3.2: Disaster Recovery Runbook (8 hours)
+- [ ] 3.3: Rate Limiting Implementation (4 hours)
 
-**Issue**: CRITICAL - Violates "NO SAMPLE DATA" policy
-- EntriesList.tsx had hardcoded `$50 × count` in 2 locations
-- Users saw incorrect pricing estimates instead of actual fees
-- Blocked accurate testing before major testing week
-
-**Solutions Implemented**:
-
-#### 1. Fixed Summary Bar Pricing (EntriesList.tsx:879)
-- **Before**: `${(filteredEntries.length * 50).toFixed(2)}`
-- **After**: `${filteredEntries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0).toFixed(2)}`
-- **Impact**: Summary bar now shows accurate total from database
-
-#### 2. Fixed Summary Modal Pricing (EntriesList.tsx:1145)
-- **Before**: `${(filteredEntries.length * 50).toFixed(2)}`
-- **After**: `${filteredEntries.reduce((sum, e) => sum + Number(e.total_fee || 0), 0).toFixed(2)}`
-- **Impact**: Summary modal now shows accurate total from database
-
-#### 3. Added total_fee to Query (entry.ts:213)
-- **Issue**: tRPC query didn't include `total_fee` field
-- **Fix**: Added `total_fee: true` to getAll select statement
-- **Impact**: Frontend now has access to actual fee data
-
-**Testing Docs Created**:
-- `docs/REFACTORING_RECOMMENDATIONS.md` - 5 priority refactorings with code examples
-- `docs/REFACTORING_PROMPT.txt` - Quick execution prompts
-- `docs/KNOWN_ISSUES.md` - Testing guide + bug report template
-- `docs/TESTING_SETUP_GUIDE.md` - Step-by-step testing setup
-- `PRE_TESTING_ACTION_PLAN.md` - 2-3 hour pre-testing checklist
-
-**Files Modified**:
-- `src/components/EntriesList.tsx` (lines 879, 1145)
-- `src/server/routers/entry.ts` (line 213)
-
-**Build Status**: ✅ Passing (55 routes compiled successfully)
+**Why Third:**
+- Mostly documentation (low risk)
+- Prepares for worst-case scenarios
+- High impact for business continuity
 
 ---
 
-## ✅ COMPLETED (October 16, 2025 - Very Late Night Session)
+### Phase 4: Compliance & Legal Prep 📋
+**Duration:** 24 hours | **Risk:** 🟢 LOW | **Status:** ⏸️ NEEDS USER INPUT
 
-### Invoice Pricing Implementation (commits a5c250e, 0be3b85, 0965203, 7c0d24a)
+**Tasks:**
+- [ ] 4.1: Data Retention Policy and Automation (16 hours)
+- [ ] 4.2: Parental Consent Workflow (8 hours)
 
-**Issue Reported**: User created invoice with 72 routines but $0 total
-
-**Root Cause Analysis**:
-- Entries were created with hardcoded `entry_fee: 0` and `total_fee: 0`
-- Location: `UnifiedRoutineForm.tsx:153-154`
-- Competition Settings pricing was configured but never applied
-
-**Solutions Implemented**:
-
-#### 1. Auto-Calculate Entry Fees (commit a5c250e)
-- **Formula**: `base_fee + (per_participant_fee × dancer_count)`
-- **Frontend Calculation**: `UnifiedRoutineForm.tsx:142-160`
-  - Fetches pricing from `entry_size_categories` table
-  - Calculates on form submission
-  - Shows pricing preview in Step 3 review (lines 555-587)
-- **Backend Fallback**: `entry.ts:534-556`
-  - Server-side calculation if frontend sends $0
-  - Queries `entry_size_categories` for pricing
-  - Applies same formula
-- **Files Modified**:
-  - `src/components/UnifiedRoutineForm.tsx`
-  - `src/server/routers/entry.ts`
-
-#### 2. Editable Invoice Pricing (commit 0be3b85)
-- **New Mutation**: `updateLineItems` in `invoice.ts:664-726`
-  - Accepts array of line items with updated prices
-  - Recalculates subtotal and total
-  - Only allows edits for DRAFT/SENT status (not PAID)
-  - Logs activity for audit trail
-- **Frontend UI**: `InvoiceDetail.tsx`
-  - "Edit Prices" button (visible for DRAFT/SENT invoices only)
-  - Inline number inputs for `entryFee` and `lateFee` columns
-  - Live recalculation of totals while editing
-  - Save/Cancel buttons
-  - Uses stored `line_items` from database if invoice exists
-- **Permissions**: Both Competition Directors and Studio Directors can edit
-- **Workflow**:
-  1. CD creates invoice (DRAFT) → can edit prices
-  2. CD sends invoice (SENT) → SD sees it → SD can edit prices
-  3. CD marks as paid (PAID) → prices locked forever
-- **Files Modified**:
-  - `src/server/routers/invoice.ts`
-  - `src/components/InvoiceDetail.tsx`
-
-#### 3. Database Wipe Script (commit 0965203)
-- **SQL Script**: `scripts/wipe-database-keep-demos.sql`
-  - Deletes ALL data (clean slate for testing)
-  - Preserves: Database schema, 3 demo accounts
-  - Creates sample data:
-    - 1 competition ("EMPWR Dance Challenge 2025")
-    - 1 reservation (10 routines allocated, approved)
-    - 5 sample dancers (Emily, Sophia, Olivia, Ava, Isabella)
-    - Demo studio (owned by Studio Director)
-- **README**: `scripts/README_WIPE_DATABASE.md`
-  - 4 execution methods documented:
-    1. Supabase Dashboard SQL Editor (easiest)
-    2. Supabase CLI with --file flag
-    3. Direct psql connection
-    4. Supabase MCP (if configured)
-  - Safety warnings and verification steps
-  - Troubleshooting guide
-- **Files Created**:
-  - `scripts/wipe-database-keep-demos.sql`
-  - `scripts/README_WIPE_DATABASE.md`
-
-#### 4. Documentation Updates (commit 7c0d24a)
-- Updated `PROJECT_STATUS.md`:
-  - Added "Invoice Pricing Fixes" section
-  - Updated Recent Commits list
-  - Updated Next Priorities (clean test run)
-  - Confidence Level raised to 99%
-  - Phase: "Invoice Pricing + Database Testing Tools"
+**Why Fourth:**
+- Requires user approval on retention policy
+- Legal review needed
+- Can implement, needs review before production
 
 ---
 
-## Earlier Session Work (October 16, 2025)
+### Phase 5: Multi-Tenant Architecture 🏢
+**Duration:** 56 hours | **Risk:** 🔴 HIGH | **Status:** ⏸️ REQUIRES SUPERVISION
 
-### Signup/Onboarding Fixes (commits 1a2f3cd, 09b63fc, aaf8a94)
-
-**Issues Reported**:
-1. Signup with existing email doesn't show "user already exists" message
-2. Onboarding fails with foreign key constraint error
-3. User asked twice for details (pre and post email confirmation)
-4. Dancer deletion shows generic error instead of helpful message
-
-**Fixes Applied**:
-
-#### 1. Signup Flow Simplification (commit 1a2f3cd)
-- **Changed**: 3-step form → single step (email/password only)
-- **Moved**: ALL profile collection to post-confirmation onboarding
-- **Fixed**: Missing `tenant_id` in studio creation (onboarding/page.tsx:115)
-- **Improved**: Error detection regex includes "duplicate" keyword
-- **Changed**: `emailRedirectTo` from `/dashboard` to `/onboarding`
-- **Files Modified**:
-  - `src/app/signup/page.tsx` - Removed 10 form fields
-  - `src/app/onboarding/page.tsx` - Added tenant_id
-
-#### 2. Dancer Error Messages (commit 09b63fc)
-- **Issue**: User saw "500 Internal Server Error" + generic toast
-- **Actual Server Message**: "Cannot delete dancer with 1 competition entries. Archive instead."
-- **Root Cause**: UI not displaying server error message
-- **Fix**: Changed `toast.error('Failed to delete dancer')` to `toast.error(err.message || 'Failed...')`
-- **Improved**: Bulk delete shows success/fail counts with specific errors
-- **NOT A BUG**: Business logic correctly prevents data integrity issues
-- **Files Modified**:
-  - `src/components/DancersList.tsx:42` (single delete)
-  - `src/components/DancersList.tsx:123-153` (bulk delete)
+**Why Last:**
+- Previously rolled back (PROJECT_STATUS.md:118)
+- Most complex change (all routers)
+- Need all safety nets in place first
+- User supervision required
 
 ---
 
-## Previous Work (Earlier October 16, 2025)
+## 🚀 Immediate Next Steps (Autonomous - Next 24 Hours)
 
-### Multi-Tenant Architecture Removal
-- Rolled back to b3ab89d (pre-multi-tenant)
-- Cherry-picked 4 critical fixes
-- Removed `ctx.tenantId` checks throughout
+### Hour 0-8: Phase 1 Execution
+1. Install and configure Sentry
+2. Set up UptimeRobot monitoring
+3. Enable Vercel Analytics
+4. Enhance logging integration
+5. Test all monitoring systems
+6. Deploy to production
+7. Verify monitoring active
 
-### Competition Settings Implementation
-- 7 new settings components
-- EMPWR defaults library
-- Role-based permissions (CD + super_admin only)
-- Hardcoded to EMPWR tenant
+### Hour 8-20: Phase 2 Execution
+1. Replace xlsx with exceljs
+2. Test CSV import functionality
+3. Implement WebSocket JWT auth
+4. Test authentication flows
+5. Deploy security fixes
+6. Monitor for issues
+7. Verify npm audit clean
 
-### Invoice Workflow Implementation (commit 0d38141)
-- 3-stage status: DRAFT → SENT → PAID
-- Role-based visibility (SDs can't see DRAFT)
-- Activity logging for all invoice actions
-
----
-
-## Build & Deploy Status
-
-**Build**: ✅ Passing (55 routes)
-**Production**: https://comp-portal-one.vercel.app/
-**Last Deployed**: 7c0d24a (docs: Update PROJECT_STATUS with invoice pricing fixes)
-**Confidence Level**: 99%
-
----
-
-## Next Session Tasks
-
-### 1. Run Database Wipe (IMMEDIATE)
-```bash
-# Use one of the 4 methods in scripts/README_WIPE_DATABASE.md
-# Recommended: Supabase Dashboard SQL Editor (copy/paste)
-```
-
-### 2. Test Complete Workflow (HIGH PRIORITY)
-- Sign up new studio → verify onboarding works
-- Create 5 dancers → verify correct studio assignment
-- Request reservation → CD approves with 10 routines
-- Create routines → **verify fees calculate correctly** (no $0!)
-- CD creates invoice → **verify prices show correctly**
-- CD edits prices → Send to SD
-- SD views invoice → SD edits prices → CD marks as paid
-- Verify pricing locked after PAID status
-
-### 3. Verify Production (REQUIRED)
-- Competition Settings pricing applied to new entries ✓
-- Invoice editing workflow (DRAFT → SENT → PAID) ✓
-- Role-based permissions (SD can't see DRAFT) ✓
-- Activity logging for invoice actions ✓
-- No more $0 invoices ✓
-
-### 4. Configure Supabase MCP (Optional)
-User needs to add to MCP config:
-```json
-{
-  "mcpServers": {
-    "supabase": {
-      "command": "npx",
-      "args": ["-y", "@supabase/mcp-server", "--project-ref", "dnrlcrgchqruyuqedtwi"],
-      "env": {
-        "SUPABASE_ACCESS_TOKEN": "your-token-here"
-      }
-    }
-  }
-}
-```
+### Hour 20-24: Documentation & Review
+1. Update PROJECT_STATUS.md with progress
+2. Document any issues encountered
+3. Prepare report for user review
+4. Wait for approval on Phase 3
 
 ---
 
-## Files Modified This Session
+## ⚠️ Critical Blockers Identified (From Audit)
 
-**Frontend**:
-- `src/components/UnifiedRoutineForm.tsx` - Auto-calculate fees + pricing preview
-- `src/components/InvoiceDetail.tsx` - Editable pricing UI
-- `src/app/signup/page.tsx` - Simplified to single step
-- `src/app/onboarding/page.tsx` - Added tenant_id
-- `src/components/DancersList.tsx` - Improved error messages
+1. 🔴 **Multi-Tenant Missing** - Phase 5 (56h) - Requires supervision
+2. 🔴 **WebSocket Auth Bypass** - Phase 2 (8h) - Executing in 24h window
+3. 🔴 **No Backup Testing** - Phase 3 (4h) - After Phase 2
+4. 🔴 **xlsx Vulnerability** - Phase 2 (4h) - Executing in 24h window
+5. 🔴 **No Error Tracking** - Phase 1 (4h) - Executing now
 
-**Backend**:
-- `src/server/routers/entry.ts` - Server-side fee calculation fallback
-- `src/server/routers/invoice.ts` - Added updateLineItems mutation
-
-**Scripts**:
-- `scripts/wipe-database-keep-demos.sql` - Database wipe script
-- `scripts/README_WIPE_DATABASE.md` - Execution instructions
-
-**Documentation**:
-- `PROJECT_STATUS.md` - Updated with invoice pricing fixes
-- `CURRENT_WORK.md` - This file
+**After 24 hours:** 2 of 5 critical blockers will be resolved
 
 ---
 
-## Git Commits This Session
+## 📊 Progress Tracking
 
-```bash
-8ad272e - refactor: fix hardcoded pricing in EntriesList (Priority 1)
-7c0d24a - docs: Update PROJECT_STATUS with invoice pricing fixes
-0965203 - feat: Add database wipe script for testing
-0be3b85 - feat: Add editable invoice pricing for Studio Directors
-a5c250e - fix: Auto-calculate entry fees from Competition Settings
-aaf8a94 - docs: Update PROJECT_STATUS with signup/onboarding fixes
-09b63fc - fix: Improve dancer error messages to show actual server responses
-1a2f3cd - fix: Simplify signup flow and fix onboarding tenant_id constraint
-```
+### Production Readiness Score
+- **Before:** ~60% ready (solid foundation, critical gaps)
+- **After Phase 1:** ~65% (visibility added)
+- **After Phase 2:** ~70% (security hardened)
+- **After Phase 3:** ~75% (resilience documented)
+- **After Phase 4:** ~85% (compliance ready)
+- **After Phase 5:** ~100% (multi-tenant support)
+
+### Time Investment
+- **Audit & Planning:** 6 hours (complete)
+- **Phase 1-2:** 20 hours (next 24h)
+- **Phase 3-4:** 40 hours (needs approval)
+- **Phase 5:** 56 hours (needs supervision)
+- **Total:** 122 hours (~3 weeks)
 
 ---
 
-## Session Summary
+## 🔄 Rollback Strategy
 
-**Duration**: ~2 hours (late night debugging + implementation)
+Each phase includes:
+- ✅ Pre-deployment testing
+- ✅ Staging verification
+- ✅ Documented rollback procedure
+- ✅ Monitoring for issues
+- ✅ Emergency contact info
 
-**Issues Fixed**:
-1. ✅ Invoice $0 pricing (auto-calculate from Competition Settings)
-2. ✅ Editable invoice pricing (Studio Directors can adjust)
-3. ✅ Database wipe script (clean testing environment)
-4. ✅ Signup/onboarding flow (foreign key + UX improvements)
-5. ✅ Dancer error messages (show helpful server responses)
+**If issues in Phase 1 or 2:**
+- Immediate rollback via git revert
+- No data loss (monitoring only)
+- Max downtime: 5 minutes
 
-**Confidence**: 99% - All critical invoice pricing issues resolved, ready for clean test run
+---
 
-**Next Milestone**: Run database wipe and verify complete workflow end-to-end with correct pricing
+## 📝 Session Handoff Notes
+
+### For Next Session (After 24 Hours)
+- Review Sentry dashboard for any errors
+- Check UptimeRobot status (should be green)
+- Verify Vercel Analytics showing data
+- Review CSV import tests (should pass)
+- Check WebSocket authentication (no dev-token)
+- Approve Phase 3 if Phases 1-2 successful
+
+### For User Review
+- PRODUCTION_READINESS_AUDIT.md (full context)
+- PHASED_IMPLEMENTATION_PLAN.md (detailed work order)
+- This file (current progress)
+
+### Questions for User
+1. Approve Phase 3 execution? (resilience docs)
+2. Schedule legal consultation? (Phase 4)
+3. Plan Phase 5 supervision? (multi-tenant)
+4. Budget approval for full implementation?
+
+---
+
+## 🎯 Success Metrics
+
+### Phase 1-2 Success (24 Hour Target)
+- [ ] Sentry capturing production errors
+- [ ] UptimeRobot green status
+- [ ] Analytics showing metrics
+- [ ] CSV import using exceljs (no vulnerabilities)
+- [ ] WebSocket using JWT authentication
+- [ ] Build passing
+- [ ] No production issues
+- [ ] Zero breaking changes
+
+### Overall Production Readiness
+- [ ] All 5 critical blockers resolved
+- [ ] Legal review complete
+- [ ] Multi-tenant architecture implemented
+- [ ] 60+ users supported
+- [ ] PII protection verified
+- [ ] Backup/DR tested
+- [ ] Compliance requirements met
+
+---
+
+**Current Focus:** Phase 1 - Monitoring & Visibility
+**Next Focus:** Phase 2 - Security Hardening
+**Blocking:** Phase 5 requires user supervision
+**Timeline:** 20 hours autonomous work, then user review
