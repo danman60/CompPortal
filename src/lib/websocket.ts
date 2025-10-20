@@ -6,6 +6,7 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { logger } from './logger';
+import { verifyWebSocketToken, isTokenExpired } from './websocket-auth';
 
 // Import shared types
 import {
@@ -93,11 +94,37 @@ export class WebSocketManager {
       // Authenticate connection
       socket.on('authenticate', async (data: { userId: string; competitionId: string; role: string; token: string }) => {
         try {
-          // TODO: Verify JWT token (requires auth architecture decision)
-          // For now, trust the client (add authentication in production)
+          // Verify JWT token
+          const payload = await verifyWebSocketToken(data.token);
+
+          if (!payload) {
+            logger.warn('WebSocket authentication failed: Invalid token', { userId: data.userId });
+            socket.emit('error', { message: 'Invalid authentication token' });
+            socket.disconnect();
+            return;
+          }
+
+          // Check if token is expired
+          if (isTokenExpired(payload)) {
+            logger.warn('WebSocket authentication failed: Token expired', { userId: data.userId });
+            socket.emit('error', { message: 'Authentication token expired' });
+            socket.disconnect();
+            return;
+          }
+
+          // Verify user ID matches token
+          if (payload.sub !== data.userId) {
+            logger.warn('WebSocket authentication failed: User ID mismatch', {
+              tokenUserId: payload.sub,
+              claimedUserId: data.userId,
+            });
+            socket.emit('error', { message: 'User ID mismatch' });
+            socket.disconnect();
+            return;
+          }
 
           this.connectedUsers.set(socket.id, {
-            userId: data.userId,
+            userId: payload.sub, // Use verified user ID from token
             role: data.role,
             competitionId: data.competitionId,
           });

@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { WSEvent, WSPayload } from '@/lib/websocket-types';
 import { logger } from '@/lib/logger';
+import { createClient } from '@/lib/supabase';
 
 export interface UseWebSocketOptions {
   competitionId: string;
@@ -60,17 +61,43 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     setSocket(newSocket);
 
     // Connection handlers
-    newSocket.on('connect', () => {
+    newSocket.on('connect', async () => {
       console.log('✅ WebSocket connected');
       setConnected(true);
       setError(null);
 
-      // Authenticate
+      // Get JWT token from Supabase session
+      let token = options.token;
+
+      if (!token) {
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (session?.access_token) {
+            token = session.access_token;
+          } else {
+            logger.warn('No Supabase session found for WebSocket authentication');
+            setError('Authentication required');
+            newSocket.disconnect();
+            return;
+          }
+        } catch (err) {
+          logger.error('Failed to get Supabase session', {
+            error: err instanceof Error ? err : new Error(String(err)),
+          });
+          setError('Authentication failed');
+          newSocket.disconnect();
+          return;
+        }
+      }
+
+      // Authenticate with verified JWT token
       newSocket.emit('authenticate', {
         userId: options.userId,
         competitionId: options.competitionId,
         role: options.role,
-        token: options.token || 'dev-token', // TODO: Use real JWT
+        token,
       });
 
       options.onConnect?.();
