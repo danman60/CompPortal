@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
+import { logger } from '@/lib/logger';
 import {
   exportUserData,
   deleteUserData,
@@ -200,7 +201,7 @@ export const gdprRouter = router({
           `;
         }
       } catch (error) {
-        console.warn('GDPR audit log query failed');
+        logger.warn('GDPR audit log query failed', { error: error instanceof Error ? error : new Error(String(error)) });
         return { logs: [], count: 0 };
       }
 
@@ -271,7 +272,7 @@ export const gdprRouter = router({
         recent_deletions: Number(recentDeletionStats[0]?.count || 0),
       };
     } catch (error) {
-      console.warn('GDPR statistics query failed');
+      logger.warn('GDPR statistics query failed', { error: error instanceof Error ? error : new Error(String(error)) });
     }
 
     return stats;

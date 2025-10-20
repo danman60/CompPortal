@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import nodemailer from 'nodemailer';
+import { logger } from '@/lib/logger';
 
 /**
  * Health check endpoint for monitoring and load balancers
@@ -34,7 +35,7 @@ export async function GET() {
     await prisma.$queryRaw`SELECT 1`;
     checks.checks.database = 'healthy';
   } catch (error) {
-    console.error('Health check database error:', error);
+    logger.error('Health check database error', { error: error instanceof Error ? error : new Error(String(error)) });
     checks.status = 'unhealthy';
     checks.checks.database = 'unhealthy';
   }
@@ -57,7 +58,7 @@ export async function GET() {
       checks.checks.email = 'healthy';
     }
   } catch (error) {
-    console.error('Health check email error:', error);
+    logger.error('Health check email error', { error: error instanceof Error ? error : new Error(String(error)) });
     // Email failures are logged but don't mark system as unhealthy
     // since email is non-critical for core app functionality
     checks.checks.email = 'degraded';
@@ -89,7 +90,7 @@ export async function HEAD() {
     await prisma.$queryRaw`SELECT 1`;
     return new NextResponse(null, { status: 200 });
   } catch (error) {
-    console.error('Health check database error:', error);
+    logger.error('Health check database error', { error: error instanceof Error ? error : new Error(String(error)) });
     return new NextResponse(null, { status: 503 });
   }
 }

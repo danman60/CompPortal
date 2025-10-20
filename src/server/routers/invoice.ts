@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { guardInvoiceStatus } from '@/lib/guards/statusGuards';
+import { logger } from '@/lib/logger';
 
 export const invoiceRouter = router({
   // Get invoice by studio and competition (returns existing invoice or null)
@@ -460,7 +461,11 @@ export const invoiceRouter = router({
 
       // Send reminder email (basic notification for now)
       // In production, this would use email router with proper template
-      console.log(`Invoice reminder sent to ${studio.contact_email} for ${competition.name} ${competition.year} - $${totalAmount.toFixed(2)}`);
+      logger.info('Invoice reminder sent', {
+        email: studio.contact_email,
+        competition: `${competition.name} ${competition.year}`,
+        amount: totalAmount.toFixed(2),
+      });
 
     return { success: true, email: studio.contact_email };
     }),
@@ -572,7 +577,7 @@ export const invoiceRouter = router({
           },
         });
       } catch (e) {
-        console.error('Failed to log activity (invoice.create):', e);
+        logger.error('Failed to log activity (invoice.create)', { error: e instanceof Error ? e : new Error(String(e)) });
       }
 
       return { invoiceId: invoice.id };
@@ -617,7 +622,7 @@ export const invoiceRouter = router({
           },
         });
       } catch (e) {
-        console.error('Failed to log activity (invoice.send):', e);
+        logger.error('Failed to log activity (invoice.send)', { error: e instanceof Error ? e : new Error(String(e)) });
       }
 
       return { success: true };
@@ -683,7 +688,7 @@ export const invoiceRouter = router({
           },
         });
       } catch (e) {
-        console.error('Failed to log activity (invoice.markPaid):', e);
+        logger.error('Failed to log activity (invoice.markPaid)', { error: e instanceof Error ? e : new Error(String(e)) });
       }
 
       return { success: true };
@@ -748,7 +753,7 @@ export const invoiceRouter = router({
           },
         });
       } catch (e) {
-        console.error('Failed to log activity (invoice.updateLineItems):', e);
+        logger.error('Failed to log activity (invoice.updateLineItems)', { error: e instanceof Error ? e : new Error(String(e)) });
       }
 
       return { success: true };

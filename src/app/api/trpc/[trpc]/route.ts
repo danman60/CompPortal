@@ -2,6 +2,7 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter } from '@/server/routers/_app';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 import type { Context } from '@/server/trpc';
 import type { TenantData } from '@/lib/tenant-context';
 
@@ -18,8 +19,8 @@ const handler = async (req: Request) => {
       if (tenantDataStr) {
         try {
           tenantData = JSON.parse(tenantDataStr) as TenantData;
-        } catch {
-          console.warn('Failed to parse tenant data from headers');
+        } catch (error) {
+          logger.warn('Failed to parse tenant data from headers', { error: error instanceof Error ? error : new Error(String(error)) });
         }
       }
 
@@ -53,7 +54,7 @@ const handler = async (req: Request) => {
         tenantData,
       };
     } catch (error) {
-      console.error('Error creating tRPC context:', error);
+      logger.error('Error creating tRPC context', { error: error instanceof Error ? error : new Error(String(error)) });
       return { userId: null, userRole: null, studioId: null, tenantId: null, tenantData: null };
     }
   };

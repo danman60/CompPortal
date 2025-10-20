@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { TRPCError } from '@trpc/server';
+import { logger } from '@/lib/logger';
 
 /**
  * Scoring router for judge tablet interface
@@ -33,7 +34,7 @@ async function calculateEntryScore(entryId: string): Promise<void> {
   });
 
   if (scores.length === 0) {
-    console.log(`No final scores found for entry ${entryId}`);
+    logger.info('No final scores found for entry', { entryId });
     return;
   }
 
@@ -41,7 +42,7 @@ async function calculateEntryScore(entryId: string): Promise<void> {
   const totalSum = scores.reduce((sum, s) => sum + Number(s.total_score), 0);
   const avgScore = totalSum / scores.length;
 
-  console.log(`Entry ${entryId}: ${scores.length} scores, average: ${avgScore}`);
+  logger.info('Entry score calculation', { entryId, scoreCount: scores.length, average: avgScore });
 
   // Get competition to check scoring ranges
   const entry = await prisma.competition_entries.findUnique({
@@ -93,7 +94,7 @@ async function calculateEntryScore(entryId: string): Promise<void> {
     }
   }
 
-  console.log(`Award level: ${awardLevel}`);
+  logger.info('Award level determined', { entryId, awardLevel });
 
   // Update entry with calculated score and award level
   await prisma.competition_entries.update({
@@ -152,7 +153,7 @@ async function calculateCategoryPlacements(
   // Assign placements
   for (let i = 0; i < entriesWithAvg.length; i++) {
     const placement = i + 1;
-    console.log(`Entry ${entriesWithAvg[i].id}: placement ${placement}, score ${entriesWithAvg[i].avgScore}`);
+    logger.info('Entry placement calculated', { entryId: entriesWithAvg[i].id, placement, score: entriesWithAvg[i].avgScore });
 
     await prisma.competition_entries.update({
       where: { id: entriesWithAvg[i].id },

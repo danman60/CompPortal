@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTenantData } from '@/lib/tenant-context';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/tenant
@@ -19,7 +20,7 @@ export async function GET() {
 
     return NextResponse.json(tenantData);
   } catch (error) {
-    console.error('Error fetching tenant data:', error);
+    logger.error('Error fetching tenant data', { error: error instanceof Error ? error : new Error(String(error)) });
     return NextResponse.json(
       { error: 'Failed to fetch tenant data' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error('Inbound email error', e);
+    logger.error('Inbound email error', { error: e instanceof Error ? e : new Error(String(e)) });
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

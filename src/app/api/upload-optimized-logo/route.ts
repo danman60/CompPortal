@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { optimizeImage, formatBytes, getCompressionRatio } from '@/lib/image-optimization';
+import { logger } from '@/lib/logger';
 
 /**
  * Server-side API route for optimized logo upload
@@ -71,9 +72,11 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
     const originalSize = buffer.length;
 
-    console.log(
-      `Optimizing logo for studio ${studioId}: ${file.name} (${formatBytes(originalSize)})`
-    );
+    logger.info('Optimizing logo for studio', {
+      studioId,
+      fileName: file.name,
+      originalSize: formatBytes(originalSize),
+    });
 
     // Optimize image with Sharp
     const optimized = await optimizeImage(buffer, {
@@ -84,16 +87,18 @@ export async function POST(request: NextRequest) {
     });
 
     const compressionRatio = getCompressionRatio(originalSize, optimized.size);
-    console.log(
-      `Optimized: ${formatBytes(optimized.size)} (saved ${compressionRatio}%, ${optimized.width}x${optimized.height})`
-    );
+    logger.info('Image optimization complete', {
+      optimizedSize: formatBytes(optimized.size),
+      savedPercentage: compressionRatio,
+      dimensions: `${optimized.width}x${optimized.height}`,
+    });
 
     // Upload to Supabase Storage
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase credentials missing');
+      logger.error('Supabase credentials missing', { error: new Error('Missing SUPABASE credentials') });
       return NextResponse.json(
         {
           success: false,
@@ -121,7 +126,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
+      logger.error('Supabase upload error', { error: error instanceof Error ? error : new Error(String(error)) });
       return NextResponse.json(
         {
           success: false,
@@ -134,7 +139,7 @@ export async function POST(request: NextRequest) {
     // Get public URL
     const { data: urlData } = supabase.storage.from(LOGOS_BUCKET).getPublicUrl(filePath);
 
-    console.log(`Upload complete: ${urlData.publicUrl}`);
+    logger.info('Upload complete', { publicUrl: urlData.publicUrl, filePath });
 
     return NextResponse.json(
       {
@@ -153,7 +158,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Upload API error:', error);
+    logger.error('Upload API error', { error: error instanceof Error ? error : new Error(String(error)) });
     return NextResponse.json(
       {
         success: false,

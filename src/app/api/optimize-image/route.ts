@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { optimizeImage, getCompressionRatio, formatBytes } from '@/lib/image-optimization';
+import { logger } from '@/lib/logger';
 
 /**
  * API route for server-side image optimization
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Image optimization API error:', error);
+    logger.error('Image optimization API error', { error: error instanceof Error ? error : new Error(String(error)) });
     return NextResponse.json(
       {
         error: 'Failed to optimize image',
