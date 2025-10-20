@@ -1,7 +1,7 @@
 # User Action Required List
 
 **Date**: October 20, 2025
-**Status**: Phase 1 Complete, Phase 2 In Progress
+**Status**: Phase 1 & 2 Complete
 
 ---
 
@@ -37,9 +37,31 @@
 
 ---
 
+### 2. Add SUPABASE_JWT_SECRET to Vercel (5 minutes)
+**Why**: WebSocket JWT authentication won't work without this secret
+**Priority**: HIGH (required for real-time features)
+**Guide**: See `.env.example` line 21
+
+**Steps**:
+1. Go to Supabase Dashboard: https://supabase.com/dashboard/project/[project-ref]/settings/api
+2. Scroll to "JWT Settings" section
+3. Copy the **JWT Secret** value
+4. Go to Vercel: https://vercel.com/[team]/compportal/settings/environment-variables
+5. Add new variable:
+   ```
+   SUPABASE_JWT_SECRET=your_jwt_secret_here
+   ```
+6. Select **Production** environment
+7. Click "Save"
+8. Redeploy will happen automatically
+
+**Result**: WebSocket connections authenticate using real JWT tokens (not 'dev-token')
+
+---
+
 ## ⚠️ RECOMMENDED ACTIONS (Improves Monitoring)
 
-### 2. Set Up UptimeRobot (15 minutes)
+### 3. Set Up UptimeRobot (15 minutes)
 **Why**: External uptime monitoring, <5 minute incident detection
 **Priority**: MEDIUM
 **Guide**: `docs/operations/MONITORING.md`
@@ -69,7 +91,7 @@
 
 ## ✅ VERIFICATION TASKS (After Phase 1-2 Deploy)
 
-### 3. Verify Vercel Analytics (5 minutes)
+### 4. Verify Vercel Analytics (5 minutes)
 **Why**: Confirm performance monitoring is active
 **Priority**: LOW (auto-active, just verify)
 
@@ -87,7 +109,7 @@
 
 ---
 
-### 4. Test Sentry Error Capture (5 minutes)
+### 5. Test Sentry Error Capture (5 minutes)
 **Why**: Verify errors are being tracked
 **Priority**: LOW (only after Sentry setup)
 
@@ -107,7 +129,7 @@
 
 ## 📋 PHASE 2 ACTIONS (No User Action Required)
 
-### 5. CSV Import Update (Testing Required Later)
+### 6. CSV Import Update (Testing Required Later)
 **What Changed**: Replaced `xlsx` package with `exceljs`
 **Why**: Fix 2 high-severity CVE vulnerabilities
 **User Action**: Test CSV import after Phase 2 deploys
@@ -122,7 +144,7 @@
 
 ---
 
-### 6. WebSocket Connection (Testing Required Later)
+### 7. WebSocket Connection (Testing Required Later)
 **What Changed**: JWT authentication replaces 'dev-token'
 **Why**: Security - dev token is insecure in production
 **User Action**: Verify real-time features work
@@ -143,13 +165,14 @@
 | # | Action | Priority | Time | Cost | Status |
 |---|--------|----------|------|------|--------|
 | 1 | Set up Sentry account | HIGH | 10 min | FREE | ⏸️ PENDING |
-| 2 | Set up UptimeRobot | MEDIUM | 15 min | FREE | ⏸️ PENDING |
-| 3 | Verify Vercel Analytics | LOW | 5 min | FREE | ⏸️ PENDING |
-| 4 | Test Sentry errors | LOW | 5 min | FREE | ⏸️ PENDING |
-| 5 | Test CSV import | LOW | 5 min | FREE | ⏸️ AFTER PHASE 2.1 |
-| 6 | Test WebSocket | LOW | 5 min | FREE | ⏸️ AFTER PHASE 2.2 |
+| 2 | Add SUPABASE_JWT_SECRET | HIGH | 5 min | FREE | ⏸️ PENDING |
+| 3 | Set up UptimeRobot | MEDIUM | 15 min | FREE | ⏸️ PENDING |
+| 4 | Verify Vercel Analytics | LOW | 5 min | FREE | ⏸️ PENDING |
+| 5 | Test Sentry errors | LOW | 5 min | FREE | ⏸️ PENDING |
+| 6 | Test CSV import | LOW | 5 min | FREE | ⏸️ AFTER PHASE 2.1 |
+| 7 | Test WebSocket | LOW | 5 min | FREE | ⏸️ AFTER PHASE 2.2 |
 
-**Total Time**: ~45 minutes (critical actions only: 10 min)
+**Total Time**: ~50 minutes (critical actions only: 15 min)
 
 ---
 
@@ -169,5 +192,5 @@
 
 ---
 
-**Last Updated**: October 20, 2025 - Phase 1 Complete
-**Next Update**: After Phase 2 Complete (~12 hours from now)
+**Last Updated**: October 20, 2025 - Phase 1 & 2 Complete
+**Next Update**: After Phase 3 Complete (or per user request)
