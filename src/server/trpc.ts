@@ -3,6 +3,7 @@ import superjson from 'superjson';
 import { ZodError } from 'zod';
 import { user_role } from '@prisma/client';
 import type { TenantData } from '@/lib/tenant-context';
+import { logger } from '@/lib/logger';
 
 /**
  * Context type for tRPC procedures
@@ -22,6 +23,19 @@ export interface Context {
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
+    // Log tRPC errors (but filter out validation errors)
+    const isValidationError = error.cause instanceof ZodError;
+    const isAuthError = error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN';
+
+    // Log non-validation, non-auth errors (actual bugs/issues)
+    if (!isValidationError && !isAuthError) {
+      logger.error('tRPC Error', {
+        error: error.cause instanceof Error ? error.cause : new Error(error.message),
+        code: error.code,
+        message: error.message,
+      });
+    }
+
     return {
       ...shape,
       data: {

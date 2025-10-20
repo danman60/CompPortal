@@ -8,7 +8,10 @@
  * - Request ID correlation
  * - Performance tracking
  * - Production-safe (no sensitive data)
+ * - Sentry integration for error tracking
  */
+
+import * as Sentry from '@sentry/nextjs';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -57,11 +60,68 @@ class Logger {
   }
 
   warn(message: string, context?: LogContext): void {
+    // Log to console (always)
     console.warn(this.formatMessage('warn', message, context));
+
+    // Send to Sentry (production only) with warning level
+    if (this.isProduction && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      Sentry.captureMessage(message, {
+        level: 'warning',
+        tags: {
+          logger: 'true',
+          ...(context?.userId && { userId: context.userId }),
+          ...(context?.path && { path: context.path }),
+          ...(context?.method && { method: context.method }),
+        },
+        extra: context,
+      });
+    }
   }
 
   error(message: string, context?: LogContext): void {
+    // Log to console (always)
     console.error(this.formatMessage('error', message, context));
+
+    // Send to Sentry (production only)
+    if (this.isProduction && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      // Capture error in Sentry with context
+      if (context?.error) {
+        // If error object provided, use captureException for better stack traces
+        Sentry.captureException(context.error, {
+          level: 'error',
+          tags: {
+            logger: 'true',
+            ...(context.userId && { userId: context.userId }),
+            ...(context.path && { path: context.path }),
+            ...(context.method && { method: context.method }),
+          },
+          extra: {
+            message,
+            requestId: context.requestId,
+            statusCode: context.statusCode,
+            duration: context.duration,
+            // Include other context (filtered by Sentry config)
+            ...Object.fromEntries(
+              Object.entries(context).filter(
+                ([key]) => !['error', 'userId', 'path', 'method', 'requestId', 'statusCode', 'duration'].includes(key)
+              )
+            ),
+          },
+        });
+      } else {
+        // If no error object, use captureMessage
+        Sentry.captureMessage(message, {
+          level: 'error',
+          tags: {
+            logger: 'true',
+            ...(context?.userId && { userId: context.userId }),
+            ...(context?.path && { path: context.path }),
+            ...(context?.method && { method: context.method }),
+          },
+          extra: context,
+        });
+      }
+    }
   }
 
   // HTTP request logging
