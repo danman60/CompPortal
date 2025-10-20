@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, getClientIp, RateLimitPresets } from '@/lib/rate-limit';
+import { checkRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 /**
  * Example API route with rate limiting
- * Demonstrates how to protect API endpoints from abuse
+ * Demonstrates how to protect API endpoints from abuse using Upstash Redis
  */
 export async function GET(request: NextRequest) {
-  const ip = getClientIp(request.headers);
+  // Get IP address from request
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown';
 
-  // Check rate limit
-  const rateLimit = await checkRateLimit(ip, RateLimitPresets.api);
+  // Check rate limit using API limiter
+  const rateLimit = await checkRateLimit(rateLimiters?.api || null, ip);
 
   // Add rate limit headers
   const headers = new Headers({
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Too many requests',
-        message: RateLimitPresets.api.message,
+        message: 'You have exceeded the rate limit. Please slow down and try again later.',
         retryAfter: Math.ceil((rateLimit.reset - Date.now()) / 1000),
       },
       {

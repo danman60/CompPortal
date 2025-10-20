@@ -1,190 +1,142 @@
 /**
- * Rate limiting utility for API protection
- * Prevents abuse and ensures fair usage
- *
- * Features:
- * - Configurable limits per endpoint
- * - IP-based tracking
- * - Sliding window algorithm
- * - Redis support (optional, falls back to memory)
- * - Standard rate limit headers
+ * Rate Limiting with Upstash Redis
+ * Protects against abuse, brute force, and resource exhaustion
  */
 
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 import { logger } from './logger';
 
-export interface RateLimitConfig {
-  /**
-   * Maximum number of requests allowed in the window
-   */
-  max: number;
+/**
+ * Redis client (only initialized in production)
+ * Falls back to no-op in development if Upstash not configured
+ */
+let redis: Redis | null = null;
 
-  /**
-   * Time window in milliseconds
-   */
-  windowMs: number;
-
-  /**
-   * Message to send when rate limit is exceeded
-   */
-  message?: string;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+} else {
+  // Development mode: No rate limiting if Upstash not configured
+  logger.warn('Upstash Redis not configured - rate limiting disabled');
 }
 
-export interface RateLimitResult {
+/**
+ * Rate limiters for different endpoints
+ */
+export const rateLimiters = redis ? {
+  /**
+   * General API: 100 requests per minute per user
+   * Prevents general abuse while allowing normal usage
+   */
+  api: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(100, '1 m'),
+    analytics: true,
+    prefix: 'ratelimit:api',
+  }),
+
+  /**
+   * Authentication: 10 requests per minute per IP
+   * Prevents brute force login attempts
+   */
+  auth: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(10, '1 m'),
+    analytics: true,
+    prefix: 'ratelimit:auth',
+  }),
+
+  /**
+   * CSV Upload: 5 per minute per user
+   * Prevents resource exhaustion from large file processing
+   */
+  upload: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, '1 m'),
+    analytics: true,
+    prefix: 'ratelimit:upload',
+  }),
+
+  /**
+   * Email sending: 20 per hour per user
+   * Prevents spam and excessive email usage
+   */
+  email: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(20, '1 h'),
+    analytics: true,
+    prefix: 'ratelimit:email',
+  }),
+
+  /**
+   * Score submission: 200 per minute per judge
+   * Allows rapid scoring during competitions while preventing abuse
+   */
+  scoring: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(200, '1 m'),
+    analytics: true,
+    prefix: 'ratelimit:scoring',
+  }),
+} : null;
+
+/**
+ * Check rate limit for a specific limiter and identifier
+ * @param limiter - The rate limiter to use (e.g., rateLimiters.api)
+ * @param identifier - Unique identifier (user ID, IP address, etc.)
+ * @returns Rate limit result with success, limit, remaining, and reset time
+ */
+export async function checkRateLimit(
+  limiter: Ratelimit | null,
+  identifier: string
+): Promise<{
   success: boolean;
   limit: number;
   remaining: number;
   reset: number;
-}
-
-// In-memory store for rate limiting
-// In production, use Redis for distributed rate limiting
-class RateLimiter {
-  private store: Map<string, { count: number; resetTime: number }> = new Map();
-  private cleanupInterval: NodeJS.Timeout;
-
-  constructor() {
-    // Cleanup expired entries every 5 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000);
-  }
-
-  private cleanup(): void {
-    const now = Date.now();
-    for (const [key, value] of this.store.entries()) {
-      if (now > value.resetTime) {
-        this.store.delete(key);
-      }
-    }
-  }
-
-  async check(identifier: string, config: RateLimitConfig): Promise<RateLimitResult> {
-    const now = Date.now();
-    const key = identifier;
-    const existing = this.store.get(key);
-
-    // No previous requests or window expired
-    if (!existing || now > existing.resetTime) {
-      const resetTime = now + config.windowMs;
-      this.store.set(key, { count: 1, resetTime });
-
-      return {
-        success: true,
-        limit: config.max,
-        remaining: config.max - 1,
-        reset: resetTime,
-      };
-    }
-
-    // Within window
-    if (existing.count < config.max) {
-      existing.count++;
-      this.store.set(key, existing);
-
-      return {
-        success: true,
-        limit: config.max,
-        remaining: config.max - existing.count,
-        reset: existing.resetTime,
-      };
-    }
-
-    // Rate limit exceeded
-    logger.warn('Rate limit exceeded', {
-      identifier,
-      count: existing.count,
-      limit: config.max,
-      resetTime: new Date(existing.resetTime).toISOString(),
-    });
-
+}> {
+  // If rate limiting is disabled (no Upstash configured), allow all requests
+  if (!limiter) {
     return {
-      success: false,
-      limit: config.max,
-      remaining: 0,
-      reset: existing.resetTime,
+      success: true,
+      limit: 999999,
+      remaining: 999999,
+      reset: Date.now() + 60000,
     };
   }
 
-  // Cleanup on process termination
-  destroy(): void {
-    clearInterval(this.cleanupInterval);
-    this.store.clear();
+  try {
+    const result = await limiter.limit(identifier);
+
+    return {
+      success: result.success,
+      limit: result.limit,
+      remaining: result.remaining,
+      reset: result.reset,
+    };
+  } catch (error) {
+    // If rate limit check fails, log error but allow request (fail open)
+    logger.error('Rate limit check failed', {
+      error: error instanceof Error ? error : new Error(String(error)),
+      identifier,
+    });
+
+    return {
+      success: true,
+      limit: 0,
+      remaining: 0,
+      reset: Date.now() + 60000,
+    };
   }
 }
 
-// Singleton instance
-const rateLimiter = new RateLimiter();
-
-// Cleanup on process termination
-process.on('beforeExit', () => {
-  rateLimiter.destroy();
-});
-
 /**
- * Default rate limit configurations
+ * Get identifier for rate limiting
+ * Priority: User ID > IP address > 'anonymous'
  */
-export const RateLimitPresets = {
-  // Strict limit for authentication endpoints
-  auth: {
-    max: 5,
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    message: 'Too many authentication attempts, please try again later.',
-  },
-
-  // Standard API rate limit
-  api: {
-    max: 100,
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    message: 'Too many requests, please try again later.',
-  },
-
-  // Lenient limit for read-only operations
-  readOnly: {
-    max: 300,
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    message: 'Too many requests, please try again later.',
-  },
-
-  // Very strict for sensitive operations
-  sensitive: {
-    max: 3,
-    windowMs: 60 * 60 * 1000, // 1 hour
-    message: 'Too many attempts for this operation, please try again later.',
-  },
-} as const;
-
-/**
- * Check rate limit for a request
- */
-export async function checkRateLimit(
-  identifier: string,
-  config: RateLimitConfig = RateLimitPresets.api
-): Promise<RateLimitResult> {
-  return rateLimiter.check(identifier, config);
-}
-
-/**
- * Extract IP address from request
- * Handles proxies and load balancers
- */
-export function getClientIp(headers: Headers): string {
-  // Check common proxy headers
-  const forwarded = headers.get('x-forwarded-for');
-  if (forwarded) {
-    // Get first IP from comma-separated list
-    return forwarded.split(',')[0].trim();
-  }
-
-  const realIp = headers.get('x-real-ip');
-  if (realIp) {
-    return realIp;
-  }
-
-  const cfConnectingIp = headers.get('cf-connecting-ip'); // Cloudflare
-  if (cfConnectingIp) {
-    return cfConnectingIp;
-  }
-
-  // Fallback (should not happen in production)
-  return 'unknown';
+export function getRateLimitIdentifier(userId?: string, ip?: string): string {
+  return userId || ip || 'anonymous';
 }
