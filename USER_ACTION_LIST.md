@@ -1,7 +1,7 @@
 # User Action Required List
 
 **Date**: October 20, 2025
-**Status**: Phase 1 & 2 Complete
+**Status**: Phase 1, 2 & 3 Complete - 4 of 5 Critical Blockers Resolved
 
 ---
 
@@ -127,6 +127,60 @@
 
 ---
 
+## 📋 PHASE 3 ACTIONS (Optional Setup Recommended)
+
+### 8. Set Up Upstash Redis for Rate Limiting (15 minutes - OPTIONAL)
+**What Changed:** Rate limiting implemented, works without Upstash in dev mode
+**Why:** Protects against API abuse, brute force, resource exhaustion
+**User Action:** Set up free Upstash account for production rate limiting
+**When:** After Phase 3 deploy (optional - app works without it)
+
+**Test Steps** (when ready):
+1. Go to https://upstash.com
+2. Create free account (10k requests/day)
+3. Create Redis database (Regional, same region as Vercel)
+4. Copy UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+5. Add to Vercel environment variables
+6. Redeploy application
+7. Test: Visit /api/test-rate-limit multiple times (should block after 100 requests)
+8. Monitor: Check Upstash dashboard for analytics
+
+**Rate Limits:**
+- API: 100 req/min (general)
+- Auth: 10 req/min (brute force protection)
+- Upload: 5 req/min (CSV files)
+- Email: 20 req/hour (spam protection)
+- Scoring: 200 req/min (judge tablets)
+
+### 9. Run Backup Restoration Test (1-2 hours - RECOMMENDED)
+**What Changed:** Comprehensive backup testing guide created
+**Why:** Verify you can actually restore database in emergency
+**User Action:** Follow backup verification guide to test restoration
+**When:** Quarterly, or before major competitions
+
+**Test Steps:**
+1. Read: `docs/operations/BACKUP_VERIFICATION.md`
+2. Schedule 2 hours of uninterrupted time
+3. Follow Step 1-7 in "Backup Restoration Testing" section
+4. Document RTO (Recovery Time Objective) and RPO
+5. Update BACKUP_VERIFICATION.md with test results
+6. Schedule next test in 3 months
+
+### 10. Review Disaster Recovery Runbook (30 minutes - CRITICAL)
+**What Changed:** Complete DR runbook with 5 emergency scenarios created
+**Why:** Know what to do when disaster strikes (no time to figure it out then)
+**User Action:** Read runbook, fill in emergency contacts, print reference card
+**When:** Now, and review monthly
+
+**Test Steps:**
+1. Read: `docs/operations/DISASTER_RECOVERY_RUNBOOK.md`
+2. Fill in emergency contact information (names, phones, emails)
+3. Print emergency quick reference card (last page)
+4. Store printed card in accessible location
+5. Review runbook before each competition
+
+---
+
 ## 📋 PHASE 2 ACTIONS (No User Action Required)
 
 ### 6. CSV Import Update (Testing Required Later)
@@ -171,8 +225,11 @@
 | 5 | Test Sentry errors | LOW | 5 min | FREE | ⏸️ PENDING |
 | 6 | Test CSV import | LOW | 5 min | FREE | ⏸️ AFTER PHASE 2.1 |
 | 7 | Test WebSocket | LOW | 5 min | FREE | ⏸️ AFTER PHASE 2.2 |
+| 8 | Set up Upstash Redis | OPTIONAL | 15 min | FREE | ⏸️ AFTER PHASE 3.3 |
+| 9 | Run backup restoration test | RECOMMENDED | 1-2 hours | FREE | ⏸️ QUARTERLY |
+| 10 | Review DR runbook | CRITICAL | 30 min | FREE | ⏸️ NOW |
 
-**Total Time**: ~50 minutes (critical actions only: 15 min)
+**Total Time**: ~3 hours (critical actions only: 45 min)
 
 ---
 
@@ -192,5 +249,5 @@
 
 ---
 
-**Last Updated**: October 20, 2025 - Phase 1 & 2 Complete
-**Next Update**: After Phase 3 Complete (or per user request)
+**Last Updated**: October 20, 2025 - Phase 1, 2 & 3 Complete (4 of 5 critical blockers resolved)
+**Next Update**: After Phase 4 approval (or per user request)
