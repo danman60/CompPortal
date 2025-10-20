@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, ROUTINE_CSV_FIELDS } from '@/lib/csv-utils';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import levenshtein from 'fast-levenshtein';
 
 type ParsedRoutine = {
@@ -40,7 +40,7 @@ export default function RoutineCSVImport() {
   const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'importing' | 'success' | 'error'>('idle');
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
-  const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
+  const [excelWorkbook, setExcelWorkbook] = useState<ExcelJS.Workbook | null>(null);
   const [selectedReservationId, setSelectedReservationId] = useState<string>('');
   const [dancerMatches, setDancerMatches] = useState<DancerMatch[]>([]);
   const [noDancersWarning, setNoDancersWarning] = useState(false);
@@ -96,14 +96,23 @@ export default function RoutineCSVImport() {
     return bestMatch;
   };
 
-  const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): ParsedRoutine[] => {
-    const worksheet = workbook.Sheets[sheetName];
+  const parseExcel = (workbook: ExcelJS.Workbook, sheetName: string): ParsedRoutine[] => {
+    const worksheet = workbook.getWorksheet(sheetName);
     if (!worksheet) return [];
 
-    const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-    if (jsonData.length === 0) return [];
+    // Get rows as array (ExcelJS returns rows including header)
+    const rows = worksheet.getSheetValues();
+    if (!rows || rows.length < 2) return []; // Need at least header + 1 data row
 
-    const excelHeaders = Object.keys(jsonData[0]);
+    // First row is header (rows[1] in ExcelJS, it's 1-indexed)
+    const headerRow = rows[1];
+    if (!Array.isArray(headerRow)) return [];
+
+    // Convert header row to strings and filter out empty headers
+    const excelHeaders = headerRow
+      .map((cell: any) => (cell !== null && cell !== undefined ? String(cell).trim() : ''))
+      .filter((h: string) => h !== '');
+
     const { mapping, unmatched, suggestions } = mapCSVHeaders(excelHeaders, ROUTINE_CSV_FIELDS, 0.7);
 
     setHeaderSuggestions(suggestions);
@@ -114,21 +123,29 @@ export default function RoutineCSVImport() {
 
     const data: ParsedRoutine[] = [];
 
-    jsonData.forEach((row) => {
+    // Process data rows (skip row 1 which is header)
+    for (let i = 2; i < rows.length; i++) {
+      const row = rows[i];
+      if (!Array.isArray(row)) continue;
+
       const routineRow: any = {};
 
-      excelHeaders.forEach((excelHeader) => {
+      excelHeaders.forEach((excelHeader, colIndex) => {
         const canonicalField = mapping[excelHeader];
-        if (canonicalField && row[excelHeader]) {
-          const value = String(row[excelHeader]).trim();
-          routineRow[canonicalField] = value;
+        const cellValue = row[colIndex + 1]; // ExcelJS columns are 1-indexed
+
+        if (canonicalField && cellValue !== undefined && cellValue !== null) {
+          const value = String(cellValue).trim();
+          if (value !== '') {
+            routineRow[canonicalField] = value;
+          }
         }
       });
 
       if (Object.keys(routineRow).length > 0) {
         data.push(routineRow as ParsedRoutine);
       }
-    });
+    }
 
     return data;
   };
@@ -275,15 +292,19 @@ export default function RoutineCSVImport() {
 
       if (fileExt === 'xlsx' || fileExt === 'xls') {
         const arrayBuffer = await uploadedFile.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
 
-        if (workbook.SheetNames.length > 1) {
-          setAvailableSheets(workbook.SheetNames);
+        // Get worksheet names
+        const sheetNames = workbook.worksheets.map(ws => ws.name);
+
+        if (sheetNames.length > 1) {
+          setAvailableSheets(sheetNames);
           setExcelWorkbook(workbook);
-          setSelectedSheet(workbook.SheetNames[0]);
-          parsed = parseExcel(workbook, workbook.SheetNames[0]);
-        } else if (workbook.SheetNames.length === 1) {
-          parsed = parseExcel(workbook, workbook.SheetNames[0]);
+          setSelectedSheet(sheetNames[0]);
+          parsed = parseExcel(workbook, sheetNames[0]);
+        } else if (sheetNames.length === 1) {
+          parsed = parseExcel(workbook, sheetNames[0]);
         }
       } else {
         const text = await uploadedFile.text();

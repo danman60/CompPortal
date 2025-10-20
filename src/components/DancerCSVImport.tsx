@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, DANCER_CSV_FIELDS } from '@/lib/csv-utils';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 type ParsedDancer = {
   first_name: string;
@@ -72,7 +72,7 @@ export default function DancerCSVImport() {
   const [studioId, setStudioId] = useState<string | null>(null);
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
-  const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
+  const [excelWorkbook, setExcelWorkbook] = useState<ExcelJS.Workbook | null>(null);
   const [duplicates, setDuplicates] = useState<Array<{ row: number; name: string }>>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [importError, setImportError] = useState<string | null>(null);
@@ -107,16 +107,22 @@ export default function DancerCSVImport() {
     },
   });
 
-  const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): ParsedDancer[] => {
-    const worksheet = workbook.Sheets[sheetName];
+  const parseExcel = (workbook: ExcelJS.Workbook, sheetName: string): ParsedDancer[] => {
+    const worksheet = workbook.getWorksheet(sheetName);
     if (!worksheet) return [];
 
-    // Convert to JSON with header row
-    const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-    if (jsonData.length === 0) return [];
+    // Get rows as array (ExcelJS returns rows including header)
+    const rows = worksheet.getSheetValues();
+    if (!rows || rows.length < 2) return []; // Need at least header + 1 data row
 
-    // Get headers from first row keys
-    const excelHeaders = Object.keys(jsonData[0]);
+    // First row is header (rows[1] in ExcelJS, it's 1-indexed)
+    const headerRow = rows[1];
+    if (!Array.isArray(headerRow)) return [];
+
+    // Convert header row to strings and filter out empty headers
+    const excelHeaders = headerRow
+      .map((cell: any) => (cell !== null && cell !== undefined ? String(cell).trim() : ''))
+      .filter((h: string) => h !== '');
 
     // Map Excel headers to canonical field names using flexible matching
     const { mapping, unmatched, suggestions } = mapCSVHeaders(excelHeaders, DANCER_CSV_FIELDS, 0.7);
@@ -131,33 +137,43 @@ export default function DancerCSVImport() {
 
     const data: ParsedDancer[] = [];
 
-    jsonData.forEach((row) => {
+    // Process data rows (skip row 1 which is header)
+    for (let i = 2; i < rows.length; i++) {
+      const row = rows[i];
+      if (!Array.isArray(row)) continue;
+
       const dancerRow: any = {};
 
-      excelHeaders.forEach((excelHeader) => {
+      excelHeaders.forEach((excelHeader, colIndex) => {
         const canonicalField = mapping[excelHeader];
-        if (canonicalField && row[excelHeader] !== undefined && row[excelHeader] !== null) {
-          const value = String(row[excelHeader]).trim();
+        const cellValue = row[colIndex + 1]; // ExcelJS columns are 1-indexed
 
-          // Skip completely empty values
-          if (value === '') return;
-
-          // Use flexible date parsing for date_of_birth
-          if (canonicalField === 'date_of_birth') {
-            // Handle Excel date serial numbers
-            if (typeof row[excelHeader] === 'number') {
-              const date = XLSX.SSF.parse_date_code(row[excelHeader]);
-              if (date) {
-                dancerRow[canonicalField] = `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
-              }
+        if (canonicalField && cellValue !== undefined && cellValue !== null) {
+          // Handle Date objects from Excel
+          if (cellValue instanceof Date) {
+            if (canonicalField === 'date_of_birth') {
+              const year = cellValue.getFullYear();
+              const month = String(cellValue.getMonth() + 1).padStart(2, '0');
+              const day = String(cellValue.getDate()).padStart(2, '0');
+              dancerRow[canonicalField] = `${year}-${month}-${day}`;
             } else {
+              dancerRow[canonicalField] = cellValue.toISOString().split('T')[0];
+            }
+          } else {
+            const value = String(cellValue).trim();
+
+            // Skip completely empty values
+            if (value === '') return;
+
+            // Use flexible date parsing for date_of_birth if string
+            if (canonicalField === 'date_of_birth') {
               const parsedDate = parseFlexibleDate(value);
               if (parsedDate) {
                 dancerRow[canonicalField] = parsedDate;
               }
+            } else {
+              dancerRow[canonicalField] = value;
             }
-          } else {
-            dancerRow[canonicalField] = value;
           }
         }
       });
@@ -166,7 +182,7 @@ export default function DancerCSVImport() {
       if (Object.keys(dancerRow).length > 0) {
         data.push(dancerRow as ParsedDancer);
       }
-    });
+    }
 
     return data;
   };
@@ -327,17 +343,21 @@ export default function DancerCSVImport() {
       if (fileExt === 'xlsx' || fileExt === 'xls') {
         // Handle Excel files
         const arrayBuffer = await uploadedFile.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
+
+        // Get worksheet names
+        const sheetNames = workbook.worksheets.map(ws => ws.name);
 
         // Check if multiple sheets
-        if (workbook.SheetNames.length > 1) {
-          setAvailableSheets(workbook.SheetNames);
+        if (sheetNames.length > 1) {
+          setAvailableSheets(sheetNames);
           setExcelWorkbook(workbook);
-          setSelectedSheet(workbook.SheetNames[0]);
+          setSelectedSheet(sheetNames[0]);
           // Parse first sheet by default
-          parsed = parseExcel(workbook, workbook.SheetNames[0]);
-        } else if (workbook.SheetNames.length === 1) {
-          parsed = parseExcel(workbook, workbook.SheetNames[0]);
+          parsed = parseExcel(workbook, sheetNames[0]);
+        } else if (sheetNames.length === 1) {
+          parsed = parseExcel(workbook, sheetNames[0]);
         }
       } else {
         // Handle CSV files
