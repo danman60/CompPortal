@@ -76,24 +76,22 @@ export function ChatwootWidget({
 
     script.onload = () => {
       if (window.chatwootSDK) {
-        window.chatwootSDK.run({
+        // Build config object with user info if provided
+        const config: any = {
           websiteToken,
           baseUrl,
-        });
+        };
 
-        // Set user if provided
-        if (user) {
-          // Wait for Chatwoot to be ready
-          setTimeout(() => {
-            if (window.$chatwoot) {
-              // Set user identity
-              (window as any).chatwootSDK?.setUser?.(user.identifier || user.email, {
-                name: user.name,
-                email: user.email,
-              });
-            }
-          }, 1000);
+        // Add user info directly to config (Chatwoot's recommended approach)
+        if (user && user.email) {
+          config.user = {
+            email: user.email,
+            name: user.name || user.email,
+            identifier_hash: user.identifier, // Optional: for identity verification
+          };
         }
+
+        window.chatwootSDK.run(config);
       }
     };
 
