@@ -2,15 +2,61 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
-import { renderEntrySubmitted, getEmailSubject, type EntrySubmittedData } from '@/lib/email-templates';
+import {
+  renderEntrySubmitted,
+  renderRoutineSummarySubmitted,
+  getEmailSubject,
+  type EntrySubmittedData,
+  type RoutineSummarySubmittedData,
+} from '@/lib/email-templates';
 import { logActivity } from '@/lib/activity';
 import { logger } from '@/lib/logger';
+import { supabaseAdmin } from '@/lib/supabase-server';
 import {
   validateEntrySizeCategory,
   validateMinimumParticipants,
   validateMaximumParticipants,
   validateFeeRange
 } from '@/lib/validators/businessRules';
+
+/**
+ * Helper function to check if email notification is enabled for a user
+ */
+async function isEmailEnabled(userId: string, emailType: string): Promise<boolean> {
+  try {
+    const preference = await prisma.email_preferences.findUnique({
+      where: {
+        user_id_email_type: {
+          user_id: userId,
+          email_type: emailType as any,
+        },
+      },
+    });
+    // Default to true if no preference exists
+    return preference?.enabled ?? true;
+  } catch (error) {
+    logger.error('Failed to check email preference', { error: error instanceof Error ? error : new Error(String(error)), userId, emailType });
+    // Default to true on error
+    return true;
+  }
+}
+
+/**
+ * Helper function to get user email from Supabase auth
+ */
+async function getUserEmail(userId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (error) {
+      logger.error('Failed to fetch user email from auth', { error, userId });
+      return null;
+    }
+    return data.user?.email || null;
+  } catch (error) {
+    logger.error('Failed to fetch user email from auth', { error: error instanceof Error ? error : new Error(String(error)), userId });
+    return null;
+  }
+}
 
 // Validation schema for entry participant
 const entryParticipantSchema = z.object({
@@ -90,10 +136,88 @@ export const entryRouter = router({
       };
     }),
 
-  // Submit routine summary (lock & request invoice) - placeholder no-op
+  // Submit routine summary (lock & request invoice)
   submitSummary: protectedProcedure
     .input(z.object({ studioId: z.string().uuid(), competitionId: z.string().uuid() }))
-    .mutation(async () => {
+    .mutation(async ({ input, ctx }) => {
+      const { studioId, competitionId } = input;
+
+      // Fetch studio and competition data
+      const [studio, competition, entries] = await Promise.all([
+        prisma.studios.findUnique({
+          where: { id: studioId },
+          select: { name: true, email: true, tenant_id: true },
+        }),
+        prisma.competitions.findUnique({
+          where: { id: competitionId },
+          select: { name: true, year: true },
+        }),
+        prisma.competition_entries.findMany({
+          where: { studio_id: studioId, competition_id: competitionId, status: { not: 'cancelled' } },
+          select: { total_fee: true },
+        }),
+      ]);
+
+      if (!studio || !competition) {
+        throw new Error('Studio or competition not found');
+      }
+
+      const routineCount = entries.length;
+      const totalFees = entries.reduce((sum: number, e: any) => sum + Number(e.total_fee || 0), 0);
+
+      // Send "routine_summary_submitted" email to Competition Directors (non-blocking)
+      try {
+        // Get all Competition Directors for this tenant
+        const competitionDirectors = await prisma.user_profiles.findMany({
+          where: {
+            tenant_id: studio.tenant_id,
+            role: 'competition_director',
+          },
+          select: {
+            id: true,
+            first_name: true,
+          },
+        });
+
+        // Send email to each CD who has this preference enabled
+        for (const cd of competitionDirectors) {
+          const isEnabled = await isEmailEnabled(cd.id, 'routine_summary_submitted');
+          if (!isEnabled) continue;
+
+          const cdEmail = await getUserEmail(cd.id);
+          if (!cdEmail) continue;
+
+          const emailData: RoutineSummarySubmittedData = {
+            studioName: studio.name,
+            competitionName: competition.name,
+            competitionYear: competition.year,
+            routineCount,
+            totalFees,
+            studioEmail: studio.email || '',
+            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/routine-summaries`,
+          };
+
+          const html = await renderRoutineSummarySubmitted(emailData);
+          const subject = getEmailSubject('routine-summary-submitted', {
+            studioName: studio.name,
+            competitionName: competition.name,
+          });
+
+          await sendEmail({
+            to: cdEmail,
+            subject,
+            html,
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to send routine summary submitted email to CDs', {
+          error: error instanceof Error ? error : new Error(String(error)),
+          studioId,
+          competitionId,
+        });
+        // Don't throw - email failure shouldn't block summary submission
+      }
+
       return { success: true };
     }),
 
@@ -643,13 +767,13 @@ export const entryRouter = router({
         }
       }
 
-      // Send email notification
+      // Send entry_submitted email notification (non-blocking)
       try {
         // Fetch additional data for email
         const [studio, competition, category, sizeCategory] = await Promise.all([
           prisma.studios.findUnique({
             where: { id: input.studio_id },
-            select: { name: true, email: true },
+            select: { name: true, email: true, owner_id: true },
           }),
           prisma.competitions.findUnique({
             where: { id: input.competition_id },
@@ -666,30 +790,35 @@ export const entryRouter = router({
           }) : Promise.resolve(null),
         ]);
 
-        if (studio?.email && competition && category) {
-          const emailData: EntrySubmittedData = {
-            studioName: studio.name,
-            competitionName: competition.name,
-            competitionYear: competition.year,
-            entryTitle: entry.title,
-            entryNumber: entry.entry_number || undefined,
-            category: category.name,
-            sizeCategory: sizeCategory?.name || 'TBD', // TBD if not set (auto-detected later)
-            participantCount: entry.entry_participants?.length || 0,
-            entryFee: entry_fee || 0,
-          };
+        if (studio?.email && studio.owner_id && competition && category) {
+          // Check if entry_submitted email preference is enabled
+          const isEnabled = await isEmailEnabled(studio.owner_id, 'entry_submitted');
 
-          const html = await renderEntrySubmitted(emailData);
-          const subject = getEmailSubject('entry', {
-            entryTitle: entry.title,
-            competitionName: competition.name,
-          });
+          if (isEnabled) {
+            const emailData: EntrySubmittedData = {
+              studioName: studio.name,
+              competitionName: competition.name,
+              competitionYear: competition.year,
+              entryTitle: entry.title,
+              entryNumber: entry.entry_number || undefined,
+              category: category.name,
+              sizeCategory: sizeCategory?.name || 'TBD', // TBD if not set (auto-detected later)
+              participantCount: entry.entry_participants?.length || 0,
+              entryFee: entry_fee || 0,
+            };
 
-          await sendEmail({
-            to: studio.email,
-            subject,
-            html,
-          });
+            const html = await renderEntrySubmitted(emailData);
+            const subject = getEmailSubject('entry', {
+              entryTitle: entry.title,
+              competitionName: competition.name,
+            });
+
+            await sendEmail({
+              to: studio.email,
+              subject,
+              html,
+            });
+          }
         }
       } catch (emailError) {
         logger.error('Failed to send entry submission email', { error: emailError instanceof Error ? emailError : new Error(String(emailError)) });

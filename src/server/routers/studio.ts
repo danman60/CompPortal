@@ -10,10 +10,52 @@ import WelcomeEmail from '@/emails/WelcomeEmail';
 import {
   renderStudioApproved,
   renderStudioRejected,
+  renderStudioProfileSubmitted,
   getEmailSubject,
   type StudioApprovedData,
   type StudioRejectedData,
+  type StudioProfileSubmittedData,
 } from '@/lib/email-templates';
+import { supabaseAdmin } from '@/lib/supabase-server';
+
+/**
+ * Helper function to check if email notification is enabled for a user
+ */
+async function isEmailEnabled(userId: string, emailType: string): Promise<boolean> {
+  try {
+    const preference = await prisma.email_preferences.findUnique({
+      where: {
+        user_id_email_type: {
+          user_id: userId,
+          email_type: emailType as any,
+        },
+      },
+    });
+    // Default to true if no preference exists
+    return preference?.enabled ?? true;
+  } catch (error) {
+    logger.error('Failed to check email preference', { error: error instanceof Error ? error : new Error(String(error)), userId, emailType });
+    // Default to true on error
+    return true;
+  }
+}
+
+/**
+ * Helper function to get user email from Supabase auth
+ */
+async function getUserEmail(userId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (error) {
+      logger.error('Failed to fetch user email from auth', { error, userId });
+      return null;
+    }
+    return data.user?.email || null;
+  } catch (error) {
+    logger.error('Failed to fetch user email from auth', { error: error instanceof Error ? error : new Error(String(error)), userId });
+    return null;
+  }
+}
 
 export const studioRouter = router({
   // Get all studios
@@ -130,6 +172,55 @@ export const studioRouter = router({
         },
       });
 
+      // Send "studio_profile_submitted" email to Competition Directors (non-blocking)
+      try {
+        // Get all Competition Directors for this tenant
+        const competitionDirectors = await prisma.user_profiles.findMany({
+          where: {
+            tenant_id: ctx.tenantId!,
+            role: 'competition_director',
+          },
+          select: {
+            id: true,
+            first_name: true,
+          },
+        });
+
+        // Send email to each CD who has this preference enabled
+        for (const cd of competitionDirectors) {
+          const isEnabled = await isEmailEnabled(cd.id, 'studio_profile_submitted');
+          if (!isEnabled) continue;
+
+          const cdEmail = await getUserEmail(cd.id);
+          if (!cdEmail) continue;
+
+          const emailData: StudioProfileSubmittedData = {
+            studioName: studio.name,
+            studioEmail: studio.email || '',
+            city: studio.city || undefined,
+            province: studio.province || undefined,
+            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/admin/studios`,
+          };
+
+          const html = await renderStudioProfileSubmitted(emailData);
+          const subject = getEmailSubject('studio-profile-submitted', {
+            studioName: studio.name,
+          });
+
+          await sendEmail({
+            to: cdEmail,
+            subject,
+            html,
+          });
+        }
+      } catch (error) {
+        logger.error('Failed to send studio profile submitted email to CDs', {
+          error: error instanceof Error ? error : new Error(String(error)),
+          studioId: studio.id,
+        });
+        // Don't throw - email failure shouldn't block studio creation
+      }
+
       return studio;
     }),
 
@@ -214,42 +305,47 @@ export const studioRouter = router({
       }
 
       // Send approval email to studio owner
-      if (studio.users_studios_owner_idTousers?.email) {
+      if (studio.users_studios_owner_idTousers?.email && studio.users_studios_owner_idTousers.id) {
         try {
-          const profile = studio.users_studios_owner_idTousers.user_profiles;
-          const ownerName = profile && (profile.first_name || profile.last_name)
-            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-            : undefined;
+          // Check if studio_approved email preference is enabled
+          const isEnabled = await isEmailEnabled(studio.users_studios_owner_idTousers.id, 'studio_approved');
 
-          const emailData: StudioApprovedData = {
-            studioName: studio.name,
-            ownerName,
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
-          };
+          if (isEnabled) {
+            const profile = studio.users_studios_owner_idTousers.user_profiles;
+            const ownerName = profile && (profile.first_name || profile.last_name)
+              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+              : undefined;
 
-          const html = await renderStudioApproved(emailData);
-          const subject = getEmailSubject('studio-approved', { studioName: studio.name });
+            const emailData: StudioApprovedData = {
+              studioName: studio.name,
+              ownerName,
+              portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+            };
 
-          await sendEmail({
-            to: studio.users_studios_owner_idTousers.email,
-            subject,
-            html,
-          });
+            const html = await renderStudioApproved(emailData);
+            const subject = getEmailSubject('studio-approved', { studioName: studio.name });
 
-          // Also send welcome email
-          const welcomeHtml = await renderEmail(
-            WelcomeEmail({
-              name: ownerName || 'Studio Owner',
-              email: studio.users_studios_owner_idTousers.email,
-              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
-              tenantBranding: undefined,
-            })
-          );
-          await sendEmail({
-            to: studio.users_studios_owner_idTousers.email,
-            subject: 'Welcome to CompPortal - Studio Approved!',
-            html: welcomeHtml,
-          });
+            await sendEmail({
+              to: studio.users_studios_owner_idTousers.email,
+              subject,
+              html,
+            });
+
+            // Also send welcome email
+            const welcomeHtml = await renderEmail(
+              WelcomeEmail({
+                name: ownerName || 'Studio Owner',
+                email: studio.users_studios_owner_idTousers.email,
+                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+                tenantBranding: undefined,
+              })
+            );
+            await sendEmail({
+              to: studio.users_studios_owner_idTousers.email,
+              subject: 'Welcome to CompPortal - Studio Approved!',
+              html: welcomeHtml,
+            });
+          }
         } catch (error) {
           logger.error('Failed to send approval email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the approval
@@ -316,29 +412,34 @@ export const studioRouter = router({
       }
 
       // Send rejection email to studio owner
-      if (studio.users_studios_owner_idTousers?.email) {
+      if (studio.users_studios_owner_idTousers?.email && studio.users_studios_owner_idTousers.id) {
         try {
-          const profile = studio.users_studios_owner_idTousers.user_profiles;
-          const ownerName = profile && (profile.first_name || profile.last_name)
-            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-            : undefined;
+          // Check if studio_rejected email preference is enabled
+          const isEnabled = await isEmailEnabled(studio.users_studios_owner_idTousers.id, 'studio_rejected');
 
-          const emailData: StudioRejectedData = {
-            studioName: studio.name,
-            ownerName,
-            reason: input.reason,
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
-            contactEmail: process.env.CONTACT_EMAIL || 'info@example.com',
-          };
+          if (isEnabled) {
+            const profile = studio.users_studios_owner_idTousers.user_profiles;
+            const ownerName = profile && (profile.first_name || profile.last_name)
+              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+              : undefined;
 
-          const html = await renderStudioRejected(emailData);
-          const subject = getEmailSubject('studio-rejected', { studioName: studio.name });
+            const emailData: StudioRejectedData = {
+              studioName: studio.name,
+              ownerName,
+              reason: input.reason,
+              portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+              contactEmail: process.env.CONTACT_EMAIL || 'info@example.com',
+            };
 
-          await sendEmail({
-            to: studio.users_studios_owner_idTousers.email,
-            subject,
-            html,
-          });
+            const html = await renderStudioRejected(emailData);
+            const subject = getEmailSubject('studio-rejected', { studioName: studio.name });
+
+            await sendEmail({
+              to: studio.users_studios_owner_idTousers.email,
+              subject,
+              html,
+            });
+          }
         } catch (error) {
           logger.error('Failed to send rejection email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the rejection

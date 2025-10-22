@@ -19,6 +19,7 @@ const emailTypeSchema = z.enum([
   'missing_music',
   'studio_approved',
   'studio_rejected',
+  'studio_profile_submitted',
 ]);
 
 export const emailPreferencesRouter = router({

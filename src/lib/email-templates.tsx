@@ -5,6 +5,7 @@ import ReservationApproved from '@/emails/ReservationApproved';
 import ReservationRejected from '@/emails/ReservationRejected';
 import ReservationSubmitted from '@/emails/ReservationSubmitted';
 import RoutineSummarySubmitted from '@/emails/RoutineSummarySubmitted';
+import StudioProfileSubmitted from '@/emails/StudioProfileSubmitted';
 import EntrySubmitted from '@/emails/EntrySubmitted';
 import StudioApproved from '@/emails/StudioApproved';
 import StudioRejected from '@/emails/StudioRejected';
@@ -146,6 +147,16 @@ export interface RoutineSummarySubmittedData {
   tenantBranding?: TenantBranding;
 }
 
+export interface StudioProfileSubmittedData {
+  studioName: string;
+  studioEmail: string;
+  ownerName?: string;
+  city?: string;
+  province?: string;
+  portalUrl: string;
+  tenantBranding?: TenantBranding;
+}
+
 /**
  * Render registration confirmation email
  */
@@ -231,10 +242,17 @@ export async function renderRoutineSummarySubmitted(data: RoutineSummarySubmitte
 }
 
 /**
+ * Render studio profile submitted email (for CD)
+ */
+export async function renderStudioProfileSubmitted(data: StudioProfileSubmittedData) {
+  return render(<StudioProfileSubmitted {...data} />);
+}
+
+/**
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music',
   data: { [key: string]: any }
 ): string {
   const subjects = {
@@ -244,6 +262,7 @@ export function getEmailSubject(
     'reservation-rejected': `Reservation Status Update - ${data.competitionName} (${data.competitionYear})`,
     'reservation-submitted': `New Reservation from ${data.studioName} - ${data.competitionName}`,
     'routine-summary-submitted': `Routine Summary Ready from ${data.studioName} - ${data.competitionName}`,
+    'studio-profile-submitted': `New Studio Registration - ${data.studioName}`,
     entry: `Routine Submitted: ${data.entryTitle} - ${data.competitionName}`,
     'studio-approved': `Welcome to the Platform - ${data.studioName}`,
     'studio-rejected': `Studio Registration Status Update`,

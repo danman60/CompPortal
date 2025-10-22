@@ -15,7 +15,8 @@ type EmailType =
   | 'entry_submitted'
   | 'missing_music'
   | 'studio_approved'
-  | 'studio_rejected';
+  | 'studio_rejected'
+  | 'studio_profile_submitted';
 
 interface EmailPreferenceConfig {
   label: string;
@@ -178,6 +179,12 @@ const emailPreferences: Record<EmailType, EmailPreferenceConfig> = {
     description: 'When your studio registration is rejected',
     icon: '⚠️',
     userType: 'SD',
+  },
+  studio_profile_submitted: {
+    label: 'Studio Profile Submitted',
+    description: 'When a new studio completes registration',
+    icon: '🏢',
+    userType: 'CD',
   },
 };
 
