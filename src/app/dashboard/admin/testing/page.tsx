@@ -88,6 +88,15 @@ export default function TestingToolsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <a
+            href="/dashboard"
+            className="inline-flex items-center text-white/70 hover:text-white mb-4 transition-colors"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
+          </a>
           <h1 className="text-4xl font-bold text-white mb-2">🧪 Testing Tools</h1>
           <p className="text-white/70">
             Super Admin tools for cleaning and populating test data (Development/Staging only)
