@@ -12,6 +12,7 @@ import {
 import { logActivity } from '@/lib/activity';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { isAdmin, isSuperAdmin } from '@/lib/auth-utils';
 import {
   validateEntrySizeCategory,
   validateMinimumParticipants,
@@ -291,13 +292,14 @@ export const entryRouter = router({
           competitionId: z.string().uuid().optional(),
           reservationId: z.string().uuid().optional(),
           status: z.string().optional(),
+          tenantId: z.string().uuid().optional(), // Super admin can filter by specific tenant
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
         })
         .optional()
     )
     .query(async ({ input = {}, ctx }) => {
-      const { studioId, competitionId, reservationId, status, limit = 50, offset = 0 } = input;
+      const { studioId, competitionId, reservationId, status, tenantId, limit = 50, offset = 0 } = input;
 
       const where: any = {};
 
@@ -310,6 +312,23 @@ export const entryRouter = router({
       } else if (studioId) {
         // Admins can filter by specific studio
         where.studio_id = studioId;
+      }
+
+      // Tenant filtering: super admins can see all tenants or filter by specific tenant
+      // Entries don't have direct tenant_id, so filter via studio relationship
+      if (!isSuperAdmin(ctx.userRole)) {
+        // Non-super admins: filter entries to their tenant via studios
+        if (!where.studio_id) {
+          // If not already filtered by specific studio, add tenant filter
+          where.studios = {
+            tenant_id: ctx.tenantId,
+          };
+        }
+      } else if (tenantId) {
+        // Super admin filtering by specific tenant
+        where.studios = {
+          tenant_id: tenantId,
+        };
       }
 
       if (competitionId) {
@@ -928,21 +947,6 @@ export const entryRouter = router({
       return { success: true, message: 'Participant removed successfully' };
     }),
 
-  // Delete an entry
-  delete: publicProcedure
-    .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      // 🔐 TRANSACTION: Wrap delete operation for atomicity and consistency
-      await prisma.$transaction(async (tx) => {
-        // Delete entry (participants will cascade delete via DB constraints)
-        await tx.competition_entries.delete({
-          where: { id: input.id },
-        });
-      });
-
-      return { success: true, message: 'Entry deleted successfully' };
-    }),
-
   // Cancel an entry
   cancel: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
@@ -995,5 +999,85 @@ export const entryRouter = router({
       });
 
       return entry;
+    }),
+
+  // Delete an entry (Competition Directors and Super Admins only)
+  delete: protectedProcedure
+    .input(z.object({
+      id: z.string().uuid(),
+      hardDelete: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Only CDs and super admins can delete entries
+      if (!isAdmin(ctx.userRole)) {
+        throw new Error('Only competition directors and super admins can delete entries');
+      }
+
+      const entry = await prisma.competition_entries.findUnique({
+        where: { id: input.id },
+        select: {
+          id: true,
+          title: true,
+          studio_id: true,
+          competition_id: true,
+          status: true,
+          studios: {
+            select: { name: true },
+          },
+          competitions: {
+            select: { name: true },
+          },
+        },
+      });
+
+      if (!entry) {
+        throw new Error('Entry not found');
+      }
+
+      if (input.hardDelete) {
+        // Hard delete: permanently remove entry
+        await prisma.competition_entries.delete({
+          where: { id: input.id },
+        });
+      } else {
+        // Soft delete: mark as cancelled
+        await prisma.competition_entries.update({
+          where: { id: input.id },
+          data: {
+            status: 'cancelled',
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: entry.studio_id,
+          action: input.hardDelete ? 'entry.hard_delete' : 'entry.soft_delete',
+          entityType: 'entry',
+          entityId: input.id,
+          details: {
+            title: entry.title,
+            studio_name: entry.studios.name,
+            competition_name: entry.competitions.name,
+            previous_status: entry.status,
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log activity (entry.delete)', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
+      return {
+        success: true,
+        message: input.hardDelete ? 'Entry permanently deleted' : 'Entry cancelled',
+        entry: {
+          id: entry.id,
+          title: entry.title,
+          studio_name: entry.studios.name,
+          competition_name: entry.competitions.name,
+        },
+      };
     }),
 });

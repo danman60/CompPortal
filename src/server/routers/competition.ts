@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { isAdmin, isSuperAdmin } from '@/lib/auth-utils';
 
 // Validation schema for competition input
 const competitionInputSchema = z.object({
@@ -32,6 +33,7 @@ const competitionInputSchema = z.object({
 
 export const competitionRouter = router({
   // Get all competitions with optional filtering
+  // Super admins can see competitions across all tenants
   getAll: publicProcedure
     .input(
       z
@@ -41,13 +43,25 @@ export const competitionRouter = router({
           isPublic: z.boolean().optional(),
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
+          tenantId: z.string().uuid().optional(), // Super admin can filter by specific tenant
         })
         .optional()
     )
-    .query(async ({ input = {} }) => {
-      const { year, status, isPublic, limit = 50, offset = 0 } = input;
+    .query(async ({ ctx, input = {} }) => {
+      const { year, status, isPublic, limit = 50, offset = 0, tenantId } = input;
 
       const where: any = {};
+
+      // Tenant filtering: super admins can see all tenants or filter by specific tenant
+      if (isSuperAdmin(ctx.userRole)) {
+        if (tenantId) {
+          where.tenant_id = tenantId;
+        }
+        // No tenant filter if super admin and no specific tenant requested
+      } else {
+        // Non-super admins only see their own tenant's competitions
+        where.tenant_id = ctx.tenantId;
+      }
 
       if (year) {
         where.year = year;
@@ -328,13 +342,18 @@ export const competitionRouter = router({
       return competition;
     }),
 
-  // Delete a competition (Testing - allows deletion with entries/reservations)
-  delete: publicProcedure
+  // Delete a competition (Competition Directors and Super Admins only)
+  delete: protectedProcedure
     .input(z.object({
       id: z.string().uuid(),
       hardDelete: z.boolean().default(false),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Only CDs and super admins can delete competitions
+      if (!isAdmin(ctx.userRole)) {
+        throw new Error('Only competition directors and super admins can delete competitions');
+      }
+
       await prisma.$transaction(async (tx) => {
         // 1. Return entries to draft (preserve entry data for studios)
         await tx.competition_entries.updateMany({

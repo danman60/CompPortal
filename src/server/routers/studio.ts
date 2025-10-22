@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
-import { isStudioDirector } from '@/lib/auth-utils';
+import { isStudioDirector, isAdmin, isSuperAdmin } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { render as renderEmail } from '@react-email/render';
@@ -59,8 +59,33 @@ async function getUserEmail(userId: string): Promise<string | null> {
 
 export const studioRouter = router({
   // Get all studios
-  getAll: publicProcedure.query(async () => {
+  // Super admins can see studios across all tenants
+  getAll: publicProcedure
+    .input(
+      z
+        .object({
+          tenantId: z.string().uuid().optional(), // Super admin can filter by specific tenant
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input = {} }) => {
+    const { tenantId } = input;
+
+    const where: any = {};
+
+    // Tenant filtering: super admins can see all tenants or filter by specific tenant
+    if (isSuperAdmin(ctx.userRole)) {
+      if (tenantId) {
+        where.tenant_id = tenantId;
+      }
+      // No tenant filter if super admin and no specific tenant requested
+    } else {
+      // Non-super admins only see their own tenant's studios
+      where.tenant_id = ctx.tenantId;
+    }
+
     const studios = await prisma.studios.findMany({
+      where,
       select: {
         id: true,
         name: true,
@@ -447,5 +472,116 @@ export const studioRouter = router({
       }
 
       return studio;
+    }),
+
+  // Delete a studio (Competition Directors and Super Admins only)
+  delete: protectedProcedure
+    .input(z.object({
+      id: z.string().uuid(),
+      hardDelete: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Only CDs and super admins can delete studios
+      if (!isAdmin(ctx.userRole)) {
+        throw new Error('Only competition directors and super admins can delete studios');
+      }
+
+      const studio = await prisma.studios.findUnique({
+        where: { id: input.id },
+        select: {
+          name: true,
+          _count: {
+            select: {
+              dancers: true,
+              competition_entries: true,
+              reservations: true,
+            },
+          },
+        },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
+      await prisma.$transaction(async (tx) => {
+        if (input.hardDelete) {
+          // Hard delete: remove all related data
+          // 1. Delete entries
+          await tx.competition_entries.deleteMany({
+            where: { studio_id: input.id },
+          });
+
+          // 2. Delete reservations
+          await tx.reservations.deleteMany({
+            where: { studio_id: input.id },
+          });
+
+          // 3. Delete dancers
+          await tx.dancers.deleteMany({
+            where: { studio_id: input.id },
+          });
+
+          // 4. Delete invoices
+          await tx.invoices.deleteMany({
+            where: { studio_id: input.id },
+          });
+
+          // 5. Delete studio
+          await tx.studios.delete({
+            where: { id: input.id },
+          });
+        } else {
+          // Soft delete: mark as deleted
+          await tx.studios.update({
+            where: { id: input.id },
+            data: {
+              status: 'deleted',
+              updated_at: new Date(),
+            },
+          });
+
+          // Cancel active reservations
+          await tx.reservations.updateMany({
+            where: {
+              studio_id: input.id,
+              status: { in: ['pending', 'approved'] },
+            },
+            data: {
+              status: 'cancelled',
+              internal_notes: 'Studio deleted by super admin',
+            },
+          });
+        }
+      });
+
+      // Activity logging (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: input.id,
+          action: input.hardDelete ? 'studio.hard_delete' : 'studio.soft_delete',
+          entityType: 'studio',
+          entityId: input.id,
+          details: {
+            studio_name: studio.name,
+            dancers_count: studio._count.dancers,
+            entries_count: studio._count.competition_entries,
+            reservations_count: studio._count.reservations,
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log activity (studio.delete)', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
+      return {
+        success: true,
+        message: input.hardDelete ? 'Studio permanently deleted' : 'Studio soft deleted',
+        deletedCounts: {
+          dancers: studio._count.dancers,
+          entries: studio._count.competition_entries,
+          reservations: studio._count.reservations,
+        },
+      };
     }),
 });
