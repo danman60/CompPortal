@@ -4,6 +4,52 @@ import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { guardInvoiceStatus } from '@/lib/guards/statusGuards';
 import { logger } from '@/lib/logger';
+import { sendEmail } from '@/lib/email';
+import { supabaseAdmin } from '@/lib/supabase-server';
+import {
+  renderInvoiceDelivery,
+  renderPaymentConfirmed,
+  getEmailSubject,
+  type InvoiceDeliveryData,
+  type PaymentConfirmedData,
+} from '@/lib/email-templates';
+
+/**
+ * Helper function to check if email notification is enabled for a user
+ */
+async function isEmailEnabled(userId: string, emailType: string): Promise<boolean> {
+  try {
+    const preference = await prisma.email_preferences.findUnique({
+      where: {
+        user_id_email_type: {
+          user_id: userId,
+          email_type: emailType as any,
+        },
+      },
+    });
+    return preference?.enabled ?? true;
+  } catch (error) {
+    logger.error('Failed to check email preference', { error: error instanceof Error ? error : new Error(String(error)), userId, emailType });
+    return true;
+  }
+}
+
+/**
+ * Helper function to get user email from Supabase auth
+ */
+async function getUserEmail(userId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (error) {
+      logger.error('Failed to fetch user email from auth', { error, userId });
+      return null;
+    }
+    return data.user?.email || null;
+  } catch (error) {
+    logger.error('Failed to fetch user email from auth', { error: error instanceof Error ? error : new Error(String(error)), userId });
+    return null;
+  }
+}
 
 export const invoiceRouter = router({
   // Get invoice by studio and competition (returns existing invoice or null)
@@ -601,7 +647,7 @@ export const invoiceRouter = router({
         throw new Error('Can only send invoices with DRAFT status');
       }
 
-      await prisma.invoices.update({
+      const updatedInvoice = await prisma.invoices.update({
         where: { id: input.invoiceId },
         data: {
           status: 'SENT',
@@ -623,6 +669,53 @@ export const invoiceRouter = router({
         });
       } catch (e) {
         logger.error('Failed to log activity (invoice.send)', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      // Send invoice_received email to studio owner (non-blocking)
+      try {
+        const studio = await prisma.studios.findUnique({
+          where: { id: updatedInvoice.studio_id },
+          select: { owner_id: true, name: true, email: true },
+        });
+
+        const competition = await prisma.competitions.findUnique({
+          where: { id: updatedInvoice.competition_id },
+          select: { name: true, year: true },
+        });
+
+        if (studio?.owner_id && studio?.email && competition) {
+          const isEnabled = await isEmailEnabled(studio.owner_id, 'invoice_received');
+
+          if (isEnabled) {
+            const emailData: InvoiceDeliveryData = {
+              studioName: studio.name,
+              competitionName: competition.name,
+              competitionYear: competition.year || new Date().getFullYear(),
+              invoiceNumber: updatedInvoice.id.substring(0, 8),
+              totalAmount: 0, // See full details in invoice
+              routineCount: 0, // See full details in invoice
+              invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices/${updatedInvoice.studio_id}/${updatedInvoice.competition_id}`,
+            };
+
+            const html = await renderInvoiceDelivery(emailData);
+            const subject = getEmailSubject('invoice', {
+              invoiceNumber: emailData.invoiceNumber,
+              competitionName: emailData.competitionName,
+              competitionYear: emailData.competitionYear,
+            });
+
+            await sendEmail({
+              to: studio.email,
+              subject,
+              html,
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to send invoice received email', {
+          error: error instanceof Error ? error : new Error(String(error)),
+          invoiceId: invoice.id,
+        });
       }
 
       return { success: true };
@@ -689,6 +782,53 @@ export const invoiceRouter = router({
         });
       } catch (e) {
         logger.error('Failed to log activity (invoice.markPaid)', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      // Send payment_confirmed email to studio owner (non-blocking)
+      try {
+        const studio = await prisma.studios.findUnique({
+          where: { id: invoice.studio_id },
+          select: { owner_id: true, name: true, email: true },
+        });
+
+        const competition = await prisma.competitions.findUnique({
+          where: { id: invoice.competition_id },
+          select: { name: true, year: true },
+        });
+
+        if (studio?.owner_id && studio?.email && competition) {
+          const isEnabled = await isEmailEnabled(studio.owner_id, 'payment_confirmed');
+
+          if (isEnabled) {
+            const emailData: PaymentConfirmedData = {
+              studioName: studio.name,
+              competitionName: competition.name,
+              competitionYear: competition.year || new Date().getFullYear(),
+              amount: 0, // See full details in invoice
+              paymentStatus: 'paid',
+              invoiceNumber: invoice.id.substring(0, 8),
+              paymentDate: new Date().toISOString(),
+            };
+
+            const html = await renderPaymentConfirmed(emailData);
+            const subject = getEmailSubject('payment-confirmed', {
+              competitionName: emailData.competitionName,
+              competitionYear: emailData.competitionYear,
+              paymentStatus: emailData.paymentStatus,
+            });
+
+            await sendEmail({
+              to: studio.email,
+              subject,
+              html,
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to send payment confirmed email', {
+          error: error instanceof Error ? error : new Error(String(error)),
+          invoiceId: invoice.id,
+        });
       }
 
       return { success: true };
