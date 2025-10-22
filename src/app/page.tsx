@@ -6,11 +6,12 @@ export default async function Home() {
   // Get tenant data from subdomain (empwr.compsync.net → EMPWR Dance)
   const tenant = await getTenantData();
 
-  // Extract tenant branding
+  // Extract tenant branding with consistent fallbacks
+  const branding = tenant?.branding || {};
   const tenantName = tenant?.name || 'Competition Portal';
-  const tagline = tenant?.branding?.tagline || 'Professional dance competition management platform';
-  const primaryColor = tenant?.branding?.primaryColor || '#8B5CF6';
-  const secondaryColor = tenant?.branding?.secondaryColor || '#EC4899';
+  const tagline = (typeof branding === 'object' && branding.tagline) || 'Professional dance competition management platform';
+  const primaryColor = (typeof branding === 'object' && branding.primaryColor) || '#8B5CF6';
+  const secondaryColor = (typeof branding === 'object' && branding.secondaryColor) || '#EC4899';
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">

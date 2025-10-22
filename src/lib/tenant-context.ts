@@ -66,8 +66,11 @@ export async function getTenantData(): Promise<TenantData | null> {
 
     if (tenant) {
       return {
-        ...tenant,
-        branding: tenant.branding as any || {},
+        id: tenant.id,
+        slug: tenant.slug || '',
+        subdomain: tenant.subdomain || '',
+        name: tenant.name || 'Competition Portal',
+        branding: (tenant.branding && typeof tenant.branding === 'object' ? tenant.branding : {}) as any,
       };
     }
   }
@@ -87,8 +90,11 @@ export async function getTenantData(): Promise<TenantData | null> {
   if (!tenant) return null;
 
   return {
-    ...tenant,
-    branding: tenant.branding as any || {},
+    id: tenant.id,
+    slug: tenant.slug || '',
+    subdomain: tenant.subdomain || '',
+    name: tenant.name || 'Competition Portal',
+    branding: (tenant.branding && typeof tenant.branding === 'object' ? tenant.branding : {}) as any,
   };
 }
 
