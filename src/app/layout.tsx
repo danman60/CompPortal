@@ -59,11 +59,12 @@ export const metadata: Metadata = {
   },
   // Icons auto-generated from icon.tsx and apple-icon.tsx
   manifest: '/manifest.json',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default async function RootLayout({
