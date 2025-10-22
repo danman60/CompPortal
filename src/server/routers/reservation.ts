@@ -5,6 +5,7 @@ import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
+import { supabaseAdmin } from '@/lib/supabase-server';
 import {
   renderReservationApproved,
   renderReservationRejected,
@@ -64,6 +65,23 @@ async function isEmailEnabled(userId: string, emailType: string): Promise<boolea
     logger.error('Failed to check email preference', { error: error instanceof Error ? error : new Error(String(error)), userId, emailType });
     // Default to true on error
     return true;
+  }
+}
+
+/**
+ * Helper function to get user email from Supabase auth
+ */
+async function getUserEmail(userId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (error) {
+      logger.error('Failed to fetch user email from auth', { error, userId });
+      return null;
+    }
+    return data.user?.email || null;
+  } catch (error) {
+    logger.error('Failed to fetch user email from auth', { error: error instanceof Error ? error : new Error(String(error)), userId });
+    return null;
   }
 }
 
@@ -487,8 +505,41 @@ export const reservationRouter = router({
           },
         });
 
-        // TODO: Send email to each CD who has this preference enabled
-        // Need to fetch user emails from Supabase auth.users table
+        // Get studio email
+        const studioWithEmail = await prisma.studios.findUnique({
+          where: { id: input.studio_id },
+          select: { email: true },
+        });
+
+        // Send email to each CD who has this preference enabled
+        for (const cd of competitionDirectors) {
+          const isEnabled = await isEmailEnabled(cd.id, 'reservation_submitted');
+          if (!isEnabled) continue;
+
+          const cdEmail = await getUserEmail(cd.id);
+          if (!cdEmail) continue;
+
+          const emailData: ReservationSubmittedData = {
+            studioName: reservation.studios?.name || 'Studio',
+            competitionName: reservation.competitions?.name || 'Competition',
+            competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+            spacesRequested: reservation.spaces_requested,
+            studioEmail: studioWithEmail?.email || '',
+            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservation-pipeline`,
+          };
+
+          const html = await renderReservationSubmitted(emailData);
+          const subject = getEmailSubject('reservation-submitted', {
+            studioName: emailData.studioName,
+            competitionName: emailData.competitionName,
+          });
+
+          await sendEmail({
+            to: cdEmail,
+            subject,
+            html,
+          });
+        }
       } catch (error) {
         logger.error('Failed to send reservation submitted email to CDs', {
           error: error instanceof Error ? error : new Error(String(error)),
@@ -662,28 +713,40 @@ export const reservationRouter = router({
         logger.error('Failed to log activity (reservation.approve)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
-      // Send approval email to studio
+      // Send approval email to studio (check preferences first)
       if (reservation.studios?.email) {
         try {
-          const emailData: ReservationApprovedData = {
-            studioName: reservation.studios.name,
-            competitionName: reservation.competitions?.name || 'Competition',
-            competitionYear: reservation.competitions?.year || new Date().getFullYear(),
-            spacesConfirmed: reservation.spaces_confirmed || 0,
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
-          };
-
-          const html = await renderReservationApproved(emailData);
-          const subject = getEmailSubject('reservation-approved', {
-            competitionName: emailData.competitionName,
-            competitionYear: emailData.competitionYear,
+          // Get studio owner to check preferences
+          const studio = await prisma.studios.findUnique({
+            where: { id: reservation.studio_id },
+            select: { owner_id: true },
           });
 
-          await sendEmail({
-            to: reservation.studios.email,
-            subject,
-            html,
-          });
+          if (studio?.owner_id) {
+            const isEnabled = await isEmailEnabled(studio.owner_id, 'reservation_approved');
+
+            if (isEnabled) {
+              const emailData: ReservationApprovedData = {
+                studioName: reservation.studios.name,
+                competitionName: reservation.competitions?.name || 'Competition',
+                competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+                spacesConfirmed: reservation.spaces_confirmed || 0,
+                portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
+              };
+
+              const html = await renderReservationApproved(emailData);
+              const subject = getEmailSubject('reservation-approved', {
+                competitionName: emailData.competitionName,
+                competitionYear: emailData.competitionYear,
+              });
+
+              await sendEmail({
+                to: reservation.studios.email,
+                subject,
+                html,
+              });
+            }
+          }
         } catch (error) {
           logger.error('Failed to send approval email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the approval
@@ -756,29 +819,41 @@ export const reservationRouter = router({
         },
       });
 
-      // Send rejection email to studio
+      // Send rejection email to studio (check preferences first)
       if (reservation.studios?.email) {
         try {
-          const emailData: ReservationRejectedData = {
-            studioName: reservation.studios.name,
-            competitionName: reservation.competitions?.name || 'Competition',
-            competitionYear: reservation.competitions?.year || new Date().getFullYear(),
-            reason: input.reason,
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
-            contactEmail: reservation.competitions?.contact_email || process.env.EMAIL_FROM || 'info@glowdance.com',
-          };
-
-          const html = await renderReservationRejected(emailData);
-          const subject = getEmailSubject('reservation-rejected', {
-            competitionName: emailData.competitionName,
-            competitionYear: emailData.competitionYear,
+          // Get studio owner to check preferences
+          const studio = await prisma.studios.findUnique({
+            where: { id: reservation.studio_id },
+            select: { owner_id: true },
           });
 
-          await sendEmail({
-            to: reservation.studios.email,
-            subject,
-            html,
-          });
+          if (studio?.owner_id) {
+            const isEnabled = await isEmailEnabled(studio.owner_id, 'reservation_rejected');
+
+            if (isEnabled) {
+              const emailData: ReservationRejectedData = {
+                studioName: reservation.studios.name,
+                competitionName: reservation.competitions?.name || 'Competition',
+                competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+                reason: input.reason,
+                portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
+                contactEmail: reservation.competitions?.contact_email || process.env.EMAIL_FROM || 'info@glowdance.com',
+              };
+
+              const html = await renderReservationRejected(emailData);
+              const subject = getEmailSubject('reservation-rejected', {
+                competitionName: emailData.competitionName,
+                competitionYear: emailData.competitionYear,
+              });
+
+              await sendEmail({
+                to: reservation.studios.email,
+                subject,
+                html,
+              });
+            }
+          }
         } catch (error) {
           logger.error('Failed to send rejection email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the rejection
