@@ -10,10 +10,11 @@ export const userRouter = router({
   /**
    * Check if email exists in auth system (for signup validation)
    * Public endpoint - does not reveal user info beyond existence
+   * Mutation (not query) so it can be called from client form handlers
    */
   checkEmailExists: publicProcedure
     .input(z.object({ email: z.string().email() }))
-    .query(async ({ input }) => {
+    .mutation(async ({ input }) => {
       try {
         // Query auth.users table directly via Prisma raw query
         const result = await prisma.$queryRaw<Array<{ exists: boolean }>>`
