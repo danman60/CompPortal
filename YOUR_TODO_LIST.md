@@ -1,11 +1,32 @@
 # Your Action Items - Quick Reference
 
 **Created**: October 21, 2025
-**Status**: Phases 1-3 Complete - Awaiting Your Actions
+**Updated**: October 21, 2025 (Session 2 - Chatwoot Fix)
+**Status**: Phases 1-3 Complete + Chatwoot Fixed - Awaiting Your Actions
 
 ---
 
-## 🚨 CRITICAL (Do These First - 15 minutes total)
+## 🚨 CRITICAL (Do These First - 20 minutes total)
+
+### 0. Update Chatwoot Tokens in Vercel (5 minutes) 🆕
+**Why**: Widget won't load until tokens are corrected
+**Priority**: CRITICAL (blocking support widget)
+
+**Quick Steps**:
+1. Go to: https://vercel.com/danman60s-projects/comp-portal/settings/environment-variables
+2. Update these 3 variables (see VERIFIED_TOKENS.md for details):
+   - `NEXT_PUBLIC_CHATWOOT_CD_TECH_TOKEN` = `irbih1LmxkGRoPAxqy1iZhrY`
+   - `NEXT_PUBLIC_CHATWOOT_SD_CD_TOKEN` = `Q5oZfrxnEEMSQx54MhP7rnZa`
+   - `NEXT_PUBLIC_CHATWOOT_SD_TECH_TOKEN` = `AqBfYtvETJEV6VSe5qe8GC7S`
+3. For each: Click Edit → Paste new token → Select ALL environments → Save
+4. Wait for automatic redeploy (~2 min)
+5. Test: Login as SD, click Support, widget should load
+
+**Result**: Support widget works, users receive email notifications
+
+**Full Guide**: `VERIFIED_TOKENS.md`
+
+---
 
 ### 1. Set Up Sentry Account (10 minutes)
 **Why**: Production error tracking won't work until configured
