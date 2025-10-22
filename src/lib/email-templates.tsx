@@ -3,6 +3,8 @@ import RegistrationConfirmation from '@/emails/RegistrationConfirmation';
 import InvoiceDelivery from '@/emails/InvoiceDelivery';
 import ReservationApproved from '@/emails/ReservationApproved';
 import ReservationRejected from '@/emails/ReservationRejected';
+import ReservationSubmitted from '@/emails/ReservationSubmitted';
+import RoutineSummarySubmitted from '@/emails/RoutineSummarySubmitted';
 import EntrySubmitted from '@/emails/EntrySubmitted';
 import StudioApproved from '@/emails/StudioApproved';
 import StudioRejected from '@/emails/StudioRejected';
@@ -123,6 +125,27 @@ export interface WelcomeEmailData {
   tenantBranding?: TenantBranding;
 }
 
+export interface ReservationSubmittedData {
+  studioName: string;
+  competitionName: string;
+  competitionYear: number;
+  spacesRequested: number;
+  studioEmail: string;
+  portalUrl: string;
+  tenantBranding?: TenantBranding;
+}
+
+export interface RoutineSummarySubmittedData {
+  studioName: string;
+  competitionName: string;
+  competitionYear: number;
+  routineCount: number;
+  totalFees: number;
+  studioEmail: string;
+  portalUrl: string;
+  tenantBranding?: TenantBranding;
+}
+
 /**
  * Render registration confirmation email
  */
@@ -194,10 +217,24 @@ export async function renderWelcomeEmail(data: WelcomeEmailData) {
 }
 
 /**
+ * Render reservation submitted email (for CD)
+ */
+export async function renderReservationSubmitted(data: ReservationSubmittedData) {
+  return render(<ReservationSubmitted {...data} />);
+}
+
+/**
+ * Render routine summary submitted email (for CD)
+ */
+export async function renderRoutineSummarySubmitted(data: RoutineSummarySubmittedData) {
+  return render(<RoutineSummarySubmitted {...data} />);
+}
+
+/**
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music',
   data: { [key: string]: any }
 ): string {
   const subjects = {
@@ -205,6 +242,8 @@ export function getEmailSubject(
     invoice: `Invoice ${data.invoiceNumber} - ${data.competitionName} (${data.competitionYear})`,
     'reservation-approved': `Reservation Approved - ${data.competitionName} (${data.competitionYear})`,
     'reservation-rejected': `Reservation Status Update - ${data.competitionName} (${data.competitionYear})`,
+    'reservation-submitted': `New Reservation from ${data.studioName} - ${data.competitionName}`,
+    'routine-summary-submitted': `Routine Summary Ready from ${data.studioName} - ${data.competitionName}`,
     entry: `Routine Submitted: ${data.entryTitle} - ${data.competitionName}`,
     'studio-approved': `Welcome to the Platform - ${data.studioName}`,
     'studio-rejected': `Studio Registration Status Update`,
