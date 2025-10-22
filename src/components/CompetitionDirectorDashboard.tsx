@@ -121,19 +121,60 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
     setGreeting(getGreeting());
   }, []);
 
-  // Add settings card for super admins
-  const dashboardCards = isAdmin
-    ? [
-        ...CD_DASHBOARD_CARDS,
-        {
-          id: 'settings',
-          href: '/dashboard/settings',
-          icon: '⚙️',
-          title: 'Settings',
-          description: 'System configuration',
-        },
-      ]
-    : CD_DASHBOARD_CARDS;
+  // Super Admin gets streamlined admin-focused dashboard
+  const SA_DASHBOARD_CARDS: DashboardCard[] = [
+    {
+      id: 'testing',
+      href: '/dashboard/admin/testing',
+      icon: '🧪',
+      title: 'Testing Tools',
+      description: 'Clean slate & test data',
+    },
+    {
+      id: 'studios',
+      href: '/dashboard/studios',
+      icon: '🏢',
+      title: 'Studios',
+      description: 'Manage studio accounts',
+    },
+    {
+      id: 'events',
+      href: '/dashboard/competitions',
+      icon: '🎪',
+      title: 'Events',
+      description: 'Manage competitions',
+    },
+    {
+      id: 'analytics',
+      href: '/dashboard/analytics',
+      icon: '📊',
+      title: 'Analytics',
+      description: 'System health & insights',
+    },
+    {
+      id: 'emails',
+      href: '/dashboard/emails',
+      icon: '📨',
+      title: 'Emails',
+      description: 'Debug email templates',
+    },
+    {
+      id: 'inspector',
+      href: '/dashboard/admin/inspector',
+      icon: '🔍',
+      title: 'Admin Inspector',
+      description: 'Debug CD workflows',
+    },
+    {
+      id: 'settings',
+      href: '/dashboard/settings',
+      icon: '⚙️',
+      title: 'Settings',
+      description: 'System configuration',
+    },
+  ];
+
+  const dashboardCards = isAdmin ? SA_DASHBOARD_CARDS : CD_DASHBOARD_CARDS;
 
   return (
     <>
