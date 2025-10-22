@@ -66,6 +66,20 @@ v=DMARC1; p=quarantine; rua=mailto:noreply@compsync.net
 
 ## Troubleshooting
 
+### Emails Not Sending At All
+
+**CRITICAL**: Large/complex email templates can block sending entirely.
+
+**Symptoms**: Signups work, users created, but zero emails sent (not even slow)
+
+**Fix**: Use minimal template instead:
+1. Dashboard → Authentication → Email Templates → Confirm signup
+2. Replace with contents of `supabase/templates/confirmation-minimal.html`
+3. Click Save
+4. Test signup - email should arrive in 1-5 seconds
+
+**Why**: Templates over ~3-4KB or with complex CSS can cause SMTP failures
+
 ### Emails Still Slow
 - Verify SMTP credentials are correct
 - Check Namecheap Private Email status page
