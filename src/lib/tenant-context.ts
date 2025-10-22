@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 import { createServerSupabaseClient } from './supabase-server-client';
+import { prisma } from './prisma';
 
 /**
  * Tenant context data structure
@@ -43,33 +44,52 @@ export async function getTenantId(): Promise<string | null> {
 /**
  * Get full tenant data from request headers (server-side only)
  * Fetches from database based on subdomain
+ * Uses Prisma to bypass RLS (tenant data is public)
  */
 export async function getTenantData(): Promise<TenantData | null> {
   const headersList = await headers();
   const hostname = headersList.get('host') || '';
   const subdomain = extractSubdomain(hostname);
 
-  const supabase = await createServerSupabaseClient();
-
   // Query by subdomain if present
   if (subdomain) {
-    const { data } = await supabase
-      .from('tenants')
-      .select('id, slug, subdomain, name, branding')
-      .eq('subdomain', subdomain)
-      .single();
+    const tenant = await prisma.tenants.findFirst({
+      where: { subdomain },
+      select: {
+        id: true,
+        slug: true,
+        subdomain: true,
+        name: true,
+        branding: true,
+      },
+    });
 
-    if (data) return data as TenantData;
+    if (tenant) {
+      return {
+        ...tenant,
+        branding: tenant.branding as any || {},
+      };
+    }
   }
 
   // Fallback to demo tenant
-  const { data } = await supabase
-    .from('tenants')
-    .select('id, slug, subdomain, name, branding')
-    .eq('slug', 'demo')
-    .single();
+  const tenant = await prisma.tenants.findFirst({
+    where: { slug: 'demo' },
+    select: {
+      id: true,
+      slug: true,
+      subdomain: true,
+      name: true,
+      branding: true,
+    },
+  });
 
-  return data as TenantData | null;
+  if (!tenant) return null;
+
+  return {
+    ...tenant,
+    branding: tenant.branding as any || {},
+  };
 }
 
 /**
