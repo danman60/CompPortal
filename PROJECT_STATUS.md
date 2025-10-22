@@ -1,8 +1,8 @@
 # CompPortal - Project Status
 
-**Last Updated**: October 20, 2025 12:44 PM EST (Production Readiness Initiative)
+**Last Updated**: October 21, 2025 11:35 PM EST (SA Dashboard Enhancement)
 **Current Phase**: 🔄 PREPARING FOR PRODUCTION LAUNCH
-**Build**: ✅ All 57 routes compile
+**Build**: ✅ All 59 routes compile
 **Production**: https://comp-portal-one.vercel.app/
 **Status Page**: https://comp-portal-one.vercel.app/status
 
@@ -294,13 +294,33 @@
 - Simplified authorization to role-based only (no tenant comparisons)
 - Database schema unchanged (soft remove - tenant_id fields kept for future use)
 
+**SA Dashboard Enhancement** 🔍 (NEW - Oct 21, 2025)
+- **Commit**: d2cef28
+- **Issue**: SA dashboard cluttered with 14 cards (all CD operational tools + SA tools)
+- **Solution**: Streamlined SA dashboard to 7 admin-focused cards
+- **Changes**:
+  - Removed 12 CD operational cards (Invoices, Judges, Scoring, Reports, etc.)
+  - SA Dashboard Cards (CompetitionDirectorDashboard.tsx:125-177):
+    1. 🧪 Testing Tools - Clean slate & test data (SA exclusive)
+    2. 🏢 Studios - Manage studio accounts
+    3. 🎪 Events - Manage competitions
+    4. 📊 Analytics - System health & insights
+    5. 📨 Emails - Debug email templates
+    6. 🔍 **Admin Inspector** - Debug CD workflows (NEW)
+    7. ⚙️ Settings - System configuration (SA exclusive)
+  - Created `/dashboard/admin/inspector` page (admin/inspector/page.tsx:1-159)
+    - 8 CD workflow cards with direct links
+    - Quick tips for debugging common issues
+    - Provides SA visibility into CD operations without dashboard clutter
+- **Status**: ✅ Built, deployed, 59 routes compiling
+
 ---
 
 ## 🎯 Quick Stats
 
 | Metric | Value |
 |--------|-------|
-| Routes | 56 (all compiling, added /admin/failures) |
+| Routes | 59 (all compiling, added /admin/inspector) |
 | Components | 78+ (added FailureNotificationBanner) |
 | tRPC Routers | 30 (added failure router) |
 | Database Tables | 39 (added failure_log) |
