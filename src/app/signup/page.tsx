@@ -23,6 +23,7 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const utils = trpc.useUtils();
 
   const updateFormData = (field: keyof SignupFormData, value: string) => {
     if (field === 'email') setError(null);
@@ -55,10 +56,12 @@ export default function SignupPage() {
 
     try {
       // Check if email already exists before attempting signup
-      const response = await fetch('/api/trpc/user.checkEmailExists?input=' + encodeURIComponent(JSON.stringify({ email: formData.email })));
-      const emailCheck = await response.json();
+      const emailCheck = await utils.user.checkEmailExists.fetch({ email: formData.email });
 
-      if (emailCheck.result?.data?.exists) {
+      console.log('Email check response:', emailCheck);
+      console.log('Exists?', emailCheck.exists);
+
+      if (emailCheck.exists) {
         setError('This email is already registered. Please sign in or reset your password.');
         setLoading(false);
         return;

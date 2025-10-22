@@ -7,6 +7,7 @@
 
 import { router, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-server';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { faker } from '@faker-js/faker';
@@ -63,6 +64,7 @@ export const testingRouter = router({
       }
 
       const deletedCounts: Record<string, number> = {};
+      let studioDirectorIds: string[] = [];
 
       await prisma.$transaction(async (tx) => {
         // Delete in reverse dependency order
@@ -105,11 +107,20 @@ export const testingRouter = router({
         }
 
         if (input.wipeOptions.studios) {
-          // Delete studio users (but preserve CD and SA accounts)
-          const studioUsers = await tx.users.deleteMany({
+          // Get studio director user IDs before deleting (to delete from auth.users)
+          const studioDirectors = await tx.user_profiles.findMany({
             where: {
               role: 'studio_director',
-              is_super_admin: { not: true },
+            },
+            select: { id: true },
+          });
+
+          studioDirectorIds = studioDirectors.map(sd => sd.id);
+
+          // Delete studio user profiles (but preserve CD and SA accounts)
+          const studioUsers = await tx.user_profiles.deleteMany({
+            where: {
+              role: 'studio_director',
             },
           });
 
@@ -118,6 +129,21 @@ export const testingRouter = router({
           deletedCounts.studios = studios.count;
         }
       });
+
+      // Delete from auth.users AFTER transaction completes (Supabase Admin API)
+      if (studioDirectorIds.length > 0) {
+        let authDeletedCount = 0;
+        for (const userId of studioDirectorIds) {
+          try {
+            await supabaseAdmin.auth.admin.deleteUser(userId);
+            authDeletedCount++;
+          } catch (error) {
+            console.error(`Failed to delete auth user ${userId}:`, error);
+            // Continue with other deletions
+          }
+        }
+        deletedCounts.auth_users = authDeletedCount;
+      }
 
       return {
         success: true,
