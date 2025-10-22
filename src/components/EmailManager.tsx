@@ -353,7 +353,7 @@ export default function EmailManager() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(emailPreferences).map(([emailType, config]) => {
-              const preference = preferences.find(p => p.email_type === emailType);
+              const preference = preferences.find((p: any) => p.email_type === emailType);
               const isEnabled = preference?.enabled ?? true;
 
               return (

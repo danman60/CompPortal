@@ -8,11 +8,13 @@ import { logger } from '@/lib/logger';
 import {
   renderReservationApproved,
   renderReservationRejected,
+  renderReservationSubmitted,
   renderPaymentConfirmed,
   renderInvoiceDelivery,
   getEmailSubject,
   type ReservationApprovedData,
   type ReservationRejectedData,
+  type ReservationSubmittedData,
   type PaymentConfirmedData,
   type InvoiceDeliveryData,
 } from '@/lib/email-templates';
@@ -42,6 +44,28 @@ const reservationInputSchema = z.object({
   internal_notes: z.string().optional(),
   public_notes: z.string().optional(),
 });
+
+/**
+ * Helper function to check if email notification is enabled for a user
+ */
+async function isEmailEnabled(userId: string, emailType: string): Promise<boolean> {
+  try {
+    const preference = await prisma.email_preferences.findUnique({
+      where: {
+        user_id_email_type: {
+          user_id: userId,
+          email_type: emailType as any,
+        },
+      },
+    });
+    // Default to true if no preference exists
+    return preference?.enabled ?? true;
+  } catch (error) {
+    logger.error('Failed to check email preference', { error: error instanceof Error ? error : new Error(String(error)), userId, emailType });
+    // Default to true on error
+    return true;
+  }
+}
 
 export const reservationRouter = router({
   // Get all reservations with optional filtering (role-based)
@@ -448,6 +472,30 @@ export const reservationRouter = router({
           },
         },
       });
+
+      // Send "reservation_submitted" email to Competition Directors (non-blocking)
+      try {
+        // Get all Competition Directors for this tenant
+        const competitionDirectors = await prisma.user_profiles.findMany({
+          where: {
+            tenant_id: studio.tenant_id,
+            role: 'competition_director',
+          },
+          select: {
+            id: true,
+            first_name: true,
+          },
+        });
+
+        // TODO: Send email to each CD who has this preference enabled
+        // Need to fetch user emails from Supabase auth.users table
+      } catch (error) {
+        logger.error('Failed to send reservation submitted email to CDs', {
+          error: error instanceof Error ? error : new Error(String(error)),
+          reservationId: reservation.id,
+        });
+        // Don't throw - email failure shouldn't block the creation
+      }
 
       return reservation;
     }),
