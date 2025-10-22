@@ -1001,6 +1001,10 @@ model studios {
   logo_url                         String?
   social_media                     Json?                 @default("{}")
   settings                         Json?                 @default("{}")
+  consent_photo_video              Boolean?              @default(false)
+  consent_photo_video_at           DateTime?             @db.Timestamp(6)
+  consent_legal_info               Boolean?              @default(false)
+  consent_legal_info_at            DateTime?             @db.Timestamp(6)
   created_at                       DateTime?             @default(now()) @db.Timestamp(6)
   updated_at                       DateTime?             @default(now()) @db.Timestamp(6)
   tenants                          tenants               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)

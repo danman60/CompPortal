@@ -19,9 +19,11 @@ export default function OnboardingPage() {
     postalCode: '',
     phone: '',
     email: '',
+    consentPhotoVideo: false,
+    consentLegalInfo: false,
   });
 
-  const updateFormData = (field: keyof typeof formData, value: string) => {
+  const updateFormData = (field: keyof typeof formData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -36,6 +38,14 @@ export default function OnboardingPage() {
   const validateStep2 = () => {
     if (!formData.studioName) {
       setError('Studio name is required');
+      return false;
+    }
+    if (!formData.consentPhotoVideo) {
+      setError('You must consent to photo/video usage to continue');
+      return false;
+    }
+    if (!formData.consentLegalInfo) {
+      setError('You must consent to sharing legal information to continue');
       return false;
     }
     return true;
@@ -90,6 +100,8 @@ export default function OnboardingPage() {
         .single();
 
       let studioError;
+      const now = new Date().toISOString();
+
       if (existingStudio) {
         // Update existing studio
         const { error } = await supabase
@@ -104,6 +116,10 @@ export default function OnboardingPage() {
             email: formData.email || user.email,
             status: 'approved',
             country: 'Canada',
+            consent_photo_video: formData.consentPhotoVideo,
+            consent_photo_video_at: formData.consentPhotoVideo ? now : null,
+            consent_legal_info: formData.consentLegalInfo,
+            consent_legal_info_at: formData.consentLegalInfo ? now : null,
           })
           .eq('owner_id', user.id);
         studioError = error;
@@ -123,6 +139,10 @@ export default function OnboardingPage() {
             email: formData.email || user.email,
             status: 'approved',
             country: 'Canada',
+            consent_photo_video: formData.consentPhotoVideo,
+            consent_photo_video_at: formData.consentPhotoVideo ? now : null,
+            consent_legal_info: formData.consentLegalInfo,
+            consent_legal_info_at: formData.consentLegalInfo ? now : null,
           });
         studioError = error;
       }
@@ -324,6 +344,43 @@ export default function OnboardingPage() {
                     className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                     placeholder="M5H 2N2"
                   />
+                </div>
+
+                {/* Consent Waivers */}
+                <div className="pt-4 pb-2 border-t border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-3">Required Consents</h3>
+
+                  <div className="space-y-4">
+                    {/* Photo/Video Consent */}
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.consentPhotoVideo}
+                        onChange={(e) => updateFormData('consentPhotoVideo', e.target.checked)}
+                        className="mt-1 w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-purple-500 focus:ring-2 focus:ring-purple-500"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                          I consent to the use of photos and videos of my studio's dancers for competition materials, promotional purposes, and event documentation. <span className="text-red-400">*</span>
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Legal Info Consent */}
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.consentLegalInfo}
+                        onChange={(e) => updateFormData('consentLegalInfo', e.target.checked)}
+                        className="mt-1 w-5 h-5 rounded border-white/20 bg-white/5 checked:bg-purple-500 focus:ring-2 focus:ring-purple-500"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                          I consent to sharing legal information (studio name, contact details, liability acknowledgment) with the CompSync platform for registration and competition management purposes. <span className="text-red-400">*</span>
+                        </span>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-2">
