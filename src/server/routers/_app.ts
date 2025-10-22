@@ -30,6 +30,7 @@ import { tenantSettingsRouter } from './tenantSettings';
 import { failureRouter } from './failure';
 import { testingRouter } from './testing';
 import { emailPreferencesRouter } from './emailPreferences';
+import { superAdminRouter } from './superAdmin';
 
 /**
  * Main tRPC router
@@ -67,6 +68,7 @@ export const appRouter = router({
   tenantSettings: tenantSettingsRouter,
   failure: failureRouter,
   emailPreferences: emailPreferencesRouter,
+  superAdmin: superAdminRouter,
 });
 
 // Export type definition of API
