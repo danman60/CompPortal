@@ -2,7 +2,7 @@
 
 ## Overview
 
-Custom branded email templates for CompPortal authentication emails.
+Custom branded email templates for CompSync authentication emails.
 
 ## Templates
 

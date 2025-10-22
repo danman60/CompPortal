@@ -81,7 +81,7 @@ enable_confirmations = true
 
 # Custom email templates
 [auth.email.template.confirmation]
-subject = "Confirm Your Email - CompPortal"
+subject = "Confirm Your Email - CompSync"
 content_path = "./supabase/templates/confirmation.html"
 
 # [auth.email.template.invite]
