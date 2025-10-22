@@ -5,6 +5,25 @@ import { useState } from 'react';
 
 type TemplateType = 'registration' | 'invoice' | 'reservation' | 'entry' | 'missing-music';
 
+type EmailType =
+  | 'reservation_submitted'
+  | 'reservation_approved'
+  | 'reservation_rejected'
+  | 'routine_summary_submitted'
+  | 'invoice_received'
+  | 'payment_confirmed'
+  | 'entry_submitted'
+  | 'missing_music'
+  | 'studio_approved'
+  | 'studio_rejected';
+
+interface EmailPreferenceConfig {
+  label: string;
+  description: string;
+  icon: string;
+  userType: 'CD' | 'SD';
+}
+
 interface TemplateConfig {
   name: string;
   description: string;
@@ -99,6 +118,69 @@ const templates: Record<TemplateType, TemplateConfig> = {
   },
 };
 
+const emailPreferences: Record<EmailType, EmailPreferenceConfig> = {
+  reservation_submitted: {
+    label: 'Reservation Submitted',
+    description: 'When a Studio Director submits a reservation',
+    icon: '📥',
+    userType: 'CD',
+  },
+  reservation_approved: {
+    label: 'Reservation Approved',
+    description: 'When your reservation is approved',
+    icon: '✅',
+    userType: 'SD',
+  },
+  reservation_rejected: {
+    label: 'Reservation Rejected',
+    description: 'When your reservation is rejected',
+    icon: '❌',
+    userType: 'SD',
+  },
+  routine_summary_submitted: {
+    label: 'Routine Summary Submitted',
+    description: 'When a studio submits their routine summary',
+    icon: '📋',
+    userType: 'CD',
+  },
+  invoice_received: {
+    label: 'Invoice Received',
+    description: 'When a new invoice is created for your studio',
+    icon: '💰',
+    userType: 'SD',
+  },
+  payment_confirmed: {
+    label: 'Payment Confirmed',
+    description: 'When your payment is processed',
+    icon: '💳',
+    userType: 'SD',
+  },
+  entry_submitted: {
+    label: 'Entry Submitted',
+    description: 'Confirmation when you submit a routine',
+    icon: '🎭',
+    userType: 'SD',
+  },
+  missing_music: {
+    label: 'Missing Music Reminder',
+    description: 'Reminders to upload missing music files',
+    icon: '🎵',
+    userType: 'SD',
+  },
+  studio_approved: {
+    label: 'Studio Approved',
+    description: 'Welcome email when your studio is approved',
+    icon: '🎉',
+    userType: 'SD',
+  },
+  studio_rejected: {
+    label: 'Studio Rejected',
+    description: 'When your studio registration is rejected',
+    icon: '⚠️',
+    userType: 'SD',
+  },
+};
+
 export default function EmailManager() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('registration');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
@@ -117,6 +199,17 @@ export default function EmailManager() {
   const { data: emailHistory } = trpc.email.getHistory.useQuery({
     limit: 10,
   });
+
+  const { data: preferences, refetch: refetchPreferences } = trpc.emailPreferences.getAll.useQuery();
+  const updatePreference = trpc.emailPreferences.update.useMutation({
+    onSuccess: () => {
+      refetchPreferences();
+    },
+  });
+
+  const handleTogglePreference = async (emailType: EmailType, enabled: boolean) => {
+    await updatePreference.mutateAsync({ emailType, enabled });
+  };
 
   const handlePreview = async () => {
     setIsLoading(true);
@@ -244,6 +337,70 @@ export default function EmailManager() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Email Preferences */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">🔔 Email Notification Preferences</h2>
+        <p className="text-gray-400 text-sm mb-6">
+          Control which email notifications you want to receive. All notifications are enabled by default.
+        </p>
+
+        {!preferences ? (
+          <div className="text-center py-8 text-gray-400">
+            Loading preferences...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(emailPreferences).map(([emailType, config]) => {
+              const preference = preferences.find(p => p.email_type === emailType);
+              const isEnabled = preference?.enabled ?? true;
+
+              return (
+                <div
+                  key={emailType}
+                  className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-2xl">{config.icon}</span>
+                        <div>
+                          <h3 className="text-white font-semibold">{config.label}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            config.userType === 'CD'
+                              ? 'bg-purple-500/20 text-purple-300'
+                              : 'bg-blue-500/20 text-blue-300'
+                          }`}>
+                            {config.userType === 'CD' ? 'Competition Director' : 'Studio Director'}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-400 mt-2">{config.description}</p>
+                    </div>
+
+                    <button
+                      onClick={() => handleTogglePreference(emailType as EmailType, !isEnabled)}
+                      disabled={updatePreference.isPending}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isEnabled ? 'bg-purple-600' : 'bg-gray-600'
+                      }`}
+                      role="switch"
+                      aria-checked={isEnabled}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          isEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Email History */}

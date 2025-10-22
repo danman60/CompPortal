@@ -29,6 +29,7 @@ import { chatRouter } from './chat';
 import { tenantSettingsRouter } from './tenantSettings';
 import { failureRouter } from './failure';
 import { testingRouter } from './testing';
+import { emailPreferencesRouter } from './emailPreferences';
 
 /**
  * Main tRPC router
@@ -65,6 +66,7 @@ export const appRouter = router({
   chat: chatRouter,
   tenantSettings: tenantSettingsRouter,
   failure: failureRouter,
+  emailPreferences: emailPreferencesRouter,
 });
 
 // Export type definition of API
