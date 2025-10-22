@@ -398,10 +398,10 @@ export const competitionRouter = router({
           await tx.competition_entries.deleteMany({ where: { competition_id: input.id } });
           await tx.competitions.delete({ where: { id: input.id } });
         } else {
-          // Soft delete (recommended)
+          // Soft delete (recommended) - mark as cancelled
           await tx.competitions.update({
             where: { id: input.id },
-            data: { status: 'deleted' },
+            data: { status: 'cancelled', updated_at: new Date() },
           });
         }
       });
