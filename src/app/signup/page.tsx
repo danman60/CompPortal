@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -53,6 +54,16 @@ export default function SignupPage() {
     setError(null);
 
     try {
+      // Check if email already exists before attempting signup
+      const response = await fetch('/api/trpc/user.checkEmailExists?input=' + encodeURIComponent(JSON.stringify({ email: formData.email })));
+      const emailCheck = await response.json();
+
+      if (emailCheck.result?.data?.exists) {
+        setError('This email is already registered. Please sign in or reset your password.');
+        setLoading(false);
+        return;
+      }
+
       // Create auth account - user will complete profile in onboarding after email confirmation
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,

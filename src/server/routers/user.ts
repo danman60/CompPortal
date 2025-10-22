@@ -1,11 +1,34 @@
-import { router, protectedProcedure } from '../trpc';
+import { router, protectedProcedure, publicProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { supabaseAdmin } from '@/lib/supabase-server';
 import { z } from 'zod';
 
 /**
  * User Router - User profile and session data
  */
 export const userRouter = router({
+  /**
+   * Check if email exists in auth system (for signup validation)
+   * Public endpoint - does not reveal user info beyond existence
+   */
+  checkEmailExists: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ input }) => {
+      try {
+        // Query auth.users table directly via Prisma raw query
+        const result = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+          SELECT EXISTS(
+            SELECT 1 FROM auth.users WHERE email = ${input.email}
+          ) as exists
+        `;
+
+        return { exists: result[0]?.exists || false };
+      } catch (err) {
+        // On any error, assume email might exist (fail safe)
+        return { exists: true };
+      }
+    }),
+
   /**
    * Get current user profile with role and studio info
    */
