@@ -39,7 +39,7 @@ export default function ReservationPipeline() {
   const [remindConfirm, setRemindConfirm] = useState<{isOpen: boolean; studioName: string; studioId: string; competitionId: string} | null>(null);
 
   // Fetch data
-  const { data: pipelineData, refetch } = trpc.reservation.getPipelineView.useQuery();
+  const { data: pipelineData, isLoading, refetch } = trpc.reservation.getPipelineView.useQuery();
   const { data: competitions } = trpc.competition.getAll.useQuery();
 
   // Mutations
@@ -383,7 +383,15 @@ export default function ReservationPipeline() {
                 </tr>
               </thead>
               <tbody>
-                {filteredReservations.length === 0 ? (
+                {/* 🐛 FIX Bug #19: Add loading state to prevent empty state flash */}
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-16 text-center text-gray-400">
+                      <div className="text-4xl mb-4 animate-pulse">⏳</div>
+                      <div className="text-xl font-semibold mb-2">Loading reservations...</div>
+                    </td>
+                  </tr>
+                ) : filteredReservations.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-16 text-center text-gray-400">
                       <div className="text-6xl mb-4 opacity-50">📋</div>
