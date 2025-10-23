@@ -1,8 +1,8 @@
 {
   "cycle_active": false,
-  "current_test": "post_session_verification_complete",
-  "tests_run": 35,
-  "bugs_found": 5,
+  "current_test": "additional_pages_testing",
+  "tests_run": 38,
+  "bugs_found": 6,
   "bugs_fixed": 4,
   "last_test_time": "2025-10-23T07:51:00Z",
   "last_deploy_time": "2025-10-23T05:34:00Z",
@@ -201,6 +201,24 @@
       "status": "passed",
       "timestamp": "2025-10-23T07:51:00Z",
       "note": "Reservation Pipeline page loads correctly - shows proper UI with event filter, status filters (All, Pending Reservation, Pending Routine Creation, Pending Invoice, Invoiced, Paid), complete table headers, proper empty state message. Note: Shows 0 reservations (test data may have been cleaned)."
+    },
+    {
+      "test": "scoreboard_page_verification",
+      "status": "passed",
+      "timestamp": "2025-10-23T08:00:00Z",
+      "note": "Live Scoreboard page loads correctly - shows Competition ID input field, proper empty state message 'No scored routines yet for this competition', clean UI with no errors."
+    },
+    {
+      "test": "scoreboard_viewer_verification",
+      "status": "passed",
+      "timestamp": "2025-10-23T08:00:00Z",
+      "note": "Scoreboard Viewer page loads correctly - shows 'Dance Competition 2025' header, WebSocket connection indicators, 'Starting Soon' message, empty standings section, proper layout. WebSocket reconnection attempts are normal for live connection."
+    },
+    {
+      "test": "tenant_settings_page_verification",
+      "status": "failed",
+      "timestamp": "2025-10-23T08:00:00Z",
+      "note": "ISSUE FOUND: Tenant Settings page shows blank main section with excessive WebSocket reconnection attempts (200+ messages). No React errors in console. Likely infinite re-render loop in one of the child components (EntrySizeSettings, AgeDivisionSettings, DanceStyleSettings, ScoringRubricSettings, or AwardsSettings). Requires investigation."
     }
   ],
   "errors_found": [
@@ -250,7 +268,16 @@
       "fix": "Fixed in 2 commits: (1) Converted page to client component (26f8e76), (2) Moved useTableSort before conditional return (3c0a5b5)",
       "status": "fixed",
       "commit": "3c0a5b5",
-      "note": "VERIFIED WORKING IN PRODUCTION - Page component converted to client, hooks ordering fixed in AllInvoicesList.tsx:305. Tested on compsync.net - loads perfectly with 1 invoice, filters, stats, action buttons."
+      "note": "VERIFIED WORKING IN PRODUCTION - Page component converted to client, hooks ordering fixed in AllInvoicesList.txt:305. Tested on compsync.net - loads perfectly with 1 invoice, filters, stats, action buttons."
+    },
+    {
+      "test": "tenant_settings",
+      "url": "/dashboard/settings/tenant",
+      "error": "Page shows blank main section with excessive WebSocket reconnection attempts (200+ messages)",
+      "root_cause": "Likely infinite re-render loop in one of the child components (EntrySizeSettings, AgeDivisionSettings, DanceStyleSettings, ScoringRubricSettings, or AwardsSettings)",
+      "fix": "Not yet fixed - requires investigation of component hooks ordering and dependencies",
+      "status": "investigating",
+      "note": "No React errors in console (only camera/microphone permission warnings). Page structure in page.tsx appears correct. Issue is in one of the imported components."
     }
   ],
   "testing_instructions": {
