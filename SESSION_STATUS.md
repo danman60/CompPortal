@@ -3,13 +3,13 @@
 ## Current State: 🚨 BLOCKED - DEPLOYMENT ISSUE
 
 ### Session Progress
-- **Tests Run**: 47 (4 new tests while blocked)
+- **Tests Run**: 49 (6 new tests while blocked)
 - **Bugs Found**: 7 (2 new this session)
 - **Bugs Fixed**: 6 (2 fixed this session)
-- **Commits**: 8 pushed to production (5 code, 3 docs)
+- **Commits**: 9 pushed to production (5 code, 4 docs)
 - **Build Status**: ✅ All passing locally
 - **Deployment Status**: ❌ BLOCKED - Not deploying after 1 hour
-- **Context Usage**: ~106k/200k (53%)
+- **Context Usage**: ~123k/200k (62%)
 
 ### Bugs Fixed This Session
 
@@ -82,6 +82,8 @@
 - Dancers list (13 dancers displayed) ✅
 - Dancer add page (SD-only message displayed correctly) ✅
 - Dancer edit workflow (form loads with all fields) ✅
+- Entries/Routines list page ✅
+- Entry edit form (multi-step wizard loads) ✅
 
 **Not Yet Tested**
 - Dancer creation flow (SD login blocked)
