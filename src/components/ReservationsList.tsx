@@ -9,7 +9,6 @@ import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { SkeletonList } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
-import PullToRefresh from 'react-pull-to-refresh';
 import { hapticMedium } from '@/lib/haptics';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -295,7 +294,6 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   };
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
     <div>
       {/* Header with Create Button (Studio Directors Only - Issue #18) */}
       <div className="flex justify-between items-center mb-6">
@@ -1036,6 +1034,5 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
         }}
       />
     </div>
-    </PullToRefresh>
   );
 }
