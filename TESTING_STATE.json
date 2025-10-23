@@ -1,13 +1,13 @@
 {
   "cycle_active": true,
   "current_test": "reservation_creation",
-  "tests_run": 2,
-  "bugs_found": 0,
-  "bugs_fixed": 0,
-  "last_test_time": "2025-10-23T03:15:00Z",
-  "last_deploy_time": null,
-  "awaiting_deployment": false,
-  "deployment_hash": "bd9e57b",
+  "tests_run": 3,
+  "bugs_found": 1,
+  "bugs_fixed": 1,
+  "last_test_time": "2025-10-23T03:25:00Z",
+  "last_deploy_time": "2025-10-23T03:25:00Z",
+  "awaiting_deployment": true,
+  "deployment_hash": "a3de255",
   "test_queue": [
     "reservation_creation",
     "dancers_page",
@@ -28,5 +28,14 @@
       "note": "4 competitions visible in dropdown - tenant fix confirmed working"
     }
   ],
-  "errors_found": []
+  "errors_found": [
+    {
+      "test": "reservation_creation",
+      "url": "/dashboard/reservations/new",
+      "error": "Competition dropdown empty",
+      "fix": "Changed competition.getAll to protectedProcedure",
+      "status": "fixed",
+      "commit": "a3de255"
+    }
+  ]
 }

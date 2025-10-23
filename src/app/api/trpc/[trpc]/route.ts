@@ -46,12 +46,22 @@ const handler = async (req: Request) => {
         studioId = studio?.id || null;
       }
 
+      // TEMPORARY: Default to EMPWR tenant if none detected (for demo)
+      const finalTenantId = tenantId || '00000000-0000-0000-0000-000000000001';
+      const finalTenantData = tenantData || {
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'EMPWR Dance Experience',
+        subdomain: 'demo',
+        slug: 'empwr',
+        branding: {},
+      };
+
       return {
         userId: user.id,
         userRole: userProfile?.role || null,
         studioId,
-        tenantId,
-        tenantData,
+        tenantId: finalTenantId,
+        tenantData: finalTenantData,
       };
     } catch (error) {
       logger.error('Error creating tRPC context', { error: error instanceof Error ? error : new Error(String(error)) });
