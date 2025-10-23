@@ -3,15 +3,15 @@
 ## Current State: 🚨 CRITICAL - DEPLOYMENT FAILURE CONFIRMED
 
 ### Session Progress (After Auto-Compact Resumption)
-- **Tests Run**: 65 total (5 tenant settings + 14 CD workflow pages)
+- **Tests Run**: 68 total (5 tenant settings + 17 CD workflow pages)
 - **Bugs Found**: 7 (2 new in previous session)
 - **Bugs Fixed**: 6 (2 fixed in previous session)
 - **Bugs Verified**: 0 (partial deployment - only 1/3 files deployed)
-- **Commits**: 18 pushed to production (5 code, 13 docs)
+- **Commits**: 19 pushed to production (5 code, 14 docs)
 - **Build Status**: ✅ All passing locally
-- **Deployment Status**: ❌ CRITICAL - Partial deployment (build cache corruption)
+- **Deployment Status**: ❌ CRITICAL - Partial deployment (build cache corruption - PERSISTS AFTER RE-TEST)
 - **Root Cause**: ✅ IDENTIFIED - Vercel build cache serving mixed old/new chunks
-- **Context Usage**: ~140k/200k (70%)
+- **Context Usage**: ~145k/200k (72%)
 
 ### Bugs Fixed This Session
 
@@ -36,8 +36,9 @@
 - **Forced Deployment**: ~09:53 UTC (commit cfe6f60 - trivial change)
 - **Test #1**: 09:19 UTC (55 min after original) - Old code serving
 - **Test #2**: After auto-compact resumption - Old code STILL serving
+- **Test #3**: Current session re-test - Old code STILL serving (3+ hours total)
 - **Expected**: 15-20 minutes per deployment
-- **Actual**: 2+ hours, multiple deployment attempts, OLD CODE STILL SERVING
+- **Actual**: 3+ hours, multiple deployment attempts, OLD CODE STILL SERVING
 
 **Test Results (After Auto-Compact):**
 | Tab | Status | Error |
@@ -109,6 +110,13 @@
 - Reservation Pipeline page - Event filter, pipeline stages, no reservations found
 - Routine Summaries page - Competition filter, summary table with discount support
 - Invoices (All) page - 1 invoice displayed, $115.00 pending, filters working
+- System Status page (/status) - All systems operational, database connected, 3m uptime
+- Admin Inspector page - 8 workflow links with debugging tips, all functional
+- Scoreboard page - Live scoreboard with competition UUID input, no scored routines message
+
+**Re-Tested (Deployment Verification)** ❌
+- Tenant Settings: Dance Styles tab - STILL CRASHES (3+ hours after fix committed)
+- Tenant Settings: Scoring Rubric tab - STILL CRASHES (3+ hours after fix committed)
 
 **Not Yet Tested**
 - Dancer creation flow (SD login blocked)
