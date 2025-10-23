@@ -60,7 +60,12 @@ export const competitionRouter = router({
         // No tenant filter if super admin and no specific tenant requested
       } else {
         // Non-super admins only see their own tenant's competitions
-        where.tenant_id = ctx.tenantId;
+        if (ctx.tenantId) {
+          where.tenant_id = ctx.tenantId;
+        } else {
+          // If no tenant context, return empty results
+          return { competitions: [], total: 0 };
+        }
       }
 
       if (year) {
