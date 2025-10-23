@@ -795,17 +795,8 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 )}
               </div>
 
-              <div className="pt-4 border-t border-white/10">
-                <div className="text-sm text-gray-400">Estimated Fee</div>
-                <div className="text-2xl font-bold text-green-400">
-                  ${(() => {
-                    const sizeCategory = lookupData?.entrySizeCategories.find(s => s.id === formData.entry_size_category_id);
-                    const baseFee = Number(sizeCategory?.base_fee || 0);
-                    const perParticipantFee = Number(sizeCategory?.per_participant_fee || 0);
-                    return (baseFee + (perParticipantFee * formData.participants.length)).toFixed(2);
-                  })()}
-                </div>
-              </div>
+              {/* 🐛 FIX Bug #13: Fee display removed from creation wizard */}
+              {/* Fees are calculated and displayed AFTER submission when invoice is generated */}
             </div>
           </div>
         )}
