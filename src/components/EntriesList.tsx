@@ -76,6 +76,12 @@ export default function EntriesList() {
     (r: any) => r.status === 'approved'
   ) ?? false;
 
+  // Get the first approved reservation's competition ID for routine creation
+  const firstApprovedReservation = reservationData?.reservations?.find(
+    (r: any) => r.status === 'approved'
+  );
+  const approvedCompetitionId = firstApprovedReservation?.competition_id || '';
+
   // Modal states
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -396,7 +402,7 @@ export default function EntriesList() {
           </p>
           {hasApprovedReservations ? (
             <Link
-              href="/dashboard/entries/create"
+              href={`/dashboard/entries/create?competition=${approvedCompetitionId}`}
               className="inline-block bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200"
             >
               Create Your First Routine
@@ -569,7 +575,7 @@ export default function EntriesList() {
     {/* Floating Action Button for Mobile */}
     {hasApprovedReservations && (
       <FloatingActionButton
-        href="/dashboard/entries/create"
+        href={`/dashboard/entries/create?competition=${approvedCompetitionId}`}
         icon="➕"
         label="Create Routine"
       />
