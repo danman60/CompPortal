@@ -81,7 +81,12 @@ export const studioRouter = router({
       // No tenant filter if super admin and no specific tenant requested
     } else {
       // Non-super admins only see their own tenant's studios
-      where.tenant_id = ctx.tenantId;
+      if (ctx.tenantId) {
+        where.tenant_id = ctx.tenantId;
+      } else {
+        // If no tenant context, return empty array
+        return { studios: [], count: 0 };
+      }
     }
 
     const studios = await prisma.studios.findMany({
