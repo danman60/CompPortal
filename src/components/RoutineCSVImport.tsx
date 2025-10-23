@@ -290,7 +290,12 @@ export default function RoutineCSVImport() {
       const fileExt = uploadedFile.name.split('.').pop()?.toLowerCase();
       let parsed: ParsedRoutine[] = [];
 
-      if (fileExt === 'xlsx' || fileExt === 'xls') {
+      if (fileExt === 'csv') {
+        // Handle CSV files
+        const text = await uploadedFile.text();
+        parsed = parseCSV(text);
+      } else if (fileExt === 'xlsx' || fileExt === 'xls') {
+        // Handle Excel files
         const arrayBuffer = await uploadedFile.arrayBuffer();
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(arrayBuffer);
@@ -307,8 +312,7 @@ export default function RoutineCSVImport() {
           parsed = parseExcel(workbook, sheetNames[0]);
         }
       } else {
-        const text = await uploadedFile.text();
-        parsed = parseCSV(text);
+        throw new Error(`Unsupported file type: ${fileExt}. Please upload .csv, .xlsx, or .xls`);
       }
 
       setParsedData(parsed);

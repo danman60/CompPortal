@@ -178,6 +178,8 @@ export const entryRouter = router({
 
       if (reservation) {
         // Update reservation: set spaces_confirmed to actual routine count, mark as submitted
+        // Note: Unused spaces are automatically released because capacity is calculated
+        // dynamically from actual entry count, not from a static space_limit field
         await prisma.reservations.update({
           where: { id: reservation.id },
           data: {
