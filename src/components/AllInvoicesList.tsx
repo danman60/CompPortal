@@ -298,15 +298,15 @@ export default function AllInvoicesList() {
     );
   };
 
-  if (isLoading) {
-    return <SkeletonTable rows={5} />;
-  }
-
   const invoices = data?.invoices || [];
   const competitions = competitionsData?.competitions || [];
 
-  // Sort invoices for table view
+  // Sort invoices for table view - MUST be before conditional returns
   const { sortedData: sortedInvoices, sortConfig, requestSort } = useTableSort(invoices);
+
+  if (isLoading) {
+    return <SkeletonTable rows={5} />;
+  }
 
   // Pull-to-refresh handler
   const handleRefresh = async () => {
