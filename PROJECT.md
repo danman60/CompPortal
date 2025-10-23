@@ -39,6 +39,20 @@ Project-specific rules, patterns, and constants for CompPortal.
 - Production: `http://compsync.net`
 - Vercel: `https://comp-portal-one.vercel.app`
 
+**⚠️ CRITICAL: Production Login Methods**
+- **Competition Director (CD)**: 1-click login button on homepage - NO password required
+  - Click 🎯 "Competition Director" button on `http://compsync.net`
+  - Instant login via `demoLoginAction()` in `src/app/actions/auth.ts`
+- **Studio Director (SD)**: Manual login required
+  - Use real credentials (e.g., danieljohnabrahamson@gmail.com)
+  - No demo button available for SD role currently
+- **Super Admin (SA)**: 1-click login button on homepage (if available)
+  - Click 👑 "Super Admin" button on homepage
+
+**For Testing:**
+- CD testing: Use 1-click button (fastest, no credentials needed)
+- SD testing: Requires user to provide valid login credentials
+
 **Stack:**
 - Next.js 14
 - tRPC

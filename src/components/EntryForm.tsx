@@ -506,7 +506,12 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Routine Size</option>
-                {Array.from(new Map(lookupData?.entrySizeCategories.map(size => [size.name, size]))).map(([_, size]) => (
+                {/* 🐛 FIX Bug #21: Deduplicate by ID and filter to valid categories (sort_order not null) */}
+                {Array.from(new Map(
+                  lookupData?.entrySizeCategories
+                    .filter(size => size.sort_order !== null)
+                    .map(size => [size.id, size])
+                )).map(([_, size]) => (
                   <option key={size.id} value={size.id} className="bg-gray-900 text-white">
                     {size.name} ({size.min_participants}-{size.max_participants} dancers)
                     {size.base_fee && ` - $${size.base_fee}`}
