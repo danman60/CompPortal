@@ -1,7 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
@@ -64,15 +64,15 @@ export default function DancersList() {
   const { sortedData: sortedDancers, sortConfig, requestSort } = useTableSort(filteredDancers);
 
   // Bulk selection helper functions - defined before hooks that use them
-  const handleSelectAllFiltered = () => {
+  const handleSelectAllFiltered = useCallback(() => {
     setSelectedDancers(new Set(sortedDancers.map(d => d.id)));
     toast.success(`${sortedDancers.length} dancers selected`);
-  };
+  }, [sortedDancers]);
 
-  const handleClearSelection = () => {
+  const handleClearSelection = useCallback(() => {
     setSelectedDancers(new Set());
     toast.success('Selection cleared');
-  };
+  }, []);
 
   // Force cards view on mobile
   useEffect(() => {
