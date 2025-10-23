@@ -35,12 +35,12 @@ const userManagementRouter = router({
         })
         .optional()
     )
-    .query(async ({ ctx, input = {} }) => {
+    .query(async ({ ctx, input }) => {
       if (!isSuperAdmin(ctx.userRole)) {
         throw new Error('Only super admins can access user management');
       }
 
-      const { tenantId, role, search, limit = 50, offset = 0 } = input;
+      const { tenantId, role, search, limit = 50, offset = 0 } = input ?? {};
 
       const where: any = {};
 
@@ -352,12 +352,12 @@ const tenantManagementRouter = router({
         })
         .optional()
     )
-    .query(async ({ ctx, input = {} }) => {
+    .query(async ({ ctx, input }) => {
       if (!isSuperAdmin(ctx.userRole)) {
         throw new Error('Only super admins can access tenant management');
       }
 
-      const { search, limit = 50, offset = 0 } = input;
+      const { search, limit = 50, offset = 0 } = input ?? {};
 
       const where: any = {};
 

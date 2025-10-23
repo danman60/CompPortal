@@ -78,7 +78,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-6">
+        <div className="min-h-[400px] flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 via-gray-900 to-black">
           <div className="bg-red-500/10 border border-red-400/30 rounded-xl p-8 max-w-2xl w-full">
             <div className="flex items-start gap-4 mb-6">
               <div className="text-4xl">⚠️</div>

@@ -38,9 +38,12 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
   first_name: ['firstname', 'fname', 'given_name', 'givenname', 'first', 'name', 'dancer_first_name'],
   last_name: ['lastname', 'lname', 'surname', 'family_name', 'familyname', 'last', 'dancer_last_name'],
   date_of_birth: ['dob', 'birthdate', 'birth_date', 'dateofbirth', 'birthday', 'birth', 'bday', 'bd', 'born', 'age', 'dancer_dob', 'dancer_birth_date'],
-  gender: ['sex', 'male_female', 'mf', 'gender_identity', 'dancer_gender'],
+  gender: ['sex', 'male_female', 'm_f', 'mf', 'gender_identity', 'dancer_gender'],
   email: ['email_address', 'e_mail', 'emailaddress', 'mail'],
   phone: ['phone_number', 'phonenumber', 'tel', 'telephone', 'mobile', 'cell'],
+  parent_name: ['guardian_name', 'guardian', 'parent', 'parentname', 'guardian_full_name', 'parent_full_name'],
+  parent_email: ['guardian_email', 'guardian_mail', 'parent_mail', 'guardian_email_address', 'parent_email_address'],
+  parent_phone: ['guardian_phone', 'guardian_tel', 'parent_tel', 'guardian_phone_number', 'parent_phone_number'],
 
   // Routine fields
   title: ['routine_title', 'routinetitle', 'routine_name', 'routinename', 'name', 'routine', 'piece', 'dance_title', 'dancetitle', 'dance_name', 'entry_title'],
@@ -158,9 +161,11 @@ export const DANCER_CSV_FIELDS = [
   'emergency_contact_name',
   'emergency_contact_phone',
   'medical_notes',
-  'guardian_name',
-  'guardian_email',
-  'guardian_phone',
+  'parent_name',
+  'parent_email',
+  'parent_phone',
+  'skill_level',
+  'registration_number',
 ];
 
 /**

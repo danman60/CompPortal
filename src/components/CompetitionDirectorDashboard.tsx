@@ -223,7 +223,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
 
       {/* Quick Info */}
       <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">
-        <h2 className="text-2xl font-bold text-white mb-4">🎯 Admin Responsibilities</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">🎯 Competition Director Responsibilities</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
           <div className="space-y-2">
             <h3 className="text-white font-semibold">Reservation Management</h3>

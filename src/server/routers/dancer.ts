@@ -179,13 +179,13 @@ export const dancerRouter = router({
         })
         .optional()
     )
-    .query(async ({ ctx, input = {} }) => {
+    .query(async ({ ctx, input }) => {
       const where: any = {};
 
       // Studio directors can only see their own studio's stats
       if (isStudioDirector(ctx.userRole) && ctx.studioId) {
         where.studio_id = ctx.studioId;
-      } else if (input.studioId) {
+      } else if (input?.studioId) {
         // Admins can filter by studioId if provided
         where.studio_id = input.studioId;
       }

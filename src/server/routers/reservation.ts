@@ -100,8 +100,8 @@ export const reservationRouter = router({
         })
         .optional()
     )
-    .query(async ({ ctx, input = {} }) => {
-      const { studioId, competitionId, status, paymentStatus, limit = 50, offset = 0 } = input;
+    .query(async ({ ctx, input }) => {
+      const { studioId, competitionId, status, paymentStatus, limit = 50, offset = 0 } = input ?? {};
 
       const where: any = {};
 
@@ -328,14 +328,14 @@ export const reservationRouter = router({
         })
         .optional()
     )
-    .query(async ({ input = {} }) => {
+    .query(async ({ input }) => {
       const where: any = {};
 
-      if (input.competitionId) {
+      if (input?.competitionId) {
         where.competition_id = input.competitionId;
       }
 
-      if (input.studioId) {
+      if (input?.studioId) {
         where.studio_id = input.studioId;
       }
 

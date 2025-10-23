@@ -305,8 +305,8 @@ export const invoiceRouter = router({
         paymentStatus: z.string().optional(),
       }).optional()
     )
-    .query(async ({ input = {} }) => {
-      const { competitionId, paymentStatus } = input;
+    .query(async ({ input }) => {
+      const { competitionId, paymentStatus } = input ?? {};
 
       // PERFORMANCE FIX: Fetch all data in bulk instead of N+1 queries
       // Get all studio × competition combinations with entries

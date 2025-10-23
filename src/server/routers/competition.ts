@@ -47,8 +47,8 @@ export const competitionRouter = router({
         })
         .optional()
     )
-    .query(async ({ ctx, input = {} }) => {
-      const { year, status, isPublic, limit = 50, offset = 0, tenantId } = input;
+    .query(async ({ ctx, input }) => {
+      const { year, status, isPublic, limit = 50, offset = 0, tenantId } = input ?? {};
 
       const where: any = {};
 
@@ -165,14 +165,14 @@ export const competitionRouter = router({
         })
         .optional()
     )
-    .query(async ({ input = {} }) => {
+    .query(async ({ input }) => {
       const where: any = {};
 
-      if (input.competitionId) {
+      if (input?.competitionId) {
         where.id = input.competitionId;
       }
 
-      if (input.year) {
+      if (input?.year) {
         where.year = input.year;
       }
 
