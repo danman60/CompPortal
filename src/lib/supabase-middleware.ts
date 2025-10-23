@@ -58,10 +58,17 @@ export async function updateSession(request: NextRequest) {
 
   // Create modified request headers with tenant context
   const requestHeaders = new Headers(request.headers);
-  if (tenantId && tenantData) {
-    requestHeaders.set('x-tenant-id', tenantId);
-    requestHeaders.set('x-tenant-data', JSON.stringify(tenantData));
-  }
+
+  // TEMPORARY: Default to EMPWR tenant if none detected (for demo)
+  const finalTenantId = tenantId || '00000000-0000-0000-0000-000000000001';
+  const finalTenantData = tenantData || {
+    id: '00000000-0000-0000-0000-000000000001',
+    name: 'EMPWR Dance Experience',
+    subdomain: 'demo',
+  };
+
+  requestHeaders.set('x-tenant-id', finalTenantId);
+  requestHeaders.set('x-tenant-data', JSON.stringify(finalTenantData));
 
   // Refresh session if expired
   const {
