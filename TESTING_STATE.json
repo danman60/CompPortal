@@ -4,10 +4,10 @@
   "tests_run": 3,
   "bugs_found": 1,
   "bugs_fixed": 1,
-  "last_test_time": "2025-10-23T03:25:00Z",
-  "last_deploy_time": "2025-10-23T03:25:00Z",
+  "last_test_time": "2025-10-23T03:45:00Z",
+  "last_deploy_time": "2025-10-23T03:45:00Z",
   "awaiting_deployment": true,
-  "deployment_hash": "a3de255",
+  "deployment_hash": "66de81c",
   "test_queue": [
     "reservation_creation",
     "dancers_page",
@@ -32,10 +32,11 @@
     {
       "test": "reservation_creation",
       "url": "/dashboard/reservations/new",
-      "error": "Competition dropdown empty",
-      "fix": "Changed competition.getAll to protectedProcedure",
+      "error": "Competition dropdown empty - client tRPC missing tenant context",
+      "root_cause": "Client-side tRPC calls don't include x-tenant-id header",
+      "fix": "Added tenant fallback in tRPC context creation",
       "status": "fixed",
-      "commit": "a3de255"
+      "commit": "66de81c"
     }
   ]
 }
