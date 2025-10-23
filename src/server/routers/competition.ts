@@ -45,7 +45,7 @@ export const competitionRouter = router({
           offset: z.number().int().min(0).default(0),
           tenantId: z.string().uuid().optional(), // Super admin can filter by specific tenant
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ ctx, input }) => {
       const { year, status, isPublic, limit = 50, offset = 0, tenantId } = input ?? {};
@@ -163,7 +163,7 @@ export const competitionRouter = router({
           competitionId: z.string().uuid().optional(),
           year: z.number().int().optional(),
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ input }) => {
       const where: any = {};

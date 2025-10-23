@@ -256,7 +256,7 @@ export const twoFactorRouter = router({
         .object({
           limit: z.number().min(1).max(100).optional(),
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ input, ctx }) => {
       if (!ctx.userId) {

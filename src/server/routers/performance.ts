@@ -38,7 +38,7 @@ export const performanceRouter = router({
         .object({
           thresholdMs: z.number().min(10).max(10000).optional(),
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ ctx, input }) => {
       // Only admins can access performance metrics

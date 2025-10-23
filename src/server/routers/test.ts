@@ -3,7 +3,7 @@ import { router, publicProcedure } from '../trpc';
 
 export const testRouter = router({
   hello: publicProcedure
-    .input(z.object({ name: z.string().optional() }))
+    .input(z.object({ name: z.string().nullish() }))
     .query(({ input }) => {
       return {
         greeting: `Hello ${input.name ?? 'World'}!`,

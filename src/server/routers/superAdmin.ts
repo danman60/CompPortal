@@ -33,7 +33,7 @@ const userManagementRouter = router({
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ ctx, input }) => {
       if (!isSuperAdmin(ctx.userRole)) {
@@ -350,7 +350,7 @@ const tenantManagementRouter = router({
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ ctx, input }) => {
       if (!isSuperAdmin(ctx.userRole)) {

@@ -66,7 +66,7 @@ export const studioRouter = router({
         .object({
           tenantId: z.string().uuid().optional(), // Super admin can filter by specific tenant
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ ctx, input }) => {
     const { tenantId } = input ?? {};

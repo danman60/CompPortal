@@ -296,7 +296,7 @@ export const entryRouter = router({
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ input, ctx }) => {
       const { studioId, competitionId, reservationId, status, tenantId, limit = 50, offset = 0 } = input ?? {};
@@ -519,7 +519,7 @@ export const entryRouter = router({
           competitionId: z.string().uuid().optional(),
           studioId: z.string().uuid().optional(),
         })
-        .optional()
+        .nullish()
     )
     .query(async ({ input }) => {
       const where: any = {};
