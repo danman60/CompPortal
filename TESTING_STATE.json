@@ -1,10 +1,10 @@
 {
   "cycle_active": false,
   "current_test": "additional_pages_testing",
-  "tests_run": 40,
+  "tests_run": 41,
   "bugs_found": 7,
   "bugs_fixed": 6,
-  "last_test_time": "2025-10-23T08:32:00Z",
+  "last_test_time": "2025-10-23T08:40:00Z",
   "last_deploy_time": "2025-10-23T05:34:00Z",
   "awaiting_deployment": false,
   "deployment_hash": "af01174",
@@ -309,6 +309,13 @@
       "status": "pending",
       "timestamp": "2025-10-23T08:32:00Z",
       "note": "TESTED BUT OLD CODE: Deployment not yet complete. Dance Styles tab still crashes with 'l.map is not a function' error (chunk hash: page-0bdce353d84aa7c4.js). Routine Categories tab works. Commits 42ace09 (infinite loop) and 1956e06 (null handling) pushed at 08:22, tested at 08:32 - insufficient time for Vercel deployment. Will re-test after deployment completes."
+    },
+    {
+      "test": "sd_demo_login_button",
+      "url": "/ (Homepage)",
+      "status": "failed",
+      "timestamp": "2025-10-23T08:40:00Z",
+      "note": "Studio Director one-click demo login button redirects to /login?error=demo_login_failed. CD and SA login buttons work. Transient issue noted in previous session. May be environmental or session-related."
     }
   ],
   "testing_instructions": {
