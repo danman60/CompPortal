@@ -68,8 +68,8 @@ export const studioRouter = router({
         })
         .optional()
     )
-    .query(async ({ ctx, input = {} }) => {
-    const { tenantId } = input;
+    .query(async ({ ctx, input }) => {
+    const { tenantId } = input ?? {};
 
     const where: any = {};
 

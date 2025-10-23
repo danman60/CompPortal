@@ -168,6 +168,54 @@ export const testingRouter = router({
     }),
 
   /**
+   * Delete User By Email - Remove user from auth.users
+   * Super Admin only - for cleaning up test accounts
+   */
+  deleteUserByEmail: superAdminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      // Find user in auth.users
+      const result = await prisma.$queryRaw<Array<{ id: string; email: string }>>`
+        SELECT id, email FROM auth.users WHERE email = ${input.email}
+      `;
+
+      if (!result || result.length === 0) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `User with email ${input.email} not found`,
+        });
+      }
+
+      const userId = result[0].id;
+
+      // Delete user profile first (if exists)
+      try {
+        await prisma.user_profiles.delete({
+          where: { id: userId },
+        });
+      } catch (error) {
+        // Profile might not exist, continue
+      }
+
+      // Delete from auth.users
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to delete auth user: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      }
+
+      return {
+        success: true,
+        email: input.email,
+        userId: userId,
+        message: `Deleted user ${input.email}`,
+      };
+    }),
+
+  /**
    * Get current data counts (for UI display)
    */
   getDataCounts: superAdminProcedure.query(async () => {

@@ -41,13 +41,13 @@ export const dancerRouter = router({
           studioId: z.string().uuid().optional(),
           search: z.string().optional(),
           status: z.string().optional(),
-          limit: z.number().int().min(1).max(100).default(50),
+          limit: z.number().int().min(1).max(1000).default(50),
           offset: z.number().int().min(0).default(0),
         })
         .optional()
     )
-    .query(async ({ ctx, input = {} }) => {
-      const { studioId, search, status, limit = 50, offset = 0 } = input;
+    .query(async ({ ctx, input }) => {
+      const { studioId, search, status, limit = 50, offset = 0 } = input ?? {};
 
       const where: any = {};
 
