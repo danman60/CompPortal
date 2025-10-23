@@ -63,6 +63,17 @@ export default function DancersList() {
   // Sort dancers for table view
   const { sortedData: sortedDancers, sortConfig, requestSort } = useTableSort(filteredDancers);
 
+  // Bulk selection helper functions - defined before hooks that use them
+  const handleSelectAllFiltered = () => {
+    setSelectedDancers(new Set(sortedDancers.map(d => d.id)));
+    toast.success(`${sortedDancers.length} dancers selected`);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedDancers(new Set());
+    toast.success('Selection cleared');
+  };
+
   // Force cards view on mobile
   useEffect(() => {
     const handleResize = () => {
@@ -75,6 +86,28 @@ export default function DancersList() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Keyboard shortcuts for bulk selection - MUST be called before conditional returns
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (viewMode !== 'table') return;
+
+      // Ctrl+A / Cmd+A - Select All Filtered
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedDancers.length > 0) {
+        e.preventDefault();
+        handleSelectAllFiltered();
+      }
+
+      // Escape - Clear Selection
+      if (e.key === 'Escape' && selectedDancers.size > 0) {
+        e.preventDefault();
+        handleClearSelection();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, sortedDancers, selectedDancers, handleSelectAllFiltered, handleClearSelection]);
 
   if (error) {
     return (
@@ -152,39 +185,6 @@ export default function DancersList() {
       toast.error(`Deleted ${successCount}, failed ${failedCount}. Last error: ${lastError}`);
     }
   };
-
-  // Bulk selection shortcuts
-  const handleSelectAllFiltered = () => {
-    setSelectedDancers(new Set(sortedDancers.map(d => d.id)));
-    toast.success(`${sortedDancers.length} dancers selected`);
-  };
-
-  const handleClearSelection = () => {
-    setSelectedDancers(new Set());
-    toast.success('Selection cleared');
-  };
-
-  // Keyboard shortcuts for bulk selection
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (viewMode !== 'table') return;
-
-      // Ctrl+A / Cmd+A - Select All Filtered
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && sortedDancers.length > 0) {
-        e.preventDefault();
-        handleSelectAllFiltered();
-      }
-
-      // Escape - Clear Selection
-      if (e.key === 'Escape' && selectedDancers.size > 0) {
-        e.preventDefault();
-        handleClearSelection();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode, sortedDancers, selectedDancers]);
 
   // Pull-to-refresh handler
   const handleRefresh = async () => {

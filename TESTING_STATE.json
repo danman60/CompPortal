@@ -1,13 +1,13 @@
 {
   "cycle_active": true,
-  "current_test": "reservation_creation",
-  "tests_run": 3,
-  "bugs_found": 1,
-  "bugs_fixed": 1,
-  "last_test_time": "2025-10-23T03:45:00Z",
-  "last_deploy_time": "2025-10-23T03:45:00Z",
-  "awaiting_deployment": true,
-  "deployment_hash": "66de81c",
+  "current_test": "complete",
+  "tests_run": 10,
+  "bugs_found": 4,
+  "bugs_fixed": 2,
+  "last_test_time": "2025-10-23T04:29:00Z",
+  "last_deploy_time": "2025-10-23T04:23:00Z",
+  "awaiting_deployment": false,
+  "deployment_hash": "e28559d",
   "test_queue": [
     "reservation_creation",
     "dancers_page",
@@ -26,6 +26,42 @@
       "status": "passed",
       "timestamp": "2025-10-23T03:15:00Z",
       "note": "4 competitions visible in dropdown - tenant fix confirmed working"
+    },
+    {
+      "test": "reservation_creation_full_workflow",
+      "status": "passed",
+      "timestamp": "2025-10-23T03:50:00Z",
+      "note": "Full 4-step reservation workflow working - selected competition, entered routines, accepted waivers, submitted successfully"
+    },
+    {
+      "test": "entries_page_business_logic",
+      "status": "passed",
+      "timestamp": "2025-10-23T04:05:00Z",
+      "note": "Correctly blocks routine creation until reservation approved - proper business logic enforced"
+    },
+    {
+      "test": "invoices_page",
+      "status": "passed",
+      "timestamp": "2025-10-23T04:08:00Z",
+      "note": "Shows 'No Invoices Found' correctly - no routines created yet"
+    },
+    {
+      "test": "cd_reservation_pipeline_visibility",
+      "status": "passed",
+      "timestamp": "2025-10-23T04:16:00Z",
+      "note": "CD can see SD's pending reservation - 1 reservation visible in pipeline"
+    },
+    {
+      "test": "cd_reservation_approval_workflow",
+      "status": "passed",
+      "timestamp": "2025-10-23T04:17:00Z",
+      "note": "CD approval flow working - approved 1 space, status changed to 'approved', pipeline updated"
+    },
+    {
+      "test": "routine_creation_full_workflow",
+      "status": "passed",
+      "timestamp": "2025-10-23T04:29:00Z",
+      "note": "Complete 3-step routine creation working - competition auto-selected, dancers selected, routine created successfully with $115 fee"
     }
   ],
   "errors_found": [
@@ -37,6 +73,57 @@
       "fix": "Added tenant fallback in tRPC context creation",
       "status": "fixed",
       "commit": "66de81c"
+    },
+    {
+      "test": "dancers_page",
+      "url": "/dashboard/dancers",
+      "error": "Page crashes with React error #310 and #419 - hooks violation",
+      "root_cause": "useTableSort and useEffect hooks called after conditional returns",
+      "fix": "Moved all hooks before conditional returns",
+      "status": "fix_failed",
+      "commit": "0580ead",
+      "note": "Fix deployed but error persists - needs deeper investigation"
+    },
+    {
+      "test": "cd_reservation_pipeline",
+      "url": "/dashboard/reservation-pipeline",
+      "error": "CD cannot see SD's pending reservation in pipeline",
+      "root_cause": "User was logged in as SD, not CD - no actual bug",
+      "fix": "Used one-click CD login button on homepage",
+      "status": "not_a_bug",
+      "note": "Resolved by switching to correct user account"
+    },
+    {
+      "test": "routine_creation",
+      "url": "/dashboard/entries/create",
+      "error": "Competition dropdown disabled and empty, blocks form submission",
+      "root_cause": "Create routine link doesn't pass competition ID as URL parameter",
+      "fix": "Modified EntriesList.tsx to pass ?competition=ID in URL",
+      "status": "fixed",
+      "commit": "e28559d",
+      "note": "VERIFIED WORKING - Competition auto-selected, full 3-step workflow completed, routine created"
     }
-  ]
+  ],
+  "testing_instructions": {
+    "source": "C:\\Users\\Danie\\Downloads\\App Testing Meeting Agenda.md",
+    "objective": "Test complete SD and CD workflows until all business logic works perfectly",
+    "sd_workflow": [
+      "Account Creation/Login",
+      "Studio Details/Onboarding",
+      "Import Dancers",
+      "Import Routines",
+      "Create and Submit Reservations",
+      "Create Dancers",
+      "Create Routines",
+      "Submit Summaries",
+      "Receive Invoices"
+    ],
+    "cd_workflow": [
+      "Receive and Approve Reservations",
+      "Receive and Approve Summaries",
+      "Generate and Send Invoices",
+      "View Routines, Reservations, and Dancers"
+    ],
+    "end_condition": "All workflows must work perfectly with correct business logic enforcement"
+  }
 }
