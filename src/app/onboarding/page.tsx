@@ -116,10 +116,8 @@ export default function OnboardingPage() {
             email: formData.email || user.email,
             status: 'approved',
             country: 'Canada',
-            consent_photo_video: formData.consentPhotoVideo,
-            consent_photo_video_at: formData.consentPhotoVideo ? now : null,
-            consent_legal_info: formData.consentLegalInfo,
-            consent_legal_info_at: formData.consentLegalInfo ? now : null,
+            consent_photo_video: formData.consentPhotoVideo ? now : null,
+            consent_legal_info: formData.consentLegalInfo ? now : null,
           })
           .eq('owner_id', user.id);
         studioError = error;
@@ -139,10 +137,8 @@ export default function OnboardingPage() {
             email: formData.email || user.email,
             status: 'approved',
             country: 'Canada',
-            consent_photo_video: formData.consentPhotoVideo,
-            consent_photo_video_at: formData.consentPhotoVideo ? now : null,
-            consent_legal_info: formData.consentLegalInfo,
-            consent_legal_info_at: formData.consentLegalInfo ? now : null,
+            consent_photo_video: formData.consentPhotoVideo ? now : null,
+            consent_legal_info: formData.consentLegalInfo ? now : null,
           });
         studioError = error;
       }
