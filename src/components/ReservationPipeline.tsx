@@ -37,6 +37,12 @@ export default function ReservationPipeline() {
   });
   const [approvalAmount, setApprovalAmount] = useState<number>(0);
   const [remindConfirm, setRemindConfirm] = useState<{isOpen: boolean; studioName: string; studioId: string; competitionId: string} | null>(null);
+  const [rejectModal, setRejectModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    reason: string;
+  } | null>(null);
 
   // Fetch data
   const { data: pipelineData, isLoading, refetch } = trpc.reservation.getPipelineView.useQuery();
@@ -79,6 +85,17 @@ export default function ReservationPipeline() {
     },
   });
 
+  const rejectMutation = trpc.reservation.reject.useMutation({
+    onSuccess: () => {
+      toast.success('Reservation rejected');
+      refetch();
+      setRejectModal(null);
+    },
+    onError: (error) => {
+      toast.error(`Failed to reject reservation: ${error.message}`);
+    },
+  });
+
   const reservations = pipelineData?.reservations || [];
   const competitionList = competitions?.competitions || [];
 
@@ -86,10 +103,10 @@ export default function ReservationPipeline() {
   const eventMetrics = competitionList
     .filter(comp => comp.name !== 'QA Automation')
     .map(comp => {
-      const totalCapacity = comp.venue_capacity || 600;
-      const reservedCount = reservations
-        .filter(r => r.competitionId === comp.id && r.status === 'approved')
-        .reduce((sum, r) => sum + (r.spacesConfirmed || 0), 0);
+      // Use total_reservation_tokens if available, fall back to venue_capacity
+      const totalCapacity = comp.total_reservation_tokens || comp.venue_capacity || 600;
+      const availableCapacity = comp.available_reservation_tokens ?? totalCapacity;
+      const reservedCount = totalCapacity - availableCapacity;
       const pendingCount = reservations.filter(
         r => r.competitionId === comp.id && r.status === 'pending'
       ).length;
@@ -194,6 +211,23 @@ export default function ReservationPipeline() {
     approveMutation.mutate({
       reservationId: approvalModal.reservationId,
       spacesConfirmed: approvalAmount,
+    });
+  };
+
+  const handleReject = (reservationId: string, studioName: string) => {
+    setRejectModal({
+      isOpen: true,
+      reservationId,
+      studioName,
+      reason: '',
+    });
+  };
+
+  const confirmReject = () => {
+    if (!rejectModal) return;
+    rejectMutation.mutate({
+      id: rejectModal.reservationId,
+      reason: rejectModal.reason || undefined,
     });
   };
 
@@ -530,7 +564,10 @@ export default function ReservationPipeline() {
                                   >
                                     ✓ Approve
                                   </button>
-                                  <button className="px-3 py-1.5 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-xs font-semibold hover:bg-red-500/30 transition-all">
+                                  <button
+                                    onClick={() => handleReject(reservation.id, reservation.studioName)}
+                                    className="px-3 py-1.5 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-xs font-semibold hover:bg-red-500/30 transition-all"
+                                  >
                                     ✗ Deny
                                   </button>
                                 </>
@@ -696,6 +733,55 @@ export default function ReservationPipeline() {
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {approveMutation.isPending ? 'Approving...' : '✓ Confirm Approval'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {rejectModal?.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setRejectModal(null)}
+        >
+          <div
+            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Reject Reservation</h2>
+              <p className="text-gray-400 text-sm">
+                Are you sure you want to reject the reservation from <strong>{rejectModal.studioName}</strong>?
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Rejection Reason (Optional)
+              </label>
+              <textarea
+                value={rejectModal.reason}
+                onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+                placeholder="Enter reason for rejection..."
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRejectModal(null)}
+                className="flex-1 px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/20 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmReject}
+                disabled={rejectMutation.isPending}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {rejectMutation.isPending ? 'Rejecting...' : '✗ Reject Reservation'}
               </button>
             </div>
           </div>

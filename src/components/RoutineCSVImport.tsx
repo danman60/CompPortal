@@ -296,20 +296,41 @@ export default function RoutineCSVImport() {
         parsed = parseCSV(text);
       } else if (fileExt === 'xlsx' || fileExt === 'xls') {
         // Handle Excel files
-        const arrayBuffer = await uploadedFile.arrayBuffer();
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(arrayBuffer);
+        try {
+          const arrayBuffer = await uploadedFile.arrayBuffer();
+          const workbook = new ExcelJS.Workbook();
 
-        // Get worksheet names
-        const sheetNames = workbook.worksheets.map(ws => ws.name);
+          // Try to load the file - this may fail if the file is corrupted or not a valid Excel file
+          try {
+            await workbook.xlsx.load(arrayBuffer);
+          } catch (excelError: any) {
+            // If it fails with a JSZip error, provide a more helpful message
+            if (excelError?.message?.includes('central directory') || excelError?.message?.includes('JSZip')) {
+              throw new Error('The Excel file appears to be corrupted or in an unsupported format. Please try re-exporting it from Excel or saving it as CSV.');
+            }
+            throw excelError;
+          }
 
-        if (sheetNames.length > 1) {
-          setAvailableSheets(sheetNames);
-          setExcelWorkbook(workbook);
-          setSelectedSheet(sheetNames[0]);
-          parsed = parseExcel(workbook, sheetNames[0]);
-        } else if (sheetNames.length === 1) {
-          parsed = parseExcel(workbook, sheetNames[0]);
+          // Get worksheet names
+          const sheetNames = workbook.worksheets.map(ws => ws.name);
+          if (sheetNames.length === 0) {
+            throw new Error('The Excel file contains no worksheets.');
+          }
+
+          if (sheetNames.length > 1) {
+            setAvailableSheets(sheetNames);
+            setExcelWorkbook(workbook);
+            setSelectedSheet(sheetNames[0]);
+            parsed = parseExcel(workbook, sheetNames[0]);
+          } else if (sheetNames.length === 1) {
+            parsed = parseExcel(workbook, sheetNames[0]);
+          }
+        } catch (excelError) {
+          // Re-throw with context if not already handled
+          if (excelError instanceof Error) {
+            throw excelError;
+          }
+          throw new Error('Failed to process Excel file. Please ensure it is a valid .xlsx or .xls file.');
         }
       } else {
         throw new Error(`Unsupported file type: ${fileExt}. Please upload .csv, .xlsx, or .xls`);

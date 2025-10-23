@@ -67,7 +67,8 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     (existingInvoice.line_items as any[]) :
     (invoice?.lineItems || []);
 
-  const canEditPrices = existingInvoice && existingInvoice.status !== 'PAID';
+  // Only Competition Directors and Super Admins can edit prices, not Studio Directors
+  const canEditPrices = isCompetitionDirector && existingInvoice && existingInvoice.status !== 'PAID';
 
   const handleStartEditing = () => {
     setEditableLineItems(displayLineItems.map((item: any) => ({ ...item })));
@@ -319,50 +320,52 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         </div>
       </div>
 
-      {/* Discount Buttons */}
-      <div className="mb-6 flex justify-end">
-        <div className="flex gap-2">
-          <span className="text-gray-300 self-center mr-2">Apply Discount:</span>
-          <button
-            onClick={() => setDiscountPercent(discountPercent === 5 ? 0 : 5)}
-            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-              discountPercent === 5
-                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-            }`}
-          >
-            5%
-          </button>
-          <button
-            onClick={() => setDiscountPercent(discountPercent === 10 ? 0 : 10)}
-            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-              discountPercent === 10
-                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-            }`}
-          >
-            10%
-          </button>
-          <button
-            onClick={() => setDiscountPercent(discountPercent === 15 ? 0 : 15)}
-            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-              discountPercent === 15
-                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-            }`}
-          >
-            15%
-          </button>
-          {discountPercent > 0 && (
+      {/* Discount Buttons - Only for Competition Directors */}
+      {isCompetitionDirector && (
+        <div className="mb-6 flex justify-end">
+          <div className="flex gap-2">
+            <span className="text-gray-300 self-center mr-2">Apply Discount:</span>
             <button
-              onClick={() => setDiscountPercent(0)}
-              className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all"
+              onClick={() => setDiscountPercent(discountPercent === 5 ? 0 : 5)}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                discountPercent === 5
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+              }`}
             >
-              Clear
+              5%
             </button>
-          )}
+            <button
+              onClick={() => setDiscountPercent(discountPercent === 10 ? 0 : 10)}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                discountPercent === 10
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+              }`}
+            >
+              10%
+            </button>
+            <button
+              onClick={() => setDiscountPercent(discountPercent === 15 ? 0 : 15)}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                discountPercent === 15
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+              }`}
+            >
+              15%
+            </button>
+            {discountPercent > 0 && (
+              <button
+                onClick={() => setDiscountPercent(0)}
+                className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Totals */}
       <div className="flex justify-end">

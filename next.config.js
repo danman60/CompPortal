@@ -50,7 +50,7 @@ const nextConfig = {
   // Experimental features
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '10mb', // Increased to support larger CSV imports
     },
   },
 
