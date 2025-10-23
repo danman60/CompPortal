@@ -1,0 +1,8 @@
+SMTP_HOST=mail.privateemail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=noreply@compsync.net
+SMTP_PASS=V#;TqHBku:q8)a3
+EMAIL_FROM=noreply@compsync.net
+SUPPORT_EMAIL=support@compsync.net
+CONTACT_EMAIL=contact@compsync.net
