@@ -277,7 +277,7 @@
       "root_cause": "Infinite re-render loop in all 6 tenant settings components - useEffect with [currentSettings] dependency triggers on every tRPC refetch due to new object reference",
       "fix": "Changed useEffect dependencies from [currentSettings] to [JSON.stringify(currentSettings)] in all 6 components to compare by value instead of reference",
       "status": "fixed",
-      "commit": "pending",
+      "commit": "42ace09",
       "files_changed": [
         "EntrySizeSettings.tsx:34",
         "AgeDivisionSettings.tsx:32",
