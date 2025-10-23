@@ -11,7 +11,7 @@ export default function EntryStatusTimelineWrapper({ entryId }: { entryId: strin
   const currentIndex = Math.max(0, statusOrder.indexOf(entry.status || 'draft'));
   const now = new Date();
   const events = statusOrder.slice(0, currentIndex + 1).map((status, i) => ({
-    status: (status === 'registered' ? 'created' : (status === 'confirmed' ? 'approved' : status)) as any,
+    status: (status === 'draft' ? 'created' : (status === 'registered' ? 'created' : (status === 'confirmed' ? 'approved' : status))) as any,
     timestamp: new Date(now.getTime() - (currentIndex - i) * 60 * 60 * 1000),
     note: undefined as string | undefined,
   }));
