@@ -205,24 +205,16 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   });
 
   // 🐛 FIX Bug #14: Auto-detect group size category based on number of dancers
+  // Uses tenant-configured min_participants/max_participants ranges (NOT hardcoded patterns)
   useEffect(() => {
     if (!lookupData?.entrySizeCategories || formData.participants.length === 0) return;
 
     const participantCount = formData.participants.length;
 
-    // Find matching size category by name pattern
-    // Pattern: Solo (1), Duet/Trio (2-3), Small Group (4-9), Large Group (10-19), Line/Production (20+)
-    const sizeCategory = lookupData.entrySizeCategories.find(cat => {
-      const name = cat.name.toLowerCase();
-
-      if (participantCount === 1) return name.includes('solo');
-      if (participantCount >= 2 && participantCount <= 3) return name.includes('duet') || name.includes('trio');
-      if (participantCount >= 4 && participantCount <= 9) return name.includes('small') && name.includes('group');
-      if (participantCount >= 10 && participantCount <= 19) return name.includes('large') && name.includes('group');
-      if (participantCount >= 20) return name.includes('line') || name.includes('production');
-
-      return false;
-    });
+    // Find matching size category by tenant-configured participant range
+    const sizeCategory = lookupData.entrySizeCategories.find(cat =>
+      participantCount >= cat.min_participants && participantCount <= cat.max_participants
+    );
 
     // Only update if different from current selection
     if (sizeCategory && sizeCategory.id !== formData.entry_size_category_id) {
