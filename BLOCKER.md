@@ -1,9 +1,10 @@
-# 🚨 BLOCKER: Deployment Not Completing After 1 Hour
+# ✅ RESOLVED: Backend Data Structure Mismatch (Bug #8)
 
 **Created:** 2025-10-23 09:22 UTC
-**Updated:** 2025-10-23 (continued after auto-compact)
-**Severity:** HIGH - Blocks verification of Bug #6 & Bug #7 fixes
-**Status:** ACTIVE - Multiple deployment attempts failed, old code still serving
+**Resolved:** 2025-10-23 11:30 UTC
+**Severity:** HIGH - Blocked verification of Bug #6 & Bug #7 fixes
+**Status:** RESOLVED - Backend fix deployed and verified
+**Resolution Time:** ~3 hours (diagnosis took time, fix was simple)
 
 ---
 
@@ -14,10 +15,10 @@
 
 ---
 
-## CURRENT ISSUE: Deployment Delay/Failure
+## FINAL RESOLUTION: Backend Data Structure Mismatch
 
-### Problem
-Vercel deployment not completing after **58+ minutes** (3x+ expected time). Bug #6 and Bug #7 fixes are pushed to main but not deployed to production.
+### Root Cause (Bug #8)
+The issue was NOT a deployment problem. Frontend fixes (Bugs #6, #7) were deployed successfully. The actual problem was a backend data structure mismatch discovered through SQL query investigation.
 
 ### Evidence
 
@@ -65,31 +66,47 @@ $ git show 1956e06:src/app/dashboard/settings/tenant/components/DanceStyleSettin
 **Result:** FAILED - Dance Styles tab still crashes after auto-compact resumption
 **Evidence:** Playwright test shows same `TypeError: l.map is not a function` error
 
-### Root Cause Identified: PARTIAL DEPLOYMENT
+### Actual Root Cause: Backend Data Structure Mismatch (Bug #8)
 
-**Critical Discovery:** Awards tab works but Dance Styles/Scoring Rubric crash - YET ALL THREE WERE FIXED IN THE SAME COMMIT.
+**Discovery Process:**
+1. User corrected initial "build cache" assumption
+2. SQL query revealed truth: `dance_category_settings: {styles: [...]}`
+3. tRPC was returning entire object instead of extracting array
+4. Components expected arrays, received objects → `object.map()` crashed
 
-**Evidence:**
-```bash
-$ git show --stat 1956e06
- AwardsSettings.tsx         | 4 +---
- DanceStyleSettings.tsx     | 4 +---
- ScoringRubricSettings.tsx  | 4 +---
+**Why Awards Worked:**
+- `award_settings` was `null` in DB
+- Frontend: `null || []` = `[]` (empty array works)
+
+**Why Dance Styles/Scoring Rubric Crashed:**
+- DB had `{styles: [...]}` and `{tiers: [...]}`
+- Frontend: `{styles: [...]} || []` = `{styles: [...]}` (object fails)
+- Component tried `object.map()` → TypeError
+
+**The Fix (Commit 231e74a):**
+```typescript
+// Before: Returned whole object
+danceStyles: tenant.dance_category_settings
+
+// After: Extract nested array
+danceStyles: (tenant.dance_category_settings as any)?.styles || null
 ```
 
-**Production Behavior:**
-- ✅ Awards tab: Fix deployed, works perfectly
-- ❌ Dance Styles tab: Fix NOT deployed, crashes
-- ❌ Scoring Rubric tab: Fix NOT deployed, crashes
+**Verification:**
+- Both tabs now load with data
+- Dance Styles: 14 styles displayed
+- Scoring Rubric: 6 tiers displayed
+- No console errors (only expected camera/microphone warnings)
 
-**Diagnosis:** PARTIAL DEPLOYMENT - Only 1 of 3 files from commit 1956e06 successfully deployed.
+## Resolution Summary
 
-### Confirmed Root Causes
-1. **Build cache corruption** - Mixing old/new code chunks (MOST LIKELY)
-2. **Code splitting/lazy loading** - Different chunks cached inconsistently
-3. **CDN edge cache** - Edge servers serving mismatched file versions
+**Issue Resolved:** ✅ All 5 tenant settings tabs working perfectly
+**Time to Resolution:** ~3 hours (diagnosis took time, fix was simple)
+**Key Lesson:** Check backend data structure first, don't assume deployment issues
 
-## Required Actions (User)
+---
+
+## ARCHIVED: Previous Investigation (Incorrect Path)
 
 **IMMEDIATE:** Check Vercel Dashboard
 
