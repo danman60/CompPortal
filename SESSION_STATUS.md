@@ -3,15 +3,15 @@
 ## Current State: 🚨 CRITICAL - DEPLOYMENT FAILURE CONFIRMED
 
 ### Session Progress (After Auto-Compact Resumption)
-- **Tests Run**: 62 total (5 tenant settings tabs + 8 CD workflow pages)
+- **Tests Run**: 65 total (5 tenant settings + 14 CD workflow pages)
 - **Bugs Found**: 7 (2 new in previous session)
 - **Bugs Fixed**: 6 (2 fixed in previous session)
 - **Bugs Verified**: 0 (partial deployment - only 1/3 files deployed)
-- **Commits**: 15 pushed to production (5 code, 10 docs)
+- **Commits**: 18 pushed to production (5 code, 13 docs)
 - **Build Status**: ✅ All passing locally
 - **Deployment Status**: ❌ CRITICAL - Partial deployment (build cache corruption)
 - **Root Cause**: ✅ IDENTIFIED - Vercel build cache serving mixed old/new chunks
-- **Context Usage**: ~121k/200k (60%)
+- **Context Usage**: ~140k/200k (70%)
 
 ### Bugs Fixed This Session
 
@@ -106,6 +106,9 @@
 - Emails page - 5 email templates, preview, notifications, history
 - Music Tracking page - Dashboard with auto-refresh and filters
 - Scoring page - Competition selector for judge setup
+- Reservation Pipeline page - Event filter, pipeline stages, no reservations found
+- Routine Summaries page - Competition filter, summary table with discount support
+- Invoices (All) page - 1 invoice displayed, $115.00 pending, filters working
 
 **Not Yet Tested**
 - Dancer creation flow (SD login blocked)
