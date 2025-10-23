@@ -71,6 +71,11 @@ export default function EntriesList() {
     isIncomplete,
   } = useSpaceUsage(entries, selectedCompetition, reservationData);
 
+  // Check if user has any approved reservations (business logic requirement)
+  const hasApprovedReservations = reservationData?.reservations?.some(
+    (r: any) => r.status === 'approved'
+  ) ?? false;
+
   // Modal states
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -389,12 +394,27 @@ export default function EntriesList() {
               ? 'No routines have been created yet.'
               : `No ${filter} routines found.`}
           </p>
-          <Link
-            href="/dashboard/entries/create"
-            className="inline-block bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200"
-          >
-            Create Your First Routine
-          </Link>
+          {hasApprovedReservations ? (
+            <Link
+              href="/dashboard/entries/create"
+              className="inline-block bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200"
+            >
+              Create Your First Routine
+            </Link>
+          ) : (
+            <div className="relative group inline-block">
+              <button
+                disabled
+                className="bg-gray-600 text-gray-400 px-6 py-3 rounded-lg cursor-not-allowed"
+                title="You need an approved reservation before creating routines"
+              >
+                Create Your First Routine
+              </button>
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                You need an approved reservation before creating routines
+              </div>
+            </div>
+          )}
         </div>
       ) : viewMode === 'cards' ? (
         <EntriesCardView entries={filteredEntries} />
@@ -547,11 +567,13 @@ export default function EntriesList() {
     </div>
 
     {/* Floating Action Button for Mobile */}
-    <FloatingActionButton
-      href="/dashboard/entries/create"
-      icon="➕"
-      label="Create Routine"
-    />
+    {hasApprovedReservations && (
+      <FloatingActionButton
+        href="/dashboard/entries/create"
+        icon="➕"
+        label="Create Routine"
+      />
+    )}
 
 
       {/* Quick Edit Modal */}
