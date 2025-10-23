@@ -579,17 +579,10 @@ export const entryRouter = router({
         ...data
       } = input;
 
-      // If reservation ID provided, validate it and enforce space limits
+      // 🐛 FIX Bug #22: Validate reservation capacity (count only non-cancelled entries)
       if (input.reservation_id) {
         const reservation = await prisma.reservations.findUnique({
           where: { id: input.reservation_id },
-          include: {
-            _count: {
-              select: {
-                competition_entries: true,
-              },
-            },
-          },
         });
 
         if (!reservation) {
@@ -604,12 +597,19 @@ export const entryRouter = router({
           throw new Error('Invalid reservation for this studio and competition.');
         }
 
-        const currentEntries = reservation._count.competition_entries;
+        // Count only non-cancelled entries for this reservation
+        const currentEntries = await prisma.competition_entries.count({
+          where: {
+            reservation_id: input.reservation_id,
+            status: { not: 'cancelled' },
+          },
+        });
+
         const confirmedSpaces = reservation.spaces_confirmed || 0;
 
         if (currentEntries >= confirmedSpaces) {
           throw new Error(
-            `Reservation capacity exceeded. Confirmed: ${confirmedSpaces}, Current: ${currentEntries}`
+            `Reservation capacity exceeded. You have ${confirmedSpaces} confirmed spaces and ${currentEntries} active routines. Please contact the competition director to request additional spaces.`
           );
         }
       }
