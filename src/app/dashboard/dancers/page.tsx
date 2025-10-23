@@ -1,15 +1,36 @@
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase-server-client';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import DancersList from '@/components/DancersList';
 
-export default async function DancersPage() {
-  const supabase = await createServerSupabaseClient();
+export default function DancersPage() {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !user) {
-    redirect('/login');
+      if (error || !user) {
+        router.push('/login');
+      } else {
+        setIsChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (isChecking) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </main>
+    );
   }
 
   return (
