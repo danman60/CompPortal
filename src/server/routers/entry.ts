@@ -869,10 +869,15 @@ export const entryRouter = router({
         ...data
       } = input.data;
 
+      // 🐛 FIX Bug #18: Explicitly extract and preserve status field
+      // The schema default 'draft' was preventing status updates to 'registered'
+      const { status, ...otherData } = data;
+
       const entry = await prisma.competition_entries.update({
         where: { id: input.id },
         data: {
-          ...data,
+          ...otherData,
+          ...(status && { status }), // Explicitly include status if provided
           performance_date: performance_date ? new Date(performance_date) : undefined,
           performance_time: performance_time ? new Date(`1970-01-01T${performance_time}`) : undefined,
           warm_up_time: warm_up_time ? new Date(`1970-01-01T${warm_up_time}`) : undefined,
