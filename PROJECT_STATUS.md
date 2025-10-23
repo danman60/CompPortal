@@ -1,10 +1,10 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-23 01:45 UTC
+**Last Updated:** 2025-10-23 02:15 UTC
 
-## Current Status: ✅ Critical Bug Fixed
+## Current Status: ⚠️ Investigating Production Issue
 
-### Latest Session (Oct 23, 2025)
+### Latest Session (Oct 23, 2025) - ONGOING
 
 **Critical Fix: tRPC Null Input Handling**
 
@@ -14,16 +14,29 @@
 - Error: "Expected object, received null" from Zod validation
 - Affected: 32 router files across entire codebase
 
-**Solution:**
-- Replaced `.optional()` with `.nullish()` in all input schemas
+**Solution Implemented:**
+- Replaced `.optional()` with `.nullish()` in all input schemas (32 files)
 - `.nullish()` accepts `null` | `undefined` | object (matches tRPC behavior)
-- Created automated script to fix all 32 router files
-- Build passed, committed, and pushed
+- Changed destructuring pattern: `input = {}` → `const { field } = input ?? {}`
+- Verified locally: Zod `.nullish()` correctly parses `null` values
+- Build passed ✅ (commit: 1bc3024)
 
-**Files Modified:**
-- All routers in `src/server/routers/*.ts` (32 files)
-- Used Node.js script to automate replacement
-- Pattern: `.optional()` → `.nullish()` for input schemas only
+**Production Status:**
+- ⚠️ ERROR PERSISTS on www.compsync.net after deployment
+- studio.getAll still returns 500 error with same "json":null pattern
+- Tested via Playwright at 02:10 UTC - multiple 500 errors in console
+- Local code is correct, builds successfully
+- Possible causes:
+  1. Vercel deployment not fully propagated
+  2. Server-side caching issue
+  3. Different code version deployed than what's in repo
+
+**Testing Performed:**
+- ✅ Verified local code has `.nullish()` at studio.ts:69
+- ✅ Verified Zod `.nullish()` handles null correctly via Node test
+- ✅ Build passes locally (npm run build)
+- ❌ Production still returns 500 on studio.getAll
+- Browser test: Logged into SD dashboard, 6+ console errors for studio.getAll
 
 **Additional Fixes This Session:**
 1. ErrorBoundary dark background (ErrorBoundary.tsx:81)
@@ -31,16 +44,10 @@
 3. CSV gender/parent field mapping (csv-utils.ts - uncommitted)
 
 **Deployment:**
-- Commit: `1bc3024` - "fix: Replace .optional() with .nullish() for all tRPC inputs"
-- Pushed to GitHub main branch
-- Vercel auto-deploy in progress
-- ETA: 2-3 minutes from push
-
-**Testing Required:**
-- [ ] Verify www.compsync.net loads without 500 errors
-- [ ] Check studio.getAll endpoint
-- [ ] Check competition.getAll endpoint  
-- [ ] Test SD and CD dashboards
+- Commits: 1bc3024 (nullish), 62f576f (UI fixes), 738f2f9 (docs)
+- All pushed to GitHub main branch
+- Vercel should have auto-deployed
+- Need user confirmation on deployment status
 
 ---
 
