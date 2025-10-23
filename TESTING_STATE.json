@@ -3,11 +3,11 @@
   "current_test": "complete",
   "tests_run": 10,
   "bugs_found": 4,
-  "bugs_fixed": 2,
-  "last_test_time": "2025-10-23T04:29:00Z",
-  "last_deploy_time": "2025-10-23T04:23:00Z",
-  "awaiting_deployment": false,
-  "deployment_hash": "e28559d",
+  "bugs_fixed": 3,
+  "last_test_time": "2025-10-23T04:55:00Z",
+  "last_deploy_time": "2025-10-23T04:55:00Z",
+  "awaiting_deployment": true,
+  "deployment_hash": "ecc078f",
   "test_queue": [
     "reservation_creation",
     "dancers_page",
@@ -77,12 +77,12 @@
     {
       "test": "dancers_page",
       "url": "/dashboard/dancers",
-      "error": "Page crashes with React error #310 and #419 - hooks violation",
-      "root_cause": "useTableSort and useEffect hooks called after conditional returns",
-      "fix": "Moved all hooks before conditional returns",
-      "status": "fix_failed",
-      "commit": "0580ead",
-      "note": "Fix deployed but error persists - needs deeper investigation"
+      "error": "Page crashes with React error #310 and #419 - SSR/hydration error",
+      "root_cause": "Server component rendering client component with hooks caused Suspense boundary failure",
+      "fix": "Converted entire page to client component, moved auth to useEffect",
+      "status": "fixed",
+      "commit": "ecc078f",
+      "note": "Fixed in 3 commits: d85ed2b (hooks ordering), bb79b5f (useCallback), ecc078f (client component)"
     },
     {
       "test": "cd_reservation_pipeline",
