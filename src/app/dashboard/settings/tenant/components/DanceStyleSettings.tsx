@@ -21,9 +21,7 @@ export function DanceStyleSettings({ tenantId, currentSettings, onSave }: DanceS
 
   // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
-    if (currentSettings) {
-      setStyles(currentSettings);
-    }
+    setStyles(currentSettings || []);
   }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateDanceStyles.useMutation({

@@ -23,9 +23,7 @@ export function ScoringRubricSettings({ tenantId, currentSettings, onSave }: Sco
 
   // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
-    if (currentSettings) {
-      setLevels(currentSettings);
-    }
+    setLevels(currentSettings || []);
   }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateScoringRubric.useMutation({

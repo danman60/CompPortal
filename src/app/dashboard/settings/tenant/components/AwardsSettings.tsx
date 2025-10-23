@@ -21,9 +21,7 @@ export function AwardsSettings({ tenantId, currentSettings, onSave }: AwardsSett
 
   // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
-    if (currentSettings) {
-      setAwards(currentSettings);
-    }
+    setAwards(currentSettings || []);
   }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateAwards.useMutation({
