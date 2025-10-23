@@ -1,9 +1,9 @@
 {
   "cycle_active": false,
   "current_test": "additional_pages_testing",
-  "tests_run": 39,
+  "tests_run": 40,
   "bugs_found": 7,
-  "bugs_fixed": 5,
+  "bugs_fixed": 6,
   "last_test_time": "2025-10-23T07:51:00Z",
   "last_deploy_time": "2025-10-23T05:34:00Z",
   "awaiting_deployment": false,
@@ -290,12 +290,25 @@
     },
     {
       "test": "tenant_settings_dance_styles_tab",
-      "url": "/dashboard/settings/tenant (Dance Styles tab)",
-      "error": "TypeError: l.map is not a function - Component crashes when clicking Dance Styles tab",
-      "root_cause": "DanceStyleSettings expects array but production database returns null/undefined for dance styles. Component doesn't handle null case properly before mapping.",
-      "fix": "Not yet fixed - needs better null handling in DanceStyleSettings component initialization",
-      "status": "investigating",
-      "note": "This is a separate bug from the infinite loop issue. Infinite loop is fixed. This is a production data handling issue."
+      "url": "/dashboard/settings/tenant (Dance Styles, Awards, Scoring Rubric tabs)",
+      "error": "TypeError: l.map is not a function - Components crash when clicking tabs with null database values",
+      "root_cause": "DanceStyleSettings, AwardsSettings, and ScoringRubricSettings expect arrays but production database returns null for uninitialized settings. useEffect conditionally set state only if truthy, leaving null values.",
+      "fix": "Changed useEffect to always use fallback: setStyles(currentSettings || []) instead of if(currentSettings) setStyles(currentSettings)",
+      "status": "fixed",
+      "commit": "1956e06",
+      "files_changed": [
+        "DanceStyleSettings.tsx:24",
+        "AwardsSettings.tsx:24",
+        "ScoringRubricSettings.tsx:26"
+      ],
+      "note": "Separate bug from infinite loop (Bug #6). Build passes. Awaiting deployment to production for verification."
+    },
+    {
+      "test": "tenant_settings_all_tabs_verification",
+      "url": "/dashboard/settings/tenant",
+      "status": "pending",
+      "timestamp": "2025-10-23T08:25:00Z",
+      "note": "Awaiting deployment of commits 42ace09 (infinite loop fix) and 1956e06 (null handling fix) to test all 5 tabs (Routine Categories, Age Divisions, Dance Styles, Scoring Rubric, Awards) in production."
     }
   ],
   "testing_instructions": {
