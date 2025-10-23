@@ -166,6 +166,28 @@ export const entryRouter = router({
       const routineCount = entries.length;
       const totalFees = entries.reduce((sum: number, e: any) => sum + Number(e.total_fee || 0), 0);
 
+      // 🐛 FIX Bug #23: Update reservation to reflect actual submitted routines
+      // Find the reservation for this studio/competition
+      const reservation = await prisma.reservations.findFirst({
+        where: {
+          studio_id: studioId,
+          competition_id: competitionId,
+          status: 'approved', // Only update approved reservations
+        },
+      });
+
+      if (reservation) {
+        // Update reservation: set spaces_confirmed to actual routine count, mark as submitted
+        await prisma.reservations.update({
+          where: { id: reservation.id },
+          data: {
+            spaces_confirmed: routineCount, // Lock to actual submitted count
+            status: 'submitted', // Change status so it doesn't show in "available spaces"
+            updated_at: new Date(),
+          },
+        });
+      }
+
       // Send "routine_summary_submitted" email to Competition Directors (non-blocking)
       try {
         // Get all Competition Directors for this tenant

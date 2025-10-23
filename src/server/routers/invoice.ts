@@ -160,6 +160,14 @@ export const invoiceRouter = router({
         },
       });
 
+      // 🛡️ GUARD: Cannot generate invoice if no entries exist
+      if (entries.length === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot generate invoice: No entries found for this studio and competition.',
+        });
+      }
+
       // Calculate totals
       const lineItems = entries.map((entry) => {
         const entryFee = Number(entry.entry_fee || 0);
@@ -196,12 +204,12 @@ export const invoiceRouter = router({
       });
 
       return {
-        invoiceNumber: `INV-${competition.year}-${studio.code}-${Date.now()}`,
+        invoiceNumber: `INV-${competition.year}-${studio.code || 'UNKNOWN'}-${Date.now()}`,
         invoiceDate: new Date(),
         studio: {
           id: studio.id,
           name: studio.name,
-          code: studio.code,
+          code: studio.code || 'N/A',
           address1: studio.address1,
           address2: studio.address2,
           city: studio.city,
