@@ -21,11 +21,12 @@ export function ScoringRubricSettings({ tenantId, currentSettings, onSave }: Sco
   const [levels, setLevels] = useState<ScoreLevel[]>(currentSettings || []);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
     if (currentSettings) {
       setLevels(currentSettings);
     }
-  }, [currentSettings]);
+  }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateScoringRubric.useMutation({
     onSuccess: () => {

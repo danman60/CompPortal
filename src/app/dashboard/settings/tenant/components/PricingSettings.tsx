@@ -37,12 +37,13 @@ export function PricingSettings({ tenantId, currentSettings, onSave }: PricingSe
   const [hasChanges, setHasChanges] = useState(false);
 
   // Reset when currentSettings changes
+  // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
     setFees(currentSettings?.fees || EMPWR_ENTRY_FEES.fees);
     setCurrency(currentSettings?.currency || EMPWR_ENTRY_FEES.currency);
     setDescription(currentSettings?.description || EMPWR_ENTRY_FEES.description || '');
     setHasChanges(false);
-  }, [currentSettings]);
+  }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateEntryFees.useMutation({
     onSuccess: () => {

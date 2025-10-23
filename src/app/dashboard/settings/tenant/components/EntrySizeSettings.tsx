@@ -27,10 +27,11 @@ export function EntrySizeSettings({ tenantId, currentSettings, onSave }: EntrySi
   const [hasChanges, setHasChanges] = useState(false);
 
   // Reset categories when currentSettings changes
+  // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
     setCategories(currentSettings?.categories || EMPWR_ENTRY_SIZE_CATEGORIES.categories);
     setHasChanges(false);
-  }, [currentSettings]);
+  }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateEntrySizeCategories.useMutation({
     onSuccess: () => {

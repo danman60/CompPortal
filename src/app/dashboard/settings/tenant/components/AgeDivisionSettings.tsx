@@ -25,10 +25,11 @@ export function AgeDivisionSettings({ tenantId, currentSettings, onSave }: AgeDi
   const [hasChanges, setHasChanges] = useState(false);
 
   // Reset divisions when currentSettings changes
+  // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
     setDivisions(currentSettings?.divisions || EMPWR_AGE_DIVISIONS.divisions);
     setHasChanges(false);
-  }, [currentSettings]);
+  }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateAgeDivisions.useMutation({
     onSuccess: () => {

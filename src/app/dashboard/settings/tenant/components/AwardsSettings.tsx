@@ -19,11 +19,12 @@ export function AwardsSettings({ tenantId, currentSettings, onSave }: AwardsSett
   const [awards, setAwards] = useState<AwardCategory[]>(currentSettings || []);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Use JSON.stringify to avoid infinite loop from object reference changes
   useEffect(() => {
     if (currentSettings) {
       setAwards(currentSettings);
     }
-  }, [currentSettings]);
+  }, [JSON.stringify(currentSettings)]);
 
   const updateMutation = trpc.tenantSettings.updateAwards.useMutation({
     onSuccess: () => {

@@ -1,9 +1,9 @@
 {
   "cycle_active": false,
   "current_test": "additional_pages_testing",
-  "tests_run": 38,
-  "bugs_found": 6,
-  "bugs_fixed": 4,
+  "tests_run": 39,
+  "bugs_found": 7,
+  "bugs_fixed": 5,
   "last_test_time": "2025-10-23T07:51:00Z",
   "last_deploy_time": "2025-10-23T05:34:00Z",
   "awaiting_deployment": false,
@@ -216,9 +216,9 @@
     },
     {
       "test": "tenant_settings_page_verification",
-      "status": "failed",
-      "timestamp": "2025-10-23T08:00:00Z",
-      "note": "ISSUE FOUND: Tenant Settings page shows blank main section with excessive WebSocket reconnection attempts (200+ messages). No React errors in console. Likely infinite re-render loop in one of the child components (EntrySizeSettings, AgeDivisionSettings, DanceStyleSettings, ScoringRubricSettings, or AwardsSettings). Requires investigation."
+      "status": "passed",
+      "timestamp": "2025-10-23T08:18:00Z",
+      "note": "✅ FIXED: Infinite re-render loop resolved by changing useEffect dependencies from [currentSettings] to [JSON.stringify(currentSettings)] in all 6 components (EntrySizeSettings, AgeDivisionSettings, DanceStyleSettings, ScoringRubricSettings, AwardsSettings, PricingSettings). Routine Categories and Age Divisions tabs working perfectly. Note: Dance Styles tab has separate production data handling issue (expects array, gets null) - not related to infinite loop bug."
     }
   ],
   "errors_found": [
@@ -274,10 +274,28 @@
       "test": "tenant_settings",
       "url": "/dashboard/settings/tenant",
       "error": "Page shows blank main section with excessive WebSocket reconnection attempts (200+ messages)",
-      "root_cause": "Likely infinite re-render loop in one of the child components (EntrySizeSettings, AgeDivisionSettings, DanceStyleSettings, ScoringRubricSettings, or AwardsSettings)",
-      "fix": "Not yet fixed - requires investigation of component hooks ordering and dependencies",
+      "root_cause": "Infinite re-render loop in all 6 tenant settings components - useEffect with [currentSettings] dependency triggers on every tRPC refetch due to new object reference",
+      "fix": "Changed useEffect dependencies from [currentSettings] to [JSON.stringify(currentSettings)] in all 6 components to compare by value instead of reference",
+      "status": "fixed",
+      "commit": "pending",
+      "files_changed": [
+        "EntrySizeSettings.tsx:34",
+        "AgeDivisionSettings.tsx:32",
+        "AwardsSettings.tsx:27",
+        "DanceStyleSettings.tsx:27",
+        "PricingSettings.tsx:46",
+        "ScoringRubricSettings.tsx:29"
+      ],
+      "note": "VERIFIED WORKING - Routine Categories and Age Divisions tabs load perfectly with no infinite loops. Build passes. Dance Styles tab has separate production data handling bug (expects array, gets null) unrelated to infinite loop fix."
+    },
+    {
+      "test": "tenant_settings_dance_styles_tab",
+      "url": "/dashboard/settings/tenant (Dance Styles tab)",
+      "error": "TypeError: l.map is not a function - Component crashes when clicking Dance Styles tab",
+      "root_cause": "DanceStyleSettings expects array but production database returns null/undefined for dance styles. Component doesn't handle null case properly before mapping.",
+      "fix": "Not yet fixed - needs better null handling in DanceStyleSettings component initialization",
       "status": "investigating",
-      "note": "No React errors in console (only camera/microphone permission warnings). Page structure in page.tsx appears correct. Issue is in one of the imported components."
+      "note": "This is a separate bug from the infinite loop issue. Infinite loop is fixed. This is a production data handling issue."
     }
   ],
   "testing_instructions": {
