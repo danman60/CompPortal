@@ -320,6 +320,9 @@ export const entryRouter = router({
         // Non-super admins: filter entries to their tenant via studios
         if (!where.studio_id) {
           // If not already filtered by specific studio, add tenant filter
+          if (!ctx.tenantId) {
+            return { entries: [], total: 0, limit, offset, hasMore: false };
+          }
           where.studios = {
             tenant_id: ctx.tenantId,
           };
