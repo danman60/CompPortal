@@ -38,7 +38,7 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
   first_name: ['firstname', 'fname', 'given_name', 'givenname', 'first', 'name', 'dancer_first_name'],
   last_name: ['lastname', 'lname', 'surname', 'family_name', 'familyname', 'last', 'dancer_last_name'],
   date_of_birth: ['dob', 'birthdate', 'birth_date', 'dateofbirth', 'birthday', 'birth', 'bday', 'bd', 'born', 'age', 'dancer_dob', 'dancer_birth_date'],
-  gender: ['sex', 'male_female', 'm_f', 'mf', 'gender_identity', 'dancer_gender'],
+  gender: ['sex', 'male_female', 'm_f', 'mf', 'gender_identity', 'dancer_gender', 'gender_female_male', 'female_male'],
   email: ['email_address', 'e_mail', 'emailaddress', 'mail'],
   phone: ['phone_number', 'phonenumber', 'tel', 'telephone', 'mobile', 'cell'],
   parent_name: ['guardian_name', 'guardian', 'parent', 'parentname', 'guardian_full_name', 'parent_full_name'],

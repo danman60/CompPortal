@@ -69,7 +69,7 @@ export default function SignupPage() {
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
+          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/onboarding`,
         },
       });
 
@@ -197,7 +197,7 @@ export default function SignupPage() {
             </button>
 
             <p className="text-xs text-gray-400 text-center">
-              You'll complete your studio profile after confirming your email
+              Complete your studio profile after confirming your email
             </p>
           </form>
 

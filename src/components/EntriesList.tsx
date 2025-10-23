@@ -442,7 +442,7 @@ export default function EntriesList() {
       </div>
 
       {/* Live Summary Bar (Fixed at bottom - only for Studio Directors) */}
-      {isStudioDirector && entries.length > 0 && (
+      {isStudioDirector && (
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 border-t-2 border-purple-400/50 shadow-2xl z-50">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between gap-6">
@@ -567,7 +567,7 @@ export default function EntriesList() {
       )}
 
       {/* Spacer for fixed bottom bar - only for Studio Directors */}
-      {isStudioDirector && entries.length > 0 && (
+      {isStudioDirector && (
         <div className="h-24"></div>
       )}
     </div>

@@ -434,7 +434,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Category</option>
-                {lookupData?.categories.map((cat) => (
+                {Array.from(new Map(lookupData?.categories.map(cat => [cat.id, cat]))).map(([_, cat]) => (
                   <option key={cat.id} value={cat.id} className="bg-gray-900 text-white">
                     {cat.name}
                   </option>
@@ -458,7 +458,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Classification</option>
-                {lookupData?.classifications.map((cls) => (
+                {Array.from(new Map(lookupData?.classifications.map(cls => [cls.id, cls]))).map(([_, cls]) => (
                   <option key={cls.id} value={cls.id} className="bg-gray-900 text-white">
                     {cls.name} {cls.skill_level && `(Level ${cls.skill_level})`}
                   </option>

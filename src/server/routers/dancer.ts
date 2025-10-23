@@ -534,7 +534,7 @@ export const dancerRouter = router({
             last_name: z.string().min(1).max(100),
             date_of_birth: z.string().optional(), // ISO date string
             gender: z.string().max(20).optional(),
-            email: z.string().email().optional().or(z.literal('')),
+            email: z.string().email().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
             phone: z.string().max(50).optional(),
             skill_level: z.string().max(50).optional(),
           })
