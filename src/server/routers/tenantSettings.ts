@@ -123,6 +123,7 @@ export const tenantSettingsRouter = router({
           classification_settings: true,
           dance_category_settings: true,
           scoring_system_settings: true,
+          award_settings: true,
         },
       });
 
@@ -143,9 +144,9 @@ export const tenantSettingsRouter = router({
           classifications: tenant.classification_settings as ClassificationSettings | null,
           danceCategories: tenant.dance_category_settings as DanceCategorySettings | null,
           scoringSystem: tenant.scoring_system_settings as ScoringSystemSettings | null,
-          danceStyles: tenant.dance_category_settings as any, // Simplified dance styles
-          scoringRubric: tenant.scoring_system_settings as any, // Score ranges
-          awards: (tenant as any).award_settings as any, // Overall awards
+          danceStyles: (tenant.dance_category_settings as any)?.styles || null, // Extract nested styles array
+          scoringRubric: (tenant.scoring_system_settings as any)?.tiers || null, // Extract nested tiers array
+          awards: tenant.award_settings as any, // Overall awards (already array or null)
         },
       };
     }),
