@@ -47,6 +47,22 @@ export default function DancersList() {
     },
   });
 
+  // IMPORTANT: All hooks must be called before any conditional returns
+  const dancers = data?.dancers ?? [];
+  const filteredDancers = dancers.filter((dancer) => {
+    if (!dancer) return false;
+    const matchesGender = filter === 'all' || dancer.gender?.toLowerCase() === filter;
+    const matchesSearch =
+      searchTerm === '' ||
+      dancer.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dancer.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${dancer.first_name} ${dancer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesGender && matchesSearch;
+  });
+
+  // Sort dancers for table view
+  const { sortedData: sortedDancers, sortConfig, requestSort } = useTableSort(filteredDancers);
+
   // Force cards view on mobile
   useEffect(() => {
     const handleResize = () => {
@@ -85,21 +101,6 @@ export default function DancersList() {
       </div>
     );
   }
-
-  const dancers = data?.dancers ?? [];
-  const filteredDancers = dancers.filter((dancer) => {
-    if (!dancer) return false;
-    const matchesGender = filter === 'all' || dancer.gender?.toLowerCase() === filter;
-    const matchesSearch =
-      searchTerm === '' ||
-      dancer.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dancer.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${dancer.first_name} ${dancer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesGender && matchesSearch;
-  });
-
-  // Sort dancers for table view
-  const { sortedData: sortedDancers, sortConfig, requestSort } = useTableSort(filteredDancers);
 
   // Checkbox handlers
   const handleSelectAll = () => {
