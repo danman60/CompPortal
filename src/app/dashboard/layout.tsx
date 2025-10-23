@@ -23,7 +23,9 @@ export default function DashboardLayout({
   return (
     <>
       <ErrorBoundary boundaryName="Dashboard">
-        <div className="pb-20 md:pb-0">{children}</div>
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black pb-20 md:pb-0">
+          {children}
+        </div>
         <MobileBottomNav />
         <KeyboardShortcutsModal />
         <SupportChatWrapper />
