@@ -44,7 +44,7 @@ export default function EntriesList() {
     setViewMode,
     competitions,
     filteredEntries,
-  } = useEntryFilters(entries);
+  } = useEntryFilters(entries, reservationData);
 
   // Sort entries for table view
   const { sortedData: sortedEntries, sortConfig, requestSort } = useTableSort(filteredEntries);

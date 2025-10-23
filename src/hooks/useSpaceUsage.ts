@@ -8,7 +8,12 @@ export function useSpaceUsage(
   reservationData: any
 ) {
   const hasSelectedCompetition = !!selectedCompetition;
-  const selectedReservation = hasSelectedCompetition ? reservationData?.reservations?.[0] : null;
+
+  // 🐛 FIX Bug #16: Find reservation matching selected competition, not just first reservation
+  const selectedReservation = hasSelectedCompetition
+    ? reservationData?.reservations?.find((r: any) => r.competition_id === selectedCompetition)
+    : null;
+
   const hasNoReservation = hasSelectedCompetition && !selectedReservation;
 
   // Calculate total confirmed spaces and used spaces
