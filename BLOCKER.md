@@ -65,12 +65,29 @@ $ git show 1956e06:src/app/dashboard/settings/tenant/components/DanceStyleSettin
 **Result:** FAILED - Dance Styles tab still crashes after auto-compact resumption
 **Evidence:** Playwright test shows same `TypeError: l.map is not a function` error
 
-### Possible Causes
-1. **Deployment failed silently** - Build error not surfaced in git push output
-2. **Deployment queue backed up** - Vercel infrastructure delay
-3. **Build cache issue** - Old chunks being served despite cache-busting attempts
-4. **Webhook not triggered** - Git push didn't trigger deployment
-5. **CDN/Edge caching** - Vercel edge network serving stale code from cache
+### Root Cause Identified: PARTIAL DEPLOYMENT
+
+**Critical Discovery:** Awards tab works but Dance Styles/Scoring Rubric crash - YET ALL THREE WERE FIXED IN THE SAME COMMIT.
+
+**Evidence:**
+```bash
+$ git show --stat 1956e06
+ AwardsSettings.tsx         | 4 +---
+ DanceStyleSettings.tsx     | 4 +---
+ ScoringRubricSettings.tsx  | 4 +---
+```
+
+**Production Behavior:**
+- ✅ Awards tab: Fix deployed, works perfectly
+- ❌ Dance Styles tab: Fix NOT deployed, crashes
+- ❌ Scoring Rubric tab: Fix NOT deployed, crashes
+
+**Diagnosis:** PARTIAL DEPLOYMENT - Only 1 of 3 files from commit 1956e06 successfully deployed.
+
+### Confirmed Root Causes
+1. **Build cache corruption** - Mixing old/new code chunks (MOST LIKELY)
+2. **Code splitting/lazy loading** - Different chunks cached inconsistently
+3. **CDN edge cache** - Edge servers serving mismatched file versions
 
 ## Required Actions (User)
 
@@ -93,9 +110,15 @@ $ git show 1956e06:src/app/dashboard/settings/tenant/components/DanceStyleSettin
 2. Manually trigger redeploy from Vercel dashboard
 3. Select "Redeploy with existing build cache cleared"
 
+**If Partial Deployment (Awards works, others crash):**
+1. **CRITICAL**: Clear ALL build caches in Vercel dashboard
+2. Redeploy from scratch WITHOUT cache
+3. Verify all 3 files deployed: check source maps or deployment logs
+4. If persists: Rollback to pre-1956e06 commit, then re-apply fix
+
 **If Deployment Succeeded But Old Code Serving:**
-1. Clear Vercel function/edge cache
-2. Or: Make trivial commit (add comment) to force new deployment
+1. Clear Vercel CDN/edge cache globally
+2. Make trivial commit (add comment) to force new deployment
 3. Hard refresh browser (Ctrl+Shift+R) to clear client cache
 
 ## Workaround
