@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { guardInvoiceStatus } from '@/lib/guards/statusGuards';
@@ -728,6 +729,14 @@ export const invoiceRouter = router({
       paymentMethod: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can mark invoices as paid
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can mark invoices as paid. Payment is confirmed externally (e-transfer, check, etc.) and must be verified by competition staff.',
+        });
+      }
+
       const invoice = await prisma.invoices.findUnique({
         where: { id: input.invoiceId },
       });

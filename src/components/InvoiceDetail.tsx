@@ -15,6 +15,11 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [isEditingPrices, setIsEditingPrices] = useState(false);
   const [editableLineItems, setEditableLineItems] = useState<any[]>([]);
 
+  // Get current user role
+  const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
+  const isStudioDirector = userProfile?.role === 'studio_director';
+  const isCompetitionDirector = ['competition_director', 'super_admin'].includes(userProfile?.role || '');
+
   // Check if there's an existing invoice in the database
   const { data: existingInvoice } = trpc.invoice.getByStudioAndCompetition.useQuery({
     studioId,
@@ -406,16 +411,26 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             )}
             {existingInvoice.status === 'SENT' && (
               <>
-                <div className="flex-1 bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 px-6 py-3 rounded-lg font-semibold text-center">
-                  ⏳ Awaiting Payment from Studio
-                </div>
-                <button
-                  onClick={() => markAsPaidMutation.mutate({ invoiceId: existingInvoice.id, paymentMethod: 'manual' })}
-                  disabled={markAsPaidMutation.isPending}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
-                >
-                  {markAsPaidMutation.isPending ? '✓ Confirming...' : '✓ Mark as Paid'}
-                </button>
+                {isStudioDirector ? (
+                  // Studio Directors see read-only status (payment happens externally)
+                  <div className="flex-1 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 px-6 py-3 rounded-lg font-semibold text-center">
+                    📋 Invoice Sent - Payment will be confirmed by competition staff after external payment received (e-transfer, check, etc.)
+                  </div>
+                ) : (
+                  // Competition Directors can mark as paid
+                  <>
+                    <div className="flex-1 bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 px-6 py-3 rounded-lg font-semibold text-center">
+                      ⏳ Awaiting External Payment from Studio
+                    </div>
+                    <button
+                      onClick={() => markAsPaidMutation.mutate({ invoiceId: existingInvoice.id, paymentMethod: 'manual' })}
+                      disabled={markAsPaidMutation.isPending}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
+                    >
+                      {markAsPaidMutation.isPending ? '✓ Confirming...' : '✓ Mark as Paid'}
+                    </button>
+                  </>
+                )}
               </>
             )}
             {existingInvoice.status === 'PAID' && (

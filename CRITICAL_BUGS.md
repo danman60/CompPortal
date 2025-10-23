@@ -1,6 +1,6 @@
 # Critical Bugs Found - 2025-10-23
 
-## Status: 🔴 CRITICAL - 9 Production Bugs (1 Fixed, 8 Active)
+## Status: 🔴 CRITICAL - 11 Production Bugs (1 Fixed, 10 Active)
 
 **Test Account**: danieljohnabrahamson@gmail.com (Studio Director)
 **Reservations**: 15 spaces (St. Catharines), 1 space (London)
@@ -297,26 +297,76 @@ ORDER BY created_at DESC
 
 ---
 
+### Bug #19: Reservation Pipeline Flash 🔴 ACTIVE
+**Severity**: LOW - UX annoyance
+**Discovered**: 2025-10-23 (User testing)
+
+**Issue**: Reservation pipeline page flashes "no reservations found" message before data loads
+
+**Impact**:
+- Poor user experience
+- Looks unprofessional
+- May confuse users
+
+**Fix Required**: Add loading state to prevent flash of empty state
+
+---
+
+### Bug #20: SD Can Mark Invoice as Paid 🔴 CRITICAL
+**Severity**: CRITICAL - Business logic violation, financial impact
+**Discovered**: 2025-10-23 (User testing)
+**URL**: https://www.compsync.net/dashboard/invoices/15dffb1d-6a1f-43ff-b03f-0387cf2e7624/79cef00c-e163-449c-9f3c-d021fbb4d672
+
+**Issue**: Studio Director can mark invoice as paid - this is a Competition Director only action
+
+**Current Behavior**:
+- SD sees "Mark as Paid" button on invoice detail page
+- SD sees "awaiting payment from studio" status message
+- SD can click button and mark invoice as paid
+
+**Expected Behavior**:
+- SD should ONLY view the invoice (read-only)
+- Payment happens EXTERNALLY (e-transfer, check, etc.)
+- CD manually marks invoice as paid after receiving external payment
+- SD should NOT see "Mark as Paid" button
+- Status message should say "Invoice sent to studio" or "Awaiting external payment"
+
+**Impact**:
+- ❌ CRITICAL: Studios could fraudulently mark unpaid invoices as paid
+- ❌ Financial integrity compromised
+- ❌ No audit trail of actual payments
+- ❌ Business logic completely broken
+
+**Fix Required**:
+1. Remove "Mark as Paid" button for Studio Directors
+2. Update status message to reflect external payment workflow
+3. Restrict mark-as-paid action to CD/SA roles only
+4. Add role check in backend API endpoint
+
+---
+
 ## Priority Actions
 
 ### Priority Order (By Severity)
 
 **🔥 CRITICAL - BLOCKS CORE WORKFLOW:**
-1. **Bug #16**: Capacity tracking incorrect - CRITICAL data integrity
-2. **Bug #17**: St. Catharines missing from dropdown - blocks 15 routines
-3. **Bug #18**: Routines not marked as submitted - duplicate submissions
+1. **Bug #20**: SD can mark invoice as paid - CRITICAL financial integrity
+2. **Bug #16**: Capacity tracking incorrect - CRITICAL data integrity
+3. **Bug #17**: St. Catharines missing from dropdown - blocks 15 routines
+4. **Bug #18**: Routines not marked as submitted - duplicate submissions
 
 **🚨 HIGH PRIORITY - BREAKS FUNCTIONALITY:**
-4. **Bug #14**: Group size auto-detect not working
-5. **Bug #15**: React error #419 after routine creation
-6. **Bug #11**: Email notifications not sending
-7. **Bug #12**: React error #418 on dashboard navigation
+5. **Bug #14**: Group size auto-detect not working
+6. **Bug #15**: React error #419 after routine creation
+7. **Bug #11**: Email notifications not sending
+8. **Bug #12**: React error #418 on dashboard navigation
 
 **⚠️ MEDIUM PRIORITY - UX ISSUES:**
-8. **Bug #13**: Fee display on creation page (confusing but not blocking)
+9. **Bug #13**: Fee display on creation page (confusing but not blocking)
+10. **Bug #19**: Reservation pipeline flashes empty state before loading
 
 **✅ FIXED:**
-9. **Bug #10**: Two-factor migration applied ✅
+11. **Bug #10**: Two-factor migration applied ✅
 
 ### Immediate Actions Required
 
