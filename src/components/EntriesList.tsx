@@ -24,6 +24,23 @@ export default function EntriesList() {
   const { data: userData } = trpc.user.getCurrentUser.useQuery();
   const isStudioDirector = userData?.role === 'studio_director';
 
+  // Submit summary mutation
+  const submitSummaryMutation = trpc.entry.submitSummary.useMutation({
+    onSuccess: () => {
+      toast.success('Summary submitted to Competition Director! They will create your invoice.', {
+        duration: 4000,
+        position: 'top-right',
+      });
+      setSummarySubmitted(true);
+      refetch(); // Refresh entries to show updated reservation status
+    },
+    onError: (error) => {
+      toast.error(`Failed to submit summary: ${error.message}`, {
+        position: 'top-right',
+      });
+    },
+  });
+
   // Use custom hooks
   const {
     entries,
@@ -543,14 +560,20 @@ export default function EntriesList() {
                       .join(',');
 
                     setSubmittedEntriesSnapshot(snapshot);
-                    setSummarySubmitted(true);
 
-                    toast.success('Summary submitted to Competition Director! They will create your invoice.', {
-                      duration: 4000,
-                      position: 'top-right',
-                    });
+                    // Call the actual tRPC mutation
+                    if (userData?.studio?.id && selectedCompetition) {
+                      submitSummaryMutation.mutate({
+                        studioId: userData.studio.id,
+                        competitionId: selectedCompetition,
+                      });
+                    } else {
+                      toast.error('Missing studio or competition information', {
+                        position: 'top-right',
+                      });
+                    }
                   }}
-                  disabled={filteredEntries.length === 0 || summarySubmitted}
+                  disabled={filteredEntries.length === 0 || summarySubmitted || submitSummaryMutation.isPending}
                   className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
                     summarySubmitted
                       ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'

@@ -70,8 +70,17 @@ export default function SignupPage() {
         password: formData.password,
         options: {
           emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/onboarding`,
+          data: {
+            // Prevent auto-login before email confirmation
+            // This reduces console errors from unconfirmed session
+          },
         },
       });
+
+      // Sign out immediately to prevent unconfirmed session errors
+      if (data.user && !data.user.email_confirmed_at) {
+        await supabase.auth.signOut();
+      }
 
       if (signUpError) {
         const msg = signUpError.message || '';
