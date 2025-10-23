@@ -34,7 +34,7 @@ const competitionInputSchema = z.object({
 export const competitionRouter = router({
   // Get all competitions with optional filtering
   // Super admins can see competitions across all tenants
-  getAll: publicProcedure
+  getAll: protectedProcedure
     .input(
       z
         .object({
