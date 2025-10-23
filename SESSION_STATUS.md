@@ -3,13 +3,13 @@
 ## Current State: 🚨 BLOCKED - DEPLOYMENT ISSUE
 
 ### Session Progress
-- **Tests Run**: 43
+- **Tests Run**: 47 (4 new tests while blocked)
 - **Bugs Found**: 7 (2 new this session)
 - **Bugs Fixed**: 6 (2 fixed this session)
-- **Commits**: 7 pushed to production (5 code, 2 docs)
+- **Commits**: 8 pushed to production (5 code, 3 docs)
 - **Build Status**: ✅ All passing locally
 - **Deployment Status**: ❌ BLOCKED - Not deploying after 1 hour
-- **Context Usage**: ~79k/200k (40%)
+- **Context Usage**: ~106k/200k (53%)
 
 ### Bugs Fixed This Session
 
@@ -69,14 +69,22 @@
 - Judge Scoring Demo
 - Tenant Settings: Routine Categories tab ✅
 - Tenant Settings: Age Divisions tab ✅
+- Dancers page (list view) ✅
+- Dancer edit form ✅
 
 **Tested & Needs Verification** ⏳
 - Tenant Settings: Dance Styles tab (awaiting deployment)
 - Tenant Settings: Scoring Rubric tab (awaiting deployment)
 - Tenant Settings: Awards tab (awaiting deployment)
 
+**Tested During Blocker (New)**
+- Studios page ✅
+- Dancers list (13 dancers displayed) ✅
+- Dancer add page (SD-only message displayed correctly) ✅
+- Dancer edit workflow (form loads with all fields) ✅
+
 **Not Yet Tested**
-- Dancer creation/edit flows
+- Dancer creation flow (SD login blocked)
 - Entry edit flows
 - Competition creation/edit
 - Judge bulk import
