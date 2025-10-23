@@ -1,19 +1,18 @@
 {
-  "cycle_active": false,
-  "current_test": "complete",
-  "tests_run": 14,
-  "bugs_found": 4,
-  "bugs_fixed": 3,
-  "last_test_time": "2025-10-23T05:05:00Z",
-  "last_deploy_time": "2025-10-23T05:01:00Z",
-  "awaiting_deployment": false,
-  "deployment_hash": "7904acb",
+  "cycle_active": true,
+  "current_test": "cd_pages_comprehensive",
+  "tests_run": 20,
+  "bugs_found": 5,
+  "bugs_fixed": 4,
+  "last_test_time": "2025-10-23T05:13:00Z",
+  "last_deploy_time": "2025-10-23T05:13:00Z",
+  "awaiting_deployment": true,
+  "deployment_hash": "26f8e76",
   "test_queue": [
-    "reservation_creation",
-    "dancers_page",
-    "entries_page",
-    "invoices_page",
-    "cd_dashboard"
+    "verify_invoices_all_fix",
+    "import_dancers",
+    "import_routines",
+    "summary_submission"
   ],
   "tests_passed": [
     {
@@ -62,6 +61,48 @@
       "status": "passed",
       "timestamp": "2025-10-23T04:29:00Z",
       "note": "Complete 3-step routine creation working - competition auto-selected, dancers selected, routine created successfully with $115 fee"
+    },
+    {
+      "test": "cd_dashboard",
+      "status": "passed",
+      "timestamp": "2025-10-23T05:08:00Z",
+      "note": "CD dashboard loads with all quick actions, shows role badge 'DIRECTOR', statistics loading"
+    },
+    {
+      "test": "cd_director_panel",
+      "status": "passed",
+      "timestamp": "2025-10-23T05:09:00Z",
+      "note": "Director control panel working - shows routine queue (3 routines), judge status (3/4 ready), start buttons functional"
+    },
+    {
+      "test": "cd_competitions_page",
+      "status": "passed",
+      "timestamp": "2025-10-23T05:10:00Z",
+      "note": "Event Management page working - 4 events displayed (QA Automation Event, EMPWR Dance), capacity stats visible, filter tabs functional"
+    },
+    {
+      "test": "cd_studios_page",
+      "status": "passed",
+      "timestamp": "2025-10-23T05:10:00Z",
+      "note": "Studios page working - 1 studio 'dsda' displayed with contact info, filter tabs (All:1, Pending:0, Approved:1)"
+    },
+    {
+      "test": "cd_routine_summaries",
+      "status": "passed",
+      "timestamp": "2025-10-23T05:11:00Z",
+      "note": "Routine Summaries page loads correctly - table with headers, competition filter, 'No routine submissions found' (expected for draft routines)"
+    },
+    {
+      "test": "cd_scheduling",
+      "status": "passed",
+      "timestamp": "2025-10-23T05:12:00Z",
+      "note": "Scheduling page loads - shows 'Loading events...' state, header and layout functional"
+    },
+    {
+      "test": "cd_analytics",
+      "status": "passed",
+      "timestamp": "2025-10-23T05:12:00Z",
+      "note": "Analytics page working - competition dropdown, system-wide metrics option, placeholder content"
     }
   ],
   "errors_found": [
@@ -102,6 +143,16 @@
       "status": "fixed",
       "commit": "e28559d",
       "note": "VERIFIED WORKING - Competition auto-selected, full 3-step workflow completed, routine created"
+    },
+    {
+      "test": "cd_invoices_all",
+      "url": "/dashboard/invoices/all",
+      "error": "Page crashes with React error #310 and #419 - SSR/hydration error",
+      "root_cause": "Same as dancers page - async server component rendering client component with hooks",
+      "fix": "Converted entire page to client component, moved auth to useEffect",
+      "status": "fixed",
+      "commit": "26f8e76",
+      "note": "Awaiting deployment verification"
     }
   ],
   "testing_instructions": {
