@@ -1,4 +1,5 @@
 'use client';
+// Force deployment: 2025-10-23 09:45 UTC
 
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
