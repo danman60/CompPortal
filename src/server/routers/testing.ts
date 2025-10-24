@@ -97,8 +97,33 @@ export const testingRouter = router({
         }
 
         if (input.wipeOptions.reservations) {
+          // Get all approved reservations to refund capacity BEFORE deletion
+          const reservationsToDelete = await tx.reservations.findMany({
+            where: { status: 'approved' },
+            select: {
+              id: true,
+              competition_id: true,
+              spaces_confirmed: true,
+            },
+          });
+
+          // Delete all reservations
           const reservations = await tx.reservations.deleteMany({});
           deletedCounts.reservations = reservations.count;
+
+          // Refund capacity for approved reservations back to competitions
+          for (const reservation of reservationsToDelete) {
+            if (reservation.spaces_confirmed) {
+              await tx.competitions.update({
+                where: { id: reservation.competition_id },
+                data: {
+                  available_reservation_tokens: {
+                    increment: reservation.spaces_confirmed,
+                  },
+                },
+              });
+            }
+          }
         }
 
         if (input.wipeOptions.dancers) {
