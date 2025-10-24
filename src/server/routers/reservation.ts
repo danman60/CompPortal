@@ -687,15 +687,24 @@ export const reservationRouter = router({
       });
 
       // Auto-adjust competition capacity (Issue #16)
-      const spacesConfirmed = reservation.spaces_confirmed || 0;
-      await prisma.competitions.update({
-        where: { id: reservation.competition_id },
-        data: {
-          available_reservation_tokens: {
-            decrement: spacesConfirmed,
+      try {
+        const spacesConfirmed = reservation.spaces_confirmed || 0;
+        await prisma.competitions.update({
+          where: { id: reservation.competition_id },
+          data: {
+            available_reservation_tokens: {
+              decrement: spacesConfirmed,
+            },
           },
-        },
-      });
+        });
+      } catch (capacityError) {
+        logger.error('Failed to update competition capacity', {
+          error: capacityError instanceof Error ? capacityError : new Error(String(capacityError)),
+          competitionId: reservation.competition_id,
+          spacesConfirmed: reservation.spaces_confirmed || 0
+        });
+        // Don't throw - capacity adjustment failure shouldn't block approval or notifications
+      }
 
       // Activity logging (non-blocking)
       try {
