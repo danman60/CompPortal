@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
+import { capacityService } from '../services/capacity';
+import { TRPCError } from '@trpc/server';
 
 // Bulk import studios with pre-approved reservations
 const bulkImportInputSchema = z.array(
@@ -18,6 +20,70 @@ const bulkImportInputSchema = z.array(
 );
 
 export const adminRouter = router({
+  /**
+   * Get capacity ledger (audit trail) for a competition
+   * Shows all capacity changes with reason and timestamp
+   * SUPER ADMIN ONLY
+   */
+  getCapacityLedger: protectedProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid(),
+        reservationId: z.string().uuid().optional(),
+        limit: z.number().int().min(1).max(1000).optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      // Super admin only
+      if (ctx.userRole !== 'super_admin') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Super admin access required',
+        });
+      }
+
+      return capacityService.getLedger(input.competitionId, {
+        reservationId: input.reservationId,
+        limit: input.limit,
+      });
+    }),
+
+  /**
+   * Get current available capacity for a competition
+   */
+  getAvailableCapacity: protectedProcedure
+    .input(z.object({ competitionId: z.string().uuid() }))
+    .query(async ({ input, ctx }) => {
+      // Super admin or competition director
+      if (!ctx.userRole || !['super_admin', 'competition_director'].includes(ctx.userRole)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Admin access required',
+        });
+      }
+
+      return capacityService.getAvailable(input.competitionId);
+    }),
+
+  /**
+   * Reconcile capacity - verify ledger matches current state
+   * Returns discrepancy if any
+   * SUPER ADMIN ONLY
+   */
+  reconcileCapacity: protectedProcedure
+    .input(z.object({ competitionId: z.string().uuid() }))
+    .query(async ({ input, ctx }) => {
+      // Super admin only
+      if (ctx.userRole !== 'super_admin') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Super admin access required',
+        });
+      }
+
+      return capacityService.reconcile(input.competitionId);
+    }),
+
   bulkImportStudios: protectedProcedure
     .input(bulkImportInputSchema)
     .mutation(async ({ ctx, input }) => {
