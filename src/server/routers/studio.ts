@@ -241,6 +241,8 @@ export const studioRouter = router({
             to: cdEmail,
             subject,
             html,
+            templateType: 'studio-profile-submitted',
+            studioId: studio.id,
           });
         }
       } catch (error) {

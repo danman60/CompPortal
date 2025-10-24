@@ -250,6 +250,9 @@ export const entryRouter = router({
             to: cdEmail,
             subject,
             html,
+            templateType: 'routine-summary-submitted',
+            studioId: studioId,
+            competitionId: competitionId,
           });
         }
       } catch (error) {
@@ -881,6 +884,9 @@ export const entryRouter = router({
               to: studio.email,
               subject,
               html,
+              templateType: 'entry-submitted',
+              studioId: input.studio_id,
+              competitionId: input.competition_id,
             });
           }
         }

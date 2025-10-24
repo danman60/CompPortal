@@ -716,6 +716,9 @@ export const invoiceRouter = router({
               to: studio.email,
               subject,
               html,
+              templateType: 'invoice-delivery',
+              studioId: updatedInvoice.studio_id,
+              competitionId: updatedInvoice.competition_id,
             });
           }
         }
@@ -838,6 +841,9 @@ export const invoiceRouter = router({
               to: studio.email,
               subject,
               html,
+              templateType: 'payment-confirmed',
+              studioId: invoice.studio_id,
+              competitionId: invoice.competition_id,
             });
           }
         }

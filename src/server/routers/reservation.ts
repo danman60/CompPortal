@@ -538,6 +538,9 @@ export const reservationRouter = router({
             to: cdEmail,
             subject,
             html,
+            templateType: 'reservation-submitted',
+            studioId: reservation.studio_id,
+            competitionId: reservation.competition_id,
           });
         }
       } catch (error) {
@@ -744,6 +747,9 @@ export const reservationRouter = router({
                 to: reservation.studios.email,
                 subject,
                 html,
+                templateType: 'reservation-approved',
+                studioId: reservation.studio_id,
+                competitionId: reservation.competition_id,
               });
             }
           }
@@ -851,6 +857,9 @@ export const reservationRouter = router({
                 to: reservation.studios.email,
                 subject,
                 html,
+                templateType: 'reservation-rejected',
+                studioId: reservation.studio_id,
+                competitionId: reservation.competition_id,
               });
             }
           }
@@ -1066,6 +1075,9 @@ export const reservationRouter = router({
             to: reservation.studios.email,
             subject,
             html,
+            templateType: 'payment-confirmed',
+            studioId: reservation.studio_id,
+            competitionId: reservation.competition_id,
           });
         }
       } catch (emailError) {
