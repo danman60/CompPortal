@@ -542,7 +542,16 @@ export function generateInvoicePDF(invoice: {
     startDate?: Date | string | null;
     endDate?: Date | string | null;
     location?: string | null;
+    logo_url?: string | null;
   };
+  tenant?: {
+    branding?: {
+      logo?: string | null;
+      tagline?: string | null;
+      primaryColor?: string;
+      secondaryColor?: string;
+    } | null;
+  } | null;
   reservation?: {
     spacesRequested: number;
     spacesConfirmed: number;
@@ -568,10 +577,38 @@ export function generateInvoicePDF(invoice: {
     totalAmount: number;
   };
 }): Blob {
-  const doc = initPDF(`Invoice ${invoice.invoiceNumber}`);
+  // Use tenant primary color if available, fallback to default
+  const brandColor = invoice.tenant?.branding?.primaryColor || COLORS.primary;
+  const brandTagline = invoice.tenant?.branding?.tagline || 'Competition Management System';
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'letter',
+  });
+
+  // Professional header with competition branding
+  let yPos = 15;
+
+  // Competition name (large, branded)
+  doc.setFontSize(22);
+  doc.setTextColor(brandColor);
+  doc.text(invoice.competition.name, 15, yPos);
+  yPos += 7;
+
+  // Tagline/subtitle
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(brandTagline, 15, yPos);
+  yPos += 3;
+
+  // Horizontal line separator
+  doc.setDrawColor(brandColor);
+  doc.setLineWidth(0.5);
+  doc.line(15, yPos, 200, yPos);
+  yPos += 10;
 
   // Invoice header with invoice number and date
-  let yPos = 40;
   doc.setFontSize(18);
   doc.setTextColor(COLORS.text);
   doc.text('INVOICE', 15, yPos);
@@ -729,7 +766,7 @@ export function generateInvoicePDF(invoice: {
     ]),
     theme: 'grid',
     headStyles: {
-      fillColor: COLORS.primary,
+      fillColor: brandColor,
       textColor: '#ffffff',
       fontSize: 8,
       fontStyle: 'bold',
