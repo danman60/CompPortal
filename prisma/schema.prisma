@@ -888,6 +888,9 @@ model reservations {
   approved_by           String?                @db.Uuid
   payment_confirmed_at  DateTime?              @db.Timestamp(6)
   payment_confirmed_by  String?                @db.Uuid
+  deposit_paid_at       DateTime?              @db.Timestamp(6)
+  deposit_confirmed_by  String?                @db.Uuid
+  is_closed             Boolean?               @default(false)
   created_at            DateTime?              @default(now()) @db.Timestamp(6)
   updated_at            DateTime?              @default(now()) @db.Timestamp(6)
   competition_entries   competition_entries[]
@@ -920,6 +923,10 @@ model invoices {
   stripe_customer_id       String?       @db.VarChar(255)
   paid_at                  DateTime?     @db.Timestamp(6)
   payment_method           String?       @db.VarChar(50)
+  credit_amount            Decimal?      @default(0) @db.Decimal(10, 2)
+  credit_reason            String?       @db.Text
+  tax_rate                 Decimal?      @default(13.00) @db.Decimal(5, 2)
+  is_locked                Boolean?      @default(false)
   created_at               DateTime?     @default(now()) @db.Timestamp(6)
   updated_at               DateTime?     @default(now()) @db.Timestamp(6)
   competitions             competitions  @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)

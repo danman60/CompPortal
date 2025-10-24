@@ -132,14 +132,12 @@ export const invoiceRouter = router({
         throw new Error('Competition not found');
       }
 
-      // Fetch all entries for this studio in this competition
+      // Fetch confirmed entries only for this studio in this competition
       const entries = await prisma.competition_entries.findMany({
         where: {
           studio_id: studioId,
           competition_id: competitionId,
-          status: {
-            not: 'cancelled',
-          },
+          status: 'confirmed',
         },
         include: {
           dance_categories: true,
@@ -251,11 +249,11 @@ export const invoiceRouter = router({
     .input(z.object({ studioId: z.string().uuid() }))
     .query(async ({ input }) => {
       // PERFORMANCE FIX: Fetch all data in parallel instead of N+1 queries
-      // Get all entries for this studio (non-cancelled)
+      // Get confirmed entries only for this studio
       const entries = await prisma.competition_entries.findMany({
         where: {
           studio_id: input.studioId,
-          status: { not: 'cancelled' },
+          status: 'confirmed',
         },
         select: {
           competition_id: true,
@@ -503,12 +501,12 @@ export const invoiceRouter = router({
         throw new Error('Studio or competition not found');
       }
 
-      // Get entries for total amount
+      // Get confirmed entries only for total amount
       const entries = await prisma.competition_entries.findMany({
         where: {
           studio_id: studioId,
           competition_id: competitionId,
-          status: { not: 'cancelled' },
+          status: 'confirmed',
         },
       });
 
@@ -556,12 +554,12 @@ export const invoiceRouter = router({
         throw new Error('Invoice already exists for this reservation');
       }
 
-      // Build line items from all non-cancelled entries for this studio+competition
+      // Build line items from confirmed entries only (not draft, registered, or cancelled)
       const entries = await prisma.competition_entries.findMany({
         where: {
           studio_id: reservation.studio_id,
           competition_id: reservation.competition_id,
-          status: { not: 'cancelled' },
+          status: 'confirmed',
         },
         include: { dance_categories: true, entry_size_categories: true },
         orderBy: { entry_number: 'asc' },
@@ -660,6 +658,7 @@ export const invoiceRouter = router({
         where: { id: input.invoiceId },
         data: {
           status: 'SENT',
+          is_locked: true, // Lock invoice after sending to prevent unauthorized edits
           updated_at: new Date(),
         },
       });
@@ -874,6 +873,11 @@ export const invoiceRouter = router({
 
       if (!invoice) {
         throw new Error('Invoice not found');
+      }
+
+      // 🛡️ GUARD: Prevent editing locked invoices
+      if (invoice.is_locked) {
+        throw new Error('Cannot edit locked invoice. Invoice is locked after being sent.');
       }
 
       // 🛡️ GUARD: Only allow edits when status is DRAFT or SENT (not PAID)
