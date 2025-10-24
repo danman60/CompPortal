@@ -720,10 +720,37 @@ const bulkOperationsRouter = router({
         }
 
         if (input.dataTypes.includes('reservations')) {
+          // Get all reservations with their capacity to refund BEFORE deletion
+          const reservationsToDelete = await tx.reservations.findMany({
+            where: { tenant_id: input.tenantId },
+            select: {
+              id: true,
+              competition_id: true,
+              spaces_confirmed: true,
+              status: true,
+            },
+          });
+
+          // Delete reservations first
           const result = await tx.reservations.deleteMany({
             where: { tenant_id: input.tenantId },
           });
           deletedCounts.reservations = result.count;
+
+          // Refund capacity for approved reservations back to competitions
+          for (const reservation of reservationsToDelete) {
+            if (reservation.status === 'approved' && reservation.spaces_confirmed) {
+              // Directly update competition capacity (can't use CapacityService in transaction)
+              await tx.competitions.update({
+                where: { id: reservation.competition_id },
+                data: {
+                  available_reservation_tokens: {
+                    increment: reservation.spaces_confirmed,
+                  },
+                },
+              });
+            }
+          }
         }
 
         if (input.dataTypes.includes('dancers')) {

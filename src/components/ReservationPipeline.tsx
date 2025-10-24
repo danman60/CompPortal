@@ -46,13 +46,14 @@ export default function ReservationPipeline() {
 
   // Fetch data
   const { data: pipelineData, isLoading, refetch } = trpc.reservation.getPipelineView.useQuery();
-  const { data: competitions } = trpc.competition.getAll.useQuery();
+  const { data: competitions, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
 
   // Mutations
   const approveMutation = trpc.reservation.approve.useMutation({
     onSuccess: () => {
       toast.success('Reservation approved!');
       refetch();
+      refetchCompetitions(); // CRITICAL: Refetch competitions to update available_reservation_tokens
       closeApprovalModal();
     },
     onError: (error) => {
