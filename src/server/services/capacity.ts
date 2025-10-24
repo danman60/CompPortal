@@ -32,24 +32,43 @@ export class CapacityService {
       throw new Error('Spaces must be positive');
     }
 
-    // Check idempotency - has this reservation already been approved?
-    const existingLedger = await prisma.capacity_ledger.findFirst({
-      where: {
-        reservation_id: reservationId,
-        reason: 'reservation_approval',
-      },
-    });
-
-    if (existingLedger) {
-      logger.warn('Reservation already processed - idempotency check', {
-        reservationId,
-        existingChange: existingLedger.change_amount,
-      });
-      return; // Already processed, skip silently
-    }
-
     await prisma.$transaction(async (tx) => {
-      // Lock row for update
+      // 🔒 ATOMIC GUARD: Check reservation status with row lock
+      // This prevents race conditions from double-clicks or React re-renders
+      const reservation = await tx.reservations.findUnique({
+        where: { id: reservationId },
+        select: { status: true },
+      });
+
+      if (!reservation) {
+        throw new Error('Reservation not found');
+      }
+
+      if (reservation.status !== 'pending') {
+        logger.warn('Reservation already processed - status guard', {
+          reservationId,
+          status: reservation.status,
+        });
+        return; // Already approved/rejected, skip silently
+      }
+
+      // Check idempotency via ledger (backup check)
+      const existingLedger = await tx.capacity_ledger.findFirst({
+        where: {
+          reservation_id: reservationId,
+          reason: 'reservation_approval',
+        },
+      });
+
+      if (existingLedger) {
+        logger.warn('Reservation already processed - ledger check', {
+          reservationId,
+          existingChange: existingLedger.change_amount,
+        });
+        return; // Already processed, skip silently
+      }
+
+      // Lock competition row for update
       const competition = await tx.competitions.findUnique({
         where: { id: competitionId },
         select: {
@@ -70,7 +89,8 @@ export class CapacityService {
         );
       }
 
-      // Deduct capacity
+      // ⚡ ATOMIC OPERATIONS: All updates in same transaction
+      // 1. Deduct capacity
       await tx.competitions.update({
         where: { id: competitionId },
         data: {
@@ -80,7 +100,19 @@ export class CapacityService {
         },
       });
 
-      // Log to ledger (audit trail)
+      // 2. Update reservation status (prevents double-processing)
+      await tx.reservations.update({
+        where: { id: reservationId },
+        data: {
+          status: 'approved',
+          spaces_confirmed: spaces,
+          approved_at: new Date(),
+          approved_by: userId,
+          updated_at: new Date(),
+        },
+      });
+
+      // 3. Log to ledger (audit trail)
       await tx.capacity_ledger.create({
         data: {
           competition_id: competitionId,
@@ -91,7 +123,7 @@ export class CapacityService {
         },
       });
 
-      logger.info('Capacity reserved', {
+      logger.info('Capacity reserved atomically', {
         competitionId,
         reservationId,
         spaces,

@@ -659,13 +659,19 @@ export const reservationRouter = router({
         'approve reservation'
       );
 
-      // Reserve capacity FIRST (atomic transaction with audit trail)
+      // Reserve capacity atomically (includes status update to prevent double-processing)
       // Matches Phase 1 spec lines 442-499 (approval process)
       const spacesConfirmed = input.spacesConfirmed || 0;
       if (spacesConfirmed > 0) {
         try {
+          const competitionId = (await prisma.reservations.findUnique({
+            where: { id: reservationId },
+            select: { competition_id: true }
+          }))!.competition_id;
+
+          // ⚡ ATOMIC: CapacityService.reserve() now handles both capacity + status update
           await capacityService.reserve(
-            (await prisma.reservations.findUnique({ where: { id: reservationId }, select: { competition_id: true } }))!.competition_id,
+            competitionId,
             spacesConfirmed,
             reservationId,
             ctx.userId
@@ -680,16 +686,9 @@ export const reservationRouter = router({
         }
       }
 
-      // Update reservation status (only after capacity successfully reserved)
-      const reservation = await prisma.reservations.update({
+      // Fetch updated reservation for email (status already updated by CapacityService)
+      const reservation = await prisma.reservations.findUnique({
         where: { id: reservationId },
-        data: {
-          status: 'approved',
-          spaces_confirmed: spacesConfirmed,
-          approved_at: new Date(),
-          approved_by: ctx.userId,
-          updated_at: new Date(),
-        },
         include: {
           studios: {
             select: {
@@ -708,6 +707,10 @@ export const reservationRouter = router({
           },
         },
       });
+
+      if (!reservation) {
+        throw new Error('Reservation not found after approval');
+      }
 
       // Activity logging (non-blocking)
       try {
