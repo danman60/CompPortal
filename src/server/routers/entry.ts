@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
@@ -145,6 +146,16 @@ export const entryRouter = router({
       const { studioId, competitionId } = input;
 
       // Fetch studio and competition data
+      // First find the reservation to filter entries by reservation_id (per PHASE1_SPEC.md line 602)
+      const reservation = await prisma.reservations.findFirst({
+        where: {
+          studio_id: studioId,
+          competition_id: competitionId,
+          status: 'approved',
+        },
+        select: { id: true },
+      });
+
       const [studio, competition, entries] = await Promise.all([
         prisma.studios.findUnique({
           where: { id: studioId },
@@ -155,8 +166,11 @@ export const entryRouter = router({
           select: { name: true, year: true },
         }),
         prisma.competition_entries.findMany({
-          where: { studio_id: studioId, competition_id: competitionId, status: { not: 'cancelled' } },
-          select: { total_fee: true },
+          where: {
+            reservation_id: reservation?.id,
+            status: { not: 'cancelled' },
+          },
+          select: { total_fee: true, id: true },
         }),
       ]);
 
@@ -168,27 +182,38 @@ export const entryRouter = router({
       const totalFees = entries.reduce((sum: number, e: any) => sum + Number(e.total_fee || 0), 0);
 
       // 🐛 FIX Bug #23: Update reservation to reflect actual submitted routines
-      // Find the reservation for this studio/competition
-      const reservation = await prisma.reservations.findFirst({
-        where: {
-          studio_id: studioId,
-          competition_id: competitionId,
-          status: 'approved', // Only update approved reservations
-        },
-      });
+      // Fetch full reservation details if it exists
+      const fullReservation = reservation
+        ? await prisma.reservations.findUnique({
+            where: { id: reservation.id },
+          })
+        : null;
 
-      if (reservation) {
+      if (fullReservation) {
+        // Idempotency check - prevent duplicate summary submissions (PHASE1_SPEC.md line 599)
+        const existingSummary = await prisma.summaries.findUnique({
+          where: { reservation_id: fullReservation.id },
+        });
+
+        if (existingSummary) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Summary already submitted for this reservation',
+          });
+        }
+
         // Calculate unused spaces that need to be released back to competition
         // Matches Phase 1 spec lines 589-651 (summary submission with refund pseudocode)
-        const originalSpaces = reservation.spaces_confirmed || 0;
+        const originalSpaces = fullReservation.spaces_confirmed || 0;
         const unusedSpaces = originalSpaces - routineCount;
 
-        // Update reservation status first
+        // Update reservation status to 'summarized' (PHASE1_SPEC.md line 629)
         await prisma.reservations.update({
-          where: { id: reservation.id },
+          where: { id: fullReservation.id },
           data: {
             spaces_confirmed: routineCount, // Lock to actual submitted count
-            is_closed: unusedSpaces > 0, // Close if spaces were not fully used
+            status: 'summarized', // Mark as summarized per spec
+            is_closed: true, // Always close after summary submission
             updated_at: new Date(),
           },
         });
@@ -199,7 +224,7 @@ export const entryRouter = router({
             await capacityService.refund(
               competitionId,
               unusedSpaces,
-              reservation.id,
+              fullReservation.id,
               'summary_refund',
               ctx.userId
             );
@@ -207,11 +232,39 @@ export const entryRouter = router({
             logger.error('Failed to refund capacity', {
               error: refundError instanceof Error ? refundError : new Error(String(refundError)),
               competitionId,
-              reservationId: reservation.id,
+              reservationId: fullReservation.id,
               unusedSpaces,
             });
             // Don't throw - log the error but don't block summary submission
           }
+        }
+
+        // Create summary record (PHASE1_SPEC.md lines 611-616)
+        const summary = await prisma.summaries.create({
+          data: {
+            reservation_id: fullReservation.id,
+            entries_used: routineCount,
+            entries_unused: unusedSpaces,
+            submitted_at: new Date(),
+          },
+        });
+
+        // Create entry snapshots and update entry statuses (PHASE1_SPEC.md lines 619-626)
+        for (const entry of entries) {
+          // Create immutable snapshot for audit trail
+          await prisma.summary_entries.create({
+            data: {
+              summary_id: summary.id,
+              entry_id: entry.id,
+              snapshot: entry as any, // Full entry object as JSON
+            },
+          });
+
+          // Update entry status to 'submitted' per spec line 625
+          await prisma.competition_entries.update({
+            where: { id: entry.id },
+            data: { status: 'submitted' },
+          });
         }
       }
 
@@ -729,7 +782,22 @@ export const entryRouter = router({
       createData.entry_size_categories = { connect: { id: entrySizeCategoryId } };
 
       // Optional relation fields
-      if (data.reservation_id) createData.reservations = { connect: { id: data.reservation_id } };
+      // Auto-link to approved reservation if not provided
+      if (data.reservation_id) {
+        createData.reservations = { connect: { id: data.reservation_id } };
+      } else {
+        const approvedReservation = await prisma.reservations.findFirst({
+          where: {
+            studio_id: data.studio_id,
+            competition_id: data.competition_id,
+            status: 'approved',
+          },
+          select: { id: true },
+        });
+        if (approvedReservation) {
+          createData.reservations = { connect: { id: approvedReservation.id } };
+        }
+      }
       if (data.session_id) createData.competition_sessions = { connect: { id: data.session_id } };
 
       // Optional string fields

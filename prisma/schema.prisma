@@ -504,6 +504,7 @@ model competition_entries {
   studios                                                                              studios                  @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   documents                                                                            documents[]
   entry_participants                                                                   entry_participants[]
+  summary_entries                                                                      summary_entries[]
   rankings                                                                             rankings[]
   scores                                                                               scores[]
   schedule_items                                                                       schedule_items[]         @relation("schedule_item_entry")
@@ -925,6 +926,7 @@ model reservations {
   capacity_ledger       capacity_ledger[]
   competition_entries   competition_entries[]
   invoices              invoices[]
+  summaries             summaries?
   users                 users?                 @relation(fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   competitions          competitions           @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   competition_locations competition_locations? @relation(fields: [location_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -1451,5 +1453,40 @@ model schedule_suggestions {
   @@index([schedule_id], map: "idx_schedule_suggestions_schedule")
   @@index([studio_id], map: "idx_schedule_suggestions_studio")
   @@index([status], map: "idx_schedule_suggestions_status")
+  @@schema("public")
+}
+
+/// Audit trail for submitted routine summaries per reservation
+/// Required by PHASE1_SPEC.md lines 611-616
+model summaries {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservation_id String            @unique @db.Uuid
+  entries_used   Int
+  entries_unused Int
+  submitted_at   DateTime          @default(now()) @db.Timestamptz(6)
+  created_at     DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime          @default(now()) @db.Timestamptz(6)
+  reservations   reservations      @relation(fields: [reservation_id], references: [id], onDelete: Cascade)
+  summary_entries summary_entries[]
+
+  @@index([reservation_id], map: "idx_summaries_reservation")
+  @@index([submitted_at], map: "idx_summaries_submitted_at")
+  @@schema("public")
+}
+
+/// Immutable snapshots of entries at summary submission time
+/// Required by PHASE1_SPEC.md lines 619-624
+model summary_entries {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  summary_id          String              @db.Uuid
+  entry_id            String              @db.Uuid
+  snapshot            Json                @db.JsonB
+  created_at          DateTime            @default(now()) @db.Timestamptz(6)
+  summaries           summaries           @relation(fields: [summary_id], references: [id], onDelete: Cascade)
+  competition_entries competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade)
+
+  @@unique([summary_id, entry_id])
+  @@index([summary_id], map: "idx_summary_entries_summary")
+  @@index([entry_id], map: "idx_summary_entries_entry")
   @@schema("public")
 }
