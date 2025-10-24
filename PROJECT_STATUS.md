@@ -1,60 +1,85 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-24 (11pm EST - Demo Prep Planning)
+**Last Updated:** 2025-10-24 (3:30pm EST - Email & Capacity Fixes Complete)
 
 ---
 
-## Current Status: 🎯 Demo Prep - Building Test Data Infrastructure
+## Current Status: 🔴 AWAITING VERIFICATION - Critical Bugs Fixed
 
-### Latest Work: Session 7 - Invoice Branding + Scheduling Fixes
-- ✅ Professional invoice PDF branding (tenant colors, competition name)
-- ✅ Fixed scheduling suite TypeScript errors (5 fixes)
-- ✅ Fixed scheduleBuilder router auth context
-- ✅ Added schedule_suggestions to query
-- **Next:** Build automated test data seed script for Tuesday demo
+### Latest Work: Session 8 - Email Notifications & Capacity Double-Deduction
 
-**See:** `DEMO_PREP_PLAN.md` for complete Tuesday demo preparation plan
+**Date:** October 24, 2025 (10:30am-3:30pm EST)
+**Duration:** 5 hours
+**Status:** ✅ All fixes deployed to production (commit 68e421e)
 
----
+**Problems Solved:**
+1. ✅ Email notifications completely blocked (root cause: uncaught capacity error)
+2. ✅ Catastrophic capacity double-deduction (75 spaces → 150 deducted)
+3. ✅ Schema mismatch causing entry creation failures
+4. ✅ Database wiped and reset for clean testing
 
-## 📊 EMPWR Testing Round 2 Summary (Oct 24, 2025)
+**Awaiting User Testing:**
+- Email delivery verification (RESEND_API_KEY confirmed set)
+- Capacity math accuracy (should be exactly 75 deducted)
+- Logging verification (email_logs and activity_logs should populate)
 
-**Environment:** https://empwr.compsync.net (Production)
-**Duration:** ~90 minutes (initial + parallel testing)
-**Result:** 2 of 3 critical bugs RESOLVED
-
-### Production Readiness: **85% Confident GO**
-
-**✅ Systems Working:**
-- Invoice locking (PAID invoices lock automatically)
-- Capacity tracking (accurate real-time calculations)
-- Authentication (CD and SD login functional)
-- Forgot password (full flow working)
-
-**⚠️ Requires Monitoring:**
-- Email notifications (Resend configured, needs workflow testing)
-- Auto-close reservations (needs confirmed routines to test)
-- Invoice generation (limited testing due to data)
-
-**📈 Test Results:**
-- Tests executed: 7 of 25
-- Tests passed: 5 (100% pass rate)
-- Tests blocked: 18 (72% due to test data limitations)
-
-**📄 Documentation Created:**
-- `TEST_EXECUTION_REPORT_2025-10-24.md` - Initial findings
-- `PARALLEL_TASK_RESULTS.md` - Verification results
-- `FINAL_TEST_SESSION_SUMMARY.md` - Complete session summary
-- `TESTING_ROUND_2_COMPLETE.md` - Consolidated final report
-
-**See:** `docs/sessions/TESTING_ROUND_2_COMPLETE.md` for full details
+**See:** `EMAIL_DEBUG_STATUS.md` for complete debugging documentation
 
 ---
 
-## ✅ Completed Fixes (Total: 21)
+## 📊 Session 8 Summary - Email & Capacity Crisis
+
+**Environment:** https://www.compsync.net (Production)
+**Testing Method:** Incognito browser, fresh deploys, SQL verification
+**Result:** 4 critical fixes, clean database, ready for testing
+
+### Critical Fixes Deployed (Commit 68e421e)
+
+**Fix #1: Email Notification Blocking (commit 86f21a4)**
+- **Problem:** NO email_logs, NO activity_logs despite approvals working
+- **Root Cause:** Uncaught error in capacity update killing function execution before email code
+- **Solution:** Wrapped capacity update in try/catch block
+- **Files:** reservation.ts:689-707
+- **Impact:** Email and logging code now executes even if capacity update fails
+
+**Fix #2: Double-Capacity Deduction (commit 967028c)**
+- **Problem:** 75-space reservation deducted 150 spaces (298→448)
+- **Evidence:** St. Cath #1 showing 318 extra spaces deducted (130 actual vs 448 shown)
+- **Root Cause:** Re-approval of already-approved reservations deducting again
+- **Solution:** Only decrement if existingReservation.status === 'pending'
+- **Files:** reservation.ts:690-710
+- **Impact:** Capacity deducted exactly once per reservation approval
+
+**Fix #3: Entry Creation Schema Mismatch (commit 68e421e)**
+- **Problem:** "column routine_number does not exist in the current database"
+- **User Clarification:** "routine number is for a later function to do with scheduling"
+- **Solution:** Added routine_number column to database via migration + restored to schema
+- **Files:** prisma/schema.prisma:448, migration file
+- **Impact:** Entry creation now works, scheduling feature preserved
+
+**Fix #4: Schedule Builder Field Mapping (commit 4ff7d7b)**
+- **Problem:** Trying to update competition_entries.routine_number which doesn't exist for that purpose
+- **Solution:** Changed to competition_entries.entry_number (correct field)
+- **Files:** scheduleBuilder.ts:279
+- **Impact:** Schedule locking will work correctly when feature is used
+
+### Database State Reset
+- ✅ Test database completely wiped
+- ✅ All competition capacities reset to 600/600
+- ✅ 4 competitions, 2 user profiles exist
+- ✅ 0 studios, 0 reservations (clean slate)
+- ⚠️ Seed function broken (manual testing required)
+
+### User Frustration Points
+- Regression concerns: "honestly i'm very frsutrated at all the regression and tiny bugs"
+- Schema sync fatigue: "We've literally already done a DB schema sync cleanup, but I guess we have to do it again"
+- Context confusion: "WHO THE FUCK WAS TALKING ABOUT SCHEDULE LOCKING" (I was looking at wrong code)
+
+---
+
+## ✅ Completed Fixes (Total: 25)
 
 ### Session 1 - Foundation Fixes (13 fixes)
-See `CURRENT_WORK.md` for detailed list:
 - CSV export fixes
 - Deny reservation modal
 - Event capacity card
@@ -65,96 +90,88 @@ See `CURRENT_WORK.md` for detailed list:
 
 ### Session 2 - Invoice Security (2 fixes)
 14. **Invoice lock after send** - Invoices lock when status = SENT
-    - Files: invoice.ts:661, 881-883
-
 15. **Invoice confirmed routines only** - Filter to `status: 'confirmed'`
-    - Files: invoice.ts:140, 256, 509, 564
 
 ### Session 3 - Auto-Close Reservations (1 fix)
 16. **Auto-close with token refund** - Complete implementation
-    - Files: entry.ts:179-209
-    - Calculates unused spaces on summary submission
-    - Sets `is_closed = true` when routines < approved spaces
-    - Refunds unused tokens to competition pool
-    - Atomic transaction for data integrity
 
 ### Session 4 - Password & Email (2 fixes)
 17. **Forgot password link** - Added to login page
-    - Files: login/page.tsx:85-87
-
 18. **Resend email integration** - Complete SMTP → Resend migration
-    - Files: email.ts:1-128 (complete rewrite)
-    - Email logging with success tracking
-    - Better error handling
 
 ### Session 5 - Critical Bug Fixes (1 fix)
-19. **Invoice lock for PAID status** - Fixed missing lock on PAID
-    - Files: invoice.ts:766
-    - Migration applied to lock existing PAID invoices
-    - Verified by parallel agent: All 3 PAID invoices locked ✅
+19. **Invoice lock for PAID status** - Fixed missing lock
 
 ### Session 7 - Demo Prep (2 fixes)
 20. **Invoice PDF branding** - Professional branded invoices
-    - Files: pdf-reports.ts:547-615,769
-    - Uses tenant primary color and tagline
-    - Competition name prominently displayed
-
 21. **Scheduling suite TypeScript fixes** - Build errors resolved
-    - Files: schedule-builder/page.tsx:96,228,230,263,269
-    - Files: scheduleBuilder.ts (context auth fixes)
-    - Added schedule_suggestions to query
+
+### Session 8 - Email & Capacity (4 fixes)
+22. **Email notification blocking** - Try/catch wrapper unblocks email code
+    - Files: reservation.ts:689-707
+23. **Double-capacity deduction** - Status check prevents re-deduction
+    - Files: reservation.ts:690-710
+24. **Entry creation schema mismatch** - Added routine_number column
+    - Files: prisma/schema.prisma:448
+25. **Schedule builder field mapping** - entry_number vs routine_number
+    - Files: scheduleBuilder.ts:279
 
 ---
 
 ## 🚧 Remaining Priority Issues
 
-### Critical Priority
+### Critical Priority - AWAITING VERIFICATION
 
-1. **Create comprehensive test data** (BLOCKER)
-   - Status: 72% of tests blocked by missing data
-   - Need: Studio with approved reservation + confirmed routines
-   - Impact: Cannot verify invoice generation, auto-close, CSV export
-   - Action: Build automated seed script
+1. **Email notification testing** (DEPLOYED - NOT TESTED)
+   - Status: Fixes deployed (commit 68e421e)
+   - Code changes: Try/catch wrapper + logging preserved
+   - RESEND_API_KEY: Confirmed set by user
+   - Testing needed: Create reservation → approve → verify email delivery
+   - Verification: Check email_logs and activity_logs tables
 
-2. **Email notification testing** (BLOCKED)
-   - Status: Resend integration complete, no activity to verify
-   - Need: Trigger workflow actions (submit, approve, send)
-   - Impact: Cannot confirm email delivery in production
-   - Action: Manual workflow testing after test data creation
+2. **Capacity math verification** (DEPLOYED - NOT TESTED)
+   - Status: Double-deduction fix deployed (commit 967028c)
+   - Code change: Status check before decrement
+   - Testing needed: Approve 75-space reservation
+   - Expected: Competition capacity changes 600 → 525 (exactly 75)
+   - Verification: SQL query on competitions table
+
+3. **Routine summary space refunding** (NEVER TESTED)
+   - Status: Code exists (entry.ts:197-207)
+   - User report: "I submitted a Summary for London with 12/100 spaces, spaces were not refunded"
+   - Testing needed: Reserve 100 → submit 75 → verify 25 refunded
+   - Impact: Studios lose unused reservation slots permanently
 
 ### High Priority
 
-3. **Invoice detail page verification** (PARTIALLY RESOLVED)
-   - Status: Root cause identified (data validation, not routing bug)
-   - Route structure correct: `[studioId]/[competitionId]`
-   - Need: Test data with confirmed routines
-   - Action: Verify with valid studio+competition combination
+4. **Create comprehensive test data** (BLOCKER)
+   - Status: 72% of tests blocked by missing data
+   - Need: Studio with approved reservation + confirmed routines
+   - Seed function: Broken, manual testing required
+   - Impact: Cannot verify invoice generation, auto-close, CSV export
 
-4. **Unified "Approve & Send Invoice" button** (MEDIUM)
-   - One-click CD workflow
-   - Combine: approval → invoice generation → email send
+5. **Invoice detail page verification** (PARTIALLY RESOLVED)
+   - Status: Root cause identified (data validation, not routing bug)
+   - Need: Test data with confirmed routines
 
 ### Medium Priority
 
-5. **Late fee CSV/PDF mismatch** - Appears in CSV, not PDF
-6. **Invoice PDF branding** - Use competition logo/name
-7. **Invoice PDF layout audit** - Professional formatting
+6. **Unified "Approve & Send Invoice" button** - One-click CD workflow
+7. **Late fee CSV/PDF mismatch** - Appears in CSV, not PDF
+8. **Invoice PDF layout audit** - Professional formatting
 
 ---
 
 ## 🔄 Recent Commits
 
 ```
+68e421e - fix: Add routine_number column to database and restore to schema (Oct 24 3pm)
+476a512 - fix: Remove routine_number from Prisma schema (Oct 24 2pm) [REVERTED]
+4ff7d7b - fix: Update competition_entries.entry_number not routine_number (Oct 24 1pm)
+967028c - fix: Prevent double-decrement of competition capacity (Oct 24 12pm)
+86f21a4 - fix: Wrap capacity update in try/catch to unblock email (Oct 24 11am)
 897d4b1 - fix: TypeScript errors in scheduling suite (Oct 24 11pm)
 ff22650 - feat: Add professional branding to invoice PDFs (Oct 24 11pm)
-5ca36ed - docs: Update trackers for Session 6 coordination (Oct 24)
-0095cfe - docs: Complete parallel agent coordination session (Oct 24)
-8739dfb - feat: Create test data for invoice/auto-close testing (Oct 24)
-199445f - fix: Lock invoices when marked as PAID + migrate (Oct 24)
-dd888a3 - feat: Switch email service to Resend API (Oct 24)
-1e149f0 - feat: Add forgot password link to login (Oct 24)
-48edcf7 - feat: Auto-close reservations with token refund (Oct 24)
-15a2527 - feat: Invoice lock + confirmed routines filter (Oct 24)
 ```
 
 ---
@@ -162,7 +179,7 @@ dd888a3 - feat: Switch email service to Resend API (Oct 24)
 ## 🎯 Reservation Lifecycle (Complete Flow)
 
 1. **SD creates reservation** → Requests X spaces
-2. **CD approves reservation** → Confirms Y spaces (deducts tokens)
+2. **CD approves reservation** → Confirms Y spaces (deducts tokens ONCE)
 3. **SD creates routines** → Builds up to Y routines (draft/registered)
 4. **SD submits summary** → Routines become 'confirmed'
    - If confirmed count Z < Y:
@@ -175,23 +192,17 @@ dd888a3 - feat: Switch email service to Resend API (Oct 24)
 
 ---
 
-## 📁 Documentation Structure
+## 📁 Key Documentation Files
+
+**Session 8 Debugging:**
+- `EMAIL_DEBUG_STATUS.md` - Complete email notification debugging log
+- `RESEND_SETUP_CHECKLIST.md` - Email setup with all 9 triggers
 
 **Active Trackers:**
 - `PROJECT.md` - Project rules and configuration
 - `PROJECT_STATUS.md` - This file (current status)
 - `CURRENT_WORK.md` - Detailed work tracking
-- `README.md` - Project overview
-- `QUICKSTART.md` - Quick start guide
-- `DOCS_INDEX.md` - Complete documentation index
-
-**Organized Folders:**
-- `docs/testing/` - Testing documentation and reports
-- `docs/testing/reports/` - Latest test results
-- `docs/sessions/` - Testing session summaries
-- `docs/bugs/` - Bug tracking and fixes
-- `docs/reference/` - Development references
-- `docs/archive/` - Historical documents
+- `DEMO_PREP_PLAN.md` - Tuesday demo preparation plan
 
 **See `DOCS_INDEX.md` for complete documentation map**
 
@@ -199,89 +210,84 @@ dd888a3 - feat: Switch email service to Resend API (Oct 24)
 
 ## 📊 Production Deployment
 
-**Environment:** https://empwr.compsync.net
-**Status:** ✅ Auto-deploying (commit 4ece525)
-**Latest Build:** ✅ Passing (all 59 routes)
+**Environment:** https://www.compsync.net
+**Status:** ✅ Deployed (commit 68e421e)
+**Latest Build:** ✅ Passing
 
 **Critical Features Status:**
+- 🟡 Email notifications - DEPLOYED, NOT TESTED
+- 🟡 Capacity tracking - DEPLOYED, NOT TESTED
+- 🟡 Entry creation - DEPLOYED, NOT TESTED
+- 🟡 Auto-close reservations - CODE EXISTS, NEVER TESTED
 - ✅ Invoice locking - VERIFIED WORKING
-- ✅ Auto-close reservations - LOGIC ACTIVE
-- ✅ Resend email - INTEGRATED
 - ✅ Forgot password - FUNCTIONAL
-- 🟡 Email notifications - NEEDS WORKFLOW TESTING
-- 🟡 Invoice detail page - NEEDS TEST DATA
 
 ---
 
 ## 🧪 Test Credentials
 
-**Production (empwr.compsync.net):**
-- **Studio Director:** danieljohnabrahamson@gmail.com / 123456
+**Production (compsync.net):**
+- **Studio Director:** danieljohnabrahamson@gmail.com / password
 - **Competition Director:** 1-click demo on homepage
-- **Event:** EMPWR Dance - London (2026)
+- **Database:** Wiped clean (600/600 spaces on all competitions)
 
 ---
 
-## 📈 Next Session Priorities - DEMO PREP MODE
+## 📈 Next Session Priorities - VERIFICATION REQUIRED
 
-### 🎯 **MONDAY (Today/Tomorrow) - 6-8 hours**
+### 🎯 **IMMEDIATE - Testing Session Required**
 
-**See `DEMO_PREP_PLAN.md` for complete details**
+**User must verify fixes work:**
 
-1. ✅ **Build test data seed script** (CRITICAL - 2-3 hours)
-   - Automated creation of complete test scenarios
-   - Studio with approved reservation (15 spaces)
-   - 12 confirmed routines + 3 draft routines
-   - Enables full feature verification
+1. **Test email delivery** (15 minutes)
+   - Create SD account and studio
+   - Create reservation for 75 spaces
+   - Approve as CD
+   - Verify email arrives
+   - Check database: `SELECT * FROM email_logs ORDER BY sent_at DESC LIMIT 1;`
+   - Check database: `SELECT * FROM activity_logs WHERE action = 'reservation.approve' ORDER BY created_at DESC LIMIT 1;`
 
-2. ✅ **Execute full workflow test** (1-2 hours)
-   - SD reserve → CD approve → SD routines → invoice → payment
-   - Verify auto-close with token refund
-   - Test email notifications at each step
-   - Document with screenshots
+2. **Verify capacity math** (5 minutes)
+   - Before approval: `SELECT available_reservation_tokens FROM competitions WHERE name = 'St. Cath #1';` (should be 600)
+   - After approval: Should be 525 (exactly 75 deducted)
+   - Not 450 (double-deduction bug would show this)
 
-3. ✅ **Fix late fee PDF display** (15 min)
-   - Already in CSV, add to PDF
+3. **Test routine space refunding** (20 minutes)
+   - Approve reservation for 100 spaces (capacity: 600 → 500)
+   - Create 75 routines as SD
+   - Submit routine summary
+   - Verify capacity: 500 → 525 (25 refunded)
+   - Verify reservation.is_closed = true
 
-4. ✅ **Unified "Approve & Send Invoice" button** (30 min)
-   - Combine 2 clicks into 1 for CD workflow
+### 🚀 **AFTER TESTING PASSES - Demo Prep Continues**
 
-5. ⏭️ **OPTIONAL: Polish scheduling suite** (2-3 hours)
-   - Only if time permits
-
-### 🚀 **TUESDAY MORNING - 2 hours before demo**
-
-1. ✅ Final smoke test on production
-2. ✅ Create demo script with exact steps
-3. ✅ Pre-seed demo data
-4. ✅ Test forgot password one more time
-
-### Long-term (Post-Demo)
-- Automated E2E test suite (Playwright)
-- Production error tracking (Sentry)
-- Performance monitoring
-- Complete regression test suite
+See `DEMO_PREP_PLAN.md` for complete Tuesday demo preparation plan
 
 ---
 
-## 🎉 Session Achievements
+## 🎉 Session 8 Achievements
 
-**Testing Round 2:**
-- ✅ Verified 2 critical bug fixes in production
-- ✅ Documented complete system state
-- ✅ Identified all data blockers
-- ✅ Created production readiness assessment
-- ✅ Organized 60+ documentation files
-- ✅ Established clear next steps
+**Fixes Deployed:**
+- ✅ Diagnosed email notification complete blockage
+- ✅ Fixed catastrophic capacity double-deduction bug
+- ✅ Resolved schema mismatch blocking entry creation
+- ✅ Reset database to clean testing state
+- ✅ Created comprehensive debugging documentation
 
-**Development Progress:**
-- 19 fixes completed across 5 sessions
-- 100% build success rate
-- 0 rollbacks required
-- Production stability significantly improved
+**Code Quality:**
+- 5 commits pushed
+- 4 files modified (reservation.ts, scheduleBuilder.ts, schema.prisma, migration)
+- 1 database migration applied
+- Build status: ✅ Passing (verified by user)
+
+**User Collaboration:**
+- User provided network tab output (critical debugging data)
+- User clarified business logic (routine_number is for scheduling)
+- User tested 5+ scenarios on production
+- User confirmed deployment status throughout
 
 ---
 
-**Last Deployment:** Oct 24, 2025 (commit 4ece525)
-**Next Session Focus:** Test data creation + email verification
-**Production Status:** Conditional GO with monitoring
+**Last Deployment:** Oct 24, 2025 3:00pm EST (commit 68e421e)
+**Next Session Focus:** Email delivery verification + capacity math testing
+**Production Status:** 🔴 AWAITING VERIFICATION (3 days until demo)
