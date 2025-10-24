@@ -107,22 +107,27 @@ export const testingRouter = router({
             },
           });
 
+          // Delete capacity_ledger entries FIRST (to avoid orphaned ledger entries)
+          const ledgerDeleted = await tx.capacity_ledger.deleteMany({});
+          deletedCounts.capacity_ledger = ledgerDeleted.count;
+
           // Delete all reservations
           const reservations = await tx.reservations.deleteMany({});
           deletedCounts.reservations = reservations.count;
 
           // Refund capacity for approved reservations back to competitions
-          for (const reservation of reservationsToDelete) {
-            if (reservation.spaces_confirmed) {
-              await tx.competitions.update({
-                where: { id: reservation.competition_id },
-                data: {
-                  available_reservation_tokens: {
-                    increment: reservation.spaces_confirmed,
-                  },
-                },
-              });
-            }
+          // ALSO reset available_reservation_tokens to total_reservation_tokens to ensure clean state
+          const competitions = await tx.competitions.findMany({
+            select: { id: true, total_reservation_tokens: true },
+          });
+
+          for (const comp of competitions) {
+            await tx.competitions.update({
+              where: { id: comp.id },
+              data: {
+                available_reservation_tokens: comp.total_reservation_tokens,
+              },
+            });
           }
         }
 
