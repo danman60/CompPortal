@@ -195,7 +195,7 @@ export default function EntriesList() {
                     entry.age_groups?.name || '',
                     entry.props || '',
                     entry.choreographer || '',
-                    entry.entry_participants?.map(p => `${p.dancers?.first_name} ${p.dancers?.last_name}`).join('; ') || '',
+                    entry.entry_participants?.map((p: any) => `${p.dancers?.first_name} ${p.dancers?.last_name}`).join('; ') || '',
                     entry.total_fee || '0',
                     entry.status || ''
                   ]);
