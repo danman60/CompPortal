@@ -13,6 +13,7 @@ import { logActivity } from '@/lib/activity';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { isAdmin, isSuperAdmin } from '@/lib/auth-utils';
+import { capacityService } from '../services/capacity';
 import {
   validateEntrySizeCategory,
   validateMinimumParticipants,
@@ -178,34 +179,41 @@ export const entryRouter = router({
 
       if (reservation) {
         // Calculate unused spaces that need to be released back to competition
+        // Matches Phase 1 spec lines 589-651 (summary submission with refund pseudocode)
         const originalSpaces = reservation.spaces_confirmed || 0;
         const unusedSpaces = originalSpaces - routineCount;
 
-        // 🔐 TRANSACTION: Update reservation + refund tokens atomically
-        await prisma.$transaction(async (tx) => {
-          // Update reservation: lock to actual routine count, close if underutilized
-          await tx.reservations.update({
-            where: { id: reservation.id },
-            data: {
-              spaces_confirmed: routineCount, // Lock to actual submitted count
-              status: 'submitted', // Change status to submitted
-              is_closed: unusedSpaces > 0, // Close if spaces were not fully used
-              updated_at: new Date(),
-            },
-          });
-
-          // Refund unused spaces back to competition's available tokens
-          if (unusedSpaces > 0) {
-            await tx.competitions.update({
-              where: { id: competitionId },
-              data: {
-                available_reservation_tokens: {
-                  increment: unusedSpaces,
-                },
-              },
-            });
-          }
+        // Update reservation status first
+        await prisma.reservations.update({
+          where: { id: reservation.id },
+          data: {
+            spaces_confirmed: routineCount, // Lock to actual submitted count
+            status: 'submitted', // Change status to submitted
+            is_closed: unusedSpaces > 0, // Close if spaces were not fully used
+            updated_at: new Date(),
+          },
         });
+
+        // Refund unused spaces using CapacityService (atomic transaction with audit trail)
+        if (unusedSpaces > 0) {
+          try {
+            await capacityService.refund(
+              competitionId,
+              unusedSpaces,
+              reservation.id,
+              'summary_refund',
+              ctx.userId
+            );
+          } catch (refundError) {
+            logger.error('Failed to refund capacity', {
+              error: refundError instanceof Error ? refundError : new Error(String(refundError)),
+              competitionId,
+              reservationId: reservation.id,
+              unusedSpaces,
+            });
+            // Don't throw - log the error but don't block summary submission
+          }
+        }
       }
 
       // Send "routine_summary_submitted" email to Competition Directors (non-blocking)

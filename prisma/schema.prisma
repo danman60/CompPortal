@@ -342,6 +342,7 @@ model users {
   mfa_factors                        mfa_factors[]
   one_time_tokens                    one_time_tokens[]
   sessions                           sessions[]
+  capacity_ledger                    capacity_ledger[]
   competition_sessions               competition_sessions[]
   documents                          documents[]
   judges                             judges[]
@@ -617,6 +618,7 @@ model competitions {
   updated_at                   DateTime?               @default(now()) @db.Timestamp(6)
   tenants                      tenants                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   awards                       awards[]
+  capacity_ledger              capacity_ledger[]
   competition_entries          competition_entries[]
   competition_locations        competition_locations[]
   competition_sessions         competition_sessions[]
@@ -635,6 +637,27 @@ model competitions {
   @@index([competition_start_date, competition_end_date], map: "idx_competitions_dates")
   @@index([status], map: "idx_competitions_status")
   @@index([year], map: "idx_competitions_year")
+  @@schema("public")
+}
+
+/// Audit trail for all competition capacity changes
+/// Negative change_amount = capacity deducted, Positive = capacity refunded
+model capacity_ledger {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competition_id String        @db.Uuid
+  reservation_id String?       @db.Uuid
+  change_amount  Int
+  reason         String        @db.VarChar(50)
+  notes          String?
+  created_at     DateTime      @default(now()) @db.Timestamp(6)
+  created_by     String?       @db.Uuid
+
+  competitions   competitions  @relation(fields: [competition_id], references: [id], onDelete: Cascade)
+  reservations   reservations? @relation(fields: [reservation_id], references: [id], onDelete: SetNull)
+  users          users?        @relation(fields: [created_by], references: [id])
+
+  @@index([competition_id, created_at(sort: Desc)], map: "idx_capacity_ledger_competition")
+  @@index([reservation_id], map: "idx_capacity_ledger_reservation")
   @@schema("public")
 }
 
@@ -899,6 +922,7 @@ model reservations {
   is_closed             Boolean?               @default(false)
   created_at            DateTime?              @default(now()) @db.Timestamp(6)
   updated_at            DateTime?              @default(now()) @db.Timestamp(6)
+  capacity_ledger       capacity_ledger[]
   competition_entries   competition_entries[]
   invoices              invoices[]
   users                 users?                 @relation(fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)

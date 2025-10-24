@@ -21,6 +21,7 @@ import {
 } from '@/lib/email-templates';
 import { guardReservationStatus } from '@/lib/guards/statusGuards';
 import { validateReservationCapacity } from '@/lib/validators/businessRules';
+import { capacityService } from '../services/capacity';
 
 // Validation schema for reservation input
 const reservationInputSchema = z.object({
@@ -658,11 +659,33 @@ export const reservationRouter = router({
         'approve reservation'
       );
 
+      // Reserve capacity FIRST (atomic transaction with audit trail)
+      // Matches Phase 1 spec lines 442-499 (approval process)
+      const spacesConfirmed = input.spacesConfirmed || 0;
+      if (spacesConfirmed > 0) {
+        try {
+          await capacityService.reserve(
+            (await prisma.reservations.findUnique({ where: { id: reservationId }, select: { competition_id: true } }))!.competition_id,
+            spacesConfirmed,
+            reservationId,
+            ctx.userId
+          );
+        } catch (capacityError) {
+          // If capacity reservation fails, don't proceed with approval
+          throw new Error(
+            capacityError instanceof Error
+              ? capacityError.message
+              : 'Failed to reserve capacity'
+          );
+        }
+      }
+
+      // Update reservation status (only after capacity successfully reserved)
       const reservation = await prisma.reservations.update({
         where: { id: reservationId },
         data: {
           status: 'approved',
-          spaces_confirmed: input.spacesConfirmed,
+          spaces_confirmed: spacesConfirmed,
           approved_at: new Date(),
           approved_by: ctx.userId,
           updated_at: new Date(),
@@ -685,29 +708,6 @@ export const reservationRouter = router({
           },
         },
       });
-
-      // Auto-adjust competition capacity (Issue #16)
-      // ONLY decrement if transitioning from pending → approved (not already approved)
-      if (existingReservation.status === 'pending') {
-        try {
-          const spacesConfirmed = reservation.spaces_confirmed || 0;
-          await prisma.competitions.update({
-            where: { id: reservation.competition_id },
-            data: {
-              available_reservation_tokens: {
-                decrement: spacesConfirmed,
-              },
-            },
-          });
-        } catch (capacityError) {
-          logger.error('Failed to update competition capacity', {
-            error: capacityError instanceof Error ? capacityError : new Error(String(capacityError)),
-            competitionId: reservation.competition_id,
-            spacesConfirmed: reservation.spaces_confirmed || 0
-          });
-          // Don't throw - capacity adjustment failure shouldn't block approval or notifications
-        }
-      }
 
       // Activity logging (non-blocking)
       try {
