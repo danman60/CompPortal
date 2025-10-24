@@ -28,11 +28,21 @@ export class CapacityService {
     reservationId: string,
     userId: string
   ): Promise<void> {
+    logger.info('🔵 CapacityService.reserve CALLED', {
+      competitionId,
+      spaces,
+      reservationId,
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+
     if (spaces <= 0) {
       throw new Error('Spaces must be positive');
     }
 
     await prisma.$transaction(async (tx) => {
+      logger.info('🔵 Transaction started - acquiring lock', { reservationId });
+
       // 🔒 ATOMIC GUARD: Lock reservation row with SELECT FOR UPDATE
       // This MUST use raw SQL because Prisma doesn't support FOR UPDATE
       const reservations = await tx.$queryRaw<Array<{ id: string; status: string }>>`
@@ -40,6 +50,12 @@ export class CapacityService {
         WHERE id = ${reservationId}::uuid
         FOR UPDATE
       `;
+
+      logger.info('🔵 Lock acquired, reservation fetched', {
+        reservationId,
+        found: reservations.length,
+        status: reservations[0]?.status,
+      });
 
       if (!reservations || reservations.length === 0) {
         throw new Error('Reservation not found');
@@ -126,13 +142,19 @@ export class CapacityService {
         },
       });
 
-      logger.info('Capacity reserved atomically', {
+      logger.info('🟢 Transaction COMMITTED - capacity reserved', {
         competitionId,
         reservationId,
         spaces,
         previousAvailable: available,
         newAvailable: available - spaces,
+        timestamp: new Date().toISOString(),
       });
+    });
+
+    logger.info('🟢 CapacityService.reserve COMPLETED', {
+      reservationId,
+      timestamp: new Date().toISOString(),
     });
   }
 
