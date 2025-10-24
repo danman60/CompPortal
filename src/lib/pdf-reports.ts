@@ -805,6 +805,16 @@ export function generateInvoicePDF(invoice: {
   doc.text(`$${invoice.summary.subtotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 6;
 
+  // Late fees (if applicable)
+  const totalLateFees = invoice.lineItems.reduce((sum, item) => sum + item.lateFee, 0);
+  if (totalLateFees > 0) {
+    doc.setTextColor(COLORS.textLight);
+    doc.text('Late Fees', totalsX, yPos);
+    doc.setTextColor(COLORS.text);
+    doc.text(`$${totalLateFees.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+  }
+
   // Tax (if applicable)
   if (invoice.summary.taxAmount > 0) {
     doc.setTextColor(COLORS.textLight);

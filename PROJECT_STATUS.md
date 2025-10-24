@@ -1,16 +1,19 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-24 (Post-Testing Round 2 Cleanup)
+**Last Updated:** 2025-10-24 (11pm EST - Demo Prep Planning)
 
 ---
 
-## Current Status: ✅ Testing Round 2 Complete - Documentation Organized
+## Current Status: 🎯 Demo Prep - Building Test Data Infrastructure
 
-### Latest Work: Documentation Cleanup & Organization
-- Consolidated 60+ documentation files into organized structure
-- Created comprehensive `DOCS_INDEX.md` for easy navigation
-- Archived obsolete session logs and planning documents
-- Organized testing reports, bug tracking, and reference materials
+### Latest Work: Session 7 - Invoice Branding + Scheduling Fixes
+- ✅ Professional invoice PDF branding (tenant colors, competition name)
+- ✅ Fixed scheduling suite TypeScript errors (5 fixes)
+- ✅ Fixed scheduleBuilder router auth context
+- ✅ Added schedule_suggestions to query
+- **Next:** Build automated test data seed script for Tuesday demo
+
+**See:** `DEMO_PREP_PLAN.md` for complete Tuesday demo preparation plan
 
 ---
 
@@ -48,7 +51,7 @@
 
 ---
 
-## ✅ Completed Fixes (Total: 19)
+## ✅ Completed Fixes (Total: 21)
 
 ### Session 1 - Foundation Fixes (13 fixes)
 See `CURRENT_WORK.md` for detailed list:
@@ -89,6 +92,17 @@ See `CURRENT_WORK.md` for detailed list:
     - Files: invoice.ts:766
     - Migration applied to lock existing PAID invoices
     - Verified by parallel agent: All 3 PAID invoices locked ✅
+
+### Session 7 - Demo Prep (2 fixes)
+20. **Invoice PDF branding** - Professional branded invoices
+    - Files: pdf-reports.ts:547-615,769
+    - Uses tenant primary color and tagline
+    - Competition name prominently displayed
+
+21. **Scheduling suite TypeScript fixes** - Build errors resolved
+    - Files: schedule-builder/page.tsx:96,228,230,263,269
+    - Files: scheduleBuilder.ts (context auth fixes)
+    - Added schedule_suggestions to query
 
 ---
 
@@ -131,13 +145,16 @@ See `CURRENT_WORK.md` for detailed list:
 ## 🔄 Recent Commits
 
 ```
-4ece525 - docs: Add parallel agent task list post-bug-fix (Oct 24)
+897d4b1 - fix: TypeScript errors in scheduling suite (Oct 24 11pm)
+ff22650 - feat: Add professional branding to invoice PDFs (Oct 24 11pm)
+5ca36ed - docs: Update trackers for Session 6 coordination (Oct 24)
+0095cfe - docs: Complete parallel agent coordination session (Oct 24)
+8739dfb - feat: Create test data for invoice/auto-close testing (Oct 24)
 199445f - fix: Lock invoices when marked as PAID + migrate (Oct 24)
 dd888a3 - feat: Switch email service to Resend API (Oct 24)
 1e149f0 - feat: Add forgot password link to login (Oct 24)
 48edcf7 - feat: Auto-close reservations with token refund (Oct 24)
 15a2527 - feat: Invoice lock + confirmed routines filter (Oct 24)
-3a1f022 - fix: TypeScript error in CSV export (Oct 24)
 ```
 
 ---
@@ -205,36 +222,45 @@ dd888a3 - feat: Switch email service to Resend API (Oct 24)
 
 ---
 
-## 📈 Next Session Priorities
+## 📈 Next Session Priorities - DEMO PREP MODE
 
-### Immediate Actions (Next Session)
-1. **Build test data seed script** (CRITICAL)
+### 🎯 **MONDAY (Today/Tomorrow) - 6-8 hours**
+
+**See `DEMO_PREP_PLAN.md` for complete details**
+
+1. ✅ **Build test data seed script** (CRITICAL - 2-3 hours)
    - Automated creation of complete test scenarios
    - Studio with approved reservation (15 spaces)
    - 12 confirmed routines + 3 draft routines
    - Enables full feature verification
 
-2. **Email workflow testing** (HIGH)
-   - Trigger all 4 email types
-   - Verify email_logs table population
-   - Confirm delivery with Resend dashboard
+2. ✅ **Execute full workflow test** (1-2 hours)
+   - SD reserve → CD approve → SD routines → invoice → payment
+   - Verify auto-close with token refund
+   - Test email notifications at each step
+   - Document with screenshots
 
-3. **Complete invoice verification** (HIGH)
-   - Test detail page with valid data
-   - Verify locked invoice UI behavior
-   - Confirm RLS policies working
+3. ✅ **Fix late fee PDF display** (15 min)
+   - Already in CSV, add to PDF
 
-### Short-term (Within 1 Week)
-4. Unified "Approve & Send" button
-5. Invoice PDF improvements (branding, late fee, layout)
-6. Security audit (`supabase:get_advisors`)
-7. Production monitoring setup
+4. ✅ **Unified "Approve & Send Invoice" button** (30 min)
+   - Combine 2 clicks into 1 for CD workflow
 
-### Long-term (Within 1 Month)
-8. Automated E2E test suite (Playwright)
-9. Production error tracking (Sentry)
-10. Performance monitoring
-11. Complete regression test suite
+5. ⏭️ **OPTIONAL: Polish scheduling suite** (2-3 hours)
+   - Only if time permits
+
+### 🚀 **TUESDAY MORNING - 2 hours before demo**
+
+1. ✅ Final smoke test on production
+2. ✅ Create demo script with exact steps
+3. ✅ Pre-seed demo data
+4. ✅ Test forgot password one more time
+
+### Long-term (Post-Demo)
+- Automated E2E test suite (Playwright)
+- Production error tracking (Sentry)
+- Performance monitoring
+- Complete regression test suite
 
 ---
 
