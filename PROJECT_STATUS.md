@@ -1,44 +1,29 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-24 00:20 UTC
+**Last Updated:** 2025-10-24 00:45 UTC
 
-## Current Status: ✅ EMPWR Testing Round 2 Fixes Complete
+## Current Status: ✅ EMPWR Testing Round 2 - Session 2 Complete
 
-### Latest Session (Oct 24, 2025) - COMPLETED
+### Latest Session (Oct 24, 2025) - Session 2
 
-**EMPWR Testing Round 2 Bug Fixes - 11 Critical Issues Resolved**
+**Invoice Security & Data Filtering Improvements**
 
 **Session Summary:**
-- **Duration:** ~90 minutes
-- **Commits:** 3 successful (4d054df, 2a8e325, 3a1f022)
+- **Duration:** ~15 minutes
+- **Commits:** 1 successful (15a2527)
 - **Build Status:** ✅ Passing
-- **Deployment Status:** ⚠️ Previous deployment failed (TypeScript error), fixed in 3a1f022
-- **Database Migrations:** 1 successful (deposit & invoice fields)
+- **Schema Updates:** Prisma schema synced with database fields
 
 ---
 
-## ✅ Completed Fixes (11 Total)
+## ✅ Completed Fixes (Total: 15)
 
-### Critical Reservation & CSV Issues:
-1. **"Deny Reservation" button not working** - Added onClick handler + reject mutation with modal UI (ReservationPipeline.tsx:534-538, 82-91, 217-232, 742-789)
-2. **Token refund logic broken** - Verified already working in reject/cancel mutations (reservation.ts)
-3. **Event capacity card data incorrect** - Fixed to use live `reservation_tokens` instead of static values (ReservationPipeline.tsx:107-109)
-4. **Studio CSV upload 406 error** - Increased body size limit from 2MB to 10MB (next.config.js:53)
-5. **Routine CSV import JSZip error** - Added better error handling for corrupted Excel files (RoutineCSVImport.tsx:304-334)
+### Previous Session (Session 1):
+1-13. [See CURRENT_WORK.md for full list from first session]
 
-### Financial & Access Control:
-6. **Studio Directors editing invoices** - Added role checks to prevent unauthorized edits (InvoiceDetail.tsx:71, 324-368)
-7. **Mark as Paid security** - Verified already restricted to Competition Directors only
-8. **Hardcoded 13% HST tax** - Removed dynamic tax rate, now always 13% (invoice.ts:194)
-9. **Manual Payment Only banner** - Added clear offline payment indication (InvoiceDetail.tsx:127-133)
-
-### Database Schema:
-10. **Deposit tracking fields** - Added `deposit_paid_at`, `deposit_confirmed_by`, `is_closed` to reservations
-11. **Invoice fields** - Added `credit_amount`, `credit_reason`, `tax_rate`, `is_locked` to invoices
-
-### Export Functionality:
-12. **CSV Export for Dancers** - Added export button with full dancer data (dancers/page.tsx:16-53, 109-115)
-13. **CSV Export for Routines** - Added export button with complete routine details (EntriesList.tsx:181-226)
+### Current Session (Session 2):
+14. **Invoice lock after send** - Invoices automatically lock when status changes to SENT (invoice.ts:661, 881-883)
+15. **Invoice confirmed routines only** - All invoice generation now filters to `status: 'confirmed'` entries (invoice.ts:140, 256, 509, 564)
 
 ---
 
@@ -49,28 +34,35 @@ From EMPWR testing, still requiring implementation:
 1. **Auto-close reservations** - Needs backend trigger when fewer routines submitted than reserved
    - Database field ready: `is_closed` added
    - Logic needed: Detect routine count < spaces_confirmed, set is_closed=true, refund tokens
+   - Complexity: HIGH (requires entry lifecycle hooks + token refund logic)
 
-2. **Invoice lock after send** - Prevent modifications after invoice sent
-   - Database field ready: `is_locked` added
-   - Needs: Enforcement in update mutations
+2. **Individual routine pricing display** - User clarified requirements
+   - ✅ KEEP individual pricing when clicking on routines in summary view
+   - ✅ KEEP total pricing in "live summary along the bottom" (Routines page)
+   - No changes needed - current behavior is correct
 
-3. **Invoice should only include confirmed routines** - Filter by status
-   - Current: Includes all non-cancelled entries
-   - Needs: Modify invoice generation to filter for confirmed entries only
+3. **Late fee mismatch** - Appears in CSV export but not on PDF
+   - Need to verify PDF generation includes late_fee field
 
-4. **Hide individual routine pricing in summary** - Only show total
-   - Status: Need to locate where prices are displayed to users
-   - May have already been removed
+4. **Unified "Approve & Send Invoice" button** - One-click CD workflow
+   - Combine reservation approval + invoice generation + send email
+
+5. **Invoice PDF branding** - Use competition.branding_logo and competition.name
+   - Update PDF template with tenant/competition branding
+
+6. **Invoice PDF layout audit** - Fix fonts, alignment, spacing
+   - Professional invoice formatting improvements
 
 ---
 
 ## 🔄 Recent Commits
 
 ```
-3a1f022 - fix: TypeScript error in CSV export (Oct 24, 2025)
-2a8e325 - fix: Additional EMPWR fixes - deposit fields, tax, CSV export (Oct 24, 2025)
-4d054df - fix: Critical EMPWR testing fixes - reservation & CSV issues (Oct 24, 2025)
-5735018 - fix: CSV import JSZip error + space release (Oct 23, 2025)
+15a2527 - feat: Invoice lock + confirmed routines filter (Oct 24, 2025) [Session 2]
+687a5f2 - docs: Update trackers (Oct 24, 2025)
+3a1f022 - fix: TypeScript error in CSV export (Oct 24, 2025) [Session 1]
+2a8e325 - fix: Additional EMPWR fixes - deposit fields, tax, CSV export (Oct 24, 2025) [Session 1]
+4d054df - fix: Critical EMPWR testing fixes - reservation & CSV issues (Oct 24, 2025) [Session 1]
 ```
 
 ---
@@ -78,11 +70,8 @@ From EMPWR testing, still requiring implementation:
 ## 📊 Production Deployment
 
 **Environment:** https://empwr.compsync.net
-**Status:** Deploying (commit 3a1f022)
-**Previous Deployment:** Failed (TypeScript error in EntriesList.tsx:198)
-**Current Deployment:** Should succeed - TypeScript error fixed
-
-**Note:** The previous Vercel deployment failed due to missing type annotation in CSV export code. This has been corrected in commit 3a1f022.
+**Status:** Auto-deploying (commit 15a2527)
+**Latest Build:** ✅ Passing (all 59 routes)
 
 ---
 
@@ -94,21 +83,20 @@ From EMPWR testing, still requiring implementation:
 
 ---
 
-## 📈 Session Metrics
+## 📈 Session 2 Metrics
 
-- **Fixes Completed:** 11+ critical issues
-- **Files Modified:** 7 components/pages
-- **Database Migrations:** 1 successful
+- **Fixes Completed:** 2 critical issues
+- **Files Modified:** 2 (invoice.ts, schema.prisma)
+- **Database Schema:** Synced to production
 - **Build Passes:** ✅ All 59 routes compiling
 - **Rollbacks:** None needed
-- **TypeScript Errors:** 1 fixed (implicit any type)
 
 ---
 
 ## Next Session Priorities
 
-1. **Monitor Vercel deployment** - Ensure 3a1f022 deploys successfully
-2. **Implement reservation auto-close** - Add backend trigger for unused slots
-3. **Enforce invoice lock** - Prevent edits after sending
-4. **Filter invoice routines** - Only confirmed entries
-5. **Security audit** - Run `supabase:get_advisors`
+1. **Implement reservation auto-close** - Complex feature requiring entry lifecycle monitoring
+2. **Add unified Approve & Send button** - Streamline CD workflow
+3. **Audit invoice PDF** - Branding + late fee visibility
+4. **Security audit** - Run `supabase:get_advisors` for RLS/performance
+5. **Production testing** - Verify all fixes on empwr.compsync.net
