@@ -1,34 +1,27 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { prisma } from './prisma';
 import { logger } from './logger';
 
 /**
- * Email service using SMTP (PrivateEmail)
- * Required env:
- *  - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
- * Optional:
- *  - SMTP_SECURE ("true" to use TLS/465)
- *  - EMAIL_FROM (fallback sender)
+ * Email service using Resend
+ * Required env: RESEND_API_KEY
+ * Optional: EMAIL_FROM (fallback sender)
  */
 
-let transporter: nodemailer.Transporter | null = null;
+let resend: Resend | null = null;
 
-function getSmtpTransport() {
-  if (!transporter) {
-    const host = process.env.SMTP_HOST;
-    const port = Number(process.env.SMTP_PORT || 587);
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const secure = String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
+function getResendClient() {
+  if (!resend) {
+    const apiKey = process.env.RESEND_API_KEY;
 
-    if (!host || !user || !pass) {
-      console.warn('SMTP not configured (missing SMTP_HOST/SMTP_USER/SMTP_PASS). Email disabled.');
+    if (!apiKey) {
+      console.warn('Resend not configured (missing RESEND_API_KEY). Email disabled.');
       return null;
     }
 
-    transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    resend = new Resend(apiKey);
   }
-  return transporter;
+  return resend;
 }
 
 export interface SendEmailParams {
@@ -46,27 +39,47 @@ export interface SendEmailParams {
 /**
  * Send an email using Resend
  */
-export async function sendEmail({ to, subject, html, from = process.env.EMAIL_FROM || 'noreply@glowdance.com', replyTo, templateType, studioId, competitionId, }: SendEmailParams) {
-  const smtp = getSmtpTransport();
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  from = process.env.EMAIL_FROM || 'noreply@glowdance.com',
+  replyTo,
+  templateType,
+  studioId,
+  competitionId,
+}: SendEmailParams) {
+  const client = getResendClient();
   const recipientEmail = Array.isArray(to) ? to[0] : to;
   let success = false;
   let errorMessage: string | undefined;
 
-  if (!smtp) {
-    logger.error('Email sending disabled: SMTP not configured');
+  if (!client) {
+    logger.error('Email sending disabled: Resend not configured');
     errorMessage = 'Email service not configured';
   } else {
     try {
-      await smtp.sendMail({
+      const { data, error } = await client.emails.send({
         from,
-        to,
+        to: Array.isArray(to) ? to : [to],
         subject,
         html,
         replyTo,
       });
-      success = true;
+
+      if (error) {
+        logger.error('Email send error from Resend', { error });
+        errorMessage = error.message || 'Unknown Resend error';
+      } else {
+        success = true;
+        logger.info('Email sent successfully', {
+          id: data?.id,
+          to: recipientEmail,
+          template: templateType
+        });
+      }
     } catch (error) {
-      logger.error('Email send error', { error: error instanceof Error ? error : new Error(String(error)) });
+      logger.error('Email send exception', { error: error instanceof Error ? error : new Error(String(error)) });
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
   }
