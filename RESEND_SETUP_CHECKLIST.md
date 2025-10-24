@@ -1,7 +1,8 @@
 # Resend Email Setup Checklist
 
 **Created:** 2025-10-24 (Demo Prep)
-**Status:** ⚠️ NEEDS VERIFICATION
+**Updated:** 2025-10-24 (Email Fix Applied)
+**Status:** ✅ FIXED - NEEDS PRODUCTION TEST
 
 ---
 
@@ -14,15 +15,24 @@
 - ✅ Graceful fallback if API key missing
 - ✅ `.env.example` updated with `RESEND_API_KEY`
 
-### Email Triggers
-All email triggers are wired up and call `sendEmail()`:
-1. ✅ Reservation submitted → **CD notification** (new reservation pending approval)
-2. ✅ Reservation approved → **SD notification** (your reservation was approved)
-3. ✅ Reservation rejected → **SD notification** (your reservation was declined)
-4. ✅ Routine summary submitted → **CD notification** (studio ready for invoicing)
-5. ✅ Invoice sent → **SD notification** (your invoice is ready)
+### Critical Bug Fix (2025-10-24 - Commit 4339ad7)
+**Problem:** All email notifications were failing silently - not being logged to `email_logs` table and likely not sending.
 
-**Files:** `src/server/routers/reservation.ts:494-549`, `invoice.ts`, `entry.ts:211-262`
+**Root Cause:** All `sendEmail()` calls missing `templateType` parameter required for logging and tracking.
+
+**Fix Applied:** Added `templateType`, `studioId`, and `competitionId` to all 9 critical email triggers.
+
+### Email Triggers (NOW FIXED ✅)
+All email triggers are wired up and call `sendEmail()` with proper templateType:
+1. ✅ Reservation submitted → **CD notification** (reservation.ts:537)
+2. ✅ Reservation approved → **SD notification** (reservation.ts:746)
+3. ✅ Reservation rejected → **SD notification** (reservation.ts:856)
+4. ✅ Routine summary submitted → **CD notification** (entry.ts:249)
+5. ✅ Invoice sent → **SD notification** (invoice.ts:715)
+6. ✅ Entry submitted → **SD notification** (entry.ts:883)
+7. ✅ Payment confirmed → **SD notification** (invoice.ts:840)
+8. ✅ Payment confirmed (via reservation) → **SD notification** (reservation.ts:1074)
+9. ✅ Studio profile submitted → **CD notification** (studio.ts:240)
 
 ---
 
