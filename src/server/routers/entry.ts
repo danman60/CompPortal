@@ -188,7 +188,6 @@ export const entryRouter = router({
           where: { id: reservation.id },
           data: {
             spaces_confirmed: routineCount, // Lock to actual submitted count
-            status: 'submitted', // Change status to submitted
             is_closed: unusedSpaces > 0, // Close if spaces were not fully used
             updated_at: new Date(),
           },
