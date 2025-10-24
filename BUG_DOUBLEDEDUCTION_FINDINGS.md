@@ -330,11 +330,51 @@ On duplicate call:
    - ledger has exactly 1 entry of -15
    - discrepancy = 0
 
-**Result:** PENDING - Testing on production...
+**Result:** ❌ FAILED - Bug persists
+
+**Test Evidence (October 24, 2025 10:47 PM):**
+
+Approved 25-space reservation for "123" studio on London event:
+
+**BEFORE:**
+```sql
+total: 600, available: 600, ledger_count: 0, ledger_sum: 0
+```
+
+**AFTER:**
+```sql
+total: 600, available: 550, ledger_count: 1, ledger_sum: -25
+discrepancy: -25
+```
+
+**Proof of failure:**
+- Ledger: 1 entry of -25 (unique constraint working)
+- Capacity: Decreased by 50 (600 → 550)
+- Expected: 575 (600 - 25)
+- Actual: 550
+- **Double deduction confirmed: 25 extra spaces deducted**
 
 ---
 
-**Status:** ⏳ FIX DEPLOYED - Testing in progress
+**Status:** ❌ FIX ATTEMPT 4 FAILED - Bug still active
 **Priority:** CRITICAL - Blocks production launch
 **Assignee:** Claude Code
-**Date:** October 24, 2025 9:01 PM - 10:35 PM
+**Date:** October 24, 2025 9:01 PM - 10:47 PM
+
+## Next Investigation Steps
+
+The operation reordering didn't work. This suggests:
+
+1. **Hypothesis A**: Advisory lock not acquired before BOTH transactions reach the ledger INSERT
+   - Both transactions start
+   - Both acquire advisory lock (sequentially, but before checking ledger)
+   - First transaction: Creates ledger, updates capacity, commits
+   - Second transaction: Ledger insert fails (unique constraint), but capacity update already happened
+   - **Problem**: Transaction doesn't rollback capacity update when ledger fails
+
+2. **Hypothesis B**: Operations not truly atomic despite being in transaction
+   - Prisma's transaction isolation might allow capacity UPDATE to commit even if ledger INSERT fails later
+
+**Critical insight**: The unique constraint error should rollback the ENTIRE transaction, including the capacity UPDATE. If it's not, then Prisma's transaction handling is broken OR the operations are somehow committing separately.
+
+**Required fix**: Wrap the transaction in explicit error handling and verify rollback behavior.
