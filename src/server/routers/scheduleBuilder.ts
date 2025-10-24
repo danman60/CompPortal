@@ -276,7 +276,7 @@ export const scheduleBuilderRouter = router({
         if (item.item_type === 'routine' && item.entry_id && item.routine_number) {
           await prisma.competition_entries.update({
             where: { id: item.entry_id },
-            data: { routine_number: item.routine_number },
+            data: { entry_number: item.routine_number },
           });
         }
       }
