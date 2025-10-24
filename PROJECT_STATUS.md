@@ -1,16 +1,30 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-24 (3:30pm EST - Email & Capacity Fixes Complete)
+**Last Updated:** 2025-10-24 (6:00pm EST - Capacity System Rewrite Complete)
 
 ---
 
-## Current Status: 🔴 AWAITING VERIFICATION - Critical Bugs Fixed
+## Current Status: 🟢 CAPACITY SYSTEM REWRITTEN - Ready for Testing
 
-### Latest Work: Session 8 - Email Notifications & Capacity Double-Deduction
+### Latest Work: Session 9 - Surgical Capacity System Rewrite
+
+**Date:** October 24, 2025 (4:00pm-6:00pm EST)
+**Duration:** 2 hours
+**Status:** ✅ Complete architectural rewrite deployed (commits 6d84795, 917c3b0)
+
+**MAJOR CHANGES:**
+1. ✅ **CapacityService class** - Single source of truth with atomic transactions
+2. ✅ **capacity_ledger table** - Complete audit trail for all capacity changes
+3. ✅ **Idempotency protection** - Prevents double-deductions from duplicate API calls
+4. ✅ **Admin debugging tools** - Super admin can view ledger, reconcile capacity
+5. ✅ **Approve mutation rewritten** - Uses CapacityService.reserve()
+6. ✅ **Summary mutation rewritten** - Uses CapacityService.refund()
+
+**Previous Work: Session 8 - Email Notifications & Capacity Double-Deduction**
 
 **Date:** October 24, 2025 (10:30am-3:30pm EST)
 **Duration:** 5 hours
-**Status:** ✅ All fixes deployed to production (commit 68e421e)
+**Status:** ⚠️ Bandaid fixes replaced by surgical rewrite in Session 9
 
 **Problems Solved:**
 1. ✅ Email notifications completely blocked (root cause: uncaught capacity error)
@@ -23,7 +37,93 @@
 - Capacity math accuracy (should be exactly 75 deducted)
 - Logging verification (email_logs and activity_logs should populate)
 
-**See:** `EMAIL_DEBUG_STATUS.md` for complete debugging documentation
+**See:** `CAPACITY_REWRITE_PLAN.md` for complete surgical rewrite architecture
+
+---
+
+## 📊 Session 9 Summary - Capacity System Surgical Rewrite
+
+**Environment:** https://www.compsync.net (Production)
+**Approach:** Complete architectural rewrite following CAPACITY_REWRITE_PLAN.md
+**Result:** Atomic, auditable, idempotent capacity management
+
+### What Was Built
+
+**1. CapacityService Class (src/server/services/capacity.ts)**
+- `reserve()` - Atomic capacity deduction with idempotency check
+- `refund()` - Atomic capacity refund with validation
+- `getAvailable()` - Real-time capacity query
+- `getLedger()` - Audit trail viewer
+- `reconcile()` - Verify ledger matches current state
+
+**Key Features:**
+- Database transactions with row locking (prevents race conditions)
+- Idempotency protection (checks capacity_ledger before reserve)
+- Audit trail (every change logged with reason + timestamp)
+- Validation (prevents over-refunding, insufficient capacity)
+
+**2. capacity_ledger Table (Migration via Supabase MCP)**
+```sql
+CREATE TABLE capacity_ledger (
+  id UUID PRIMARY KEY,
+  competition_id UUID REFERENCES competitions(id),
+  reservation_id UUID REFERENCES reservations(id),
+  change_amount INT,  -- Negative = deduction, Positive = refund
+  reason VARCHAR(50), -- 'reservation_approval', 'summary_refund', etc
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id)
+);
+```
+
+**3. Mutations Rewritten**
+- **Approve mutation** (reservation.ts:662-680)
+  - Old: Manual prisma.competitions.update with try/catch
+  - New: capacityService.reserve() with transaction + audit
+  - Benefit: Idempotency prevents double-deduction bug
+
+- **Summary mutation** (entry.ts:197-216)
+  - Old: Manual prisma.competitions.update in transaction
+  - New: capacityService.refund() with validation + audit
+  - Benefit: Can now debug "where did refund go?"
+
+**4. Admin Tools** (admin.ts:28-85)
+- `getCapacityLedger` - View all capacity changes for competition
+- `getAvailableCapacity` - Real-time capacity check
+- `reconcileCapacity` - Verify ledger integrity
+
+**Super Admin only** - Debug tools for troubleshooting capacity issues
+
+### Bugs Fixed
+
+**Bug #1: Double-Deduction (User reported: 100 spaces → 200 deducted)**
+- **Root Cause:** No idempotency protection, approve called twice
+- **Fix:** CapacityService checks capacity_ledger before reserve
+- **Result:** Silent skip if reservation already processed
+
+**Bug #2: Refund Not Persisting (User reported: "99 spaces warning but didn't refund")**
+- **Root Cause:** Scattered logic, no audit trail to debug
+- **Fix:** CapacityService.refund() with atomic transaction
+- **Result:** Refund logged in capacity_ledger, can verify it happened
+
+**Bug #3: No Audit Trail**
+- **Root Cause:** No way to answer "where did capacity go?"
+- **Fix:** capacity_ledger table logs every change
+- **Result:** Can query ledger to see exact history
+
+### Files Changed
+
+- `src/server/services/capacity.ts` - NEW (268 lines)
+- `prisma/schema.prisma` - Added capacity_ledger model
+- `src/server/routers/reservation.ts` - Approve mutation rewritten
+- `src/server/routers/entry.ts` - Summary mutation rewritten
+- `src/server/routers/admin.ts` - Added 3 capacity debug queries
+- `CAPACITY_REWRITE_PLAN.md` - Complete architecture documentation
+
+### Commits
+
+- `6d84795` - feat: Implement CapacityService with atomic transactions
+- `917c3b0` - feat: Add admin tools for capacity debugging
 
 ---
 
