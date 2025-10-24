@@ -201,7 +201,97 @@ This provides defense in depth:
 
 ---
 
-**Status:** Bug confirmed and reproduced in production
+## ROOT CAUSE IDENTIFIED (October 24, 2025 10:07 PM)
+
+**Frontend race condition in CompetitionReservationsPanel.tsx:67-95**
+
+### The Bug Timeline
+
+```typescript
+const handleApprove = async (reservationId: string, studioId: string) => {
+  // Line 80: Set removingId (for animation)
+  setRemovingId(reservationId);
+
+  // Line 83: Schedule mutation for 300ms later
+  setTimeout(async () => {
+    await approveMutation.mutateAsync({ ... });  // Line 84
+  }, 300);
+};
+```
+
+**What happened on double-click:**
+
+| Time | First Click | Second Click |
+|------|-------------|--------------|
+| 0ms | setRemovingId('abc') | - |
+| 0ms | Schedule timeout #1 | - |
+| 50ms (double-click) | - | setRemovingId('abc') AGAIN |
+| 50ms | - | Schedule timeout #2 |
+| 300ms | Timeout #1 fires → mutateAsync() | - |
+| 350ms | - | Timeout #2 fires → mutateAsync() |
+
+**Both setTimeout callbacks executed** because there was NO guard checking if `removingId` was already set.
+
+The button's `disabled={approveMutation.isPending}` check (line 182) only prevented clicks DURING the mutation, not during the 300ms animation window.
+
+### The Fix
+
+**Commit a977508:** Add early return if removingId or mutation already in progress:
+
+```typescript
+const handleApprove = async (reservationId: string, studioId: string) => {
+  // NEW: Prevent double-click during 300ms window
+  if (removingId || approveMutation.isPending) {
+    return;
+  }
+
+  // ... rest of function
+};
+```
+
+### Defense in Depth
+
+1. **Frontend (a977508):** Block double-clicks during animation window
+2. **Backend (94670ac):** Use `pg_advisory_xact_lock()` to prevent concurrent execution
+3. **Database:** Unique constraint on `capacity_ledger(reservation_id, reason)` to catch any breakthrough
+
+---
+
+## Latest Test Results (October 24, 2025 10:22 PM)
+
+**Test:** Approved 15-space reservation for St. Catharines #1
+
+**Evidence of CONTINUED Bug:**
+```sql
+St. Catharines #1:
+- Total: 600
+- Available: 270
+- Used by DB: 330 (actual capacity decremented)
+- Used by ledger: 315 (sum of all ledger entries: -300, -15)
+- Discrepancy: 15 spaces
+
+Ledger entries:
+1. -300 spaces (old approval)
+2. -15 spaces (new test approval) ← Only ONE entry created
+```
+
+**Analysis:**
+- Ledger shows CORRECT single entry of -15
+- Database shows 15 MORE was deducted than ledger (discrepancy = 15)
+- This proves capacity.ts line 113-120 is executing TWICE despite:
+  - Advisory lock at line 49
+  - Status check at line 66-72
+  - Ledger idempotency check at line 75-88
+
+**Hypothesis:** The unique constraint on capacity_ledger caught the SECOND ledger insert, preventing duplicate ledger entries, but the capacity UPDATE at line 113-120 executed BEFORE the ledger insert failed, so both capacity decrements succeeded.
+
+**Next Steps:**
+1. Move capacity decrement AFTER ledger creation (reorder operations)
+2. OR wrap entire transaction body in try-catch and verify ledger creation succeeded before committing
+
+---
+
+**Status:** ❌ BUG STILL ACTIVE - Fix unsuccessful, requires further investigation
 **Priority:** CRITICAL - Blocks production launch
 **Assignee:** Claude Code
-**Date:** October 24, 2025 9:01 PM
+**Date:** October 24, 2025 9:01 PM - 10:22 PM
