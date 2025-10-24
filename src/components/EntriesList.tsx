@@ -177,6 +177,53 @@ export default function EntriesList() {
                 <span>📤</span>
                 <span>Import</span>
               </Link>
+
+              <button
+                onClick={() => {
+                  if (!filteredEntries || filteredEntries.length === 0) {
+                    toast.error('No routines to export');
+                    return;
+                  }
+
+                  // Generate CSV content
+                  const headers = ['Routine #', 'Title', 'Category', 'Size', 'Age Group', 'Props', 'Choreographer', 'Dancers', 'Fee', 'Status'];
+                  const rows = filteredEntries.map(entry => [
+                    entry.entry_number || '',
+                    entry.title || '',
+                    entry.dance_categories?.name || '',
+                    entry.entry_size_categories?.name || '',
+                    entry.age_groups?.name || '',
+                    entry.props || '',
+                    entry.choreographer || '',
+                    entry.entry_participants?.map(p => `${p.dancers?.first_name} ${p.dancers?.last_name}`).join('; ') || '',
+                    entry.total_fee || '0',
+                    entry.status || ''
+                  ]);
+
+                  // Combine headers and rows
+                  const csvContent = [
+                    headers.join(','),
+                    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                  ].join('\n');
+
+                  // Create download
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `routines-export-${new Date().toISOString().split('T')[0]}.csv`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+
+                  toast.success(`Exported ${filteredEntries.length} routines to CSV`);
+                }}
+                className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
+              >
+                <span>📥</span>
+                <span>Export CSV</span>
+              </button>
             </>
           )}
 

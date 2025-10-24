@@ -191,7 +191,7 @@ export const invoiceRouter = router({
       });
 
       const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
-      const taxRate = Number(competition.tax_rate || 0); // Tax rate from competition settings
+      const taxRate = 0.13; // Hardcoded 13% HST as per requirements
       const taxAmount = subtotal * taxRate;
       const totalAmount = subtotal + taxAmount;
 
