@@ -16,13 +16,13 @@
 
 ### Email Triggers
 All email triggers are wired up and call `sendEmail()`:
-1. ✅ Reservation submitted (SD notification)
-2. ✅ Reservation approved (SD notification)
-3. ✅ Reservation rejected (SD notification)
-4. ✅ Routine summary submitted (CD notification - "Ready to invoice")
-5. ✅ Invoice sent (SD notification)
+1. ✅ Reservation submitted → **CD notification** (new reservation pending approval)
+2. ✅ Reservation approved → **SD notification** (your reservation was approved)
+3. ✅ Reservation rejected → **SD notification** (your reservation was declined)
+4. ✅ Routine summary submitted → **CD notification** (studio ready for invoicing)
+5. ✅ Invoice sent → **SD notification** (your invoice is ready)
 
-**Files:** `src/server/routers/reservation.ts`, `invoice.ts`, `entry.ts:211-262`
+**Files:** `src/server/routers/reservation.ts:494-549`, `invoice.ts`, `entry.ts:211-262`
 
 ---
 
@@ -193,11 +193,11 @@ LIMIT 10;
    - [ ] Check actual email received (if using real address)
 
 3. **Test All Email Types:**
-   - [ ] Reservation submitted email (to SD)
-   - [ ] Reservation approved email (to SD)
-   - [ ] Reservation rejected email (to SD)
-   - [ ] Routine summary submitted email (to CD - "Ready to invoice")
-   - [ ] Invoice sent email (to SD)
+   - [ ] Reservation submitted email (to **CD** - new pending reservation)
+   - [ ] Reservation approved email (to **SD** - approval confirmation)
+   - [ ] Reservation rejected email (to **SD** - rejection notice)
+   - [ ] Routine summary submitted email (to **CD** - ready to invoice)
+   - [ ] Invoice sent email (to **SD** - invoice delivery)
 
 4. **Document for Demo:**
    - [ ] Take screenshot of Resend dashboard showing successful delivery
