@@ -717,6 +717,12 @@ export const reservationRouter = router({
       }
 
       // Send approval email to studio (check preferences first)
+      console.log('[EMAIL DEBUG] Starting email flow for reservation approval', {
+        reservationId: reservation.id,
+        studioEmail: reservation.studios?.email,
+        studioId: reservation.studio_id
+      });
+
       if (reservation.studios?.email) {
         try {
           // Get studio owner to check preferences
@@ -725,8 +731,12 @@ export const reservationRouter = router({
             select: { owner_id: true },
           });
 
+          console.log('[EMAIL DEBUG] Studio owner check', { ownerId: studio?.owner_id });
+
           if (studio?.owner_id) {
             const isEnabled = await isEmailEnabled(studio.owner_id, 'reservation_approved');
+
+            console.log('[EMAIL DEBUG] Email preference check', { isEnabled });
 
             if (isEnabled) {
               const emailData: ReservationApprovedData = {
@@ -743,7 +753,12 @@ export const reservationRouter = router({
                 competitionYear: emailData.competitionYear,
               });
 
-              await sendEmail({
+              console.log('[EMAIL DEBUG] About to send email', {
+                to: reservation.studios.email,
+                templateType: 'reservation-approved'
+              });
+
+              const result = await sendEmail({
                 to: reservation.studios.email,
                 subject,
                 html,
@@ -751,12 +766,21 @@ export const reservationRouter = router({
                 studioId: reservation.studio_id,
                 competitionId: reservation.competition_id,
               });
+
+              console.log('[EMAIL DEBUG] Email send result', result);
+            } else {
+              console.log('[EMAIL DEBUG] Email disabled by user preference');
             }
+          } else {
+            console.log('[EMAIL DEBUG] No studio owner_id found');
           }
         } catch (error) {
+          console.error('[EMAIL DEBUG] Email error caught', error);
           logger.error('Failed to send approval email', { error: error instanceof Error ? error : new Error(String(error)) });
           // Don't throw - email failure shouldn't block the approval
         }
+      } else {
+        console.log('[EMAIL DEBUG] No studio email found');
       }
 
       return reservation;
