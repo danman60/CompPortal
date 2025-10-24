@@ -41,27 +41,29 @@ export class CapacityService {
     }
 
     await prisma.$transaction(async (tx) => {
-      logger.info('🔵 Transaction started - acquiring lock', { reservationId });
+      logger.info('🔵 Transaction started - acquiring advisory lock', { reservationId });
 
-      // 🔒 ATOMIC GUARD: Lock reservation row with SELECT FOR UPDATE
-      // This MUST use raw SQL because Prisma doesn't support FOR UPDATE
-      const reservations = await tx.$queryRaw<Array<{ id: string; status: string }>>`
-        SELECT id, status FROM reservations
-        WHERE id = ${reservationId}::uuid
-        FOR UPDATE
-      `;
+      // 🔒 ATOMIC GUARD: Use PostgreSQL advisory lock
+      // This locks at APPLICATION LEVEL and is guaranteed to work across the transaction
+      // Lock is automatically released when transaction commits/rollbacks
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${reservationId}::text))`;
 
-      logger.info('🔵 Lock acquired, reservation fetched', {
-        reservationId,
-        found: reservations.length,
-        status: reservations[0]?.status,
+      logger.info('🔵 Advisory lock acquired, fetching reservation', { reservationId });
+
+      // Now fetch reservation status after lock is acquired
+      const reservation = await tx.reservations.findUnique({
+        where: { id: reservationId },
+        select: { id: true, status: true },
       });
 
-      if (!reservations || reservations.length === 0) {
+      if (!reservation) {
         throw new Error('Reservation not found');
       }
 
-      const reservation = reservations[0];
+      logger.info('🔵 Reservation fetched', {
+        reservationId,
+        status: reservation.status,
+      });
 
       if (reservation.status !== 'pending') {
         logger.warn('Reservation already processed - status guard', {
