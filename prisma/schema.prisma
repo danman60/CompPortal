@@ -350,6 +350,9 @@ model users {
   studios_studios_verified_byTousers studios[]              @relation("studios_verified_byTousers")
   user_profiles                      user_profiles?
   failure_log                        failure_log[]
+  schedules_created                  schedules[]            @relation("schedule_creator")
+  schedule_suggestions_created       schedule_suggestions[] @relation("suggestion_creator")
+  schedule_suggestions_reviewed      schedule_suggestions[] @relation("suggestion_reviewer")
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -442,6 +445,7 @@ model competition_entries {
   studio_id                                                                            String                   @db.Uuid
   entry_number                                                                         Int?
   entry_suffix                                                                         String?                  @db.VarChar(5)
+  routine_number                                                                       Int?
   is_late_entry                                                                        Boolean?                 @default(false)
   sequence_number                                                                      Int?
   title                                                                                String                   @db.VarChar(255)
@@ -501,6 +505,7 @@ model competition_entries {
   entry_participants                                                                   entry_participants[]
   rankings                                                                             rankings[]
   scores                                                                               scores[]
+  schedule_items                                                                       schedule_items[]         @relation("schedule_item_entry")
 
   @@unique([competition_id, entry_number, entry_suffix], map: "idx_entry_number_per_comp")
   @@index([competition_id], map: "idx_entries_competition")
@@ -622,6 +627,7 @@ model competitions {
   judges                       judges[]
   rankings                     rankings[]
   reservations                 reservations[]
+  schedules                    schedules[]
   title_rounds                 title_rounds[]
   vip_events                   vip_events[]
 
@@ -1021,6 +1027,7 @@ model studios {
   email_logs                       email_logs[]
   invoices                         invoices[]
   reservations                     reservations[]
+  schedule_suggestions             schedule_suggestions[]
   users_studios_owner_idTousers    users                 @relation("studios_owner_idTousers", fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users_studios_verified_byTousers users?                @relation("studios_verified_byTousers", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -1315,5 +1322,110 @@ model failure_log {
   @@index([operation_type], map: "failure_log_operation_type_idx")
   @@index([entity_type, entity_id], map: "failure_log_entity_idx")
   @@index([created_at(sort: Desc)], map: "failure_log_created_at_idx")
+  @@schema("public")
+}
+
+// ============================================
+// ADVANCED SCHEDULING SUITE
+// ============================================
+
+model schedules {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competition_id        String                  @db.Uuid
+  status                String                  @default("draft") @db.VarChar(20)
+  locked_at             DateTime?               @db.Timestamptz(6)
+  created_by            String?                 @db.Uuid
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  competitions          competitions            @relation(fields: [competition_id], references: [id], onDelete: Cascade)
+  users                 users?                  @relation("schedule_creator", fields: [created_by], references: [id], onDelete: SetNull)
+  schedule_items        schedule_items[]
+  schedule_conflicts    schedule_conflicts[]
+  schedule_suggestions  schedule_suggestions[]
+
+  @@index([competition_id], map: "idx_schedules_competition")
+  @@index([status], map: "idx_schedules_status")
+  @@schema("public")
+}
+
+model schedule_items {
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schedule_id       String      @db.Uuid
+  item_type         String      @db.VarChar(20)
+
+  // For routine items
+  entry_id          String?     @db.Uuid
+  routine_number    Int?
+
+  // For break items
+  break_type        String?     @db.VarChar(20)
+  break_label       String?     @db.VarChar(100)
+
+  // Positioning
+  day_number        Int
+  session_number    Int
+  running_order     Int
+
+  // Timing
+  start_time        DateTime?   @db.Time(6)
+  duration_minutes  Int         @default(5)
+
+  created_at        DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime    @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  schedules              schedules            @relation(fields: [schedule_id], references: [id], onDelete: Cascade)
+  competition_entries    competition_entries? @relation("schedule_item_entry", fields: [entry_id], references: [id], onDelete: Cascade)
+
+  @@index([schedule_id], map: "idx_schedule_items_schedule")
+  @@index([entry_id], map: "idx_schedule_items_entry")
+  @@index([day_number, session_number], map: "idx_schedule_items_day_session")
+  @@index([running_order], map: "idx_schedule_items_running_order")
+  @@index([routine_number], map: "idx_schedule_items_routine_number")
+  @@schema("public")
+}
+
+model schedule_conflicts {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schedule_id    String   @db.Uuid
+  conflict_type  String   @db.VarChar(50)
+  entry_ids      String[] @default([])
+  dancer_ids     String[] @default([])
+  severity       String   @default("warning") @db.VarChar(20)
+  description    String
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  schedules      schedules @relation(fields: [schedule_id], references: [id], onDelete: Cascade)
+
+  @@index([schedule_id], map: "idx_schedule_conflicts_schedule")
+  @@index([severity], map: "idx_schedule_conflicts_severity")
+  @@schema("public")
+}
+
+model schedule_suggestions {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schedule_id           String    @db.Uuid
+  studio_id             String    @db.Uuid
+  suggested_by_user_id  String    @db.Uuid
+  suggestion_type       String    @db.VarChar(50)
+  details               Json      @db.JsonB
+  notes                 String?
+  status                String    @default("pending") @db.VarChar(20)
+  reviewed_by           String?   @db.Uuid
+  reviewed_at           DateTime? @db.Timestamptz(6)
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  schedules             schedules @relation(fields: [schedule_id], references: [id], onDelete: Cascade)
+  studios               studios   @relation(fields: [studio_id], references: [id], onDelete: Cascade)
+  users_suggested       users     @relation("suggestion_creator", fields: [suggested_by_user_id], references: [id], onDelete: Cascade)
+  users_reviewed        users?    @relation("suggestion_reviewer", fields: [reviewed_by], references: [id], onDelete: SetNull)
+
+  @@index([schedule_id], map: "idx_schedule_suggestions_schedule")
+  @@index([studio_id], map: "idx_schedule_suggestions_studio")
+  @@index([status], map: "idx_schedule_suggestions_status")
   @@schema("public")
 }

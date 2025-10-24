@@ -10,6 +10,7 @@ import { lookupRouter } from './lookup';
 import { invoiceRouter } from './invoice';
 import { emailRouter } from './email';
 import { schedulingRouter } from './scheduling';
+import { scheduleBuilderRouter } from './scheduleBuilder';
 import { scoringRouter } from './scoring';
 import { judgesRouter } from './judges';
 import { analyticsRouter } from './analytics';
@@ -49,6 +50,7 @@ export const appRouter = router({
   invoice: invoiceRouter,
   email: emailRouter,
   scheduling: schedulingRouter,
+  scheduleBuilder: scheduleBuilderRouter,
   scoring: scoringRouter,
   judges: judgesRouter,
   analytics: analyticsRouter,
