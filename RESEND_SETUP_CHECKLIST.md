@@ -19,9 +19,10 @@ All email triggers are wired up and call `sendEmail()`:
 1. ✅ Reservation submitted (SD notification)
 2. ✅ Reservation approved (SD notification)
 3. ✅ Reservation rejected (SD notification)
-4. ✅ Invoice sent (SD notification)
+4. ✅ Routine summary submitted (CD notification - "Ready to invoice")
+5. ✅ Invoice sent (SD notification)
 
-**Files:** `src/server/routers/reservation.ts`, `invoice.ts`
+**Files:** `src/server/routers/reservation.ts`, `invoice.ts`, `entry.ts:211-262`
 
 ---
 
@@ -192,10 +193,11 @@ LIMIT 10;
    - [ ] Check actual email received (if using real address)
 
 3. **Test All Email Types:**
-   - [ ] Reservation submitted email
-   - [ ] Reservation approved email
-   - [ ] Reservation rejected email
-   - [ ] Invoice sent email
+   - [ ] Reservation submitted email (to SD)
+   - [ ] Reservation approved email (to SD)
+   - [ ] Reservation rejected email (to SD)
+   - [ ] Routine summary submitted email (to CD - "Ready to invoice")
+   - [ ] Invoice sent email (to SD)
 
 4. **Document for Demo:**
    - [ ] Take screenshot of Resend dashboard showing successful delivery
