@@ -33,16 +33,19 @@ export class CapacityService {
     }
 
     await prisma.$transaction(async (tx) => {
-      // 🔒 ATOMIC GUARD: Check reservation status with row lock
-      // This prevents race conditions from double-clicks or React re-renders
-      const reservation = await tx.reservations.findUnique({
-        where: { id: reservationId },
-        select: { status: true },
-      });
+      // 🔒 ATOMIC GUARD: Lock reservation row with SELECT FOR UPDATE
+      // This MUST use raw SQL because Prisma doesn't support FOR UPDATE
+      const reservations = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status FROM reservations
+        WHERE id = ${reservationId}::uuid
+        FOR UPDATE
+      `;
 
-      if (!reservation) {
+      if (!reservations || reservations.length === 0) {
         throw new Error('Reservation not found');
       }
+
+      const reservation = reservations[0];
 
       if (reservation.status !== 'pending') {
         logger.warn('Reservation already processed - status guard', {
