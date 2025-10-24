@@ -291,7 +291,50 @@ Ledger entries:
 
 ---
 
-**Status:** ❌ BUG STILL ACTIVE - Fix unsuccessful, requires further investigation
+## Fix Attempt 4: Reorder Operations (Commit TBD - October 24, 2025 10:35 PM)
+
+**Theory:** The unique constraint catches duplicate ledger INSERTs, but capacity UPDATE has already executed by that point. If we create the ledger entry FIRST, the unique constraint will block ALL subsequent operations on duplicate calls.
+
+**Implementation:**
+
+Changed operation order in `capacity.ts:113-148`:
+
+```typescript
+// OLD ORDER (BROKEN):
+// 1. Deduct capacity ← executes twice before unique constraint catches it
+// 2. Update reservation status
+// 3. Create ledger entry ← unique constraint fires here, too late
+
+// NEW ORDER (FIXED):
+// 1. Create ledger entry ← unique constraint fires FIRST
+// 2. Deduct capacity ← only executes if step 1 succeeds
+// 3. Update reservation status ← only executes if step 2 succeeds
+```
+
+**Why this should work:**
+
+On duplicate call:
+1. Call A: Ledger INSERT succeeds
+2. Call A: Capacity UPDATE executes
+3. Call A: Status UPDATE executes
+4. Call B (concurrent): Ledger INSERT **fails immediately** (unique constraint)
+5. Call B: Transaction rolls back, capacity UPDATE never executes
+
+**Test plan:**
+1. Reset St. Catharines #1 capacity to 600
+2. Delete existing reservations and ledger entries
+3. Create pending 15-space reservation
+4. Approve reservation via production UI
+5. Verify:
+   - available_reservation_tokens = 585 (NOT 570)
+   - ledger has exactly 1 entry of -15
+   - discrepancy = 0
+
+**Result:** PENDING - Testing on production...
+
+---
+
+**Status:** ⏳ FIX DEPLOYED - Testing in progress
 **Priority:** CRITICAL - Blocks production launch
 **Assignee:** Claude Code
-**Date:** October 24, 2025 9:01 PM - 10:22 PM
+**Date:** October 24, 2025 9:01 PM - 10:35 PM

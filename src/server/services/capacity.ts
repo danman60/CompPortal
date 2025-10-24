@@ -111,7 +111,21 @@ export class CapacityService {
       }
 
       // ⚡ ATOMIC OPERATIONS: All updates in same transaction
-      // 1. Deduct capacity
+      // CRITICAL ORDER: Create ledger FIRST so unique constraint blocks ALL operations on duplicate calls
+
+      // 1. Log to ledger (audit trail) - UNIQUE CONSTRAINT GUARD
+      // If duplicate call, this will throw and prevent steps 2-3 from executing
+      await tx.capacity_ledger.create({
+        data: {
+          competition_id: competitionId,
+          reservation_id: reservationId,
+          change_amount: -spaces, // Negative = deduction
+          reason: 'reservation_approval',
+          created_by: userId,
+        },
+      });
+
+      // 2. Deduct capacity (only executes if ledger created successfully)
       await tx.competitions.update({
         where: { id: competitionId },
         data: {
@@ -121,7 +135,7 @@ export class CapacityService {
         },
       });
 
-      // 2. Update reservation status (prevents double-processing)
+      // 3. Update reservation status (prevents double-processing)
       await tx.reservations.update({
         where: { id: reservationId },
         data: {
@@ -130,17 +144,6 @@ export class CapacityService {
           approved_at: new Date(),
           approved_by: userId,
           updated_at: new Date(),
-        },
-      });
-
-      // 3. Log to ledger (audit trail)
-      await tx.capacity_ledger.create({
-        data: {
-          competition_id: competitionId,
-          reservation_id: reservationId,
-          change_amount: -spaces, // Negative = deduction
-          reason: 'reservation_approval',
-          created_by: userId,
         },
       });
 
