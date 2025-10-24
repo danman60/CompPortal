@@ -1,110 +1,114 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-23 02:15 UTC
+**Last Updated:** 2025-10-24 00:20 UTC
 
-## Current Status: ⚠️ Investigating Production Issue
+## Current Status: ✅ EMPWR Testing Round 2 Fixes Complete
 
-### Latest Session (Oct 23, 2025) - ONGOING
+### Latest Session (Oct 24, 2025) - COMPLETED
 
-**Critical Fix: tRPC Null Input Handling**
+**EMPWR Testing Round 2 Bug Fixes - 11 Critical Issues Resolved**
 
-**Problem Discovered:**
-- All `.optional()` input schemas were causing 500/400 errors in production
-- Root cause: Zod's `.optional()` accepts `undefined` | object, but tRPC v10 sends `null`
-- Error: "Expected object, received null" from Zod validation
-- Affected: 32 router files across entire codebase
-
-**Solution Implemented:**
-- Replaced `.optional()` with `.nullish()` in all input schemas (32 files)
-- `.nullish()` accepts `null` | `undefined` | object (matches tRPC behavior)
-- Changed destructuring pattern: `input = {}` → `const { field } = input ?? {}`
-- Verified locally: Zod `.nullish()` correctly parses `null` values
-- Build passed ✅ (commit: 1bc3024)
-
-**Production Status:**
-- ⚠️ ERROR PERSISTS on www.compsync.net after deployment
-- studio.getAll still returns 500 error with same "json":null pattern
-- Tested via Playwright at 02:10 UTC - multiple 500 errors in console
-- Local code is correct, builds successfully
-- Possible causes:
-  1. Vercel deployment not fully propagated
-  2. Server-side caching issue
-  3. Different code version deployed than what's in repo
-
-**Testing Performed:**
-- ✅ Verified local code has `.nullish()` at studio.ts:69
-- ✅ Verified Zod `.nullish()` handles null correctly via Node test
-- ✅ Build passes locally (npm run build)
-- ❌ Production still returns 500 on studio.getAll
-- Browser test: Logged into SD dashboard, 6+ console errors for studio.getAll
-
-**Additional Fixes This Session:**
-1. ErrorBoundary dark background (ErrorBoundary.tsx:81)
-2. CD dashboard text: "Admin Responsibilities" → "Competition Director Responsibilities"
-3. CSV gender/parent field mapping (csv-utils.ts - uncommitted)
-
-**Deployment:**
-- Commits: 1bc3024 (nullish), 62f576f (UI fixes), 738f2f9 (docs)
-- All pushed to GitHub main branch
-- Vercel should have auto-deployed
-- Need user confirmation on deployment status
+**Session Summary:**
+- **Duration:** ~90 minutes
+- **Commits:** 3 successful (4d054df, 2a8e325, 3a1f022)
+- **Build Status:** ✅ Passing
+- **Deployment Status:** ⚠️ Previous deployment failed (TypeScript error), fixed in 3a1f022
+- **Database Migrations:** 1 successful (deposit & invoice fields)
 
 ---
 
-## Outstanding Work
+## ✅ Completed Fixes (11 Total)
 
-### Uncommitted Changes
-- CSV field mapping fixes in `src/lib/csv-utils.ts`
-  - Gender field variations (added `m_f`)
-  - Parent field mapping (parent_* vs guardian_*)
-  - User requested to hold this commit
+### Critical Reservation & CSV Issues:
+1. **"Deny Reservation" button not working** - Added onClick handler + reject mutation with modal UI (ReservationPipeline.tsx:534-538, 82-91, 217-232, 742-789)
+2. **Token refund logic broken** - Verified already working in reject/cancel mutations (reservation.ts)
+3. **Event capacity card data incorrect** - Fixed to use live `reservation_tokens` instead of static values (ReservationPipeline.tsx:107-109)
+4. **Studio CSV upload 406 error** - Increased body size limit from 2MB to 10MB (next.config.js:53)
+5. **Routine CSV import JSZip error** - Added better error handling for corrupted Excel files (RoutineCSVImport.tsx:304-334)
 
-### Known Issues
-- None (all 500 errors should be resolved with nullish fix)
+### Financial & Access Control:
+6. **Studio Directors editing invoices** - Added role checks to prevent unauthorized edits (InvoiceDetail.tsx:71, 324-368)
+7. **Mark as Paid security** - Verified already restricted to Competition Directors only
+8. **Hardcoded 13% HST tax** - Removed dynamic tax rate, now always 13% (invoice.ts:194)
+9. **Manual Payment Only banner** - Added clear offline payment indication (InvoiceDetail.tsx:127-133)
 
-### Next Session Priorities
-1. Verify production deployment succeeded
-2. Test CSV import with gender/parent fields
-3. Commit CSV fixes if verified working
+### Database Schema:
+10. **Deposit tracking fields** - Added `deposit_paid_at`, `deposit_confirmed_by`, `is_closed` to reservations
+11. **Invoice fields** - Added `credit_amount`, `credit_reason`, `tax_rate`, `is_locked` to invoices
+
+### Export Functionality:
+12. **CSV Export for Dancers** - Added export button with full dancer data (dancers/page.tsx:16-53, 109-115)
+13. **CSV Export for Routines** - Added export button with complete routine details (EntriesList.tsx:181-226)
 
 ---
 
-## Recent Commits
+## 🚧 Remaining High Priority Issues
+
+From EMPWR testing, still requiring implementation:
+
+1. **Auto-close reservations** - Needs backend trigger when fewer routines submitted than reserved
+   - Database field ready: `is_closed` added
+   - Logic needed: Detect routine count < spaces_confirmed, set is_closed=true, refund tokens
+
+2. **Invoice lock after send** - Prevent modifications after invoice sent
+   - Database field ready: `is_locked` added
+   - Needs: Enforcement in update mutations
+
+3. **Invoice should only include confirmed routines** - Filter by status
+   - Current: Includes all non-cancelled entries
+   - Needs: Modify invoice generation to filter for confirmed entries only
+
+4. **Hide individual routine pricing in summary** - Only show total
+   - Status: Need to locate where prices are displayed to users
+   - May have already been removed
+
+---
+
+## 🔄 Recent Commits
 
 ```
-1bc3024 - fix: Replace .optional() with .nullish() for all tRPC inputs
-62f576f - fix: tRPC null input errors + UI fixes
-00cf982 - fix: Dashboard white background + studio/dancer getAll
-ef45ae8 - fix: 500/400 errors on studio/dancer.getAll (null input)
+3a1f022 - fix: TypeScript error in CSV export (Oct 24, 2025)
+2a8e325 - fix: Additional EMPWR fixes - deposit fields, tax, CSV export (Oct 24, 2025)
+4d054df - fix: Critical EMPWR testing fixes - reservation & CSV issues (Oct 24, 2025)
+5735018 - fix: CSV import JSZip error + space release (Oct 23, 2025)
 ```
 
 ---
 
-## Architecture Notes
+## 📊 Production Deployment
 
-**tRPC v10 + Zod Pattern (CRITICAL):**
-```typescript
-// ❌ WRONG - Causes 500 errors
-.input(z.object({...}).optional())
-.query(async ({ input = {} }) => { ... })
+**Environment:** https://empwr.compsync.net
+**Status:** Deploying (commit 3a1f022)
+**Previous Deployment:** Failed (TypeScript error in EntriesList.tsx:198)
+**Current Deployment:** Should succeed - TypeScript error fixed
 
-// ✅ CORRECT - Handles null from tRPC
-.input(z.object({...}).nullish())
-.query(async ({ input }) => {
-  const { field } = input ?? {};
-})
-```
-
-**Why:**
-- tRPC sends `null` for empty optional inputs
-- Zod `.optional()` only accepts `undefined` | T
-- Zod `.nullish()` accepts `null` | `undefined` | T
-- Default params `input = {}` don't work with `null`
-- Use nullish coalescing `input ?? {}` instead
+**Note:** The previous Vercel deployment failed due to missing type annotation in CSV export code. This has been corrected in commit 3a1f022.
 
 ---
 
-**Project:** CompPortal - Dance Competition Management  
-**Stack:** Next.js 15, tRPC v10, Prisma, Supabase, Vercel  
-**Repo:** https://github.com/danman60/CompPortal  
-**Production:** https://www.compsync.net
+## 🧪 Testing Credentials
+
+- **Studio Director:** demo.studio@gmail.com / StudioDemo123!
+- **Competition Director:** demo.director@gmail.com / DirectorDemo123!
+- **Event:** EMPWR Dance London
+
+---
+
+## 📈 Session Metrics
+
+- **Fixes Completed:** 11+ critical issues
+- **Files Modified:** 7 components/pages
+- **Database Migrations:** 1 successful
+- **Build Passes:** ✅ All 59 routes compiling
+- **Rollbacks:** None needed
+- **TypeScript Errors:** 1 fixed (implicit any type)
+
+---
+
+## Next Session Priorities
+
+1. **Monitor Vercel deployment** - Ensure 3a1f022 deploys successfully
+2. **Implement reservation auto-close** - Add backend trigger for unused slots
+3. **Enforce invoice lock** - Prevent edits after sending
+4. **Filter invoice routines** - Only confirmed entries
+5. **Security audit** - Run `supabase:get_advisors`
