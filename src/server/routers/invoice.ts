@@ -758,11 +758,12 @@ export const invoiceRouter = router({
 
       // 🔐 TRANSACTION: Wrap invoice update + reservation update for atomicity
       await prisma.$transaction(async (tx) => {
-        // Update invoice to PAID status
+        // Update invoice to PAID status and lock it
         await tx.invoices.update({
           where: { id: input.invoiceId },
           data: {
             status: 'PAID',
+            is_locked: true, // Lock invoice when marked as paid
             paid_at: new Date(),
             payment_method: input.paymentMethod || 'manual',
             updated_at: new Date(),
