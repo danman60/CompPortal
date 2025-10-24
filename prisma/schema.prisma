@@ -445,6 +445,7 @@ model competition_entries {
   studio_id                                                                            String                   @db.Uuid
   entry_number                                                                         Int?
   entry_suffix                                                                         String?                  @db.VarChar(5)
+  routine_number                                                                       Int?
   is_late_entry                                                                        Boolean?                 @default(false)
   sequence_number                                                                      Int?
   title                                                                                String                   @db.VarChar(255)
