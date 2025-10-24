@@ -177,16 +177,34 @@ export const entryRouter = router({
       });
 
       if (reservation) {
-        // Update reservation: set spaces_confirmed to actual routine count, mark as submitted
-        // Note: Unused spaces are automatically released because capacity is calculated
-        // dynamically from actual entry count, not from a static space_limit field
-        await prisma.reservations.update({
-          where: { id: reservation.id },
-          data: {
-            spaces_confirmed: routineCount, // Lock to actual submitted count
-            status: 'submitted', // Change status so it doesn't show in "available spaces"
-            updated_at: new Date(),
-          },
+        // Calculate unused spaces that need to be released back to competition
+        const originalSpaces = reservation.spaces_confirmed || 0;
+        const unusedSpaces = originalSpaces - routineCount;
+
+        // 🔐 TRANSACTION: Update reservation + refund tokens atomically
+        await prisma.$transaction(async (tx) => {
+          // Update reservation: lock to actual routine count, close if underutilized
+          await tx.reservations.update({
+            where: { id: reservation.id },
+            data: {
+              spaces_confirmed: routineCount, // Lock to actual submitted count
+              status: 'submitted', // Change status to submitted
+              is_closed: unusedSpaces > 0, // Close if spaces were not fully used
+              updated_at: new Date(),
+            },
+          });
+
+          // Refund unused spaces back to competition's available tokens
+          if (unusedSpaces > 0) {
+            await tx.competitions.update({
+              where: { id: competitionId },
+              data: {
+                available_reservation_tokens: {
+                  increment: unusedSpaces,
+                },
+              },
+            });
+          }
         });
       }
 
