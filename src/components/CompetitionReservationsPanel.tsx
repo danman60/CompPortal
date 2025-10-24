@@ -65,6 +65,11 @@ export default function CompetitionReservationsPanel({
   const remaining = maxRoutines - totalAllocated;
 
   const handleApprove = async (reservationId: string, studioId: string) => {
+    // Prevent double-click race condition during 300ms animation window
+    if (removingId || approveMutation.isPending) {
+      return;
+    }
+
     const spaces = spacesInput[reservationId];
     if (!spaces || spaces <= 0) {
       toast.error('Please enter number of spaces to approve');
