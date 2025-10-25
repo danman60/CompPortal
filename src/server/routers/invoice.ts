@@ -541,6 +541,14 @@ export const invoiceRouter = router({
 
       if (!reservation) throw new Error('Reservation not found');
 
+      // 🛡️ GUARD: Validate reservation is in summarized state
+      if (reservation.status !== 'summarized') {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: `Cannot create invoice: reservation must be in 'summarized' state (current: ${reservation.status}). Please submit summary first.`
+        });
+      }
+
       // 🛡️ GUARD: Check for existing invoice
       const existingInvoice = await prisma.invoices.findFirst({
         where: {
@@ -599,14 +607,12 @@ export const invoiceRouter = router({
           },
         });
 
-        // Mark reservation approved and set confirmed spaces
+        // Mark reservation as invoiced (Phase 1 spec: summarized → invoiced)
         await tx.reservations.update({
           where: { id: reservationId },
           data: {
-            status: 'approved',
+            status: 'invoiced',
             spaces_confirmed: spacesConfirmed ?? reservation.spaces_requested,
-            approved_at: new Date(),
-            approved_by: ctx.userId,
             updated_at: new Date(),
           },
         });

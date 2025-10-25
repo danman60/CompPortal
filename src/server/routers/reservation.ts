@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
@@ -1030,10 +1031,33 @@ export const reservationRouter = router({
         throw new Error('Studio directors cannot confirm payments');
       }
 
+      // 🛡️ GUARD: Verify reservation exists and has invoice
+      const existingReservation = await prisma.reservations.findUnique({
+        where: { id: input.id },
+        select: { id: true, status: true },
+      });
+
+      if (!existingReservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found'
+        });
+      }
+
+      // 🛡️ GUARD: Validate reservation is in invoiced state
+      if (existingReservation.status !== 'invoiced') {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: `Cannot mark as paid: reservation must be in 'invoiced' state (current: ${existingReservation.status}). Please create invoice first.`
+        });
+      }
+
       const reservation = await prisma.reservations.update({
         where: { id: input.id },
         data: {
           payment_status: input.paymentStatus,
+          status: 'closed', // Phase 1 spec: invoiced → closed on payment
+          is_closed: true,
           payment_confirmed_at: new Date(),
           payment_confirmed_by: ctx.userId,
           updated_at: new Date(),

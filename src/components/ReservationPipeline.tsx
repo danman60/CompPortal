@@ -137,7 +137,7 @@ export default function ReservationPipeline() {
     if (statusFilter === 'all') return true;
     if (statusFilter === 'pending') return r.status === 'pending';
     if (statusFilter === 'approved') return r.status === 'approved' && r.entryCount === 0 && !r.invoiceId;
-    if (statusFilter === 'summary_in') return r.status === 'summarized' && !r.invoiceId;
+    if (statusFilter === 'summary_in') return r.status === 'approved' && r.entryCount > 0 && !r.invoiceId;
     if (statusFilter === 'invoiced') return (r.status === 'approved' || r.status === 'summarized') && r.invoiceId && !r.invoicePaid;
     if (statusFilter === 'paid') return (r.status === 'approved' || r.status === 'summarized') && r.invoicePaid;
     return true;
