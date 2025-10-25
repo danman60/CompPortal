@@ -16,7 +16,12 @@ export function EntriesHeader() {
       </Link>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-white">My Routines</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-4xl font-bold text-white">My Routines</h1>
+          <span className="px-3 py-1 bg-purple-500/30 border border-purple-400/50 rounded-full text-purple-200 text-sm font-bold">
+            🔨 REBUILD
+          </span>
+        </div>
 
         <div className="flex gap-3">
           <Button href="/dashboard/entries/create" variant="primary">

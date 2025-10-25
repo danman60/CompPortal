@@ -199,23 +199,28 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
         </p>
         <MotivationalQuote />
 
-        {/* Preview New Pipeline Page Banner - CD only */}
+        {/* REBUILD: New Pipeline Page Banner - CD only */}
         {!isAdmin && (
           <div className="mt-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-md rounded-xl border-2 border-blue-400/50 p-6">
             <div className="flex items-start gap-4">
               <div className="text-4xl">✨</div>
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-blue-300 mb-2">
-                  Preview: New Pipeline Page
-                </h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-xl font-semibold text-blue-300">
+                    New Reservation Pipeline (REBUILD)
+                  </h3>
+                  <span className="px-3 py-1 bg-blue-500/30 border border-blue-400/50 rounded-full text-blue-200 text-xs font-bold">
+                    🔨 REBUILD
+                  </span>
+                </div>
                 <p className="text-gray-300 mb-4">
-                  Try out our rebuilt reservation pipeline with improved event metrics and filtering. Your feedback helps us improve!
+                  Try out our rebuilt reservation pipeline with improved event metrics, smooth animations, and enhanced filtering. Your feedback helps us improve!
                 </p>
                 <Link
                   href="/dashboard/reservation-pipeline-rebuild"
                   className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
-                  🎯 Preview New Pipeline →
+                  🎯 Open Rebuild Version →
                 </Link>
               </div>
             </div>
