@@ -1,28 +1,43 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-25 (Session 14 - Build Fix)
+**Last Updated:** 2025-10-25 (Session 14 - Critical Bug Fixes)
 
 ---
 
 ## Current Status: Phase 1 Summary Workflow - 100% Complete
 
-### Latest Work: Session 14 - Build Fix for Reservation Variables
+### Latest Work: Session 14 - Critical Bug Fixes (Build + Event Name)
 
 **Date:** October 25, 2025
-**Duration:** 5 minutes
-**Status:** ✅ DEPLOYED - Fixed build errors from Session 13 refactor
+**Duration:** 45 minutes
+**Status:** ✅ DEPLOYED - Fixed build errors and event_name mapping bug
 
-**BUILD ERRORS FIXED:**
+**CRITICAL BUGS FIXED:**
+
+**Bug 1: Build Errors (EntriesList.tsx)**
 - Line 546: `hasApprovedReservations` → `hasSelectedReservation`
 - Line 548: `approvedCompetitionId` → `selectedCompetitionId` + `reservation.id`
 - Line 680: `hasSelectedCompetition` → `hasSelectedReservation`
 - Line 682: `competitions.find()` → `selectedReservation.event_name`
+- **Commit:** 781797d
 
-**Root Cause:** Session 13 refactor to reservation-based filtering missed updating two locations:
-1. FloatingActionButton (mobile Create Routine button)
-2. Summary modal header displaying event name
+**Bug 2: "Unknown Event" in Reservation Dropdown (CRITICAL)**
+- Line 29: `r.events?.name` → `r.competitions?.name` (useEntryFilters.ts)
+- **Root Cause:** Referenced non-existent 'events' table (schema has 'competitions')
+- **Impact:** Broke reservation selection, caused cascading failures
+- **Commit:** 82ac1c0
 
-**Commit:** 781797d - fix: Update EntriesList to use reservation variables
+**User-Reported Issues Resolved:**
+1. ✅ "Unknown Event" dropdown → Fixed by Bug 2
+2. ✅ "Routine not showing" → Entry exists (status='draft'), will display after deployment
+3. ✅ "Space limit reached" (100 spaces) → Race condition from null reservation, fixed by Bug 2
+4. ✅ "Auto-submitted summary" → FALSE: No summaries in DB, user misread CD pipeline
+
+**Database Verification:**
+- Reservation: `status='approved'`, 100 spaces confirmed, NOT closed
+- Entry: EXISTS with `status='draft'`, correct reservation_id
+- Summary: NONE (not auto-submitted)
+- Competition capacity: 600 total, 500 available (100 deducted correctly)
 
 ---
 
