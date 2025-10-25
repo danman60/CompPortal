@@ -27,8 +27,14 @@ interface RoutineCardListProps {
 export function RoutineCardList({ entries, onDelete }: RoutineCardListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {entries.map((entry) => (
-        <RoutineCard key={entry.id} entry={entry} onDelete={onDelete} />
+      {entries.map((entry, index) => (
+        <div
+          key={entry.id}
+          className="animate-fadeInUp"
+          style={{ animationDelay: `${index * 0.05}s` }}
+        >
+          <RoutineCard entry={entry} onDelete={onDelete} />
+        </div>
       ))}
     </div>
   );

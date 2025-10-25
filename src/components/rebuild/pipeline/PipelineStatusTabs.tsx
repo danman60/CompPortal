@@ -42,7 +42,7 @@ export function PipelineStatusTabs({
           onClick={() => onStatusFilterChange(tab.key)}
           className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
             statusFilter === tab.key
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-purple-500/50'
               : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
           }`}
         >
