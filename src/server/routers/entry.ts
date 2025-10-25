@@ -237,6 +237,10 @@ export const entryRouter = router({
         });
       }
 
+      // Calculate unused spaces before transaction for activity logging
+      const originalSpaces = fullReservation.spaces_confirmed || 0;
+      const unusedSpaces = originalSpaces - routineCount;
+
       // Wrap all database operations in a transaction for atomicity
       await prisma.$transaction(async (tx) => {
         // Idempotency check - prevent duplicate summary submissions (PHASE1_SPEC.md line 599)
@@ -250,11 +254,6 @@ export const entryRouter = router({
             message: 'Summary already submitted for this reservation',
           });
         }
-
-        // Calculate unused spaces that need to be released back to competition
-        // Matches Phase 1 spec lines 589-651 (summary submission with refund pseudocode)
-        const originalSpaces = fullReservation.spaces_confirmed || 0;
-        const unusedSpaces = originalSpaces - routineCount;
 
         // Update reservation status to 'summarized' (PHASE1_SPEC.md line 629)
         await tx.reservations.update({
@@ -368,12 +367,16 @@ export const entryRouter = router({
           });
         }
 
-        // Log activity for summary submission
+        // Activity logging moved outside transaction to prevent rollback issues
+      });
+
+      // Log activity for summary submission (non-blocking, outside transaction)
+      try {
         await logActivity({
           userId: ctx.userId,
           action: 'summary.submitted',
           entityType: 'summary',
-          entityId: summary.id,
+          entityId: fullReservation.id, // Use reservation ID since summary ID not available here
           details: {
             reservation_id: fullReservation.id,
             studio_id: studioId,
@@ -382,7 +385,12 @@ export const entryRouter = router({
             entries_unused: unusedSpaces,
           },
         });
-      });
+      } catch (logError) {
+        logger.error('Failed to log summary submission activity', {
+          error: logError instanceof Error ? logError : new Error(String(logError))
+        });
+        // Don't throw - activity logging should never block main operations
+      }
 
       // Send "routine_summary_submitted" email to Competition Directors (non-blocking)
       try {
