@@ -1,61 +1,80 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-25 (Session 15 - Parallel Rebuild Phase 3 Complete)
+**Last Updated:** 2025-10-25 (Session 16 - Parallel Rebuild Phase 4 Complete)
 
 ---
 
-## Current Status: Parallel Rebuild - Phase 3 Complete (37.5%)
+## Current Status: Parallel Rebuild - Phase 4 Complete (50%)
 
-### Latest Work: Session 15 - Entries Page Rebuild
+### Latest Work: Session 16 - Pipeline Page Rebuild + Bug Fix
 
 **Date:** October 25, 2025
-**Status:** ✅ Phase 3 Complete - Entries page rebuilt with correct business logic
+**Status:** ✅ Phase 4 Complete - Both rebuild pages built, Decimal bug fixed
 
-**PARALLEL REBUILD STRATEGY:**
-- New pages at `-rebuild` routes (zero risk to production)
-- Backend status progression implemented (Phase 0)
-- Shared UI components created (Phase 1)
-- Custom hooks built (Phase 2)
-- Entries page components completed (Phase 3)
-- Next: Pipeline page rebuild (Phase 4)
+**PARALLEL REBUILD PROGRESS: 50% (4 of 8 phases)**
 
-**PHASE 3 COMPLETION (8 components, 699 lines):**
-
-**Route:** `/dashboard/entries-rebuild` (parallel to old `/dashboard/entries`)
-
-**Components Built:**
-1. `EntriesPageContainer.tsx` - Main orchestrator with data fetching
-2. `EntriesHeader.tsx` - Back button + Create Routine button
-3. `EntriesFilters.tsx` - Reservation selector + view toggle
-4. `RoutineCard.tsx` - Glassmorphic card view for single entry
-5. `RoutineCardList.tsx` - Grid layout (responsive: 1/2/3 cols)
-6. `RoutineTable.tsx` - Table view with sortable columns
-7. `LiveSummaryBar.tsx` - Fixed bottom bar with submit button
-8. `SubmitSummaryModal.tsx` - Warning modal for incomplete submissions
-
-**Key Features:**
-- Auto-selects first approved reservation
-- Filters entries by reservation_id client-side
-- Card/Table view toggle
-- Incomplete warning (created < confirmed spaces)
-- Glassmorphic design system throughout
-- Decimal type handling for Prisma monetary fields
-
-**Commits:**
-- 1204b69 - Phase 0: Backend status progression
-- 32aacd3 - Phase 1: Shared UI components (6 components)
-- 1cf845e - Phase 2: Custom hooks (4 hooks)
-- 4aea682 - Phase 3: Entries page components (8 components)
-
-**Build Status:** ✅ All phases compile successfully
+✅ **Phase 0:** Backend status progression (invoice.ts, reservation.ts)
+✅ **Phase 1:** Shared UI components (6 components, 336 lines)
+✅ **Phase 2:** Custom hooks (4 hooks, 297 lines)
+✅ **Phase 3:** Entries page (8 components, 699 lines)
+✅ **Phase 4:** Pipeline page (9 components, 870 lines)
+⏳ **Phase 5:** E2E testing (awaiting deployment)
+⏳ **Phase 6:** Dashboard buttons + cutover
 
 ---
 
-### Phase 0-3 Summary (Complete)
+### Phase 4 Completion: Pipeline Page (9 components, 870 lines)
+
+**Route:** `/dashboard/reservation-pipeline-rebuild` (CD-only)
+
+**Components Built:**
+1. `PipelinePageContainer.tsx` - Orchestrator + event metrics calculation
+2. `PipelineHeader.tsx` - Back link + title
+3. `EventMetricsGrid.tsx` - Sticky capacity cards (3-col grid)
+4. `EventFilterDropdown.tsx` - Competition filter
+5. `PipelineStatusTabs.tsx` - 6 filter buttons (all/pending/approved/summary_in/invoiced/paid)
+6. `ReservationTable.tsx` - Expandable rows with action buttons
+7. `ApprovalModal.tsx` - Capacity-aware approval with quick amounts
+8. `RejectModal.tsx` - Rejection with reason
+9. Mark as Paid inline button
+
+**Key Implementation:**
+- Uses `usePipelineFilters` with CORRECT status logic
+- Fetches competitions separately for capacity metrics
+- Event metrics calculated client-side (capacity, studios, pending count)
+- Modal system for approve/reject actions
+- Correct mutation signatures (approve takes reservationId + spacesConfirmed, reject takes id + reason)
+
+**Commits:**
+- b8c661d - Phase 4: Pipeline page rebuild (9 components)
+- ee9803b - Bug fix: Decimal type handling in total_fee display
+
+---
+
+### Bug Fix: Prisma Decimal Handling
+
+**Issue:** Runtime error `a.total_fee.toFixed is not a function`
+**Cause:** Prisma returns Decimal objects, not numbers
+**Fix:** Added type check and conversion:
+```typescript
+${typeof entry.total_fee === 'number'
+  ? entry.total_fee.toFixed(2)
+  : Number(entry.total_fee).toFixed(2)}
+```
+
+**Files Fixed:**
+- `RoutineCard.tsx:104`
+- `RoutineTable.tsx:73`
+
+**Status:** Committed, awaiting Vercel deployment
+
+---
+
+### Phase 0-4 Summary (Complete)
 
 **Phase 0: Backend Status Progression**
-- Modified `invoice.ts` - Status 'approved' → 'invoiced' after invoice creation
-- Modified `reservation.ts` - Status 'invoiced' → 'closed' + is_closed=true on payment
+- Modified `invoice.ts` - Status 'approved' → 'invoiced' after invoice creation (line 606)
+- Modified `reservation.ts` - Status 'invoiced' → 'closed' + is_closed=true on payment (lines 1037-1038)
 - Added validation guards with TRPCError for proper status flow
 
 **Phase 1: Shared UI Components (6 components, 336 lines)**
@@ -70,95 +89,69 @@
 - `useEntries.ts` - Entry data + mutations (delete, submit summary)
 - `useReservations.ts` - SD + CD variants with approve/reject/invoice
 - `useEntriesFilters.ts` - Client-side filtering by reservation
-- `usePipelineFilters.ts` - CORRECT status logic using Phase 0 backend changes
+- `usePipelineFilters.ts` - **CORRECT status logic** using Phase 0 backend changes
 
 **Phase 3: Entries Page (8 components, 699 lines)**
+- Route: `/dashboard/entries-rebuild` (SD)
 - Container/Presenter pattern
 - Type-safe with Prisma Decimal handling
 - Nullable field support throughout
 - Mutation wrappers for component compatibility
 
+**Phase 4: Pipeline Page (9 components, 870 lines)**
+- Route: `/dashboard/reservation-pipeline-rebuild` (CD)
+- Event metrics with capacity tracking
+- Status-based filtering with correct business logic
+- Approval/rejection modals
+- Invoice creation + mark as paid actions
+
 ---
 
 ### Remaining Rebuild Phases
 
-**Phase 4: Pipeline Page (NOT STARTED)**
-- 8-10 components estimated
-- `/dashboard/reservation-pipeline-rebuild` route
-- CD-only functionality
-
-**Phase 5: E2E Testing (NOT STARTED)**
-- Playwright MCP for production testing
-- Test both SD and CD workflows
+**Phase 5: E2E Testing (IN PROGRESS - awaiting deployment)**
+- Test Entries page functionality
+- Test Pipeline page functionality
 - Verify status progression
+- Document any issues
 
 **Phase 6: Cutover + Dashboard Buttons (NOT STARTED)**
-- Add preview buttons to dashboards
+- Add preview buttons to SD dashboard
+- Add preview buttons to CD dashboard
 - Test swap-out capability
 - Deploy navigation changes
 
-**Estimated Progress:** 37.5% (3 of 8 phases complete)
+**Estimated Progress:** 50% (4 of 8 phases complete)
 
 ---
 
 ## Previous Sessions
 
+### Session 15 - Parallel Rebuild Phase 3 Complete
+
+**Date:** October 25, 2025
+**Status:** ✅ Phase 3 Complete - Entries page rebuilt
+
+**Commits:**
+- 1204b69 - Phase 0: Backend status progression
+- 32aacd3 - Phase 1: Shared UI components
+- 1cf845e - Phase 2: Custom hooks
+- 4aea682 - Phase 3: Entries page components
+
 ### Session 14 - Critical Bug Fixes (3 bugs fixed)
 
 **Date:** October 25, 2025
-**Duration:** 1.5 hours
-**Status:** ✅ DEPLOYED - Fixed build errors, event_name mapping, and missing reservation_id
-
-**CRITICAL BUGS FIXED:**
-
-**Bug 1: Build Errors (EntriesList.tsx)**
-- Line 546: `hasApprovedReservations` → `hasSelectedReservation`
-- Line 548: `approvedCompetitionId` → `selectedCompetitionId` + `reservation.id`
-- Line 680: `hasSelectedCompetition` → `hasSelectedReservation`
-- Line 682: `competitions.find()` → `selectedReservation.event_name`
-- **Commit:** 781797d
-
-**Bug 2: "Unknown Event" in Reservation Dropdown (CRITICAL)**
-- Line 29: `r.events?.name` → `r.competitions?.name` (useEntryFilters.ts)
-- **Root Cause:** Referenced non-existent 'events' table (schema has 'competitions')
-- **Impact:** Broke reservation selection, caused cascading failures
-- **Commit:** 82ac1c0
-
-**Bug 3: Missing reservation_id in entry.getAll (CRITICAL)**
-- Line 644: Added `reservation_id: true` to select (entry.ts)
-- **Root Cause:** Query didn't return reservation_id field to frontend
-- **Impact:** Filter `entry.reservation_id === selectedReservation` always failed (undefined === uuid)
-- **Result:** ALL entries filtered out, "Showing 0 of 2 routines"
-- **Commit:** 5d1fed9
+**Status:** ✅ Fixed build errors, event_name mapping, missing reservation_id
 
 ### Session 13 - Reservation-Based UI Refactor
 
 **Date:** October 25, 2025
-**Duration:** ~2 hours
-**Status:** ✅ DEPLOYED - Complete UI refactor for reservation-based workflow
+**Status:** ✅ Complete UI refactor for reservation-based workflow
 
-**Commit:** 48a9ac7 - feat: Refactor entries list to use reservation-based filtering
+### Session 12 - Critical Reservation Closure Bug
 
-### Session 12 - Critical Reservation Closure Bug Fixed
-
-**Date:** October 25, 2025 (14:00-16:30 UTC)
-**Status:** ✅ RESOLVED - 6 fixes deployed, root cause confirmed
-
-**Documentation:** `BLOCKER_RESERVATION_CLOSURE.md` (231 lines)
-
-### Session 10 - Database Trigger Bug
-
-**Date:** October 24, 2025
-**Status:** ✅ Fixed - Dropped legacy `reservation_tokens_trigger`
-
-### Session 9 - Capacity System Rewrite
-
-**Date:** October 24, 2025
-**Status:** ✅ Complete architectural rewrite
-- CapacityService class with atomic transactions
-- capacity_ledger table for audit trail
-- Idempotency protection
-- Admin debugging tools
+**Date:** October 25, 2025
+**Status:** ✅ 6 fixes deployed, transaction mixing resolved
 
 ---
 
@@ -178,14 +171,13 @@
 ## 🔄 Recent Commits
 
 ```
+ee9803b - fix: Handle Prisma Decimal type in total_fee display (Oct 25)
+b8c661d - feat: Complete Pipeline page rebuild (Phase 4) (Oct 25)
+9de1f75 - docs: Update PROJECT_STATUS.md for Phase 3 completion (Oct 25)
 4aea682 - feat: Complete Entries page rebuild (Phase 3) (Oct 25)
 1cf845e - feat: Create custom hooks for rebuild (Phase 2) (Oct 25)
 32aacd3 - feat: Create shared UI components for rebuild (Phase 1) (Oct 25)
 1204b69 - feat: Implement backend status progression (Phase 0) (Oct 25)
-5d1fed9 - fix: Add missing reservation_id to entry.getAll (Oct 25)
-82ac1c0 - fix: Use competitions.name for event display (Oct 25)
-781797d - fix: Update reservation filter variable names (Oct 25)
-48a9ac7 - feat: Refactor entries list to use reservation-based filtering (Oct 25)
 ```
 
 ---
@@ -196,27 +188,23 @@
 - `PROJECT.md` - Project rules and configuration
 - `PROJECT_STATUS.md` - This file (current status)
 - `PARALLEL_REBUILD_EXECUTION_PLAN.md` - Complete rebuild strategy
-- `BLOCKER_RESERVATION_CLOSURE.md` - Complete blocker resolution
 - `TEST_CREDENTIALS.md` - Production test credentials
-
-**See `DOCS_INDEX.md` for complete documentation map**
 
 ---
 
 ## 📊 Production Deployment
 
 **Environment:** https://www.compsync.net
-**Latest Commit:** 4aea682
-**Status:** ✅ Deployed (old pages unchanged, new pages available at `-rebuild` routes)
+**Latest Commit:** ee9803b
+**Status:** 🔄 Deploying (Decimal fix)
 
-**Critical Features:**
-- ✅ Reservation-based entry filtering
-- ✅ Summary submission workflow
-- ✅ CD Pending Invoice pipeline
-- ✅ Capacity tracking with audit trail
-- ✅ Email notifications
-- ✅ Invoice locking
-- 🆕 Parallel rebuild Entries page (Phase 3 complete)
+**Rebuild Pages:**
+- `/dashboard/entries-rebuild` (SD) - ⚠️ Awaiting Decimal fix deployment
+- `/dashboard/reservation-pipeline-rebuild` (CD) - ✅ Ready
+
+**Old Pages (unchanged):**
+- `/dashboard/entries` (SD) - ✅ Stable
+- `/dashboard/reservation-pipeline` (CD) - ✅ Stable
 
 ---
 
@@ -226,33 +214,24 @@
 - **Studio Director:** danieljohnabrahamson@gmail.com / password
 - **Competition Director:** 1-click demo on homepage
 
-**Testing Rebuild Pages:**
-- Navigate to `/dashboard/entries-rebuild` (SD)
-- Old page at `/dashboard/entries` unchanged
-
 ---
 
 ## 📈 Next Session Priorities
 
-### Immediate: Phase 4 - Pipeline Page Rebuild
-1. Create `/dashboard/reservation-pipeline-rebuild` route
-2. Build 8-10 components for CD workflow
-3. Use `usePipelineFilters` with correct status logic
+### Immediate: Phase 5 - E2E Testing
+1. Wait for Vercel deployment of Decimal fix
+2. Test `/dashboard/entries-rebuild` functionality
+3. Test `/dashboard/reservation-pipeline-rebuild` functionality
 4. Verify status progression matches Phase 0 backend
+5. Document test results
 
-### Future: Phase 5-6
-- E2E testing with Playwright MCP
-- Dashboard preview buttons
-- Cutover navigation
-
-### User Testing Required (Old System)
-1. **Test reservation selector** - Verify dropdown shows correct reservations with proper naming
-2. **Test closed reservation behavior** - Confirm "Create Routine" blocked but editing allowed
-3. **Test CD pipeline** - Verify summarized reservations appear in "Pending Invoice"
-4. **Test submission flow** - Complete end-to-end summary submission with refund
+### Future: Phase 6 - Cutover
+- Add preview buttons to both dashboards
+- Test navigation between old and new pages
+- Prepare for production cutover
 
 ---
 
-**Last Deployment:** Oct 25, 2025 (commit 4aea682)
-**Next Session Focus:** Phase 4 - Pipeline page rebuild
-**Production Status:** ✅ READY - Old system stable, new system 37.5% complete
+**Last Deployment:** Oct 25, 2025 (commit ee9803b - deploying)
+**Next Session Focus:** Phase 5 - E2E testing after deployment
+**Production Status:** 🔄 DEPLOYING - Rebuild 50% complete, Decimal fix in progress
