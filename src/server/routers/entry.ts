@@ -181,6 +181,14 @@ export const entryRouter = router({
       const routineCount = entries.length;
       const totalFees = entries.reduce((sum: number, e: any) => sum + Number(e.total_fee || 0), 0);
 
+      // 🐛 FIX Bug #3: Validate that there are entries to submit
+      if (routineCount === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot submit summary with no routines. Please create at least one routine before submitting.',
+        });
+      }
+
       // 🐛 FIX Bug #23: Update reservation to reflect actual submitted routines
       // Fetch full reservation details if it exists
       const fullReservation = reservation
@@ -189,9 +197,17 @@ export const entryRouter = router({
           })
         : null;
 
-      if (fullReservation) {
+      if (!fullReservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No approved reservation found for this studio and competition. Please request a reservation first.',
+        });
+      }
+
+      // Wrap all database operations in a transaction for atomicity
+      await prisma.$transaction(async (tx) => {
         // Idempotency check - prevent duplicate summary submissions (PHASE1_SPEC.md line 599)
-        const existingSummary = await prisma.summaries.findUnique({
+        const existingSummary = await tx.summaries.findUnique({
           where: { reservation_id: fullReservation.id },
         });
 
@@ -208,7 +224,7 @@ export const entryRouter = router({
         const unusedSpaces = originalSpaces - routineCount;
 
         // Update reservation status to 'summarized' (PHASE1_SPEC.md line 629)
-        await prisma.reservations.update({
+        await tx.reservations.update({
           where: { id: fullReservation.id },
           data: {
             spaces_confirmed: routineCount, // Lock to actual submitted count
@@ -235,12 +251,16 @@ export const entryRouter = router({
               reservationId: fullReservation.id,
               unusedSpaces,
             });
-            // Don't throw - log the error but don't block summary submission
+            // Throw error to rollback transaction - capacity refund is critical
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to refund unused capacity. Please try again or contact support.',
+            });
           }
         }
 
         // Create summary record (PHASE1_SPEC.md lines 611-616)
-        const summary = await prisma.summaries.create({
+        const summary = await tx.summaries.create({
           data: {
             reservation_id: fullReservation.id,
             entries_used: routineCount,
@@ -252,7 +272,7 @@ export const entryRouter = router({
         // Create entry snapshots and update entry statuses (PHASE1_SPEC.md lines 619-626)
         for (const entry of entries) {
           // Create immutable snapshot for audit trail
-          await prisma.summary_entries.create({
+          await tx.summary_entries.create({
             data: {
               summary_id: summary.id,
               entry_id: entry.id,
@@ -261,12 +281,27 @@ export const entryRouter = router({
           });
 
           // Update entry status to 'submitted' per spec line 625
-          await prisma.competition_entries.update({
+          await tx.competition_entries.update({
             where: { id: entry.id },
             data: { status: 'submitted' },
           });
         }
-      }
+
+        // Log activity for summary submission
+        await logActivity({
+          userId: ctx.userId,
+          action: 'summary.submitted',
+          entityType: 'summary',
+          entityId: summary.id,
+          details: {
+            reservation_id: fullReservation.id,
+            studio_id: studioId,
+            competition_id: competitionId,
+            entries_count: routineCount,
+            entries_unused: unusedSpaces,
+          },
+        });
+      });
 
       // Send "routine_summary_submitted" email to Competition Directors (non-blocking)
       try {
