@@ -181,7 +181,29 @@ export const entryRouter = router({
             reservation_id: reservation?.id,
             status: { not: 'cancelled' },
           },
-          select: { total_fee: true, id: true },
+          // Fetch full entry data for snapshot (entry.ts:351)
+          select: {
+            id: true,
+            title: true,
+            entry_number: true,
+            routine_number: true,
+            category_id: true,
+            classification_id: true,
+            age_group_id: true,
+            entry_size_category_id: true,
+            music_title: true,
+            music_artist: true,
+            choreographer: true,
+            entry_fee: true,
+            late_fee: true,
+            total_fee: true,
+            status: true,
+            reservation_id: true,
+            studio_id: true,
+            competition_id: true,
+            created_at: true,
+            updated_at: true,
+          },
         }),
       ]);
 
@@ -324,11 +346,18 @@ export const entryRouter = router({
         // Create entry snapshots and update entry statuses (PHASE1_SPEC.md lines 619-626)
         for (const entry of entries) {
           // Create immutable snapshot for audit trail
+          // Convert dates to ISO strings for clean JSON serialization
+          const snapshot = {
+            ...entry,
+            created_at: entry.created_at?.toISOString(),
+            updated_at: entry.updated_at?.toISOString(),
+          };
+
           await tx.summary_entries.create({
             data: {
               summary_id: summary.id,
               entry_id: entry.id,
-              snapshot: entry as any, // Full entry object as JSON
+              snapshot: snapshot as any,
             },
           });
 
