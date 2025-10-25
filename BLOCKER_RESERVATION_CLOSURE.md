@@ -1,16 +1,26 @@
-# BLOCKER: Reservation Not Closing After Summary Submission - RESOLVED
+# BLOCKER: Reservation Not Closing After Summary Submission - IN PROGRESS
 
-**Date:** October 25, 2025 16:00 UTC
-**Status:** ✅ **ROOT CAUSE IDENTIFIED - FIX #4 DEPLOYED**
+**Date:** October 25, 2025 16:30 UTC
+**Status:** 🔍 **FIX #5 DEPLOYED - ENHANCED DEBUGGING ACTIVE**
 **Impact:** Phase 1 workflow completely broken - reservations never close, capacity never refunded
 
-## Final Root Cause
+## Root Cause Analysis
 
-**`logActivity()` call inside transaction was causing silent rollback**
+### Fix #4 Theory: `logActivity()` Transaction Mixing
 
 At entry.ts:372, `logActivity()` was called INSIDE the `prisma.$transaction()` block. The `logActivity()` function uses `prisma.$executeRaw` with the global `prisma` instance, which **cannot participate in the transaction context**.
 
-When operations inside a Prisma transaction use the global `prisma` instance instead of the `tx` transaction client, they run as separate database operations that can cause the transaction to fail silently.
+**Status:** ❌ Fix #4 deployed but error persists - indicates additional issues exist
+
+### Fix #5: Enhanced Debugging & Verification
+
+Based on FRESH_DEBUGGING_INSIGHTS.md, implemented comprehensive logging:
+- Transaction START/END/COMMITTED markers (entry.ts:245-252, 379-395)
+- Post-transaction verification to detect paradox (entry.ts:397-426)
+- Explicit timeout/maxWait configuration (entry.ts:387-390)
+- Immediate error if DB state doesn't match expected
+
+**Purpose:** Identify exact failure point - transaction completion vs. commit vs. rollback
 
 ## All Fixes Applied
 
@@ -29,9 +39,10 @@ When operations inside a Prisma transaction use the global `prisma` instance ins
 **Fix:** Expanded select to include all snapshot fields (19 fields), convert dates to ISO strings
 **Result:** ❌ Still failing - but enabled proper snapshot creation
 
-### Fix #4 (Commit [pending]) - Move logActivity Outside Transaction
+### Fix #4 (Commit 1c0c446) - Move logActivity Outside Transaction
 **Issue:** `logActivity()` used global `prisma` instance inside transaction context
 **Fix:** Moved `logActivity()` call outside transaction block with try/catch
+**Result:** ❌ **STILL FAILING** - Error persists despite fix
 **Code Change:**
 ```typescript
 // BEFORE (line 372 - INSIDE transaction)
@@ -62,7 +73,22 @@ try {
 }
 ```
 
-**Result:** ✅ **EXPECTED TO RESOLVE** - Transaction should complete successfully
+### Fix #5 (Commit cee8265) - Enhanced Transaction Logging & Verification
+**Issue:** Need to identify exact failure point in transaction lifecycle
+**Fix:** Added comprehensive logging and post-transaction verification per FRESH_DEBUGGING_INSIGHTS.md
+**Changes:**
+- Transaction START/END/COMMITTED log markers with timestamps
+- Post-transaction DB verification query
+- Throws TRANSACTION_PARADOX error if DB doesn't match expected state
+- Explicit transaction timeout (10s) and maxWait (5s) config
+
+**Expected Result:** Logs will reveal exact failure point - options:
+1. See START but not END → Transaction fails during execution
+2. See END but not COMMITTED → Transaction completes but doesn't commit
+3. See COMMITTED but PARADOX error → Transaction commits but changes don't persist
+4. No PARADOX error → Transaction works correctly
+
+**Status:** 🔍 **DEPLOYED - AWAITING TEST RESULTS**
 
 ## Why This Wasn't in Logs
 
@@ -95,13 +121,55 @@ WHERE id = '43c1db28-a405-4068-9f65-b6ca754d8fcc';
 -- Expected: status='submitted'
 ```
 
-## Testing Plan
+## Next Steps - Debugging Protocol
 
-1. Wait for deployment of commit [pending]
-2. Run Playwright test to submit summary
-3. Verify database shows all changes persisted
-4. Verify UI shows correct state
-5. Mark Phase 1 workflow as functional
+### What to Look For in Logs
+
+After testing Fix #5, check logs for these markers:
+
+**Success Pattern (transaction works):**
+```
+🔄 Transaction START - summary submission
+✅ Transaction END - about to commit
+💾 Transaction COMMITTED successfully
+🔍 POST-TRANSACTION VERIFICATION
+   actual: { status: 'summarized', is_closed: true, ... }
+   expected: { status: 'summarized', is_closed: true, ... }
+```
+
+**Failure Patterns:**
+
+1. **Transaction fails during execution:**
+   - See: `🔄 Transaction START`
+   - Missing: `✅ Transaction END`
+   - Indicates: Error thrown inside transaction block
+
+2. **Transaction completes but doesn't commit:**
+   - See: `🔄 Transaction START` + `✅ Transaction END`
+   - Missing: `💾 Transaction COMMITTED`
+   - Indicates: Prisma rolling back between completion and commit
+
+3. **Transaction commits but changes don't persist:**
+   - See: All three markers + `🚨 TRANSACTION PARADOX DETECTED`
+   - Indicates: Database-level issue (trigger, constraint, race condition)
+
+### Additional Debugging Strategies (If Fix #5 Fails)
+
+From FRESH_DEBUGGING_INSIGHTS.md:
+
+**Phase 2 - Deep Audit:**
+- Check for Prisma middleware (may be intercepting transactions)
+- Check for database triggers on reservations/summaries/competitions tables
+- Verify no race conditions with state validation
+
+**Phase 3 - Isolation Testing:**
+- Test minimal transaction (update single field on reservation)
+- If minimal test succeeds but full transaction fails → Complex logic issue
+- If minimal test fails → Prisma client, database, or environment issue
+
+**Phase 4 - Nuclear Options:**
+- Regenerate Prisma client completely
+- Try raw SQL transaction to isolate Prisma-specific issues
 
 ## Lessons Learned
 
