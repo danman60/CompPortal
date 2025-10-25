@@ -233,6 +233,29 @@ export default function EntriesList() {
             </button>
           )}
 
+          {/* Submit Summary Button - Top Row */}
+          {isStudioDirector && hasSelectedCompetition && filteredEntries.length > 0 && (
+            <button
+              onClick={() => {
+                if (userData?.studio?.id && selectedCompetition) {
+                  submitSummaryMutation.mutate({
+                    studioId: userData.studio.id,
+                    competitionId: selectedCompetition,
+                  });
+                }
+              }}
+              disabled={summarySubmitted || submitSummaryMutation.isPending}
+              className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
+                summarySubmitted
+                  ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-lg transform hover:scale-105'
+              }`}
+            >
+              <span>{summarySubmitted ? '✓' : '📤'}</span>
+              <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
+            </button>
+          )}
+
           {isAtLimit || hasNoReservation ? (
             <div className="relative group">
               <button
