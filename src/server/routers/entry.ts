@@ -242,6 +242,15 @@ export const entryRouter = router({
       const unusedSpaces = originalSpaces - routineCount;
 
       // Wrap all database operations in a transaction for atomicity
+      logger.info('🔄 Transaction START - summary submission', {
+        reservationId: fullReservation.id,
+        studioId,
+        competitionId,
+        routineCount,
+        unusedSpaces,
+        timestamp: Date.now(),
+      });
+
       await prisma.$transaction(async (tx) => {
         // Idempotency check - prevent duplicate summary submissions (PHASE1_SPEC.md line 599)
         const existingSummary = await tx.summaries.findUnique({
@@ -367,8 +376,54 @@ export const entryRouter = router({
           });
         }
 
+        logger.info('✅ Transaction END - about to commit', {
+          reservationId: fullReservation.id,
+          summaryId: summary.id,
+          entriesProcessed: entries.length,
+          timestamp: Date.now(),
+        });
+
         // Activity logging moved outside transaction to prevent rollback issues
+      }, {
+        timeout: 10000, // 10 second timeout
+        maxWait: 5000,  // 5 second max wait for connection
       });
+
+      logger.info('💾 Transaction COMMITTED successfully', {
+        reservationId: fullReservation.id,
+        timestamp: Date.now(),
+      });
+
+      // POST-TRANSACTION VERIFICATION - Catch "success response but no database change" paradox
+      const verification = await prisma.reservations.findUnique({
+        where: { id: fullReservation.id },
+        select: {
+          status: true,
+          is_closed: true,
+          spaces_confirmed: true,
+          updated_at: true,
+        },
+      });
+
+      logger.info('🔍 POST-TRANSACTION VERIFICATION', {
+        reservationId: fullReservation.id,
+        actual: verification,
+        expected: { status: 'summarized', is_closed: true, spaces_confirmed: routineCount },
+      });
+
+      // This should NEVER happen if transaction succeeded
+      if (!verification?.is_closed || verification?.status !== 'summarized') {
+        logger.error('🚨 TRANSACTION PARADOX DETECTED', {
+          reservationId: fullReservation.id,
+          status: verification?.status,
+          is_closed: verification?.is_closed,
+          expected: { status: 'summarized', is_closed: true },
+        });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `TRANSACTION PARADOX: Returned success but reservation not updated. Status: ${verification?.status}, Closed: ${verification?.is_closed}`,
+        });
+      }
 
       // Log activity for summary submission (non-blocking, outside transaction)
       try {

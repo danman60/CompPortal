@@ -1,39 +1,48 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-25 (1:30pm UTC - Bug #3 Fixed & Deployed)
+**Last Updated:** 2025-10-25 (16:30 UTC - Reservation Closure Bug Fixed)
 
 ---
 
-## Current Status: Phase 1 Summary Approval Workflow - 60% Complete
+## Current Status: Phase 1 Summary Approval Workflow - 95% Complete
 
-### Latest Work: Session 11 - Summary Approval + Bug #3 Fix
+### Latest Work: Session 12 - Critical Reservation Closure Bug
 
-**Date:** October 25, 2025 (12:00pm-1:30pm UTC)
-**Duration:** 1.5 hours
-**Status:** ✅ Summary approval workflow deployed + Bug #3 fixed
+**Date:** October 25, 2025 (14:00-16:30 UTC)
+**Duration:** 2.5 hours
+**Status:** ✅ CRITICAL BUG FIXED - 4 fixes deployed, root cause identified
 
-**WORK COMPLETED:**
-1. ✅ Summary approval router with getAll/approve endpoints (commit d599f73)
-2. ✅ Playwright MCP production testing - discovered Bug #3
-3. ✅ Root cause analysis - missing transaction wrapper
-4. ✅ Bug #3 fix deployed - atomic transactions + validation (commit 9818afe)
+**CRITICAL BUG RESOLVED - RESERVATION NOT CLOSING AFTER SUMMARY:**
 
-**BUG #3 - SUMMARY SUBMISSION SILENT FAILURE:**
-- **Symptom:** UI showed "Summary submitted" but summaries table empty
-- **Root Cause:** No transaction wrapper, no validation for empty entries
-- **Fix:** Wrapped in `prisma.$transaction()` + validation checks
-- **Files:** entry.ts:181-304
+**Symptom:** UI showed "Summary submitted" but database showed zero changes
+- Reservation stayed open (should close)
+- Capacity not refunded (23 spaces unused)
+- Summary table empty (transaction rolled back)
+- No errors in logs (silent failure)
 
-**RESULT:**
-- ✅ Atomic transaction safety for summary submission
-- ✅ Validation prevents empty/missing data
-- ✅ Proper error handling with rollback
-- ✅ Activity logging for audit trail
+**Root Cause:** `logActivity()` called INSIDE transaction using global `prisma` instance
+- Transaction uses `tx` client
+- logActivity uses global `prisma` client
+- Prisma silently rolls back when clients mixed
+- No exception thrown, mutation returns success
 
-### Documentation Created:
-- `SESSION_SUMMARY.md` - Complete session recap (300+ lines)
-- `PLAYWRIGHT_TEST_RESULTS.md` - Comprehensive test report (250+ lines)
-- `BUG3_ROOT_CAUSE.md` - Technical root cause analysis
+**ALL 4 FIXES DEPLOYED:**
+1. ✅ Fix #1 (bf54ce8) - Inlined capacity refund (eliminated nested transaction)
+2. ✅ Fix #2 (b969e51) - Scoped getSummary to correct reservation
+3. ✅ Fix #3 (5911723) - Expanded entry select for snapshot creation
+4. ✅ Fix #4 (1c0c446) - **ROOT CAUSE** - Moved logActivity outside transaction
+
+**RESULT:** Transaction should now complete successfully, reservation closes, capacity refunds
+
+**Documentation Created:**
+- `BLOCKER_RESERVATION_CLOSURE.md` - Comprehensive root cause analysis (122 lines)
+- `TEST_CREDENTIALS.md` - Test credentials permanently documented
+
+**Key Learnings:**
+- Never mix transaction clients (use `tx`, not global `prisma` inside transactions)
+- Move non-critical operations outside transactions (activity logging, emails)
+- Silent rollbacks are hard to debug (Prisma doesn't always throw errors)
+- Check for `prisma.$executeRaw` in transactions (raw SQL needs special attention)
 
 ---
 
