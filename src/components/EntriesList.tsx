@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
-import PullToRefresh from 'react-pull-to-refresh';
+// Removed PullToRefresh - causes SSR window.is-not-defined error
 import { SkeletonCard } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import FloatingActionButton from '@/components/FloatingActionButton';
@@ -124,11 +124,6 @@ export default function EntriesList() {
     }
   }, [filteredEntries, summarySubmitted, submittedEntriesSnapshot]);
 
-  // Pull-to-refresh handler
-  const handleRefresh = async () => {
-    await refetch();
-  };
-
   // Loading state check AFTER all hooks
   if (isLoading) {
     return (
@@ -144,7 +139,7 @@ export default function EntriesList() {
   const showProgressBar = filteredEntries.length > 0 && confirmedSpaces > 0;
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
+    <>
       <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
@@ -651,9 +646,8 @@ export default function EntriesList() {
       />
     )}
 
-
-      {/* Quick Edit Modal */}
-      {showEditModal && editingEntry && (
+    {/* Quick Edit Modal */}
+    {showEditModal && editingEntry && (
         <EntryEditModal
           entry={editingEntry}
           isOpen={showEditModal}
@@ -960,7 +954,7 @@ export default function EntriesList() {
           </div>
         </div>
       )}
-    </PullToRefresh>
+    </>
   );
 }
 

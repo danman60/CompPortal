@@ -1,6 +1,87 @@
 # CURRENT WORK STATUS
-**Last Updated:** October 25, 2025 13:30 UTC
-**Session:** Session 11 - Summary Approval + Bug #3 Fix COMPLETE
+**Last Updated:** October 25, 2025 14:15 UTC
+**Session:** Session 12 - Bug #3 Re-Test FAILED - CRITICAL BLOCKER
+
+## 🔴 SESSION 12 - CRITICAL BLOCKER (Bug #3 Still Failing)
+
+**Duration:** 1:30pm-2:15pm UTC (45 minutes)
+**Commits:** 1 (bcb6cf8 - cache bust)
+**Status:** 🔴 CRITICAL BLOCKER - Bug #3 fix deployed but STILL FAILING
+**Build:** ✅ Passing
+
+### Work Completed:
+
+**1. Vercel Build Cache Investigation**
+- **Problem:** Deployment b61539e (docs only) reused cached build from d599f73
+- **Evidence:** Build logs showed "Restored build cache from previous deployment"
+- **Impact:** Bug #3 fix (9818afe) was in git but NOT in production
+- **Solution:** Added trivial comment to entry.ts:3 to force rebuild
+
+**2. Cache-Bust Deployment** (commit bcb6cf8)
+- **Change:** Added comment: `// Force rebuild - Deploy Bug #3 fix (commit 9818afe with transaction wrapper)`
+- **File:** entry.ts:3
+- **Build:** ✅ Passed (30.6s compile time)
+- **Deployment:** ✅ READY on production (www.compsync.net)
+- **Verification:** Build logs confirm fresh compile, NOT cached
+
+**3. Production Re-Test with Playwright MCP**
+- **Test:** Summary submission with deployed Bug #3 fix
+- **Result:** ❌ **STILL FAILING**
+- **UI:** Shows "Summary submitted with 2 routines! 23 unused spaces released."
+- **Button:** Changed to "✓ Summary Submitted" (disabled)
+- **Database:** summaries table STILL EMPTY
+- **Reservation:** status still "approved" (should be "summarized")
+- **Reservation:** is_closed still false (should be true)
+
+**4. Database Investigation**
+```sql
+-- Summaries: EMPTY
+SELECT * FROM summaries; -- Result: []
+
+-- Reservation: Unchanged
+SELECT status, is_closed FROM reservations WHERE id = 'd6b7de60...';
+-- Result: status='approved', is_closed=false
+-- Expected: status='summarized', is_closed=true
+
+-- Entries: Only 1 on current reservation
+SELECT id, reservation_id FROM competition_entries WHERE studio_id = '6b5253...';
+-- 43c1db28 → d6b7de60 (CURRENT reservation) ✅
+-- 3d432f22 → 09aba73f (OLD reservation) ❌
+```
+
+**5. Root Cause Analysis**
+- ✅ Bug #3 fix code IS deployed (verified in production build)
+- ✅ Transaction wrapper exists (entry.ts:208-304)
+- ✅ Validation exists (empty entries, missing reservation)
+- ❌ Silent failure in production - error thrown but not surfaced
+- ❌ Frontend showing success despite backend failure
+- ⚠️ No error logs in Supabase API logs (only auth requests)
+- ⚠️ Need Vercel runtime logs to see actual exception
+
+**6. BLOCKER Documentation Created**
+- **File:** BLOCKER_BUG3_STILL_FAILING.md
+- **Content:** Complete analysis, evidence, next steps
+- **Status:** Requires user intervention or deeper investigation
+
+### Critical Findings:
+
+**The Bug #3 Fix DID NOT WORK**
+Despite successful deployment of transaction wrapper code, summary submission continues to fail silently. This indicates:
+
+1. **Silent Exception:** Error being thrown inside transaction but caught somewhere
+2. **Frontend Mismatch:** UI optimistically showing success before backend completes
+3. **Validation Failing:** One of the validation checks (empty entries, reservation) triggering
+4. **Capacity Refund Error:** capacityService.refund() throwing error causing rollback
+5. **Database Constraint:** CHECK constraint or foreign key violation
+
+### Next Steps Required (URGENT):
+
+1. **Check Vercel Runtime Logs** - See actual error being thrown
+2. **Add Debug Logging** - Trace execution path through transaction
+3. **Test with Fresh Data** - Eliminate data pollution (2 reservations issue)
+4. **Frontend Error Handling** - Verify onSuccess vs onError handling
+
+---
 
 ## ✅ SESSION 11 COMPLETE (Summary Workflow + Critical Bug Fix)
 
