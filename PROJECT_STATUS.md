@@ -1,12 +1,109 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-25 (Session 14 - Critical Bug Fixes)
+**Last Updated:** 2025-10-25 (Session 15 - Parallel Rebuild Phase 3 Complete)
 
 ---
 
-## Current Status: Phase 1 Summary Workflow - 100% Complete
+## Current Status: Parallel Rebuild - Phase 3 Complete (37.5%)
 
-### Latest Work: Session 14 - Critical Bug Fixes (3 bugs fixed)
+### Latest Work: Session 15 - Entries Page Rebuild
+
+**Date:** October 25, 2025
+**Status:** ✅ Phase 3 Complete - Entries page rebuilt with correct business logic
+
+**PARALLEL REBUILD STRATEGY:**
+- New pages at `-rebuild` routes (zero risk to production)
+- Backend status progression implemented (Phase 0)
+- Shared UI components created (Phase 1)
+- Custom hooks built (Phase 2)
+- Entries page components completed (Phase 3)
+- Next: Pipeline page rebuild (Phase 4)
+
+**PHASE 3 COMPLETION (8 components, 699 lines):**
+
+**Route:** `/dashboard/entries-rebuild` (parallel to old `/dashboard/entries`)
+
+**Components Built:**
+1. `EntriesPageContainer.tsx` - Main orchestrator with data fetching
+2. `EntriesHeader.tsx` - Back button + Create Routine button
+3. `EntriesFilters.tsx` - Reservation selector + view toggle
+4. `RoutineCard.tsx` - Glassmorphic card view for single entry
+5. `RoutineCardList.tsx` - Grid layout (responsive: 1/2/3 cols)
+6. `RoutineTable.tsx` - Table view with sortable columns
+7. `LiveSummaryBar.tsx` - Fixed bottom bar with submit button
+8. `SubmitSummaryModal.tsx` - Warning modal for incomplete submissions
+
+**Key Features:**
+- Auto-selects first approved reservation
+- Filters entries by reservation_id client-side
+- Card/Table view toggle
+- Incomplete warning (created < confirmed spaces)
+- Glassmorphic design system throughout
+- Decimal type handling for Prisma monetary fields
+
+**Commits:**
+- 1204b69 - Phase 0: Backend status progression
+- 32aacd3 - Phase 1: Shared UI components (6 components)
+- 1cf845e - Phase 2: Custom hooks (4 hooks)
+- 4aea682 - Phase 3: Entries page components (8 components)
+
+**Build Status:** ✅ All phases compile successfully
+
+---
+
+### Phase 0-3 Summary (Complete)
+
+**Phase 0: Backend Status Progression**
+- Modified `invoice.ts` - Status 'approved' → 'invoiced' after invoice creation
+- Modified `reservation.ts` - Status 'invoiced' → 'closed' + is_closed=true on payment
+- Added validation guards with TRPCError for proper status flow
+
+**Phase 1: Shared UI Components (6 components, 336 lines)**
+- `Card.tsx` - Glassmorphic base component
+- `Badge.tsx` - 9 Phase 1 status variants + 4 generic
+- `Button.tsx` - 4 variants (primary/secondary/ghost/danger)
+- `Modal.tsx` - Overlay with ESC key support
+- `Table.tsx` - 5 sub-components with hover states
+- `Dropdown.tsx` - Select with glassmorphic styling
+
+**Phase 2: Custom Hooks (4 hooks, 297 lines)**
+- `useEntries.ts` - Entry data + mutations (delete, submit summary)
+- `useReservations.ts` - SD + CD variants with approve/reject/invoice
+- `useEntriesFilters.ts` - Client-side filtering by reservation
+- `usePipelineFilters.ts` - CORRECT status logic using Phase 0 backend changes
+
+**Phase 3: Entries Page (8 components, 699 lines)**
+- Container/Presenter pattern
+- Type-safe with Prisma Decimal handling
+- Nullable field support throughout
+- Mutation wrappers for component compatibility
+
+---
+
+### Remaining Rebuild Phases
+
+**Phase 4: Pipeline Page (NOT STARTED)**
+- 8-10 components estimated
+- `/dashboard/reservation-pipeline-rebuild` route
+- CD-only functionality
+
+**Phase 5: E2E Testing (NOT STARTED)**
+- Playwright MCP for production testing
+- Test both SD and CD workflows
+- Verify status progression
+
+**Phase 6: Cutover + Dashboard Buttons (NOT STARTED)**
+- Add preview buttons to dashboards
+- Test swap-out capability
+- Deploy navigation changes
+
+**Estimated Progress:** 37.5% (3 of 8 phases complete)
+
+---
+
+## Previous Sessions
+
+### Session 14 - Critical Bug Fixes (3 bugs fixed)
 
 **Date:** October 25, 2025
 **Duration:** 1.5 hours
@@ -34,99 +131,18 @@
 - **Result:** ALL entries filtered out, "Showing 0 of 2 routines"
 - **Commit:** 5d1fed9
 
-**User-Reported Issues Resolved:**
-1. ✅ "Unknown Event" dropdown → Fixed by Bug 2
-2. ✅ "Routines not showing (0 of 2)" → Fixed by Bug 3
-3. ✅ "Bottom summary bar shows 0" → Fixed by Bug 3 (uses filteredEntries.length)
-4. ✅ "CD pipeline shows Pending Invoice" → NOT A BUG: Correct behavior
-   - Reservation has entries (count=2) and no invoice yet
-   - "Pending Invoice" = needs summary submission OR invoice creation
-   - ReservationPipeline.tsx:150 correctly filters: `status='approved' && entryCount > 0 && !invoiceId`
-
-**Issues from First Report (resolved in first part of session):**
-5. ✅ "Space limit reached" (100 spaces) → Race condition from Bug 2, now fixed
-6. ✅ "Auto-submitted summary" → FALSE: No summaries in DB, user misunderstood CD pipeline
-
-**Database Verification:**
-- Reservation: `status='approved'`, 100 spaces confirmed, NOT closed
-- Entry: EXISTS with `status='draft'`, correct reservation_id
-- Summary: NONE (not auto-submitted)
-- Competition capacity: 600 total, 500 available (100 deducted correctly)
-
----
-
-### Previous Session: Session 13 - Reservation-Based UI Refactor
+### Session 13 - Reservation-Based UI Refactor
 
 **Date:** October 25, 2025
 **Duration:** ~2 hours
 **Status:** ✅ DEPLOYED - Complete UI refactor for reservation-based workflow
 
-**MAJOR UI CHANGES - SD ENTRIES PAGE:**
-
-**Replaced Competition Filtering with Reservation Selection:**
-- Created new `ReservationSelector` component replacing `CompetitionFilter`
-- Shows approved + summarized reservations in dropdown
-- Event names with ordinal suffixes for duplicates (e.g., "St. Catharines 1 - 2nd")
-- Displays "(closed)" indicator for summarized reservations
-- Entries now filter by `reservation_id` instead of `competition_id`
-
-**Submit Summary Enhancements:**
-- Moved button to far right in header (prominent green gradient with pulse animation)
-- Added incomplete warning modal requiring "Submit Anyway" confirmation
-- Removed non-working buttons from bottom Live Summary bar
-- Centered Live Summary stats display
-
-**Closed Reservation Handling:**
-- Blocks "Create Routine" button with explanatory tooltip
-- Allows editing existing routines (page 2 details only)
-- Prevents creating new routines after summary submission
-
-**Status Filter Cleanup:**
-- Removed all/draft/registered/confirmed/cancelled filter buttons
-- Simplified UI to focus on reservation selection
-
-**CD PIPELINE FIX:**
-- Fixed "Pending Invoice" filter to show `status='summarized'` reservations
-- Previously only showed `status='approved'` with entries (wrong!)
-- Summarized reservations now correctly appear ready for invoicing
-
-**Files Changed:**
-- NEW: `src/components/ReservationSelector.tsx` (106 lines)
-- MODIFIED: `src/components/EntriesList.tsx` (reservation-based filtering)
-- MODIFIED: `src/hooks/useEntryFilters.ts` (filter by reservation)
-- MODIFIED: `src/hooks/useSpaceUsage.ts` (accept reservation object, added isClosed flag)
-- MODIFIED: `src/components/ReservationPipeline.tsx` (fix Pending Invoice filter)
-
 **Commit:** 48a9ac7 - feat: Refactor entries list to use reservation-based filtering
-
----
-
-## Previous Sessions
 
 ### Session 12 - Critical Reservation Closure Bug Fixed
 
 **Date:** October 25, 2025 (14:00-16:30 UTC)
 **Status:** ✅ RESOLVED - 6 fixes deployed, root cause confirmed
-
-**BLOCKER RESOLVED:**
-- Symptom: UI showed success but database had zero changes (silent transaction rollback)
-- Root Cause (PRIMARY): UI event interference from bottom submit button
-- Root Cause (SECONDARY): Transaction client mixing (`logActivity()` using global `prisma` inside `tx` block)
-
-**ALL 6 FIXES:**
-1. ✅ Fix #1 (bf54ce8) - Inlined capacity refund
-2. ✅ Fix #2 (b969e51) - Scoped getSummary to reservation
-3. ✅ Fix #3 (5911723) - Expanded entry select for snapshot
-4. ✅ Fix #4 (1c0c446) - **CRITICAL** - Moved logActivity outside transaction
-5. ✅ Fix #5 (cee8265) - Enhanced transaction logging
-6. ✅ Fix #6 (d22bbd9) - **KEY FIX** - Header button bypasses UI interference
-
-**Production Verification (3 successful tests):**
-- ✅ Summaries created
-- ✅ Reservations closed (`is_closed=true`, `status='summarized'`)
-- ✅ Capacity refunded (+249, +298, +49 tokens)
-- ✅ Entry statuses updated to 'submitted'
-- ✅ Emails sent to Competition Directors
 
 **Documentation:** `BLOCKER_RESERVATION_CLOSURE.md` (231 lines)
 
@@ -162,12 +178,14 @@
 ## 🔄 Recent Commits
 
 ```
+4aea682 - feat: Complete Entries page rebuild (Phase 3) (Oct 25)
+1cf845e - feat: Create custom hooks for rebuild (Phase 2) (Oct 25)
+32aacd3 - feat: Create shared UI components for rebuild (Phase 1) (Oct 25)
+1204b69 - feat: Implement backend status progression (Phase 0) (Oct 25)
+5d1fed9 - fix: Add missing reservation_id to entry.getAll (Oct 25)
+82ac1c0 - fix: Use competitions.name for event display (Oct 25)
+781797d - fix: Update reservation filter variable names (Oct 25)
 48a9ac7 - feat: Refactor entries list to use reservation-based filtering (Oct 25)
-28e93e3 - docs: Update blocker resolution status (Oct 25)
-cf6b3f6 - docs: Document Fix #6 success in blocker file (Oct 25)
-d22bbd9 - feat: Add duplicate submit button in header for UI isolation test (Oct 25)
-cee8265 - feat: Add comprehensive transaction logging and verification (Oct 25)
-1c0c446 - fix: Move logActivity outside transaction to prevent client mixing (Oct 25)
 ```
 
 ---
@@ -177,6 +195,7 @@ cee8265 - feat: Add comprehensive transaction logging and verification (Oct 25)
 **Active Trackers:**
 - `PROJECT.md` - Project rules and configuration
 - `PROJECT_STATUS.md` - This file (current status)
+- `PARALLEL_REBUILD_EXECUTION_PLAN.md` - Complete rebuild strategy
 - `BLOCKER_RESERVATION_CLOSURE.md` - Complete blocker resolution
 - `TEST_CREDENTIALS.md` - Production test credentials
 
@@ -187,8 +206,8 @@ cee8265 - feat: Add comprehensive transaction logging and verification (Oct 25)
 ## 📊 Production Deployment
 
 **Environment:** https://www.compsync.net
-**Latest Commit:** 48a9ac7
-**Status:** ✅ Deployed
+**Latest Commit:** 4aea682
+**Status:** ✅ Deployed (old pages unchanged, new pages available at `-rebuild` routes)
 
 **Critical Features:**
 - ✅ Reservation-based entry filtering
@@ -197,6 +216,7 @@ cee8265 - feat: Add comprehensive transaction logging and verification (Oct 25)
 - ✅ Capacity tracking with audit trail
 - ✅ Email notifications
 - ✅ Invoice locking
+- 🆕 Parallel rebuild Entries page (Phase 3 complete)
 
 ---
 
@@ -206,23 +226,33 @@ cee8265 - feat: Add comprehensive transaction logging and verification (Oct 25)
 - **Studio Director:** danieljohnabrahamson@gmail.com / password
 - **Competition Director:** 1-click demo on homepage
 
+**Testing Rebuild Pages:**
+- Navigate to `/dashboard/entries-rebuild` (SD)
+- Old page at `/dashboard/entries` unchanged
+
 ---
 
 ## 📈 Next Session Priorities
 
-### User Testing Required
+### Immediate: Phase 4 - Pipeline Page Rebuild
+1. Create `/dashboard/reservation-pipeline-rebuild` route
+2. Build 8-10 components for CD workflow
+3. Use `usePipelineFilters` with correct status logic
+4. Verify status progression matches Phase 0 backend
+
+### Future: Phase 5-6
+- E2E testing with Playwright MCP
+- Dashboard preview buttons
+- Cutover navigation
+
+### User Testing Required (Old System)
 1. **Test reservation selector** - Verify dropdown shows correct reservations with proper naming
 2. **Test closed reservation behavior** - Confirm "Create Routine" blocked but editing allowed
 3. **Test CD pipeline** - Verify summarized reservations appear in "Pending Invoice"
 4. **Test submission flow** - Complete end-to-end summary submission with refund
 
-### Future Enhancements
-- Invoice generation improvements
-- Late fee handling
-- Schedule builder integration
-
 ---
 
-**Last Deployment:** Oct 25, 2025 (commit 48a9ac7)
-**Next Session Focus:** User testing and validation of reservation-based workflow
-**Production Status:** ✅ READY FOR TESTING
+**Last Deployment:** Oct 25, 2025 (commit 4aea682)
+**Next Session Focus:** Phase 4 - Pipeline page rebuild
+**Production Status:** ✅ READY - Old system stable, new system 37.5% complete
