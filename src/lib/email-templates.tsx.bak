@@ -266,7 +266,7 @@ export function getEmailSubject(
     entry: `Routine Submitted: ${data.entryTitle} - ${data.competitionName}`,
     'studio-approved': `Welcome to the Platform - ${data.studioName}`,
     'studio-rejected': `Studio Registration Status Update`,
-    'payment-confirmed': `Payment ${data.paymentStatus ? data.paymentStatus.toUpperCase() : 'CONFIRMED'} - ${data.competitionName} (${data.competitionYear})`,
+    'payment-confirmed': `Payment ${data.paymentStatus.toUpperCase()} - ${data.competitionName} (${data.competitionYear})`,
     'missing-music': `⏰ Reminder: Upload Music Files - ${data.competitionName}`,
   };
 

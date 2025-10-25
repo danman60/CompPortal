@@ -482,7 +482,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                 required
               >
                 <option value="" className="bg-gray-900 text-white">Select Age Group</option>
-                {Array.from(new Map(lookupData?.ageGroups.map(age => [`${age.name}-${age.min_age}-${age.max_age}`, age]))).map(([_, age]) => (
+                {Array.from(new Map(lookupData?.ageGroups.map(age => [age.name, age]))).map(([_, age]) => (
                   <option key={age.id} value={age.id} className="bg-gray-900 text-white">
                     {age.name} ({age.min_age}-{age.max_age} years)
                   </option>
