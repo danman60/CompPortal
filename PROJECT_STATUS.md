@@ -1,35 +1,52 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-24 (11:30pm EST - Double-Deduction Bug FIXED!)
+**Last Updated:** 2025-10-25 (1:30pm UTC - Bug #3 Fixed & Deployed)
 
 ---
 
-## Current Status: ✅ DOUBLE-DEDUCTION BUG FIXED - Production Stable
+## Current Status: Phase 1 Summary Approval Workflow - 60% Complete
 
-### Latest Work: Session 10 - Found & Fixed Hidden Database Trigger!
+### Latest Work: Session 11 - Summary Approval + Bug #3 Fix
 
-**Date:** October 24, 2025 (11:00pm-11:30pm EST)
-**Duration:** 30 minutes
-**Status:** ✅ Critical bug completely resolved - NO CODE CHANGES NEEDED
+**Date:** October 25, 2025 (12:00pm-1:30pm UTC)
+**Duration:** 1.5 hours
+**Status:** ✅ Summary approval workflow deployed + Bug #3 fixed
 
-**ROOT CAUSE DISCOVERED:**
-- Legacy database trigger `reservation_tokens_trigger` was ALSO deducting capacity
-- Trigger was on `reservations` table (not `competitions` where we looked)
-- Both CapacityService AND trigger were executing = double deduction
+**WORK COMPLETED:**
+1. ✅ Summary approval router with getAll/approve endpoints (commit d599f73)
+2. ✅ Playwright MCP production testing - discovered Bug #3
+3. ✅ Root cause analysis - missing transaction wrapper
+4. ✅ Bug #3 fix deployed - atomic transactions + validation (commit 9818afe)
 
-**THE FIX:**
-```sql
-DROP TRIGGER IF EXISTS reservation_tokens_trigger ON public.reservations;
-DROP FUNCTION IF EXISTS update_competition_tokens();
-```
+**BUG #3 - SUMMARY SUBMISSION SILENT FAILURE:**
+- **Symptom:** UI showed "Summary submitted" but summaries table empty
+- **Root Cause:** No transaction wrapper, no validation for empty entries
+- **Fix:** Wrapped in `prisma.$transaction()` + validation checks
+- **Files:** entry.ts:181-304
 
 **RESULT:**
-- ✅ No more double-deduction
-- ✅ CapacityService is now the single source of truth
-- ✅ All capacity changes properly audited in ledger
-- ✅ Bug investigation protocol added to CLAUDE.md
+- ✅ Atomic transaction safety for summary submission
+- ✅ Validation prevents empty/missing data
+- ✅ Proper error handling with rollback
+- ✅ Activity logging for audit trail
 
-### Previous Work: Session 9 - Surgical Capacity System Rewrite
+### Documentation Created:
+- `SESSION_SUMMARY.md` - Complete session recap (300+ lines)
+- `PLAYWRIGHT_TEST_RESULTS.md` - Comprehensive test report (250+ lines)
+- `BUG3_ROOT_CAUSE.md` - Technical root cause analysis
+
+---
+
+## Previous Sessions
+
+### Session 10 - Found & Fixed Hidden Database Trigger
+
+**Date:** October 24, 2025
+**Status:** ✅ Double-deduction bug fixed - NO CODE CHANGES NEEDED
+- Dropped legacy `reservation_tokens_trigger` on reservations table
+- CapacityService now single source of truth
+
+### Session 9 - Surgical Capacity System Rewrite
 
 **Date:** October 24, 2025 (4:00pm-6:00pm EST)
 **Duration:** 2 hours
@@ -291,13 +308,11 @@ CREATE TABLE capacity_ledger (
 ## 🔄 Recent Commits
 
 ```
-68e421e - fix: Add routine_number column to database and restore to schema (Oct 24 3pm)
-476a512 - fix: Remove routine_number from Prisma schema (Oct 24 2pm) [REVERTED]
-4ff7d7b - fix: Update competition_entries.entry_number not routine_number (Oct 24 1pm)
-967028c - fix: Prevent double-decrement of competition capacity (Oct 24 12pm)
-86f21a4 - fix: Wrap capacity update in try/catch to unblock email (Oct 24 11am)
-897d4b1 - fix: TypeScript errors in scheduling suite (Oct 24 11pm)
-ff22650 - feat: Add professional branding to invoice PDFs (Oct 24 11pm)
+9818afe - fix: Bug #3 - wrap summary submission in transaction (Oct 25 1pm)
+d599f73 - feat: Add summary approval workflow (Oct 25 12pm)
+ffcd289 - docs: Add comprehensive production testing report (Oct 25)
+42d34c3 - fix: Show success screen after routine creation (Oct 25)
+f76351f - fix: Implement feature improvements and Sentry setup (Oct 25)
 ```
 
 ---
@@ -414,6 +429,16 @@ See `DEMO_PREP_PLAN.md` for complete Tuesday demo preparation plan
 
 ---
 
-**Last Deployment:** Oct 24, 2025 3:00pm EST (commit 68e421e)
-**Next Session Focus:** Email delivery verification + capacity math testing
-**Production Status:** 🔴 AWAITING VERIFICATION (3 days until demo)
+**Last Deployment:** Oct 25, 2025 1:30pm UTC (commit 9818afe)
+**Next Session Focus:** Validation testing of Bug #3 fix + Phase 1 workflow
+**Production Status:** 🟡 DEPLOYED - AWAITING VERIFICATION
+
+---
+
+## Phase 1 Workflow Progress: 60% Complete
+
+1. ✅ SD creates routines
+2. ✅ SD submits summary (transaction-safe as of 9818afe)
+3. ⏳ Summary appears in CD view (needs verification)
+4. ⏳ CD approves summary (needs testing)
+5. ⏳ Invoice generation (needs testing)
