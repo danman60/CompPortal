@@ -117,20 +117,30 @@ export const entryRouter = router({
     .query(async ({ input }) => {
       const { studioId, competitionId } = input;
 
-      const [entries, reservation] = await Promise.all([
-        prisma.competition_entries.findMany({
-          where: { studio_id: studioId, competition_id: competitionId, status: { not: 'cancelled' } },
-          select: { total_fee: true },
-        }),
-        prisma.reservations.findFirst({
-          where: { studio_id: studioId, competition_id: competitionId, status: { in: ['approved', 'pending'] } },
-          select: { spaces_confirmed: true },
-        }),
-      ]);
+      // First find the approved reservation (matches submitSummary logic at line 151)
+      const reservation = await prisma.reservations.findFirst({
+        where: { studio_id: studioId, competition_id: competitionId, status: 'approved' },
+        select: { id: true, spaces_confirmed: true },
+      });
+
+      if (!reservation) {
+        return {
+          totalRoutines: 0,
+          estimatedCost: 0,
+          remainingTokens: 0,
+          status: 'no_reservation',
+        };
+      }
+
+      // Only count entries for THIS reservation (matches submitSummary at line 171)
+      const entries = await prisma.competition_entries.findMany({
+        where: { reservation_id: reservation.id, status: { not: 'cancelled' } },
+        select: { total_fee: true },
+      });
 
       const totalRoutines = entries.length;
       const estimatedCost = entries.reduce((sum: number, e: any) => sum + Number(e.total_fee || 0), 0);
-      const confirmed = reservation?.spaces_confirmed || 0;
+      const confirmed = reservation.spaces_confirmed || 0;
 
       return {
         totalRoutines,
