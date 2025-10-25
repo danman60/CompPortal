@@ -26,7 +26,7 @@ export function useEntryFilters(entries: any[], reservationData?: any) {
     .filter((r: any) => r.status === 'approved' || r.status === 'summarized')
     .map((r: any) => ({
       id: r.id,
-      event_name: r.events?.name || 'Unknown Event',
+      event_name: r.competitions?.name || 'Unknown Event',
       status: r.status,
       is_closed: r.is_closed,
       competition_id: r.competition_id,
