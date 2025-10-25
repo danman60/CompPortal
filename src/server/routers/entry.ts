@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
+// Force rebuild - Deploy Bug #3 fix (commit 9818afe with transaction wrapper)
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
