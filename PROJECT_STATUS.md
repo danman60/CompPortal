@@ -6,11 +6,11 @@
 
 ## Current Status: Phase 1 Summary Workflow - 100% Complete
 
-### Latest Work: Session 14 - Critical Bug Fixes (Build + Event Name)
+### Latest Work: Session 14 - Critical Bug Fixes (3 bugs fixed)
 
 **Date:** October 25, 2025
-**Duration:** 45 minutes
-**Status:** ✅ DEPLOYED - Fixed build errors and event_name mapping bug
+**Duration:** 1.5 hours
+**Status:** ✅ DEPLOYED - Fixed build errors, event_name mapping, and missing reservation_id
 
 **CRITICAL BUGS FIXED:**
 
@@ -27,11 +27,25 @@
 - **Impact:** Broke reservation selection, caused cascading failures
 - **Commit:** 82ac1c0
 
+**Bug 3: Missing reservation_id in entry.getAll (CRITICAL)**
+- Line 644: Added `reservation_id: true` to select (entry.ts)
+- **Root Cause:** Query didn't return reservation_id field to frontend
+- **Impact:** Filter `entry.reservation_id === selectedReservation` always failed (undefined === uuid)
+- **Result:** ALL entries filtered out, "Showing 0 of 2 routines"
+- **Commit:** 5d1fed9
+
 **User-Reported Issues Resolved:**
 1. ✅ "Unknown Event" dropdown → Fixed by Bug 2
-2. ✅ "Routine not showing" → Entry exists (status='draft'), will display after deployment
-3. ✅ "Space limit reached" (100 spaces) → Race condition from null reservation, fixed by Bug 2
-4. ✅ "Auto-submitted summary" → FALSE: No summaries in DB, user misread CD pipeline
+2. ✅ "Routines not showing (0 of 2)" → Fixed by Bug 3
+3. ✅ "Bottom summary bar shows 0" → Fixed by Bug 3 (uses filteredEntries.length)
+4. ✅ "CD pipeline shows Pending Invoice" → NOT A BUG: Correct behavior
+   - Reservation has entries (count=2) and no invoice yet
+   - "Pending Invoice" = needs summary submission OR invoice creation
+   - ReservationPipeline.tsx:150 correctly filters: `status='approved' && entryCount > 0 && !invoiceId`
+
+**Issues from First Report (resolved in first part of session):**
+5. ✅ "Space limit reached" (100 spaces) → Race condition from Bug 2, now fixed
+6. ✅ "Auto-submitted summary" → FALSE: No summaries in DB, user misunderstood CD pipeline
 
 **Database Verification:**
 - Reservation: `status='approved'`, 100 spaces confirmed, NOT closed
