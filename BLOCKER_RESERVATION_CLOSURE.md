@@ -1,7 +1,7 @@
 # BLOCKER: Reservation Not Closing After Summary Submission - IN PROGRESS
 
 **Date:** October 25, 2025 16:30 UTC
-**Status:** 🔍 **FIX #5 DEPLOYED - ENHANCED DEBUGGING ACTIVE**
+**Status:** 🔍 **FIX #6 DEPLOYED - UI ISOLATION TEST**
 **Impact:** Phase 1 workflow completely broken - reservations never close, capacity never refunded
 
 ## Root Cause Analysis
@@ -88,7 +88,21 @@ try {
 3. See COMMITTED but PARADOX error → Transaction commits but changes don't persist
 4. No PARADOX error → Transaction works correctly
 
-**Status:** 🔍 **DEPLOYED - AWAITING TEST RESULTS**
+**Status:** ✅ **DEPLOYED** - Transaction logging added
+
+### Fix #6 (Commit d22bbd9) - UI Isolation Test
+**Theory:** Bottom submit button may be affected by live summary element interference
+**Fix:** Added duplicate submit button in page header, isolated from bottom summary panel
+**Changes:**
+- New "Submit Summary" button in top row beside "Create Routine" (EntriesList.tsx:236-257)
+- Same mutation logic: `submitSummaryMutation.mutate({ studioId, competitionId })`
+- Visibility conditions: SD role + competition selected + entries exist
+- Positioned away from potentially interfering live summary DOM
+
+**Hypothesis:** If header button works but bottom button fails, confirms UI/React state interference
+**Expected Result:** Either button triggers successful transaction with all database changes persisting
+
+**Status:** 🔍 **DEPLOYED - AWAITING TEST WITH HEADER BUTTON**
 
 ## Why This Wasn't in Logs
 
