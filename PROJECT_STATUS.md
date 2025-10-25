@@ -1,14 +1,40 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-24 (6:00pm EST - Capacity System Rewrite Complete)
+**Last Updated:** 2025-10-24 (11:30pm EST - Double-Deduction Bug FIXED!)
 
 ---
 
-## Current Status: 🟢 CAPACITY SYSTEM REWRITTEN - Ready for Testing
+## Current Status: ✅ DOUBLE-DEDUCTION BUG FIXED - Production Stable
 
-### Latest Work: Session 9 - Surgical Capacity System Rewrite
+### Latest Work: Session 10 - Found & Fixed Hidden Database Trigger!
+
+**Date:** October 24, 2025 (11:00pm-11:30pm EST)
+**Duration:** 30 minutes
+**Status:** ✅ Critical bug completely resolved - NO CODE CHANGES NEEDED
+
+**ROOT CAUSE DISCOVERED:**
+- Legacy database trigger `reservation_tokens_trigger` was ALSO deducting capacity
+- Trigger was on `reservations` table (not `competitions` where we looked)
+- Both CapacityService AND trigger were executing = double deduction
+
+**THE FIX:**
+```sql
+DROP TRIGGER IF EXISTS reservation_tokens_trigger ON public.reservations;
+DROP FUNCTION IF EXISTS update_competition_tokens();
+```
+
+**RESULT:**
+- ✅ No more double-deduction
+- ✅ CapacityService is now the single source of truth
+- ✅ All capacity changes properly audited in ledger
+- ✅ Bug investigation protocol added to CLAUDE.md
+
+### Previous Work: Session 9 - Surgical Capacity System Rewrite
 
 **Date:** October 24, 2025 (4:00pm-6:00pm EST)
+**Duration:** 2 hours
+**Status:** ✅ Complete architectural rewrite deployed (commits 6d84795, 917c3b0)
+
 **Duration:** 2 hours
 **Status:** ✅ Complete architectural rewrite deployed (commits 6d84795, 917c3b0)
 
