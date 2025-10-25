@@ -585,47 +585,6 @@ export default function UnifiedRoutineForm() {
               </div>
             )}
 
-            {/* Pricing Preview */}
-            <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Routine Fee</h2>
-              {(() => {
-                const sizeCategoryId = overrides.entry_size_category_id || inferredSizeCategory?.id;
-                const sizeCategory = lookupData?.entrySizeCategories?.find((sc: any) => sc.id === sizeCategoryId);
-                const baseFee = sizeCategory?.base_fee ? Number(sizeCategory.base_fee) : 0;
-                const perParticipantFee = sizeCategory?.per_participant_fee ? Number(sizeCategory.per_participant_fee) : 0;
-                const titleFee = (selectedDancers.length === 1 && isTitleEntry) ? TITLE_SURCHARGE : 0;
-                const totalFee = baseFee + (perParticipantFee * selectedDancers.length) + titleFee;
-
-                return (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-gray-300">
-                      <span>Base Fee ({sizeCategory?.name || 'Unknown'})</span>
-                      <span>${baseFee.toFixed(2)}</span>
-                    </div>
-                    {perParticipantFee > 0 && (
-                      <div className="flex justify-between text-gray-300">
-                        <span>Per Dancer ({selectedDancers.length} × ${perParticipantFee.toFixed(2)})</span>
-                        <span>${(perParticipantFee * selectedDancers.length).toFixed(2)}</span>
-                      </div>
-                    )}
-                    {titleFee > 0 && (
-                      <div className="flex justify-between text-yellow-300">
-                        <span>🏆 Title Upgrade</span>
-                        <span>+${titleFee.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-xl font-bold text-green-400 pt-2 border-t border-green-400/30">
-                      <span>Total</span>
-                      <span>${totalFee.toFixed(2)}</span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                      * Pricing from Competition Settings
-                    </p>
-                  </div>
-                );
-              })()}
-            </div>
-
             {/* Inferred Values with Override Option */}
             <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
               <h2 className="text-xl font-bold text-white mb-4">
@@ -642,7 +601,7 @@ export default function UnifiedRoutineForm() {
                     onChange={(e) => setOverrides({ ...overrides, age_group_id: e.target.value })}
                   >
                     {!inferredAgeGroup && <option value="" className="bg-gray-900">Select age group</option>}
-                    {lookupData?.ageGroups?.map((ag: any) => {
+                    {Array.from(new Map(lookupData?.ageGroups?.map((ag: any) => [ag.id, ag]) || []).values()).map((ag: any) => {
                       const isInferred = !overrides.age_group_id && inferredAgeGroup?.id === ag.id;
                       return (
                         <option key={ag.id} value={ag.id} className="bg-gray-900">
@@ -666,7 +625,7 @@ export default function UnifiedRoutineForm() {
                     onChange={(e) => setOverrides({ ...overrides, entry_size_category_id: e.target.value })}
                   >
                     {!inferredSizeCategory && <option value="" className="bg-gray-900">Select size</option>}
-                    {lookupData?.entrySizeCategories?.map((sc: any) => {
+                    {Array.from(new Map(lookupData?.entrySizeCategories?.map((sc: any) => [sc.id, sc]) || []).values()).map((sc: any) => {
                       const isInferred = !overrides.entry_size_category_id && inferredSizeCategory?.id === sc.id;
                       return (
                         <option key={sc.id} value={sc.id} className="bg-gray-900">
