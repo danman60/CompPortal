@@ -372,7 +372,7 @@ export default function OnboardingPage() {
                       />
                       <div className="flex-1">
                         <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                          I consent to sharing legal information (studio name, contact details, liability acknowledgment) with the CompSync platform for registration and competition management purposes. <span className="text-red-400">*</span>
+                          I consent to sharing legal information (studio name, contact details, liability acknowledgment) with the EMPWR platform for registration and competition management purposes. <span className="text-red-400">*</span>
                         </span>
                       </div>
                     </label>

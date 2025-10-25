@@ -25,28 +25,12 @@ interface StudioDirectorDashboardProps {
 
 const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   {
-    id: 'results',
-    href: '/dashboard/scoreboard',
-    icon: '🏆',
-    title: 'Results',
-    description: 'View competition scores',
-    tooltip: 'Check your scores and rankings',
-  },
-  {
     id: 'invoices',
     href: '/dashboard/invoices',
     icon: '🧾',
     title: 'My Invoices',
     description: 'View studio billing',
     tooltip: 'View and pay invoices',
-  },
-  {
-    id: 'music',
-    href: '/dashboard/music',
-    icon: '🎵',
-    title: 'Music Tracking',
-    description: 'Monitor music file uploads',
-    tooltip: 'Upload routine music files',
   },
 ];
 

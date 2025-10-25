@@ -89,7 +89,7 @@ export default function StudioProfileSubmitted({
           <Hr style={hr} />
 
           <Text style={footer}>
-            © 2025 CompSync. Dance Competition Management.
+            © 2025 EMPWR. Dance Competition Management.
           </Text>
         </Container>
       </Body>

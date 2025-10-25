@@ -217,7 +217,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     );
 
     // Only update if different from current selection
-    if (sizeCategory && sizeCategory.id !== formData.entry_size_category_id) {
+    if (sizeCategory && (!formData.entry_size_category_id || sizeCategory.id !== formData.entry_size_category_id)) {
       setFormData(prev => ({
         ...prev,
         entry_size_category_id: sizeCategory.id,
