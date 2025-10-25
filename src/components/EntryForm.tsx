@@ -181,6 +181,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
         entry_size_category_id: formData.entry_size_category_id,
       });
       // Show success animation before redirect
+      setShowSuccess(true);
     },
     onError: (error) => {
       toast.error(`Error creating entry: ${error.message}`);
