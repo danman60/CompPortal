@@ -1,12 +1,32 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-25 (Session 13 - UI Refactor: Reservation-Based Filtering)
+**Last Updated:** 2025-10-25 (Session 14 - Build Fix)
 
 ---
 
 ## Current Status: Phase 1 Summary Workflow - 100% Complete
 
-### Latest Work: Session 13 - Reservation-Based UI Refactor
+### Latest Work: Session 14 - Build Fix for Reservation Variables
+
+**Date:** October 25, 2025
+**Duration:** 5 minutes
+**Status:** ✅ DEPLOYED - Fixed build errors from Session 13 refactor
+
+**BUILD ERRORS FIXED:**
+- Line 546: `hasApprovedReservations` → `hasSelectedReservation`
+- Line 548: `approvedCompetitionId` → `selectedCompetitionId` + `reservation.id`
+- Line 680: `hasSelectedCompetition` → `hasSelectedReservation`
+- Line 682: `competitions.find()` → `selectedReservation.event_name`
+
+**Root Cause:** Session 13 refactor to reservation-based filtering missed updating two locations:
+1. FloatingActionButton (mobile Create Routine button)
+2. Summary modal header displaying event name
+
+**Commit:** 781797d - fix: Update EntriesList to use reservation variables
+
+---
+
+### Previous Session: Session 13 - Reservation-Based UI Refactor
 
 **Date:** October 25, 2025
 **Duration:** ~2 hours
