@@ -32,6 +32,7 @@ import { failureRouter } from './failure';
 import { testingRouter } from './testing';
 import { emailPreferencesRouter } from './emailPreferences';
 import { superAdminRouter } from './superAdmin';
+import { summaryRouter } from './summary';
 
 /**
  * Main tRPC router
@@ -71,6 +72,7 @@ export const appRouter = router({
   failure: failureRouter,
   emailPreferences: emailPreferencesRouter,
   superAdmin: superAdminRouter,
+  summary: summaryRouter,
 });
 
 // Export type definition of API
