@@ -167,6 +167,23 @@ export default function EntryForm({ entryId }: EntryFormProps) {
     }
   }, [existingEntry, isEditMode]);
 
+  // Handler for "Another Like This" button
+  const handleAnotherLikeThis = () => {
+    // Keep dancers but reset other fields
+    const keepDancers = formData.participants;
+    setFormData({
+      ...initialFormData,
+      participants: keepDancers,
+      competition_id: formData.competition_id,
+      category_id: formData.category_id,
+      classification_id: formData.classification_id,
+      age_group_id: formData.age_group_id,
+      entry_size_category_id: formData.entry_size_category_id,
+    });
+    setShowSuccess(false);
+    setCurrentStep(0);
+  };
+
   const createMutation = trpc.entry.create.useMutation({
     onSuccess: async (data) => {
       toast.success('Routine created successfully!');
@@ -180,10 +197,6 @@ export default function EntryForm({ entryId }: EntryFormProps) {
         entry_size_category_id: formData.entry_size_category_id,
       });
       // Show success animation before redirect
-      setShowSuccess(true);
-      setTimeout(() => {
-        router.push('/dashboard/entries');
-      }, 1500);
     },
     onError: (error) => {
       toast.error(`Error creating entry: ${error.message}`);
@@ -295,6 +308,33 @@ export default function EntryForm({ entryId }: EntryFormProps) {
 
   return (
     <div className="max-w-4xl mx-auto">
+  // Show success screen with "Another Like This" button
+  if (showSuccess && !isEditMode) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[600px] p-8">
+        <div className="text-center space-y-6">
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-3xl font-bold text-white">Routine Created Successfully!</h2>
+          <p className="text-gray-400">Your routine has been saved.</p>
+          <div className="flex gap-4 justify-center mt-8">
+            <button
+              onClick={handleAnotherLikeThis}
+              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              🔄 Another Like This
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/entries")}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              ✓ View All Routines
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="flex justify-between mb-2">

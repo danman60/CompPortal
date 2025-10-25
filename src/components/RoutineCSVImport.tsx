@@ -418,7 +418,7 @@ export default function RoutineCSVImport() {
           entry_fee: 0,
           total_fee: 0,
           status: 'draft',
-          participants: [],
+          participants: dancerMatches.filter(m => m.routineIndex === i && m.matched && m.matchedId).map(m => ({ dancer_id: m.matchedId })),
         } as any);
 
         successCount++;

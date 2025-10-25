@@ -12,6 +12,8 @@ type Props = {
 
 export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [otherCredit, setOtherCredit] = useState({ amount: 0, reason: "" });
+  const [showCreditModal, setShowCreditModal] = useState(false);
   const [isEditingPrices, setIsEditingPrices] = useState(false);
   const [editableLineItems, setEditableLineItems] = useState<any[]>([]);
 
@@ -100,7 +102,15 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const currentSubtotal = currentLineItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
   const taxRate = invoice?.summary.taxRate || 0;
   const taxAmount = currentSubtotal * taxRate;
-  const totalAmount = currentSubtotal * (1 - discountPercent / 100) * (1 + taxRate);
+  const totalAfterDiscount = currentSubtotal * (1 - discountPercent / 100);
+  const totalWithTax = totalAfterDiscount * (1 + taxRate);
+  const totalAmount = Math.max(0, totalWithTax - otherCredit.amount);
+          {otherCredit.amount > 0 && (
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-purple-400">Other Credits{otherCredit.reason && `: ${otherCredit.reason}`}</span>
+              <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
+            </div>
+          )}
 
   if (isLoading) {
     return (
@@ -370,6 +380,63 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all"
               >
                 Clear
+            </button>
+          )}
+          <button
+            onClick={() => setShowCreditModal(true)}
+            className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg font-semibold text-sm hover:bg-purple-500/30 transition-all ml-4"
+          >
+            💳 Other Credits
+          </button>
+        </div>
+      </div>
+
+      {/* Other Credits Modal */}
+      {showCreditModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-xl max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4">Add Other Credits</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Credit Amount ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={otherCredit.amount}
+                  onChange={(e) => setOtherCredit({ ...otherCredit, amount: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Reason</label>
+                <input
+                  type="text"
+                  value={otherCredit.reason}
+                  onChange={(e) => setOtherCredit({ ...otherCredit, reason: e.target.value })}
+                  placeholder="e.g., Early bird discount, Loyalty credit"
+                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={() => setShowCreditModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+              >
+                Apply
+              </button>
+              <button
+                onClick={() => {
+                  setOtherCredit({ amount: 0, reason: "" });
+                  setShowCreditModal(false);
+                }}
+                className="flex-1 px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
               </button>
             )}
           </div>
@@ -395,6 +462,12 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <div className="flex justify-between py-2 border-b border-white/10">
               <span className="text-gray-300">Tax ({(taxRate * 100).toFixed(2)}%)</span>
               <span className="text-white">${(((currentSubtotal * (1 - discountPercent / 100)) * taxRate)).toFixed(2)}</span>
+            </div>
+          )}
+          {otherCredit.amount > 0 && (
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-purple-400">Other Credits{otherCredit.reason && `: ${otherCredit.reason}`}</span>
+              <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
             </div>
           )}
 
@@ -498,6 +571,12 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             rows.push(['', '', '', '', '', '', 'Subtotal:', `$${invoice.summary.subtotal.toFixed(2)}`]);
             rows.push(['', '', '', '', '', '', `Tax (${invoice.summary.taxRate}%):`, `$${invoice.summary.taxAmount.toFixed(2)}`]);
             rows.push(['', '', '', '', '', '', 'Total:', `$${invoice.summary.totalAmount.toFixed(2)}`]);
+          {otherCredit.amount > 0 && (
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-purple-400">Other Credits{otherCredit.reason && `: ${otherCredit.reason}`}</span>
+              <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
+            </div>
+          )}
 
             // Convert to CSV
             const csvContent = [headers, ...rows]
