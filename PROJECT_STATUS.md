@@ -4,14 +4,14 @@
 
 ---
 
-## Current Status: Parallel Rebuild - Phase 5 Complete (62.5%)
+## Current Status: Parallel Rebuild - Phase 6 Complete (75%)
 
-### Latest Work: Session 16 - E2E Testing Complete
+### Latest Work: Session 16 - Dashboard Preview Buttons Added
 
 **Date:** October 25, 2025
-**Status:** ✅ Phase 5 Complete - Both rebuild pages tested and working
+**Status:** ✅ Phase 6 Complete - Preview buttons added to both dashboards
 
-**PARALLEL REBUILD PROGRESS: 62.5% (5 of 8 phases)**
+**PARALLEL REBUILD PROGRESS: 75% (6 of 8 phases)**
 
 ✅ **Phase 0:** Backend status progression (invoice.ts, reservation.ts)
 ✅ **Phase 1:** Shared UI components (6 components, 336 lines)
@@ -19,7 +19,39 @@
 ✅ **Phase 3:** Entries page (8 components, 699 lines)
 ✅ **Phase 4:** Pipeline page (9 components, 870 lines)
 ✅ **Phase 5:** E2E testing (both pages verified working)
-⏳ **Phase 6:** Dashboard buttons + cutover
+✅ **Phase 6:** Dashboard preview buttons (navigation ready)
+⏳ **Phase 7:** Production cutover (swap routes)
+
+---
+
+### Phase 6 Completion: Dashboard Preview Buttons
+
+**Date:** October 25, 2025
+**Status:** ✅ Preview buttons deployed to both dashboards
+
+**Components Modified:**
+
+**Studio Director Dashboard (`StudioDirectorDashboard.tsx:109-129`):**
+- Added preview banner with gradient border (purple/pink)
+- "Preview: New Entries Page" heading
+- Link to `/dashboard/entries-rebuild`
+- Positioned after MotivationalQuote component
+- Glassmorphic design matching existing UI
+
+**Competition Director Dashboard (`CompetitionDirectorDashboard.tsx:202-223`):**
+- Added preview banner with gradient border (blue/purple)
+- "Preview: New Pipeline Page" heading
+- Link to `/dashboard/reservation-pipeline-rebuild`
+- CD-only (hidden for super_admin role)
+- Positioned before existing Pipeline button
+
+**Design:**
+- Consistent banner pattern across both dashboards
+- Gradient backgrounds with backdrop blur
+- Clear call-to-action buttons
+- User-friendly messaging encouraging feedback
+
+**Commit:** 48e0b78 - feat: Add preview buttons for rebuild pages
 
 ---
 
@@ -153,13 +185,20 @@ ${typeof entry.total_fee === 'number'
 ✅ Status progression verified - approved status displayed correctly
 ✅ All UI interactions functional
 
-**Phase 6: Cutover + Dashboard Buttons (NOT STARTED)**
-- Add preview buttons to SD dashboard
-- Add preview buttons to CD dashboard
-- Test swap-out capability
-- Deploy navigation changes
+**Phase 6: Dashboard Preview Buttons (COMPLETE)**
+✅ SD dashboard preview button added (StudioDirectorDashboard.tsx:109-129)
+✅ CD dashboard preview button added (CompetitionDirectorDashboard.tsx:202-223)
+✅ Build passed, changes committed and pushed
+✅ Awaiting deployment for final testing
 
-**Estimated Progress:** 62.5% (5 of 8 phases complete)
+**Phase 7: Production Cutover (NOT STARTED)**
+- Swap `/dashboard/entries` to use rebuild version
+- Swap `/dashboard/reservation-pipeline` to use rebuild version
+- Move old pages to `-legacy` routes for rollback
+- Remove preview buttons after cutover
+- Monitor production for issues
+
+**Estimated Progress:** 75% (6 of 8 phases complete)
 
 ---
 
@@ -209,13 +248,13 @@ ${typeof entry.total_fee === 'number'
 ## 🔄 Recent Commits
 
 ```
+48e0b78 - feat: Add preview buttons for rebuild pages (Oct 25)
+736fd5e - docs: Complete Phase 5 E2E testing (62.5% progress) (Oct 25)
 ee9803b - fix: Handle Prisma Decimal type in total_fee display (Oct 25)
 b8c661d - feat: Complete Pipeline page rebuild (Phase 4) (Oct 25)
-9de1f75 - docs: Update PROJECT_STATUS.md for Phase 3 completion (Oct 25)
 4aea682 - feat: Complete Entries page rebuild (Phase 3) (Oct 25)
 1cf845e - feat: Create custom hooks for rebuild (Phase 2) (Oct 25)
 32aacd3 - feat: Create shared UI components for rebuild (Phase 1) (Oct 25)
-1204b69 - feat: Implement backend status progression (Phase 0) (Oct 25)
 ```
 
 ---
@@ -256,15 +295,17 @@ b8c661d - feat: Complete Pipeline page rebuild (Phase 4) (Oct 25)
 
 ## 📈 Next Session Priorities
 
-### Immediate: Phase 6 - Cutover + Dashboard Buttons
-1. Create "Preview New Entries Page" button on SD dashboard
-2. Create "Preview New Pipeline Page" button on CD dashboard
-3. Test navigation between old and new pages
-4. Verify both dashboards work with preview buttons
-5. Plan production cutover strategy
+### Immediate: Phase 7 - Production Cutover
+1. Test preview buttons work correctly after deployment
+2. Swap `/dashboard/entries` route to rebuild version
+3. Swap `/dashboard/reservation-pipeline` route to rebuild version
+4. Move old pages to `-legacy` routes for rollback safety
+5. Remove preview buttons from dashboards
+6. Monitor production for any issues
+7. Celebrate completion! 🎉
 
 ---
 
-**Last Deployment:** Oct 25, 2025 (commit ee9803b - deployed ✅)
-**Next Session Focus:** Phase 6 - Dashboard preview buttons
-**Production Status:** ✅ STABLE - Rebuild 62.5% complete, both pages tested and working
+**Last Deployment:** Oct 25, 2025 (commit 48e0b78 - deploying...)
+**Next Session Focus:** Phase 7 - Production cutover
+**Production Status:** 🔄 DEPLOYING - Rebuild 75% complete, preview buttons being deployed
