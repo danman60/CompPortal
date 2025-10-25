@@ -4,13 +4,13 @@ export type PipelineStatus = 'all' | 'pending' | 'approved' | 'summary_in' | 'in
 
 interface PipelineReservation {
   id: string;
-  event_id: string;
-  event_name: string;
-  status: string;
-  entry_count: number;
-  invoice_id: string | null;
-  invoice_paid: boolean;
-  payment_status: string;
+  competitionId: string;
+  competitionName: string;
+  status: string | null;
+  entryCount: number;
+  invoiceId: string | null;
+  invoicePaid: boolean;
+  [key: string]: any;
 }
 
 /**
@@ -30,10 +30,10 @@ export function usePipelineFilters(reservations: PipelineReservation[]) {
   const events = useMemo(() => {
     const uniqueEvents = new Map();
     reservations.forEach(r => {
-      if (!uniqueEvents.has(r.event_id)) {
-        uniqueEvents.set(r.event_id, {
-          id: r.event_id,
-          name: r.event_name
+      if (!uniqueEvents.has(r.competitionId)) {
+        uniqueEvents.set(r.competitionId, {
+          id: r.competitionId,
+          name: r.competitionName
         });
       }
     });
@@ -46,7 +46,7 @@ export function usePipelineFilters(reservations: PipelineReservation[]) {
 
     // Event filter
     if (eventFilter !== 'all') {
-      result = result.filter(r => r.event_id === eventFilter);
+      result = result.filter(r => r.competitionId === eventFilter);
     }
 
     // Status filter - CORRECT IMPLEMENTATION (uses new status values)
@@ -56,26 +56,26 @@ export function usePipelineFilters(reservations: PipelineReservation[]) {
       // Approved but no entries yet (waiting for SD to create routines)
       result = result.filter(r =>
         r.status === 'approved' &&
-        r.entry_count === 0 &&
-        !r.invoice_id
+        r.entryCount === 0 &&
+        !r.invoiceId
       );
     } else if (statusFilter === 'summary_in') {
       // CORRECT: After summary submission, status='summarized'
       result = result.filter(r =>
         r.status === 'summarized' &&
-        !r.invoice_id
+        !r.invoiceId
       );
     } else if (statusFilter === 'invoiced') {
       // CORRECT: After invoice creation, status='invoiced'
       result = result.filter(r =>
         r.status === 'invoiced' &&
-        r.payment_status !== 'completed'
+        !r.invoicePaid
       );
     } else if (statusFilter === 'paid') {
       // CORRECT: After payment, status='closed'
       result = result.filter(r =>
         r.status === 'closed' ||
-        r.payment_status === 'completed'
+        r.invoicePaid
       );
     }
 
@@ -87,16 +87,16 @@ export function usePipelineFilters(reservations: PipelineReservation[]) {
     all: reservations.length,
     pending: reservations.filter(r => r.status === 'pending').length,
     approved: reservations.filter(r =>
-      r.status === 'approved' && r.entry_count === 0 && !r.invoice_id
+      r.status === 'approved' && r.entryCount === 0 && !r.invoiceId
     ).length,
     summary_in: reservations.filter(r =>
-      r.status === 'summarized' && !r.invoice_id
+      r.status === 'summarized' && !r.invoiceId
     ).length,
     invoiced: reservations.filter(r =>
-      r.status === 'invoiced' && r.payment_status !== 'completed'
+      r.status === 'invoiced' && !r.invoicePaid
     ).length,
     paid: reservations.filter(r =>
-      r.status === 'closed' || r.payment_status === 'completed'
+      r.status === 'closed' || r.invoicePaid
     ).length
   }), [reservations]);
 
