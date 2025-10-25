@@ -543,9 +543,9 @@ export default function EntriesList() {
     </div>
 
     {/* Floating Action Button for Mobile */}
-    {hasApprovedReservations && (
+    {hasSelectedReservation && selectedReservation && (
       <FloatingActionButton
-        href={`/dashboard/entries/create?competition=${approvedCompetitionId}`}
+        href={`/dashboard/entries/create?competition=${selectedCompetitionId}&reservation=${selectedReservation.id}`}
         icon="➕"
         label="Create Routine"
       />
@@ -677,9 +677,9 @@ export default function EntriesList() {
           >
             <h2 className="text-2xl font-bold text-white mb-4">
               Routine Summary
-              {hasSelectedCompetition && (
+              {hasSelectedReservation && selectedReservation && (
                 <span className="text-lg text-gray-400 ml-2">
-                  - {competitions.find((c: any) => c.id === selectedCompetition)?.name}
+                  - {selectedReservation.event_name}
                 </span>
               )}
             </h2>
