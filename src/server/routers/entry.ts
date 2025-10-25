@@ -235,29 +235,70 @@ export const entryRouter = router({
           },
         });
 
-        // Refund unused spaces using CapacityService (atomic transaction with audit trail)
+        // Refund unused spaces inline (avoid nested transaction)
+        // Matches Phase 1 spec lines 589-651 (capacity refund on summary submission)
         if (unusedSpaces > 0) {
-          try {
-            await capacityService.refund(
-              competitionId,
-              unusedSpaces,
-              fullReservation.id,
-              'summary_refund',
-              ctx.userId
-            );
-          } catch (refundError) {
-            logger.error('Failed to refund capacity', {
-              error: refundError instanceof Error ? refundError : new Error(String(refundError)),
-              competitionId,
-              reservationId: fullReservation.id,
-              unusedSpaces,
-            });
-            // Throw error to rollback transaction - capacity refund is critical
+          // Lock competition row and get current capacity
+          const competition = await tx.competitions.findUnique({
+            where: { id: competitionId },
+            select: {
+              available_reservation_tokens: true,
+              total_reservation_tokens: true,
+            },
+          });
+
+          if (!competition) {
             throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'Failed to refund unused capacity. Please try again or contact support.',
+              code: 'NOT_FOUND',
+              message: 'Competition not found',
             });
           }
+
+          const available = competition.available_reservation_tokens || 0;
+          const total = competition.total_reservation_tokens || 0;
+
+          // Validate refund won't exceed total capacity
+          if (available + unusedSpaces > total) {
+            logger.error('Refund would exceed total capacity', {
+              competitionId,
+              currentAvailable: available,
+              refundAmount: unusedSpaces,
+              total,
+            });
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Cannot refund more than total capacity',
+            });
+          }
+
+          // Increment capacity (refund unused spaces)
+          await tx.competitions.update({
+            where: { id: competitionId },
+            data: {
+              available_reservation_tokens: {
+                increment: unusedSpaces,
+              },
+            },
+          });
+
+          // Create audit trail in capacity ledger
+          await tx.capacity_ledger.create({
+            data: {
+              competition_id: competitionId,
+              reservation_id: fullReservation.id,
+              change_amount: unusedSpaces, // Positive = refund
+              reason: 'summary_refund',
+              created_by: ctx.userId,
+            },
+          });
+
+          logger.info('Capacity refunded during summary submission', {
+            competitionId,
+            reservationId: fullReservation.id,
+            spaces: unusedSpaces,
+            previousAvailable: available,
+            newAvailable: available + unusedSpaces,
+          });
         }
 
         // Create summary record (PHASE1_SPEC.md lines 611-616)
