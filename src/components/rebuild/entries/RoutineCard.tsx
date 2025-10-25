@@ -101,7 +101,7 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
 
       {entry.total_fee && (
         <div className="text-2xl font-bold text-white mb-4">
-          ${entry.total_fee.toFixed(2)}
+          ${typeof entry.total_fee === 'number' ? entry.total_fee.toFixed(2) : Number(entry.total_fee).toFixed(2)}
         </div>
       )}
 

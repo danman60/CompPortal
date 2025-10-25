@@ -70,7 +70,7 @@ export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
             </TableCell>
             <TableCell align="right">
               <span className="text-white font-medium">
-                ${entry.total_fee?.toFixed(2) || '0.00'}
+                ${entry.total_fee ? (typeof entry.total_fee === 'number' ? entry.total_fee.toFixed(2) : Number(entry.total_fee).toFixed(2)) : '0.00'}
               </span>
             </TableCell>
             <TableCell>
