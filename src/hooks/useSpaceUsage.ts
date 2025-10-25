@@ -1,40 +1,31 @@
 /**
  * Custom hook for calculating space usage and reservation limits
- * Extracted from EntriesList.tsx (lines 236-254)
+ * Updated to work directly with reservation object instead of competition ID
  */
 export function useSpaceUsage(
   entries: any[],
-  selectedCompetition: string,
-  reservationData: any
+  selectedReservation: any | null
 ) {
-  const hasSelectedCompetition = !!selectedCompetition;
-
-  // 🐛 FIX Bug #16: Find reservation matching selected competition, not just first reservation
-  const selectedReservation = hasSelectedCompetition
-    ? reservationData?.reservations?.find((r: any) => r.competition_id === selectedCompetition)
-    : null;
-
-  const hasNoReservation = hasSelectedCompetition && !selectedReservation;
+  const hasSelectedReservation = !!selectedReservation;
 
   // Calculate total confirmed spaces and used spaces
-  const confirmedSpaces = hasSelectedCompetition
-    ? selectedReservation?.spaces_confirmed || 0
-    : 0;
+  const confirmedSpaces = selectedReservation?.spaces_confirmed || 0;
 
-  const usedSpaces = hasSelectedCompetition
-    ? entries.filter(e => e.competition_id === selectedCompetition && e.status !== 'cancelled').length
+  const usedSpaces = hasSelectedReservation
+    ? entries.filter(e => e.reservation_id === selectedReservation.id && e.status !== 'cancelled').length
     : entries.filter(e => e.status !== 'cancelled').length;
 
-  const isAtLimit = hasSelectedCompetition && selectedReservation && usedSpaces >= confirmedSpaces;
-  const isIncomplete = hasSelectedCompetition && selectedReservation && usedSpaces < confirmedSpaces;
+  const isAtLimit = hasSelectedReservation && usedSpaces >= confirmedSpaces;
+  const isIncomplete = hasSelectedReservation && usedSpaces < confirmedSpaces;
+  const isClosed = selectedReservation?.is_closed || false;
 
   return {
-    hasSelectedCompetition,
+    hasSelectedReservation,
     selectedReservation,
-    hasNoReservation,
     confirmedSpaces,
     usedSpaces,
     isAtLimit,
     isIncomplete,
+    isClosed,
   };
 }

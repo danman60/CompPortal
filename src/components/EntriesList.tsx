@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { SkeletonCard } from '@/components/Skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import FloatingActionButton from '@/components/FloatingActionButton';
-import { CompetitionFilter } from './CompetitionFilter';
+import { ReservationSelector } from './ReservationSelector';
 import { EntryEditModal } from './EntryEditModal';
 import { useTableSort } from '@/hooks/useTableSort';
 import { useEntries } from '@/hooks/useEntries';
@@ -55,12 +55,13 @@ export default function EntriesList() {
   const {
     filter,
     setFilter,
-    selectedCompetition,
-    setSelectedCompetition,
+    selectedReservation: selectedReservationId,
+    setSelectedReservation,
     viewMode,
     setViewMode,
-    competitions,
+    reservations,
     filteredEntries,
+    selectedReservationObj,
   } = useEntryFilters(entries, reservationData);
 
   // Sort entries for table view
@@ -79,25 +80,17 @@ export default function EntriesList() {
 
   // Space usage calculations
   const {
-    hasSelectedCompetition,
+    hasSelectedReservation,
     selectedReservation,
-    hasNoReservation,
     confirmedSpaces,
     usedSpaces,
     isAtLimit,
     isIncomplete,
-  } = useSpaceUsage(entries, selectedCompetition, reservationData);
+    isClosed,
+  } = useSpaceUsage(entries, selectedReservationObj);
 
-  // Check if user has any approved reservations (business logic requirement)
-  const hasApprovedReservations = reservationData?.reservations?.some(
-    (r: any) => r.status === 'approved'
-  ) ?? false;
-
-  // Get the first approved reservation's competition ID for routine creation
-  const firstApprovedReservation = reservationData?.reservations?.find(
-    (r: any) => r.status === 'approved'
-  );
-  const approvedCompetitionId = firstApprovedReservation?.competition_id || '';
+  // Get competition ID from selected reservation for routine creation
+  const selectedCompetitionId = selectedReservation?.competition_id || '';
 
   // Modal states
   const [editingEntry, setEditingEntry] = useState<any>(null);
@@ -135,8 +128,8 @@ export default function EntriesList() {
     );
   }
 
-  // Show progress bar when there are filtered entries and reservations for selected competition
-  const showProgressBar = filteredEntries.length > 0 && confirmedSpaces > 0;
+  // Show progress bar when there are filtered entries and selected reservation
+  const showProgressBar = filteredEntries.length > 0 && hasSelectedReservation && confirmedSpaces > 0;
 
   return (
     <>
@@ -233,30 +226,7 @@ export default function EntriesList() {
             </button>
           )}
 
-          {/* Submit Summary Button - Top Row */}
-          {isStudioDirector && hasSelectedCompetition && filteredEntries.length > 0 && (
-            <button
-              onClick={() => {
-                if (userData?.studio?.id && selectedCompetition) {
-                  submitSummaryMutation.mutate({
-                    studioId: userData.studio.id,
-                    competitionId: selectedCompetition,
-                  });
-                }
-              }}
-              disabled={summarySubmitted || submitSummaryMutation.isPending}
-              className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
-                summarySubmitted
-                  ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-lg transform hover:scale-105'
-              }`}
-            >
-              <span>{summarySubmitted ? '✓' : '📤'}</span>
-              <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
-            </button>
-          )}
-
-          {isAtLimit || hasNoReservation ? (
+          {isAtLimit || isClosed || !hasSelectedReservation ? (
             <div className="relative group">
               <button
                 disabled
@@ -266,17 +236,19 @@ export default function EntriesList() {
               </button>
               <div className="absolute right-0 top-full mt-2 w-64 bg-red-500/20 border border-red-400/30 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 <div className="text-xs text-red-200">
-                  {isAtLimit
-                    ? 'Space limit reached for this competition. You cannot create more routines.'
-                    : 'No approved reservation found for this competition. Please create and get approval for a reservation first.'}
+                  {isClosed
+                    ? 'This reservation is closed. You can edit existing routines but cannot create new ones.'
+                    : isAtLimit
+                    ? 'Space limit reached for this reservation. You cannot create more routines.'
+                    : 'No reservation selected. Please select a reservation first.'}
                 </div>
               </div>
             </div>
           ) : (
             <Link
               href={
-                hasSelectedCompetition && selectedReservation
-                  ? `/dashboard/entries/create?competition=${selectedCompetition}&reservation=${selectedReservation.id}`
+                hasSelectedReservation && selectedReservation
+                  ? `/dashboard/entries/create?competition=${selectedCompetitionId}&reservation=${selectedReservation.id}`
                   : '/dashboard/entries/create'
               }
               className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
@@ -284,15 +256,60 @@ export default function EntriesList() {
               ➕ Create Routine
             </Link>
           )}
+
+          {/* Submit Summary Button - Far Right, Prominent */}
+          {isStudioDirector && hasSelectedReservation && filteredEntries.length > 0 && (
+            <button
+              onClick={() => {
+                // Check if incomplete - show confirmation dialog
+                if (isIncomplete) {
+                  setShowIncompleteConfirm(true);
+                  return;
+                }
+
+                // Proceed with submission
+                if (userData?.studio?.id && selectedCompetitionId) {
+                  submitSummaryMutation.mutate({
+                    studioId: userData.studio.id,
+                    competitionId: selectedCompetitionId,
+                  });
+                }
+              }}
+              disabled={summarySubmitted || submitSummaryMutation.isPending}
+              className={`px-8 py-4 rounded-xl transition-all duration-200 flex items-center gap-3 disabled:cursor-not-allowed font-bold text-lg shadow-xl ${
+                summarySubmitted
+                  ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white hover:shadow-2xl transform hover:scale-105 hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 animate-pulse'
+              }`}
+            >
+              <span className="text-2xl">{summarySubmitted ? '✓' : '📤'}</span>
+              <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
+              {submitSummaryMutation.isPending && (
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        {/* Event Filter */}
-        <CompetitionFilter competitions={competitions.filter(Boolean).map((comp: any) => ({ id: comp.id, competition_name: comp.name, competition_start_date: comp.competition_start_date || (comp.year ? new Date(`${comp.year}-01-01`) : new Date()), }))} selectedId={selectedCompetition || null} onSelect={(id) => setSelectedCompetition(id || '')} />
+        {/* Reservation Selector */}
+        <ReservationSelector
+          reservations={reservations.map((r: any) => ({
+            id: r.id,
+            event_name: r.event_name,
+            status: r.status,
+            is_closed: r.is_closed,
+            competition_id: r.competition_id
+          }))}
+          selectedId={selectedReservationId || null}
+          onSelect={(id) => setSelectedReservation(id || '')}
+        />
 
-        {/* Status Filter */}
         <div className="flex gap-2 flex-wrap">
           {/* View Mode Toggle */}
           <div className="flex gap-1 bg-white/5 rounded-lg p-1">
@@ -324,91 +341,6 @@ export default function EntriesList() {
             </button>
           </div>
 
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              filter === 'all'
-                ? 'bg-purple-500 text-white'
-                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-            }`}
-          >
-            All
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-              filter === 'all'
-                ? 'bg-white/30 text-white'
-                : 'bg-purple-500 text-white'
-            }`}>
-              {entries.length}
-            </span>
-          </button>
-          <button
-            onClick={() => setFilter('draft')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              filter === 'draft'
-                ? 'bg-gray-500 text-white'
-                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-            }`}
-          >
-            Draft
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-              filter === 'draft'
-                ? 'bg-white/30 text-white'
-                : 'bg-gray-500 text-white'
-            }`}>
-              {entries.filter((e) => e.status === 'draft').length}
-            </span>
-          </button>
-          <button
-            onClick={() => setFilter('registered')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              filter === 'registered'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-            }`}
-          >
-            Registered
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-              filter === 'registered'
-                ? 'bg-white/30 text-white'
-                : 'bg-yellow-500 text-black'
-            }`}>
-              {entries.filter((e) => e.status === 'registered').length}
-            </span>
-          </button>
-          <button
-            onClick={() => setFilter('confirmed')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              filter === 'confirmed'
-                ? 'bg-green-500 text-white'
-                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-            }`}
-          >
-            Confirmed
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-              filter === 'confirmed'
-                ? 'bg-white/30 text-white'
-                : 'bg-green-500 text-black'
-            }`}>
-              {entries.filter((e) => e.status === 'confirmed').length}
-            </span>
-          </button>
-          <button
-            onClick={() => setFilter('cancelled')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              filter === 'cancelled'
-                ? 'bg-red-500 text-white'
-                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-            }`}
-          >
-            Cancelled
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-              filter === 'cancelled'
-                ? 'bg-white/30 text-white'
-                : 'bg-red-500 text-white'
-            }`}>
-              {entries.filter((e) => e.status === 'cancelled').length}
-            </span>
-          </button>
         </div>
       </div>
 
@@ -478,13 +410,13 @@ export default function EntriesList() {
           <div className="text-6xl mb-4">🎭</div>
           <h3 className="text-xl font-semibold text-white mb-2">No routines found</h3>
           <p className="text-gray-400 mb-6">
-            {filter === 'all'
-              ? 'No routines have been created yet.'
-              : `No ${filter} routines found.`}
+            {hasSelectedReservation
+              ? 'No routines have been created for this reservation yet.'
+              : 'Please select a reservation to view or create routines.'}
           </p>
-          {hasApprovedReservations ? (
+          {hasSelectedReservation && !isClosed ? (
             <Link
-              href={`/dashboard/entries/create?competition=${approvedCompetitionId}`}
+              href={`/dashboard/entries/create?competition=${selectedCompetitionId}&reservation=${selectedReservation?.id}`}
               className="inline-block bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200"
             >
               Create Your First Routine
@@ -527,8 +459,8 @@ export default function EntriesList() {
       {isStudioDirector && (
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 border-t-2 border-purple-400/50 shadow-2xl z-50">
           <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between gap-6">
-              {/* Summary Stats */}
+            <div className="flex items-center justify-center gap-6">
+              {/* Summary Stats - Centered */}
               <div className="flex items-center gap-8">
                 {/* Created Routines */}
                 <div className="flex items-center gap-2">
@@ -558,7 +490,7 @@ export default function EntriesList() {
                   <div>
                     <div className="text-xs text-gray-300 font-semibold uppercase">Viewing</div>
                     <div className="text-sm font-bold text-white">
-                      {competitions.find((c: any) => c.id === selectedCompetition)?.name || 'Selected Competition'}
+                      {selectedReservationObj?.event_name || 'Select a Reservation'}
                     </div>
                   </div>
                 </div>
@@ -599,56 +531,6 @@ export default function EntriesList() {
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowSummaryModal(true)}
-                  disabled={filteredEntries.length === 0}
-                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                >
-                  <span>📊</span>
-                  <span>View Summary</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    // Check if incomplete - show confirmation dialog
-                    if (isIncomplete) {
-                      setShowIncompleteConfirm(true);
-                      return;
-                    }
-
-                    // Create snapshot of current filtered entries
-                    const snapshot = filteredEntries
-                      .map(e => e.id)
-                      .sort()
-                      .join(',');
-
-                    setSubmittedEntriesSnapshot(snapshot);
-
-                    // Call the actual tRPC mutation
-                    if (userData?.studio?.id && selectedCompetition) {
-                      submitSummaryMutation.mutate({
-                        studioId: userData.studio.id,
-                        competitionId: selectedCompetition,
-                      });
-                    } else {
-                      toast.error('Missing studio or competition information', {
-                        position: 'top-right',
-                      });
-                    }
-                  }}
-                  disabled={filteredEntries.length === 0 || summarySubmitted || submitSummaryMutation.isPending}
-                  className={`px-8 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed font-semibold ${
-                    summarySubmitted
-                      ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
-                  }`}
-                >
-                  <span>{summarySubmitted ? '✓' : '📤'}</span>
-                  <span>{summarySubmitted ? 'Summary Submitted' : 'Submit Summary'}</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -954,20 +836,15 @@ export default function EntriesList() {
               </button>
               <button
                 onClick={() => {
-                  // Proceed with submission
-                  const snapshot = filteredEntries
-                    .map(e => e.id)
-                    .sort()
-                    .join(',');
-
-                  setSubmittedEntriesSnapshot(snapshot);
-                  setSummarySubmitted(true);
                   setShowIncompleteConfirm(false);
 
-                  toast.success(`Summary submitted with ${usedSpaces} routines! ${confirmedSpaces - usedSpaces} unused spaces released.`, {
-                    duration: 5000,
-                    position: 'top-right',
-                  });
+                  // Proceed with submission via mutation
+                  if (userData?.studio?.id && selectedCompetitionId) {
+                    submitSummaryMutation.mutate({
+                      studioId: userData.studio.id,
+                      competitionId: selectedCompetitionId,
+                    });
+                  }
                 }}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
               >
