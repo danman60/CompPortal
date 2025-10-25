@@ -12,7 +12,7 @@ import { logger } from './logger';
 /**
  * Configuration
  */
-const APP_NAME = 'CompPortal';
+const APP_NAME = 'EMPWR';
 const BACKUP_CODE_COUNT = 10;
 const BACKUP_CODE_LENGTH = 8;
 

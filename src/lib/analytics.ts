@@ -1,5 +1,5 @@
 /**
- * Analytics tracking utilities for CompPortal
+ * Analytics tracking utilities for EMPWR
  *
  * Integrates with Vercel Analytics for custom event tracking
  * Tracks critical business operations without PII

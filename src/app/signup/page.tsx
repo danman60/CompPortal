@@ -138,7 +138,7 @@ export default function SignupPage() {
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-white mb-1">Create Account</h1>
-            <p className="text-gray-300 text-sm">Join CompPortal today</p>
+            <p className="text-gray-300 text-sm">Join EMPWR today</p>
           </div>
 
           {error && (

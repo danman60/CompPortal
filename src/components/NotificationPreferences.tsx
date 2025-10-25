@@ -85,7 +85,7 @@ export function NotificationPreferencesModal({
                 />
                 <ToggleItem
                   label="Desktop Notifications"
-                  description="Show browser notifications even when CompPortal isn't open"
+                  description="Show browser notifications even when EMPWR isn't open"
                   checked={preferences.desktop}
                   onChange={(checked) => updatePreference('desktop', checked)}
                   disabled={!preferences.enabled}

@@ -36,12 +36,12 @@ export default function WelcomeEmail({
   return (
     <Html>
       <Head />
-      <Preview>Welcome to CompPortal — Let's get you set up</Preview>
+      <Preview>Welcome to EMPWR — Let's get you set up</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={h1}>✨ Welcome, {name}!</Heading>
 
-          <Text style={text}>We're excited to have you on CompPortal.</Text>
+          <Text style={text}>We're excited to have you on EMPWR.</Text>
 
           <Section style={calloutBox(primaryColor)}>
             <Text style={infoLabel}>Account</Text>
@@ -78,7 +78,7 @@ export default function WelcomeEmail({
           <Hr style={hr} />
 
           <Text style={footer}>
-            Welcome aboard! We're here to help you make the most of CompPortal.
+            Welcome aboard! We're here to help you make the most of EMPWR.
           </Text>
         </Container>
       </Body>

@@ -175,7 +175,7 @@ export default function OnboardingPage() {
         <div className="text-center mb-8">
           <div className="text-6xl mb-4 animate-bounce">🎭</div>
           <h1 className="text-4xl font-bold text-white mb-2">
-            Welcome to CompPortal!
+            Welcome to EMPWR!
           </h1>
           <p className="text-gray-300">
             Let's get your studio set up in just a few steps

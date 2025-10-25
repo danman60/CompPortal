@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import MusicTrackingDashboard from '@/components/MusicTrackingDashboard';
 
 export const metadata = {
-  title: 'Music Tracking - CompPortal',
+  title: 'Music Tracking - EMPWR',
   description: 'Track music uploads and send reminders',
 };
 

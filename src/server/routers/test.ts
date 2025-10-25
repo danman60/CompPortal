@@ -15,7 +15,7 @@ export const testRouter = router({
   getServerStatus: publicProcedure.query(() => {
     return {
       status: 'online',
-      message: 'GlowDance API Server is running',
+      message: 'EMPWR API Server is running',
       version: '1.0.0',
       features: {
         nextjs: true,

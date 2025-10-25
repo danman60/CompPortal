@@ -20,7 +20,7 @@ const COLORS = {
 };
 
 /**
- * Initialize PDF with standard CompPortal branding
+ * Initialize PDF with standard EMPWR branding
  */
 function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrait'): jsPDF {
   const doc = new jsPDF({
@@ -32,7 +32,7 @@ function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrai
   // Add header with branding
   doc.setFontSize(20);
   doc.setTextColor(COLORS.primary);
-  doc.text('✨ GlowDance CompPortal', 15, 15);
+  doc.text('✨ EMPWR Dance Experience', 15, 15);
 
   doc.setFontSize(12);
   doc.setTextColor(COLORS.text);
@@ -63,7 +63,7 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
     pageHeight - 10,
     { align: 'center' }
   );
-  doc.text('GlowDance CompPortal', 15, pageHeight - 10);
+  doc.text('EMPWR Dance Experience', 15, pageHeight - 10);
 }
 
 /**

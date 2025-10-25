@@ -114,7 +114,7 @@ export default function NotificationCenter() {
                         Enable Desktop Notifications
                       </div>
                       <div className="text-xs text-gray-400 mb-2">
-                        Get notified even when CompPortal isn't open
+                        Get notified even when EMPWR isn't open
                       </div>
                       <button
                         onClick={requestDesktopPermission}

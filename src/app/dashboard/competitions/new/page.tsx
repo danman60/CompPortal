@@ -79,7 +79,7 @@ export default function NewCompetitionPage() {
               <input
                 {...register('name', { required: 'Event name is required' })}
                 className={`w-full px-4 py-2 rounded-lg bg-white/5 border ${errors.name ? 'border-red-400' : 'border-white/20'} text-white focus:outline-none focus:ring-2 focus:ring-pink-500`}
-                placeholder="e.g., GlowDance Spring Showcase 2025"
+                placeholder="e.g., EMPWR Spring Showcase 2025"
               />
               {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>}
             </div>

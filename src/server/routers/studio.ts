@@ -374,7 +374,7 @@ export const studioRouter = router({
             );
             await sendEmail({
               to: studio.users_studios_owner_idTousers.email,
-              subject: 'Welcome to CompPortal - Studio Approved!',
+              subject: 'Welcome to EMPWR - Studio Approved!',
               html: welcomeHtml,
             });
           }

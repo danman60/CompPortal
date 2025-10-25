@@ -118,7 +118,7 @@ export function ThemeSelector() {
           <div className="absolute right-0 mt-2 w-64 bg-gray-900 border border-white/20 rounded-xl shadow-2xl z-50 p-2 animate-fade-in">
             <div className="mb-2 px-3 py-2">
               <h3 className="text-sm font-semibold text-white">Theme Preference</h3>
-              <p className="text-xs text-gray-400 mt-1">Choose how CompPortal looks</p>
+              <p className="text-xs text-gray-400 mt-1">Choose how EMPWR looks</p>
             </div>
 
             <div className="space-y-1">

@@ -3,7 +3,7 @@
 /**
  * Support Chat Button Component
  *
- * Role-based chat selector for CompPortal support
+ * Role-based chat selector for EMPWR support
  *
  * Chat Paths:
  * - SD (Studio Director): Tech Support OR Questions for CD

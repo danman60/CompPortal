@@ -737,7 +737,7 @@ export const schedulingRouter = router({
       // Create calendar
       const calendar = icalGenerator({
         name: `${competition?.name || 'Competition'} Schedule`,
-        prodId: '//CompPortal//Schedule Export//EN',
+        prodId: '//EMPWR//Schedule Export//EN',
         timezone: 'America/Toronto',
       });
 

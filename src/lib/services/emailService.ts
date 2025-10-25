@@ -56,7 +56,7 @@ export class EmailService {
         </div>
         <p>You can now start creating routines for this competition.</p>
         <p>If you have any questions, please don't hesitate to reach out.</p>
-        <p>Best regards,<br/>CompPortal Team</p>
+        <p>Best regards,<br/>EMPWR Team</p>
       </div>
     `;
 
@@ -97,7 +97,7 @@ export class EmailService {
         <p>Unfortunately, your reservation request for <strong>${competitionName}</strong> could not be approved at this time.</p>
         ${reason ? `<div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;"><p style="margin: 0;"><strong>Reason:</strong> ${reason}</p></div>` : ''}
         <p>Please feel free to reach out if you have any questions or would like to discuss alternative options.</p>
-        <p>Best regards,<br/>CompPortal Team</p>
+        <p>Best regards,<br/>EMPWR Team</p>
       </div>
     `;
 
@@ -142,7 +142,7 @@ export class EmailService {
           <a href="${invoiceUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Invoice</a>
         </div>
         <p>Please review and process payment at your earliest convenience.</p>
-        <p>Best regards,<br/>CompPortal Team</p>
+        <p>Best regards,<br/>EMPWR Team</p>
       </div>
     `;
 

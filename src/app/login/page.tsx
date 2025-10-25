@@ -52,7 +52,7 @@ export default function LoginPage() {
             Welcome Back
           </h1>
           <p className="text-gray-300 text-center mb-8">
-            Sign in to your CompPortal account
+            Sign in to your EMPWR account
           </p>
 
           {error && (
