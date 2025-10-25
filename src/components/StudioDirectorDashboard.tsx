@@ -105,6 +105,27 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
           {studioName && <span className="text-purple-400">{studioName}</span>}
         </p>
         <MotivationalQuote />
+
+        {/* Preview New Entries Page Banner */}
+        <div className="mt-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-md rounded-xl border-2 border-purple-400/50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="text-4xl">✨</div>
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-purple-300 mb-2">
+                Preview: New Entries Page
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Try out our rebuilt entries page with improved performance and design. Your feedback helps us improve!
+              </p>
+              <Link
+                href="/dashboard/entries-rebuild"
+                className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                🎨 Preview New Page →
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats - 3 large colored cards */}
