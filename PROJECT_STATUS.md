@@ -4,22 +4,60 @@
 
 ---
 
-## Current Status: Parallel Rebuild - Phase 4 Complete (50%)
+## Current Status: Parallel Rebuild - Phase 5 Complete (62.5%)
 
-### Latest Work: Session 16 - Pipeline Page Rebuild + Bug Fix
+### Latest Work: Session 16 - E2E Testing Complete
 
 **Date:** October 25, 2025
-**Status:** ✅ Phase 4 Complete - Both rebuild pages built, Decimal bug fixed
+**Status:** ✅ Phase 5 Complete - Both rebuild pages tested and working
 
-**PARALLEL REBUILD PROGRESS: 50% (4 of 8 phases)**
+**PARALLEL REBUILD PROGRESS: 62.5% (5 of 8 phases)**
 
 ✅ **Phase 0:** Backend status progression (invoice.ts, reservation.ts)
 ✅ **Phase 1:** Shared UI components (6 components, 336 lines)
 ✅ **Phase 2:** Custom hooks (4 hooks, 297 lines)
 ✅ **Phase 3:** Entries page (8 components, 699 lines)
 ✅ **Phase 4:** Pipeline page (9 components, 870 lines)
-⏳ **Phase 5:** E2E testing (awaiting deployment)
+✅ **Phase 5:** E2E testing (both pages verified working)
 ⏳ **Phase 6:** Dashboard buttons + cutover
+
+---
+
+### Phase 5 Completion: E2E Testing
+
+**Date:** October 25, 2025
+**Status:** ✅ Both rebuild pages verified working in production
+
+**Test Results:**
+
+**Entries Page (`/dashboard/entries-rebuild`):**
+- ✅ Page loads without errors
+- ✅ Decimal type handling working ($115.00 displayed correctly)
+- ✅ Card view functional (routine cards with all details)
+- ✅ Table view functional (sortable columns)
+- ✅ Reservation selector working
+- ✅ View toggle (Cards/Table) working
+- ✅ Summary statistics accurate ($230.00 total for 2 entries)
+- ✅ Create Routine button present
+
+**Pipeline Page (`/dashboard/reservation-pipeline-rebuild`):**
+- ✅ Page loads without errors
+- ✅ Event metrics cards displaying correctly (4 events)
+- ✅ Capacity tracking accurate (100/600 for St. Catharines #1)
+- ✅ Event filter dropdown working (shows reservation counts)
+- ✅ Status tabs functional (All/Pending/Approved/etc.)
+- ✅ Reservation table displaying correctly
+- ✅ Status badge showing "approved" correctly
+- ✅ Empty state working ("No reservations found" message)
+
+**Verified Status Progression:**
+- Current reservation showing `status: "approved"` correctly
+- 2 routines created under approved reservation
+- Pipeline filtering logic working as expected
+
+**Screenshots:**
+- `entries-rebuild-test.png` - Entries page card view
+- `pipeline-rebuild-test.png` - Pipeline page with event metrics
 
 ---
 
@@ -109,11 +147,11 @@ ${typeof entry.total_fee === 'number'
 
 ### Remaining Rebuild Phases
 
-**Phase 5: E2E Testing (IN PROGRESS - awaiting deployment)**
-- Test Entries page functionality
-- Test Pipeline page functionality
-- Verify status progression
-- Document any issues
+**Phase 5: E2E Testing (COMPLETE)**
+✅ Entries page tested - Card/table views working, Decimal fix deployed
+✅ Pipeline page tested - Event metrics, filters, status tabs working
+✅ Status progression verified - approved status displayed correctly
+✅ All UI interactions functional
 
 **Phase 6: Cutover + Dashboard Buttons (NOT STARTED)**
 - Add preview buttons to SD dashboard
@@ -121,7 +159,7 @@ ${typeof entry.total_fee === 'number'
 - Test swap-out capability
 - Deploy navigation changes
 
-**Estimated Progress:** 50% (4 of 8 phases complete)
+**Estimated Progress:** 62.5% (5 of 8 phases complete)
 
 ---
 
@@ -218,20 +256,15 @@ b8c661d - feat: Complete Pipeline page rebuild (Phase 4) (Oct 25)
 
 ## 📈 Next Session Priorities
 
-### Immediate: Phase 5 - E2E Testing
-1. Wait for Vercel deployment of Decimal fix
-2. Test `/dashboard/entries-rebuild` functionality
-3. Test `/dashboard/reservation-pipeline-rebuild` functionality
-4. Verify status progression matches Phase 0 backend
-5. Document test results
-
-### Future: Phase 6 - Cutover
-- Add preview buttons to both dashboards
-- Test navigation between old and new pages
-- Prepare for production cutover
+### Immediate: Phase 6 - Cutover + Dashboard Buttons
+1. Create "Preview New Entries Page" button on SD dashboard
+2. Create "Preview New Pipeline Page" button on CD dashboard
+3. Test navigation between old and new pages
+4. Verify both dashboards work with preview buttons
+5. Plan production cutover strategy
 
 ---
 
-**Last Deployment:** Oct 25, 2025 (commit ee9803b - deploying)
-**Next Session Focus:** Phase 5 - E2E testing after deployment
-**Production Status:** 🔄 DEPLOYING - Rebuild 50% complete, Decimal fix in progress
+**Last Deployment:** Oct 25, 2025 (commit ee9803b - deployed ✅)
+**Next Session Focus:** Phase 6 - Dashboard preview buttons
+**Production Status:** ✅ STABLE - Rebuild 62.5% complete, both pages tested and working
