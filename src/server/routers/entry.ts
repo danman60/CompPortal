@@ -641,6 +641,7 @@ export const entryRouter = router({
             entry_suffix: true,
             is_late_entry: true,
             competition_id: true,
+            reservation_id: true,
             studio_id: true,
             music_file_url: true,
             music_title: true,
