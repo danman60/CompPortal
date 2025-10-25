@@ -2,17 +2,17 @@ import { useState, useEffect, useMemo } from 'react';
 
 interface Entry {
   id: string;
-  reservation_id: string;
-  status: string;
-  total_fee?: number;
+  reservation_id: string | null;
+  [key: string]: any; // Allow any other fields from actual entry data
 }
 
 interface Reservation {
   id: string;
-  status: 'approved' | 'summarized' | 'invoiced' | 'closed';
-  is_closed: boolean;
-  spaces_confirmed: number;
+  status: 'approved' | 'summarized' | 'invoiced' | 'closed' | string | null;
+  is_closed: boolean | null;
+  spaces_confirmed: number | null;
   competitions?: { name: string };
+  [key: string]: any; // Allow any other fields from actual reservation data
 }
 
 /**
