@@ -8,15 +8,15 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gradient-to-r from-purple-900/40 via-indigo-900/40 to-blue-900/40 backdrop-blur-md border-t border-white/10 py-6 mt-auto">
+    <footer className="bg-gradient-to-r from-slate-900 via-gray-900 to-black border-t border-white/10 py-6 mt-auto">
       <div className="container mx-auto px-4 text-center">
-        <p className="text-gray-300 text-sm">
-          © {currentYear} <span className="font-semibold text-white">EMPWR</span> for {tenantName}
+        <p className="text-gray-400 text-sm">
+          © {currentYear} <span className="font-semibold text-white">EMPWR Dance Experience</span> · Powered by <span className="font-semibold text-purple-400">CompSync</span>
         </p>
-        <p className="text-gray-400 text-xs mt-2">
+        <p className="text-gray-500 text-xs mt-2">
           <a
             href="/status"
-            className="hover:text-white transition-colors"
+            className="hover:text-purple-400 transition-colors"
             target="_blank"
             rel="noopener noreferrer"
           >
