@@ -1,82 +1,86 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-26 (Session 17 - Manual Testing & Bug Fixes Complete)
+**Last Updated:** 2025-10-26 (Session 18 - Entry Creation Foundation)
 
 ---
 
-## Current Status: Parallel Rebuild - Refining Workflow (80%)
+## Current Status: Parallel Rebuild - Entry Creation Build (85%)
 
-### Latest Work: Session 17 - Manual Testing Round + Entry Creation Planning
+### Latest Work: Session 18 - Entry Creation Rebuild Session 1 (Foundation)
 
 **Date:** October 26, 2025
-**Status:** ✅ Multiple critical bugs fixed, invoice flow perfected, entry rebuild planned
+**Status:** ✅ Entry creation foundation complete, all components built, build passing
 
-**SESSION 17 ACHIEVEMENTS:**
+**SESSION 18 ACHIEVEMENTS:**
 
-**Manual Testing Round (CD Flow):**
-1. ✅ Tested reservation → approval → summary → invoice creation
-2. ✅ Fixed 10x display bug in pipeline table (parseInt radix)
-3. ✅ Fixed counter re-animation on alt-tab (useCountUp hasAnimated ref)
-4. ✅ Fixed bottom bar capacity display (LiveSummaryBar)
-5. ✅ Fixed create routine button navigation (context params)
-6. ✅ Fixed UUID validation in summary submission (actual reservation fields)
-7. ✅ Fixed invoice creation query (reservation-based, not status-based)
-8. ✅ Added missing database statuses (invoiced, closed, adjusted)
-9. ✅ Fixed invoice redirect after creation (studioId/competitionId)
-10. ✅ Fixed generateForStudio 400 error (draft entries support)
-11. ✅ Fixed SD invoice visibility (query actual invoices table)
-12. ✅ Made invoice singular permanent DB object (not regenerated)
-13. ✅ Fixed capacity counters re-animating on button clicks (React.memo)
+**Entry Creation Foundation (Session 1 of 4):**
+1. ✅ Created route `/dashboard/entries-rebuild/create` (page.tsx)
+2. ✅ Built `useEntryForm` hook with state + inference + validation (200 lines)
+3. ✅ Built EntryCreateForm container component (260 lines)
+4. ✅ Built RoutineDetailsSection (title, choreographer, category, classification)
+5. ✅ Built DancerSelectionSection (search, sort, select with checkboxes)
+6. ✅ Built AutoCalculatedSection (age group + size auto-detection, manual override)
+7. ✅ Built ReservationContextBar (fixed bottom bar with capacity + competition info)
+8. ✅ Built EntryFormActions (4 save buttons: Cancel, Save, Save & Another, Create Like This)
+9. ✅ Added ID mapping logic (inferred strings → DB IDs from lookups)
+10. ✅ Added capacity display (fetches entries, filters by reservation)
+11. ✅ Updated EntriesHeader create button to point to new route
+12. ✅ Fixed TypeScript compilation (import paths, type interfaces)
 
-**Entry Creation Analysis:**
-- ✅ Analyzed current UnifiedRoutineForm (765 lines, 3-step wizard)
-- ✅ Compared to business logic requirements
-- ✅ Created comprehensive rebuild plan (ENTRY_REBUILD_PLAN.md)
-- ✅ Designed streamlined single-page form
-- ✅ Defined 4 save actions (Cancel, Save, Save & Another, Create Like This)
-- ✅ Removed fee display at creation stage
-- ✅ 8-hour implementation plan ready for next session
+**Technical Details:**
+- Uses existing `lookupRouter.getAllForEntry` for categories/age groups/sizes
+- Uses existing `dancer.getByStudio` for dancer list
+- Uses existing `entry.getAll` for capacity calculation
+- Auto-calculates age group from average dancer age
+- Auto-calculates size category from dancer count
+- Allows manual override of auto-calculated values
+- No fee display (matches business requirement)
 
-**Key Improvements This Session:**
-- **Invoice as Singular DB Object:** Created once, stored permanently, never regenerated
-- **Better Data Flow:** Pipeline creates → DB stores → Detail reads DB → One source of truth
-- **Studio Director Access:** Invoices properly filtered by status (SENT/PAID only)
-- **Capacity Counters:** No longer re-animate on state changes
-- **Entry Creation Plan:** Clear path from 765-line wizard to clean single-page form
+**Files Created:**
+- src/app/dashboard/entries-rebuild/create/page.tsx (26 lines)
+- src/hooks/rebuild/useEntryForm.ts (200 lines)
+- src/components/rebuild/entries/EntryCreateForm.tsx (260 lines)
+- src/components/rebuild/entries/RoutineDetailsSection.tsx (143 lines)
+- src/components/rebuild/entries/DancerSelectionSection.tsx (191 lines)
+- src/components/rebuild/entries/AutoCalculatedSection.tsx (142 lines)
+- src/components/rebuild/entries/ReservationContextBar.tsx (106 lines)
+- src/components/rebuild/entries/EntryFormActions.tsx (67 lines)
+
+**Total New Code:** 1,135 lines across 8 files
+
+**Key Features This Session:**
+- **Single-Page Form:** No wizard steps, all fields visible at once
+- **Smart Auto-Calculation:** Age group from avg age, size from dancer count
+- **4 Save Actions:** Cancel, Save, Save & Another, Create Like This
+- **Live Capacity Display:** Shows X/Y used, Z remaining in realtime
+- **Reservation Context:** Fixed bottom bar with competition info
+- **No Fees Shown:** Aligns with business logic (fees at summary only)
 
 ---
 
-## 📊 Rebuild Progress: 80%
+## 📊 Rebuild Progress: 85%
 
 ✅ **Phase 0:** Backend status progression (invoice.ts, reservation.ts)
 ✅ **Phase 1:** Shared UI components (6 components, 336 lines)
-✅ **Phase 2:** Custom hooks (4 hooks, 297 lines)
+✅ **Phase 2:** Custom hooks (5 hooks, 497 lines) - Added useEntryForm
 ✅ **Phase 3:** Entries page (8 components, 699 lines)
 ✅ **Phase 4:** Pipeline page (9 components, 870 lines)
 ✅ **Phase 5:** E2E testing (15/15 golden path tests passed)
 ✅ **Phase 6:** Dashboard REBUILD badges + manual testing fixes
-⏳ **Phase 7:** Entry creation rebuild (8 hours planned)
-⏳ **Phase 8:** Production cutover (awaiting completion)
+🚧 **Phase 7:** Entry creation rebuild (Session 1/4 complete - foundation done)
+⏳ **Phase 8:** Production cutover (awaiting Phase 7 completion)
 
 ---
 
-## Session 17 Commits (13 total)
+## Session 18 Commits (3 total)
 
 ```
-e038f9d - docs: Add entry creation rebuild plan (Oct 26)
-21474e6 - fix: Prevent capacity counters from re-animating (Oct 26)
-9addcec - fix: Make invoice singular permanent DB object (Oct 26)
-9fef4aa - fix: Make invoices visible to Studio Directors (Oct 26)
-9280e9b - fix: Redirect to invoice detail + fix generateForStudio (Oct 26)
-7081c2e - fix: Add REBUILD badges to navigation + headers (Oct 26)
-01c7d23 - fix: Add missing reservation statuses to DB constraint (Oct 26)
-fc73375 - fix: Change invoice query to reservation-based (Oct 26)
-d3cf99f - fix: EventMetricsGrid progress bar animation (Oct 26)
-cb0b5c0 - fix: Use actual reservation fields in summary modal (Oct 26)
-f8de0bb - fix: Add available slots display to LiveSummaryBar (Oct 26)
-5d4b12a - fix: useCountUp prevent re-animation on re-render (Oct 26)
-c4da9f6 - fix: Add radix 10 to parseInt in ReservationForm (Oct 26)
+b231754 - fix: Add ID mapping + capacity display + type fixes (Oct 26)
+d658202 - feat: Entry creation rebuild - Session 1 (foundation) (Oct 26)
+f889939 - docs: Update trackers for Session 17 completion (Oct 26)
 ```
+
+**Previous Session:** 13 commits (Session 17 - Manual testing & bug fixes)
 
 ---
 
@@ -205,28 +209,37 @@ c4da9f6 - fix: Add radix 10 to parseInt in ReservationForm (Oct 26)
 
 ## 📈 Next Session Priorities
 
-### Immediate: Entry Creation Rebuild (Session 1 of 4)
+### Immediate: Entry Creation Testing & Refinement (Session 2 of 4)
 
-**Ready to Start:**
-- ✅ Plan complete (ENTRY_REBUILD_PLAN.md)
-- ✅ Architecture defined (7 components + 1 hook)
-- ✅ Tasks broken down (2h + 3h + 2h + 1h)
-- ✅ Success metrics defined
+**Session 1 Complete:**
+- ✅ Route created at `/dashboard/entries-rebuild/create`
+- ✅ All 8 components built (1,135 lines of code)
+- ✅ useEntryForm hook with auto-calculation logic
+- ✅ Build passing, types resolved
+- ✅ Pushed to production
 
-**Session 1 Tasks (2 hours):**
-1. Create route: `/dashboard/entries-rebuild/create`
-2. Build `useEntryForm` hook (state + inference + validation)
-3. Create `EntryCreateForm` container
-4. Set up data fetching (reservation, dancers, settings)
+**Session 2 Tasks (Manual Testing + Fixes):**
+1. Test form in production with real data
+2. Verify auto-calculation logic (age group, size category)
+3. Test all 4 save actions (Cancel, Save, Save & Another, Create Like This)
+4. Verify capacity enforcement
+5. Test with edge cases (no dancers, at capacity, no reservation)
+6. Fix any bugs discovered during testing
+7. Add optimistic updates for better UX
+8. Add keyboard shortcuts (Ctrl+S, Tab order)
 
-**Workflow Improvements:**
-- User happier with rebuild workflow approach
-- Parallel development keeps old code stable
-- Clear migration path from wizard to single-page form
-- Better alignment with business logic
+**Remaining Sessions:**
+- Session 3: Integration refinements (if needed)
+- Session 4: Final polish and production cutover
+
+**Notes:**
+- Foundation complete, build passing
+- Parallel rebuild keeps old form stable
+- Clear migration path when testing complete
+- Better UX than 765-line wizard
 
 ---
 
-**Last Deployment:** Oct 26, 2025 (Session 17 - All bugs fixed)
-**Next Session Focus:** Entry creation rebuild - Session 1 (Foundation)
-**Production Status:** ✅ STABLE - Rebuild 80% complete, invoice flow perfected
+**Last Deployment:** Oct 26, 2025 (Session 18 - Entry creation foundation)
+**Next Session Focus:** Entry creation testing & refinement
+**Production Status:** ✅ STABLE - Rebuild 85% complete, entry creation foundation deployed
