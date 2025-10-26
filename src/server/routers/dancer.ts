@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
@@ -252,10 +253,18 @@ export const dancerRouter = router({
         }
       }
 
+      // Validate tenant context exists
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'No tenant context - access via subdomain required',
+        });
+      }
+
       const dancer = await prisma.dancers.create({
         data: {
           ...data,
-          tenant_id: '00000000-0000-0000-0000-000000000001', // EMPWR tenant
+          tenant_id: ctx.tenantId!, // ✅ Dynamic from subdomain (validated above)
           date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
         },
         include: {
@@ -484,6 +493,14 @@ export const dancerRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Validate tenant context exists
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'No tenant context - access via subdomain required',
+        });
+      }
+
       // Validate all dancers belong to user's studio (for studio directors)
       if (isStudioDirector(ctx.userRole)) {
         if (!ctx.studioId) {
@@ -502,7 +519,7 @@ export const dancerRouter = router({
           return prisma.dancers.create({
             data: {
               ...data,
-              tenant_id: '00000000-0000-0000-0000-000000000001', // EMPWR tenant
+              tenant_id: ctx.tenantId!, // ✅ Dynamic from subdomain (validated above)
               date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
             },
           });
@@ -639,6 +656,14 @@ export const dancerRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Validate tenant context exists
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'No tenant context - access via subdomain required',
+        });
+      }
+
       // Get all unique studio codes from the input
       const studioCodes = [...new Set(input.dancers.map((d) => d.studio_code))];
 
@@ -687,7 +712,7 @@ export const dancerRouter = router({
           return prisma.dancers.create({
             data: {
               studio_id,
-              tenant_id: '00000000-0000-0000-0000-000000000001', // EMPWR tenant
+              tenant_id: ctx.tenantId!, // ✅ Dynamic from subdomain (validated above)
               ...data,
               date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
               gender: data.gender ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1).toLowerCase() : undefined,

@@ -174,7 +174,7 @@ export const entryRouter = router({
         }),
         prisma.competitions.findUnique({
           where: { id: competitionId },
-          select: { name: true, year: true },
+          select: { name: true, year: true, tenant_id: true },
         }),
         prisma.competition_entries.findMany({
           where: {
@@ -461,6 +461,12 @@ export const entryRouter = router({
           },
         });
 
+        // Fetch tenant branding
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: competition.tenant_id },
+          select: { name: true, branding: true },
+        });
+
         // Send email to each CD who has this preference enabled
         for (const cd of competitionDirectors) {
           const isEnabled = await isEmailEnabled(cd.id, 'routine_summary_submitted');
@@ -477,6 +483,13 @@ export const entryRouter = router({
             totalFees,
             studioEmail: studio.email || '',
             portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/routine-summaries`,
+            // ✅ Add tenant branding
+            tenantBranding: tenant?.branding ? {
+              primaryColor: (tenant.branding as any).primaryColor,
+              secondaryColor: (tenant.branding as any).secondaryColor,
+              logo: (tenant.branding as any).logo,
+              tenantName: tenant.name,
+            } : undefined,
           };
 
           const html = await renderRoutineSummarySubmitted(emailData);

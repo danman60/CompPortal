@@ -704,6 +704,7 @@ export const reservationRouter = router({
               name: true,
               year: true,
               entry_fee: true,
+              tenant_id: true, // ✅ For tenant branding in email
             },
           },
         },
@@ -755,12 +756,25 @@ export const reservationRouter = router({
             console.log('[EMAIL DEBUG] Email preference check', { isEnabled });
 
             if (isEnabled) {
+              // Fetch tenant branding
+              const tenant = await prisma.tenants.findUnique({
+                where: { id: reservation.competitions?.tenant_id },
+                select: { name: true, branding: true },
+              });
+
               const emailData: ReservationApprovedData = {
                 studioName: reservation.studios.name,
                 competitionName: reservation.competitions?.name || 'Competition',
                 competitionYear: reservation.competitions?.year || new Date().getFullYear(),
                 spacesConfirmed: reservation.spaces_confirmed || 0,
                 portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
+                // ✅ Add tenant branding
+                tenantBranding: tenant?.branding ? {
+                  primaryColor: (tenant.branding as any).primaryColor,
+                  secondaryColor: (tenant.branding as any).secondaryColor,
+                  logo: (tenant.branding as any).logo,
+                  tenantName: tenant.name,
+                } : undefined,
               };
 
               const html = await renderReservationApproved(emailData);
@@ -860,6 +874,7 @@ export const reservationRouter = router({
               name: true,
               year: true,
               contact_email: true,
+              tenant_id: true, // ✅ For tenant branding in email
             },
           },
         },
@@ -878,6 +893,12 @@ export const reservationRouter = router({
             const isEnabled = await isEmailEnabled(studio.owner_id, 'reservation_rejected');
 
             if (isEnabled) {
+              // Fetch tenant branding
+              const tenant = await prisma.tenants.findUnique({
+                where: { id: reservation.competitions?.tenant_id },
+                select: { name: true, branding: true },
+              });
+
               const emailData: ReservationRejectedData = {
                 studioName: reservation.studios.name,
                 competitionName: reservation.competitions?.name || 'Competition',
@@ -885,6 +906,13 @@ export const reservationRouter = router({
                 reason: input.reason,
                 portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
                 contactEmail: reservation.competitions?.contact_email || process.env.EMAIL_FROM || 'info@glowdance.com',
+                // ✅ Add tenant branding
+                tenantBranding: tenant?.branding ? {
+                  primaryColor: (tenant.branding as any).primaryColor,
+                  secondaryColor: (tenant.branding as any).secondaryColor,
+                  logo: (tenant.branding as any).logo,
+                  tenantName: tenant.name,
+                } : undefined,
               };
 
               const html = await renderReservationRejected(emailData);

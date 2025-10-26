@@ -76,6 +76,9 @@ export const userRouter = router({
       notification_preferences: userProfile?.notification_preferences,
       notificationsEnabled,
       studio,
+      // ✅ Add tenant context from tRPC
+      tenantId: ctx.tenantId,
+      tenantData: ctx.tenantData,
     };
   }),
 

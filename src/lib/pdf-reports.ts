@@ -20,9 +20,13 @@ const COLORS = {
 };
 
 /**
- * Initialize PDF with standard EMPWR branding
+ * Initialize PDF with tenant branding
  */
-function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrait'): jsPDF {
+function initPDF(
+  title: string,
+  orientation: 'portrait' | 'landscape' = 'portrait',
+  tenantName: string = 'EMPWR Dance Experience' // ✅ Optional with default
+): jsPDF {
   const doc = new jsPDF({
     orientation,
     unit: 'mm',
@@ -32,7 +36,7 @@ function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrai
   // Add header with branding
   doc.setFontSize(20);
   doc.setTextColor(COLORS.primary);
-  doc.text('✨ EMPWR Dance Experience', 15, 15);
+  doc.text(`✨ ${tenantName}`, 15, 15); // ✅ Dynamic
 
   doc.setFontSize(12);
   doc.setTextColor(COLORS.text);
@@ -53,7 +57,7 @@ function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrai
 /**
  * Add footer with page numbers
  */
-function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
+function addFooter(doc: jsPDF, pageNum: number, totalPages: number, tenantName: string = 'EMPWR Dance Experience') {
   const pageHeight = doc.internal.pageSize.height;
   doc.setFontSize(8);
   doc.setTextColor(COLORS.textLight);
@@ -63,7 +67,7 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
     pageHeight - 10,
     { align: 'center' }
   );
-  doc.text('EMPWR Dance Experience', 15, pageHeight - 10);
+  doc.text(tenantName, 15, pageHeight - 10); // ✅ Dynamic
 }
 
 /**

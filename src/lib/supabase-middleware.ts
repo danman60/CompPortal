@@ -30,6 +30,7 @@ export async function updateSession(request: NextRequest) {
   let tenantData: any = null;
 
   if (subdomain) {
+    // Production subdomain provided - lookup required
     const { data, error } = await supabase
       .from('tenants')
       .select('id, slug, subdomain, name, branding')
@@ -39,36 +40,66 @@ export async function updateSession(request: NextRequest) {
     if (!error && data) {
       tenantId = data.id;
       tenantData = data;
+    } else {
+      // ✅ Invalid subdomain - return 404 immediately
+      return new Response(
+        JSON.stringify({
+          error: 'Tenant not found',
+          message: `No tenant found for subdomain: ${subdomain}`,
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
-  }
+  } else {
+    // No subdomain detected
+    if (hostname === 'localhost' || hostname.startsWith('localhost:')) {
+      // ✅ Localhost - load demo tenant for development
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('id, slug, subdomain, name, branding')
+        .eq('slug', 'demo')
+        .single();
 
-  // Fallback to default tenant (demo) if no subdomain or tenant not found
-  if (!tenantId) {
-    const { data } = await supabase
-      .from('tenants')
-      .select('id, slug, subdomain, name, branding')
-      .eq('slug', 'demo')
-      .single();
-
-    if (data) {
-      tenantId = data.id;
-      tenantData = data;
+      if (!error && data) {
+        tenantId = data.id;
+        tenantData = data;
+      } else {
+        // Demo tenant not found - this is a setup issue
+        return new Response(
+          JSON.stringify({
+            error: 'Demo tenant not configured',
+            message: 'Contact system administrator',
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    } else {
+      // ✅ Production without subdomain (e.g., compsync.net) - return 404
+      return new Response(
+        JSON.stringify({
+          error: 'Subdomain required',
+          message: 'Please access via subdomain (e.g., empwr.compsync.net)',
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
   }
 
   // Create modified request headers with tenant context
   const requestHeaders = new Headers(request.headers);
 
-  // TEMPORARY: Default to EMPWR tenant if none detected (for demo)
-  const finalTenantId = tenantId || '00000000-0000-0000-0000-000000000001';
-  const finalTenantData = tenantData || {
-    id: '00000000-0000-0000-0000-000000000001',
-    name: 'EMPWR Dance Experience',
-    subdomain: 'demo',
-  };
-
-  requestHeaders.set('x-tenant-id', finalTenantId);
-  requestHeaders.set('x-tenant-data', JSON.stringify(finalTenantData));
+  // ✅ Tenant is guaranteed to be set here (or we returned 404)
+  requestHeaders.set('x-tenant-id', tenantId!);
+  requestHeaders.set('x-tenant-data', JSON.stringify(tenantData!));
 
   // Refresh session if expired
   const {

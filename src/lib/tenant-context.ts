@@ -73,29 +73,40 @@ export async function getTenantData(): Promise<TenantData | null> {
         branding: (tenant.branding && typeof tenant.branding === 'object' ? tenant.branding : {}) as any,
       };
     }
+
+    // ✅ Invalid subdomain - return null (middleware will handle 404)
+    return null;
   }
 
-  // Fallback to demo tenant
-  const tenant = await prisma.tenants.findFirst({
-    where: { slug: 'demo' },
-    select: {
-      id: true,
-      slug: true,
-      subdomain: true,
-      name: true,
-      branding: true,
-    },
-  });
+  // No subdomain detected
+  if (hostname === 'localhost' || hostname.startsWith('localhost:')) {
+    // ✅ Localhost - load demo tenant for development
+    const tenant = await prisma.tenants.findFirst({
+      where: { slug: 'demo' },
+      select: {
+        id: true,
+        slug: true,
+        subdomain: true,
+        name: true,
+        branding: true,
+      },
+    });
 
-  if (!tenant) return null;
+    if (!tenant) {
+      return null;
+    }
 
-  return {
-    id: tenant.id,
-    slug: tenant.slug || '',
-    subdomain: tenant.subdomain || '',
-    name: tenant.name || 'Competition Portal',
-    branding: (tenant.branding && typeof tenant.branding === 'object' ? tenant.branding : {}) as any,
-  };
+    return {
+      id: tenant.id,
+      slug: tenant.slug || '',
+      subdomain: tenant.subdomain || '',
+      name: tenant.name || 'Competition Portal',
+      branding: (tenant.branding && typeof tenant.branding === 'object' ? tenant.branding : {}) as any,
+    };
+  }
+
+  // ✅ Production without subdomain - return null (middleware will handle 404)
+  return null;
 }
 
 /**

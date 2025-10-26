@@ -16,9 +16,9 @@ export default function TenantSettingsPage() {
   const [showLoadDefaultsConfirm, setShowLoadDefaultsConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('routine-categories');
 
-  // Hardcoded EMPWR tenant ID (no multi-tenant support)
-  const tenantId = '00000000-0000-0000-0000-000000000001';
-  const userLoading = false;
+  // Get tenant from current user context
+  const { data: currentUser, isLoading: userLoading } = trpc.user.getCurrentUser.useQuery();
+  const tenantId = currentUser?.tenantId;
 
   // Fetch current tenant settings
   const { data: settingsData, isLoading: settingsLoading, refetch } = trpc.tenantSettings.getTenantSettings.useQuery(
@@ -55,6 +55,19 @@ export default function TenantSettingsPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // ✅ Add tenant validation
+  if (!tenantId) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-200">
+            No tenant context available. Please access via subdomain (e.g., empwr.compsync.net).
           </div>
         </div>
       </main>

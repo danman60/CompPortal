@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { createStudioOnboarding, updateStudioOnboarding } from '../actions/onboarding';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -99,52 +100,35 @@ export default function OnboardingPage() {
         .eq('owner_id', user.id)
         .single();
 
-      let studioError;
-      const now = new Date().toISOString();
-
       if (existingStudio) {
         // Update existing studio
-        const { error } = await supabase
-          .from('studios')
-          .update({
-            name: formData.studioName,
-            address1: formData.address1,
-            city: formData.city,
-            province: formData.province,
-            postal_code: formData.postalCode,
-            phone: formData.phone,
-            email: formData.email || user.email,
-            status: 'approved',
-            country: 'Canada',
-            consent_photo_video: formData.consentPhotoVideo ? now : null,
-            consent_legal_info: formData.consentLegalInfo ? now : null,
-          })
-          .eq('owner_id', user.id);
-        studioError = error;
+        await updateStudioOnboarding(user.id, {
+          name: formData.studioName,
+          address1: formData.address1,
+          address2: '',
+          city: formData.city,
+          province: formData.province,
+          postal_code: formData.postalCode,
+          phone: formData.phone,
+          email: formData.email || user.email,
+          consent_photo_video: formData.consentPhotoVideo,
+          consent_legal_info: formData.consentLegalInfo,
+        });
       } else {
         // Create new studio
-        const { error } = await supabase
-          .from('studios')
-          .insert({
-            tenant_id: '00000000-0000-0000-0000-000000000001', // EMPWR tenant
-            owner_id: user.id,
-            name: formData.studioName,
-            address1: formData.address1,
-            city: formData.city,
-            province: formData.province,
-            postal_code: formData.postalCode,
-            phone: formData.phone,
-            email: formData.email || user.email,
-            status: 'approved',
-            country: 'Canada',
-            consent_photo_video: formData.consentPhotoVideo ? now : null,
-            consent_legal_info: formData.consentLegalInfo ? now : null,
-          });
-        studioError = error;
-      }
-
-      if (studioError) {
-        throw new Error(`Failed to save studio: ${studioError.message}`);
+        await createStudioOnboarding({
+          owner_id: user.id,
+          name: formData.studioName,
+          address1: formData.address1,
+          address2: '',
+          city: formData.city,
+          province: formData.province,
+          postal_code: formData.postalCode,
+          phone: formData.phone,
+          email: formData.email || user.email,
+          consent_photo_video: formData.consentPhotoVideo,
+          consent_legal_info: formData.consentLegalInfo,
+        });
       }
 
       // Redirect to dashboard

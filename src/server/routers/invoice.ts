@@ -76,7 +76,17 @@ export const invoiceRouter = router({
         },
         include: {
           studios: true,
-          competitions: true,
+          competitions: {
+            include: {
+              tenants: {
+                select: {
+                  id: true,
+                  name: true,
+                  branding: true,
+                },
+              },
+            },
+          },
           reservations: true,
         },
         orderBy: {
@@ -133,6 +143,15 @@ export const invoiceRouter = router({
           endDate: invoice.competitions?.competition_end_date,
           location: invoice.competitions?.primary_location,
         },
+        // ✅ Add tenant object (matching PDF type)
+        tenant: invoice.competitions?.tenants ? {
+          branding: invoice.competitions.tenants.branding as {
+            logo?: string | null;
+            tagline?: string | null;
+            primaryColor?: string;
+            secondaryColor?: string;
+          } | null,
+        } : null,
         reservation: invoice.reservations ? {
           id: invoice.reservations.id,
           spacesRequested: invoice.reservations.spaces_requested,
@@ -199,6 +218,15 @@ export const invoiceRouter = router({
       // Fetch competition details
       const competition = await prisma.competitions.findUnique({
         where: { id: competitionId },
+        include: {
+          tenants: {
+            select: {
+              id: true,
+              name: true,
+              branding: true,
+            },
+          },
+        },
       });
 
       if (!competition) {
@@ -298,6 +326,15 @@ export const invoiceRouter = router({
           endDate: competition.competition_end_date,
           location: competition.primary_location,
         },
+        // ✅ Add tenant object (matching PDF type)
+        tenant: competition.tenants ? {
+          branding: competition.tenants.branding as {
+            logo?: string | null;
+            tagline?: string | null;
+            primaryColor?: string;
+            secondaryColor?: string;
+          } | null,
+        } : null,
         reservation: reservation ? {
           id: reservation.id,
           spacesRequested: reservation.spaces_requested,
@@ -764,6 +801,17 @@ export const invoiceRouter = router({
           const isEnabled = await isEmailEnabled(studio.owner_id, 'invoice_received');
 
           if (isEnabled) {
+            // Fetch tenant branding
+            const tenantQuery = await prisma.competitions.findUnique({
+              where: { id: updatedInvoice.competition_id },
+              select: { tenant_id: true },
+            });
+
+            const tenant = tenantQuery?.tenant_id ? await prisma.tenants.findUnique({
+              where: { id: tenantQuery.tenant_id },
+              select: { name: true, branding: true },
+            }) : null;
+
             const emailData: InvoiceDeliveryData = {
               studioName: studio.name,
               competitionName: competition.name,
@@ -772,6 +820,13 @@ export const invoiceRouter = router({
               totalAmount: 0, // See full details in invoice
               routineCount: 0, // See full details in invoice
               invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices/${updatedInvoice.studio_id}/${updatedInvoice.competition_id}`,
+              // ✅ Add tenant branding
+              tenantBranding: tenant?.branding ? {
+                primaryColor: (tenant.branding as any).primaryColor,
+                secondaryColor: (tenant.branding as any).secondaryColor,
+                logo: (tenant.branding as any).logo,
+                tenantName: tenant.name,
+              } : undefined,
             };
 
             const html = await renderInvoiceDelivery(emailData);
