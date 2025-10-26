@@ -217,7 +217,7 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               min="1"
               max="1000"
               value={formData.spaces_requested}
-              onChange={(e) => setFormData({ ...formData, spaces_requested: parseInt(e.target.value) || 1 })}
+              onChange={(e) => setFormData({ ...formData, spaces_requested: parseInt(e.target.value, 10) || 1 })}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                 showErrors && currentStep === 2 && (!formData.spaces_requested || formData.spaces_requested < 1) ? 'border-red-500' : 'border-white/20'
               }`}

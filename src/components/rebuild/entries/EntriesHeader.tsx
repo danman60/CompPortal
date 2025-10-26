@@ -1,11 +1,21 @@
 import Link from 'next/link';
 import { Button } from '@/components/rebuild/ui/Button';
 
+interface EntriesHeaderProps {
+  selectedReservationId?: string;
+  selectedCompetitionId?: string;
+}
+
 /**
  * Header for Entries rebuild page
  * Shows title and action buttons
  */
-export function EntriesHeader() {
+export function EntriesHeader({ selectedReservationId, selectedCompetitionId }: EntriesHeaderProps) {
+  // Build create URL with context
+  const createUrl = selectedReservationId && selectedCompetitionId
+    ? `/dashboard/entries/create?reservation=${selectedReservationId}&competition=${selectedCompetitionId}`
+    : '/dashboard/entries/create';
+
   return (
     <div className="mb-6">
       <Link
@@ -24,7 +34,7 @@ export function EntriesHeader() {
         </div>
 
         <div className="flex gap-3">
-          <Button href="/dashboard/entries/create" variant="primary">
+          <Button href={createUrl} variant="primary">
             Create Routine
           </Button>
         </div>

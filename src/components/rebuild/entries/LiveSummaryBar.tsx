@@ -53,8 +53,20 @@ export function LiveSummaryBar({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               <div className="text-white">
+                <div className="text-sm text-white/60">Available Slots</div>
+                <div className="text-2xl font-bold">🎫 {confirmedSpaces}</div>
+              </div>
+
+              <div className="text-white">
                 <div className="text-sm text-white/60">Created</div>
                 <div className="text-2xl font-bold">✅ {created}</div>
+              </div>
+
+              <div className="text-white">
+                <div className="text-sm text-white/60">Remaining</div>
+                <div className={`text-2xl font-bold ${isIncomplete ? 'text-red-400' : 'text-green-400'}`}>
+                  {confirmedSpaces - created}
+                </div>
               </div>
 
               <div className="text-white">

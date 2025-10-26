@@ -68,7 +68,10 @@ export function EntriesPageContainer() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-8">
-      <EntriesHeader />
+      <EntriesHeader
+        selectedReservationId={selectedReservation?.id}
+        selectedCompetitionId={selectedReservation?.competition_id}
+      />
 
       <EntriesFilters
         reservations={selectableReservations}
