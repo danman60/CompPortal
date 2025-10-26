@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
 
-export default function StudioDirectorStats() {
+interface StudioDirectorStatsProps {
+  nextActionCard?: 'dancers' | 'reservations' | 'routines' | null;
+}
+
+export default function StudioDirectorStats({ nextActionCard }: StudioDirectorStatsProps = {}) {
   const { data: myDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
   const { data: myEntries, isLoading: entriesLoading } = trpc.entry.getAll.useQuery();
   const { data: myReservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
@@ -41,7 +45,11 @@ export default function StudioDirectorStats() {
           <div className="text-sm text-gray-400 mb-2 font-medium">Add or import your dancers</div>
           <Link
             href="/dashboard/dancers"
-            className="block bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl border border-purple-400/30 p-6 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer"
+            className={`block bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl p-6 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer ${
+              nextActionCard === 'dancers'
+                ? 'border-2 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.4)] animate-pulse'
+                : 'border border-purple-400/30'
+            }`}
             title="Manage your studio's dancer roster. Add new dancers individually or import multiple dancers from a CSV file. Track active and inactive dancers."
           >
             <div className="flex items-center justify-between mb-4">
@@ -67,7 +75,11 @@ export default function StudioDirectorStats() {
           <div className="text-sm text-gray-400 mb-2 font-medium">Reserve routine slots</div>
           <Link
             href="/dashboard/reservations"
-            className="block bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl border border-green-400/30 p-6 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-200 cursor-pointer"
+            className={`block bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl p-6 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-200 cursor-pointer ${
+              nextActionCard === 'reservations'
+                ? 'border-2 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.4)] animate-pulse'
+                : 'border border-green-400/30'
+            }`}
             title="Request routine slots at upcoming competitions. Submit reservation requests specifying how many routines you plan to enter. Once approved by the competition director, you can create your routines."
           >
             <div className="flex items-center justify-between mb-4">
@@ -93,7 +105,11 @@ export default function StudioDirectorStats() {
           <div className="text-sm text-gray-400 mb-2 font-medium">Create your routines</div>
           <Link
             href="/dashboard/entries"
-            className="block bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-blue-400/30 p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer"
+            className={`block bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer ${
+              nextActionCard === 'routines'
+                ? 'border-2 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.4)] animate-pulse'
+                : 'border border-blue-400/30'
+            }`}
             title="Create and manage your competition routines. Build routines from approved reservations, assign dancers, upload music files, and track submission status. Edit routine details and view confirmation status."
           >
             <div className="flex items-center justify-between mb-4">

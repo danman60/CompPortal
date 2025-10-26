@@ -65,6 +65,77 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
   // Calculate unpaid invoices (all invoices are unpaid by default - payment tracking is per reservation)
   const unpaidInvoices = myInvoices?.invoices?.length || 0;
 
+  // Determine next action for user
+  const getNextAction = () => {
+    const totalDancers = myDancers?.dancers?.length || 0;
+    const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
+
+    if (totalDancers === 0) {
+      return {
+        icon: '💃',
+        label: 'Next Action for You',
+        value: 'Create Dancers',
+        color: 'text-purple-300',
+        href: '/dashboard/dancers',
+        tooltip: 'Start by adding your dancers'
+      };
+    }
+
+    if (approvedReservations === 0) {
+      return {
+        icon: '📋',
+        label: 'Next Action for You',
+        value: 'Create Reservation',
+        color: 'text-green-300',
+        href: '/dashboard/reservations',
+        tooltip: 'Reserve routine slots for a competition'
+      };
+    }
+
+    if (routinesLeftToCreate > 0) {
+      return {
+        icon: '🎭',
+        label: 'Next Action for You',
+        value: 'Finish Creating Routines',
+        color: 'text-blue-300',
+        href: '/dashboard/entries',
+        tooltip: `${routinesLeftToCreate} routine${routinesLeftToCreate !== 1 ? 's' : ''} left to create`
+      };
+    }
+
+    if (unpaidInvoices > 0) {
+      return {
+        icon: '💰',
+        label: 'Next Action for You',
+        value: 'Pay Invoice',
+        color: 'text-yellow-300',
+        href: '/dashboard/invoices',
+        tooltip: `${unpaidInvoices} invoice${unpaidInvoices !== 1 ? 's' : ''} awaiting payment`
+      };
+    }
+
+    return {
+      icon: '✅',
+      label: 'Next Action for You',
+      value: "You're Good for now!",
+      color: 'text-green-300',
+      tooltip: 'All caught up!'
+    };
+  };
+
+  const nextAction = getNextAction();
+
+  // Determine which card to highlight based on next action
+  const getNextActionCard = (): 'dancers' | 'reservations' | 'routines' | null => {
+    const totalDancers = myDancers?.dancers?.length || 0;
+    const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
+
+    if (totalDancers === 0) return 'dancers';
+    if (approvedReservations === 0) return 'reservations';
+    if (routinesLeftToCreate > 0) return 'routines';
+    return null; // All caught up
+  };
+
   return (
     <>
       {showLoading && (
@@ -134,7 +205,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       </div>
 
       {/* Stats - 3 large colored cards */}
-      <StudioDirectorStats />
+      <StudioDirectorStats nextActionCard={getNextActionCard()} />
 
       {/* Quick Actions - 3 cards (Results, Invoices, Music) */}
       <SortableDashboardCards cards={STUDIO_DIRECTOR_CARDS} />
@@ -159,14 +230,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
             href: '/dashboard/entries',
             tooltip: 'Remaining routines to create from approved reservations'
           },
-          {
-            icon: '✅',
-            value: (myEntries?.entries?.filter(e => e.status === 'confirmed').length) || 0,
-            label: 'Confirmed',
-            color: 'text-green-300',
-            href: '/dashboard/entries',
-            tooltip: 'Routines confirmed by competition director'
-          },
+          nextAction,
         ]}
       />
     </div>
