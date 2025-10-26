@@ -562,12 +562,11 @@ export const invoiceRouter = router({
         throw new Error('Invoice already exists for this reservation');
       }
 
-      // Build line items from confirmed entries only (not draft, registered, or cancelled)
+      // Build line items from all entries for this reservation (summary was already validated)
       const entries = await prisma.competition_entries.findMany({
         where: {
-          studio_id: reservation.studio_id,
-          competition_id: reservation.competition_id,
-          status: 'confirmed',
+          reservation_id: reservationId,
+          status: { not: 'cancelled' }, // Exclude only cancelled entries
         },
         include: { dance_categories: true, entry_size_categories: true },
         orderBy: { entry_number: 'asc' },

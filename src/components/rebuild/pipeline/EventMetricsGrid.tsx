@@ -63,7 +63,7 @@ export function EventMetricsGrid({ metrics }: EventMetricsGridProps) {
           </div>
           <div className="h-3 bg-white/10 rounded-full overflow-hidden relative">
             <div
-              className={`h-full ${getCapacityBarColor(event.percentage)} animate-progress`}
+              className={`h-full ${getCapacityBarColor(event.percentage)} transition-all duration-300`}
               style={{ width: `${event.percentage}%` }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
