@@ -80,26 +80,21 @@ export async function updateSession(request: NextRequest) {
         );
       }
     } else {
-      // ✅ Production without subdomain (e.g., compsync.net) - return 404
-      return new Response(
-        JSON.stringify({
-          error: 'Subdomain required',
-          message: 'Please access via subdomain (e.g., empwr.compsync.net)',
-        }),
-        {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      // ✅ Production without subdomain (e.g., compsync.net) - serve landing page with null tenant
+      // Landing page will display marketing content instead of tenant-specific portal
+      tenantId = null;
+      tenantData = null;
     }
   }
 
   // Create modified request headers with tenant context
   const requestHeaders = new Headers(request.headers);
 
-  // ✅ Tenant is guaranteed to be set here (or we returned 404)
-  requestHeaders.set('x-tenant-id', tenantId!);
-  requestHeaders.set('x-tenant-data', JSON.stringify(tenantData!));
+  // ✅ Set tenant headers (may be null for root domain landing page)
+  if (tenantId) {
+    requestHeaders.set('x-tenant-id', tenantId);
+    requestHeaders.set('x-tenant-data', JSON.stringify(tenantData));
+  }
 
   // Refresh session if expired
   const {
