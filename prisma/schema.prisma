@@ -372,6 +372,8 @@ model age_groups {
   form_grouping       String?               @db.VarChar(100)
   sort_order          Int?
   created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  tenant_id           String                @db.Uuid
+  tenants             tenants               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competition_entries competition_entries[]
   rankings            rankings[]
 
@@ -677,6 +679,8 @@ model dance_categories {
   sort_order                 Int?
   is_active                  Boolean?                 @default(true)
   created_at                 DateTime?                @default(now()) @db.Timestamp(6)
+  tenant_id                  String                   @db.Uuid
+  tenants                    tenants                  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competition_entries        competition_entries[]
   rankings                   rankings[]
 
@@ -829,6 +833,8 @@ model entry_size_categories {
   per_participant_fee Decimal?              @db.Decimal(10, 2)
   sort_order          Int?
   created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  tenant_id           String                @db.Uuid
+  tenants             tenants               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competition_entries competition_entries[]
 
   @@schema("public")
@@ -1319,6 +1325,9 @@ model tenants {
   invoices             invoices[]
   dancers              dancers[]
   failure_log          failure_log[]
+  age_groups           age_groups[]
+  dance_categories     dance_categories[]
+  entry_size_categories entry_size_categories[]
 
   @@schema("public")
 }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { TRPCError } from '@trpc/server';
 
 export const lookupRouter = router({
   // Get all dance categories
@@ -43,19 +44,32 @@ export const lookupRouter = router({
   }),
 
   // Get all lookup data at once (for entry forms)
-  getAllForEntry: publicProcedure.query(async () => {
+  // ARCHITECTURE_ISSUES.md: Tenant isolation fix for lookup tables
+  getAllForEntry: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenantId) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'No tenant associated with user'
+      });
+    }
+
     const [categories, classifications, ageGroups, entrySizeCategories] = await Promise.all([
       prisma.dance_categories.findMany({
-        where: { is_active: true },
+        where: {
+          is_active: true,
+          tenant_id: ctx.tenantId,
+        },
         orderBy: { sort_order: 'asc' },
       }),
       prisma.classifications.findMany({
         orderBy: { skill_level: 'asc' },
       }),
       prisma.age_groups.findMany({
+        where: { tenant_id: ctx.tenantId },
         orderBy: { sort_order: 'asc' },
       }),
       prisma.entry_size_categories.findMany({
+        where: { tenant_id: ctx.tenantId },
         orderBy: { sort_order: 'asc' },
       }),
     ]);
