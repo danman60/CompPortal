@@ -74,12 +74,85 @@ export const invoiceRouter = router({
             },
           }),
         },
+        include: {
+          studios: true,
+          competitions: true,
+          reservations: true,
+        },
         orderBy: {
           created_at: 'desc',
         },
       });
 
-      return invoice;
+      if (!invoice) return null;
+
+      // Transform to match expected format
+      const lineItems = Array.isArray(invoice.line_items)
+        ? (invoice.line_items as Array<{
+            id: string;
+            entryNumber: number | null;
+            title: string;
+            category: string;
+            sizeCategory: string;
+            participantCount?: number;
+            entryFee: number;
+            lateFee: number;
+            total: number;
+          }>).map(item => ({
+            ...item,
+            participantCount: item.participantCount ?? 0,
+          }))
+        : [];
+      const subtotal = parseFloat(invoice.subtotal?.toString() || '0');
+      const taxRate = parseFloat(invoice.tax_rate?.toString() || '0.13') / 100;
+      const taxAmount = subtotal * taxRate;
+      const totalAmount = parseFloat(invoice.total?.toString() || '0');
+
+      return {
+        id: invoice.id,
+        invoiceNumber: `INV-${invoice.competitions?.year}-${invoice.studios?.code || 'UNKNOWN'}-${invoice.id.substring(0, 8)}`,
+        invoiceDate: invoice.created_at || new Date(),
+        studio: {
+          id: invoice.studios?.id || '',
+          name: invoice.studios?.name || 'Unknown',
+          code: invoice.studios?.code || 'N/A',
+          address1: invoice.studios?.address1,
+          address2: invoice.studios?.address2,
+          city: invoice.studios?.city,
+          province: invoice.studios?.province,
+          postal_code: invoice.studios?.postal_code,
+          country: invoice.studios?.country,
+          email: invoice.studios?.email,
+          phone: invoice.studios?.phone,
+        },
+        competition: {
+          id: invoice.competitions?.id || '',
+          name: invoice.competitions?.name || 'Unknown',
+          year: invoice.competitions?.year || new Date().getFullYear(),
+          startDate: invoice.competitions?.competition_start_date,
+          endDate: invoice.competitions?.competition_end_date,
+          location: invoice.competitions?.primary_location,
+        },
+        reservation: invoice.reservations ? {
+          id: invoice.reservations.id,
+          spacesRequested: invoice.reservations.spaces_requested,
+          spacesConfirmed: invoice.reservations.spaces_confirmed || 0,
+          depositAmount: Number(invoice.reservations.deposit_amount || 0),
+          totalAmount: Number(invoice.reservations.total_amount || 0),
+          paymentStatus: invoice.reservations.payment_status,
+        } : null,
+        lineItems,
+        summary: {
+          entryCount: lineItems.length,
+          subtotal,
+          taxRate,
+          taxAmount,
+          totalAmount,
+        },
+        status: invoice.status,
+        paidAt: invoice.paid_at,
+        isLocked: invoice.is_locked,
+      };
     }),
 
   // Generate invoice for a studio's entries in a competition

@@ -22,16 +22,24 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const isStudioDirector = userProfile?.role === 'studio_director';
   const isCompetitionDirector = ['competition_director', 'super_admin'].includes(userProfile?.role || '');
 
-  // Check if there's an existing invoice in the database
-  const { data: existingInvoice } = trpc.invoice.getByStudioAndCompetition.useQuery({
+  // Check if there's an existing invoice in the database (primary source of truth)
+  const { data: dbInvoice, isLoading: dbLoading, refetch: refetchDb } = trpc.invoice.getByStudioAndCompetition.useQuery({
     studioId,
     competitionId,
   });
 
-  const { data: invoice, isLoading, refetch } = trpc.invoice.generateForStudio.useQuery({
+  // Only generate from entries if no database invoice exists (fallback for old invoices)
+  const { data: generatedInvoice, isLoading: genLoading } = trpc.invoice.generateForStudio.useQuery({
     studioId,
     competitionId,
+  }, {
+    enabled: !dbInvoice && !dbLoading, // Only run if no DB invoice found
   });
+
+  // Use database invoice if it exists, otherwise use generated
+  const invoice = dbInvoice || generatedInvoice;
+  const isLoading = dbLoading || genLoading;
+  const refetch = refetchDb;
 
   const sendInvoiceMutation = trpc.invoice.sendInvoice.useMutation({
     onSuccess: () => {
@@ -64,13 +72,11 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     },
   });
 
-  // Use stored line items if invoice exists, otherwise use generated ones
-  const displayLineItems = existingInvoice?.line_items ?
-    (existingInvoice.line_items as any[]) :
-    (invoice?.lineItems || []);
+  // Line items come from the invoice (either DB or generated)
+  const displayLineItems = invoice?.lineItems || [];
 
   // Only Competition Directors and Super Admins can edit prices, not Studio Directors
-  const canEditPrices = isCompetitionDirector && existingInvoice && existingInvoice.status !== 'PAID';
+  const canEditPrices = isCompetitionDirector && dbInvoice && dbInvoice.status !== 'PAID';
 
   const handleStartEditing = () => {
     setEditableLineItems(displayLineItems.map((item: any) => ({ ...item })));
@@ -78,9 +84,9 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   };
 
   const handleSaveEdits = () => {
-    if (!existingInvoice) return;
+    if (!dbInvoice) return;
     updateLineItemsMutation.mutate({
-      invoiceId: existingInvoice.id,
+      invoiceId: dbInvoice.id,
       lineItems: editableLineItems,
     });
   };
@@ -432,18 +438,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       {/* Actions */}
       <div className="mt-8 pt-8 border-t border-white/20 space-y-4">
         {/* Invoice Status Actions (Competition Directors only) */}
-        {existingInvoice && (
+        {dbInvoice && (
           <div className="flex gap-4 mb-4">
-            {existingInvoice.status === 'DRAFT' && (
+            {dbInvoice.status === 'DRAFT' && (
               <button
-                onClick={() => sendInvoiceMutation.mutate({ invoiceId: existingInvoice.id })}
+                onClick={() => sendInvoiceMutation.mutate({ invoiceId: dbInvoice.id })}
                 disabled={sendInvoiceMutation.isPending}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
               >
                 {sendInvoiceMutation.isPending ? '📤 Sending...' : '📤 Send Invoice to Studio'}
               </button>
             )}
-            {existingInvoice.status === 'SENT' && (
+            {dbInvoice.status === 'SENT' && (
               <>
                 {isStudioDirector ? (
                   // Studio Directors see read-only status (payment happens externally)
@@ -457,7 +463,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                       ⏳ Awaiting External Payment from Studio
                     </div>
                     <button
-                      onClick={() => markAsPaidMutation.mutate({ invoiceId: existingInvoice.id, paymentMethod: 'manual' })}
+                      onClick={() => markAsPaidMutation.mutate({ invoiceId: dbInvoice.id, paymentMethod: 'manual' })}
                       disabled={markAsPaidMutation.isPending}
                       className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
                     >
@@ -467,10 +473,10 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 )}
               </>
             )}
-            {existingInvoice.status === 'PAID' && (
+            {dbInvoice.status === 'PAID' && (
               <div className="flex-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 px-6 py-3 rounded-lg font-semibold text-center flex items-center justify-center gap-2">
                 <span className="text-2xl">✓</span>
-                <span>Invoice Paid - {existingInvoice.paid_at ? new Date(existingInvoice.paid_at).toLocaleDateString() : 'Recently'}</span>
+                <span>Invoice Paid - {dbInvoice.paidAt ? new Date(dbInvoice.paidAt).toLocaleDateString() : 'Recently'}</span>
               </div>
             )}
           </div>
