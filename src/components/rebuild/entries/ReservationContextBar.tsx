@@ -1,13 +1,15 @@
 interface Reservation {
   id: string;
   spaces_confirmed: number | null;
+  [key: string]: any;
 }
 
 interface Competition {
   id: string;
-  name: string;
-  start_date: Date | string;
-  end_date: Date | string;
+  name?: string | null;
+  start_date?: Date | string | null;
+  end_date?: Date | string | null;
+  [key: string]: any;
 }
 
 interface ReservationContextBarProps {
@@ -39,7 +41,8 @@ export function ReservationContextBar({
   const isNearCapacity = remainingSpaces > 0 && remainingSpaces <= 3;
 
   // Format dates
-  const formatDate = (date: Date | string) => {
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return 'TBD';
     const d = typeof date === 'string' ? new Date(date) : date;
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
@@ -89,7 +92,7 @@ export function ReservationContextBar({
             <div className="flex items-center gap-2 justify-end">
               <span className="text-2xl font-bold">🎪</span>
               <div>
-                <div className="text-lg font-bold text-white">{competition.name}</div>
+                <div className="text-lg font-bold text-white">{competition.name || 'Competition'}</div>
                 <div className="text-sm text-white/80">
                   {startDate === endDate ? startDate : `${startDate} - ${endDate}`}
                 </div>

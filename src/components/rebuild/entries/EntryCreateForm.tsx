@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { trpc } from '@/lib/trpc-client';
+import { trpc } from '@/lib/trpc';
 import { useEntryForm } from '@/hooks/rebuild/useEntryForm';
 import { RoutineDetailsSection } from './RoutineDetailsSection';
 import { DancerSelectionSection } from './DancerSelectionSection';
@@ -43,10 +43,17 @@ export function EntryCreateForm() {
   const { data: lookups, isLoading: lookupsLoading } = trpc.lookup.getAllForEntry.useQuery();
 
   // Fetch studio dancers
-  const { data: dancers, isLoading: dancersLoading } = trpc.dancer.list.useQuery(
+  const { data: dancersData, isLoading: dancersLoading } = trpc.dancer.getByStudio.useQuery(
     { studioId: reservation?.studio_id! },
     { enabled: !!reservation?.studio_id }
   );
+  const dancers = (dancersData?.dancers || []) as any[];
+
+  // Fetch entries for this reservation (to calculate capacity)
+  const { data: entriesData } = trpc.entry.getAll.useQuery();
+  const reservationEntries = entriesData?.entries?.filter(
+    (e: any) => e.reservation_id === reservationId && e.status !== 'cancelled'
+  ) || [];
 
   // Form state management
   const {
@@ -114,8 +121,32 @@ export function EntryCreateForm() {
 
   // Calculate capacity info
   const confirmedSpaces = reservation.spaces_confirmed || 0;
-  const entriesCount = 0; // TODO: Fetch actual entry count for this reservation
+  const entriesCount = reservationEntries.length;
   const remainingSpaces = confirmedSpaces - entriesCount;
+
+  /**
+   * Map inferred age group string to actual ID from lookups
+   */
+  const getAgeGroupId = () => {
+    if (form.age_group_override) return form.age_group_override;
+    if (!inferredAgeGroup) return undefined;
+
+    // Find matching age group by name
+    const match = lookups.ageGroups.find(ag => ag.name === inferredAgeGroup);
+    return match?.id;
+  };
+
+  /**
+   * Map inferred size category string to actual ID from lookups
+   */
+  const getSizeCategoryId = () => {
+    if (form.size_category_override) return form.size_category_override;
+    if (!inferredSizeCategory) return undefined;
+
+    // Find matching size category by name
+    const match = lookups.entrySizeCategories.find(sc => sc.name === inferredSizeCategory);
+    return match?.id;
+  };
 
   /**
    * Handle save action
@@ -134,7 +165,7 @@ export function EntryCreateForm() {
     }
 
     try {
-      // Create entry
+      // Create entry with mapped IDs
       await createEntryMutation.mutateAsync({
         reservation_id: reservationId,
         competition_id: reservation.competition_id,
@@ -144,8 +175,8 @@ export function EntryCreateForm() {
         category_id: form.category_id,
         classification_id: form.classification_id,
         special_requirements: form.special_requirements || undefined,
-        age_group_id: form.age_group_override || undefined, // TODO: Map inferred to actual ID
-        entry_size_category_id: form.size_category_override || undefined, // TODO: Map inferred to actual ID
+        age_group_id: getAgeGroupId(),
+        entry_size_category_id: getSizeCategoryId(),
         status: 'draft',
         participants: form.selectedDancers.map((d, idx) => ({
           dancer_id: d.dancer_id,
@@ -200,7 +231,7 @@ export function EntryCreateForm() {
             form={form}
             updateField={updateField}
             toggleDancer={toggleDancer}
-            dancers={dancers || []}
+            dancers={dancers}
           />
 
           <AutoCalculatedSection

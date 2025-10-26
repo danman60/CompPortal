@@ -3,9 +3,10 @@ import { EntryFormState, SelectedDancer } from '@/hooks/rebuild/useEntryForm';
 
 interface Dancer {
   id: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   age: number | null;
+  [key: string]: any; // Allow additional fields from DB
 }
 
 interface DancerSelectionSectionProps {
