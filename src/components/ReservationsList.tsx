@@ -21,6 +21,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   const utils = trpc.useUtils();
   const { data, isLoading, dataUpdatedAt, refetch } = trpc.reservation.getAll.useQuery();
   const { data: studiosData } = trpc.studio.getAll.useQuery();
+  const { data: entriesData } = trpc.entry.getAll.useQuery();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -593,13 +594,32 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
 
                   {/* Middle: Simple Summary (Studio Directors Only) */}
                   {isStudioDirector && (
-                    <div className="flex flex-col justify-center">
-                      <div className="text-center">
-                        <div className="text-sm text-gray-400 mb-2">Request Summary</div>
-                        <div className="text-2xl font-bold text-white mb-1">
-                          {reservation.spaces_requested} {reservation.spaces_requested === 1 ? 'routine' : 'routines'}
+                    <div className="flex flex-col justify-center space-y-4">
+                      <div>
+                        <div className="text-sm text-gray-400 mb-1">Routines Requested</div>
+                        <div className="text-2xl font-bold text-white">
+                          {reservation.spaces_requested}
                         </div>
-                        <div className="text-sm text-gray-400">requested</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400 mb-1">Routines Submitted</div>
+                        <div className="text-2xl font-bold text-green-400">
+                          {entriesData?.entries?.filter(e => e.reservation_id === reservation.id).length || 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400 mb-1">Reservation Status</div>
+                        <div className={`text-sm font-semibold ${
+                          reservation.is_closed
+                            ? 'text-gray-400'
+                            : reservation.status === 'approved'
+                            ? 'text-green-400'
+                            : reservation.status === 'pending'
+                            ? 'text-yellow-400'
+                            : 'text-red-400'
+                        }`}>
+                          {reservation.is_closed ? 'Closed' : (reservation.status ? reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1) : 'Unknown')}
+                        </div>
                       </div>
                     </div>
                   )}
