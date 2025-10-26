@@ -3,6 +3,7 @@
 import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 
 export default function ProfileSettingsPage() {
   const utils = trpc.useUtils();
@@ -72,6 +73,12 @@ export default function ProfileSettingsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
       <div className="max-w-2xl mx-auto space-y-6">
+        <Link
+          href="/dashboard"
+          className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
+        >
+          ← Back to Dashboard
+        </Link>
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
         </div>
