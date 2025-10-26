@@ -5,6 +5,8 @@ import { Button } from '@/components/rebuild/ui/Button';
 
 interface Reservation {
   id: string;
+  studio_id: string;
+  competition_id: string;
   competitions?: { name: string };
 }
 
@@ -30,11 +32,9 @@ export function SubmitSummaryModal({
   onCancel,
 }: SubmitSummaryModalProps) {
   const handleConfirm = async () => {
-    // Note: This needs studio_id and competition_id from reservation
-    // For now, using placeholder - will need to pass these from container
     await onConfirm({
-      studioId: 'placeholder-studio-id',
-      competitionId: 'placeholder-competition-id',
+      studioId: reservation.studio_id,
+      competitionId: reservation.competition_id,
     });
     onCancel();
   };

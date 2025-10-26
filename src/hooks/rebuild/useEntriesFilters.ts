@@ -8,6 +8,8 @@ interface Entry {
 
 interface Reservation {
   id: string;
+  studio_id: string;
+  competition_id: string;
   status: 'approved' | 'summarized' | 'invoiced' | 'closed' | string | null;
   is_closed: boolean | null;
   spaces_confirmed: number | null;

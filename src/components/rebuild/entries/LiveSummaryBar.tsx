@@ -6,6 +6,8 @@ import { SubmitSummaryModal } from './SubmitSummaryModal';
 
 interface Reservation {
   id: string;
+  studio_id: string;
+  competition_id: string;
   is_closed: boolean | null;
   competitions?: { name: string };
   [key: string]: any;
