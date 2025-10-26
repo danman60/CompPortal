@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { usePipelineReservations } from '@/hooks/rebuild/useReservations';
 import { usePipelineFilters } from '@/hooks/rebuild/usePipelineFilters';
@@ -42,6 +43,7 @@ interface RejectModalState {
  * - Pass filtered data to presentation components
  */
 export function PipelinePageContainer() {
+  const router = useRouter();
   const {
     reservations,
     isLoading: reservationsLoading,
@@ -174,7 +176,14 @@ export function PipelinePageContainer() {
   };
 
   const handleCreateInvoice = async (reservationId: string) => {
-    await createInvoice({ reservationId });
+    const result = await createInvoice({ reservationId });
+
+    // Find the reservation to get studioId and competitionId for redirect
+    const reservation = reservations.find((r: any) => r.id === reservationId);
+    if (reservation && result) {
+      // Redirect to invoice detail page
+      router.push(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`);
+    }
   };
 
   const handleMarkAsPaid = async (invoiceId: string, studioId: string, competitionId: string) => {

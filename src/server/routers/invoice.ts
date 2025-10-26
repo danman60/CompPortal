@@ -132,12 +132,12 @@ export const invoiceRouter = router({
         throw new Error('Competition not found');
       }
 
-      // Fetch confirmed entries only for this studio in this competition
+      // Fetch all non-cancelled entries for this studio in this competition
       const entries = await prisma.competition_entries.findMany({
         where: {
           studio_id: studioId,
           competition_id: competitionId,
-          status: 'confirmed',
+          status: { not: 'cancelled' },
         },
         include: {
           dance_categories: true,
