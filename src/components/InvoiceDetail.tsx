@@ -224,8 +224,8 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               <div className="text-xl font-bold text-white">{invoice.reservation.spacesRequested}</div>
             </div>
             <div className="bg-black/20 p-4 rounded-lg">
-              <div className="text-xs text-gray-400 mb-1">Routines Allocated</div>
-              <div className="text-xl font-bold text-green-400">{invoice.reservation.spacesConfirmed}</div>
+              <div className="text-xs text-gray-400 mb-1">Routines Submitted</div>
+              <div className="text-xl font-bold text-green-400">{invoice.lineItems.length}</div>
             </div>
             <div className="bg-black/20 p-4 rounded-lg">
               <div className="text-xs text-gray-400 mb-1">Deposit</div>

@@ -561,7 +561,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           <span className="text-white font-semibold">{reservation.spaces_requested}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Routines Allocated:</span>
+                          <span className="text-gray-400">Routines Confirmed:</span>
                           <span className="text-green-400 font-semibold">
                             {reservation.spaces_confirmed || 0}
                           </span>
