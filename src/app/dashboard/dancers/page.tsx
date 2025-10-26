@@ -7,6 +7,8 @@ import Link from 'next/link';
 import DancersList from '@/components/DancersList';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
+import { Button } from '@/components/ui';
+import { Plus, Upload, Download } from '@/lib/icons';
 
 export default function DancersPage() {
   const router = useRouter();
@@ -92,27 +94,22 @@ export default function DancersPage() {
           </div>
 
           <div className="flex gap-3">
-            <Link
-              href="/dashboard/dancers/add"
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-            >
-              <span>➕</span>
-              <span>Add Dancers</span>
-            </Link>
-            <Link
-              href="/dashboard/dancers/import"
-              className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
-            >
-              <span>📤</span>
-              <span>Import</span>
-            </Link>
-            <button
-              onClick={handleExportCSV}
-              className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
-            >
-              <span>📥</span>
-              <span>Export CSV</span>
-            </button>
+            <Button asChild variant="primary" size="lg">
+              <Link href="/dashboard/dancers/add">
+                <Plus size={20} strokeWidth={2} />
+                Add Dancers
+              </Link>
+            </Button>
+            <Button asChild variant="secondary" size="lg">
+              <Link href="/dashboard/dancers/import">
+                <Upload size={20} strokeWidth={2} />
+                Import
+              </Link>
+            </Button>
+            <Button variant="secondary" size="lg" onClick={handleExportCSV}>
+              <Download size={20} strokeWidth={2} />
+              Export CSV
+            </Button>
           </div>
         </div>
 

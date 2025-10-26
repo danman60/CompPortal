@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import JudgeBulkImportModal from '@/components/JudgeBulkImportModal';
+import { Button } from '@/components/ui';
+import { Plus, Upload } from '@/lib/icons';
 
 export default function JudgesPage() {
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
@@ -142,20 +144,24 @@ export default function JudgesPage() {
               </select>
             </div>
             <div className="flex items-end gap-3">
-              <button
+              <Button
                 onClick={() => setShowAddModal(true)}
                 disabled={!selectedCompetition}
-                className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="primary"
+                size="lg"
               >
-                + Add Judge
-              </button>
-              <button
+                <Plus size={20} strokeWidth={2} />
+                Add Judge
+              </Button>
+              <Button
                 onClick={() => setShowBulkImportModal(true)}
                 disabled={!selectedCompetition}
-                className="px-6 py-2 bg-white/10 backdrop-blur-md text-white rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="secondary"
+                size="lg"
               >
-                📊 Bulk Import CSV
-              </button>
+                <Upload size={20} strokeWidth={2} />
+                Bulk Import CSV
+              </Button>
             </div>
           </div>
         </div>

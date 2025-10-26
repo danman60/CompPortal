@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui';
+import { Plus } from '@/lib/icons';
 
 export default function CompetitionsPage() {
   const router = useRouter();
@@ -108,12 +110,12 @@ export default function CompetitionsPage() {
             <h1 className="text-4xl font-bold text-white mb-2">🎭 Event Management</h1>
             <p className="text-gray-400">Create and manage dance competition events</p>
           </div>
-          <Link
-            href="/dashboard/competitions/new"
-            className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all shadow-lg"
-          >
-            ➕ Create New Event
-          </Link>
+          <Button asChild variant="primary" size="lg">
+            <Link href="/dashboard/competitions/new">
+              <Plus size={20} strokeWidth={2} />
+              Create New Event
+            </Link>
+          </Button>
         </div>
 
         {/* Filters */}
@@ -181,12 +183,12 @@ export default function CompetitionsPage() {
               ? 'No events have been created yet.'
               : `No ${filter.replace('_', ' ')} events found.`}
           </p>
-          <Link
-            href="/dashboard/competitions/new"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all"
-          >
-            Create Your First Event
-          </Link>
+          <Button asChild variant="primary" size="lg">
+            <Link href="/dashboard/competitions/new">
+              <Plus size={20} strokeWidth={2} />
+              Create Your First Event
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
