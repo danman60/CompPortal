@@ -7,14 +7,28 @@ import Link from 'next/link';
 
 export default function ProfileSettingsPage() {
   const utils = trpc.useUtils();
-  const { data: user, isLoading } = trpc.user.getCurrentUser.useQuery();
+  const { data: user, isLoading: userLoading } = trpc.user.getCurrentUser.useQuery();
+  const { data: studioData, isLoading: studioLoading } = trpc.studio.getAll.useQuery();
+  const studio = studioData?.studios?.[0];
+
   const updateProfileMutation = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
       utils.user.getCurrentUser.invalidate();
+      utils.studio.getAll.invalidate();
       toast.success('Profile updated successfully');
     },
     onError: (error) => {
       toast.error(`Failed to update profile: ${error.message}`);
+    },
+  });
+
+  const updateStudioMutation = trpc.studio.update.useMutation({
+    onSuccess: () => {
+      utils.studio.getAll.invalidate();
+      toast.success('Studio information updated successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update studio: ${error.message}`);
     },
   });
 
@@ -34,6 +48,13 @@ export default function ProfileSettingsPage() {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [studioName, setStudioName] = useState('');
+  const [address1, setAddress1] = useState('');
+  const [city, setCity] = useState('');
+  const [province, setProvince] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [studioEmail, setStudioEmail] = useState('');
+  const [studioPhone, setStudioPhone] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -44,15 +65,47 @@ export default function ProfileSettingsPage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (studio) {
+      setStudioName(studio.name || '');
+      setAddress1(studio.address1 || '');
+      setCity(studio.city || '');
+      setProvince(studio.province || '');
+      setPostalCode(studio.postal_code || '');
+      setStudioEmail(studio.email || '');
+      setStudioPhone(studio.phone || '');
+    }
+  }, [studio]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Update user profile
     updateProfileMutation.mutate({
       first_name: firstName,
       last_name: lastName,
       phone: phone || undefined,
       notificationsEnabled,
     });
+
+    // Update studio if exists
+    if (studio?.id) {
+      updateStudioMutation.mutate({
+        id: studio.id,
+        data: {
+          name: studioName,
+          address1,
+          city,
+          province,
+          postal_code: postalCode,
+          email: studioEmail,
+          phone: studioPhone,
+        },
+      });
+    }
   };
+
+  const isLoading = userLoading || studioLoading;
 
   if (isLoading) {
     return (
@@ -145,6 +198,119 @@ export default function ProfileSettingsPage() {
             placeholder="(555) 123-4567"
           />
         </div>
+
+        {/* Studio Information Section */}
+        {studio && (
+          <>
+            <div className="pt-6 border-t border-white/10">
+              <h2 className="text-xl font-bold text-white mb-4">Studio Information</h2>
+            </div>
+
+            {/* Studio Name */}
+            <div>
+              <label htmlFor="studioName" className="block text-sm font-semibold text-white mb-2">
+                Studio Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                id="studioName"
+                type="text"
+                value={studioName}
+                onChange={(e) => setStudioName(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Enter studio name"
+              />
+            </div>
+
+            {/* Address */}
+            <div>
+              <label htmlFor="address1" className="block text-sm font-semibold text-white mb-2">
+                Street Address
+              </label>
+              <input
+                id="address1"
+                type="text"
+                value={address1}
+                onChange={(e) => setAddress1(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="123 Main St"
+              />
+            </div>
+
+            {/* City, Province, Postal Code Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="city" className="block text-sm font-semibold text-white mb-2">
+                  City
+                </label>
+                <input
+                  id="city"
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Toronto"
+                />
+              </div>
+              <div>
+                <label htmlFor="province" className="block text-sm font-semibold text-white mb-2">
+                  Province
+                </label>
+                <input
+                  id="province"
+                  type="text"
+                  value={province}
+                  onChange={(e) => setProvince(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="ON"
+                />
+              </div>
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-semibold text-white mb-2">
+                  Postal Code
+                </label>
+                <input
+                  id="postalCode"
+                  type="text"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="M5H 2N2"
+                />
+              </div>
+            </div>
+
+            {/* Studio Email */}
+            <div>
+              <label htmlFor="studioEmail" className="block text-sm font-semibold text-white mb-2">
+                Studio Email
+              </label>
+              <input
+                id="studioEmail"
+                type="email"
+                value={studioEmail}
+                onChange={(e) => setStudioEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="studio@example.com"
+              />
+            </div>
+
+            {/* Studio Phone */}
+            <div>
+              <label htmlFor="studioPhone" className="block text-sm font-semibold text-white mb-2">
+                Studio Phone
+              </label>
+              <input
+                id="studioPhone"
+                type="tel"
+                value={studioPhone}
+                onChange={(e) => setStudioPhone(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="(555) 987-6543"
+              />
+            </div>
+          </>
+        )}
 
         {/* Notifications Toggle */}
         <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
