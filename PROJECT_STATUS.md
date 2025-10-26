@@ -1,12 +1,12 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-26 (Session 18 - Entry Creation Foundation)
+**Last Updated:** 2025-10-26 (Session 18 - Tenant Isolation Fix)
 
 ---
 
 ## Current Status: Parallel Rebuild - Entry Creation Build (85%)
 
-### Latest Work: Session 18 - Entry Creation Rebuild Session 1 (Foundation)
+### Latest Work: Session 18 Part 2 - Tenant Isolation Fix
 
 **Date:** October 26, 2025
 **Status:** ✅ Entry creation foundation complete, all components built, build passing
@@ -72,13 +72,26 @@
 
 ---
 
-## Session 18 Commits (3 total)
+## Session 18 Commits (6 total)
 
+**Part 1 - Entry Creation Foundation (3 commits):**
 ```
 b231754 - fix: Add ID mapping + capacity display + type fixes (Oct 26)
 d658202 - feat: Entry creation rebuild - Session 1 (foundation) (Oct 26)
 f889939 - docs: Update trackers for Session 17 completion (Oct 26)
 ```
+
+**Part 2 - Tenant Isolation Fix (3 commits):**
+```
+a2732f0 - docs: Mark tenant isolation issue as resolved (Oct 26)
+05104db - fix: Add tenant isolation to lookup tables (Oct 26)
+e44908b - fix: Add tenant_id to lookup tables via migration (Oct 26)
+```
+
+**Issue Resolved:** Duplicate dropdowns in entry creation form
+- Root cause: Lookup tables missing tenant_id (ARCHITECTURE_ISSUES.md)
+- Fix: Database migration + router filtering + schema updates
+- Result: Each tenant sees only their own age groups/categories/sizes
 
 **Previous Session:** 13 commits (Session 17 - Manual testing & bug fixes)
 
