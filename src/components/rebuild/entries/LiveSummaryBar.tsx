@@ -87,7 +87,10 @@ export function LiveSummaryBar({
             <div>
               {isClosed ? (
                 <div className="text-white/60 text-sm">
-                  Summary submitted (reservation closed)
+                  <div>Summary submitted (reservation closed)</div>
+                  <div className="text-xs text-white/40 mt-1">
+                    💡 You can edit your routines/dancers, but create a new reservation to add more routines
+                  </div>
                 </div>
               ) : (
                 <Button
