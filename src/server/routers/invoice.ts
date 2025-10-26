@@ -247,59 +247,50 @@ export const invoiceRouter = router({
   // Get all invoices for a studio
   getByStudio: publicProcedure
     .input(z.object({ studioId: z.string().uuid() }))
-    .query(async ({ input }) => {
-      // PERFORMANCE FIX: Fetch all data in parallel instead of N+1 queries
-      // Get confirmed entries only for this studio
-      const entries = await prisma.competition_entries.findMany({
+    .query(async ({ ctx, input }) => {
+      // Studio Directors can only see SENT or PAID invoices
+      // Competition Directors and Super Admins can see all invoices
+      const isStudioDirector = ctx.userRole === 'studio_director';
+
+      // Query actual invoices table (not just entries)
+      const dbInvoices = await prisma.invoices.findMany({
         where: {
           studio_id: input.studioId,
-          status: 'confirmed',
+          ...(isStudioDirector && {
+            status: {
+              in: ['SENT', 'PAID'],
+            },
+          }),
         },
-        select: {
-          competition_id: true,
-          total_fee: true,
+        include: {
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+              year: true,
+              competition_start_date: true,
+            },
+          },
         },
-      });
-
-      // Get unique competition IDs
-      const competitionIds = [...new Set(entries.map(e => e.competition_id))];
-
-      // Fetch all competitions at once
-      const competitions = await prisma.competitions.findMany({
-        where: {
-          id: { in: competitionIds },
-        },
-        select: {
-          id: true,
-          name: true,
-          year: true,
-          competition_start_date: true,
+        orderBy: {
+          created_at: 'desc',
         },
       });
 
-      // Create a map for fast lookup
-      const competitionMap = new Map(competitions.map(c => [c.id, c]));
-
-      // Group entries by competition and calculate totals
-      const invoiceMap = new Map<string, any>();
-      entries.forEach(entry => {
-        if (!invoiceMap.has(entry.competition_id)) {
-          const comp = competitionMap.get(entry.competition_id);
-          invoiceMap.set(entry.competition_id, {
-            competitionId: entry.competition_id,
-            competitionName: comp?.name || 'Unknown',
-            competitionYear: comp?.year,
-            startDate: comp?.competition_start_date,
-            entryCount: 0,
-            totalAmount: 0,
-          });
-        }
-        const invoice = invoiceMap.get(entry.competition_id)!;
-        invoice.entryCount++;
-        invoice.totalAmount += Number(entry.total_fee || 0);
+      // Transform to match expected format
+      const invoices = dbInvoices.map(inv => {
+        const lineItems = Array.isArray(inv.line_items) ? inv.line_items : [];
+        return {
+          competitionId: inv.competition_id,
+          competitionName: inv.competitions?.name || 'Unknown',
+          competitionYear: inv.competitions?.year,
+          startDate: inv.competitions?.competition_start_date,
+          entryCount: lineItems.length,
+          totalAmount: parseFloat(inv.total?.toString() || '0'),
+          status: inv.status,
+          paidAt: inv.paid_at,
+        };
       });
-
-      const invoices = Array.from(invoiceMap.values());
 
       return { invoices };
     }),
