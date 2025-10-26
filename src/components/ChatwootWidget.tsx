@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 interface ChatwootWidgetProps {
   websiteToken: string;
   baseUrl: string;
+  websocketURL?: string;
   user?: {
     name?: string;
     email?: string;
@@ -43,6 +44,7 @@ declare global {
 export function ChatwootWidget({
   websiteToken,
   baseUrl,
+  websocketURL,
   user,
   locale = 'en',
 }: ChatwootWidgetProps) {
@@ -81,6 +83,11 @@ export function ChatwootWidget({
           websiteToken,
           baseUrl,
         };
+
+        // Add websocketURL if provided (required for some deployments)
+        if (websocketURL) {
+          config.websocketURL = websocketURL;
+        }
 
         // Add user info directly to config (Chatwoot's recommended approach)
         if (user && user.email) {
@@ -123,7 +130,7 @@ export function ChatwootWidget({
       delete window.chatwootSettings;
       delete window.chatwootSDK;
     };
-  }, [websiteToken, baseUrl, user, locale]);
+  }, [websiteToken, baseUrl, websocketURL, user, locale]);
 
   // Widget is injected by script, no UI needed
   return null;

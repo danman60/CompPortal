@@ -23,7 +23,7 @@ interface SupportChatButtonProps {
   userId?: string;
 }
 
-type ChatPath = 'sd_tech' | 'sd_cd' | 'cd_tech';
+type ChatPath = 'sd_tech' | 'sd_cd' | 'cd_sa';
 
 export function SupportChatButton({
   userRole,
@@ -35,10 +35,11 @@ export function SupportChatButton({
   const [selectedPath, setSelectedPath] = useState<ChatPath | null>(null);
 
   const baseUrl = process.env.NEXT_PUBLIC_CHATWOOT_BASE_URL;
+  const websocketURL = process.env.NEXT_PUBLIC_CHATWOOT_WEBSOCKET_URL;
   const tokens = {
     sd_tech: process.env.NEXT_PUBLIC_CHATWOOT_SD_TECH_TOKEN,
     sd_cd: process.env.NEXT_PUBLIC_CHATWOOT_SD_CD_TOKEN,
-    cd_tech: process.env.NEXT_PUBLIC_CHATWOOT_CD_TECH_TOKEN,
+    cd_sa: process.env.NEXT_PUBLIC_CHATWOOT_CD_SA_TOKEN,
   };
 
   // Don't show for super admin
@@ -47,7 +48,7 @@ export function SupportChatButton({
   }
 
   // Validate configuration
-  if (!baseUrl || !tokens.sd_tech || !tokens.sd_cd || !tokens.cd_tech) {
+  if (!baseUrl || !tokens.sd_tech || !tokens.sd_cd || !tokens.cd_sa) {
     if (process.env.NODE_ENV === 'development') {
       console.warn('SupportChatButton: Missing Chatwoot configuration');
     }
@@ -69,7 +70,7 @@ export function SupportChatButton({
   // Auto-select for CD (only one option)
   useEffect(() => {
     if (userRole === 'competition_director' && !selectedPath) {
-      setSelectedPath('cd_tech');
+      setSelectedPath('cd_sa');
     }
   }, [userRole, selectedPath]);
 
@@ -82,6 +83,7 @@ export function SupportChatButton({
     return {
       websiteToken: token,
       baseUrl: baseUrl!,
+      websocketURL: websocketURL,
       user: {
         identifier: userId,
         email: userEmail,
@@ -214,6 +216,7 @@ export function SupportChatButton({
         <ChatwootWidget
           websiteToken={chatConfig.websiteToken}
           baseUrl={chatConfig.baseUrl}
+          websocketURL={chatConfig.websocketURL}
           user={chatConfig.user}
         />
       )}
