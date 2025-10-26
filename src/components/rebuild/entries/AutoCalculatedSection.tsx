@@ -42,6 +42,22 @@ export function AutoCalculatedSection({
   ageGroups,
   sizeCategories,
 }: AutoCalculatedSectionProps) {
+  // Deduplicate age groups by name (keep first occurrence)
+  const uniqueAgeGroups = ageGroups.reduce((acc, group) => {
+    if (!acc.find(g => g.name === group.name)) {
+      acc.push(group);
+    }
+    return acc;
+  }, [] as AgeGroup[]);
+
+  // Deduplicate size categories by name (keep first occurrence)
+  const uniqueSizeCategories = sizeCategories.reduce((acc, size) => {
+    if (!acc.find(s => s.name === size.name)) {
+      acc.push(size);
+    }
+    return acc;
+  }, [] as SizeCategory[]);
+
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
       <h2 className="text-xl font-bold text-white mb-4">Auto-Calculated</h2>
@@ -80,7 +96,7 @@ export function AutoCalculatedSection({
             <option value="" className="bg-gray-900">
               {inferredAgeGroup ? `Use detected (${inferredAgeGroup})` : 'No override'}
             </option>
-            {ageGroups.map((group) => (
+            {uniqueAgeGroups.map((group) => (
               <option key={group.id} value={group.id} className="bg-gray-900">
                 {group.name}
                 {group.min_age !== undefined && group.max_age !== undefined && (
@@ -125,7 +141,7 @@ export function AutoCalculatedSection({
             <option value="" className="bg-gray-900">
               {inferredSizeCategory ? `Use detected (${inferredSizeCategory})` : 'No override'}
             </option>
-            {sizeCategories.map((size) => (
+            {uniqueSizeCategories.map((size) => (
               <option key={size.id} value={size.id} className="bg-gray-900">
                 {size.name}
                 {size.min_performers !== undefined && size.max_performers !== undefined && (
