@@ -2,39 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Light Theme (default) */
-:root,
-html.light {
-  --foreground-rgb: 15, 23, 42; /* slate-900 */
-  --background-start-rgb: 248, 250, 252; /* slate-50 */
-  --background-end-rgb: 241, 245, 249; /* slate-100 */
+/* Elite Design System Variables */
+:root {
+  /* True black dark mode - OLED optimized */
+  --bg-base: #0a0a0a;
+  --bg-elevated-1: #111111;
+  --bg-elevated-2: #1a1a1a;
+  --bg-elevated-3: #222222;
+
+  /* Glassmorphic system */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  /* Primary colors */
+  --primary: 270 91% 65%;
+  --primary-foreground: 0 0% 100%;
 
   /* Tenant-specific theme colors (dynamically updated) */
   --tenant-primary: #6366F1;
   --tenant-secondary: #8B5CF6;
   --tenant-accent: #F59E0B;
+
+  /* Light theme fallback */
+  --foreground-rgb: 15, 23, 42;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 241, 245, 249;
 }
 
-/* Dark Theme */
-html.dark {
+/* Dark Theme (Default - Elite) */
+html.dark,
+body {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
-
-  /* Tenant-specific theme colors (dynamically updated) */
-  --tenant-primary: #6366F1;
-  --tenant-secondary: #8B5CF6;
-  --tenant-accent: #F59E0B;
+  --background-start-rgb: 10, 10, 10; /* True black */
+  --background-end-rgb: 10, 10, 10;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
+  /* Elite gradient background */
   background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+    to bottom right,
+    rgba(109, 40, 217, 0.1),
+    rgba(59, 130, 246, 0.1)
+  ), var(--bg-base);
+
+  /* Improved base typography */
+  line-height: 1.6;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fluid Typography with clamp() */
+h1 {
+  font-size: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: clamp(1.25rem, 1rem + 1vw, 2rem);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+p {
+  line-height: 1.6;
 }
 
 @layer components {
@@ -379,4 +421,66 @@ html.font-size-large {
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
+}
+
+/* === ELITE UX IMPROVEMENTS === */
+
+/* Focus indicators - visible only on keyboard navigation (WCAG AAA) */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary)) !important;
+  outline-offset: 2px !important;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* Glassmorphic card system with elevation */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Improved whitespace utilities */
+.spacing-comfortable {
+  gap: 2rem;
+}
+
+.spacing-generous {
+  gap: 3rem;
+}
+
+/* Micro-interaction utilities */
+.hover-lift {
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-1px);
+}
+
+.hover-lift:active {
+  transform: translateY(0);
 }
