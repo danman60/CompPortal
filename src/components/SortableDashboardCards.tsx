@@ -22,6 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
+import { getIconFromEmoji } from '@/lib/icons';
 
 export interface DashboardCard {
   id: string;
@@ -93,7 +94,12 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </div>
-          <div className="text-4xl inline-block hover:scale-110 transition-transform flex-shrink-0">{card.icon}</div>
+          <div className="inline-block hover:scale-110 transition-transform flex-shrink-0">
+            {(() => {
+              const IconComponent = getIconFromEmoji(card.icon);
+              return <IconComponent size={40} strokeWidth={2} className="text-purple-400" />;
+            })()}
+          </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-semibold text-white truncate">{card.title}</h3>
             <p className="text-gray-400 text-sm line-clamp-2">{card.description}</p>

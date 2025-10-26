@@ -7,6 +7,7 @@ import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards'
 import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
 import { trpc } from '@/lib/trpc';
+import { Sparkles, Target, Settings as SettingsIcon } from '@/lib/icons';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -189,7 +190,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       {/* Header */}
       <div className="flex-1">
         <h1 className="text-4xl font-bold text-white mb-2">
-          {greeting}, {firstName}! 👋
+          {greeting}, {firstName}!
         </h1>
         <p className="text-gray-400 mb-4">
           {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
@@ -201,16 +202,19 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
 
         {/* REBUILD: New Pipeline Page Banner - CD only */}
         {!isAdmin && (
-          <div className="mt-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-md rounded-xl border-2 border-blue-400/50 p-6">
+          <div className="mt-6 glass-card hover-lift p-6 border-2 border-blue-400/50">
             <div className="flex items-start gap-4">
-              <div className="text-4xl">✨</div>
+              <div className="text-blue-400">
+                <Sparkles size={40} strokeWidth={2} />
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-xl font-semibold text-blue-300">
                     New Reservation Pipeline (REBUILD)
                   </h3>
-                  <span className="px-3 py-1 bg-blue-500/30 border border-blue-400/50 rounded-full text-blue-200 text-xs font-bold">
-                    🔨 REBUILD
+                  <span className="px-3 py-1 bg-blue-500/30 border border-blue-400/50 rounded-full text-blue-200 text-xs font-bold flex items-center gap-1">
+                    <SettingsIcon size={14} strokeWidth={2} />
+                    REBUILD
                   </span>
                 </div>
                 <p className="text-gray-300 mb-4">
@@ -218,9 +222,10 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
                 </p>
                 <Link
                   href="/dashboard/reservation-pipeline-rebuild"
-                  className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg hover:shadow-xl hover-lift"
                 >
-                  🎯 Open Rebuild Version →
+                  <Target size={20} strokeWidth={2} />
+                  Open Rebuild Version →
                 </Link>
               </div>
             </div>
@@ -231,10 +236,10 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
         {!isAdmin && (
           <Link
             href="/dashboard/reservation-pipeline"
-            className="mt-6 block w-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 hover:from-pink-600 hover:via-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] text-center"
+            className="mt-6 block w-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 hover:from-pink-600 hover:via-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover-lift text-center"
           >
             <div className="flex items-center justify-center gap-3">
-              <span className="text-2xl">🎯</span>
+              <Target size={28} strokeWidth={2} />
               <span className="text-xl">Reservation Pipeline</span>
               <span className="text-sm opacity-80">→</span>
             </div>
@@ -250,8 +255,11 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       <SortableDashboardCards cards={dashboardCards} />
 
       {/* Quick Info */}
-      <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">
-        <h2 className="text-2xl font-bold text-white mb-4">🎯 Competition Director Responsibilities</h2>
+      <div className="glass-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Target size={28} strokeWidth={2} className="text-purple-400" />
+          <h2 className="text-2xl font-bold text-white">Competition Director Responsibilities</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
           <div className="space-y-2">
             <h3 className="text-white font-semibold">Reservation Management</h3>
