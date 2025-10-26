@@ -11,10 +11,10 @@ interface EntriesHeaderProps {
  * Shows title and action buttons
  */
 export function EntriesHeader({ selectedReservationId, selectedCompetitionId }: EntriesHeaderProps) {
-  // Build create URL with context
-  const createUrl = selectedReservationId && selectedCompetitionId
-    ? `/dashboard/entries/create?reservation=${selectedReservationId}&competition=${selectedCompetitionId}`
-    : '/dashboard/entries/create';
+  // Build create URL with context (point to rebuild route)
+  const createUrl = selectedReservationId
+    ? `/dashboard/entries-rebuild/create?reservation=${selectedReservationId}`
+    : '/dashboard/entries-rebuild/create';
 
   return (
     <div className="mb-6">
