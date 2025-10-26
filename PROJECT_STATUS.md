@@ -1,15 +1,34 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-26 (Session 18 - Tenant Isolation Fix)
+**Last Updated:** 2025-10-26 (Session 19 - SD UX Improvements)
 
 ---
 
 ## Current Status: Parallel Rebuild - Entry Creation Build (85%)
 
-### Latest Work: Session 18 Part 2 - Tenant Isolation Fix
+### Latest Work: Session 19 - Studio Director UX Improvements
 
 **Date:** October 26, 2025
-**Status:** ✅ Entry creation foundation complete, all components built, build passing
+**Status:** ✅ 11 UX improvements complete, all builds passing, ready for production testing
+
+**SESSION 19 ACHIEVEMENTS (11 UX Improvements):**
+
+1. ✅ **Next Action Widget** - Dynamic logic (dancers → reservations → routines → invoice → all good)
+2. ✅ **Card Highlights** - Animated glow borders on dashboard cards (purple/green/blue with pulse)
+3. ✅ **Entries Page Block** - Prevents routine creation when no dancers exist with CTA
+4. ✅ **Summary Tip** - Help text for closed reservations on LiveSummaryBar
+5. ✅ **Reservation Status** - Live "Routines Submitted" and status display on cards
+6. ✅ **Invoice Labels** - Changed "Allocated" → "Submitted" (shows actual entry count)
+7. ✅ **Footer Branding** - "EMPWR Dance Experience · Powered by CompSync" with dark theme
+8. ✅ **Profile Navigation** - Added back button to settings/profile page
+9. ✅ **Profile Fields** - All onboarding fields (studio name, address, city, province, postal, email, phone)
+10. ✅ **CSV Import** - Link to existing import page from entries-rebuild
+11. ✅ **Dashboard Verification** - Confirmed all CD cards show real data (Reservations, Studios, Invoices, Events)
+
+**Files Modified:** 10 files across dashboard, entries, invoices, reservations, profile
+**Total Changes:** 10 commits, ~350 lines of code
+
+---
 
 **SESSION 18 ACHIEVEMENTS:**
 
