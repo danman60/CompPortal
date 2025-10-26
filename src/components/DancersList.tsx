@@ -7,7 +7,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
 import PullToRefresh from 'react-pull-to-refresh';
 import { highlightText } from '@/lib/highlightText';
-import { SkeletonCard } from '@/components/Skeleton';
+import { SkeletonDancerCard } from '@/components/ui';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -129,7 +129,7 @@ export default function DancersList() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <SkeletonCard key={i} />
+          <SkeletonDancerCard key={i} />
         ))}
       </div>
     );

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 // Removed PullToRefresh - causes SSR window.is-not-defined error
-import { SkeletonCard } from '@/components/Skeleton';
+import { SkeletonTableRow } from '@/components/ui';
 import { formatDistanceToNow } from 'date-fns';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { ReservationSelector } from './ReservationSelector';
@@ -120,10 +120,12 @@ export default function EntriesList() {
   // Loading state check AFTER all hooks
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <SkeletonCard key={i} />
-        ))}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <div className="space-y-0">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+            <SkeletonTableRow key={i} columns={8} />
+          ))}
+        </div>
       </div>
     );
   }
