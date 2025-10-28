@@ -42,30 +42,32 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {/* Reservations Card */}
-      <Link href="/dashboard/competitions">
-        <div className="bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md rounded-xl border border-orange-400/40 p-6 hover:from-orange-500/40 hover:to-red-500/40 transition-all duration-200 cursor-pointer shadow-lg min-h-[280px] flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Reservations</h3>
-            <div className="text-3xl">📋</div>
+      {/* Reservations Card - Studio Directors Only */}
+      {role === 'studio_director' && (
+        <Link href="/dashboard/competitions">
+          <div className="bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md rounded-xl border border-orange-400/40 p-6 hover:from-orange-500/40 hover:to-red-500/40 transition-all duration-200 cursor-pointer shadow-lg min-h-[280px] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Reservations</h3>
+              <div className="text-3xl">📋</div>
+            </div>
+            <div className="text-4xl font-bold text-white mb-2">{reservationStats?.total || 0}</div>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between text-gray-300">
+                <span>Approved:</span>
+                <span className="font-semibold text-green-400">{reservationStats?.approved || 0}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Pending:</span>
+                <span className="font-semibold text-yellow-400">{reservationStats?.pending || 0}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Rejected:</span>
+                <span className="font-semibold text-red-400">{reservationStats?.rejected || 0}</span>
+              </div>
+            </div>
           </div>
-          <div className="text-4xl font-bold text-white mb-2">{reservationStats?.total || 0}</div>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between text-gray-300">
-              <span>Approved:</span>
-              <span className="font-semibold text-green-400">{reservationStats?.approved || 0}</span>
-            </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Pending:</span>
-              <span className="font-semibold text-yellow-400">{reservationStats?.pending || 0}</span>
-            </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Rejected:</span>
-              <span className="font-semibold text-red-400">{reservationStats?.rejected || 0}</span>
-            </div>
-          </div>
-        </div>
-      </Link>
+        </Link>
+      )}
 
       {/* Studios Card */}
       <Link href="/dashboard/studios">
