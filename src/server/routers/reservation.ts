@@ -166,6 +166,7 @@ export const reservationRouter = router({
         }),
         prisma.reservations.count({ where }),
         prisma.competitions.findMany({
+          where: ctx.tenantId ? { tenant_id: ctx.tenantId } : undefined,
           select: {
             id: true,
             name: true,
