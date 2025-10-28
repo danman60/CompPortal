@@ -1279,6 +1279,7 @@ export const reservationRouter = router({
           select: {
             id: true,
             name: true,
+            code: true,
             city: true,
             province: true,
             email: true,
@@ -1326,6 +1327,7 @@ export const reservationRouter = router({
         id: r.id,
         studioId: r.studio_id,
         studioName: r.studios?.name || 'Unknown Studio',
+        studioCode: r.studios?.code || null,
         studioCity: r.studios?.city || '',
         studioProvince: r.studios?.province || '',
         studioAddress: r.studios?.address1 || '',

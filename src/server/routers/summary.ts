@@ -67,6 +67,7 @@ export const summaryRouter = router({
             reservation_id: summary.reservation_id,
             studio_id: summary.reservations?.studio_id || '',
             studio_name: summary.reservations?.studios?.name || '',
+            studio_code: summary.reservations?.studios?.code || null,
             competition_id: summary.reservations?.competition_id || '',
             competition_name: summary.reservations?.competitions?.name || '',
             entries_used: summary.entries_used,

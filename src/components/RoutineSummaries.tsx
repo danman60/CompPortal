@@ -130,7 +130,10 @@ export default function RoutineSummaries() {
                     className="border-b border-white/10 hover:bg-white/5 transition-all"
                   >
                     <td className="px-6 py-4">
-                      <div className="text-white font-medium">{summary.studio_name}</div>
+                      <div className="text-white font-medium">
+                        {summary.studio_name}
+                        {summary.studio_code && <span className="text-sm text-gray-400 ml-2">({summary.studio_code})</span>}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-white">{summary.competition_name}</div>

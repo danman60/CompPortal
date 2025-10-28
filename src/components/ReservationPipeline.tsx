@@ -462,7 +462,10 @@ export default function ReservationPipeline() {
                                 {reservation.studioName.substring(0, 2).toUpperCase()}
                               </div>
                               <div>
-                                <div className="text-white font-semibold text-sm">{reservation.studioName}</div>
+                                <div className="text-white font-semibold text-sm">
+                                  {reservation.studioName}
+                                  {reservation.studioCode && <span className="text-xs text-gray-400 ml-2">({reservation.studioCode})</span>}
+                                </div>
                                 <div className="text-xs text-gray-400">{reservation.studioCity}, {reservation.studioProvince}</div>
                               </div>
                             </div>
