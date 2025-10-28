@@ -17,6 +17,10 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
     ? `/dashboard/entries/create?reservation=${selectedReservationId}`
     : '/dashboard/entries/create';
 
+  const createV2Url = selectedReservationId
+    ? `/dashboard/entries/create-v2?reservation=${selectedReservationId}`
+    : '/dashboard/entries/create-v2';
+
   return (
     <div className="mb-6">
       <Link
@@ -40,11 +44,19 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
           </Button>
           <Button
             href={createUrl}
+            variant="secondary"
+            disabled={isRegistrationClosed}
+            title={isRegistrationClosed ? 'Reservation has been summarized - no more routines can be added' : 'Create a new routine (old version)'}
+          >
+            Create Routine (Old)
+          </Button>
+          <Button
+            href={createV2Url}
             variant="primary"
             disabled={isRegistrationClosed}
-            title={isRegistrationClosed ? 'Reservation has been summarized - no more routines can be added' : 'Create a new routine'}
+            title={isRegistrationClosed ? 'Reservation has been summarized - no more routines can be added' : 'Create a new routine (V2 rebuild)'}
           >
-            Create Routine
+            ✨ Create Routine (V2)
           </Button>
         </div>
       </div>

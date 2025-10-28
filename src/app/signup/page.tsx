@@ -25,7 +25,47 @@ export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
   const checkEmailMutation = trpc.user.checkEmailExists.useMutation();
-  const { tenant } = useTenantTheme();
+  const { tenant, isLoading: tenantLoading } = useTenantTheme();
+
+  // Resolve tenant id reliably to avoid 500s from email system
+  const resolveTenantId = async (): Promise<string | null> => {
+    // 1) Context already has tenant
+    if (tenant?.id) return tenant.id;
+
+    // 2) Try public tenant endpoint
+    try {
+      const res = await fetch('/api/tenant', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.id) return data.id as string;
+      }
+    } catch (_) {
+      // ignore and try next fallback
+    }
+
+    // 3) Env-based fallback for single-tenant deployments
+    if (process.env.NEXT_PUBLIC_TENANT_ID) {
+      return process.env.NEXT_PUBLIC_TENANT_ID as string;
+    }
+
+    // 4) As a last resort, try to infer from hostname via slug convention
+    try {
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+      const slug = host.split('.')[0];
+      // If running on a naked domain or localhost, we cannot infer safely
+      if (!slug || slug === 'localhost' || /:\\d+$/.test(slug)) return null;
+      // Defer to server to resolve slug; if endpoint missing, return null
+      const res2 = await fetch(`/api/tenant?slug=${encodeURIComponent(slug)}`, { cache: 'no-store' });
+      if (res2.ok) {
+        const data2 = await res2.json();
+        if (data2?.id) return data2.id as string;
+      }
+    } catch (_) {
+      // swallow
+    }
+
+    return null;
+  };
 
   const updateFormData = (field: keyof SignupFormData, value: string) => {
     if (field === 'email') setError(null);
@@ -57,6 +97,14 @@ export default function SignupPage() {
     setError(null);
 
     try {
+      // Ensure tenant is resolved before signup
+      const tenantId = await resolveTenantId();
+      if (!tenantId) {
+        setError('Unable to determine tenant. Please refresh and try again.');
+        setLoading(false);
+        return;
+      }
+
       // Check if email already exists before attempting signup
       const emailCheck = await checkEmailMutation.mutateAsync({ email: formData.email });
 
@@ -73,7 +121,7 @@ export default function SignupPage() {
         options: {
           emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/onboarding`,
           data: {
-            tenant_id: tenant?.id, // Required for whitelabel email system
+            tenant_id: tenantId, // Required for whitelabel email system
           },
         },
       });
@@ -200,10 +248,10 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || tenantLoading}
               className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading || tenantLoading ? 'Creating account...' : 'Create Account'}
             </button>
 
             <p className="text-xs text-gray-400 text-center">
