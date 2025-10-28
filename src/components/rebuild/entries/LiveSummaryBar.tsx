@@ -79,7 +79,7 @@ export function LiveSummaryBar({
               <div className="text-white">
                 <div className="text-sm text-white/60">Event</div>
                 <div className="text-lg font-medium">
-                  🎪 {reservation.competitions?.name || 'Unknown'}
+                  🎪 {(reservation as any).competitions?.name || 'Unknown'}
                 </div>
               </div>
             </div>

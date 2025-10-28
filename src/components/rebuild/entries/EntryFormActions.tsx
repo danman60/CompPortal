@@ -34,7 +34,7 @@ export function EntryFormActions({ canSave, isLoading, onSave }: EntryFormAction
             onClick={() => onSave('save-like-this')}
             disabled={!canSave || isLoading}
             className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-200 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            title="Save and create another with same dancers"
+            title="Saves current routine, then creates another with same dancers"
           >
             <span>🔄</span>
             <span>Create Another Like This</span>
@@ -45,7 +45,7 @@ export function EntryFormActions({ canSave, isLoading, onSave }: EntryFormAction
             onClick={() => onSave('save-another')}
             disabled={!canSave || isLoading}
             className="px-6 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-200 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            title="Save and start fresh"
+            title="Saves current routine, then starts fresh with empty form"
           >
             <span>➕</span>
             <span>Save & Create Another</span>

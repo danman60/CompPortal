@@ -277,7 +277,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
   // Filter reservations
   const filteredReservations = reservations.filter((reservation) => {
     const matchesStatus = filter === 'all' || reservation.status === filter;
-    const matchesCompetition = selectedCompetition === 'all' || reservation.competition_id === selectedCompetition;
+    const matchesCompetition = selectedCompetition === 'all' || (reservation as any).competitions_id === selectedCompetition;
     return matchesStatus && matchesCompetition;
   });
 
@@ -513,10 +513,10 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white mb-1">
-                          {reservation.competitions?.name || 'Unknown Competition'}
+                          {(reservation as any).competitions?.name || 'Unknown Competition'}
                         </h3>
                         <p className="text-gray-400 text-sm">
-                          {reservation.studios?.name || 'Unknown Studio'}
+                          {(reservation as any).studios?.name || 'Unknown Studio'}
                         </p>
                       </div>
                       <StatusBadge status={(reservation.status || 'pending') as any} />
@@ -746,7 +746,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                         : '✅ Approve Reservation'}
                     </button>
                     <button
-                      onClick={() => handleReject(reservation.id, reservation.studios?.name || 'studio')}
+                      onClick={() => handleReject(reservation.id, (reservation as any).studios?.name || 'studio')}
                       disabled={processingId === reservation.id}
                       className="flex-1 min-h-[44px] bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
                     >
@@ -806,22 +806,22 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           <div>
                             <div className="text-sm text-gray-400 mb-1">Routine Usage</div>
                             <div className="text-3xl font-bold text-white">
-                              {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                              {(reservation as any)._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
                             </div>
                             <div className={`text-sm font-semibold mt-1 ${
-                              (reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0) > 0
+                              (reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0) > 0
                                 ? 'text-green-400'
                                 : 'text-gray-400'
                             }`}>
-                              {(reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0)} {
-                                ((reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0)) === 1
+                              {(reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0)} {
+                                ((reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0)) === 1
                                   ? 'routine'
                                   : 'routines'
                               } remaining
                             </div>
                           </div>
                           <div className="text-5xl">
-                            {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                            {((reservation as any)._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                               ? '✅'
                               : '📝'}
                           </div>
@@ -832,15 +832,15 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           <div className="h-3 bg-white/10 rounded-full overflow-hidden border border-white/20">
                             <div
                               className={`h-full transition-all duration-500 ${
-                                (reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                                ((reservation as any)._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                                   ? 'bg-green-500'
-                                  : (reservation._count?.competition_entries || 0) / (reservation.spaces_confirmed || 1) >= 0.8
+                                  : ((reservation as any)._count?.competition_entries || 0) / (reservation.spaces_confirmed || 1) >= 0.8
                                   ? 'bg-yellow-500'
                                   : 'bg-gradient-to-r from-pink-500 to-purple-500'
                               }`}
                               style={{
                                 width: `${Math.min(
-                                  ((reservation._count?.competition_entries || 0) / (reservation.spaces_confirmed || 1)) * 100,
+                                  (((reservation as any)._count?.competition_entries || 0) / (reservation.spaces_confirmed || 1)) * 100,
                                   100
                                 )}%`
                               }}
@@ -852,17 +852,17 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                         <Link
                           href={`/dashboard/entries`}
                           className={`block w-full text-center px-6 py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
-                            (reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                            ((reservation as any)._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                               ? 'bg-white/10 text-gray-400 cursor-not-allowed border border-white/20'
                               : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
                           }`}
                           onClick={(e) => {
-                            if ((reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)) {
+                            if (((reservation as any)._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)) {
                               e.preventDefault();
                             }
                           }}
                         >
-                          {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                          {((reservation as any)._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                             ? '✅ All Routines Allocated'
                             : 'Create Routines'}
                         </Link>
@@ -874,11 +874,11 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           <div>
                             <div className="text-sm text-gray-400 mb-1">Routines Registered</div>
                             <div className="text-2xl font-bold text-white">
-                              {reservation._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
+                              {(reservation as any)._count?.competition_entries || 0} / {reservation.spaces_confirmed || 0}
                             </div>
                           </div>
                           <div className="text-4xl">
-                            {(reservation._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
+                            {((reservation as any)._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                               ? '✅'
                               : '⏳'}
                           </div>
@@ -889,9 +889,9 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                           onClick={() =>
                             handleReduceCapacity(
                               reservation.id,
-                              reservation.studios?.name || 'studio',
+                              (reservation as any).studios?.name || 'studio',
                               reservation.spaces_confirmed || 0,
-                              reservation._count?.competition_entries || 0
+                              (reservation as any)._count?.competition_entries || 0
                             )
                           }
                           disabled={processingId === reservation.id}

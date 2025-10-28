@@ -185,7 +185,7 @@ export default function CSVImport() {
   };
 
   const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
-  const usedSpaces = reservation?._count?.competition_entries || 0;
+  const usedSpaces = (reservation as any)?._count?.competition_entries || 0;
   const confirmedSpaces = reservation?.spaces_confirmed || 0;
   const remainingSpaces = confirmedSpaces - usedSpaces;
   const canImport = remainingSpaces >= csvData.length;

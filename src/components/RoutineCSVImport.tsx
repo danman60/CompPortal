@@ -375,7 +375,7 @@ export default function RoutineCSVImport() {
     }
 
     // Check available spaces
-    const usedSpaces = reservation._count?.competition_entries || 0;
+    const usedSpaces = (reservation as any)._count?.competition_entries || 0;
     const confirmedSpaces = reservation.spaces_confirmed || 0;
     const availableSpaces = confirmedSpaces - usedSpaces;
 
@@ -741,7 +741,7 @@ export default function RoutineCSVImport() {
                     <div className="text-2xl font-bold text-white">
                       {(() => {
                         const reservation = reservationsData.reservations.find(r => r.id === selectedReservationId);
-                        const usedSpaces = reservation?._count?.competition_entries || 0;
+                        const usedSpaces = (reservation as any)?._count?.competition_entries || 0;
                         const confirmedSpaces = reservation?.spaces_confirmed || 0;
                         return `${confirmedSpaces - usedSpaces} / ${confirmedSpaces}`;
                       })()}
@@ -762,7 +762,7 @@ export default function RoutineCSVImport() {
           {selectedReservationId && (() => {
             const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
             if (!reservation) return null;
-            const usedSpaces = reservation._count?.competition_entries || 0;
+            const usedSpaces = (reservation as any)._count?.competition_entries || 0;
             const confirmedSpaces = reservation.spaces_confirmed || 0;
             const availableSpaces = confirmedSpaces - usedSpaces;
 
@@ -802,7 +802,7 @@ export default function RoutineCSVImport() {
                     disabled={!selectedReservationId || (() => {
                       const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
                       if (!reservation) return true;
-                      const availableSpaces = (reservation.spaces_confirmed || 0) - (reservation._count?.competition_entries || 0);
+                      const availableSpaces = (reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0);
                       return parsedData.length > availableSpaces;
                     })()}
                     className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"

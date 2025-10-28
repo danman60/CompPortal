@@ -117,7 +117,7 @@ export async function validateReservationSpaces(
     throw new Error('Reservation must be approved before creating entries');
   }
 
-  const currentEntries = reservation._count.competition_entries;
+  const currentEntries = (reservation as any)._count.competition_entries;
   const confirmedSpaces = reservation.spaces_confirmed || 0;
   const totalEntries = currentEntries + additionalEntries;
 

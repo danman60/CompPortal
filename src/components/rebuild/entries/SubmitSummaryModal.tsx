@@ -33,8 +33,8 @@ export function SubmitSummaryModal({
 }: SubmitSummaryModalProps) {
   const handleConfirm = async () => {
     await onConfirm({
-      studioId: reservation.studio_id,
-      competitionId: reservation.competition_id,
+      studioId: (reservation as any).studios_id,
+      competitionId: (reservation as any).competitions_id,
     });
     onCancel();
   };
@@ -73,7 +73,7 @@ export function SubmitSummaryModal({
           <div className="flex justify-between">
             <span className="text-white/60">Event:</span>
             <span className="text-white font-medium">
-              {reservation.competitions?.name || 'Unknown'}
+              {(reservation as any).competitions?.name || 'Unknown'}
             </span>
           </div>
           <div className="flex justify-between">

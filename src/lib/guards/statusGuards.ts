@@ -75,7 +75,7 @@ export function guardInvoiceStatus(
  * @example
  * guardInvoiceCreation({
  *   status: reservation.status,
- *   entryCount: reservation._count.entries,
+ *   entryCount: (reservation as any)._count.entries,
  *   invoice: reservation.invoice,
  * });
  */

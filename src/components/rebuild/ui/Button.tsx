@@ -9,6 +9,7 @@ interface ButtonProps {
   disabled?: boolean;
   className?: string;
   type?: 'button' | 'submit';
+  title?: string;
 }
 
 /**
@@ -22,7 +23,8 @@ export function Button({
   href,
   disabled = false,
   className = '',
-  type = 'button'
+  type = 'button',
+  title
 }: ButtonProps) {
   const baseClass = `
     px-4 py-2
@@ -45,7 +47,7 @@ export function Button({
 
   if (href && !disabled) {
     return (
-      <Link href={href} className={combinedClass}>
+      <Link href={href} className={combinedClass} title={title}>
         {children}
       </Link>
     );
@@ -57,6 +59,7 @@ export function Button({
       className={combinedClass}
       onClick={!disabled ? onClick : undefined}
       disabled={disabled}
+      title={title}
     >
       {children}
     </button>

@@ -4,13 +4,14 @@ import { Button } from '@/components/rebuild/ui/Button';
 interface EntriesHeaderProps {
   selectedReservationId?: string;
   selectedCompetitionId?: string;
+  isRegistrationClosed?: boolean;
 }
 
 /**
  * Header for Entries rebuild page
  * Shows title and action buttons
  */
-export function EntriesHeader({ selectedReservationId, selectedCompetitionId }: EntriesHeaderProps) {
+export function EntriesHeader({ selectedReservationId, selectedCompetitionId, isRegistrationClosed = false }: EntriesHeaderProps) {
   // Build create URL with context (point to rebuild route)
   const createUrl = selectedReservationId
     ? `/dashboard/entries-rebuild/create?reservation=${selectedReservationId}`
@@ -37,7 +38,12 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId }: 
           <Button href="/dashboard/entries/import" variant="secondary">
             📥 CSV Import
           </Button>
-          <Button href={createUrl} variant="primary">
+          <Button
+            href={createUrl}
+            variant="primary"
+            disabled={isRegistrationClosed}
+            title={isRegistrationClosed ? 'Registration is closed for this competition' : 'Create a new routine'}
+          >
             Create Routine
           </Button>
         </div>

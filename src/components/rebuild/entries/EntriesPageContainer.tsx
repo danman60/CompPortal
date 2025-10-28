@@ -61,6 +61,10 @@ export function EntriesPageContainer() {
 
   const isLoading = entriesLoading || reservationsLoading || dancersLoading;
 
+  // TODO: Add registration_deadline field to competitions table to enable this feature
+  // For now, always allow creating routines
+  const isRegistrationClosed = false;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-8">
@@ -102,6 +106,7 @@ export function EntriesPageContainer() {
       <EntriesHeader
         selectedReservationId={selectedReservation?.id}
         selectedCompetitionId={selectedReservation?.competition_id}
+        isRegistrationClosed={isRegistrationClosed}
       />
 
       <EntriesFilters
