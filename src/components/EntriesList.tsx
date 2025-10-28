@@ -20,6 +20,7 @@ import { useSpaceUsage } from '@/hooks/useSpaceUsage';
 import { EntriesCardView } from '@/components/entries/EntriesCardView';
 import { EntriesTableView } from '@/components/entries/EntriesTableView';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { DebugSubmitButton } from '@/components/DebugSubmitButton';
 
 export default function EntriesList() {
   // Fetch current user to determine role
@@ -261,48 +262,13 @@ export default function EntriesList() {
             </Link>
           )}
 
-          {/* DUPLICATE Submit Summary Button - Beside Create Routine */}
+          {/* DEBUG Submit Button - New Component File to Force Fresh Chunk */}
           {isStudioDirector && hasSelectedReservation && filteredEntries.length > 0 && (
-            <button
-              onClick={() => {
-                console.log('[SUBMIT DEBUG] Button clicked');
-                console.log('[SUBMIT DEBUG] userData:', userData);
-                console.log('[SUBMIT DEBUG] selectedCompetitionId:', selectedCompetitionId);
-                console.log('[SUBMIT DEBUG] userData.studio:', userData?.studio);
-                console.log('[SUBMIT DEBUG] userData.studio.id:', userData?.studio?.id);
-
-                // Validate required data
-                if (!userData?.studio?.id) {
-                  console.error('[SUBMIT DEBUG] Missing studio ID');
-                  toast.error('Studio information not loaded. Please refresh the page.');
-                  return;
-                }
-                if (!selectedCompetitionId) {
-                  console.error('[SUBMIT DEBUG] Missing competition ID');
-                  toast.error('Please select a reservation first.');
-                  return;
-                }
-
-                console.log('[SUBMIT DEBUG] Validation passed, calling mutation');
-
-                // Check if incomplete - show confirmation dialog
-                if (isIncomplete) {
-                  setShowIncompleteConfirm(true);
-                  return;
-                }
-
-                // Proceed with submission
-                submitSummaryMutation.mutate({
-                  studioId: userData.studio.id,
-                  competitionId: selectedCompetitionId,
-                });
-              }}
-              disabled={submitSummaryMutation.isPending}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 font-bold disabled:opacity-50"
-            >
-              <span>🚀</span>
-              <span>DEBUG SUBMIT (v2)</span>
-            </button>
+            <DebugSubmitButton
+              selectedCompetitionId={selectedCompetitionId}
+              isIncomplete={isIncomplete}
+              onShowIncompleteConfirm={() => setShowIncompleteConfirm(true)}
+            />
           )}
 
           {/* Submit Summary Button - Far Right, Prominent */}
