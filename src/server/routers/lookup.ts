@@ -53,6 +53,8 @@ export const lookupRouter = router({
       });
     }
 
+    console.log('[lookup.getAllForEntry] ctx.tenantId:', ctx.tenantId);
+
     const [categories, classifications, ageGroups, entrySizeCategories] = await Promise.all([
       prisma.dance_categories.findMany({
         where: {
@@ -74,6 +76,11 @@ export const lookupRouter = router({
         orderBy: { sort_order: 'asc' },
       }),
     ]);
+
+    console.log('[lookup.getAllForEntry] ageGroups count:', ageGroups.length);
+    console.log('[lookup.getAllForEntry] ageGroups tenant_ids:', ageGroups.map(a => a.tenant_id));
+    console.log('[lookup.getAllForEntry] entrySizeCategories count:', entrySizeCategories.length);
+    console.log('[lookup.getAllForEntry] entrySizeCategories:', entrySizeCategories.map(e => `${e.name} (${e.min_participants}-${e.max_participants}) tenant:${e.tenant_id}`));
 
     return {
       categories,
