@@ -33,8 +33,8 @@ export function SubmitSummaryModal({
 }: SubmitSummaryModalProps) {
   const handleConfirm = async () => {
     await onConfirm({
-      studioId: (reservation as any).studios_id,
-      competitionId: (reservation as any).competitions_id,
+      studioId: reservation.studio_id,
+      competitionId: reservation.competition_id,
     });
     onCancel();
   };
