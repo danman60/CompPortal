@@ -115,6 +115,7 @@ export class CapacityService {
 
       // 1. Log to ledger (audit trail) - UNIQUE CONSTRAINT GUARD
       // If duplicate call, this will throw and prevent steps 2-3 from executing
+      // NOTE: tenant_id not in schema - scoped via competition_id → competitions.tenant_id
       await tx.capacity_ledger.create({
         data: {
           competition_id: competitionId,
@@ -219,6 +220,7 @@ export class CapacityService {
       });
 
       // Log to ledger (audit trail)
+      // NOTE: tenant_id not in schema - scoped via competition_id → competitions.tenant_id
       await tx.capacity_ledger.create({
         data: {
           competition_id: competitionId,

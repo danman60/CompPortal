@@ -31,6 +31,7 @@ export interface DashboardCard {
   title: string;
   description: string;
   tooltip?: string;
+  disabled?: boolean;
 }
 
 interface SortableCardProps {
@@ -63,6 +64,33 @@ function SortableCard({ card, isActiveCard }: SortableCardProps) {
       return false;
     }
   };
+
+  // If card is disabled, render non-interactive version
+  if (card.disabled) {
+    return (
+      <div className="relative w-full">
+        {card.tooltip && (
+          <div className="text-xs text-purple-300 font-medium mb-2 px-2">
+            {card.tooltip}
+          </div>
+        )}
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 opacity-50 cursor-not-allowed animate-fade-in h-32 w-full">
+          <div className="flex items-center gap-4 h-full">
+            <div className="inline-block flex-shrink-0">
+              {(() => {
+                const IconComponent = getIconFromEmoji(card.icon);
+                return <IconComponent size={40} strokeWidth={2} className="text-gray-400" />;
+              })()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xl font-semibold text-white truncate">{card.title}</h3>
+              <p className="text-gray-400 text-sm line-clamp-2">{card.description}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} className="relative w-full">
