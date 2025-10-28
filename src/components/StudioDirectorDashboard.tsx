@@ -23,16 +23,8 @@ interface StudioDirectorDashboardProps {
   studioStatus?: string | null;
 }
 
-const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
-  {
-    id: 'invoices',
-    href: '/dashboard/invoices',
-    icon: '🧾',
-    title: 'My Invoices',
-    description: 'View studio billing',
-    tooltip: 'View and pay invoices',
-  },
-];
+// No quick action cards for SD - invoices removed per business requirements
+const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [];
 
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
@@ -69,6 +61,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
   const getNextAction = () => {
     const totalDancers = myDancers?.dancers?.length || 0;
     const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
+    const pendingReservations = myReservations?.reservations?.filter(r => r.status === 'pending').length || 0;
 
     if (totalDancers === 0) {
       return {
@@ -78,6 +71,17 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
         color: 'text-purple-300',
         href: '/dashboard/dancers',
         tooltip: 'Start by adding your dancers'
+      };
+    }
+
+    if (pendingReservations > 0) {
+      return {
+        icon: '⏳',
+        label: 'Next Action for You',
+        value: 'Awaiting Reservation Approval',
+        color: 'text-yellow-300',
+        href: '/dashboard/reservations',
+        tooltip: `${pendingReservations} reservation${pendingReservations !== 1 ? 's' : ''} pending approval from competition director`
       };
     }
 

@@ -21,6 +21,10 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
     <div className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 ${className}`}>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {stats.map((stat, i) => {
+          // Check if this is unpaid invoices widget
+          const isUnpaidInvoices = stat.label.toLowerCase().includes('invoice') && stat.label.toLowerCase().includes('unpaid');
+          const hasUnpaidInvoices = isUnpaidInvoices && Number(stat.value) > 0;
+
           const content = (
             <>
               {/* Tooltip above CARD */}
@@ -29,24 +33,38 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
                   {stat.tooltip}
                 </div>
               )}
-              <div className="text-2xl mb-1" aria-hidden>
+              <div className="text-3xl mb-2" aria-hidden>
                 {stat.icon}
               </div>
-              <div className={`text-2xl font-bold ${stat.color || 'text-white'}`}>{stat.value}</div>
-              <div className="text-xs text-gray-400 mt-1">{stat.label}</div>
+              <div className={`text-4xl font-bold ${stat.color || 'text-white'} ${hasUnpaidInvoices ? 'relative' : ''}`}>
+                {stat.value}
+                {hasUnpaidInvoices && (
+                  <span className="absolute -top-2 -right-6 flex h-6 w-6">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-6 w-6 bg-red-500 text-white text-xs items-center justify-center font-bold">
+                      {stat.value}
+                    </span>
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-gray-400 mt-2">{stat.label}</div>
             </>
           );
+
+          const cardClassName = `text-center block rounded-lg p-3 transition-all ${
+            stat.href ? 'hover:bg-white/5' : ''
+          } ${hasUnpaidInvoices ? 'animate-pulse-slow border-2 border-red-400/50 bg-red-500/10' : ''}`;
 
           return stat.href ? (
             <Link
               key={i}
               href={stat.href}
-              className="text-center block hover:bg-white/5 rounded-lg p-2 transition-colors"
+              className={cardClassName}
             >
               {content}
             </Link>
           ) : (
-            <div key={i} className="text-center">
+            <div key={i} className={cardClassName}>
               {content}
             </div>
           );
