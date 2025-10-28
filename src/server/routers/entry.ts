@@ -904,11 +904,22 @@ export const entryRouter = router({
       // Get tenant_id from studio (this is a publicProcedure, so ctx.tenantId might be null)
       const studio = await prisma.studios.findUnique({
         where: { id: data.studio_id },
-        select: { tenant_id: true },
+        select: { id: true, name: true, tenant_id: true },
       });
 
       if (!studio) {
-        throw new Error('Studio not found');
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Studio not found'
+        });
+      }
+
+      // 🛡️ CRITICAL: Verify studio has tenant_id (data integrity check)
+      if (!studio.tenant_id) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: `Studio "${studio.name}" has no tenant assigned. This is a data integrity issue - please contact support.`
+        });
       }
 
       // Get defaults for age_group and entry_size_category if not provided (required by schema)
@@ -951,9 +962,8 @@ export const entryRouter = router({
         is_improvisation: data.is_improvisation,
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
-        // Direct tenant_id field (not a relation)
-        tenant_id: studio.tenant_id,
-        // Use Prisma relation connect syntax for foreign keys
+        // Use Prisma relation connect syntax for ALL foreign keys (including tenant)
+        tenants: { connect: { id: studio.tenant_id } },
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },
         dance_categories: { connect: { id: data.category_id } },
