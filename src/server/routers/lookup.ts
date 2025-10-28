@@ -62,6 +62,7 @@ export const lookupRouter = router({
         orderBy: { sort_order: 'asc' },
       }),
       prisma.classifications.findMany({
+        where: { tenant_id: ctx.tenantId },
         orderBy: { skill_level: 'asc' },
       }),
       prisma.age_groups.findMany({

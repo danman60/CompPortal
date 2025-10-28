@@ -852,7 +852,7 @@ export const entryRouter = router({
     }),
 
   // Create a new entry with participants
-  create: publicProcedure
+  create: protectedProcedure
     .input(entryInputSchema)
     .mutation(async ({ ctx, input }) => {
       const {
@@ -901,24 +901,27 @@ export const entryRouter = router({
         }
       }
 
-      // Get tenant_id from studio (this is a publicProcedure, so ctx.tenantId might be null)
+      // Verify user has tenant context (protectedProcedure ensures ctx.tenantId exists)
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'No tenant associated with user'
+        });
+      }
+
+      // Verify studio exists and belongs to user's tenant
       const studio = await prisma.studios.findUnique({
-        where: { id: data.studio_id },
-        select: { id: true, name: true, tenant_id: true },
+        where: {
+          id: data.studio_id,
+          tenant_id: ctx.tenantId // Verify tenant isolation
+        },
+        select: { id: true, name: true },
       });
 
       if (!studio) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Studio not found'
-        });
-      }
-
-      // 🛡️ CRITICAL: Verify studio has tenant_id (data integrity check)
-      if (!studio.tenant_id) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: `Studio "${studio.name}" has no tenant assigned. This is a data integrity issue - please contact support.`
+          message: 'Studio not found or does not belong to your organization'
         });
       }
 
@@ -962,9 +965,8 @@ export const entryRouter = router({
         is_improvisation: data.is_improvisation,
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
-        // Provide BOTH direct field AND relation (Prisma requires both for tenant)
-        tenant_id: studio.tenant_id,
-        tenants: { connect: { id: studio.tenant_id } },
+        // Use ctx.tenantId from authenticated user (protectedProcedure)
+        tenants: { connect: { id: ctx.tenantId } },
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },
         dance_categories: { connect: { id: data.category_id } },
