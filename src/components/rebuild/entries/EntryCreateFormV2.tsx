@@ -32,6 +32,9 @@ export function EntryCreateFormV2() {
     { enabled: !!reservation?.studio_id }
   );
 
+  // Calculate capacity (must be before early returns - Rules of Hooks)
+  const { data: entriesData } = trpc.entry.getAll.useQuery();
+
   const dancers = (dancersData?.dancers || []) as any[];
 
   const eventStartDate = competition?.competition_start_date ? new Date(competition.competition_start_date) : null;
@@ -82,7 +85,6 @@ export function EntryCreateFormV2() {
   }
 
   // Calculate capacity (Phase 1 spec lines 513-521)
-  const { data: entriesData } = trpc.entry.getAll.useQuery();
   const reservationEntries = entriesData?.entries?.filter(
     (e: any) => e.reservation_id === reservationId && e.status !== 'cancelled'
   ) || [];
