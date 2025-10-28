@@ -1053,6 +1053,7 @@ export const entryRouter = router({
             // Remove undefined values from each participant
             Object.fromEntries(
               Object.entries({
+                tenant_id: ctx.tenantId,
                 dancer_id: p.dancer_id,
                 dancer_name: p.dancer_name,
                 dancer_age: p.dancer_age,

@@ -199,9 +199,10 @@ export const scoringRouter = router({
         });
       }
 
-      // Verify entry exists
+      // Verify entry exists and get tenant_id
       const entry = await prisma.competition_entries.findUnique({
         where: { id: input.entry_id },
+        select: { id: true, tenant_id: true },
       });
 
       if (!entry) {
@@ -242,6 +243,7 @@ export const scoringRouter = router({
       // Create score
       const score = await prisma.scores.create({
         data: {
+          tenant_id: entry.tenant_id,
           entry_id: input.entry_id,
           judge_id: input.judge_id,
           technical_score: input.technical_score,

@@ -150,6 +150,7 @@ export const adminRouter = router({
           await prisma.user_profiles.create({
             data: {
               id: authData.user.id,
+              tenant_id: ctx.tenantId!,
               first_name: studio.firstName,
               last_name: studio.lastName,
               role: 'studio_director',

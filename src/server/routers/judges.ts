@@ -25,8 +25,15 @@ export const judgesRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      // Get tenant_id from competition
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competition_id },
+        select: { tenant_id: true },
+      });
+
       const judge = await prisma.judges.create({
         data: {
+          tenant_id: competition!.tenant_id,
           name: input.name,
           email: input.email,
           phone: input.phone,

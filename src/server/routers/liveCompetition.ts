@@ -224,6 +224,7 @@ export const liveCompetitionRouter = router({
           },
         },
         create: {
+          tenant_id: entry.tenant_id,
           entry_id: input.routineId,
           judge_id: input.judgeId,
           total_score: input.score,

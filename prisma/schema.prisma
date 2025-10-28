@@ -847,6 +847,7 @@ model entry_size_categories {
 
 model judges {
   id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String        @db.Uuid
   user_id             String?       @db.Uuid
   competition_id      String?       @db.Uuid
   name                String        @db.VarChar(255)
@@ -862,6 +863,7 @@ model judges {
   confirmed           Boolean?      @default(false)
   checked_in          Boolean?      @default(false)
   created_at          DateTime?     @default(now()) @db.Timestamp(6)
+  tenants             tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competitions        competitions? @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users               users?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   scores              scores[]
@@ -992,6 +994,7 @@ model invoices {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model scores {
   id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String              @db.Uuid
   entry_id              String              @db.Uuid
   judge_id              String              @db.Uuid
   technical_score       Decimal?            @db.Decimal(5, 2)
@@ -1006,6 +1009,7 @@ model scores {
   scored_at             DateTime?           @default(now()) @db.Timestamp(6)
   modified_at           DateTime?           @db.Timestamp(6)
   is_final              Boolean?            @default(false)
+  tenants               tenants             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competition_entries   competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   judges                judges              @relation(fields: [judge_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -1164,11 +1168,13 @@ model user_profiles {
 /// Email notification preferences for users
 model email_preferences {
   id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String     @db.Uuid
   user_id       String     @db.Uuid
   email_type    email_type
   enabled       Boolean    @default(true)
   created_at    DateTime   @default(now()) @db.Timestamptz(6)
   updated_at    DateTime   @default(now()) @db.Timestamptz(6)
+  tenants       tenants    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   user_profiles user_profiles @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, email_type])
@@ -1208,6 +1214,7 @@ model vip_events {
 
 model email_logs {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
   template_type    String    @db.VarChar(50)
   recipient_email  String    @db.VarChar(255)
   subject          String    @db.VarChar(500)
@@ -1216,9 +1223,11 @@ model email_logs {
   success          Boolean   @default(true)
   error_message    String?
   sent_at          DateTime  @default(now()) @db.Timestamp(6)
+  tenants          tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   studios          studios?  @relation(fields: [studio_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   competitions     competitions? @relation(fields: [competition_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
+  @@index([tenant_id])
   @@index([studio_id])
   @@index([competition_id])
   @@index([sent_at])
@@ -1329,6 +1338,10 @@ model tenants {
   competition_entries  competition_entries[]
   invoices             invoices[]
   dancers              dancers[]
+  email_logs           email_logs[]
+  email_preferences    email_preferences[]
+  judges               judges[]
+  scores               scores[]
   failure_log          failure_log[]
   age_groups           age_groups[]
   dance_categories     dance_categories[]

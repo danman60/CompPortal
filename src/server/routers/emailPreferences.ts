@@ -41,6 +41,7 @@ export const emailPreferencesRouter = router({
 
       await prisma.email_preferences.createMany({
         data: allEmailTypes.map(emailType => ({
+          tenant_id: ctx.tenantId!,
           user_id: userId,
           email_type: emailType,
           enabled: true,
@@ -79,6 +80,7 @@ export const emailPreferencesRouter = router({
           enabled: input.enabled,
         },
         create: {
+          tenant_id: ctx.tenantId!,
           user_id: userId,
           email_type: input.emailType,
           enabled: input.enabled,

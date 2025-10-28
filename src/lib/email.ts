@@ -87,17 +87,36 @@ export async function sendEmail({
   // Log email to database if template type is provided
   if (templateType) {
     try {
-      await prisma.email_logs.create({
-        data: {
-          template_type: templateType,
-          recipient_email: recipientEmail,
-          subject,
-          studio_id: studioId || null,
-          competition_id: competitionId || null,
-          success,
-          error_message: errorMessage || null,
-        },
-      });
+      // Get tenant_id from studio or competition
+      let tenantId: string | null = null;
+      if (studioId) {
+        const studio = await prisma.studios.findUnique({
+          where: { id: studioId },
+          select: { tenant_id: true },
+        });
+        tenantId = studio?.tenant_id || null;
+      } else if (competitionId) {
+        const competition = await prisma.competitions.findUnique({
+          where: { id: competitionId },
+          select: { tenant_id: true },
+        });
+        tenantId = competition?.tenant_id || null;
+      }
+
+      if (tenantId) {
+        await prisma.email_logs.create({
+          data: {
+            tenant_id: tenantId,
+            template_type: templateType,
+            recipient_email: recipientEmail,
+            subject,
+            studio_id: studioId || null,
+            competition_id: competitionId || null,
+            success,
+            error_message: errorMessage || null,
+          },
+        });
+      }
     } catch (logError) {
       logger.error('Failed to log email', { error: logError instanceof Error ? logError : new Error(String(logError)) });
       // Don't fail the email send if logging fails
