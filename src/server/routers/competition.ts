@@ -170,8 +170,21 @@ export const competitionRouter = router({
         })
         .nullish()
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const where: any = {};
+
+      // Tenant filtering
+      if (isSuperAdmin(ctx.userRole)) {
+        // Super admins can see all tenants
+      } else if (ctx.tenantId) {
+        where.tenant_id = ctx.tenantId;
+      } else {
+        // No tenant context, return empty stats
+        return { total: 0, byStatus: {}, byYear: [] };
+      }
+
+      // Exclude cancelled competitions for "active" count
+      where.status = { not: 'cancelled' };
 
       if (input?.competitionId) {
         where.id = input.competitionId;
