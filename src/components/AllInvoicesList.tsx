@@ -28,6 +28,14 @@ export default function AllInvoicesList() {
   // Data refresh tracking
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
+  // Client-side only rendering flag to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false);
+
+  // Set mounted flag on client-side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Read URL query parameters on mount
   useEffect(() => {
     const paymentStatus = searchParams.get('paymentStatus');
@@ -395,7 +403,11 @@ export default function AllInvoicesList() {
               <h3 className="text-xl font-bold text-white">Invoices</h3>
               <div className="flex items-center gap-3 mt-1">
                 <span className="text-xs text-gray-400">
-                  Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+                  {mounted ? (
+                    <>Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}</>
+                  ) : (
+                    <>Updated recently</>
+                  )}
                 </span>
                 <button
                   onClick={() => refetch()}
