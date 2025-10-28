@@ -965,8 +965,8 @@ export const entryRouter = router({
         is_improvisation: data.is_improvisation,
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
-        // Use ctx.tenantId from authenticated user (protectedProcedure)
-        tenants: { connect: { id: ctx.tenantId } },
+        // Use ctx.tenantId directly as scalar field (not relation connect)
+        tenant_id: ctx.tenantId,
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },
         dance_categories: { connect: { id: data.category_id } },
