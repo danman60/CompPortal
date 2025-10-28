@@ -764,13 +764,18 @@ export const invoiceRouter = router({
           const isEnabled = await isEmailEnabled(studio.owner_id, 'invoice_received');
 
           if (isEnabled) {
+            // Get actual invoice data
+            const lineItems = (updatedInvoice.line_items as any) || [];
+            const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
+            const totalAmount = Number(updatedInvoice.total || 0);
+
             const emailData: InvoiceDeliveryData = {
               studioName: studio.name,
               competitionName: competition.name,
               competitionYear: competition.year || new Date().getFullYear(),
               invoiceNumber: updatedInvoice.id.substring(0, 8),
-              totalAmount: 0, // See full details in invoice
-              routineCount: 0, // See full details in invoice
+              totalAmount,
+              routineCount,
               invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices/${updatedInvoice.studio_id}/${updatedInvoice.competition_id}`,
             };
 
