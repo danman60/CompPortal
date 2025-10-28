@@ -42,7 +42,7 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
             href={createUrl}
             variant="primary"
             disabled={isRegistrationClosed}
-            title={isRegistrationClosed ? 'Registration is closed for this competition' : 'Create a new routine'}
+            title={isRegistrationClosed ? 'Reservation has been summarized - no more routines can be added' : 'Create a new routine'}
           >
             Create Routine
           </Button>

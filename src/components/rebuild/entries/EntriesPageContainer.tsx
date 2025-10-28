@@ -61,9 +61,8 @@ export function EntriesPageContainer() {
 
   const isLoading = entriesLoading || reservationsLoading || dancersLoading;
 
-  // TODO: Add registration_deadline field to competitions table to enable this feature
-  // For now, always allow creating routines
-  const isRegistrationClosed = false;
+  // Check if selected reservation has been summarized (closed for editing)
+  const isRegistrationClosed = selectedReservation?.status === 'summarized';
 
   if (isLoading) {
     return (
