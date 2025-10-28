@@ -11,7 +11,7 @@ export default function CompetitionsPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.competition.getAll.useQuery();
-  const [filter, setFilter] = useState<'all' | 'upcoming' | 'registration_open' | 'in_progress' | 'completed'>('all');
+  const [filter, setFilter] = useState<'active' | 'all' | 'upcoming' | 'registration_open' | 'in_progress' | 'completed' | 'cancelled'>('active');
 
   const deleteMutation = trpc.competition.delete.useMutation({
     onSuccess: () => {
@@ -90,6 +90,8 @@ export default function CompetitionsPage() {
   const competitions = data?.competitions || [];
   const filteredCompetitions = filter === 'all'
     ? competitions
+    : filter === 'active'
+    ? competitions.filter(c => c.status !== 'cancelled')
     : competitions.filter(c => c.status === filter);
 
   return (
@@ -121,10 +123,20 @@ export default function CompetitionsPage() {
         {/* Filters */}
         <div className="flex gap-3 flex-wrap">
           <button
+            onClick={() => setFilter('active')}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              filter === 'active'
+                ? 'bg-white text-gray-900'
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Active ({competitions.filter(c => c.status !== 'cancelled').length})
+          </button>
+          <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg transition-all ${
               filter === 'all'
-                ? 'bg-white text-gray-900'
+                ? 'bg-gray-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
@@ -170,6 +182,16 @@ export default function CompetitionsPage() {
           >
             Completed ({competitions.filter(c => c.status === 'completed').length})
           </button>
+          <button
+            onClick={() => setFilter('cancelled')}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              filter === 'cancelled'
+                ? 'bg-red-500 text-white'
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Cancelled ({competitions.filter(c => c.status === 'cancelled').length})
+          </button>
         </div>
       </div>
 
@@ -181,6 +203,8 @@ export default function CompetitionsPage() {
           <p className="text-gray-400 mb-4">
             {filter === 'all'
               ? 'No events have been created yet.'
+              : filter === 'active'
+              ? 'No active events found.'
               : `No ${filter.replace('_', ' ')} events found.`}
           </p>
           <Button asChild variant="primary" size="lg">
