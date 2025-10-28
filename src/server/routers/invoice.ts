@@ -66,6 +66,7 @@ export const invoiceRouter = router({
 
       const invoice = await prisma.invoices.findFirst({
         where: {
+          tenant_id: ctx.tenantId!,
           studio_id: input.studioId,
           competition_id: input.competitionId,
           ...(isStudioDirector && {
@@ -174,6 +175,7 @@ export const invoiceRouter = router({
         // Check if there's a SENT or PAID invoice for this studio+competition
         const existingInvoice = await prisma.invoices.findFirst({
           where: {
+            tenant_id: ctx.tenantId!,
             studio_id: studioId,
             competition_id: competitionId,
             status: {
@@ -328,6 +330,7 @@ export const invoiceRouter = router({
       // Query actual invoices table (not just entries)
       const dbInvoices = await prisma.invoices.findMany({
         where: {
+          tenant_id: ctx.tenantId!,
           studio_id: input.studioId,
           ...(isStudioDirector && {
             status: {
@@ -369,21 +372,23 @@ export const invoiceRouter = router({
     }),
 
   // Get all invoices across all studios and competitions (Competition Directors only)
-  getAllInvoices: publicProcedure
+  getAllInvoices: protectedProcedure
     .input(
       z.object({
         competitionId: z.string().uuid().optional(),
         paymentStatus: z.string().optional(),
       }).optional()
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const { competitionId, paymentStatus } = input ?? {};
+      const tenantId = ctx.tenantId!;
 
       // PERFORMANCE FIX: Fetch all data in bulk instead of N+1 queries
       // Get all studio × competition combinations with entries
       const entryGroups = await prisma.competition_entries.groupBy({
         by: ['studio_id', 'competition_id'],
         where: {
+          tenant_id: tenantId,
           status: { not: 'cancelled' },
           ...(competitionId && { competition_id: competitionId }),
         },
@@ -441,6 +446,7 @@ export const invoiceRouter = router({
         }),
         prisma.invoices.findMany({
           where: {
+            tenant_id: tenantId,
             studio_id: { in: studioIds },
             competition_id: { in: competitionIds },
           },
@@ -616,6 +622,7 @@ export const invoiceRouter = router({
       // 🛡️ GUARD: Check for existing invoice
       const existingInvoice = await prisma.invoices.findFirst({
         where: {
+          tenant_id: ctx.tenantId!,
           studio_id: reservation.studio_id,
           competition_id: reservation.competition_id,
           reservation_id: reservationId,
@@ -717,6 +724,10 @@ export const invoiceRouter = router({
 
       if (!invoice) {
         throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
       }
 
       if (invoice.status !== 'DRAFT') {
@@ -827,6 +838,10 @@ export const invoiceRouter = router({
 
       if (!invoice) {
         throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
       }
 
       if (invoice.status === 'PAID') {
@@ -954,6 +969,10 @@ export const invoiceRouter = router({
 
       if (!invoice) {
         throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
       }
 
       // 🛡️ GUARD: Prevent editing locked invoices

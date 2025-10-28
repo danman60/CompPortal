@@ -1239,6 +1239,19 @@ export const entryRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      // Get tenant_id from the entry
+      const entry = await prisma.competition_entries.findUnique({
+        where: { id: input.entryId },
+        select: { tenant_id: true },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Entry not found',
+        });
+      }
+
       // Check if this dancer is already assigned to this entry
       const existingParticipant = await prisma.entry_participants.findFirst({
         where: {
@@ -1263,6 +1276,7 @@ export const entryRouter = router({
           display_order: input.participant.display_order,
           costume_size: input.participant.costume_size,
           special_needs: input.participant.special_needs,
+          tenant_id: entry.tenant_id,
         },
         include: {
           dancers: true,
