@@ -10,38 +10,20 @@ export async function signOutAction() {
   redirect('/');
 }
 
-export async function demoLoginAction(role: 'studio_director' | 'competition_director' | 'super_admin') {
+export async function superAdminLoginAction() {
   const supabase = await createServerSupabaseClient();
 
-  // Demo account credentials
-  const credentials = {
-    studio_director: {
-      email: 'demo.studio@gmail.com',
-      password: 'StudioDemo123!',
-    },
-    competition_director: {
-      email: 'demo.director@gmail.com',
-      password: 'DirectorDemo123!',
-    },
-    super_admin: {
-      email: 'demo.admin@gmail.com',
-      password: 'AdminDemo123!',
-    },
-  };
-
-  const { email, password } = credentials[role];
-
   const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+    email: 'danieljohnabrahamson@gmail.com',
+    password: 'CompSyncSALogin',
   });
 
   if (error) {
-    console.error('Demo login error:', error);
-    redirect('/login?error=demo_login_failed');
+    console.error('SA login error:', error);
+    redirect('/login?error=sa_login_failed');
   }
 
-  // Force Next.js to refetch all data (equivalent to router.refresh())
+  // Force Next.js to refetch all data
   revalidatePath('/', 'layout');
 
   redirect('/dashboard');
