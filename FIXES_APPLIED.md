@@ -98,14 +98,44 @@ useEffect(() => {
 **Impact:** ✅ React hydration error eliminated, page loads without console errors
 **Testing:** Build passed, ready for production verification
 
-## Remaining Issues (Not Fixed)
+## Remaining Issues (Documented)
 
-### 🟠 HIGH-01: Schema Drift
-**Status:** Documented, not fixed
+### 🟠 HIGH-01: Schema Drift Between Database and Prisma Schema
+**Status:** Documented, blocked by Prisma authentication issue
+**File:** `prisma/schema.prisma`
+
+**Problem:** Application code references column names that don't exist in database
+
+**Evidence from Database:**
+- `invoices.payment_status` doesn't exist (should be `invoices.status`)
+- `invoices.tax_amount` doesn't exist (should calculate from `tax_rate * subtotal`)
+- `reservations.entries_approved` doesn't exist (should be `spaces_confirmed`)
+- `dancers.name` doesn't exist (should concatenate `first_name + last_name`)
+
+**Attempted Fix:**
+Tried `npx prisma db pull --force` to sync schema with database
+
+**Blocker:**
+```
+Error: P1000
+Authentication failed against database server, the provided database credentials for `postgres` are not valid.
+```
+
+**Root Cause:**
+- DIRECT_URL password contains `+` character: `OHF+SHCXJkGIIUbA`
+- Password needs URL encoding: `+` should be `%2B`
+- Current: `postgresql://postgres:OHF+SHCXJkGIIUbA@db.cafugvuaatsgihrsmvvl.supabase.co:5432/postgres`
+- Should be: `postgresql://postgres:OHF%2BSHCXJkGIIUbA@db.cafugvuaatsgihrsmvvl.supabase.co:5432/postgres`
+
 **Next Steps:**
-1. Run `npx prisma db pull`
-2. Update queries using old column names
-3. Test affected features
+1. Update `.env.local` DIRECT_URL with URL-encoded password
+2. Run `npx prisma db pull --force`
+3. Run `npx prisma generate`
+4. Search codebase for incorrect column references
+5. Update all queries to use correct column names
+6. Test affected features (invoices, reservations, dancers)
+
+**Impact:** Medium - Some queries may fail at runtime, but core tenant isolation working
 
 ---
 
