@@ -54,9 +54,10 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch competitions
+  // Fetch competitions (only active/upcoming)
   const { data: competitionsData } = trpc.competition.getAll.useQuery({
     isPublic: true,
+    status: 'upcoming',
   });
 
   const createReservation = trpc.reservation.create.useMutation({
