@@ -261,7 +261,7 @@ export default function EntriesList() {
           )}
 
           {/* DUPLICATE Submit Summary Button - Beside Create Routine */}
-          {isStudioDirector && hasSelectedReservation && filteredEntries.length > 0 && !summarySubmitted && (
+          {isStudioDirector && hasSelectedReservation && filteredEntries.length > 0 && (
             <button
               onClick={() => {
                 console.log('[SUBMIT DEBUG] Button clicked');
