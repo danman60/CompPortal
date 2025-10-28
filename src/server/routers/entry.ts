@@ -1059,6 +1059,7 @@ export const entryRouter = router({
               // Required fields
               entry_id: createdEntry.id, // Link to parent entry
               dancer_id: p.dancer_id,
+              tenant_id: ctx.tenantId!, // CRITICAL: Multi-tenant isolation
               dancer_name: p.dancer_name,
               dancer_age: p.dancer_age,
               // Optional fields (only include if defined)
