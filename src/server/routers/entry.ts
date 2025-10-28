@@ -965,8 +965,8 @@ export const entryRouter = router({
         is_improvisation: data.is_improvisation,
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
-        // Use ctx.tenantId directly as scalar field (not relation connect)
-        tenant_id: ctx.tenantId,
+        // Use relation connect (Prisma requires this for foreign key relations)
+        tenants: { connect: { id: ctx.tenantId } },
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },
         dance_categories: { connect: { id: data.category_id } },
@@ -1051,9 +1051,9 @@ export const entryRouter = router({
         createData.entry_participants = {
           create: participants.map((p) =>
             // Remove undefined values from each participant
+            // NOTE: entry_participants does NOT have tenant_id in schema
             Object.fromEntries(
               Object.entries({
-                tenant_id: ctx.tenantId,
                 dancer_id: p.dancer_id,
                 dancer_name: p.dancer_name,
                 dancer_age: p.dancer_age,
