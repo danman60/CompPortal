@@ -955,8 +955,9 @@ export const entryRouter = router({
       // Validate maximum participants limit
       validateMaximumParticipants(participantCount);
 
-      // Create entry with participants
-      // Build Prisma data object using relation connect syntax (not foreign key IDs)
+      // Create entry with participants using two-step pattern
+      // See docs/PRISMA_BEST_PRACTICES.md - nested creates cause NULL FK violations
+      // Step 1: Build entry data WITHOUT nested creates (use scalar FKs)
       const createData: any = {
         title: data.title,
         status: data.status,
@@ -965,22 +966,20 @@ export const entryRouter = router({
         is_improvisation: data.is_improvisation,
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
-        // Use relational syntax for consistency with all other FK fields
-        tenants: { connect: { id: ctx.tenantId } },
-        competitions: { connect: { id: data.competition_id } },
-        studios: { connect: { id: data.studio_id } },
-        dance_categories: { connect: { id: data.category_id } },
-        classifications: { connect: { id: data.classification_id } },
+        // Use scalar FK fields (not relational syntax) to avoid mixing with nested creates
+        tenant_id: ctx.tenantId,
+        competition_id: data.competition_id,
+        studio_id: data.studio_id,
+        category_id: data.category_id,
+        classification_id: data.classification_id,
+        age_group_id: ageGroupId,
+        entry_size_category_id: entrySizeCategoryId,
       };
 
-      // Required relation fields (use defaults if not provided)
-      createData.age_groups = { connect: { id: ageGroupId } };
-      createData.entry_size_categories = { connect: { id: entrySizeCategoryId } };
-
-      // Optional relation fields
+      // Optional FK fields (use scalar syntax for consistency)
       // Auto-link to approved reservation if not provided
       if (data.reservation_id) {
-        createData.reservations = { connect: { id: data.reservation_id } };
+        createData.reservation_id = data.reservation_id;
       } else {
         const approvedReservation = await prisma.reservations.findFirst({
           where: {
@@ -991,10 +990,10 @@ export const entryRouter = router({
           select: { id: true },
         });
         if (approvedReservation) {
-          createData.reservations = { connect: { id: approvedReservation.id } };
+          createData.reservation_id = approvedReservation.id;
         }
       }
-      if (data.session_id) createData.competition_sessions = { connect: { id: data.session_id } };
+      if (data.session_id) createData.session_id = data.session_id;
 
       // Optional string fields
       if (data.choreographer) createData.choreographer = data.choreographer;
@@ -1046,42 +1045,54 @@ export const entryRouter = router({
       if (late_fee !== undefined) createData.late_fee = late_fee.toString();
       if (finalTotalFee !== undefined) createData.total_fee = finalTotalFee.toString();
 
-      // Participants (nested create)
-      if (participants && participants.length > 0) {
-        createData.entry_participants = {
-          create: participants.map((p) =>
-            // Remove undefined values from each participant
-            // NOTE: entry_participants does NOT have tenant_id in schema
-            Object.fromEntries(
-              Object.entries({
-                dancer_id: p.dancer_id,
-                dancer_name: p.dancer_name,
-                dancer_age: p.dancer_age,
-                role: p.role,
-                display_order: p.display_order,
-                costume_size: p.costume_size,
-                special_needs: p.special_needs,
-              }).filter(([_, value]) => value !== undefined)
-            )
-          ),
-        };
-      }
+      // Two-step creation pattern to avoid nested create bug
+      // Step 1: Create entry WITHOUT participants
+      const entry = await prisma.$transaction(async (tx) => {
+        const createdEntry = await tx.competition_entries.create({
+          data: createData,
+        });
 
-      const entry = await prisma.competition_entries.create({
-        data: createData,
-        include: {
-          entry_participants: {
-            include: {
-              dancers: true,
+        // Step 2: Create participants separately if provided
+        if (participants && participants.length > 0) {
+          await tx.entry_participants.createMany({
+            data: participants.map((p) => ({
+              // Required fields
+              entry_id: createdEntry.id, // Link to parent entry
+              dancer_id: p.dancer_id,
+              dancer_name: p.dancer_name,
+              dancer_age: p.dancer_age,
+              // Optional fields (only include if defined)
+              ...(p.role && { role: p.role }),
+              ...(p.display_order !== undefined && { display_order: p.display_order }),
+              ...(p.costume_size && { costume_size: p.costume_size }),
+              ...(p.special_needs && { special_needs: p.special_needs }),
+            })),
+          });
+        }
+
+        // Return entry with participants included
+        const entryWithRelations = await tx.competition_entries.findUnique({
+          where: { id: createdEntry.id },
+          include: {
+            entry_participants: {
+              include: {
+                dancers: true,
+              },
+            },
+            studios: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
-          studios: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        });
+
+        if (!entryWithRelations) {
+          throw new Error('Failed to retrieve created entry');
+        }
+
+        return entryWithRelations;
       });
 
       // Activity logging (non-blocking, only if user is authenticated)
