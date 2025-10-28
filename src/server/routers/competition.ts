@@ -630,4 +630,83 @@ export const competitionRouter = router({
         locationsCloned: original.competition_locations.length,
       };
     }),
+
+  // Get tenant-wide competition settings (category types, dance categories, age divisions)
+  getTenantSettings: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Only CD and Super Admin can access this
+      if (!ctx.userRole || !['competition_director', 'super_admin'].includes(ctx.userRole)) {
+        throw new Error('Competition Director access required');
+      }
+
+      // Get all unique categories/classifications/age groups from existing entries in the tenant
+      const entriesWhere: any = {
+        status: { not: 'cancelled' },
+      };
+
+      if (!isSuperAdmin(ctx.userRole)) {
+        if (ctx.tenantId) {
+          entriesWhere.competitions = { tenant_id: ctx.tenantId };
+        } else {
+          return {
+            categoryTypes: [],
+            danceCategories: [],
+            ageDivisions: [],
+          };
+        }
+      }
+
+      // Fetch all entries to get unique IDs
+      const entries = await prisma.competition_entries.findMany({
+        where: entriesWhere,
+        select: {
+          category_id: true,
+          classification_id: true,
+          age_group_id: true,
+        },
+      });
+
+      // Extract unique IDs
+      const uniqueCategoryIds = [...new Set(entries.map(e => e.category_id))].filter(Boolean);
+      const uniqueClassificationIds = [...new Set(entries.map(e => e.classification_id))].filter(Boolean);
+      const uniqueAgeGroupIds = [...new Set(entries.map(e => e.age_group_id))].filter(Boolean);
+
+      // Fetch the actual records
+      const [categoryTypes, danceCategories, ageDivisions] = await Promise.all([
+        prisma.dance_categories.findMany({
+          where: { id: { in: uniqueCategoryIds } },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+          orderBy: { name: 'asc' },
+        }),
+        prisma.classifications.findMany({
+          where: { id: { in: uniqueClassificationIds } },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+          orderBy: { name: 'asc' },
+        }),
+        prisma.age_groups.findMany({
+          where: { id: { in: uniqueAgeGroupIds } },
+          select: {
+            id: true,
+            name: true,
+            min_age: true,
+            max_age: true,
+          },
+          orderBy: { min_age: 'asc' },
+        }),
+      ]);
+
+      return {
+        categoryTypes,
+        danceCategories,
+        ageDivisions,
+      };
+    }),
 });

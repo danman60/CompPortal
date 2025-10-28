@@ -1391,4 +1391,127 @@ export const entryRouter = router({
         },
       };
     }),
+
+  // Get all entries for Competition Director with comprehensive filters
+  getAllForCompetitionDirector: protectedProcedure
+    .input(z.object({
+      competitionId: z.string().uuid().optional(),
+      studioId: z.string().uuid().optional(),
+      status: z.enum(['draft', 'summarized', 'all']).optional(),
+      categoryTypeId: z.string().uuid().optional(),
+      danceCategoryId: z.string().uuid().optional(),
+      ageDivisionId: z.string().uuid().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Only CD and Super Admin can access this
+      if (!['competition_director', 'super_admin'].includes(ctx.userRole)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Competition Director access required' });
+      }
+
+      const where: any = {
+        status: { not: 'cancelled' },
+      };
+
+      // Tenant filtering
+      if (isSuperAdmin(ctx.userRole)) {
+        // Super admins can see all tenants
+      } else if (ctx.tenantId) {
+        where.competitions = { tenant_id: ctx.tenantId };
+      } else {
+        return { entries: [], total: 0 };
+      }
+
+      // Competition filter
+      if (input.competitionId) {
+        where.competition_id = input.competitionId;
+      }
+
+      // Studio filter
+      if (input.studioId) {
+        where.studio_id = input.studioId;
+      }
+
+      // Status filter (draft vs summarized)
+      if (input.status === 'draft') {
+        where.reservations = {
+          status: { not: 'summarized' },
+        };
+      } else if (input.status === 'summarized') {
+        where.reservations = {
+          status: 'summarized',
+        };
+      }
+
+      // Competition settings filters
+      if (input.categoryTypeId) {
+        where.category_id = input.categoryTypeId;
+      }
+
+      if (input.danceCategoryId) {
+        where.classification_id = input.danceCategoryId;
+      }
+
+      if (input.ageDivisionId) {
+        where.age_group_id = input.ageDivisionId;
+      }
+
+      const [entries, total] = await Promise.all([
+        prisma.competition_entries.findMany({
+          where,
+          include: {
+            studios: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            competitions: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            categories: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            classifications: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            age_groups: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            entry_participants: {
+              select: {
+                dancer_id: true,
+                dancer_name: true,
+              },
+            },
+            reservations: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: [
+            { created_at: 'desc' },
+          ],
+        }),
+        prisma.competition_entries.count({ where }),
+      ]);
+
+      return {
+        entries,
+        total,
+      };
+    }),
 });
