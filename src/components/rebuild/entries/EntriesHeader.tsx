@@ -39,9 +39,6 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
         </div>
 
         <div className="flex gap-3">
-          <Button href="/dashboard/entries/import" variant="secondary">
-            📥 CSV Import
-          </Button>
           <Button
             href={createUrl}
             variant="secondary"

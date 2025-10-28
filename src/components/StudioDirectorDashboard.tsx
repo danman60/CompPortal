@@ -23,8 +23,17 @@ interface StudioDirectorDashboardProps {
   studioStatus?: string | null;
 }
 
-// No quick action cards for SD - invoices removed per business requirements
-const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [];
+// Quick action cards for SD
+const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
+  {
+    id: 'test-v2-entry',
+    href: '/dashboard/entries/create-v2',
+    icon: '✨',
+    title: 'Test V2 Entry Creation',
+    description: 'NEW: Clean rebuilt entry form with fixed auto-classification',
+    tooltip: 'Testing: V2 rebuild with proper tenant isolation',
+  }
+];
 
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
