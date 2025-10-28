@@ -114,9 +114,9 @@ export function ReservationTable({
                   </td>
                   <td className="px-4 py-4 text-center text-white">
                     {Number(reservation.spacesRequested) || 0}
-                    {reservation.spacesConfirmed && reservation.spacesConfirmed !== reservation.spacesRequested && (
+                    {(reservation.spacesConfirmed != null && reservation.spacesConfirmed !== reservation.spacesRequested) && (
                       <div className="text-xs text-yellow-400">
-                        (approved: {reservation.spacesConfirmed})
+                        (approved: {Number(reservation.spacesConfirmed)})
                       </div>
                     )}
                   </td>

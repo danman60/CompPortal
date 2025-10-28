@@ -1269,8 +1269,11 @@ export const reservationRouter = router({
       throw new Error('Studio directors cannot access the reservation pipeline');
     }
 
-    // Fetch all reservations with related data
+    // Fetch all reservations with related data (tenant-scoped)
     const reservations = await prisma.reservations.findMany({
+      where: {
+        tenant_id: ctx.tenantId!,
+      },
       include: {
         studios: {
           select: {
