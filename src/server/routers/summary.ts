@@ -27,6 +27,9 @@ export const summaryRouter = router({
 
       // Query summaries with related data
       const summaries = await prisma.summaries.findMany({
+        where: {
+          tenant_id: ctx.tenantId!, // Tenant isolation
+        },
         include: {
           reservations: {
             include: {
