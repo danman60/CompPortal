@@ -965,7 +965,7 @@ export const entryRouter = router({
         is_improvisation: data.is_improvisation,
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
-        // Use relation connect (Prisma requires this for foreign key relations)
+        // Use relational syntax for consistency with all other FK fields
         tenants: { connect: { id: ctx.tenantId } },
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },

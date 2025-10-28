@@ -1,151 +1,251 @@
-# Current Work - Entry Creation tenant_id Resolution
+# Current Work - Tenant ID Prisma Investigation
 
-**Session:** October 28, 2025 (Late Session)
-**Status:** ✅ RESOLVED - Systematic tenant_id audit complete
-**Last Commit:** f09df3e (all tenant_id fixes)
-**Build Status:** ✅ PASS (63/63 pages)
-**Tokens Used:** ~120k/200k
-
----
-
-## ✅ RESOLUTION COMPLETE
-
-**Root Cause:** Multiple `prisma.create()` operations missing `tenant_id` for tables with NOT NULL constraints
-
-**Impact:** Entry creation + other operations failing with 500 errors
-
-**Fix:** Systematic audit and fix of ALL create operations across 8 files
+**Session:** October 28, 2025 (Deep Debugging)
+**Status:** 🔍 INVESTIGATING - Prisma relation syntax issue
+**Commits:** 0918e29 (entry fix attempt), 05acb65 (debug tool)
+**Build Status:** ✅ PASS (61/61 pages)
+**Tokens Used:** ~107k/200k
 
 ---
 
-## 🎯 Issues Resolved
+## 🎯 Current Focus
 
-### Issue 1: Test User Missing tenant_id ✅
-- **Problem:** User profile had `tenant_id: null`
-- **Fix:** Updated via SQL: `UPDATE user_profiles SET tenant_id = '00000000-0000-0000-0000-000000000001' WHERE id = 'b3aebafa-e291-452a-8197-f7012338687c'`
-- **Result:** User now properly associated with EMPWR tenant
+**Problem:** Entry creation fails with `Null constraint violation on tenant_id` despite correct relation syntax
 
-### Issue 2: competition_entries Missing tenant_id ✅
-- **Problem:** `entry.ts:969` used relation connect instead of scalar field
-- **Fix:** Changed `tenants: { connect: { id: ctx.tenantId } }` → `tenant_id: ctx.tenantId`
-- **Commit:** 07b0978
-
-### Issue 3: entry_participants Missing tenant_id ✅
-- **Problem:** Nested create in `entry.ts:1056` missing tenant_id
-- **Fix:** Added `tenant_id: ctx.tenantId` to nested participant create
-- **Impact:** Would have caused 500 error after fixing competition_entries
-
-### Issue 4-10: Systematic Missing tenant_id ✅
-Found via complete audit of all `.create()` operations:
-
-| File | Table | Fix Method |
-|------|-------|------------|
-| email.ts:109 | email_logs | Lookup from studio/competition |
-| emailPreferences.ts:44,83 | email_preferences | From ctx.tenantId |
-| judges.ts:36 | judges | Lookup from competition |
-| scoring.ts:246 | scores | From entry.tenant_id |
-| liveCompetition.ts:227 | scores | From entry.tenant_id |
-| admin.ts:153 | user_profiles | From ctx.tenantId |
-
-### Issue 5: Prisma Schema Out of Sync ✅
-- **Problem:** `email_logs`, `judges`, `scores`, `email_preferences` models missing tenant_id in schema
-- **Fix:** Added tenant_id fields + tenants relations to schema.prisma
-- **Action:** Regenerated Prisma Client
+**Why This Matters:**
+- Blocking ALL entry creation in production
+- User postponing client demos → losing money
+- Multi-day persistent issue across sessions
+- Need to decide: fix vs full architecture migration
 
 ---
 
-## 📊 Complete Audit Results
+## 📊 Debug Tool Results (CRITICAL DATA)
 
-**Tables with NOT NULL tenant_id (verified):**
-- ✅ competition_entries
-- ✅ entry_participants
-- ✅ email_logs
-- ✅ email_preferences
-- ✅ judges
-- ✅ scores
+**File:** `tenant-debug-1761672478908.json`
 
-**Tables with NULLABLE tenant_id:**
-- user_profiles (now populated for studio directors)
+### ✅ What's Working
 
-**All fixed in commit:** `f09df3e`
+1. **Session Context (100% correct):**
+   - userId: `b3aebafa-e291-452a-8197-f7012338687c`
+   - tenantId: `00000000-0000-0000-0000-000000000001` ✅
+   - role: `studio_director`
+   - tenantIdExists: `true` ✅
 
----
+2. **Data Lookups (All successful):**
+   - ✅ Competition found with correct tenant_id
+   - ✅ Studio found with correct tenant_id
+   - ✅ Dancer found with correct tenant_id
+   - ✅ All categories/classifications loaded
 
-## 🔧 Changes Made (8 Files)
+3. **Relation Syntax (Consistent):**
+   - ✅ Using `connect` for ALL relations
+   - ✅ No mixing of scalar + relational syntax
+   - ✅ Follows Prisma best practices
 
-**Code Changes:**
-1. `src/server/routers/entry.ts` - 2 fixes (competition_entries + entry_participants)
-2. `src/lib/email.ts` - email_logs with tenant lookup
-3. `src/server/routers/emailPreferences.ts` - 2 fixes (createMany + upsert)
-4. `src/server/routers/judges.ts` - judges create with competition lookup
-5. `src/server/routers/scoring.ts` - scores create with entry lookup
-6. `src/server/routers/liveCompetition.ts` - scores upsert
-7. `src/server/routers/admin.ts` - user_profiles bulk import
-8. `prisma/schema.prisma` - Added tenant_id to 4 models + relations
+### ❌ What's Failing
 
-**Total Changes:** 58 insertions, 12 deletions
+**Error:** `Null constraint violation on the fields: (tenant_id)`
 
----
+**Create Data Object:**
+```json
+{
+  "tenants": { "connect": { "id": "00000000-0000-0000-0000-000000000001" } },
+  "competitions": { "connect": { "id": "..." } },
+  "studios": { "connect": { "id": "..." } },
+  "dance_categories": { "connect": { "id": "..." } },
+  "classifications": { "connect": { "id": "..." } },
+  "age_groups": { "connect": { "id": "..." } },
+  "entry_size_categories": { "connect": { "id": "..." } }
+}
+```
 
-## 🟡 Known Data Quality Issues (Non-Blocking)
-
-**Duplicate Categories in EMPWR Tenant:**
-
-**Size Categories:**
-- "Duet/Trio" (2-3, $70/participant)
-- "Duo/Trio" (2-3, $85 base)
-- "Large Group" (10-14, $55/participant) ← In use
-- "Large Group" (10-24, $110 base) ← Not used
-
-**Age Groups:**
-- Multiple overlapping ranges (Mini/Petite, Junior variants, Teen variants, Senior+/Adult)
-
-**Impact:** Confusing UX in dropdowns
-**Priority:** Low (post-launch cleanup)
+**The Mystery:**
+- ALL other relations work (competitions, studios, etc.)
+- ONLY `tenants` relation fails
+- Same syntax used everywhere
+- Why?
 
 ---
 
-## 🎯 Next Steps
+## 🎓 Prisma Documentation Research
 
-### Immediate (Required):
-1. ⏳ Wait for Vercel deployment (~2 min)
-2. 🧪 Test entry creation at `empwr.compsync.net/dashboard/entries/create-v2`
-3. ✅ Verify 500 error resolved
+**Key Finding:** Prisma enforces consistency in relation operations
 
-### Post-Launch (Optional):
-1. Clean up duplicate categories in EMPWR tenant
-2. Add Prisma middleware to validate tenant_id on all creates
-3. Create linter rule to prevent missing tenant_id
+**From Prisma GitHub:**
+> "When you use at least one connect or create block, other scalar relation fields cannot be used directly. You must be consistent - either use all scalar fields OR all relational syntax."
 
----
+**Valid Approaches:**
+1. **All relational:** `tenants: { connect: { id } }` ← We're using this
+2. **All scalar:** `tenant_id: id`
 
-## 📝 Lessons Learned
+**Cannot mix both.**
 
-**What Went Wrong:**
-- Oct 27 multi-tenant migration didn't audit ALL create operations
-- Reactive fixing (whack-a-mole) instead of systematic audit
-- No automated validation of tenant_id requirements
-
-**What Went Right:**
-- Systematic audit found ALL issues at once
-- Prisma schema sync caught additional issues
-- Database queries verified actual NOT NULL constraints
-
-**Process Improvement:**
-- After ANY schema change affecting multiple tables, run systematic audit
-- Use SQL to verify constraints match code expectations
-- Consider Prisma middleware for runtime validation
+**Design Reason:** Prevents exponential growth in generated input types (2^n where n = number of FKs)
 
 ---
 
-## 📂 Related Documentation
+## ❓ Open Investigation Questions
 
-- `docs/specs/PHASE1_SPEC.md` - Business logic specs
-- `PROJECT_STATUS.md` - Overall project status
-- `CLAUDE.md` - Pre-launch protocols
+### Q1: Schema Definition
+**Is the `tenants` relation properly defined in schema.prisma?**
+
+Need to verify:
+```prisma
+model competition_entries {
+  tenant_id String @db.Uuid
+  tenants   tenants @relation(fields: [tenant_id], references: [id], ...)
+}
+```
+
+Possible issues:
+- Missing `@relation` attribute
+- Wrong `fields` or `references` mapping
+- Relation name conflict
+
+### Q2: Prisma Client Generation
+**Was `npx prisma generate` run after schema changes?**
+
+Context: Modified schema multiple times:
+- Added tenant_id to email_logs, judges, scores
+- Added tenants relations
+- Changed competition_entries tenant field
+
+Possible issue: Outdated Prisma Client
+
+### Q3: Relation Behavior Difference
+**Why does `tenants` fail but all others succeed?**
+
+All using identical syntax:
+- ✅ competitions: { connect } - WORKS
+- ✅ studios: { connect } - WORKS
+- ❌ tenants: { connect } - FAILS
+
+Possible issues:
+- Different cascade/onDelete settings?
+- Missing index on tenant_id?
+- Relation configured differently?
+
+### Q4: Nested Create Interference
+**Could entry_participants nested create be causing issues?**
+
+Note: entry_participants does NOT have tenant_id field
+
+Possible issues:
+- Prisma trying to inherit tenant_id?
+- Transaction ordering problem?
+- Foreign key constraint timing?
+
+### Q5: Relation Mode
+**What relationMode is configured?**
+
+Need to check:
+```prisma
+datasource db {
+  provider     = "postgresql"
+  relationMode = "foreignKeys" // or "prisma"?
+}
+```
+
+### Q6: Database Triggers
+**Are there triggers on competition_entries?**
+
+Previous issue: Had legacy trigger causing double-deduction
+
+Need SQL query:
+```sql
+SELECT tgname, pg_get_triggerdef(oid)
+FROM pg_trigger
+WHERE tgrelid = 'competition_entries'::regclass
+  AND tgisinternal = false;
+```
 
 ---
 
-**Session Outcome:** ✅ All NOT NULL tenant_id violations fixed. Entry creation should work after deployment.
+## 🔬 Investigation Plan (With Prisma MCP)
 
-**Ready for:** Production testing on empwr.compsync.net
+**User installing Prisma MCP now**
+
+### Step 1: Schema Inspection
+- Get full competition_entries model
+- Verify tenants relation definition
+- Compare with working relations
+
+### Step 2: Client Verification
+- Check Prisma Client version
+- Verify generated types include tenants
+- Re-generate if needed
+
+### Step 3: Database Introspection
+- Introspect actual DB schema
+- Compare with Prisma schema
+- Check for mismatches
+
+### Step 4: Relation Configuration
+- Check relationMode
+- Verify @relation attributes
+- Check cascade settings
+
+### Step 5: Isolation Testing
+- Try entry WITHOUT nested participants
+- Try entry with ONLY tenant relation
+- Compare behavior
+
+---
+
+## 📝 Attempt History
+
+**Pattern: Every attempt fails with different error**
+
+1. **Commit 07b0978:** Used relation `tenants: { connect }`
+   - Error: "Argument `tenants` is missing"
+
+2. **Commit f09df3e:** Changed to scalar `tenant_id: ctx.tenantId`
+   - Error: "Argument `tenants` is missing"
+
+3. **Commit 0918e29:** Back to relation `tenants: { connect }`
+   - Error: "Null constraint violation on tenant_id"
+
+**Insight:** Not a simple syntax issue - something deeper wrong
+
+---
+
+## 🎯 Hypothesis
+
+**Most Likely:**
+1. **Schema mismatch** - tenants relation not defined correctly
+2. **Outdated client** - Generated client doesn't know about tenants relation
+3. **Database constraint** - Trigger or constraint interfering
+
+**Less Likely:**
+4. Nested create bug
+5. Relation mode misconfiguration
+6. Prisma version bug
+
+---
+
+## 🚀 Next Steps
+
+1. ✅ Install Prisma MCP (in progress)
+2. 🔍 Run systematic investigation (Steps 1-5)
+3. 📊 Document exact root cause
+4. 🛠️ Apply targeted fix
+5. 🧪 Re-test with debug tool
+6. ✅ Verify entry creation works
+
+---
+
+## 📂 Related Files
+
+- `BUG_TENANT_ID_PRISMA.md` - Detailed bug documentation
+- `tenant-debug-1761672478908.json` - Debug tool output
+- `src/server/routers/entry.ts` - Entry creation logic
+- `src/server/routers/tenantDebug.ts` - Debug endpoints
+- `prisma/schema.prisma` - Database schema
+- `src/app/dashboard/admin/tenant-debug/page.tsx` - Debug UI
+
+---
+
+**Current State:** Debug tool proves context is correct. Waiting for Prisma MCP to investigate schema/client mismatch.
+
+**User Action:** Installing Prisma MCP for deep investigation
