@@ -113,7 +113,7 @@ export function ReservationTable({
                     {reservation.competitionName || '—'}
                   </td>
                   <td className="px-4 py-4 text-center text-white">
-                    {reservation.spacesRequested || 0}
+                    {Number(reservation.spacesRequested) || 0}
                     {reservation.spacesConfirmed && reservation.spacesConfirmed !== reservation.spacesRequested && (
                       <div className="text-xs text-yellow-400">
                         (approved: {reservation.spacesConfirmed})
@@ -121,7 +121,7 @@ export function ReservationTable({
                     )}
                   </td>
                   <td className="px-4 py-4 text-center text-white font-medium">
-                    {reservation.entryCount || 0}
+                    {Number(reservation.entryCount) || 0}
                   </td>
                   <td className="px-4 py-4 text-center">
                     <Badge status={reservation.status || 'pending' as any} />
