@@ -166,7 +166,10 @@ export const reservationRouter = router({
         }),
         prisma.reservations.count({ where }),
         prisma.competitions.findMany({
-          where: ctx.tenantId ? { tenant_id: ctx.tenantId } : undefined,
+          where: {
+            ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+            status: 'active', // Only show active competitions for reservation creation
+          },
           select: {
             id: true,
             name: true,
@@ -174,6 +177,7 @@ export const reservationRouter = router({
             total_reservation_tokens: true,
             available_reservation_tokens: true,
             tokens_override_enabled: true,
+            status: true,
           },
           orderBy: [
             { year: 'desc' },
