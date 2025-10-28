@@ -263,6 +263,16 @@ export default function EntriesList() {
           {isStudioDirector && hasSelectedReservation && filteredEntries.length > 0 && (
             <button
               onClick={() => {
+                // Validate required data
+                if (!userData?.studio?.id) {
+                  toast.error('Studio information not loaded. Please refresh the page.');
+                  return;
+                }
+                if (!selectedCompetitionId) {
+                  toast.error('Please select a reservation first.');
+                  return;
+                }
+
                 // Check if incomplete - show confirmation dialog
                 if (isIncomplete) {
                   setShowIncompleteConfirm(true);
@@ -270,12 +280,10 @@ export default function EntriesList() {
                 }
 
                 // Proceed with submission
-                if (userData?.studio?.id && selectedCompetitionId) {
-                  submitSummaryMutation.mutate({
-                    studioId: userData.studio.id,
-                    competitionId: selectedCompetitionId,
-                  });
-                }
+                submitSummaryMutation.mutate({
+                  studioId: userData.studio.id,
+                  competitionId: selectedCompetitionId,
+                });
               }}
               disabled={summarySubmitted || submitSummaryMutation.isPending}
               className={`px-8 py-4 rounded-xl transition-all duration-200 flex items-center gap-3 disabled:cursor-not-allowed font-bold text-lg shadow-xl ${
@@ -840,13 +848,17 @@ export default function EntriesList() {
                 onClick={() => {
                   setShowIncompleteConfirm(false);
 
-                  // Proceed with submission via mutation
-                  if (userData?.studio?.id && selectedCompetitionId) {
-                    submitSummaryMutation.mutate({
-                      studioId: userData.studio.id,
-                      competitionId: selectedCompetitionId,
-                    });
+                  // Validate required data
+                  if (!userData?.studio?.id || !selectedCompetitionId) {
+                    toast.error('Missing required data. Please refresh and try again.');
+                    return;
                   }
+
+                  // Proceed with submission via mutation
+                  submitSummaryMutation.mutate({
+                    studioId: userData.studio.id,
+                    competitionId: selectedCompetitionId,
+                  });
                 }}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
               >
