@@ -45,10 +45,10 @@ export default function TenantDebugPage() {
   // Validate schema vs DB
   const { data: schemaValidation } = trpc.tenantDebug.validateSchemaVsDatabase.useQuery();
 
-  const runEntryCreationTest = async () => {
+  const runEntryCreationTest = async (configName: 'relational_with_nested' | 'relational_without_nested' | 'scalar_with_nested' | 'scalar_without_nested' | 'mixed_tenant_scalar') => {
     setIsRunning(true);
     setTestResults(null);
-    await testEntryCreationMutation.mutateAsync();
+    await testEntryCreationMutation.mutateAsync({ configName });
   };
 
   const downloadLogs = () => {
@@ -88,15 +88,55 @@ export default function TenantDebugPage() {
           </p>
         </div>
 
+        {/* Test Configuration Buttons */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4">🧪 Test Configurations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => runEntryCreationTest('relational_with_nested')}
+              disabled={isRunning}
+              className="p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+            >
+              <div className="font-bold mb-1">Relational + Nested</div>
+              <div className="text-sm opacity-80">tenants: &#123;connect&#125; with entry_participants create</div>
+            </button>
+            <button
+              onClick={() => runEntryCreationTest('relational_without_nested')}
+              disabled={isRunning}
+              className="p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+            >
+              <div className="font-bold mb-1">Relational Only</div>
+              <div className="text-sm opacity-80">tenants: &#123;connect&#125; without nested create</div>
+            </button>
+            <button
+              onClick={() => runEntryCreationTest('scalar_with_nested')}
+              disabled={isRunning}
+              className="p-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+            >
+              <div className="font-bold mb-1">Scalar + Nested</div>
+              <div className="text-sm opacity-80">tenant_id: uuid with entry_participants create</div>
+            </button>
+            <button
+              onClick={() => runEntryCreationTest('scalar_without_nested')}
+              disabled={isRunning}
+              className="p-4 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+            >
+              <div className="font-bold mb-1">Scalar Only</div>
+              <div className="text-sm opacity-80">tenant_id: uuid without nested create</div>
+            </button>
+            <button
+              onClick={() => runEntryCreationTest('mixed_tenant_scalar')}
+              disabled={isRunning}
+              className="p-4 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+            >
+              <div className="font-bold mb-1">Mixed (Tenant Scalar)</div>
+              <div className="text-sm opacity-80">tenant_id scalar, others relational</div>
+            </button>
+          </div>
+        </div>
+
         {/* Action Buttons */}
         <div className="mb-8 flex flex-wrap gap-4">
-          <button
-            onClick={runEntryCreationTest}
-            disabled={isRunning}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isRunning ? 'Running Test...' : '🧪 Test Entry Creation Flow'}
-          </button>
           <button
             onClick={() => {
               refetchContext();

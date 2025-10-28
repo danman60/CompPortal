@@ -251,10 +251,27 @@ export const tenantDebugRouter = router({
   /**
    * Test entry creation flow with detailed logging
    */
-  testEntryCreationFlow: protectedProcedure.mutation(async ({ ctx }) => {
+  testEntryCreationFlow: protectedProcedure
+    .input(z.object({
+      configName: z.enum([
+        'relational_with_nested',
+        'relational_without_nested',
+        'scalar_with_nested',
+        'scalar_without_nested',
+        'mixed_tenant_scalar',
+      ]).default('relational_with_nested'),
+    }))
+    .mutation(async ({ ctx, input }) => {
     const steps: any[] = [];
+    const { configName } = input;
 
-    try {
+    steps.push({
+      name: 'Test Configuration',
+      description: `Testing: ${configName}`,
+      data: { configName },
+    });
+
+    try{
       // Step 1: Verify context
       steps.push({
         name: 'Verify Context',
@@ -373,27 +390,108 @@ export const tenantDebugRouter = router({
         },
       });
 
-      // Step 6: Build create data - TEST SCALAR FIELDS ONLY
-      const createData: any = {
-        title: '[DEBUG TEST] Entry Creation Flow Test',
-        status: 'draft',
-        tenant_id: ctx.tenantId,
-        competition_id: competition.id,
-        studio_id: studio.id,
-        category_id: category.id,
-        classification_id: classification.id,
-        age_group_id: ageGroup.id,
-        entry_size_category_id: sizeCategory.id,
-        entry_participants: {
-          create: [
-            {
-              dancer_id: dancer.id,
-              dancer_name: `${dancer.first_name} ${dancer.last_name}`,
-              dancer_age: dancer.age_override || 10,
+      // Step 6: Build create data based on configuration
+      let createData: any = {};
+
+      switch (configName) {
+        case 'relational_with_nested':
+          // Pure relational syntax with nested create
+          createData = {
+            title: `[${configName}] Test Entry`,
+            status: 'draft',
+            tenants: { connect: { id: ctx.tenantId } },
+            competitions: { connect: { id: competition.id } },
+            studios: { connect: { id: studio.id } },
+            dance_categories: { connect: { id: category.id } },
+            classifications: { connect: { id: classification.id } },
+            age_groups: { connect: { id: ageGroup.id } },
+            entry_size_categories: { connect: { id: sizeCategory.id } },
+            entry_participants: {
+              create: [{
+                dancer_id: dancer.id,
+                dancer_name: `${dancer.first_name} ${dancer.last_name}`,
+                dancer_age: dancer.age_override || 10,
+              }],
             },
-          ],
-        },
-      };
+          };
+          break;
+
+        case 'relational_without_nested':
+          // Pure relational syntax WITHOUT nested create
+          createData = {
+            title: `[${configName}] Test Entry`,
+            status: 'draft',
+            tenants: { connect: { id: ctx.tenantId } },
+            competitions: { connect: { id: competition.id } },
+            studios: { connect: { id: studio.id } },
+            dance_categories: { connect: { id: category.id } },
+            classifications: { connect: { id: classification.id } },
+            age_groups: { connect: { id: ageGroup.id } },
+            entry_size_categories: { connect: { id: sizeCategory.id } },
+            // NO nested create
+          };
+          break;
+
+        case 'scalar_with_nested':
+          // Pure scalar fields WITH nested create
+          createData = {
+            title: `[${configName}] Test Entry`,
+            status: 'draft',
+            tenant_id: ctx.tenantId,
+            competition_id: competition.id,
+            studio_id: studio.id,
+            category_id: category.id,
+            classification_id: classification.id,
+            age_group_id: ageGroup.id,
+            entry_size_category_id: sizeCategory.id,
+            entry_participants: {
+              create: [{
+                dancer_id: dancer.id,
+                dancer_name: `${dancer.first_name} ${dancer.last_name}`,
+                dancer_age: dancer.age_override || 10,
+              }],
+            },
+          };
+          break;
+
+        case 'scalar_without_nested':
+          // Pure scalar fields WITHOUT nested create
+          createData = {
+            title: `[${configName}] Test Entry`,
+            status: 'draft',
+            tenant_id: ctx.tenantId,
+            competition_id: competition.id,
+            studio_id: studio.id,
+            category_id: category.id,
+            classification_id: classification.id,
+            age_group_id: ageGroup.id,
+            entry_size_category_id: sizeCategory.id,
+            // NO nested create
+          };
+          break;
+
+        case 'mixed_tenant_scalar':
+          // Tenant as scalar, others as relations
+          createData = {
+            title: `[${configName}] Test Entry`,
+            status: 'draft',
+            tenant_id: ctx.tenantId, // SCALAR
+            competitions: { connect: { id: competition.id } },
+            studios: { connect: { id: studio.id } },
+            dance_categories: { connect: { id: category.id } },
+            classifications: { connect: { id: classification.id } },
+            age_groups: { connect: { id: ageGroup.id } },
+            entry_size_categories: { connect: { id: sizeCategory.id } },
+            entry_participants: {
+              create: [{
+                dancer_id: dancer.id,
+                dancer_name: `${dancer.first_name} ${dancer.last_name}`,
+                dancer_age: dancer.age_override || 10,
+              }],
+            },
+          };
+          break;
+      }
 
       steps.push({
         name: 'Build Create Data',
