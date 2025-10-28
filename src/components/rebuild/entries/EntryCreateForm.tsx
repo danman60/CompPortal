@@ -80,7 +80,7 @@ export function EntryCreateForm() {
             This page requires a reservation context. Please navigate here from the Entries page.
           </p>
           <button
-            onClick={() => router.push('/dashboard/entries-rebuild')}
+            onClick={() => router.push('/dashboard/entries')}
             className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-colors"
           >
             ← Back to Entries
@@ -109,7 +109,7 @@ export function EntryCreateForm() {
             Could not load reservation or competition data. Please try again.
           </p>
           <button
-            onClick={() => router.push('/dashboard/entries-rebuild')}
+            onClick={() => router.push('/dashboard/entries')}
             className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-colors"
           >
             ← Back to Entries
@@ -154,7 +154,7 @@ export function EntryCreateForm() {
    */
   const handleSave = async (action: 'cancel' | 'save' | 'save-another' | 'save-like-this') => {
     if (action === 'cancel') {
-      router.push('/dashboard/entries-rebuild');
+      router.push('/dashboard/entries');
       return;
     }
 
@@ -188,7 +188,7 @@ export function EntryCreateForm() {
 
       // Handle post-save action
       if (action === 'save') {
-        router.push('/dashboard/entries-rebuild');
+        router.push('/dashboard/entries');
       } else if (action === 'save-another') {
         resetForm();
       } else if (action === 'save-like-this') {

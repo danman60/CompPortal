@@ -1,5 +1,5 @@
-import ReservationPipeline from '@/components/ReservationPipeline';
+import { PipelinePageContainer } from '@/components/rebuild/pipeline/PipelinePageContainer';
 
-export default function ReservationPipelinePage() {
-  return <ReservationPipeline />;
+export default function ReservationPipelineRebuildPage() {
+  return <PipelinePageContainer />;
 }

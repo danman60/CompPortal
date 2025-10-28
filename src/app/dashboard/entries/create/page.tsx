@@ -1,35 +1,25 @@
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase-server-client';
-import Link from 'next/link';
-import UnifiedRoutineForm from '@/components/UnifiedRoutineForm';
+import { Suspense } from 'react';
+import { EntryCreateForm } from '@/components/rebuild/entries/EntryCreateForm';
 
-export default async function CreateEntryPage() {
-  const supabase = await createServerSupabaseClient();
-
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    redirect('/login');
-  }
-
+/**
+ * Entry creation page (REBUILD)
+ * Single-page form for creating routine entries
+ * Replaces 3-step wizard with streamlined UX
+ *
+ * Required query params:
+ * - reservation: Reservation ID (required)
+ * - competition: Competition ID (optional, for context)
+ */
+export default function EntryCreatePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/dashboard/entries"
-            className="text-purple-400 hover:text-purple-300 text-sm mb-2 inline-block"
-          >
-            ← Back to Routines
-          </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Create Routine</h1>
-          <p className="text-gray-400">Create a new routine for your event</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-white text-lg">Loading entry form...</div>
         </div>
-
-        {/* Unified Routine Form */}
-        <UnifiedRoutineForm />
-      </div>
-    </main>
+      }>
+        <EntryCreateForm />
+      </Suspense>
+    </div>
   );
 }
