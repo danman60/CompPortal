@@ -1,200 +1,182 @@
-import { useMemo } from 'react';
-import { EntryFormState, SelectedDancer } from '@/hooks/rebuild/useEntryForm';
+"use client";
+
+import { useState } from 'react';
+import { SelectedDancer } from '@/hooks/rebuild/useEntryFormV2';
 
 interface Dancer {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  age: number | null;
-  [key: string]: any; // Allow additional fields from DB
+  first_name: string;
+  last_name: string;
+  date_of_birth: string | null;
 }
 
-interface DancerSelectionSectionProps {
-  form: EntryFormState;
-  updateField: <K extends keyof EntryFormState>(field: K, value: EntryFormState[K]) => void;
-  toggleDancer: (dancer: SelectedDancer) => void;
+interface Props {
   dancers: Dancer[];
+  selectedDancers: SelectedDancer[];
+  toggleDancer: (dancer: SelectedDancer) => void;
+  eventStartDate: Date | null;
 }
 
 /**
- * Dancer Selection Section
- * Features:
- * - Search by name
- * - Sort by name or age
- * - Checkbox selection
- * - Selected dancers display with remove option
+ * Dancer Selection Section V2
+ * Phase 1 Spec lines 528-544: Dancer attachment to entries
+ * Built from scratch without legacy code contamination
  */
 export function DancerSelectionSection({
-  form,
-  updateField,
-  toggleDancer,
   dancers,
-}: DancerSelectionSectionProps) {
-  // Filter and sort dancers
-  const filteredDancers = useMemo(() => {
-    let result = dancers;
+  selectedDancers,
+  toggleDancer,
+  eventStartDate,
+}: Props) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'age'>('name');
 
-    // Apply search filter
-    if (form.dancerSearchQuery.trim().length > 0) {
-      const query = form.dancerSearchQuery.toLowerCase();
-      result = result.filter((d) => {
-        const fullName = `${d.first_name} ${d.last_name}`.toLowerCase();
-        return fullName.includes(query);
-      });
-    }
+  /**
+   * Calculate age at event for display
+   * Phase 1 Spec line 554: age_at_event calculation
+   */
+  const calculateAgeAtEvent = (dateOfBirth: string | null): number | null => {
+    if (!dateOfBirth || !eventStartDate) return null;
 
-    // Apply sort
-    if (form.dancerSortBy === 'name') {
-      result = [...result].sort((a, b) => {
-        const nameA = `${a.first_name} ${a.last_name}`;
-        const nameB = `${b.first_name} ${b.last_name}`;
-        return nameA.localeCompare(nameB);
-      });
-    } else {
-      result = [...result].sort((a, b) => {
-        if (a.age === null && b.age === null) return 0;
-        if (a.age === null) return 1;
-        if (b.age === null) return -1;
-        return a.age - b.age;
-      });
-    }
-
-    return result;
-  }, [dancers, form.dancerSearchQuery, form.dancerSortBy]);
-
-  // Check if dancer is selected
-  const isDancerSelected = (dancerId: string) => {
-    return form.selectedDancers.some((d) => d.dancer_id === dancerId);
+    const dob = new Date(dateOfBirth);
+    const diffMs = eventStartDate.getTime() - dob.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    return Math.floor(diffDays / 365);
   };
 
-  // Get age group display for dancer
-  const getAgeGroupDisplay = (age: number | null) => {
-    if (age === null) return '';
-    if (age < 6) return 'Tiny';
-    if (age < 9) return 'Mini';
-    if (age < 13) return 'Teen';
-    if (age < 16) return 'Junior';
-    return 'Senior';
+  /**
+   * Filter dancers by search query
+   */
+  const filteredDancers = dancers.filter((d) => {
+    const fullName = `${d.first_name} ${d.last_name}`.toLowerCase();
+    return fullName.includes(searchQuery.toLowerCase());
+  });
+
+  /**
+   * Sort dancers
+   */
+  const sortedDancers = [...filteredDancers].sort((a, b) => {
+    if (sortBy === 'name') {
+      return `${a.first_name} ${a.last_name}`.localeCompare(
+        `${b.first_name} ${b.last_name}`
+      );
+    } else {
+      const ageA = calculateAgeAtEvent(a.date_of_birth) || 999;
+      const ageB = calculateAgeAtEvent(b.date_of_birth) || 999;
+      return ageA - ageB;
+    }
+  });
+
+  /**
+   * Check if dancer is selected
+   */
+  const isSelected = (dancerId: string): boolean => {
+    return selectedDancers.some((d) => d.dancer_id === dancerId);
   };
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-      <h2 className="text-xl font-bold text-white mb-4">Dancers</h2>
+      <h2 className="text-xl font-bold text-white mb-4">
+        Select Dancers <span className="text-red-400">*</span>
+      </h2>
 
       {/* Search and Sort Controls */}
-      <div className="flex gap-3 mb-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            value={form.dancerSearchQuery}
-            onChange={(e) => updateField('dancerSearchQuery', e.target.value)}
-            placeholder="🔍 Search dancers..."
-            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-        </div>
+      <div className="flex gap-4 mb-4">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search dancers..."
+          className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
         <select
-          value={form.dancerSortBy}
-          onChange={(e) => updateField('dancerSortBy', e.target.value as 'name' | 'age')}
-          className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as 'name' | 'age')}
+          className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
-          <option value="name" className="bg-gray-900">Sort: Name</option>
-          <option value="age" className="bg-gray-900">Sort: Age</option>
+          <option value="name" className="bg-gray-900">
+            Sort by Name
+          </option>
+          <option value="age" className="bg-gray-900">
+            Sort by Age
+          </option>
         </select>
       </div>
 
-      {/* Selected Dancers Summary */}
-      {form.selectedDancers.length > 0 && (
-        <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-          <div className="text-sm text-green-300 font-semibold mb-2">
-            {form.selectedDancers.length} dancer{form.selectedDancers.length !== 1 ? 's' : ''} selected
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {form.selectedDancers.map((dancer) => (
-              <div
-                key={dancer.dancer_id}
-                className="px-3 py-1 bg-green-500/20 border border-green-500/40 rounded-full text-green-200 text-sm flex items-center gap-2"
-              >
-                <span>{dancer.dancer_name}</span>
-                {dancer.dancer_age !== null && (
-                  <span className="text-green-300">({dancer.dancer_age})</span>
-                )}
-                <button
-                  onClick={() => toggleDancer(dancer)}
-                  className="ml-1 text-green-400 hover:text-green-200 transition-colors"
-                  aria-label={`Remove ${dancer.dancer_name}`}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Dancer List */}
-      <div className="max-h-96 overflow-y-auto space-y-2">
-        {filteredDancers.length === 0 ? (
-          <div className="text-center py-8 text-white/60">
-            {dancers.length === 0 ? (
-              <>
-                <p className="mb-2">No dancers found for this studio.</p>
-                <p className="text-sm">Add dancers first to create entries.</p>
-              </>
-            ) : (
-              <p>No dancers match your search.</p>
-            )}
+      <div className="space-y-2 max-h-96 overflow-y-auto">
+        {sortedDancers.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            {searchQuery
+              ? 'No dancers match your search'
+              : 'No dancers found. Add dancers to your roster first.'}
           </div>
         ) : (
-          filteredDancers.map((dancer) => {
-            const isSelected = isDancerSelected(dancer.id);
-            const dancerData: SelectedDancer = {
-              dancer_id: dancer.id,
-              dancer_name: `${dancer.first_name} ${dancer.last_name}`,
-              dancer_age: dancer.age,
-            };
+          sortedDancers.map((dancer) => {
+            const age = calculateAgeAtEvent(dancer.date_of_birth);
+            const fullName = `${dancer.first_name} ${dancer.last_name}`;
+            const selected = isSelected(dancer.id);
 
             return (
-              <label
+              <button
                 key={dancer.id}
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-purple-500/20 border-purple-500/50'
+                type="button"
+                onClick={() =>
+                  toggleDancer({
+                    dancer_id: dancer.id,
+                    dancer_name: fullName,
+                    dancer_age: age,
+                    date_of_birth: dancer.date_of_birth,
+                  })
+                }
+                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  selected
+                    ? 'bg-purple-500/20 border-purple-500'
                     : 'bg-white/5 border-white/20 hover:bg-white/10'
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleDancer(dancerData)}
-                  className="w-5 h-5 rounded border-white/30 bg-white/10 text-purple-500 focus:ring-2 focus:ring-purple-500 cursor-pointer"
-                />
-                <div className="flex-1">
-                  <div className="text-white font-semibold">
-                    {dancer.first_name} {dancer.last_name}
-                  </div>
-                  <div className="text-xs text-white/60">
-                    {dancer.age !== null ? (
-                      <>
-                        Age {dancer.age} - {getAgeGroupDisplay(dancer.age)}
-                      </>
-                    ) : (
-                      'Age not specified'
-                    )}
-                  </div>
+                <div
+                  className={`w-5 h-5 rounded flex items-center justify-center border-2 ${
+                    selected
+                      ? 'bg-purple-500 border-purple-500'
+                      : 'border-white/40'
+                  }`}
+                >
+                  {selected && (
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
                 </div>
-                {isSelected && (
-                  <div className="text-purple-400 text-sm font-semibold">✓ Selected</div>
-                )}
-              </label>
+                <div className="flex-1 text-left">
+                  <div className="text-white font-medium">{fullName}</div>
+                  {age !== null && (
+                    <div className="text-sm text-gray-400">
+                      {age} years old at event
+                    </div>
+                  )}
+                </div>
+              </button>
             );
           })
         )}
       </div>
 
-      {/* Validation */}
-      {form.selectedDancers.length === 0 && (
-        <p className="text-xs text-red-400 mt-3">At least one dancer is required</p>
-      )}
+      {/* Selected Count */}
+      <div className="mt-4 text-sm text-gray-400">
+        {selectedDancers.length} dancer{selectedDancers.length !== 1 ? 's' : ''}{' '}
+        selected
+      </div>
     </div>
   );
 }

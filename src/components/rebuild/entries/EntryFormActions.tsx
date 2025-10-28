@@ -1,12 +1,17 @@
-interface EntryFormActionsProps {
+"use client";
+
+import { SaveAction } from '@/hooks/rebuild/useEntryFormV2';
+
+interface Props {
   canSave: boolean;
   isLoading: boolean;
-  onSave: (action: 'cancel' | 'save' | 'save-another' | 'save-like-this') => Promise<void>;
+  validationErrors: string[];
+  onSave: (action: SaveAction) => Promise<void>;
 }
 
 /**
- * Entry Form Actions
- * 4 action buttons for entry creation
+ * Entry Form Actions V2
+ * 4 action buttons per Phase 1 spec
  *
  * Actions:
  * 1. Cancel - Discard and return to entries list
@@ -14,7 +19,7 @@ interface EntryFormActionsProps {
  * 3. Save & Create Another - Save and reset all fields
  * 4. Save - Save and return to entries list
  */
-export function EntryFormActions({ canSave, isLoading, onSave }: EntryFormActionsProps) {
+export function EntryFormActions({ canSave, isLoading, validationErrors, onSave }: Props) {
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -65,13 +70,14 @@ export function EntryFormActions({ canSave, isLoading, onSave }: EntryFormAction
       </div>
 
       {/* Validation Message */}
-      {!canSave && !isLoading && (
+      {!canSave && !isLoading && validationErrors.length > 0 && (
         <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
           <div className="text-sm text-yellow-200">
-            <strong>Missing required fields:</strong>
+            <strong>Cannot save:</strong>
             <ul className="list-disc list-inside mt-1 text-yellow-300/80">
-              <li>Title, Category, Classification must be filled</li>
-              <li>At least one dancer must be selected</li>
+              {validationErrors.map((error, idx) => (
+                <li key={idx}>{error}</li>
+              ))}
             </ul>
           </div>
         </div>
