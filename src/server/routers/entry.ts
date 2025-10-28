@@ -160,6 +160,7 @@ export const entryRouter = router({
       // First find the reservation to filter entries by reservation_id (per PHASE1_SPEC.md line 602)
       const reservation = await prisma.reservations.findFirst({
         where: {
+          tenant_id: ctx.tenantId!,
           studio_id: studioId,
           competition_id: competitionId,
           status: 'approved',
@@ -174,10 +175,11 @@ export const entryRouter = router({
         }),
         prisma.competitions.findUnique({
           where: { id: competitionId },
-          select: { name: true, year: true },
+          select: { name: true, year: true, tenant_id: true },
         }),
         prisma.competition_entries.findMany({
           where: {
+            tenant_id: ctx.tenantId!,
             reservation_id: reservation?.id,
             status: { not: 'cancelled' },
           },
@@ -211,6 +213,21 @@ export const entryRouter = router({
         throw new Error('Studio or competition not found');
       }
 
+      // Verify tenant isolation
+      if (studio.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot access studio from another tenant',
+        });
+      }
+
+      if (competition.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot access competition from another tenant',
+        });
+      }
+
       const routineCount = entries.length;
       const totalFees = entries.reduce((sum: number, e: any) => sum + Number(e.total_fee || 0), 0);
 
@@ -234,6 +251,14 @@ export const entryRouter = router({
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'No approved reservation found for this studio and competition. Please request a reservation first.',
+        });
+      }
+
+      // Verify tenant isolation (defense in depth)
+      if (fullReservation.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot access reservation from another tenant',
         });
       }
 

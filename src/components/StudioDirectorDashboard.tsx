@@ -20,6 +20,7 @@ interface StudioDirectorDashboardProps {
   userEmail: string;
   firstName: string;
   studioName?: string;
+  studioCode?: string | null;
   studioStatus?: string | null;
 }
 
@@ -35,7 +36,7 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   }
 ];
 
-export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioStatus }: StudioDirectorDashboardProps) {
+export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioCode, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
   const [greeting, setGreeting] = useState('Hello');
   const { data: myDancers } = trpc.dancer.getAll.useQuery();
@@ -186,7 +187,12 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
           {greeting}, {firstName}! 👋
         </h1>
         <p className="text-gray-400 mb-4">
-          {studioName && <span className="text-purple-400">{studioName}</span>}
+          {studioName && (
+            <span className="text-purple-400">
+              {studioName}
+              {studioCode && <span className="ml-2 text-sm text-gray-500">({studioCode})</span>}
+            </span>
+          )}
         </p>
         <MotivationalQuote />
       </div>
