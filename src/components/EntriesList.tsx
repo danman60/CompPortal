@@ -1,6 +1,7 @@
 'use client';
 
-// Force rebuild: b57f350
+// CACHE BUSTER: Build timestamp 2025-10-28T00:00:00Z
+// Force new chunk hash generation - chunk 9914 must be replaced
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
@@ -299,8 +300,8 @@ export default function EntriesList() {
               disabled={submitSummaryMutation.isPending}
               className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2 font-bold disabled:opacity-50"
             >
-              <span>✅</span>
-              <span>Submit Summary (TEST)</span>
+              <span>🚀</span>
+              <span>DEBUG SUBMIT (v2)</span>
             </button>
           )}
 
