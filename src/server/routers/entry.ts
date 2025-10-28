@@ -1404,7 +1404,7 @@ export const entryRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       // Only CD and Super Admin can access this
-      if (!['competition_director', 'super_admin'].includes(ctx.userRole)) {
+      if (!ctx.userRole || !['competition_director', 'super_admin'].includes(ctx.userRole)) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Competition Director access required' });
       }
 
@@ -1471,7 +1471,7 @@ export const entryRouter = router({
                 name: true,
               },
             },
-            categories: {
+            dance_categories: {
               select: {
                 id: true,
                 name: true,
