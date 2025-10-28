@@ -210,26 +210,52 @@ export const competitionRouter = router({
     }),
 
   // Get upcoming competitions
-  getUpcoming: publicProcedure.query(async () => {
+  getUpcoming: publicProcedure.query(async ({ ctx }) => {
     const now = new Date();
 
+    // Build WHERE clause with tenant filtering
+    const where: any = {
+      is_public: true,
+      status: { not: 'cancelled' }, // Exclude cancelled events
+      OR: [
+        {
+          competition_start_date: {
+            gte: now,
+          },
+        },
+        {
+          status: {
+            in: ['upcoming', 'registration_open'],
+          },
+        },
+      ],
+    };
+
+    // Tenant filtering (same pattern as getAll)
+    if (isSuperAdmin(ctx.userRole)) {
+      // Super admins can see all tenants
+      // No tenant filter
+    } else {
+      // Non-super admins only see their own tenant's competitions
+      if (ctx.tenantId) {
+        where.tenant_id = ctx.tenantId;
+      } else {
+        // If no tenant context, return empty results
+        return { competitions: [], count: 0 };
+      }
+    }
+
     const competitions = await prisma.competitions.findMany({
-      where: {
-        is_public: true,
-        OR: [
-          {
-            competition_start_date: {
-              gte: now,
-            },
-          },
-          {
-            status: {
-              in: ['upcoming', 'registration_open'],
-            },
-          },
-        ],
-      },
-      include: {
+      where,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        year: true,
+        competition_start_date: true,
+        total_reservation_tokens: true,
+        available_reservation_tokens: true,
+        venue_capacity: true,
         _count: {
           select: {
             competition_entries: true,

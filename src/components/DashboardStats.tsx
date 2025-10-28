@@ -155,9 +155,11 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
           <div className="space-y-1 text-sm flex-1">
             {upcomingCompetitions?.competitions && upcomingCompetitions.competitions.length > 0 ? (
               upcomingCompetitions.competitions.slice(0, 3).map((comp) => {
-                const totalEntries = comp._count?.competition_entries || 0;
-                const capacity = comp.venue_capacity || 600;
-                const utilizationPercent = capacity > 0 ? (totalEntries / capacity) * 100 : 0;
+                // Use proper capacity from competition tokens
+                const totalCapacity = comp.total_reservation_tokens || comp.venue_capacity || 600;
+                const availableCapacity = comp.available_reservation_tokens ?? totalCapacity;
+                const usedCapacity = totalCapacity - availableCapacity;
+                const utilizationPercent = totalCapacity > 0 ? (usedCapacity / totalCapacity) * 100 : 0;
                 const barColor = getCapacityColor(utilizationPercent);
 
                 return (
@@ -165,7 +167,7 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-300 truncate mr-2">{comp.name}</span>
                       <span className="text-white font-semibold whitespace-nowrap">
-                        {totalEntries}/{capacity}
+                        {usedCapacity}/{totalCapacity}
                       </span>
                     </div>
                     <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
