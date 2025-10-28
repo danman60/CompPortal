@@ -174,7 +174,10 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         <div>
           <h3 className="text-sm font-semibold text-gray-400 mb-2">BILL TO</h3>
           <div className="text-white">
-            <p className="font-bold text-lg mb-1">{invoice.studio.name}</p>
+            <p className="font-bold text-lg mb-1">
+              {invoice.studio.name}
+              {invoice.studio.code && <span className="text-sm text-gray-400 ml-2">({invoice.studio.code})</span>}
+            </p>
             {invoice.studio.address1 && <p>{invoice.studio.address1}</p>}
             {invoice.studio.address2 && <p>{invoice.studio.address2}</p>}
             {invoice.studio.city && invoice.studio.province && (

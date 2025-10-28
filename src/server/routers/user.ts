@@ -55,7 +55,10 @@ export const userRouter = router({
     let studio = null;
     if (userProfile?.role === 'studio_director') {
       studio = await prisma.studios.findFirst({
-        where: { owner_id: ctx.userId! },
+        where: {
+          tenant_id: ctx.tenantId!,
+          owner_id: ctx.userId!,
+        },
         select: {
           id: true,
           name: true,
