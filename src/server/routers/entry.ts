@@ -371,6 +371,7 @@ export const entryRouter = router({
         // Create summary record (PHASE1_SPEC.md lines 611-616)
         const summary = await tx.summaries.create({
           data: {
+            tenant_id: ctx.tenantId!,
             reservation_id: fullReservation.id,
             entries_used: routineCount,
             entries_unused: unusedSpaces,
@@ -390,6 +391,7 @@ export const entryRouter = router({
 
           await tx.summary_entries.create({
             data: {
+              tenant_id: ctx.tenantId!,
               summary_id: summary.id,
               entry_id: entry.id,
               snapshot: snapshot as any,

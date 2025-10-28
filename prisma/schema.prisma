@@ -1351,6 +1351,8 @@ model tenants {
   entry_size_categories entry_size_categories[]
   capacity_ledger      capacity_ledger[]
   classifications      classifications[]
+  summaries            summaries[]
+  summary_entries      summary_entries[]
 
   @@schema("public")
 }
@@ -1492,15 +1494,18 @@ model schedule_suggestions {
 /// Required by PHASE1_SPEC.md lines 611-616
 model summaries {
   id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String            @db.Uuid
   reservation_id String            @unique @db.Uuid
   entries_used   Int
   entries_unused Int
   submitted_at   DateTime          @default(now()) @db.Timestamptz(6)
   created_at     DateTime          @default(now()) @db.Timestamptz(6)
   updated_at     DateTime          @default(now()) @db.Timestamptz(6)
+  tenants        tenants           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   reservations   reservations      @relation(fields: [reservation_id], references: [id], onDelete: Cascade)
   summary_entries summary_entries[]
 
+  @@index([tenant_id], map: "idx_summaries_tenant")
   @@index([reservation_id], map: "idx_summaries_reservation")
   @@index([submitted_at], map: "idx_summaries_submitted_at")
   @@schema("public")
@@ -1510,14 +1515,17 @@ model summaries {
 /// Required by PHASE1_SPEC.md lines 619-624
 model summary_entries {
   id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String              @db.Uuid
   summary_id          String              @db.Uuid
   entry_id            String              @db.Uuid
   snapshot            Json                @db.JsonB
   created_at          DateTime            @default(now()) @db.Timestamptz(6)
+  tenants             tenants             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   summaries           summaries           @relation(fields: [summary_id], references: [id], onDelete: Cascade)
   competition_entries competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade)
 
   @@unique([summary_id, entry_id])
+  @@index([tenant_id], map: "idx_summary_entries_tenant")
   @@index([summary_id], map: "idx_summary_entries_summary")
   @@index([entry_id], map: "idx_summary_entries_entry")
   @@schema("public")
