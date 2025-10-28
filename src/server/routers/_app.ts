@@ -33,6 +33,7 @@ import { testingRouter } from './testing';
 import { emailPreferencesRouter } from './emailPreferences';
 import { superAdminRouter } from './superAdmin';
 import { summaryRouter } from './summary';
+import { tenantDebugRouter } from './tenantDebug';
 
 /**
  * Main tRPC router
@@ -41,6 +42,7 @@ import { summaryRouter } from './summary';
 export const appRouter = router({
   test: testRouter,
   testing: testingRouter,
+  tenantDebug: tenantDebugRouter,
   user: userRouter,
   studio: studioRouter,
   dancer: dancerRouter,
