@@ -962,7 +962,8 @@ export const entryRouter = router({
         is_improvisation: data.is_improvisation,
         is_glow_off_round: data.is_glow_off_round,
         is_overall_competition: data.is_overall_competition,
-        // Use Prisma relation connect syntax for ALL foreign keys (including tenant)
+        // Provide BOTH direct field AND relation (Prisma requires both for tenant)
+        tenant_id: studio.tenant_id,
         tenants: { connect: { id: studio.tenant_id } },
         competitions: { connect: { id: data.competition_id } },
         studios: { connect: { id: data.studio_id } },
