@@ -93,6 +93,7 @@ export class CapacityService {
       const competition = await tx.competitions.findUnique({
         where: { id: competitionId },
         select: {
+          tenant_id: true,
           available_reservation_tokens: true,
           total_reservation_tokens: true,
         },
@@ -115,9 +116,9 @@ export class CapacityService {
 
       // 1. Log to ledger (audit trail) - UNIQUE CONSTRAINT GUARD
       // If duplicate call, this will throw and prevent steps 2-3 from executing
-      // NOTE: tenant_id not in schema - scoped via competition_id → competitions.tenant_id
       await tx.capacity_ledger.create({
         data: {
+          tenant_id: competition.tenant_id,
           competition_id: competitionId,
           reservation_id: reservationId,
           change_amount: -spaces, // Negative = deduction
@@ -186,6 +187,7 @@ export class CapacityService {
       const competition = await tx.competitions.findUnique({
         where: { id: competitionId },
         select: {
+          tenant_id: true,
           available_reservation_tokens: true,
           total_reservation_tokens: true,
         },
@@ -220,9 +222,9 @@ export class CapacityService {
       });
 
       // Log to ledger (audit trail)
-      // NOTE: tenant_id not in schema - scoped via competition_id → competitions.tenant_id
       await tx.capacity_ledger.create({
         data: {
+          tenant_id: competition.tenant_id,
           competition_id: competitionId,
           reservation_id: reservationId,
           change_amount: spaces, // Positive = refund

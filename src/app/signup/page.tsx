@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
 interface SignupFormData {
   email: string;
@@ -24,6 +25,7 @@ export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
   const checkEmailMutation = trpc.user.checkEmailExists.useMutation();
+  const { tenant } = useTenantTheme();
 
   const updateFormData = (field: keyof SignupFormData, value: string) => {
     if (field === 'email') setError(null);
@@ -71,8 +73,7 @@ export default function SignupPage() {
         options: {
           emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/onboarding`,
           data: {
-            // Prevent auto-login before email confirmation
-            // This reduces console errors from unconfirmed session
+            tenant_id: tenant?.id, // Required for whitelabel email system
           },
         },
       });

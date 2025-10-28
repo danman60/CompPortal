@@ -647,6 +647,7 @@ model competitions {
 /// Negative change_amount = capacity deducted, Positive = capacity refunded
 model capacity_ledger {
   id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String        @db.Uuid
   competition_id String        @db.Uuid
   reservation_id String?       @db.Uuid
   change_amount  Int
@@ -655,6 +656,7 @@ model capacity_ledger {
   created_at     DateTime      @default(now()) @db.Timestamp(6)
   created_by     String?       @db.Uuid
 
+  tenants        tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   competitions   competitions  @relation(fields: [competition_id], references: [id], onDelete: Cascade)
   reservations   reservations? @relation(fields: [reservation_id], references: [id], onDelete: SetNull)
   users          users?        @relation(fields: [created_by], references: [id])
@@ -1328,6 +1330,7 @@ model tenants {
   age_groups           age_groups[]
   dance_categories     dance_categories[]
   entry_size_categories entry_size_categories[]
+  capacity_ledger      capacity_ledger[]
 
   @@schema("public")
 }

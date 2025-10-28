@@ -282,6 +282,7 @@ export const entryRouter = router({
           const competition = await tx.competitions.findUnique({
             where: { id: competitionId },
             select: {
+              tenant_id: true,
               available_reservation_tokens: true,
               total_reservation_tokens: true,
             },
@@ -324,6 +325,7 @@ export const entryRouter = router({
           // Create audit trail in capacity ledger
           await tx.capacity_ledger.create({
             data: {
+              tenant_id: competition.tenant_id,
               competition_id: competitionId,
               reservation_id: fullReservation.id,
               change_amount: unusedSpaces, // Positive = refund
