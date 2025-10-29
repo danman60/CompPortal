@@ -9,6 +9,7 @@ import {
   Text,
   Hr,
 } from '@react-email/components';
+import { emailTheme, defaultBranding } from './theme';
 
 interface RegistrationConfirmationProps {
   studioName: string;
@@ -30,122 +31,54 @@ export default function RegistrationConfirmation({
   contactEmail,
   tenantBranding,
 }: RegistrationConfirmationProps) {
-  const primaryColor = tenantBranding?.primaryColor || '#5e6ad2';
+  const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
 
   return (
     <Html>
       <Head />
       <Preview>Registration confirmed for {competitionName}</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={h1}>✨ Registration Confirmed!</Heading>
+      <Body style={emailTheme.main}>
+        <Container style={emailTheme.container}>
+          <Heading style={emailTheme.h1}>Registration Confirmed!</Heading>
 
-          <Text style={text}>
+          <Text style={emailTheme.text}>
             Thank you for registering <strong>{studioName}</strong> for <strong>{competitionName} ({competitionYear})</strong>!
           </Text>
 
           {competitionDate && (
-            <Section style={infoBox}>
-              <Text style={infoText}>
+            <Section style={{...emailTheme.infoBox, borderLeft: `4px solid ${primaryColor}`}}>
+              <Text style={{...emailTheme.text, padding: '0', margin: '0'}}>
                 <strong>Competition Date:</strong> {competitionDate}
               </Text>
             </Section>
           )}
 
-          <Text style={text}>
+          <Text style={emailTheme.text}>
             Your registration has been received and is being processed. You will receive further
             updates regarding:
           </Text>
 
-          <ul style={list}>
+          <ul style={{...emailTheme.text, paddingLeft: '60px'}}>
             <li>Competition schedule and lineup</li>
             <li>Payment details and invoices</li>
             <li>Important competition information</li>
             <li>Venue and logistics details</li>
           </ul>
 
-          <Hr style={hr} />
+          <Hr style={emailTheme.hr} />
 
-          <Text style={footer}>
+          <Text style={emailTheme.footer}>
             If you have any questions, please contact us at{' '}
-            <a href={`mailto:${contactEmail}`} style={{...link, color: primaryColor}}>
+            <a href={`mailto:${contactEmail}`} style={{color: primaryColor, textDecoration: 'none'}}>
               {contactEmail}
             </a>
           </Text>
 
-          <Text style={footer}>
-            See you on the dance floor! 💃🕺
+          <Text style={emailTheme.footer}>
+            See you on the dance floor!
           </Text>
         </Container>
       </Body>
     </Html>
   );
 }
-
-const main = {
-  backgroundColor: '#f6f9fc',
-  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-};
-
-const container = {
-  backgroundColor: '#ffffff',
-  margin: '0 auto',
-  padding: '20px 0 48px',
-  marginBottom: '64px',
-  maxWidth: '600px',
-};
-
-const h1 = {
-  color: '#333',
-  fontSize: '32px',
-  fontWeight: 'bold',
-  margin: '40px 0',
-  padding: '0 40px',
-  textAlign: 'center' as const,
-};
-
-const text = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '26px',
-  padding: '0 40px',
-};
-
-const infoBox = {
-  backgroundColor: '#f0f4ff',
-  borderRadius: '8px',
-  padding: '20px',
-  margin: '20px 40px',
-};
-
-const infoText = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '24px',
-  margin: '0',
-};
-
-const list = {
-  color: '#333',
-  fontSize: '16px',
-  lineHeight: '26px',
-  paddingLeft: '60px',
-};
-
-const hr = {
-  borderColor: '#e6ebf1',
-  margin: '20px 40px',
-};
-
-const footer = {
-  color: '#8898aa',
-  fontSize: '14px',
-  lineHeight: '24px',
-  padding: '0 40px',
-  textAlign: 'center' as const,
-};
-
-const link = {
-  color: '#5e6ad2',
-  textDecoration: 'none',
-};
