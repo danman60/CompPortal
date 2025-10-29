@@ -90,7 +90,6 @@ serve(async (req) => {
         id: authData.user.id,
         tenant_id: tenant_id, // CRITICAL: Multi-tenant isolation
         role: 'studio_director', // Default role for self-signup
-        created_at: new Date().toISOString(),
       });
 
     if (profileError) {
