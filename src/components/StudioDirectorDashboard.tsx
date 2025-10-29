@@ -126,7 +126,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       return {
         icon: '🎭',
         label: 'Next Action for You',
-        value: 'Finish Creating Routines',
+        value: 'Create Routines',
         color: 'text-blue-300',
         href: '/dashboard/entries',
         tooltip: `${routinesLeftToCreate} routine${routinesLeftToCreate !== 1 ? 's' : ''} left to create`
@@ -147,7 +147,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
     return {
       icon: '✅',
       label: 'Next Action for You',
-      value: "You're Good for now!",
+      value: "All Done!",
       color: 'text-green-300',
       tooltip: 'All caught up!'
     };

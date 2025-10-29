@@ -47,7 +47,7 @@ export default async function Home() {
           </div>
 
           {/* Auth Buttons */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 min-h-[420px] flex flex-col justify-center">
             <div className="space-y-4">
               <Link
                 href="/login"

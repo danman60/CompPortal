@@ -37,12 +37,13 @@ export const analyticsRouter = router({
         _count: true,
       });
 
-      // Get category details
+      // Get category details (filter by competition's tenant for defense-in-depth)
       const categories = await prisma.dance_categories.findMany({
         where: {
           id: {
             in: entriesByCategory.map((e) => e.category_id),
           },
+          tenant_id: competition.tenant_id,
         },
       });
 
@@ -62,12 +63,13 @@ export const analyticsRouter = router({
         _count: true,
       });
 
-      // Get studio details
+      // Get studio details (filter by competition's tenant for defense-in-depth)
       const studios = await prisma.studios.findMany({
         where: {
           id: {
             in: entriesByStudio.map((e) => e.studio_id),
           },
+          tenant_id: competition.tenant_id,
         },
       });
 
@@ -87,12 +89,13 @@ export const analyticsRouter = router({
         _count: true,
       });
 
-      // Get age group details
+      // Get age group details (filter by competition's tenant for defense-in-depth)
       const ageGroups = await prisma.age_groups.findMany({
         where: {
           id: {
             in: entriesByAgeGroup.map((e) => e.age_group_id),
           },
+          tenant_id: competition.tenant_id,
         },
       });
 

@@ -674,10 +674,13 @@ export const competitionRouter = router({
       const uniqueClassificationIds = [...new Set(entries.map(e => e.classification_id))].filter(Boolean);
       const uniqueAgeGroupIds = [...new Set(entries.map(e => e.age_group_id))].filter(Boolean);
 
-      // Fetch the actual records
+      // Fetch the actual records (filter by tenant for defense-in-depth)
       const [categoryTypes, danceCategories, ageDivisions] = await Promise.all([
         prisma.dance_categories.findMany({
-          where: { id: { in: uniqueCategoryIds } },
+          where: {
+            id: { in: uniqueCategoryIds },
+            ...(ctx.tenantId && { tenant_id: ctx.tenantId }),
+          },
           select: {
             id: true,
             name: true,
@@ -686,7 +689,10 @@ export const competitionRouter = router({
           orderBy: { name: 'asc' },
         }),
         prisma.classifications.findMany({
-          where: { id: { in: uniqueClassificationIds } },
+          where: {
+            id: { in: uniqueClassificationIds },
+            ...(ctx.tenantId && { tenant_id: ctx.tenantId }),
+          },
           select: {
             id: true,
             name: true,
@@ -695,7 +701,10 @@ export const competitionRouter = router({
           orderBy: { name: 'asc' },
         }),
         prisma.age_groups.findMany({
-          where: { id: { in: uniqueAgeGroupIds } },
+          where: {
+            id: { in: uniqueAgeGroupIds },
+            ...(ctx.tenantId && { tenant_id: ctx.tenantId }),
+          },
           select: {
             id: true,
             name: true,

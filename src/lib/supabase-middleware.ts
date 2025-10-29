@@ -42,33 +42,23 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Fallback to default tenant (demo) if no subdomain or tenant not found
-  if (!tenantId) {
-    const { data } = await supabase
-      .from('tenants')
-      .select('id, slug, subdomain, name, branding')
-      .eq('slug', 'demo')
-      .single();
+  // Redirect to tenant selection if no tenant detected (except for public routes)
+  const publicRoutes = ['/login', '/signup', '/select-tenant', '/api/tenants', '/api/auth'];
+  const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
-    if (data) {
-      tenantId = data.id;
-      tenantData = data;
-    }
+  if (!tenantId && !isPublicRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/select-tenant';
+    return NextResponse.redirect(url);
   }
 
   // Create modified request headers with tenant context
   const requestHeaders = new Headers(request.headers);
 
-  // TEMPORARY: Default to EMPWR tenant if none detected (for demo)
-  const finalTenantId = tenantId || '00000000-0000-0000-0000-000000000001';
-  const finalTenantData = tenantData || {
-    id: '00000000-0000-0000-0000-000000000001',
-    name: 'EMPWR Dance Experience',
-    subdomain: 'demo',
-  };
-
-  requestHeaders.set('x-tenant-id', finalTenantId);
-  requestHeaders.set('x-tenant-data', JSON.stringify(finalTenantData));
+  if (tenantId && tenantData) {
+    requestHeaders.set('x-tenant-id', tenantId);
+    requestHeaders.set('x-tenant-data', JSON.stringify(tenantData));
+  }
 
   // Refresh session if expired
   const {
