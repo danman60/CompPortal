@@ -40,7 +40,10 @@ const handler = async (req: Request) => {
       let studioId: string | null = null;
       if (userProfile?.role === 'studio_director' && userProfile?.tenant_id) {
         const studio = await prisma.studios.findFirst({
-          where: { tenant_id: userProfile.tenant_id },
+          where: {
+            tenant_id: userProfile.tenant_id,  // Tenant isolation
+            owner_id: user.id                   // Studio isolation (prevent cross-contamination)
+          },
           select: { id: true },
         });
         studioId = studio?.id || null;
