@@ -123,7 +123,8 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
       case 2:
         return formData.spaces_requested > 0;
       case 3:
-        return true; // Agent info is optional
+        // Waivers are REQUIRED - both age_of_consent and waiver_consent must be checked
+        return formData.age_of_consent && formData.waiver_consent;
       case 4:
         return formData.age_of_consent && formData.waiver_consent;
       case 5:
@@ -279,6 +280,14 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
                 I consent to photo and video recording for promotional purposes (optional)
               </label>
             </div>
+
+            {showErrors && currentStep === 3 && (!formData.age_of_consent || !formData.waiver_consent) && (
+              <div className="mt-4 p-3 bg-red-500/20 border border-red-400/30 rounded-lg">
+                <p className="text-red-400 text-sm">
+                  Please check both required waivers before continuing
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

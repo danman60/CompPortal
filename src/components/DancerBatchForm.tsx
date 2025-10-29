@@ -195,7 +195,7 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                   Phone
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Skill Level
+                  Classification
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-16">
                   Action

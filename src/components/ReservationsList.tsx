@@ -309,7 +309,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
             href="/dashboard/reservations/new"
             className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
           >
-            + Create Reservation
+            + Request Reservation
           </Link>
         )}
         {/* Manual Reservation Button (Competition Directors Only - Issue #17) */}
@@ -483,7 +483,7 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
               href="/dashboard/reservations/new"
               className="inline-block px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
             >
-              + Create Reservation
+              + Request Reservation
             </Link>
           ) : filter !== 'all' ? (
             <button

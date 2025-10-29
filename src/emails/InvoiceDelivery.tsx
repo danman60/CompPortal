@@ -37,12 +37,11 @@ export default function InvoiceDelivery({
   routineCount,
   invoiceUrl,
   dueDate,
-  portalUrl,
+  portalUrl = 'https://www.compsync.net/dashboard',
   tenantBranding,
 }: InvoiceDeliveryProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
   const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
-  const dashboardUrl = portalUrl || 'https://www.compsync.net/dashboard';
 
   return (
     <Html>
@@ -92,7 +91,7 @@ export default function InvoiceDelivery({
             )}
           </Section>
 
-          <Section style={{textAlign: 'center', padding: '20px 40px'}}>
+          <Section style={{textAlign: 'center', padding: '30px 40px'}}>
             <Button href={invoiceUrl} style={gradientButton(primaryColor, secondaryColor)}>
               View Invoice
             </Button>
@@ -104,7 +103,7 @@ export default function InvoiceDelivery({
           </Text>
 
           <Section style={{textAlign: 'center', padding: '20px 40px'}}>
-            <Button href={dashboardUrl} style={{...gradientButton(primaryColor, secondaryColor), fontSize: '14px', padding: '12px 32px'}}>
+            <Button href={portalUrl} style={{...gradientButton(primaryColor, secondaryColor), fontSize: '14px', padding: '12px 32px'}}>
               Go to Dashboard
             </Button>
           </Section>

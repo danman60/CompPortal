@@ -22,7 +22,7 @@ export default function DancersPage() {
     }
 
     // Generate CSV content
-    const headers = ['First Name', 'Last Name', 'Date of Birth', 'Gender', 'Email', 'Phone', 'Skill Level', 'Studio'];
+    const headers = ['First Name', 'Last Name', 'Date of Birth', 'Gender', 'Email', 'Phone', 'Classification', 'Studio'];
     const rows = dancersData.dancers.map(dancer => [
       dancer.first_name || '',
       dancer.last_name || '',

@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
+import { getTenantPortalUrl } from '@/lib/tenant-url';
 import {
   renderEntrySubmitted,
   renderRoutineSummarySubmitted,
@@ -505,7 +506,7 @@ export const entryRouter = router({
             routineCount,
             totalFees,
             studioEmail: studio.email || '',
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/routine-summaries`,
+            portalUrl: await getTenantPortalUrl(studio.tenant_id, '/dashboard/routine-summaries'),
           };
 
           const html = await renderRoutineSummarySubmitted(emailData);
@@ -1171,66 +1172,67 @@ export const entryRouter = router({
         }
       }
 
-      // Send entry_submitted email notification (non-blocking)
-      try {
-        // Fetch additional data for email
-        const [studio, competition, category, sizeCategory] = await Promise.all([
-          prisma.studios.findUnique({
-            where: { id: input.studio_id },
-            select: { name: true, email: true, owner_id: true },
-          }),
-          prisma.competitions.findUnique({
-            where: { id: input.competition_id },
-            select: { name: true, year: true },
-          }),
-          prisma.dance_categories.findUnique({
-            where: { id: input.category_id },
-            select: { name: true },
-          }),
-          // Size category is optional now (auto-detected from dancers)
-          input.entry_size_category_id ? prisma.entry_size_categories.findUnique({
-            where: { id: input.entry_size_category_id },
-            select: { name: true },
-          }) : Promise.resolve(null),
-        ]);
-
-        if (studio?.email && studio.owner_id && competition && category) {
-          // Check if entry_submitted email preference is enabled
-          const isEnabled = await isEmailEnabled(studio.owner_id, 'entry_submitted');
-
-          if (isEnabled) {
-            const emailData: EntrySubmittedData = {
-              studioName: studio.name,
-              competitionName: competition.name,
-              competitionYear: competition.year,
-              entryTitle: entry.title,
-              entryNumber: entry.entry_number || undefined,
-              category: category.name,
-              sizeCategory: sizeCategory?.name || 'TBD', // TBD if not set (auto-detected later)
-              participantCount: entry.entry_participants?.length || 0,
-              entryFee: entry_fee || 0,
-            };
-
-            const html = await renderEntrySubmitted(emailData);
-            const subject = getEmailSubject('entry', {
-              entryTitle: entry.title,
-              competitionName: competition.name,
-            });
-
-            await sendEmail({
-              to: studio.email,
-              subject,
-              html,
-              templateType: 'entry-submitted',
-              studioId: input.studio_id,
-              competitionId: input.competition_id,
-            });
-          }
-        }
-      } catch (emailError) {
-        logger.error('Failed to send entry submission email', { error: emailError instanceof Error ? emailError : new Error(String(emailError)) });
-        // Don't fail the mutation if email fails
-      }
+      // DISABLED: Send entry_submitted email notification (per user request - too noisy)
+      // Studios get confirmation when they submit the entire summary, not per-entry
+      // try {
+      //   // Fetch additional data for email
+      //   const [studio, competition, category, sizeCategory] = await Promise.all([
+      //     prisma.studios.findUnique({
+      //       where: { id: input.studio_id },
+      //       select: { name: true, email: true, owner_id: true },
+      //     }),
+      //     prisma.competitions.findUnique({
+      //       where: { id: input.competition_id },
+      //       select: { name: true, year: true },
+      //     }),
+      //     prisma.dance_categories.findUnique({
+      //       where: { id: input.category_id },
+      //       select: { name: true },
+      //     }),
+      //     // Size category is optional now (auto-detected from dancers)
+      //     input.entry_size_category_id ? prisma.entry_size_categories.findUnique({
+      //       where: { id: input.entry_size_category_id },
+      //       select: { name: true },
+      //     }) : Promise.resolve(null),
+      //   ]);
+      //
+      //   if (studio?.email && studio.owner_id && competition && category) {
+      //     // Check if entry_submitted email preference is enabled
+      //     const isEnabled = await isEmailEnabled(studio.owner_id, 'entry_submitted');
+      //
+      //     if (isEnabled) {
+      //       const emailData: EntrySubmittedData = {
+      //         studioName: studio.name,
+      //         competitionName: competition.name,
+      //         competitionYear: competition.year,
+      //         entryTitle: entry.title,
+      //         entryNumber: entry.entry_number || undefined,
+      //         category: category.name,
+      //         sizeCategory: sizeCategory?.name || 'TBD', // TBD if not set (auto-detected later)
+      //         participantCount: entry.entry_participants?.length || 0,
+      //         entryFee: entry_fee || 0,
+      //       };
+      //
+      //       const html = await renderEntrySubmitted(emailData);
+      //       const subject = getEmailSubject('entry', {
+      //         entryTitle: entry.title,
+      //         competitionName: competition.name,
+      //       });
+      //
+      //       await sendEmail({
+      //         to: studio.email,
+      //         subject,
+      //         html,
+      //         templateType: 'entry-submitted',
+      //         studioId: input.studio_id,
+      //         competitionId: input.competition_id,
+      //       });
+      //     }
+      //   }
+      // } catch (emailError) {
+      //   logger.error('Failed to send entry submission email', { error: emailError instanceof Error ? emailError : new Error(String(emailError)) });
+      //   // Don't fail the mutation if email fails
+      // }
 
       return entry;
     }),

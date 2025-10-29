@@ -8,6 +8,7 @@ import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
 import { trpc } from '@/lib/trpc';
 import { Sparkles, Target, Settings as SettingsIcon } from '@/lib/icons';
+import { useRouter } from 'next/navigation';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -113,8 +114,10 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
 ];
 
 export default function CompetitionDirectorDashboard({ userEmail, firstName, role }: CompetitionDirectorDashboardProps) {
+  const router = useRouter();
   const [showLoading, setShowLoading] = useState(true);
   const [greeting, setGreeting] = useState('Hello');
+  const [showBadge, setShowBadge] = useState(false);
   const isAdmin = role === 'super_admin';
   const { data: studios } = trpc.studio.getAll.useQuery();
   const { data: reservations } = trpc.reservation.getAll.useQuery();
@@ -124,6 +127,30 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
   useEffect(() => {
     setGreeting(getGreeting());
   }, []);
+
+  // Check if badge should be shown (session-based)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pipelineViewed = sessionStorage.getItem('pipeline-viewed');
+      setShowBadge(!pipelineViewed);
+    }
+  }, []);
+
+  // Calculate badge count (pending + summarized)
+  const badgeCount = reservations?.reservations
+    ? reservations.reservations.filter(
+        (r) => r.status === 'pending' || r.status === 'summarized'
+      ).length
+    : 0;
+
+  // Handle pipeline click
+  const handlePipelineClick = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('pipeline-viewed', 'true');
+      setShowBadge(false);
+    }
+    router.push('/dashboard/reservation-pipeline');
+  };
 
   // Super Admin gets streamlined admin-focused dashboard
   const SA_DASHBOARD_CARDS: DashboardCard[] = [
@@ -205,17 +232,22 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
 
         {/* Studio Pipeline Button - CD only */}
         {!isAdmin && (
-          <Link
-            href="/dashboard/reservation-pipeline"
-            className="mt-6 block w-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 hover:from-pink-600 hover:via-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover-lift text-center"
+          <button
+            onClick={handlePipelineClick}
+            className="mt-6 block w-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 hover:from-pink-600 hover:via-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover-lift text-center relative"
           >
             <div className="flex items-center justify-center gap-3">
               <Target size={28} strokeWidth={2} />
               <span className="text-xl">Studio Pipeline</span>
+              {showBadge && badgeCount > 0 && (
+                <span className="absolute top-3 right-3 flex items-center justify-center min-w-[28px] h-7 px-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                  {badgeCount}
+                </span>
+              )}
               <span className="text-sm opacity-80">→</span>
             </div>
             <div className="text-xs mt-1 opacity-90">Manage all studio reservations from request to payment in one view</div>
-          </Link>
+          </button>
         )}
       </div>
 

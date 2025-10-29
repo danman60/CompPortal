@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatDistanceToNow } from 'date-fns';
 
 type PipelineStatus = 'all' | 'pending' | 'approved' | 'summary_in' | 'invoiced' | 'paid';
 
@@ -47,6 +48,7 @@ export default function ReservationPipeline() {
   // Fetch data
   const { data: pipelineData, isLoading, refetch } = trpc.reservation.getPipelineView.useQuery();
   const { data: competitions, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
+  const utils = trpc.useUtils();
 
   // Mutations
   const approveMutation = trpc.reservation.approve.useMutation({
@@ -54,6 +56,7 @@ export default function ReservationPipeline() {
       toast.success('Reservation approved!');
       refetch();
       refetchCompetitions(); // CRITICAL: Refetch competitions to update available_reservation_tokens
+      utils.reservation.getPipelineView.invalidate(); // Invalidate to trigger refetch of all data
       closeApprovalModal();
     },
     onError: (error) => {
@@ -366,7 +369,7 @@ export default function ReservationPipeline() {
                 : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
             }`}
           >
-            Pending Routine Creation <span className="ml-2 opacity-70">({stats.approved})</span>
+            Submitted <span className="ml-2 opacity-70">({stats.approved})</span>
           </button>
           <button
             onClick={() => setStatusFilter('summary_in')}
@@ -535,19 +538,13 @@ export default function ReservationPipeline() {
                             <div className="text-sm">
                               <div className="text-gray-300 mb-1">
                                 {reservation.invoiceId && !reservation.invoicePaid
-                                  ? 'Invoiced on'
-                                  : reservation.lastAction || 'Reservation submitted'}
+                                  ? 'Invoiced'
+                                  : reservation.lastAction || 'Submitted'}
                               </div>
                               <div className="text-xs text-gray-400">
                                 {reservation.lastActionDate
-                                  ? new Date(reservation.lastActionDate).toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric',
-                                      hour: 'numeric',
-                                      minute: '2-digit',
-                                    })
-                                  : 'Recent'}
+                                  ? formatDistanceToNow(new Date(reservation.lastActionDate), { addSuffix: true })
+                                  : 'Recently'}
                               </div>
                             </div>
                           </td>

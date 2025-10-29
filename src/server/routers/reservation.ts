@@ -8,6 +8,7 @@ import { isSuperAdmin } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { getTenantPortalUrl } from '@/lib/tenant-url';
 import {
   renderReservationApproved,
   renderReservationRejected,
@@ -538,7 +539,7 @@ export const reservationRouter = router({
             competitionYear: reservation.competitions?.year || new Date().getFullYear(),
             spacesRequested: reservation.spaces_requested,
             studioEmail: studioWithEmail?.email || '',
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservation-pipeline`,
+            portalUrl: await getTenantPortalUrl(studio.tenant_id, '/dashboard/reservation-pipeline'),
           };
 
           const html = await renderReservationSubmitted(emailData);
@@ -766,12 +767,18 @@ export const reservationRouter = router({
             console.log('[EMAIL DEBUG] Email preference check', { isEnabled });
 
             if (isEnabled) {
+              // Get tenant_id for URL generation
+              const reservationTenant = await prisma.reservations.findUnique({
+                where: { id: reservation.id },
+                select: { tenant_id: true },
+              });
+
               const emailData: ReservationApprovedData = {
                 studioName: reservation.studios.name,
                 competitionName: reservation.competitions?.name || 'Competition',
                 competitionYear: reservation.competitions?.year || new Date().getFullYear(),
                 spacesConfirmed: reservation.spaces_confirmed || 0,
-                portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
+                portalUrl: await getTenantPortalUrl(reservationTenant!.tenant_id, '/dashboard/reservations'),
               };
 
               const html = await renderReservationApproved(emailData);
@@ -889,12 +896,18 @@ export const reservationRouter = router({
             const isEnabled = await isEmailEnabled(studio.owner_id, 'reservation_rejected');
 
             if (isEnabled) {
+              // Get tenant_id for URL generation
+              const reservationTenant = await prisma.reservations.findUnique({
+                where: { id: reservation.id },
+                select: { tenant_id: true },
+              });
+
               const emailData: ReservationRejectedData = {
                 studioName: reservation.studios.name,
                 competitionName: reservation.competitions?.name || 'Competition',
                 competitionYear: reservation.competitions?.year || new Date().getFullYear(),
                 reason: input.reason,
-                portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/reservations`,
+                portalUrl: await getTenantPortalUrl(reservationTenant!.tenant_id, '/dashboard/reservations'),
                 contactEmail: reservation.competitions?.contact_email || process.env.EMAIL_FROM || 'info@glowdance.com',
               };
 

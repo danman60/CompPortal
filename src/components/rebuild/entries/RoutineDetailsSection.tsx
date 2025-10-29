@@ -21,6 +21,7 @@ interface Props {
   ) => void;
   categories: Category[];
   classifications: Classification[];
+  disabled?: boolean; // Disable fields except title and choreographer when entry is summarized
 }
 
 /**
@@ -32,6 +33,7 @@ export function RoutineDetailsSection({
   updateField,
   categories,
   classifications,
+  disabled = false,
 }: Props) {
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -93,7 +95,8 @@ export function RoutineDetailsSection({
             id="category_id"
             value={form.category_id}
             onChange={(e) => updateField('category_id', e.target.value)}
-            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            disabled={disabled}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="" className="bg-gray-900">
               Select a category
@@ -118,7 +121,8 @@ export function RoutineDetailsSection({
             id="classification_id"
             value={form.classification_id}
             onChange={(e) => updateField('classification_id', e.target.value)}
-            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            disabled={disabled}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="" className="bg-gray-900">
               Select a classification
@@ -145,7 +149,8 @@ export function RoutineDetailsSection({
             onChange={(e) =>
               updateField('special_requirements', e.target.value)
             }
-            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            disabled={disabled}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="Props, accessibility needs, etc. (optional)"
             rows={3}
           />

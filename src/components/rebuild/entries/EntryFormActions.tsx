@@ -7,6 +7,7 @@ interface Props {
   isLoading: boolean;
   validationErrors: string[];
   onSave: (action: SaveAction) => Promise<void>;
+  mode?: 'create' | 'edit'; // Edit mode shows only Save and Cancel
 }
 
 /**
@@ -19,7 +20,7 @@ interface Props {
  * 3. Save & Create Another - Save and reset all fields
  * 4. Save - Save and return to entries list
  */
-export function EntryFormActions({ canSave, isLoading, validationErrors, onSave }: Props) {
+export function EntryFormActions({ canSave, isLoading, validationErrors, onSave, mode = 'create' }: Props) {
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -34,37 +35,42 @@ export function EntryFormActions({ canSave, isLoading, validationErrors, onSave 
 
         {/* Action Buttons (Right) */}
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Save and Create Another Like This */}
-          <button
-            onClick={() => onSave('save-like-this')}
-            disabled={!canSave || isLoading}
-            className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-200 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            title="Saves current routine, then creates another with same dancers pre-attached"
-          >
-            <span>🔄</span>
-            <span>Save and Create Another Like This</span>
-          </button>
+          {/* Show multiple actions only in create mode */}
+          {mode === 'create' && (
+            <>
+              {/* Save and Create Another Like This */}
+              <button
+                onClick={() => onSave('save-like-this')}
+                disabled={!canSave || isLoading}
+                className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-200 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                title="Saves current routine, then creates another with same dancers pre-attached"
+              >
+                <span>🔄</span>
+                <span>Save and Create Another Like This</span>
+              </button>
 
-          {/* Save & Create Another */}
-          <button
-            onClick={() => onSave('save-another')}
-            disabled={!canSave || isLoading}
-            className="px-6 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-200 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            title="Saves current routine, then starts fresh with empty form"
-          >
-            <span>➕</span>
-            <span>Save & Create Another</span>
-          </button>
+              {/* Save & Create Another */}
+              <button
+                onClick={() => onSave('save-another')}
+                disabled={!canSave || isLoading}
+                className="px-6 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-200 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                title="Saves current routine, then starts fresh with empty form"
+              >
+                <span>➕</span>
+                <span>Save & Create Another</span>
+              </button>
+            </>
+          )}
 
-          {/* Save */}
+          {/* Save (always shown) */}
           <button
             onClick={() => onSave('save')}
             disabled={!canSave || isLoading}
             className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            title="Save and return to entries"
+            title={mode === 'edit' ? 'Update and return to entries' : 'Save and return to entries'}
           >
             <span>✓</span>
-            <span>{isLoading ? 'Saving...' : 'Save'}</span>
+            <span>{isLoading ? (mode === 'edit' ? 'Updating...' : 'Saving...') : (mode === 'edit' ? 'Update' : 'Save')}</span>
           </button>
         </div>
       </div>

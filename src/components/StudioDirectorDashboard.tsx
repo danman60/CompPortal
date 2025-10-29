@@ -125,7 +125,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       return {
         icon: '📋',
         label: 'Next Action for You',
-        value: 'Create Reservation',
+        value: 'Request Reservation',
         color: 'text-green-300',
         href: '/dashboard/reservations',
         tooltip: 'Reserve routine slots for a competition'
