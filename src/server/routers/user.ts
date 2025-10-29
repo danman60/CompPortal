@@ -58,7 +58,7 @@ export const userRouter = router({
       studio = await prisma.studios.findFirst({
         where: {
           tenant_id: ctx.tenantId!,
-          owner_id: ctx.userId!,
+          // Removed owner_id filter to support studio access without ownership requirement
         },
         select: {
           id: true,
