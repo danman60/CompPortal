@@ -70,11 +70,21 @@ export function AutoCalculatedSection({
             <option value="" className="bg-gray-900">
               {inferredAgeGroup ? `Use detected (${inferredAgeGroup.name})` : 'Select age group'}
             </option>
-            {ageGroups.map((group) => (
-              <option key={group.id} value={group.id} className="bg-gray-900">
-                {group.name} ({group.min_age}-{group.max_age} yrs)
-              </option>
-            ))}
+            {ageGroups.map((group) => {
+              // Cap display at 80 years (cosmetic only, doesn't affect logic)
+              const displayMaxAge = group.max_age > 80 ? 80 : group.max_age;
+              // Check if name already contains age range to avoid duplicates
+              const hasAgeInName = /\(\d+[-\d]*\)/.test(group.name);
+              const displayName = hasAgeInName
+                ? group.name
+                : `${group.name} (${group.min_age}-${displayMaxAge} yrs)`;
+
+              return (
+                <option key={group.id} value={group.id} className="bg-gray-900">
+                  {displayName}
+                </option>
+              );
+            })}
           </select>
           {ageGroupOverride && (
             <p className="text-xs text-yellow-400 mt-1">⚠️ Manual override active</p>

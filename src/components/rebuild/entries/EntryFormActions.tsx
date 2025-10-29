@@ -34,15 +34,15 @@ export function EntryFormActions({ canSave, isLoading, validationErrors, onSave 
 
         {/* Action Buttons (Right) */}
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Create Another Like This */}
+          {/* Save and Create Another Like This */}
           <button
             onClick={() => onSave('save-like-this')}
             disabled={!canSave || isLoading}
             className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 text-blue-200 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            title="Saves current routine, then creates another with same dancers"
+            title="Saves current routine, then creates another with same dancers pre-attached"
           >
             <span>🔄</span>
-            <span>Create Another Like This</span>
+            <span>Save and Create Another Like This</span>
           </button>
 
           {/* Save & Create Another */}

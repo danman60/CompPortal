@@ -119,6 +119,9 @@ export function EntryCreateFormV2() {
         })),
       });
 
+      // Show success toast
+      toast.success('Routine saved successfully!');
+
       if (action === 'save') {
         router.push('/dashboard/entries');
       } else if (action === 'save-another') {
@@ -128,6 +131,7 @@ export function EntryCreateFormV2() {
       }
     } catch (error) {
       console.error('Failed to create entry:', error);
+      toast.error('Failed to save routine. Please try again.');
     }
   };
 
