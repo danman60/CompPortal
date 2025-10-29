@@ -76,6 +76,17 @@ export function LiveSummaryBar({
                 <div className="text-2xl font-bold">💰 ${estimatedTotal.toFixed(2)}</div>
               </div>
 
+              {reservation.deposit_amount && (
+                <div className="text-white">
+                  <div className="text-sm text-white/60">Deposit</div>
+                  <div className="text-2xl font-bold text-blue-300">
+                    ${(typeof reservation.deposit_amount === 'number'
+                      ? reservation.deposit_amount
+                      : Number(reservation.deposit_amount)).toFixed(2)}
+                  </div>
+                </div>
+              )}
+
               <div className="text-white">
                 <div className="text-sm text-white/60">Event</div>
                 <div className="text-lg font-medium">
