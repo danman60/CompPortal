@@ -273,19 +273,19 @@ export async function validateDancerAge(
 /**
  * Validate minimum participant requirement
  *
- * Ensures at least one dancer is included in an entry. Used as a basic
- * sanity check before more complex validations.
+ * DEPRECATED: Entries can now be created with 0 dancers. Dancers can be attached later.
+ * Summary submission (not entry creation) will validate that routines have dancers.
  *
  * @param participantCount - Number of dancers in the entry
- * @throws {Error} If participant count is less than 1
  * @example
  * validateMinimumParticipants(1); // OK
- * validateMinimumParticipants(0); // Throws error
+ * validateMinimumParticipants(0); // Also OK - dancers can be attached later
  */
 export function validateMinimumParticipants(participantCount: number): void {
-  if (participantCount < 1) {
-    throw new Error('At least one dancer is required for an entry');
-  }
+  // Allow 0 dancers - validation moved to summary submission
+  // if (participantCount < 1) {
+  //   throw new Error('At least one dancer is required for an entry');
+  // }
 }
 
 /**

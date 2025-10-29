@@ -29,7 +29,7 @@ export const entryCreateSchema = z.object({
     z.object({
       dancerId: z.string().uuid({ message: 'Invalid dancer ID' })
     })
-  ).min(1, 'At least one dancer is required').max(100, 'Too many dancers'),
+  ).min(0, 'Invalid dancers array').max(100, 'Too many dancers'),
 });
 
 // Entry update validation

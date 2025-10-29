@@ -617,9 +617,10 @@ export default function DancerCSVImport() {
                 <div className="flex gap-4">
                   <button
                     onClick={handleImport}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                    disabled={importMutation.isPending}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    Import
+                    {importMutation.isPending ? 'Importing...' : 'Import'}
                   </button>
                   <button
                     onClick={() => router.push('/dashboard/dancers')}

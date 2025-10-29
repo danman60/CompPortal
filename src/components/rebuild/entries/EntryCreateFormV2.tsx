@@ -110,6 +110,7 @@ export function EntryCreateFormV2() {
         special_requirements: formHook.form.special_requirements || undefined,
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
+        is_title_upgrade: formHook.form.is_title_upgrade,
         status: 'draft',
         participants: formHook.form.selectedDancers.map((d, idx) => ({
           dancer_id: d.dancer_id,
@@ -172,6 +173,29 @@ export function EntryCreateFormV2() {
         sizeCategories={lookups.entrySizeCategories}
         selectedDancerCount={formHook.form.selectedDancers.length}
       />
+
+      {/* Title Upgrade Option (empwrDefaults.ts:45) */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={formHook.form.is_title_upgrade}
+            onChange={(e) => formHook.updateField('is_title_upgrade', e.target.checked)}
+            className="mt-1 w-5 h-5 rounded border-2 border-purple-400/50 bg-white/10
+                     checked:bg-purple-500 checked:border-purple-500
+                     focus:ring-2 focus:ring-purple-500/50 cursor-pointer
+                     transition-all duration-200"
+          />
+          <div className="flex-1">
+            <div className="text-white font-medium group-hover:text-purple-300 transition-colors">
+              Title Upgrade (+$30)
+            </div>
+            <div className="text-sm text-gray-300 mt-1">
+              Select if this routine is competing for title. Additional $30 fee applies.
+            </div>
+          </div>
+        </label>
+      </div>
 
       <EntryFormActions
         canSave={formHook.canSave}

@@ -55,6 +55,9 @@ export interface EntryFormV2State {
   // Overrides for auto-calculated fields
   age_group_override: string | null;
   size_category_override: string | null;
+
+  // Title upgrade option (empwrDefaults.ts:45)
+  is_title_upgrade: boolean;
 }
 
 const initialState: EntryFormV2State = {
@@ -66,6 +69,7 @@ const initialState: EntryFormV2State = {
   selectedDancers: [],
   age_group_override: null,
   size_category_override: null,
+  is_title_upgrade: false,
 };
 
 interface UseEntryFormV2Props {
@@ -207,9 +211,7 @@ export function useEntryFormV2({
     if (!form.classification_id) {
       errors.push('Classification is required');
     }
-    if (form.selectedDancers.length === 0) {
-      errors.push('At least 1 dancer must be selected');
-    }
+    // Allow 0 dancers - can be attached later. Summary submission will validate.
     if (form.selectedDancers.length > 0 && !effectiveAgeGroup) {
       errors.push('Cannot determine age group - please select manually');
     }
@@ -245,6 +247,7 @@ export function useEntryFormV2({
       title: '',
       choreographer: '',
       special_requirements: '',
+      is_title_upgrade: false,
       // Keep: category, classification, selectedDancers, overrides
     }));
   }, []);
