@@ -140,7 +140,7 @@ export default function ReservationRejected({
 
           <Section style={{ textAlign: 'center', padding: '20px 40px' }}>
             <Button href={portalUrl} style={gradientButton(primaryColor, secondaryColor)}>
-              Go to Portal
+              Go to Dashboard
             </Button>
           </Section>
 

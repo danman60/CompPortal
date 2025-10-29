@@ -4,6 +4,31 @@ import { useState } from 'react';
 import { Badge } from '@/components/rebuild/ui/Badge';
 import { Button } from '@/components/rebuild/ui/Button';
 
+/**
+ * Get last action text based on reservation status
+ */
+function getLastAction(reservation: Reservation): string {
+  if (reservation.invoicePaid) {
+    return 'Marked Paid';
+  }
+
+  switch (reservation.status) {
+    case 'invoiced':
+      return 'Invoice Sent';
+    case 'summarized':
+      return 'Summary Sent';
+    case 'approved':
+    case 'adjusted':
+      return 'Reservation Approved';
+    case 'pending':
+      return 'Reservation Sent';
+    case 'rejected':
+      return 'Reservation Rejected';
+    default:
+      return 'Unknown';
+  }
+}
+
 interface Reservation {
   id: string;
   studioName?: string;
@@ -95,6 +120,7 @@ export function ReservationTable({
               const isInvoiced = reservation.status === 'invoiced';
               const needsInvoice = isSummarized && !reservation.invoiceId;
               const canMarkPaid = isInvoiced && reservation.invoiceId && !reservation.invoicePaid;
+              const isPaid = reservation.invoicePaid === true;
 
               return (
                 <tr key={reservation.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
@@ -127,7 +153,8 @@ export function ReservationTable({
                     <Badge status={reservation.status || 'pending' as any} />
                   </td>
                   <td className="px-4 py-4 text-white text-sm">
-                    {formatDate(reservation.updatedAt)}
+                    <div className="font-medium">{getLastAction(reservation)}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{formatDate(reservation.updatedAt)}</div>
                   </td>
                   <td className="px-4 py-4 text-right text-white font-medium">
                     {reservation.invoiceAmount ? `$${reservation.invoiceAmount.toFixed(2)}` : '—'}
@@ -174,7 +201,10 @@ export function ReservationTable({
                           Mark as Paid
                         </Button>
                       )}
-                      {!isPending && !needsInvoice && !canMarkPaid && (
+                      {isPaid && (
+                        <span className="text-green-400 text-sm font-semibold">✓ Complete!</span>
+                      )}
+                      {!isPending && !needsInvoice && !canMarkPaid && !isPaid && (
                         <span className="text-gray-500 text-sm">—</span>
                       )}
                     </div>

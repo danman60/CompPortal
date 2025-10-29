@@ -91,7 +91,7 @@ export default function ReservationApproved({
 
           <Section style={{textAlign: 'center', padding: '30px 40px'}}>
             <Button href={portalUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
-              Go to Portal
+              Go to Dashboard
             </Button>
           </Section>
 

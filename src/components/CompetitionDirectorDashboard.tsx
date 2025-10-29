@@ -203,7 +203,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
         </p>
         <MotivationalQuote />
 
-        {/* Reservation Pipeline Button - CD only */}
+        {/* Studio Pipeline Button - CD only */}
         {!isAdmin && (
           <Link
             href="/dashboard/reservation-pipeline"
@@ -211,7 +211,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
           >
             <div className="flex items-center justify-center gap-3">
               <Target size={28} strokeWidth={2} />
-              <span className="text-xl">Reservation Pipeline</span>
+              <span className="text-xl">Studio Pipeline</span>
               <span className="text-sm opacity-80">→</span>
             </div>
             <div className="text-xs mt-1 opacity-90">Manage all studio reservations from request to payment in one view</div>

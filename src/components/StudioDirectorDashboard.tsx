@@ -25,7 +25,32 @@ interface StudioDirectorDashboardProps {
 }
 
 // Quick action cards for SD
-const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [];
+const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
+  {
+    id: 'scheduling',
+    icon: '📅',
+    title: 'Scheduling',
+    description: 'View your competition schedule',
+    disabled: true,
+    comingSoon: true,
+  },
+  {
+    id: 'marks',
+    icon: '📊',
+    title: 'Marks',
+    description: 'View scores and adjudications',
+    disabled: true,
+    comingSoon: true,
+  },
+  {
+    id: 'media',
+    icon: '📹',
+    title: 'Media & Livestream',
+    description: 'Access photos, videos, and live coverage',
+    disabled: true,
+    comingSoon: true,
+  },
+];
 
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioCode, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);

@@ -8,6 +8,7 @@ import {
   Section,
   Text,
   Hr,
+  Button,
 } from '@react-email/components';
 import { emailTheme, gradientButton, defaultBranding } from './theme';
 
@@ -21,6 +22,7 @@ interface EntrySubmittedProps {
   sizeCategory: string;
   participantCount: number;
   entryFee: number;
+  portalUrl?: string;
   tenantBranding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -37,10 +39,12 @@ export default function EntrySubmitted({
   sizeCategory,
   participantCount,
   entryFee,
+  portalUrl,
   tenantBranding,
 }: EntrySubmittedProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
   const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
+  const dashboardUrl = portalUrl || 'https://www.compsync.net/dashboard';
 
   return (
     <Html>
@@ -122,6 +126,12 @@ export default function EntrySubmitted({
               <li>Check your invoice for payment information</li>
               <li>Watch for schedule updates closer to competition date</li>
             </ul>
+          </Section>
+
+          <Section style={{textAlign: 'center', padding: '20px 40px'}}>
+            <Button href={dashboardUrl} style={{...gradientButton(primaryColor, secondaryColor), fontSize: '14px', padding: '12px 32px'}}>
+              Go to Dashboard
+            </Button>
           </Section>
 
           <Hr style={emailTheme.hr} />

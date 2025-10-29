@@ -29,25 +29,25 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
             <>
               {/* Tooltip above CARD */}
               {stat.tooltip && (
-                <div className="text-xs text-purple-300 font-medium mb-2">
+                <div className="text-xs text-purple-300/80 font-medium mb-1.5">
                   {stat.tooltip}
                 </div>
               )}
-              <div className="text-3xl mb-3" aria-hidden>
+              <div className="text-2xl mb-2 opacity-80" aria-hidden>
                 {stat.icon}
               </div>
-              <div className={`text-4xl font-bold leading-tight ${stat.color || 'text-white'} ${hasUnpaidInvoices ? 'relative' : ''}`}>
+              <div className={`text-3xl font-bold leading-tight ${stat.color || 'text-white'} ${hasUnpaidInvoices ? 'relative' : ''}`}>
                 {stat.value}
                 {hasUnpaidInvoices && (
-                  <span className="absolute -top-2 -right-6 flex h-6 w-6">
+                  <span className="absolute -top-2 -right-6 flex h-5 w-5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-6 w-6 bg-red-500 text-white text-xs items-center justify-center font-bold">
+                    <span className="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-xs items-center justify-center font-bold">
                       {stat.value}
                     </span>
                   </span>
                 )}
               </div>
-              <div className="text-sm text-gray-300 mt-3 font-medium">{stat.label}</div>
+              <div className="text-xs text-gray-400 mt-2 font-normal tracking-wide">{stat.label}</div>
             </>
           );
 

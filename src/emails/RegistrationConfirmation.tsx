@@ -8,8 +8,9 @@ import {
   Section,
   Text,
   Hr,
+  Button,
 } from '@react-email/components';
-import { emailTheme, defaultBranding } from './theme';
+import { emailTheme, gradientButton, defaultBranding } from './theme';
 
 interface RegistrationConfirmationProps {
   studioName: string;
@@ -17,6 +18,7 @@ interface RegistrationConfirmationProps {
   competitionYear: number;
   competitionDate?: string;
   contactEmail: string;
+  portalUrl?: string;
   tenantBranding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -29,9 +31,12 @@ export default function RegistrationConfirmation({
   competitionYear,
   competitionDate,
   contactEmail,
+  portalUrl,
   tenantBranding,
 }: RegistrationConfirmationProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
+  const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
+  const dashboardUrl = portalUrl || 'https://www.compsync.net/dashboard';
 
   return (
     <Html>
@@ -64,6 +69,12 @@ export default function RegistrationConfirmation({
             <li>Important competition information</li>
             <li>Venue and logistics details</li>
           </ul>
+
+          <Section style={{textAlign: 'center', padding: '20px 40px'}}>
+            <Button href={dashboardUrl} style={{...gradientButton(primaryColor, secondaryColor), fontSize: '14px', padding: '12px 32px'}}>
+              Go to Dashboard
+            </Button>
+          </Section>
 
           <Hr style={emailTheme.hr} />
 

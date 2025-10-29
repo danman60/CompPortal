@@ -8,7 +8,7 @@ import {
   Section,
   Text,
   Hr,
-  Link,
+  Button,
 } from '@react-email/components';
 import { emailTheme, gradientButton, defaultBranding } from './theme';
 
@@ -88,9 +88,9 @@ export default function MissingMusicReminder({
               Music files must be in MP3, WAV, M4A, or AAC format.
             </Text>
             <div style={{textAlign: 'center'}}>
-              <Link href={portalUrl} style={gradientButton(primaryColor, secondaryColor)}>
-                Go to Portal
-              </Link>
+              <Button href={portalUrl} style={gradientButton(primaryColor, secondaryColor)}>
+                Go to Dashboard
+              </Button>
             </div>
           </Section>
 

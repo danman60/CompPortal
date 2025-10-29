@@ -30,6 +30,7 @@ export interface RegistrationConfirmationData {
   competitionYear: number;
   competitionDate?: string;
   contactEmail: string;
+  portalUrl?: string;
   tenantBranding?: TenantBranding;
 }
 
@@ -76,6 +77,7 @@ export interface EntrySubmittedData {
   sizeCategory: string;
   participantCount: number;
   entryFee: number;
+  portalUrl?: string;
   tenantBranding?: TenantBranding;
 }
 

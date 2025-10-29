@@ -49,10 +49,10 @@ export function RoutinesPageContainer() {
       {/* Header */}
       <div className="mb-6">
         <Link
-          href="/dashboard/director-panel"
+          href="/dashboard"
           className="text-white/60 hover:text-white transition-colors inline-flex items-center gap-2 mb-4"
         >
-          ← Back to Director Panel
+          ← Back to Dashboard
         </Link>
 
         <div className="flex items-center justify-between">

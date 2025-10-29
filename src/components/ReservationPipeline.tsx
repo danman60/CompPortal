@@ -251,7 +251,7 @@ export default function ReservationPipeline() {
 
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">🎯 Reservation Pipeline</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">🎯 Studio Pipeline</h1>
           <p className="text-gray-400">
             Manage all studio reservations from request to payment in one unified dashboard
           </p>
