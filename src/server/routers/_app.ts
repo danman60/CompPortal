@@ -10,7 +10,7 @@ import { lookupRouter } from './lookup';
 import { invoiceRouter } from './invoice';
 import { emailRouter } from './email';
 import { schedulingRouter } from './scheduling';
-import { scheduleBuilderRouter } from './scheduleBuilder';
+// import { scheduleBuilderRouter } from './scheduleBuilder'; // Disabled - missing schedules table in Prisma
 import { scoringRouter } from './scoring';
 import { judgesRouter } from './judges';
 import { analyticsRouter } from './analytics';
@@ -53,7 +53,7 @@ export const appRouter = router({
   invoice: invoiceRouter,
   email: emailRouter,
   scheduling: schedulingRouter,
-  scheduleBuilder: scheduleBuilderRouter,
+  // scheduleBuilder: scheduleBuilderRouter, // Disabled - missing schedules table
   scoring: scoringRouter,
   judges: judgesRouter,
   analytics: analyticsRouter,

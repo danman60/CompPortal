@@ -572,7 +572,9 @@ export const dancerRouter = router({
               studios: { connect: { id: input.studio_id } },
               tenants: { connect: { id: studio.tenant_id } },
               ...data,
-              date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+              // Bug Fix: Don't use new Date() - Prisma accepts ISO string directly
+              // This prevents timezone conversion issues with date-only values
+              date_of_birth: date_of_birth || undefined,
               gender: gender ? gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase() : undefined,
               status: 'active',
             },
@@ -582,9 +584,32 @@ export const dancerRouter = router({
 
       const successful = results.filter((r) => r.status === 'fulfilled').length;
       const failed = results.filter((r) => r.status === 'rejected').length;
+
+      // Bug Fix: Provide detailed error messages with row numbers and field info
       const errors = results
         .filter((r) => r.status === 'rejected')
-        .map((r: any) => r.reason?.message || 'Unknown error');
+        .map((r: any, rejectedIndex) => {
+          // Find the original dancer data for this failed import
+          const allResultIndices = results.map((result, idx) => ({ result, idx }));
+          const rejectedResults = allResultIndices.filter(item => item.result.status === 'rejected');
+          const originalIndex = rejectedResults[rejectedIndex]?.idx || rejectedIndex;
+          const dancer = input.dancers[originalIndex];
+          const reason = r.reason;
+
+          // Handle Prisma error codes
+          if (reason?.code === 'P2002') {
+            // Unique constraint violation
+            const fields = reason.meta?.target?.join(', ') || 'field';
+            return `Row ${originalIndex + 2}: ${dancer?.first_name || 'Unknown'} ${dancer?.last_name || ''} - Duplicate ${fields}`;
+          } else if (reason?.code === 'P2003') {
+            // Foreign key constraint violation
+            return `Row ${originalIndex + 2}: ${dancer?.first_name || 'Unknown'} ${dancer?.last_name || ''} - Invalid reference`;
+          } else if (reason?.message) {
+            return `Row ${originalIndex + 2}: ${dancer?.first_name || 'Unknown'} ${dancer?.last_name || ''} - ${reason.message}`;
+          } else {
+            return `Row ${originalIndex + 2}: ${dancer?.first_name || 'Unknown'} ${dancer?.last_name || ''} - Unknown error`;
+          }
+        });
 
       // Get the created dancers from successful results
       const createdDancers = results

@@ -1,5 +1,6 @@
-first_name,last_name,date_of_birth,gender,email,skill_level,favorite_color,shoe_size,allergies,extra_field
-Elizabeth,Cox,05/15/2010,Female,elizabeth.c@example.com,Advanced,Blue,7,None,ignored
-Christopher,Richardson,03/22/2009,Male,chris.r@example.com,Intermediate,Red,9,Peanuts,also_ignored
-Natalie,Cooper,11/08/2011,Female,natalie.c@example.com,Beginner,Green,6,Dairy,extra_data
-Ryan,Bailey,07/12/2010,Male,ryan.b@example.com,Advanced,Yellow,8,None,more_data
+first_name,last_name,date_of_birth,gender,email,favorite_color,shoe_size,notes,custom_field_1
+Quinn,Taylor,01/15/2012,Female,quinn.t@example.com,Blue,7,Loves ballet,Custom Value 1
+Ryan,Moore,03/22/2011,Male,ryan.m@example.com,Red,8,Tap specialist,Custom Value 2
+Sara,White,06/10/2010,Female,sara.w@example.com,Green,6.5,Contemporary,Custom Value 3
+Tom,Harris,08/15/2013,Male,tom.h@example.com,Yellow,9,Hip hop,Custom Value 4
+Uma,Clark,12/01/2009,Female,uma.c@example.com,Purple,7.5,Jazz dancer,Custom Value 5

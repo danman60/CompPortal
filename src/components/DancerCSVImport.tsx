@@ -94,18 +94,9 @@ export default function DancerCSVImport() {
     }
   }, [currentUser]);
 
-  const importMutation = trpc.dancer.batchCreate.useMutation({
-    onSuccess: (result) => {
-      setImportStatus('success');
-      setTimeout(() => {
-        router.push('/dashboard/dancers');
-      }, 2000);
-    },
-    onError: (error) => {
-      setImportStatus('error');
-      console.error('Import error:', error);
-    },
-  });
+  // Bug Fix: Remove onSuccess/onError to avoid race condition
+  // Handle success/error logic in handleImport function instead
+  const importMutation = trpc.dancer.batchCreate.useMutation();
 
   const parseExcel = (workbook: ExcelJS.Workbook, sheetName: string): ParsedDancer[] => {
     const worksheet = workbook.getWorksheet(sheetName);

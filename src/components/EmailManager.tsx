@@ -11,12 +11,10 @@ type EmailType =
   | 'reservation_rejected'
   | 'routine_summary_submitted'
   | 'invoice_received'
-  | 'payment_confirmed'
   | 'entry_submitted'
-  | 'missing_music'
-  | 'studio_approved'
-  | 'studio_rejected'
-  | 'studio_profile_submitted';
+  | 'payment_confirmed'
+  | 'studio_profile_submitted'
+  | 'missing_music';
 
 interface EmailPreferenceConfig {
   label: string;
@@ -166,18 +164,6 @@ const emailPreferences: Record<EmailType, EmailPreferenceConfig> = {
     label: 'Missing Music Reminder',
     description: 'Reminders to upload missing music files',
     icon: '🎵',
-    userType: 'SD',
-  },
-  studio_approved: {
-    label: 'Studio Approved',
-    description: 'Welcome email when your studio is approved',
-    icon: '🎉',
-    userType: 'SD',
-  },
-  studio_rejected: {
-    label: 'Studio Rejected',
-    description: 'When your studio registration is rejected',
-    icon: '⚠️',
     userType: 'SD',
   },
   studio_profile_submitted: {

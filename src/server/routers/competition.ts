@@ -579,6 +579,7 @@ export const competitionRouter = router({
       if (original.competition_sessions.length > 0) {
         await prisma.competition_sessions.createMany({
           data: original.competition_sessions.map((session) => ({
+            tenant_id: ctx.tenantId!,
             competition_id: newCompetition.id,
             session_name: session.session_name,
             session_number: session.session_number,
@@ -595,6 +596,7 @@ export const competitionRouter = router({
       if (original.competition_locations.length > 0) {
         await prisma.competition_locations.createMany({
           data: original.competition_locations.map((location) => ({
+            tenant_id: ctx.tenantId!,
             competition_id: newCompetition.id,
             name: location.name,
             address: location.address,

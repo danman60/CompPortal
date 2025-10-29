@@ -1,0 +1,6 @@
+first_name,last_name,date_of_birth,gender,email
+Grace,Lee,01/15/2012,Female,grace.lee1@example.com
+Grace,Lee,01/15/2012,Female,grace.lee2@example.com
+Henry,Park,03/22/2013,Male,henry.park@example.com
+Emma,Johnson,05/15/2010,Female,emma.j.duplicate@example.com
+Ivy,Chen,06/10/2011,Female,ivy.chen@example.com

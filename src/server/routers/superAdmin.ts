@@ -28,7 +28,7 @@ const userManagementRouter = router({
       z
         .object({
           tenantId: z.string().uuid().optional(),
-          role: z.enum(['studio_director', 'competition_director', 'super_admin', 'judge']).optional(),
+          role: z.enum(['studio_director', 'competition_director', 'super_admin']).optional(),
           search: z.string().optional(),
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
@@ -111,7 +111,7 @@ const userManagementRouter = router({
     .input(
       z.object({
         userId: z.string().uuid(),
-        newRole: z.enum(['studio_director', 'competition_director', 'super_admin', 'judge']),
+        newRole: z.enum(['studio_director', 'competition_director', 'super_admin']),
       })
     )
     .mutation(async ({ ctx, input }) => {

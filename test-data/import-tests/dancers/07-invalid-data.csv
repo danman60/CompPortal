@@ -1,7 +1,6 @@
-first_name,last_name,date_of_birth,gender,email,phone,skill_level
-Grace,Turner,13/45/2010,Female,grace.turner@example.com,555-1201,Advanced
-Henry,Collins,02/30/2009,Male,henry.collins@example.com,555-1301,Intermediate
-Victoria,Edwards,2025-01-01,Female,not-an-email,555-1401,Expert
-Samuel,Stewart,1990-05-15,Male,samuel.s@example.com,not-a-phone,Beginner
-Nora,Morris,15/15/2011,Unknown,nora.m@example.com,555-1601,Advanced
-Andrew,Murphy,invalid-date,Male,andrew.m@example.com,555-1701,Intermediate
+first_name,last_name,date_of_birth,gender,email
+,Johnson,05/15/2010,Female,valid@example.com
+Michael,,03/22/2008,Male,valid2@example.com
+Sophia,Williams,13/32/2010,Female,valid3@example.com
+James,Brown,12/25/2030,Male,valid4@example.com
+Olivia,Davis,06/10/2012,Female,not-an-email

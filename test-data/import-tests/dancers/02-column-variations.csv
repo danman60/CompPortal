@@ -1,6 +1,6 @@
 First Name,Last Name,DOB,Gender,Email,Phone Number,Parent Name,Parent Email,Parent Phone,Skill Level
-Ava,Martinez,06/12/2010,Female,ava.m@example.com,555-0601,Carlos Martinez,carlos.m@example.com,555-0600,Intermediate
-Ethan,Garcia,04/18/2009,Male,ethan.g@example.com,555-0701,Maria Garcia,maria.g@example.com,555-0700,Advanced
-Isabella,Rodriguez,2011-09-22,Female,isabella.r@example.com,555-0801,Jose Rodriguez,jose.r@example.com,555-0800,Beginner
-Noah,Wilson,08/30/2012,Male,noah.w@example.com,555-0901,Jennifer Wilson,jennifer.w@example.com,555-0900,Intermediate
-Mia,Anderson,10/14/2008,Female,mia.a@example.com,555-1001,Robert Anderson,robert.a@example.com,555-1000,Advanced
+Ava,Martinez,06/12/2010,Female,ava.m@example.com,555-0601,Maria Martinez,maria.m@example.com,555-0600,Intermediate
+Ethan,Garcia,04/18/2009,Male,ethan.g@example.com,555-0701,Carlos Garcia,carlos.g@example.com,555-0700,Advanced
+Isabella,Rodriguez,2011-09-22,Female,isabella.r@example.com,555-0801,Ana Rodriguez,ana.r@example.com,555-0800,Beginner
+Noah,Wilson,05/30/2008,Male,noah.w@example.com,555-0901,David Wilson,david.w@example.com,555-0900,Intermediate
+Mia,Anderson,10/14/2008,Female,mia.a@example.com,555-1001,Jennifer Anderson,jennifer.a@example.com,555-1000,Advanced

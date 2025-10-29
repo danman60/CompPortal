@@ -14,12 +14,10 @@ const emailTypeSchema = z.enum([
   'reservation_rejected',
   'routine_summary_submitted',
   'invoice_received',
-  'payment_confirmed',
   'entry_submitted',
-  'missing_music',
-  'studio_approved',
-  'studio_rejected',
+  'payment_confirmed',
   'studio_profile_submitted',
+  'missing_music',
 ]);
 
 export const emailPreferencesRouter = router({
