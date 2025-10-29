@@ -572,8 +572,8 @@ export const dancerRouter = router({
               studios: { connect: { id: input.studio_id } },
               tenants: { connect: { id: studio.tenant_id } },
               ...data,
-              // Convert ISO date string to Date object (required by Prisma DateTime field)
-              date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+              // Convert ISO date string to Date object in UTC to prevent timezone shifts
+              date_of_birth: date_of_birth ? new Date(date_of_birth + 'T00:00:00Z') : undefined,
               gender: gender ? gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase() : undefined,
               status: 'active',
             },
