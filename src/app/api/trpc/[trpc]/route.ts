@@ -38,9 +38,9 @@ const handler = async (req: Request) => {
 
       // If user is a studio director, fetch their studio
       let studioId: string | null = null;
-      if (userProfile?.role === 'studio_director') {
+      if (userProfile?.role === 'studio_director' && userProfile?.tenant_id) {
         const studio = await prisma.studios.findFirst({
-          where: { owner_id: user.id },
+          where: { tenant_id: userProfile.tenant_id },
           select: { id: true },
         });
         studioId = studio?.id || null;
