@@ -21,6 +21,7 @@ interface InvoiceDeliveryProps {
   routineCount: number;
   invoiceUrl: string;
   dueDate?: string;
+  portalUrl?: string;
   tenantBranding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -36,10 +37,12 @@ export default function InvoiceDelivery({
   routineCount,
   invoiceUrl,
   dueDate,
+  portalUrl,
   tenantBranding,
 }: InvoiceDeliveryProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
   const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
+  const dashboardUrl = portalUrl || 'https://www.compsync.net/dashboard';
 
   return (
     <Html>
@@ -99,6 +102,12 @@ export default function InvoiceDelivery({
             You can download and print your invoice from the portal. If you have any questions
             about this invoice, please don't hesitate to contact us.
           </Text>
+
+          <Section style={{textAlign: 'center', padding: '20px 40px'}}>
+            <Button href={dashboardUrl} style={{...gradientButton(primaryColor, secondaryColor), fontSize: '14px', padding: '12px 32px'}}>
+              Go to Dashboard
+            </Button>
+          </Section>
 
           <Hr style={emailTheme.hr} />
 

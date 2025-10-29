@@ -8,8 +8,9 @@ import {
   Section,
   Text,
   Hr,
+  Button,
 } from '@react-email/components';
-import { emailTheme, defaultBranding } from './theme';
+import { emailTheme, defaultBranding, gradientButton } from './theme';
 
 interface PaymentConfirmedProps {
   studioName: string;
@@ -19,6 +20,7 @@ interface PaymentConfirmedProps {
   paymentStatus: 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled';
   invoiceNumber?: string;
   paymentDate: string;
+  portalUrl?: string;
   tenantBranding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -33,9 +35,12 @@ export default function PaymentConfirmed({
   paymentStatus,
   invoiceNumber,
   paymentDate,
+  portalUrl,
   tenantBranding,
 }: PaymentConfirmedProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
+  const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
+  const dashboardUrl = portalUrl || 'https://www.compsync.net/dashboard';
 
   const statusEmoji = {
     pending: '⏳',
@@ -69,7 +74,13 @@ export default function PaymentConfirmed({
             Your payment status for <strong>{competitionName} ({competitionYear})</strong> has been updated.
           </Text>
 
-          <Section style={{...emailTheme.successBox, borderLeft: `4px solid ${primaryColor}`}}>
+          <Section style={{
+            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+            borderRadius: '12px',
+            padding: '24px 30px',
+            margin: '24px 40px',
+            borderLeft: `4px solid ${primaryColor}`,
+          }}>
             {invoiceNumber && (
               <>
                 <Text style={emailTheme.label}>Invoice Number</Text>
@@ -106,6 +117,12 @@ export default function PaymentConfirmed({
               Your payment is pending. Please ensure payment is submitted before the deadline to secure your spot.
             </Text>
           )}
+
+          <Section style={{textAlign: 'center', padding: '30px 40px'}}>
+            <Button href={dashboardUrl} style={gradientButton(primaryColor, secondaryColor)}>
+              View Dashboard
+            </Button>
+          </Section>
 
           <Hr style={emailTheme.hr} />
 

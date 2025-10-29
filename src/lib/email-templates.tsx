@@ -42,6 +42,7 @@ export interface InvoiceDeliveryData {
   routineCount: number;
   invoiceUrl: string;
   dueDate?: string;
+  portalUrl?: string;
   tenantBranding?: TenantBranding;
 }
 
@@ -102,6 +103,7 @@ export interface PaymentConfirmedData {
   paymentStatus: 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled';
   invoiceNumber?: string;
   paymentDate: string;
+  portalUrl?: string;
   tenantBranding?: TenantBranding;
 }
 

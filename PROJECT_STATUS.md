@@ -1,15 +1,52 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-26 (Session 19 - SD UX Improvements)
+**Last Updated:** 2025-10-28 (Session 20 - Email Integration & CD View Fixes)
 
 ---
 
-## Current Status: Parallel Rebuild - Entry Creation Build (85%)
+## Current Status: Parallel Rebuild - Entry Creation Build (87%)
 
-### Latest Work: Session 19 - Studio Director UX Improvements
+### Latest Work: Session 20 - Email Integration & Competition Director View Fixes
 
-**Date:** October 26, 2025
-**Status:** ✅ 11 UX improvements complete, all builds passing, ready for production testing
+**Date:** October 28-29, 2025
+**Status:** ✅ Email integration complete, CD summaries page fixed, all builds passing (64/64 pages)
+
+**SESSION 20 ACHIEVEMENTS:**
+
+1. ✅ **Mailgun Email Integration** - Custom branded signup confirmation emails
+   - React Email template (SignupConfirmation.tsx) with tenant branding
+   - Edge function v4/v5 with HTML generation + Mailgun API integration
+   - Tenant-scoped confirmation redirects (tenant.subdomain.compsync.net/login)
+   - Email theme system with gradients and info boxes
+
+2. ✅ **Competition Director Summaries Page** - Fixed business logic per Phase 1 spec
+   - Removed approve/reject buttons (wrong per spec line 196)
+   - Added "Create Invoice" action for summarized reservations
+   - Added studio filter and payment status filter (Awaiting Invoice, Invoiced, Paid)
+   - Status badges with proper workflow: summarized → invoiced → closed
+
+3. ✅ **Deleted Competitions Filter** - CD routines page cleanup
+   - Added `where.deleted_at = null` to competition.getAll router (line 84)
+   - Prevents deleted competitions from appearing in dropdowns
+
+4. ✅ **Tenant Isolation Verification** - Confirmed multi-tenant security
+   - Verified summary.getAll, competition.getAll, studio.getAll all filter by tenant_id
+   - No cross-tenant data leakage
+
+**Files Modified:**
+- src/emails/SignupConfirmation.tsx (complete rebuild)
+- supabase/functions/signup-user/index.ts (v4 → v5, Mailgun integration)
+- src/components/RoutineSummaries.tsx (CD view rebuild)
+- src/server/routers/competition.ts (deleted filter)
+
+**Commits:** 2db39ca, ed25959, a101ce3
+**Build Status:** ✅ 64/64 pages passing
+
+**Pending Next Session:**
+- Email template fixes (user has image with red pen marks showing issues)
+- Update ALL email notifications with corrected formatting
+
+---
 
 **SESSION 19 ACHIEVEMENTS (11 UX Improvements):**
 
@@ -241,7 +278,23 @@ e44908b - fix: Add tenant_id to lookup tables via migration (Oct 26)
 
 ## 📈 Next Session Priorities
 
-### Immediate: Entry Creation Testing & Refinement (Session 2 of 4)
+### Immediate: Email Template Formatting Fixes (HIGH PRIORITY)
+
+**Issue:** User reported email templates "look weird" with red pen marks in image
+**Scope:** ALL email notifications need formatting fixes
+**Files to Review:**
+- src/emails/SignupConfirmation.tsx (React Email template)
+- src/emails/RoutineSummarySubmitted.tsx (if exists)
+- src/emails/theme.ts (shared theme system)
+- supabase/functions/signup-user/index.ts (inline HTML generation)
+- Any other email templates in system
+
+**Action Required:**
+- User will provide image with specific issues marked in red pen
+- Apply fixes across all email notification templates
+- Ensure consistent branding and formatting
+
+### Secondary: Entry Creation Testing & Refinement (Session 2 of 4)
 
 **Session 1 Complete:**
 - ✅ Route created at `/dashboard/entries-rebuild/create`
@@ -272,6 +325,6 @@ e44908b - fix: Add tenant_id to lookup tables via migration (Oct 26)
 
 ---
 
-**Last Deployment:** Oct 26, 2025 (Session 18 - Entry creation foundation)
-**Next Session Focus:** Entry creation testing & refinement
-**Production Status:** ✅ STABLE - Rebuild 85% complete, entry creation foundation deployed
+**Last Deployment:** Oct 28-29, 2025 (Session 20 - Email integration & CD view fixes)
+**Next Session Focus:** Email template formatting fixes (HIGH PRIORITY)
+**Production Status:** ✅ STABLE - Rebuild 87% complete, email integration deployed
