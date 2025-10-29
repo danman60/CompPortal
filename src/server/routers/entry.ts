@@ -957,15 +957,40 @@ export const entryRouter = router({
       let entrySizeCategoryId = data.entry_size_category_id;
 
       if (!ageGroupId) {
-        const defaultAge = await prisma.age_groups.findFirst({ orderBy: { sort_order: 'asc' } });
-        if (!defaultAge) throw new Error('No age groups configured');
+        const defaultAge = await prisma.age_groups.findFirst({
+          where: { tenant_id: ctx.tenantId },
+          orderBy: { sort_order: 'asc' }
+        });
+        if (!defaultAge) throw new Error('No age groups configured for your organization');
         ageGroupId = defaultAge.id;
       }
 
       if (!entrySizeCategoryId) {
-        const defaultSize = await prisma.entry_size_categories.findFirst({ orderBy: { sort_order: 'asc' }, select: { id: true } });
-        if (!defaultSize) throw new Error('No size categories configured');
+        const defaultSize = await prisma.entry_size_categories.findFirst({
+          where: { tenant_id: ctx.tenantId },
+          orderBy: { sort_order: 'asc' },
+          select: { id: true }
+        });
+        if (!defaultSize) throw new Error('No size categories configured for your organization');
         entrySizeCategoryId = defaultSize.id;
+      }
+
+      // 🔐 TENANT ISOLATION CHECKS (prevent cross-tenant fee calculation)
+      // Verify entry_size_category belongs to correct tenant BEFORE fee calculation
+      if (entrySizeCategoryId) {
+        const sizeCategoryCheck = await prisma.entry_size_categories.findUnique({
+          where: {
+            id: entrySizeCategoryId,
+            tenant_id: ctx.tenantId,
+          },
+          select: { id: true },
+        });
+        if (!sizeCategoryCheck) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid entry size category for your organization',
+          });
+        }
       }
 
       // 🔐 BUSINESS RULE VALIDATIONS (Wave 2.2)
@@ -975,6 +1000,7 @@ export const entryRouter = router({
       validateMinimumParticipants(participantCount);
 
       // Validate participant count matches size category constraints
+      // NOTE: Validator lacks tenant context, but we verified ID above
       if (entrySizeCategoryId && participantCount > 0) {
         await validateEntrySizeCategory(entrySizeCategoryId, participantCount);
       }

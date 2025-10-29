@@ -33,7 +33,7 @@ const handler = async (req: Request) => {
       // Fetch user profile with role and studio information
       const userProfile = await prisma.user_profiles.findUnique({
         where: { id: user.id },
-        select: { role: true },
+        select: { role: true, tenant_id: true },
       });
 
       // If user is a studio director, fetch their studio
@@ -46,13 +46,14 @@ const handler = async (req: Request) => {
         studioId = studio?.id || null;
       }
 
-      // No tenant fallback - tenant must be detected from subdomain
-      // If no tenant detected, user will be redirected to /select-tenant page
+      // Fallback: Use tenant_id from user profile if header is missing
+      const effectiveTenantId = tenantId || userProfile?.tenant_id || null;
+
       return {
         userId: user.id,
         userRole: userProfile?.role || null,
         studioId,
-        tenantId,
+        tenantId: effectiveTenantId,
         tenantData,
       };
     } catch (error) {
