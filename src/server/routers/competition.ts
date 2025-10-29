@@ -80,6 +80,9 @@ export const competitionRouter = router({
         where.is_public = isPublic;
       }
 
+      // Filter out deleted competitions
+      where.deleted_at = null;
+
       const [competitions, total] = await Promise.all([
         prisma.competitions.findMany({
           where,
