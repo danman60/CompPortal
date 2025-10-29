@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
+import { isSuperAdmin } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase-server';
@@ -106,6 +107,11 @@ export const reservationRouter = router({
       const { studioId, competitionId, status, paymentStatus, limit = 50, offset = 0 } = input ?? {};
 
       const where: any = {};
+
+      // Tenant isolation (required for all non-super-admins)
+      if (!isSuperAdmin(ctx.userRole) && ctx.tenantId) {
+        where.tenant_id = ctx.tenantId;
+      }
 
       // Studio directors can only see their own studio's reservations
       if (isStudioDirector(ctx.userRole) && ctx.studioId) {

@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
+import { isSuperAdmin } from '@/lib/auth-utils';
 import { logger } from '@/lib/logger';
 
 // Validation schema for dancer input
@@ -50,6 +51,11 @@ export const dancerRouter = router({
       const { studioId, search, status, limit = 50, offset = 0 } = input ?? {};
 
       const where: any = {};
+
+      // Tenant isolation (required for all non-super-admins)
+      if (!isSuperAdmin(ctx.userRole) && ctx.tenantId) {
+        where.tenant_id = ctx.tenantId;
+      }
 
       // Studio directors can only see their own studio's dancers
       if (isStudioDirector(ctx.userRole) && ctx.studioId) {
