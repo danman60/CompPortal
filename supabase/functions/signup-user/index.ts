@@ -82,29 +82,9 @@ serve(async (req) => {
     }
 
     console.log('Auth user created:', authData.user.id, email);
+    // Note: user_profiles record is created automatically by handle_new_user() trigger
 
-    // 4. Create user_profiles record (CRITICAL: ensures tenant_id is set)
-    const { error: profileError } = await supabaseAdmin
-      .from('user_profiles')
-      .insert({
-        id: authData.user.id,
-        tenant_id: tenant_id, // CRITICAL: Multi-tenant isolation
-        role: 'studio_director', // Default role for self-signup
-      });
-
-    if (profileError) {
-      console.error('Profile creation failed:', profileError);
-      // Rollback: delete auth user
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      return new Response(
-        JSON.stringify({ error: 'Profile creation failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('User profile created with tenant_id:', tenant_id);
-
-    // 5. Generate email confirmation token
+    // 4. Generate email confirmation token
     const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email,
@@ -122,7 +102,7 @@ serve(async (req) => {
       );
     }
 
-    // 6. Send confirmation email via Mailgun (TODO: implement)
+    // 5. Send confirmation email via Mailgun (TODO: implement)
     // For now, return the confirmation link
     const confirmationUrl = tokenData.properties.action_link;
 
