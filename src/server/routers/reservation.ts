@@ -31,7 +31,7 @@ const reservationInputSchema = z.object({
   studio_id: z.string().uuid(),
   competition_id: z.string().uuid(),
   location_id: z.string().uuid().optional(),
-  spaces_requested: z.number().int().min(1).max(1000),
+  spaces_requested: z.number().int().min(1).max(300),
   spaces_confirmed: z.number().int().min(0).optional(),
   agent_first_name: z.string().max(100).optional(),
   agent_last_name: z.string().max(100).optional(),

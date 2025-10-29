@@ -93,6 +93,17 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
       return;
     }
 
+    // Confirm large reservations
+    if (formData.spaces_requested > 100) {
+      const confirmed = window.confirm(
+        `You are requesting ${formData.spaces_requested} routines. This is a large registration.\n\n` +
+        `Are you sure this is correct? If this is a typo (e.g., you meant ${Math.floor(formData.spaces_requested / 10)}), please go back and update.`
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       await createReservation.mutateAsync({
         studio_id: studioId,
@@ -217,16 +228,20 @@ export default function ReservationForm({ studioId }: ReservationFormProps) {
               id="spaces_requested"
               required
               min="1"
-              max="1000"
+              max="200"
               value={formData.spaces_requested}
               onChange={(e) => setFormData({ ...formData, spaces_requested: parseInt(e.target.value, 10) || 1 })}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                showErrors && currentStep === 2 && (!formData.spaces_requested || formData.spaces_requested < 1) ? 'border-red-500' : 'border-white/20'
+                showErrors && currentStep === 2 && (!formData.spaces_requested || formData.spaces_requested < 1) ? 'border-red-500' :
+                formData.spaces_requested > 100 ? 'border-yellow-400' : 'border-white/20'
               }`}
               placeholder="Enter number of routines"
             />
             {showErrors && currentStep === 2 && (!formData.spaces_requested || formData.spaces_requested < 1) && (
               <p className="text-red-400 text-sm mt-1">Please enter a valid number of routines</p>
+            )}
+            {formData.spaces_requested > 100 && (
+              <p className="text-yellow-400 text-sm mt-1 font-semibold">⚠️ Large registration: Are you sure you need {formData.spaces_requested} routines?</p>
             )}
             <p className="mt-2 text-sm text-gray-400">
               Number of performance entries you plan to register for this competition.
