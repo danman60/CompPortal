@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
 interface SignupFormData {
@@ -22,8 +20,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
   const checkEmailMutation = trpc.user.checkEmailExists.useMutation();
   const { tenant, isLoading: tenantLoading } = useTenantTheme();
 
@@ -114,25 +110,21 @@ export default function SignupPage() {
         return;
       }
 
-      // Create auth account - user will complete profile in onboarding after email confirmation
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/onboarding`,
-          data: {
-            tenant_id: tenantId, // Required for whitelabel email system
-          },
-        },
+      // Create auth account via edge function (handles tenant_id, user_profiles, and email)
+      const response = await fetch('/api/signup-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          tenant_id: tenantId,
+        }),
       });
 
-      // Sign out immediately to prevent unconfirmed session errors
-      if (data.user && !data.user.email_confirmed_at) {
-        await supabase.auth.signOut();
-      }
+      const result = await response.json();
 
-      if (signUpError) {
-        const msg = signUpError.message || '';
+      if (!response.ok) {
+        const msg = result.error || '';
         if (/already/i.test(msg) || /exists/i.test(msg) || /registered/i.test(msg) || /duplicate/i.test(msg)) {
           setError('This email is already registered. Please sign in or reset your password.');
         } else {
