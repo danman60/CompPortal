@@ -572,9 +572,8 @@ export const dancerRouter = router({
               studios: { connect: { id: input.studio_id } },
               tenants: { connect: { id: studio.tenant_id } },
               ...data,
-              // Bug Fix: Don't use new Date() - Prisma accepts ISO string directly
-              // This prevents timezone conversion issues with date-only values
-              date_of_birth: date_of_birth || undefined,
+              // Convert ISO date string to Date object (required by Prisma DateTime field)
+              date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
               gender: gender ? gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase() : undefined,
               status: 'active',
             },
