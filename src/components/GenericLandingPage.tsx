@@ -27,18 +27,18 @@ export default function GenericLandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
               <div className="text-3xl mb-3">🏢</div>
-              <h3 className="text-lg font-semibold text-white mb-2">Studio Management</h3>
-              <p className="text-gray-300 text-sm">Manage dancers, registrations, and competition entries</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Studio & Event Management</h3>
+              <p className="text-gray-300 text-sm">Manage dancers, registrations, competition entries, reservations, scheduling, and capacity management</p>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-              <div className="text-3xl mb-3">🎯</div>
-              <h3 className="text-lg font-semibold text-white mb-2">Event Operations</h3>
-              <p className="text-gray-300 text-sm">Handle reservations, scheduling, and capacity management</p>
+              <div className="text-3xl mb-3">📹</div>
+              <h3 className="text-lg font-semibold text-white mb-2">Competition Media</h3>
+              <p className="text-gray-300 text-sm">Manage video/photos and view livestream</p>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
               <div className="text-3xl mb-3">💯</div>
-              <h3 className="text-lg font-semibold text-white mb-2">Judge Scoring</h3>
-              <p className="text-gray-300 text-sm">Tablet-optimized scoring interface with real-time results</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Judge Panel</h3>
+              <p className="text-gray-300 text-sm">Instant easy tabulation - Tablet-optimized scoring interface with real-time results</p>
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { getIconFromEmoji } from '@/lib/icons';
 
 interface Stat {
   icon: string; // Emoji
@@ -25,34 +26,36 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
           const isUnpaidInvoices = stat.label.toLowerCase().includes('invoice') && stat.label.toLowerCase().includes('unpaid');
           const hasUnpaidInvoices = isUnpaidInvoices && Number(stat.value) > 0;
 
+          const IconComponent = getIconFromEmoji(stat.icon);
+
           const content = (
             <>
               {/* Tooltip above CARD */}
               {stat.tooltip && (
-                <div className="text-xs text-purple-300/80 font-medium mb-1.5">
+                <div className="text-[10px] text-purple-300/70 font-medium mb-1">
                   {stat.tooltip}
                 </div>
               )}
-              <div className="text-2xl mb-2 opacity-80" aria-hidden>
-                {stat.icon}
+              <div className="mb-1.5 flex justify-center">
+                <IconComponent size={28} strokeWidth={1.5} className="text-purple-300/80" />
               </div>
-              <div className={`text-3xl font-bold leading-tight ${stat.color || 'text-white'} ${hasUnpaidInvoices ? 'relative' : ''}`}>
+              <div className={`text-2xl font-bold leading-tight ${stat.color || 'text-white'} ${hasUnpaidInvoices ? 'relative' : ''}`}>
                 {stat.value}
                 {hasUnpaidInvoices && (
-                  <span className="absolute -top-2 -right-6 flex h-5 w-5">
+                  <span className="absolute -top-1 -right-5 flex h-4 w-4">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-xs items-center justify-center font-bold">
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[10px] items-center justify-center font-bold">
                       {stat.value}
                     </span>
                   </span>
                 )}
               </div>
-              <div className="text-xs text-gray-400 mt-2 font-normal tracking-wide">{stat.label}</div>
+              <div className="text-[10px] text-gray-400/90 mt-1.5 font-light uppercase tracking-wider">{stat.label}</div>
             </>
           );
 
-          const cardClassName = `text-center block rounded-lg p-3 transition-all ${
-            stat.href ? 'hover:bg-white/5' : ''
+          const cardClassName = `text-center block rounded-lg p-4 transition-all ${
+            stat.href ? 'hover:bg-white/5 cursor-pointer' : ''
           } ${hasUnpaidInvoices ? 'animate-pulse-slow border-2 border-red-400/50 bg-red-500/10' : ''}`;
 
           return stat.href ? (
