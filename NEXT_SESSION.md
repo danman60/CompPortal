@@ -1,23 +1,38 @@
 # Next Session Priorities
 
-## 1. Email Template Fixes (IMPORTANT)
+## 1. Complete Dashboard Buttons for Emails (PRIORITY)
 
-**User has image showing issues marked in red pen**
+**Status:** 2/12 templates complete
+**Remaining:** 10 templates need dashboard buttons
 
-Ask user to upload/resend the image showing email template problems.
+**See:** `EMAIL_DASHBOARD_BUTTONS_TODO.md` for complete checklist and pattern
 
-**Files to check/update:**
-- src/emails/SignupConfirmation.tsx (just created tonight)
-- src/emails/RoutineSummarySubmitted.tsx
-- src/emails/theme.ts
-- supabase/functions/signup-user/index.ts (inline HTML email)
-- Any other email notifications in the system
+**User requirement:** "all emails include a 1 click to get back into their dashboard for SD and CD"
 
-**User said:** "when you fix make sure you update all email notifications"
+Templates done:
+- ✅ PaymentConfirmed.tsx
+- ✅ InvoiceDelivery.tsx
+
+Remaining (documented in TODO file):
+- ReservationApproved, ReservationRejected, EntrySubmitted, MissingMusicReminder
+- ReservationSubmitted, RoutineSummarySubmitted, StudioProfileSubmitted
+- RegistrationConfirmation, StudioApproved, WelcomeEmail
 
 ---
 
-## 2. Tonight's Completed Work
+## 2. Email Border Issues (COMPLETED ✅)
+
+**Fixed this session:**
+- PaymentConfirmed.tsx - Border spreading issue resolved
+- EntrySubmitted.tsx - Border spreading issue resolved
+
+**Issue:** Red circle in user's image showed sloppy border alignment. Root cause was spreading theme boxes (successBox, warningBox) that already had borderLeft defined, then overriding it. Fixed by using explicit style objects.
+
+**Note:** Left red circle ("..." menu) was email client UI, not in template code.
+
+---
+
+## 3. Tonight's Completed Work
 
 ✅ **Mailgun Email Integration**
 - SignupConfirmation template created
