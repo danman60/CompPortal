@@ -153,7 +153,7 @@ export function PipelinePageContainer() {
       reservationId: approvalModal.reservationId,
       spacesConfirmed: approvalAmount,
     });
-    refetchCompetitions(); // Refetch to update capacity
+    await refetchCompetitions(); // Await refetch to update capacity numbers
     closeApprovalModal();
   };
 

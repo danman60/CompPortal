@@ -1,0 +1,3 @@
+title,props,dancers,choreographer,category,classification,duration,music_title,extra_field
+Extra Columns Test,Hats,"Dancer TestBulk35, Dancer TestBulk36",Michelle Adams,Jazz,Competitive,180,Uptown Funk,This should be ignored
+Another Extra,None,"Dancer TestBulk37, Dancer TestBulk38",Christopher Lee,Contemporary,Elite,195,River Flows In You,Ignored value

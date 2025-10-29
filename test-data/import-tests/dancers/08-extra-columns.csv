@@ -1,0 +1,5 @@
+first_name,last_name,date_of_birth,gender,email,skill_level,favorite_color,shoe_size,allergies,extra_field
+Elizabeth,Cox,05/15/2010,Female,elizabeth.c@example.com,Advanced,Blue,7,None,ignored
+Christopher,Richardson,03/22/2009,Male,chris.r@example.com,Intermediate,Red,9,Peanuts,also_ignored
+Natalie,Cooper,11/08/2011,Female,natalie.c@example.com,Beginner,Green,6,Dairy,extra_data
+Ryan,Bailey,07/12/2010,Male,ryan.b@example.com,Advanced,Yellow,8,None,more_data

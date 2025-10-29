@@ -1,0 +1,9 @@
+first_name,last_name,date_of_birth,gender,email,skill_level
+José,González,05/15/2010,Male,jose.g@example.com,Advanced
+Chloé,O'Brien,03/22/2009,Female,chloe.o@example.com,Intermediate
+François,Saint-Pierre,11/08/2011,Male,francois.sp@example.com,Beginner
+María,Rodríguez-López,07/12/2010,Female,maria.rl@example.com,Advanced
+André,D'Angelo,12/25/2008,Male,andre.d@example.com,Intermediate
+Zoë,van der Berg,09/14/2011,Female,zoe.vdb@example.com,Beginner
+Søren,Ødegård,04/18/2010,Male,soren.o@example.com,Advanced
+Amélie,Beaumont,08/22/2009,Female,amelie.b@example.com,Intermediate

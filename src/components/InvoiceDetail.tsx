@@ -417,15 +417,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             </div>
           )}
           {otherCredit.amount > 0 && (
-            <div className="flex justify-between py-2 border-b border-white/10">
+            <div className="flex justify-between items-center py-2 border-b border-white/10">
               <span className="text-purple-400">Other Credits{otherCredit.reason && `: ${otherCredit.reason}`}</span>
-              <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
-            </div>
-          )}
-          {otherCredit.amount > 0 && (
-            <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-purple-400">Other Credits{otherCredit.reason && `: ${otherCredit.reason}`}</span>
-              <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
+                <button
+                  onClick={() => setOtherCredit({ amount: 0, reason: "" })}
+                  className="text-red-400 hover:text-red-300 transition-colors"
+                  title="Remove credit"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           )}
 

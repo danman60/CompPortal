@@ -40,6 +40,13 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
 
         <div className="flex gap-3">
           <Button
+            href="/dashboard/entries/import"
+            variant="secondary"
+            title="Import routines from CSV/Excel file"
+          >
+            Import
+          </Button>
+          <Button
             href={createUrl}
             variant="secondary"
             disabled={isRegistrationClosed}

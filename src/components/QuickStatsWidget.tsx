@@ -33,10 +33,10 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
                   {stat.tooltip}
                 </div>
               )}
-              <div className="text-3xl mb-2" aria-hidden>
+              <div className="text-3xl mb-3" aria-hidden>
                 {stat.icon}
               </div>
-              <div className={`text-4xl font-bold ${stat.color || 'text-white'} ${hasUnpaidInvoices ? 'relative' : ''}`}>
+              <div className={`text-4xl font-bold leading-tight ${stat.color || 'text-white'} ${hasUnpaidInvoices ? 'relative' : ''}`}>
                 {stat.value}
                 {hasUnpaidInvoices && (
                   <span className="absolute -top-2 -right-6 flex h-6 w-6">
@@ -47,7 +47,7 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
                   </span>
                 )}
               </div>
-              <div className="text-sm text-gray-400 mt-2">{stat.label}</div>
+              <div className="text-sm text-gray-300 mt-3 font-medium">{stat.label}</div>
             </>
           );
 

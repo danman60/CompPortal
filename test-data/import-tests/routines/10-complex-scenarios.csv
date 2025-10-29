@@ -1,0 +1,7 @@
+Routine Title,prop,Participants,Choreo
+Valid with variations,Hats and scarves,"Dancer TestBulk9, Dancer TestBulk10",Jennifer Adams
+Empty dancers field,Props here,,Michelle Brown
+Mix valid and invalid dancers,None,"Dancer TestBulk11, Fake Name, Dancer TestBulk12",Robert Smith
+Special chars in title: "Dreams & Wishes",Umbrella,"Dancer TestBulk13, Dancer TestBulk14",Sarah O'Connor
+Very long title that exceeds normal expectations for routine titles in most competition systems,Minimal,"Dancer TestBulk15, Dancer TestBulk16",Dr. Elizabeth St. Pierre-Williams III
+Comma in props,Ribbons and chairs with metal legs,,"Anonymous"

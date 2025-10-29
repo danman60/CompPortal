@@ -1,0 +1,4 @@
+title,props,dancers,choreographer
+Nonexistent Dancer,None,"John Smith, Jane Doe, Bob Wilson",Sarah Jones
+Mix Valid Invalid,Chair required,"Dancer TestBulk28, Fake Dancer Name, Dancer TestBulk29",Emily Brown
+All Invalid,None,"Nobody AtAll, Completely Fake, Not Real",Michael Johnson

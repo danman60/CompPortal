@@ -1,0 +1,9 @@
+first_name,last_name,date_of_birth,gender,email,skill_level
+Scarlett,Campbell,05/15/2010,Female,scarlett.c@example.com,Advanced
+Scarlett,Campbell,05/15/2010,Female,scarlett.c@example.com,Advanced
+Logan,Nelson,,Male,logan.n@example.com,Intermediate
+Aria,Mitchell,08/22/2011,,aria.m@example.com,
+Sebastian,Perez,11/30/2009,Male,,Beginner
+Lily,Carter,03/14/2012,Female,lily.c@example.com,Advanced
+Lily,Carter,03/14/2012,Female,lily.different@example.com,Intermediate
+Mason,Roberts,,,,

@@ -1,0 +1,6 @@
+first_name,last_name,date_of_birth,gender,email,phone,parent_name,parent_email,parent_phone,skill_level
+Emma,Johnson,05/15/2010,Female,emma.johnson@example.com,555-0101,Sarah Johnson,sarah.j@example.com,555-0100,Intermediate
+Michael,Smith,03/22/2008,Male,michael.smith@example.com,555-0201,John Smith,john.s@example.com,555-0200,Advanced
+Sophia,Williams,2012-11-03,Female,sophia.w@example.com,555-0301,Lisa Williams,lisa.w@example.com,555-0300,Beginner
+James,Brown,07/08/2011,Male,james.brown@example.com,555-0401,David Brown,david.b@example.com,555-0400,Intermediate
+Olivia,Davis,12/25/2009,Female,olivia.davis@example.com,555-0501,Amanda Davis,amanda.d@example.com,555-0500,Advanced

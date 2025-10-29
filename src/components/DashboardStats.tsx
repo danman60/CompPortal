@@ -40,8 +40,11 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
     return 'bg-green-500';
   };
 
+  // Determine grid columns based on role (3 cards for CD, 4 for SD)
+  const gridCols = role === 'studio_director' ? 'lg:grid-cols-4' : 'lg:grid-cols-3';
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className={`grid grid-cols-1 md:grid-cols-2 ${gridCols} gap-6`}>
       {/* Reservations Card - Studio Directors Only */}
       {role === 'studio_director' && (
         <Link href="/dashboard/competitions">

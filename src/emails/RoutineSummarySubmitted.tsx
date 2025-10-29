@@ -41,10 +41,10 @@ export default function RoutineSummarySubmitted({
   return (
     <Html>
       <Head />
-      <Preview>Routine summary from {studioName}</Preview>
+      <Preview>Summary from {studioName}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>📋 Routine Summary Submitted</Heading>
+          <Heading style={h1}>📋 Summary Submitted</Heading>
 
           <Text style={text}>
             <strong>{studioName}</strong> has submitted their routine summary and is ready for invoicing.
@@ -74,7 +74,12 @@ export default function RoutineSummarySubmitted({
           </Section>
 
           <Text style={text}>
-            Review the routine summary and generate an invoice in the Routine Summaries page.
+            <strong>Next Steps:</strong>
+          </Text>
+          <Text style={text}>
+            • Review the routine details above<br />
+            • Generate an invoice for this studio<br />
+            • The studio will be notified once the invoice is created
           </Text>
 
           <Section style={{textAlign: 'center', padding: '20px 40px'}}>
