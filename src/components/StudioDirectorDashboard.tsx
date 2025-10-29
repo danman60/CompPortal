@@ -89,8 +89,9 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
 
   const routinesLeftToCreate = Math.max(0, approvedReservationSpaces - createdRoutinesForApprovedReservations);
 
-  // Calculate unpaid invoices (all invoices are unpaid by default - payment tracking is per reservation)
-  const unpaidInvoices = myInvoices?.invoices?.length || 0;
+  // Calculate unpaid invoices (only count SENT status, not PAID)
+  // getByStudio returns both SENT and PAID invoices (invoice.ts:336-338)
+  const unpaidInvoices = myInvoices?.invoices?.filter(i => i.status === 'SENT').length || 0;
 
   // Determine next action for user
   const getNextAction = () => {
@@ -165,7 +166,14 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
   const nextAction = getNextAction();
 
   // Determine which card to highlight based on next action
+  // Tutorial mode: disable glow after first summary submitted
   const getNextActionCard = (): 'dancers' | 'reservations' | 'routines' | null => {
+    // Disable tutorial glow once ANY reservation has been summarized (Phase1 spec:61)
+    const hasSubmittedReservation = myReservations?.reservations?.some(r =>
+      ['summarized', 'invoiced', 'closed'].includes(r.status || '')
+    );
+    if (hasSubmittedReservation) return null;
+
     const totalDancers = myDancers?.dancers?.length || 0;
     const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
 
