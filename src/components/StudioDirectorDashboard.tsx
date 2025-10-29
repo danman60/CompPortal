@@ -28,27 +28,27 @@ interface StudioDirectorDashboardProps {
 const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   {
     id: 'scheduling',
+    href: '#',
     icon: '📅',
     title: 'Scheduling',
     description: 'View your competition schedule',
     disabled: true,
-    comingSoon: true,
   },
   {
     id: 'marks',
+    href: '#',
     icon: '📊',
     title: 'Marks',
     description: 'View scores and adjudications',
     disabled: true,
-    comingSoon: true,
   },
   {
     id: 'media',
+    href: '#',
     icon: '📹',
     title: 'Media & Livestream',
     description: 'Access photos, videos, and live coverage',
     disabled: true,
-    comingSoon: true,
   },
 ];
 
@@ -175,6 +175,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
         />
       )}
 
+      {!showLoading && (
       <div className="space-y-8">
       {/* Pending Approval Banner */}
       {studioStatus === 'pending' && (
@@ -243,6 +244,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
         ]}
       />
     </div>
+    )}
     </>
   );
 }

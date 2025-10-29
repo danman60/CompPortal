@@ -145,7 +145,7 @@ export default function SignupPage() {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 text-center">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 min-h-[420px] text-center flex flex-col justify-center">
             <div className="mb-4 flex justify-center">
               <div className="h-16 w-16 bg-green-500/20 border border-green-400/30 rounded-full flex items-center justify-center">
                 <span className="text-3xl">✓</span>
@@ -176,7 +176,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 min-h-[420px]">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-white mb-1">Create Account</h1>
             <p className="text-gray-300 text-sm">Join EMPWR today</p>
