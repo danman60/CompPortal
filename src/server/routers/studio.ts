@@ -89,6 +89,11 @@ export const studioRouter = router({
       }
     }
 
+    // Studio directors can only see their own studio (studio.ts:42-49 sets ctx.studioId)
+    if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      where.id = ctx.studioId;
+    }
+
     const studios = await prisma.studios.findMany({
       where,
       select: {
