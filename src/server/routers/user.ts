@@ -1,4 +1,5 @@
 import { router, protectedProcedure, publicProcedure } from '../trpc';
+import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { z } from 'zod';
@@ -227,4 +228,34 @@ export const userRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Get all tenants (Super Admin only)
+   * Allows SA to view and switch between tenants
+   */
+  getAllTenants: protectedProcedure.query(async ({ ctx }) => {
+    // Only super admins can access this
+    if (ctx.userRole !== 'super_admin') {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Super admin access required',
+      });
+    }
+
+    const tenants = await prisma.tenants.findMany({
+      select: {
+        id: true,
+        slug: true,
+        subdomain: true,
+        name: true,
+        branding: true,
+        created_at: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    return { tenants };
+  }),
 });
