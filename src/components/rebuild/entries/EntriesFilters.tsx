@@ -47,12 +47,15 @@ export function EntriesFilters({
             onChange={(e) => onReservationChange(e.target.value)}
             className="px-4 py-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 flex-1 max-w-md"
           >
-            {reservations.map((r) => (
-              <option key={r.id} value={r.id} className="bg-gray-900">
-                {r.competitions?.name || 'Unknown Event'}
-                {r.is_closed ? ' (closed)' : ''}
-              </option>
-            ))}
+            {reservations.map((r) => {
+              const isClosed = ['summarized', 'invoiced', 'closed'].includes(r.status || '');
+              return (
+                <option key={r.id} value={r.id} className="bg-gray-900">
+                  {r.competitions?.name || 'Unknown Event'}
+                  {isClosed ? ' (CLOSED)' : ''}
+                </option>
+              );
+            })}
           </select>
         </div>
 

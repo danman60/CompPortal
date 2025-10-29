@@ -31,9 +31,12 @@ export function useEntriesFilters(
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
-  // Filter to only approved and summarized reservations
+  // Filter to all post-approval reservations (Phase1 spec:61)
+  // Show approved, adjusted, summarized, invoiced, and closed
   const selectableReservations = useMemo(
-    () => reservations.filter(r => r.status === 'approved' || r.status === 'summarized'),
+    () => reservations.filter(r =>
+      ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'].includes(r.status || '')
+    ),
     [reservations]
   );
 

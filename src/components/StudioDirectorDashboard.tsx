@@ -73,12 +73,21 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
     { enabled: !!studioId }
   );
 
-  // Calculate routines left to create
+  // Calculate routines left to create (only count open approved/adjusted reservations)
+  // Don't count entries from summarized/invoiced/closed reservations (Phase1 spec:61)
   const approvedReservationSpaces = myReservations?.reservations
-    ?.filter(r => r.status === 'approved')
+    ?.filter(r => r.status === 'approved' || r.status === 'adjusted')
     ?.reduce((total, r) => total + (r.spaces_requested || 0), 0) || 0;
-  const createdRoutines = myEntries?.entries?.length || 0;
-  const routinesLeftToCreate = Math.max(0, approvedReservationSpaces - createdRoutines);
+
+  const approvedReservationIds = myReservations?.reservations
+    ?.filter(r => r.status === 'approved' || r.status === 'adjusted')
+    ?.map(r => r.id) || [];
+
+  const createdRoutinesForApprovedReservations = myEntries?.entries
+    ?.filter(e => e.reservation_id && approvedReservationIds.includes(e.reservation_id))
+    ?.length || 0;
+
+  const routinesLeftToCreate = Math.max(0, approvedReservationSpaces - createdRoutinesForApprovedReservations);
 
   // Calculate unpaid invoices (all invoices are unpaid by default - payment tracking is per reservation)
   const unpaidInvoices = myInvoices?.invoices?.length || 0;

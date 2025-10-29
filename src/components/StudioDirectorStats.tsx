@@ -29,13 +29,28 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
   const totalDancers = myDancers?.dancers?.length || 0;
   const activeDancers = myDancers?.dancers?.filter(d => d.status === 'active').length || 0;
 
+  // My Routines: Join with reservations to determine status (Phase1 spec:236-241)
+  // "Drafts" = entries in approved/adjusted reservations (editable)
+  // "Submitted" = entries in summarized/invoiced/closed reservations (limited editing)
   const totalEntries = myEntries?.entries?.length || 0;
-  const registeredEntries = myEntries?.entries?.filter(e => e.status === 'registered' || e.status === 'confirmed').length || 0;
-  const draftEntries = myEntries?.entries?.filter(e => e.status === 'draft').length || 0;
+  const draftEntries = myEntries?.entries?.filter(e => {
+    const reservation = myReservations?.reservations?.find(r => r.id === e.reservation_id);
+    return reservation?.status === 'approved' || reservation?.status === 'adjusted';
+  }).length || 0;
+  const submittedEntries = myEntries?.entries?.filter(e => {
+    const reservation = myReservations?.reservations?.find(r => r.id === e.reservation_id);
+    return ['summarized', 'invoiced', 'closed'].includes(reservation?.status || '');
+  }).length || 0;
 
+  // My Reservations: Count by status (Phase1 spec:61)
   const totalReservations = myReservations?.reservations?.length || 0;
-  const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
+  const approvedReservations = myReservations?.reservations?.filter(r =>
+    r.status === 'approved' || r.status === 'adjusted'
+  ).length || 0;
   const pendingReservations = myReservations?.reservations?.filter(r => r.status === 'pending').length || 0;
+  const submittedReservations = myReservations?.reservations?.filter(r =>
+    ['summarized', 'invoiced', 'closed'].includes(r.status || '')
+  ).length || 0;
 
   return (
     <div className="space-y-6">
@@ -93,6 +108,10 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
                 <span className="font-semibold text-green-400">{approvedReservations}</span>
               </div>
               <div className="flex justify-between text-gray-300">
+                <span>Submitted:</span>
+                <span className="font-semibold text-blue-400">{submittedReservations}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
                 <span>Pending:</span>
                 <span className="font-semibold text-yellow-400">{pendingReservations}</span>
               </div>
@@ -119,8 +138,8 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
             <div className="text-4xl font-bold text-white mb-2">{totalEntries}</div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-gray-300">
-                <span>Registered:</span>
-                <span className="font-semibold text-green-400">{registeredEntries}</span>
+                <span>Submitted:</span>
+                <span className="font-semibold text-green-400">{submittedEntries}</span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>Drafts:</span>
