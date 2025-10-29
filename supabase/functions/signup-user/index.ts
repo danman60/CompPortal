@@ -158,10 +158,14 @@ serve(async (req) => {
     console.log('Auth user created:', authData.user.id, email);
     // Note: user_profiles record is created automatically by handle_new_user() trigger
 
-    // 4. Generate email confirmation token
+    // 4. Generate email confirmation token with tenant-scoped redirect
+    const tenantUrl = `https://${tenant.subdomain}.compsync.net`;
     const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email,
+      options: {
+        redirectTo: `${tenantUrl}/login`,
+      },
     });
 
     if (tokenError || !tokenData.properties?.action_link) {
