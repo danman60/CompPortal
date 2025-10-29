@@ -74,14 +74,14 @@ export const competitionRouter = router({
 
       if (status) {
         where.status = status;
+      } else {
+        // If no explicit status filter, exclude cancelled competitions (soft delete)
+        where.status = { not: 'cancelled' };
       }
 
       if (isPublic !== undefined) {
         where.is_public = isPublic;
       }
-
-      // Filter out deleted competitions
-      where.deleted_at = null;
 
       const [competitions, total] = await Promise.all([
         prisma.competitions.findMany({
