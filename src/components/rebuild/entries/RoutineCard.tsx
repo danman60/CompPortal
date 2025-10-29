@@ -9,6 +9,7 @@ interface Entry {
   entry_number?: number;
   status?: string;
   total_fee?: number;
+  is_title_upgrade?: boolean;
   studios?: { name: string };
   dance_categories?: { name: string };
   entry_size_categories?: { name: string };
@@ -71,6 +72,13 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
           <div className="flex items-center gap-2">
             <span>📅</span>
             <span>{entry.age_groups.name}</span>
+          </div>
+        )}
+        {entry.is_title_upgrade && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2 py-1 bg-yellow-500/20 border border-yellow-400/50 rounded-full text-yellow-200 text-xs font-semibold">
+              👑 +$30 Title Upgrade
+            </span>
           </div>
         )}
       </div>

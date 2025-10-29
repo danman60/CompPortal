@@ -9,6 +9,7 @@ interface Entry {
   entry_number?: number;
   status?: string;
   total_fee?: number;
+  is_title_upgrade?: boolean;
   dance_categories?: { name: string };
   entry_size_categories?: { name: string };
   age_groups?: { name: string };
@@ -40,6 +41,7 @@ export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
           <TableHeaderCell>Category</TableHeaderCell>
           <TableHeaderCell>Size</TableHeaderCell>
           <TableHeaderCell>Age</TableHeaderCell>
+          <TableHeaderCell>Title Status</TableHeaderCell>
           <TableHeaderCell align="right">Fee</TableHeaderCell>
           <TableHeaderCell>Status</TableHeaderCell>
           <TableHeaderCell align="right">Actions</TableHeaderCell>
@@ -67,6 +69,15 @@ export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
             </TableCell>
             <TableCell>
               <span className="text-white/80">{entry.age_groups?.name || '—'}</span>
+            </TableCell>
+            <TableCell>
+              {entry.is_title_upgrade ? (
+                <span className="inline-flex items-center px-2 py-1 bg-yellow-500/20 border border-yellow-400/50 rounded-full text-yellow-200 text-xs font-semibold">
+                  +$30 Upgrade
+                </span>
+              ) : (
+                <span className="text-white/40">—</span>
+              )}
             </TableCell>
             <TableCell align="right">
               <span className="text-white font-medium">

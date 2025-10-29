@@ -6,6 +6,7 @@ interface Entry {
   entry_number?: number;
   status?: string;
   total_fee?: number;
+  is_title_upgrade?: boolean;
   studios?: { name: string };
   dance_categories?: { name: string };
   entry_size_categories?: { name: string };

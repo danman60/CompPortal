@@ -46,9 +46,6 @@ export function EntryCreateFormV2() {
   });
 
   const createMutation = trpc.entry.create.useMutation({
-    onSuccess: () => {
-      toast.success('Entry created successfully!');
-    },
     onError: (error) => {
       toast.error(`Failed: ${error.message}`);
     },
