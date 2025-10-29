@@ -16,9 +16,9 @@ export default function TenantSettingsPage() {
   const [showLoadDefaultsConfirm, setShowLoadDefaultsConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('routine-categories');
 
-  // Hardcoded EMPWR tenant ID (no multi-tenant support)
-  const tenantId = '00000000-0000-0000-0000-000000000001';
-  const userLoading = false;
+  // Get tenant_id from current user (multi-tenant support)
+  const { data: currentUser, isLoading: userLoading } = trpc.user.getCurrentUser.useQuery();
+  const tenantId = currentUser?.tenantId;
 
   // Fetch current tenant settings
   const { data: settingsData, isLoading: settingsLoading, refetch } = trpc.tenantSettings.getTenantSettings.useQuery(
@@ -55,6 +55,19 @@ export default function TenantSettingsPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!tenantId) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-500/10 border border-red-500 rounded-lg p-6 text-white">
+            <h2 className="text-xl font-bold mb-2">No Tenant Associated</h2>
+            <p>Your account is not associated with a tenant. Please contact support.</p>
           </div>
         </div>
       </main>

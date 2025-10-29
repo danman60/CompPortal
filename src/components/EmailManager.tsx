@@ -451,7 +451,7 @@ export default function EmailManager() {
                     )}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {new Date(email.sentAt).toLocaleString()}
+                    {email.sentAt ? new Date(email.sentAt).toLocaleString() : 'N/A'}
                   </div>
                 </div>
               </div>

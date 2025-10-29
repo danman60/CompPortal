@@ -28,7 +28,7 @@ import { cacheRouter } from './cache';
 import { liveCompetitionRouter } from './liveCompetition';
 import { chatRouter } from './chat';
 import { tenantSettingsRouter } from './tenantSettings';
-import { failureRouter } from './failure';
+// import { failureRouter } from './failure'; // Temporarily disabled - missing Prisma schema
 import { testingRouter } from './testing';
 import { emailPreferencesRouter } from './emailPreferences';
 import { superAdminRouter } from './superAdmin';
@@ -71,7 +71,7 @@ export const appRouter = router({
   liveCompetition: liveCompetitionRouter,
   chat: chatRouter,
   tenantSettings: tenantSettingsRouter,
-  failure: failureRouter,
+  // failure: failureRouter, // Temporarily disabled - missing Prisma schema
   emailPreferences: emailPreferencesRouter,
   superAdmin: superAdminRouter,
   summary: summaryRouter,
