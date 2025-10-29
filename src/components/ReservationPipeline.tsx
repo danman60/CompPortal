@@ -52,11 +52,16 @@ export default function ReservationPipeline() {
 
   // Mutations
   const approveMutation = trpc.reservation.approve.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Reservation approved!');
-      refetch();
-      refetchCompetitions(); // CRITICAL: Refetch competitions to update available_reservation_tokens
-      utils.reservation.getPipelineView.invalidate(); // Invalidate to trigger refetch of all data
+      // Invalidate and refetch all related queries
+      await Promise.all([
+        utils.reservation.getPipelineView.invalidate(),
+        utils.competition.getAll.invalidate(),
+      ]);
+      // Trigger immediate refetch to update UI
+      await refetch();
+      await refetchCompetitions();
       closeApprovalModal();
     },
     onError: (error) => {
@@ -542,9 +547,14 @@ export default function ReservationPipeline() {
                                   : reservation.lastAction || 'Submitted'}
                               </div>
                               <div className="text-xs text-gray-400">
-                                {reservation.lastActionDate
-                                  ? formatDistanceToNow(new Date(reservation.lastActionDate), { addSuffix: true })
-                                  : 'Recently'}
+                                {reservation.lastActionDate ? (() => {
+                                  try {
+                                    const date = new Date(reservation.lastActionDate);
+                                    return isNaN(date.getTime()) ? 'Recently' : formatDistanceToNow(date, { addSuffix: true });
+                                  } catch {
+                                    return 'Recently';
+                                  }
+                                })() : 'Recently'}
                               </div>
                             </div>
                           </td>

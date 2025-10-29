@@ -74,30 +74,24 @@ export default function PaymentConfirmed({
             Your payment status for <strong>{competitionName} ({competitionYear})</strong> has been updated.
           </Text>
 
-          <Section style={{
-            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-            borderRadius: '12px',
-            padding: '24px 30px',
-            margin: '24px 40px',
-            borderLeft: `4px solid ${primaryColor}`,
-          }}>
+          <Section style={{...emailTheme.infoBox, borderLeft: `4px solid ${primaryColor}`}}>
             {invoiceNumber && (
               <>
-                <Text style={emailTheme.label}>Invoice Number</Text>
-                <Text style={emailTheme.value}>{invoiceNumber}</Text>
+                <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Invoice Number</Text>
+                <Text style={{...emailTheme.value, margin: '0 0 16px 0'}}>{invoiceNumber}</Text>
               </>
             )}
-            <Text style={emailTheme.label}>Amount</Text>
-            <Text style={emailTheme.value}>
+            <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Amount</Text>
+            <Text style={{...emailTheme.value, margin: '0 0 16px 0'}}>
               {new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
               }).format(amount)}
             </Text>
-            <Text style={emailTheme.label}>Status</Text>
-            <Text style={emailTheme.value}>{paymentStatus.toUpperCase()}</Text>
-            <Text style={emailTheme.label}>Date</Text>
-            <Text style={emailTheme.value}>{paymentDate}</Text>
+            <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Status</Text>
+            <Text style={{...emailTheme.value, margin: '0 0 16px 0'}}>{paymentStatus.toUpperCase()}</Text>
+            <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Date</Text>
+            <Text style={{...emailTheme.value, margin: '0'}}>{paymentDate}</Text>
           </Section>
 
           {paymentStatus === 'paid' && (

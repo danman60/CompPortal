@@ -58,8 +58,8 @@ export default function ReservationApproved({
           </Text>
 
           <Section style={{...emailTheme.infoBox, borderLeft: `4px solid ${primaryColor}`}}>
-            <Text style={emailTheme.label}>CONFIRMED SPACES</Text>
-            <Text style={{...emailTheme.valueLarge, fontSize: '64px'}}>{spacesConfirmed}</Text>
+            <Text style={{...emailTheme.label, textAlign: 'center', margin: '0 0 12px 0'}}>CONFIRMED SPACES</Text>
+            <Text style={{...emailTheme.valueLarge, textAlign: 'center', padding: '12px 0'}}>{spacesConfirmed}</Text>
           </Section>
 
           <Text style={emailTheme.text}>

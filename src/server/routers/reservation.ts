@@ -778,7 +778,7 @@ export const reservationRouter = router({
                 competitionName: reservation.competitions?.name || 'Competition',
                 competitionYear: reservation.competitions?.year || new Date().getFullYear(),
                 spacesConfirmed: reservation.spaces_confirmed || 0,
-                portalUrl: await getTenantPortalUrl(reservationTenant!.tenant_id, '/dashboard/reservations'),
+                portalUrl: await getTenantPortalUrl(reservationTenant!.tenant_id, '/dashboard/entries'),
               };
 
               const html = await renderReservationApproved(emailData);
