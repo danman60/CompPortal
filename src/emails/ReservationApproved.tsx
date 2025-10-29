@@ -39,6 +39,7 @@ export default function ReservationApproved({
 }: ReservationApprovedProps) {
   const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
   const secondaryColor = tenantBranding?.secondaryColor || '#ec4899';
+
   return (
     <Html>
       <Head />
@@ -55,8 +56,8 @@ export default function ReservationApproved({
             Your reservation for <strong>{competitionName} ({competitionYear})</strong> has been approved.
           </Text>
 
-          <Section style={{...confirmBox, border: `2px solid ${primaryColor}`}}>
-            <Text style={confirmLabel}>Confirmed Spaces</Text>
+          <Section style={{...confirmBox, borderLeft: `4px solid ${primaryColor}`}}>
+            <Text style={confirmLabel}>CONFIRMED SPACES</Text>
             <Text style={confirmValue}>{spacesConfirmed}</Text>
           </Section>
 
@@ -64,16 +65,31 @@ export default function ReservationApproved({
             You can now proceed with the following steps:
           </Text>
 
-          <Section style={stepsBox}>
-            {nextSteps.map((step, index) => (
-              <div key={index} style={stepItem}>
-                <div style={{...stepNumber, backgroundColor: primaryColor}}>{index + 1}</div>
-                <Text style={stepText}>{step}</Text>
-              </div>
-            ))}
-          </Section>
+          {/* Table-based layout for email client compatibility */}
+          <table style={stepsTable}>
+            <tbody>
+              {nextSteps.map((step, index) => (
+                <tr key={index}>
+                  <td style={{paddingBottom: '12px', verticalAlign: 'top'}}>
+                    <table style={{borderCollapse: 'collapse'}}>
+                      <tbody>
+                        <tr>
+                          <td style={{...stepNumber, backgroundColor: primaryColor}}>
+                            {index + 1}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                  <td style={{paddingBottom: '12px', paddingLeft: '16px'}}>
+                    <Text style={stepText}>{step}</Text>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-          <Section style={{textAlign: 'center', padding: '20px 40px'}}>
+          <Section style={{textAlign: 'center', padding: '30px 40px'}}>
             <Button href={portalUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
               Go to Portal
             </Button>
@@ -90,21 +106,25 @@ export default function ReservationApproved({
   );
 }
 
+// Dark theme matching app design
 const main = {
-  backgroundColor: '#f6f9fc',
+  backgroundColor: '#0f172a', // slate-900
   fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+  padding: '20px 0',
 };
 
 const container = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#1e293b', // slate-800
   margin: '0 auto',
   padding: '20px 0 48px',
   marginBottom: '64px',
   maxWidth: '600px',
+  borderRadius: '12px',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
 };
 
 const h1 = {
-  color: '#333',
+  color: '#f1f5f9', // slate-100
   fontSize: '32px',
   fontWeight: 'bold',
   margin: '40px 0',
@@ -113,66 +133,62 @@ const h1 = {
 };
 
 const text = {
-  color: '#333',
+  color: '#e2e8f0', // slate-200
   fontSize: '16px',
   lineHeight: '26px',
   padding: '0 40px',
+  margin: '12px 0',
 };
 
 const confirmBox = {
-  backgroundColor: '#ecfdf5',
-  borderRadius: '8px',
+  backgroundColor: 'rgba(139, 92, 246, 0.1)', // purple with transparency
+  borderRadius: '12px',
   padding: '30px',
-  margin: '20px 40px',
+  margin: '30px 40px',
   textAlign: 'center' as const,
 };
 
 const confirmLabel = {
-  color: '#059669',
-  fontSize: '14px',
+  color: '#c4b5fd', // purple-300
+  fontSize: '12px',
   fontWeight: '600',
   textTransform: 'uppercase' as const,
-  letterSpacing: '0.5px',
-  margin: '0 0 12px 0',
+  letterSpacing: '1px',
+  margin: '0 0 16px 0',
 };
 
 const confirmValue = {
-  color: '#047857',
-  fontSize: '48px',
+  color: '#f1f5f9', // slate-100
+  fontSize: '64px',
   fontWeight: 'bold',
   margin: '0',
+  lineHeight: '1',
 };
 
-const stepsBox = {
+const stepsTable = {
+  width: '100%',
   padding: '0 40px',
-  margin: '20px 0',
-};
-
-const stepItem = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  marginBottom: '16px',
+  margin: '24px 0',
+  borderCollapse: 'collapse' as const,
 };
 
 const stepNumber = {
   color: '#ffffff',
   borderRadius: '50%',
-  width: '32px',
-  height: '32px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  width: '36px',
+  height: '36px',
+  textAlign: 'center' as const,
   fontWeight: 'bold',
-  fontSize: '16px',
-  marginRight: '16px',
-  flexShrink: 0,
+  fontSize: '18px',
+  lineHeight: '36px',
 };
 
 const stepText = {
-  color: '#333',
+  color: '#e2e8f0', // slate-200
   fontSize: '16px',
-  lineHeight: '32px',
+  lineHeight: '24px',
   margin: '0',
+  padding: '6px 0',
 };
 
 const button = {
@@ -183,16 +199,17 @@ const button = {
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
-  padding: '12px 40px',
+  padding: '14px 48px',
+  border: 'none',
 };
 
 const hr = {
-  borderColor: '#e6ebf1',
-  margin: '20px 40px',
+  borderColor: 'rgba(255, 255, 255, 0.1)',
+  margin: '32px 40px',
 };
 
 const footer = {
-  color: '#8898aa',
+  color: '#94a3b8', // slate-400
   fontSize: '14px',
   lineHeight: '24px',
   padding: '0 40px',
