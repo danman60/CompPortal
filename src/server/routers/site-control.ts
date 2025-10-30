@@ -48,12 +48,21 @@ export const siteControlRouter = router({
     const currentlyPaused = setting?.value === true || setting?.value === 'true';
     const newStatus = !currentlyPaused;
 
-    // Update the setting
-    await prisma.system_settings.update({
+    // Update or create the setting
+    await prisma.system_settings.upsert({
       where: { key: 'site_paused' },
-      data: {
+      update: {
         value: newStatus,
         updated_at: new Date(),
+      },
+      create: {
+        key: 'site_paused',
+        value: newStatus,
+        description: 'Controls whether the site is in maintenance mode. When true, all users except super_admin see maintenance page.',
+        category: 'system',
+        data_type: 'boolean',
+        is_public: false,
+        requires_admin: true,
       },
     });
 

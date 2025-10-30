@@ -52,17 +52,28 @@ The `competition.getAll` tRPC endpoint is returning competition objects, but the
 2. Undefined in the returned data
 3. Not being serialized by tRPC/Superjson
 
-## Next Steps (DO NOT BUILD YET)
+## Discovery 8: CRITICAL - There's a Capacity Service!
 
-1. **Check what fields are actually returned** - Added debug logging to both:
-   - Backend: `src/server/routers/competition.ts:125-130` (logs what Prisma returns)
-   - Frontend: `src/components/rebuild/pipeline/PipelinePageContainer.tsx:55-65` (logs what React receives)
+**Major oversight:** The capacity system has its own dedicated service/router architecture!
 
-2. **After build and deploy:** Check production logs to see actual field values
+**Need to investigate:**
+1. Is there a `capacity` router in `src/server/routers/`?
+2. Does the pipeline page use a capacity-specific endpoint instead of `competition.getAll`?
+3. Is the capacity calculation happening in a service layer?
 
-3. **If fields are NULL/undefined:** Investigate why Prisma query isn't returning them
+**Re-examining the workflow:**
+- Pipeline page uses `competition.getAll` for competition data
+- BUT capacity might be managed by `CapacityService` (mentioned in reservation.ts:27)
+- EventMetricsGrid calculation might be using stale/incorrect data source
 
-4. **If fields exist but calculation is wrong:** Check EventMetricsGrid component logic
+## Next Steps
+
+1. ✅ **DEPLOYED:** Debug logging (commit 608f3fd)
+2. **INVESTIGATE BEFORE TESTING:**
+   - Check if there's a `capacity.ts` router
+   - Check CapacityService implementation
+   - Verify what endpoint EventMetricsGrid should be using
+   - Check if `competition.getAll` is the wrong endpoint for capacity display
 
 ## Files Modified (Not Yet Built)
 - `D:\ClaudeCode\CompPortal\src\server\routers\competition.ts` - Added server-side debug log
