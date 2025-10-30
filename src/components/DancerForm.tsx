@@ -83,6 +83,25 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
     onError: (err) => toast.error(err.message || 'Failed to update dancer'),
   });
 
+  const deleteMutation = trpc.dancer.delete.useMutation({
+    onSuccess: () => {
+      utils.dancer.getAll.invalidate();
+      toast.success('Dancer deleted successfully');
+      router.push('/dashboard/dancers');
+    },
+    onError: (err) => toast.error(err.message || 'Failed to delete dancer'),
+  });
+
+  const archiveMutation = trpc.dancer.archive.useMutation({
+    onSuccess: () => {
+      utils.dancer.getAll.invalidate();
+      utils.dancer.getById.invalidate({ id: dancerId! });
+      toast.success('Dancer archived successfully');
+      router.push('/dashboard/dancers');
+    },
+    onError: (err) => toast.error(err.message || 'Failed to archive dancer'),
+  });
+
   const onSubmit = async (values: DancerFormValues) => {
     if (!isEditMode && !studioId) {
       toast.error('Studio ID is required. Please make sure you are logged in.');
@@ -122,6 +141,34 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this dancer? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteMutation.mutateAsync({ id: dancerId! });
+    } catch (error) {
+      console.error('Delete error:', error);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!confirm('Archive this dancer? They will be hidden from active lists but their data will be preserved.')) {
+      return;
+    }
+
+    try {
+      await archiveMutation.mutateAsync({ id: dancerId! });
+    } catch (error) {
+      console.error('Archive error:', error);
+    }
+  };
+
+  // Calculate entry count and deletion eligibility
+  const entriesCount = existingDancer?._count?.entry_participants || 0;
+  const canDelete = entriesCount === 0;
+
   if (isEditMode && isLoadingDancer) {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 animate-pulse">
@@ -138,7 +185,21 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-        <h2 className="text-2xl font-bold text-white mb-6">Dancer Information</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white">Dancer Information</h2>
+
+          {/* Entry Count Badge - Only in edit mode */}
+          {isEditMode && existingDancer && (
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
+              entriesCount > 0
+                ? 'bg-purple-500/20 border border-purple-400/30 text-purple-300'
+                : 'bg-green-500/20 border border-green-400/30 text-green-300'
+            }`}>
+              {entriesCount > 0 ? '🎭' : '✅'}
+              {entriesCount > 0 ? `In ${entriesCount} Routine${entriesCount > 1 ? 's' : ''}` : 'No Routines'}
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* First Name */}
@@ -249,10 +310,42 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             )}
           </div>
         </div>
+
+        {/* Info/Warning Alert - Only in edit mode */}
+        {isEditMode && existingDancer && (
+          <div className={`flex items-start gap-4 p-4 rounded-xl border mt-6 ${
+            entriesCount > 0
+              ? 'bg-yellow-500/10 border-yellow-400/30'
+              : 'bg-blue-500/10 border-blue-400/30'
+          }`}>
+            <div className="text-2xl flex-shrink-0">
+              {entriesCount > 0 ? '⚠️' : 'ℹ️'}
+            </div>
+            <div>
+              <h3 className={`font-semibold mb-2 ${
+                entriesCount > 0 ? 'text-yellow-300' : 'text-blue-300'
+              }`}>
+                {entriesCount > 0 ? 'Cannot Delete This Dancer' : 'Safe to Delete'}
+              </h3>
+              <p className="text-gray-300 text-sm mb-2">
+                {entriesCount > 0
+                  ? `This dancer is registered in ${entriesCount} competition routine${entriesCount > 1 ? 's' : ''}. To remove this dancer, you must:`
+                  : 'This dancer is not registered in any competition routines. You can safely delete this dancer if needed.'
+                }
+              </p>
+              {entriesCount > 0 && (
+                <ul className="text-gray-300 text-sm list-disc pl-5">
+                  <li>Remove them from all routines first, or</li>
+                  <li>Use "Archive" to keep their data while hiding them from active lists</li>
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-4 justify-end">
+      <div className="flex gap-4 justify-end flex-wrap">
         <button
           type="button"
           onClick={() => router.push('/dashboard/dancers')}
@@ -273,6 +366,29 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             ? 'Creating...'
             : 'Create Dancer'}
         </button>
+
+        {/* Delete/Archive Button - Only in edit mode */}
+        {isEditMode && existingDancer && (
+          canDelete ? (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="px-6 py-3 bg-red-500/20 border border-red-400/40 text-red-300 rounded-lg hover:bg-red-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {deleteMutation.isPending ? 'Deleting...' : '🗑️ Delete Dancer'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleArchive}
+              disabled={archiveMutation.isPending}
+              className="px-6 py-3 bg-yellow-500/20 border border-yellow-400/40 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {archiveMutation.isPending ? 'Archiving...' : '📦 Archive Dancer'}
+            </button>
+          )
+        )}
       </div>
     </form>
   );

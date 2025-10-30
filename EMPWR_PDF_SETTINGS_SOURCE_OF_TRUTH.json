@@ -1,0 +1,581 @@
+{
+  "source": "EMPWR Digital Brochure PDF",
+  "date_analyzed": "2025-10-30",
+  "tenant": {
+    "name": "EMPWR Dance Experience",
+    "subdomain": "empwr",
+    "tenant_id": "00000000-0000-0000-0000-000000000001",
+    "tagline": "You Are the Key",
+    "contact": {
+      "email": "empwrdance@gmail.com",
+      "instagram": "@empwrdance",
+      "website": "www.empwrexperience.com"
+    }
+  },
+
+  "age_divisions": [
+    {
+      "name": "MICRO",
+      "min_age": 0,
+      "max_age": 5,
+      "sort_order": 1,
+      "pdf_page": 3,
+      "label": "5 & UNDER"
+    },
+    {
+      "name": "MINI",
+      "min_age": 6,
+      "max_age": 8,
+      "sort_order": 2,
+      "pdf_page": 3,
+      "label": "6 - 8"
+    },
+    {
+      "name": "JUNIOR",
+      "min_age": 9,
+      "max_age": 11,
+      "sort_order": 3,
+      "pdf_page": 3,
+      "label": "9 - 11"
+    },
+    {
+      "name": "INTERMEDIATE",
+      "min_age": 12,
+      "max_age": 14,
+      "sort_order": 4,
+      "pdf_page": 3,
+      "label": "12 - 14"
+    },
+    {
+      "name": "SENIOR",
+      "min_age": 15,
+      "max_age": 17,
+      "sort_order": 5,
+      "pdf_page": 3,
+      "label": "15 - 17"
+    },
+    {
+      "name": "ADULT",
+      "min_age": 18,
+      "max_age": 99,
+      "sort_order": 6,
+      "pdf_page": 3,
+      "label": "18+"
+    }
+  ],
+
+  "classifications": [
+    {
+      "name": "NOVICE",
+      "sort_order": 1,
+      "pdf_page": 4,
+      "rules": {
+        "solo": "A Dancer that has never competed in a solo in any dance style",
+        "duet_trio": "Dancers that have never competed in a solo or duet/trio category in any dance style. Dancers in the duet/trio must be 100% Novice",
+        "groups": "At least 75% of Dancers in the group must be Novice"
+      }
+    },
+    {
+      "name": "PART-TIME",
+      "sort_order": 2,
+      "pdf_page": 4,
+      "rules": {
+        "training_hours": "6 hours or less per week",
+        "solo": "A Dancer that has never competed in a competitive solo category. Dancer must train 6 hours or less per week",
+        "duet_trio": "Dancers that have never competed in a competitive solo or duet/trio category. Dancer must train 6 hours or less per week. Dancers in the duet/trio must be 100% Part-Time",
+        "groups": "At least 75% of Dancers in the group must be Part-Time"
+      }
+    },
+    {
+      "name": "COMPETITIVE",
+      "sort_order": 3,
+      "pdf_page": 4,
+      "rules": {
+        "training_hours": "Any Dancer that trains more than 6 hours per week"
+      }
+    }
+  ],
+
+  "entry_size_categories": [
+    {
+      "name": "Solo",
+      "min_dancers": 1,
+      "max_dancers": 1,
+      "sort_order": 1,
+      "pdf_page": 7,
+      "label": "1 Dancer"
+    },
+    {
+      "name": "Duet/Trio",
+      "min_dancers": 2,
+      "max_dancers": 3,
+      "sort_order": 2,
+      "pdf_page": 7,
+      "label": "2 or 3 Dancers"
+    },
+    {
+      "name": "Small Group",
+      "min_dancers": 4,
+      "max_dancers": 9,
+      "sort_order": 3,
+      "pdf_page": 7,
+      "label": "4-9 Dancers"
+    },
+    {
+      "name": "Large Group",
+      "min_dancers": 10,
+      "max_dancers": 14,
+      "sort_order": 4,
+      "pdf_page": 7,
+      "label": "10-14 Dancers"
+    },
+    {
+      "name": "Line",
+      "min_dancers": 15,
+      "max_dancers": 19,
+      "sort_order": 5,
+      "pdf_page": 7,
+      "label": "15-19 Dancers"
+    },
+    {
+      "name": "Super Line",
+      "min_dancers": 20,
+      "max_dancers": 999,
+      "sort_order": 6,
+      "pdf_page": 7,
+      "label": "20+ Dancers"
+    }
+  ],
+
+  "dance_styles": [
+    {
+      "name": "Classical Ballet",
+      "sort_order": 1,
+      "pdf_page": 8
+    },
+    {
+      "name": "Tap",
+      "sort_order": 2,
+      "pdf_page": 8
+    },
+    {
+      "name": "Jazz",
+      "sort_order": 3,
+      "pdf_page": 8
+    },
+    {
+      "name": "Lyrical",
+      "sort_order": 4,
+      "pdf_page": 8
+    },
+    {
+      "name": "Contemporary",
+      "sort_order": 5,
+      "pdf_page": 8
+    },
+    {
+      "name": "Hip-Hop",
+      "sort_order": 6,
+      "pdf_page": 8
+    },
+    {
+      "name": "Musical Theatre",
+      "sort_order": 7,
+      "pdf_page": 8
+    },
+    {
+      "name": "Pointe",
+      "sort_order": 8,
+      "pdf_page": 8
+    },
+    {
+      "name": "Contemporary Ballet",
+      "sort_order": 9,
+      "pdf_page": 8
+    },
+    {
+      "name": "Acro",
+      "sort_order": 10,
+      "pdf_page": 8
+    },
+    {
+      "name": "Open",
+      "sort_order": 11,
+      "pdf_page": 8
+    },
+    {
+      "name": "Song & Dance",
+      "sort_order": 12,
+      "pdf_page": 8
+    },
+    {
+      "name": "Modern",
+      "sort_order": 13,
+      "pdf_page": 8
+    },
+    {
+      "name": "Production",
+      "sort_order": 14,
+      "pdf_page": 8
+    }
+  ],
+
+  "entry_fees": {
+    "solo": {
+      "amount": 115.00,
+      "unit": "per_entry",
+      "pdf_page": 5
+    },
+    "duet_trio": {
+      "amount": 70.00,
+      "unit": "per_dancer",
+      "pdf_page": 5
+    },
+    "groups_lines_productions": {
+      "amount": 55.00,
+      "unit": "per_dancer",
+      "pdf_page": 5,
+      "note": "Groups, Lines, and Productions all use same per-dancer rate"
+    },
+    "title_upgrade": {
+      "amount": 30.00,
+      "unit": "per_solo",
+      "pdf_page": 5,
+      "note": "Fee to upgrade a solo to Title Division. Fee is per solo (not per soloist). Soloist may upgrade any number of entries."
+    }
+  },
+
+  "scoring_system": [
+    {
+      "name": "BRONZE",
+      "min_score": 0,
+      "max_score": 84.00,
+      "sort_order": 1,
+      "pdf_page": 9,
+      "label": "84.00 and under"
+    },
+    {
+      "name": "SILVER",
+      "min_score": 84.00,
+      "max_score": 86.99,
+      "sort_order": 2,
+      "pdf_page": 9,
+      "label": "84.00 - 86.99"
+    },
+    {
+      "name": "GOLD",
+      "min_score": 87.00,
+      "max_score": 89.99,
+      "sort_order": 3,
+      "pdf_page": 9,
+      "label": "87.00 - 89.99"
+    },
+    {
+      "name": "TITANIUM",
+      "min_score": 90.00,
+      "max_score": 92.99,
+      "sort_order": 4,
+      "pdf_page": 9,
+      "label": "90.00 - 92.99"
+    },
+    {
+      "name": "PLATINUM",
+      "min_score": 93.00,
+      "max_score": 95.99,
+      "sort_order": 5,
+      "pdf_page": 9,
+      "label": "93.00 - 95.99"
+    },
+    {
+      "name": "PANDORA",
+      "min_score": 96.00,
+      "max_score": 100,
+      "sort_order": 6,
+      "pdf_page": 9,
+      "label": "96.00+"
+    }
+  ],
+
+  "title_division": {
+    "age_divisions": [
+      "MICRO: 5 & UNDER",
+      "MINI: 6 - 8",
+      "JUNIOR: 9 - 11",
+      "INTERMEDIATE: 12 - 14",
+      "SENIOR: 15 - 17"
+    ],
+    "notes": [
+      "All levels are combined for the Regional Title Division",
+      "One title winner will be awarded in each age breakdown at all events",
+      "Separate scoring for Title Division soloists - Total of 100 marks per judge",
+      "Title winner receives custom award, tiara, and full scholarship or cash prize"
+    ],
+    "scoring_criteria": {
+      "technique": 20,
+      "stage_presence": 20,
+      "execution_of_choreography": 20,
+      "costume": 20,
+      "overall_entertainment_value": 20,
+      "total": 100
+    },
+    "pdf_page": 6
+  },
+
+  "awards": {
+    "overall_awards": {
+      "solo": "Top 10",
+      "duet_trio": "Top 3",
+      "small_group": "Top 3",
+      "large_group": "Top 3",
+      "line": "Top 3",
+      "super_line": "Top 3",
+      "production": "Top 3 (all age divisions combined)",
+      "age_divisions_awarded": [
+        "MICRO: 5 & UNDER",
+        "MINI: 6 - 8",
+        "JUNIOR: 9 - 11",
+        "INTERMEDIATE: 12 - 14",
+        "SENIOR: 15 - 17"
+      ],
+      "note": "Awarded in each classification for above age divisions",
+      "pdf_page": 10
+    },
+    "session_awards": {
+      "special_awards": [
+        "You Are The Key Award",
+        "Choreo of the Session"
+      ],
+      "adjudicators_choice": [
+        "Most Potential",
+        "Outstanding Performance in Each Classification",
+        "The Jes Sachse Tap Award",
+        "Unlock Your PWR Award",
+        "Ambassadorship Recipients",
+        "Top Choreo of the Weekend"
+      ],
+      "pdf_page": 11
+    },
+    "final_awards": [
+      "Highest Mark in Novice/Part-Time/Competitive",
+      "Dancer of the Year in Each Age Division",
+      "Top Studio in Novice/Part-Time/Competitive"
+    ]
+  },
+
+  "dance_off": {
+    "divisions": [
+      "12 & Under",
+      "13 & Up"
+    ],
+    "rules": {
+      "entries_per_studio": "One group per division chosen by Studio Director",
+      "fee": "No additional fee to participate",
+      "eligible_groups": "Competitive groups (excluding productions) from Mini, Junior, Intermediate, and Senior age divisions",
+      "minimum_routines": "Studio must enter at least 10 routines to qualify (3 must be groups)"
+    },
+    "awards": [
+      "12 & Under Champion",
+      "12 & Under First Runner-Up",
+      "12 & Under Second Runner-Up",
+      "13 & Up Champion",
+      "13 & Up First Runner-Up",
+      "13 & Up Second Runner-Up"
+    ],
+    "pdf_page": 12
+  },
+
+  "ambassadorship_program": {
+    "selection": "8 outstanding dancers from each event",
+    "commitments": [
+      "Ambassador Photoshoot and Leadership Meeting (June)",
+      "Monthly Mentorship Sessions (July/August)",
+      "Outreach Choreography Project (Sep/Oct)",
+      "Ambassador Curated Special Awards Presentation (Event of their Choice)"
+    ],
+    "benefits": [
+      "Custom Merchandise",
+      "Professional Photoshoot",
+      "Be a Professional Choreographer for a Day",
+      "Mentorship from Industry Experts",
+      "Leadership Opportunity and Community Impact"
+    ],
+    "pdf_page": 13
+  },
+
+  "important_dates": {
+    "registration_opens": "November 1, 2025",
+    "registration_closes": "December 23, 2025",
+    "payment_deadline": "December 23, 2025 (FULL balance due, no exceptions)",
+    "music_upload_deadline": "30 days prior to event",
+    "dance_off_submission": "7 days prior to event",
+    "schedule_changes_deadline": "14 days of tentative schedule release",
+    "pdf_page": 14
+  },
+
+  "discrepancies_found": {
+    "age_divisions": {
+      "pdf_count": 6,
+      "database_count": 12,
+      "issues": [
+        "Database has duplicates: Junior, Teen, Petite with different age ranges",
+        "Database has divisions NOT in PDF: Pre Junior, Teen, Senior+ (17+)",
+        "Mini age range differs: PDF says 6-8, DB has 7-8",
+        "Senior age range differs: PDF says 15-17, DB has 15-16"
+      ]
+    },
+    "dance_styles": {
+      "pdf_count": 14,
+      "database_count": 9,
+      "missing_from_database": [
+        "Contemporary Ballet",
+        "Song & Dance",
+        "Modern",
+        "Production",
+        "Open"
+      ],
+      "naming_differences": [
+        "PDF: 'Classical Ballet' vs DB: 'Ballet'",
+        "PDF: 'Hip-Hop' vs DB: 'Hip Hop'"
+      ]
+    },
+    "entry_fees": {
+      "issue": "Database competitions have entry_fee=$75 which doesn't match ANY PDF price",
+      "pdf_prices": {
+        "solo": "$115",
+        "duet_trio_per_dancer": "$70",
+        "groups_per_dancer": "$55"
+      },
+      "question": "Should fees be stored per entry_size_category or is $75 a different fee type?"
+    },
+    "scoring_system": {
+      "issue": "COMPLETELY DIFFERENT score ranges",
+      "pdf_tiers": "Bronze, Silver, Gold, Titanium, Platinum, Pandora",
+      "database_tiers": "bronze, silver, gold, high_gold, platinum (NO Titanium or Pandora)",
+      "score_range_differences": [
+        "Bronze: PDF=0-84, DB=70-79.9",
+        "Silver: PDF=84-86.99, DB=80-84.9",
+        "Gold: PDF=87-89.99, DB=85-89.9",
+        "Missing Titanium (90-92.99) in DB",
+        "DB has high_gold (90-94.9) NOT in PDF",
+        "Platinum: PDF=93-95.99, DB=95-100",
+        "Missing Pandora (96+) in DB"
+      ],
+      "warning": "Changing this is BREAKING - existing scores would be re-categorized"
+    },
+    "entry_size_categories": {
+      "issue": "Need to verify min/max_participants in DB match PDF dancer counts",
+      "pdf_vs_db": "Both have 6 categories but ranges may differ"
+    }
+  },
+
+  "questions_for_next_session": [
+    {
+      "id": 1,
+      "topic": "Age Divisions Cleanup",
+      "question": "Should I delete ALL 12 age groups and recreate exactly as PDF shows (6 divisions only)?",
+      "risk": "May break existing entries that reference old age groups",
+      "options": ["Clean slate (delete all, recreate 6)", "Keep existing, mark duplicates as deprecated", "Surgical fix (keep valid ones, delete duplicates)"]
+    },
+    {
+      "id": 2,
+      "topic": "Backwards Compatibility",
+      "question": "Do existing competition entries reference the old/duplicate age groups?",
+      "action_needed": "Query competition_entries to see which age_group_id values are in use"
+    },
+    {
+      "id": 3,
+      "topic": "Entry Fees Storage",
+      "question": "Where should per-category fees be stored?",
+      "options": [
+        "In entry_size_categories table (add base_fee, per_participant_fee columns)",
+        "In competitions table (separate fee fields)",
+        "In a new fee_structure table",
+        "In competition_settings as JSONB"
+      ]
+    },
+    {
+      "id": 4,
+      "topic": "Scoring System",
+      "question": "Should I completely replace scoring system with PDF values?",
+      "risk": "BREAKING CHANGE - All existing scores would be re-categorized",
+      "impact": "If any entries have been judged/scored, their tier assignments would change"
+    },
+    {
+      "id": 5,
+      "topic": "Dance Styles",
+      "question": "Should I add all 5 missing dance styles?",
+      "missing": ["Contemporary Ballet", "Song & Dance", "Modern", "Production", "Open"],
+      "rename_needed": "Ballet → Classical Ballet, Hip Hop → Hip-Hop"
+    },
+    {
+      "id": 6,
+      "topic": "Production Category",
+      "question": "Is 'Production' a dance style or just a fee grouping (Groups/Lines/Productions)?",
+      "context": "PDF lists it as a dance style (page 8) but also groups it with Lines in fee structure (page 5)"
+    },
+    {
+      "id": 7,
+      "topic": "Migration Strategy",
+      "question": "Should I create a migration script to preserve existing data, or clean slate?",
+      "options": [
+        "Surgical: Fix only what's wrong, preserve existing entries",
+        "Aggressive: Wipe all EMPWR settings, recreate from PDF",
+        "Hybrid: Deprecate old, create new, migrate entries gradually"
+      ]
+    },
+    {
+      "id": 8,
+      "topic": "Title Upgrade Fee",
+      "question": "How should the $30 title upgrade fee be stored and charged?",
+      "context": "PDF says 'per solo (not per soloist)', soloist can upgrade multiple entries"
+    },
+    {
+      "id": 9,
+      "topic": "Classifications Rules",
+      "question": "Should classification rules (training hours, percentages) be stored in database or just in documentation?",
+      "context": "PDF has detailed rules about 6 hours/week threshold, 75% group requirements"
+    },
+    {
+      "id": 10,
+      "topic": "Database Schema Changes",
+      "question": "Do I need to add new columns to support PDF structure?",
+      "examples": [
+        "entry_size_categories.base_fee (for Solo $115)",
+        "entry_size_categories.per_participant_fee (for Duet/Trio $70, Groups $55)",
+        "competitions.title_upgrade_fee",
+        "competitions.late_registration_fee"
+      ]
+    }
+  ],
+
+  "recommended_approach": {
+    "phase_1_safe_additions": [
+      "Add 5 missing dance styles",
+      "Rename 'Ballet' to 'Classical Ballet'",
+      "Fix 'Hip Hop' to 'Hip-Hop'"
+    ],
+    "phase_2_fixes": [
+      "Delete duplicate age groups (Junior, Teen, Petite with sort_order=null)",
+      "Fix Mini age range (6-8, not 7-8)",
+      "Fix Senior age range (15-17, not 15-16)"
+    ],
+    "phase_3_breaking_changes": [
+      "Replace scoring system (requires testing/approval)",
+      "Update entry fees structure (requires schema analysis)",
+      "Remove non-PDF age divisions (Pre Junior, Teen, Senior+)"
+    ],
+    "hold_for_user_decision": [
+      "Scoring system replacement (biggest impact)",
+      "Entry fees storage location",
+      "Migration vs clean slate strategy"
+    ]
+  },
+
+  "next_session_action_items": [
+    "Review this JSON with user",
+    "Get answers to 10 questions",
+    "Query database to check which age_group_ids are in use by existing entries",
+    "Create migration plan based on user preferences",
+    "Implement fixes in phases (safe → risky)"
+  ]
+}
