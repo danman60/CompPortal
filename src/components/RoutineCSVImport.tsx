@@ -14,6 +14,10 @@ type ParsedRoutine = {
   choreographer?: string;
   matchedDancers?: string[]; // IDs of matched dancers
   unmatchedDancers?: string[]; // Names that couldn't be matched
+  age_group_id?: string; // Auto-detected or manually selected
+  classification_id?: string; // Manually selected
+  category_id?: string; // Manually selected
+  entry_size_id?: string; // Auto-detected or manually selected
 };
 
 type ValidationError = {
@@ -46,6 +50,8 @@ export default function RoutineCSVImport() {
   const [noDancersWarning, setNoDancersWarning] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [previewData, setPreviewData] = useState<ParsedRoutine[]>([]);
+  const [eventStartDate, setEventStartDate] = useState<Date | null>(null);
 
   // Get user and studio data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -66,7 +72,27 @@ export default function RoutineCSVImport() {
     { enabled: !!studioId }
   );
 
+  // Fetch existing entries for export
+  const { data: existingEntries } = trpc.entry.getAll.useQuery(
+    { limit: 10000 },
+    { enabled: !!studioId }
+  );
+
   const createMutation = trpc.entry.create.useMutation();
+
+  // Update event date when reservation is selected
+  useEffect(() => {
+    if (selectedReservationId && reservationsData?.reservations) {
+      const reservation = reservationsData.reservations.find(r => r.id === selectedReservationId);
+      if (reservation?.competitions?.competition_start_date) {
+        setEventStartDate(new Date(reservation.competitions.competition_start_date));
+      } else {
+        setEventStartDate(null);
+      }
+    } else {
+      setEventStartDate(null);
+    }
+  }, [selectedReservationId, reservationsData]);
 
   // Fuzzy match dancer name against existing dancers
   const matchDancerName = (name: string): { id: string; confidence: number } | null => {
@@ -94,6 +120,59 @@ export default function RoutineCSVImport() {
     }
 
     return bestMatch;
+  };
+
+  // Calculate age at event date (from useEntryFormV2 logic lines 116-135)
+  const calculateAgeAtEvent = (dateOfBirth: string | null): number | null => {
+    if (!dateOfBirth || !eventStartDate) return null;
+
+    const birthDate = new Date(dateOfBirth);
+    const ageInMillis = eventStartDate.getTime() - birthDate.getTime();
+    const ageInYears = ageInMillis / (1000 * 60 * 60 * 24 * 365.25);
+
+    return Math.floor(ageInYears);
+  };
+
+  // Auto-detect age group based on youngest dancer (from useEntryFormV2 logic lines 116-135)
+  const autoDetectAgeGroup = (matchedDancerIds: string[]): string | undefined => {
+    if (!matchedDancerIds.length || !existingDancers?.dancers || !eventStartDate || !lookupData?.ageGroups) {
+      return undefined;
+    }
+
+    // Calculate ages at event
+    const agesAtEvent = matchedDancerIds
+      .map(id => existingDancers.dancers.find(d => d.id === id))
+      .filter(d => d?.date_of_birth)
+      .map(d => calculateAgeAtEvent(d!.date_of_birth))
+      .filter((age): age is number => age !== null);
+
+    if (agesAtEvent.length === 0) return undefined;
+
+    // Find youngest age
+    const youngestAge = Math.min(...agesAtEvent);
+
+    // Match to age divisions
+    const match = lookupData.ageGroups.find(
+      (ag) => ag.min_age <= youngestAge && youngestAge <= ag.max_age
+    );
+
+    return match?.id;
+  };
+
+  // Auto-detect entry size based on dancer count (from useEntryFormV2 logic lines 141-151)
+  const autoDetectEntrySize = (matchedDancerIds: string[]): string | undefined => {
+    if (!matchedDancerIds.length || !lookupData?.sizeCategories) {
+      return undefined;
+    }
+
+    const count = matchedDancerIds.length;
+
+    // Match to size categories
+    const match = lookupData.sizeCategories.find(
+      (sc) => sc.min_participants <= count && count <= sc.max_participants
+    );
+
+    return match?.id;
   };
 
   const parseExcel = (workbook: ExcelJS.Workbook, sheetName: string): ParsedRoutine[] => {
@@ -258,9 +337,16 @@ export default function RoutineCSVImport() {
 
       routine.matchedDancers = matched;
       routine.unmatchedDancers = unmatched;
+
+      // Auto-detect age group and entry size based on matched dancers
+      if (matched.length > 0) {
+        routine.age_group_id = autoDetectAgeGroup(matched);
+        routine.entry_size_id = autoDetectEntrySize(matched);
+      }
     });
 
     setDancerMatches(matches);
+    setPreviewData([...routines]); // Initialize preview data with auto-detected values
   };
 
   const validateData = (data: ParsedRoutine[]): ValidationError[] => {
@@ -271,6 +357,20 @@ export default function RoutineCSVImport() {
 
       if (!routine.title || routine.title.trim() === '') {
         errors.push({ row: rowNum, field: 'title', message: 'Title is required' });
+      }
+
+      // Validate all required fields are present
+      if (!routine.age_group_id) {
+        errors.push({ row: rowNum, field: 'age_group', message: 'Age Group is required' });
+      }
+      if (!routine.classification_id) {
+        errors.push({ row: rowNum, field: 'classification', message: 'Classification is required' });
+      }
+      if (!routine.category_id) {
+        errors.push({ row: rowNum, field: 'category', message: 'Dance Category is required' });
+      }
+      if (!routine.entry_size_id) {
+        errors.push({ row: rowNum, field: 'entry_size', message: 'Entry Size is required' });
       }
     });
 
@@ -304,11 +404,15 @@ export default function RoutineCSVImport() {
           try {
             await workbook.xlsx.load(arrayBuffer);
           } catch (excelError: any) {
-            // If it fails with a JSZip error, provide a more helpful message
-            if (excelError?.message?.includes('central directory') || excelError?.message?.includes('JSZip')) {
-              throw new Error('The Excel file appears to be corrupted or in an unsupported format. Please try re-exporting it from Excel or saving it as CSV.');
-            }
-            throw excelError;
+            // ExcelJS only supports .xlsx format, not legacy .xls
+            throw new Error(
+              'This file appears to be in an old Excel format (.xls) or is corrupted.\n\n' +
+              'Try these solutions:\n' +
+              '1. Open the file in Excel and Save As → .xlsx format\n' +
+              '2. Save as CSV instead\n' +
+              '3. Upload your file to ChatGPT and ask: "Please reformat this as a clean CSV file"\n\n' +
+              'If the file is corrupted, ChatGPT can often extract and reformat the data.'
+            );
           }
 
           // Get worksheet names

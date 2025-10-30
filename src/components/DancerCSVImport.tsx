@@ -335,7 +335,20 @@ export default function DancerCSVImport() {
         // Handle Excel files
         const arrayBuffer = await uploadedFile.arrayBuffer();
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(arrayBuffer);
+
+        try {
+          await workbook.xlsx.load(arrayBuffer);
+        } catch (excelError: any) {
+          // ExcelJS only supports .xlsx format, not legacy .xls
+          throw new Error(
+            'This file appears to be in an old Excel format (.xls) or is corrupted.\n\n' +
+            'Try these solutions:\n' +
+            '1. Open the file in Excel and Save As → .xlsx format\n' +
+            '2. Save as CSV instead\n' +
+            '3. Upload your file to ChatGPT and ask: "Please reformat this as a clean CSV file"\n\n' +
+            'If the file is corrupted, ChatGPT can often extract and reformat the data.'
+          );
+        }
 
         // Get worksheet names
         const sheetNames = workbook.worksheets.map(ws => ws.name);
@@ -417,6 +430,38 @@ export default function DancerCSVImport() {
     URL.revokeObjectURL(url);
   };
 
+  const exportDancers = () => {
+    if (!existingDancers?.dancers || existingDancers.dancers.length === 0) {
+      alert('No dancers to export');
+      return;
+    }
+
+    // Create CSV headers
+    const headers = ['First Name', 'Last Name', 'Date of Birth', 'Gender', 'Email', 'Phone'];
+
+    // Create CSV rows
+    const rows = existingDancers.dancers.map((dancer) => [
+      dancer.first_name,
+      dancer.last_name,
+      dancer.date_of_birth || '',
+      dancer.gender || '',
+      dancer.email || '',
+      dancer.phone || '',
+    ]);
+
+    // Combine headers and rows
+    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+
+    // Create and download file
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dancers_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleImport = async () => {
     if (validationErrors.length > 0) return;
     if (!studioId) {
@@ -473,7 +518,7 @@ export default function DancerCSVImport() {
               Select a CSV, XLS, or XLSX file containing dancer information
             </p>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap justify-center">
               <label className="cursor-pointer bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                 <input
                   type="file"
@@ -487,7 +532,14 @@ export default function DancerCSVImport() {
                 onClick={downloadTemplate}
                 className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
               >
-                📥 Download Template
+                Download Template
+              </button>
+              <button
+                onClick={exportDancers}
+                className="bg-green-600/20 text-green-300 border border-green-400/30 px-6 py-3 rounded-lg hover:bg-green-600/30 transition-all"
+                disabled={!existingDancers?.dancers || existingDancers.dancers.length === 0}
+              >
+                Export to CSV ({existingDancers?.dancers?.length || 0})
               </button>
             </div>
           </div>
