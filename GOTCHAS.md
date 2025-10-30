@@ -248,6 +248,46 @@ const prevEnd = useRef(undefined);  // Starts different from target
 4. Calculation logic ✅
 5. Display/animation hooks ← Bug often here!
 
+**Detailed logging technique that found this bug:**
+```typescript
+// 1. Backend: Verify DB values sent (competition.ts)
+console.log('[competition.getAll] Sample:', {
+  name: comp.name,
+  total_reservation_tokens: comp.total_reservation_tokens,
+  available_reservation_tokens: comp.available_reservation_tokens
+});
+
+// 2. Frontend: Log calculation (PipelinePageContainer.tsx)
+console.log(`[EventMetrics] ${comp.name}:`, JSON.stringify({
+  total_reservation_tokens: comp.total_reservation_tokens,
+  available_reservation_tokens: comp.available_reservation_tokens
+}));
+
+// 3. Component: Log props received (EventMetricsGrid.tsx)
+console.log(`[MetricCard] ${event.name}:`, {
+  used: event.used,
+  remaining: event.remaining
+});
+
+// 4. Hook: Log animation lifecycle (useCountUp.ts)
+console.log('[useCountUp] Effect triggered:', { end, count, prevEnd: prevEnd.current });
+console.log('[useCountUp] Starting animation:', { from: count, to: end });
+console.log('[useCountUp] Animate frame:', { frameCount, current, increment, shouldFinish });
+console.log('[useCountUp] Animation complete:', { finalValue: end });
+
+// 5. Render: Log final displayed values (EventMetricsGrid.tsx)
+console.log(`[MetricCard RENDER] ${event.name}:`, {
+  usedCount,
+  remainingCount
+});
+```
+
+This comprehensive logging revealed:
+- Props passed correctly: `used: 219`
+- Animation started correctly: `from: 0, to: 219`
+- **Bug found:** Animation stopped at frame 1 (current: 3) because `count` in dependency array caused effect to re-run
+- Fix: Remove `count` from useEffect dependencies
+
 ## Quick Debug Order
 
 When user reports "X isn't working":

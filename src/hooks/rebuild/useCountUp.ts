@@ -56,7 +56,7 @@ export function useCountUp(end: number, duration = 1000, startOnMount = true) {
         }
       };
     }
-  }, [end, duration, startOnMount, count]);
+  }, [end, duration, startOnMount]); // Removed 'count' from dependencies to prevent animation restart
 
   return { count, isAnimating };
 }

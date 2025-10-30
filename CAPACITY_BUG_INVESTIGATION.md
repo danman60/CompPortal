@@ -116,4 +116,18 @@ The `competition.getAll` tRPC endpoint is returning competition objects, but the
 - **Math verified:** 600 - 381 = 219 used ✅ (but displays as 3)
 - **Hypothesis:** Either props passing wrong values OR useCountUp animation logic has bug
 
-## Next: Debug what value is passed to useCountUp hook
+## Discovery 12: FOUND ROOT CAUSE - useEffect Dependency Bug ✅
+- **Comprehensive logging revealed:**
+  - MetricCard receives correct values (used: 219, remaining: 381)
+  - useCountUp starts animation correctly (from: 0, to: 219)
+  - Animation runs 1 frame: current: 3.504, increment: 3.504
+  - Component re-renders with usedCount: 3
+  - **useEffect triggers AGAIN because `count` is in dependency array**
+  - Animation restarts from 3 instead of continuing to 219
+- **Root cause:** Line 59 of useCountUp.ts had `count` in dependency array
+- **Fix:** Remove `count` from dependencies - it should only restart when `end` changes, not when internal `count` updates
+- **Result:** Animation will now run to completion without restarting
+
+## Fix Applied (commit pending)
+- Removed `count` from useEffect dependency array (useCountUp.ts:59)
+- Animation will no longer be interrupted by its own state updates
