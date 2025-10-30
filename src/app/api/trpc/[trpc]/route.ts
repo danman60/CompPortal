@@ -30,10 +30,10 @@ const handler = async (req: Request) => {
         return { userId: null, userRole: null, studioId: null, tenantId, tenantData };
       }
 
-      // Fetch user profile with role
+      // Fetch user profile with role and tenant_id
       const userProfile = await prisma.user_profiles.findUnique({
         where: { id: user.id },
-        select: { role: true },
+        select: { role: true, tenant_id: true },
       });
 
       // If user is a studio director, fetch their studio on CURRENT tenant
