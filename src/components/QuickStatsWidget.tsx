@@ -50,8 +50,15 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
                 {stat.value}
               </div>
 
-              {/* Label at bottom */}
-              <div className="text-xs text-gray-300 font-semibold uppercase tracking-wide">{stat.label}</div>
+              {/* Label */}
+              <div className="text-xs text-gray-300 font-semibold uppercase tracking-wide mb-1">{stat.label}</div>
+
+              {/* Tooltip at bottom */}
+              {stat.tooltip && (
+                <div className="text-xs text-purple-300/70 font-medium mt-2">
+                  {stat.tooltip}
+                </div>
+              )}
             </div>
           );
 
