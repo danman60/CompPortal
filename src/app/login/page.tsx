@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
 export default function LoginPage() {
+  const { tenant } = useTenantTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,7 +54,7 @@ export default function LoginPage() {
             Welcome Back
           </h1>
           <p className="text-gray-300 text-center mb-8">
-            Sign in to your EMPWR account
+            Sign in to your {tenant?.name || 'your'} account
           </p>
 
           {error && (
