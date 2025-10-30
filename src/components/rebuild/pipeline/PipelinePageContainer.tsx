@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { usePipelineReservations } from '@/hooks/rebuild/useReservations';
 import { usePipelineFilters } from '@/hooks/rebuild/usePipelineFilters';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 import { PipelineHeader } from './PipelineHeader';
 import { EventMetricsGrid } from './EventMetricsGrid';
 import { PipelineStatusTabs } from './PipelineStatusTabs';
@@ -44,9 +45,12 @@ interface RejectModalState {
  */
 export function PipelinePageContainer() {
   const router = useRouter();
+  const { tenant } = useTenantTheme();
 
-  // Fetch competitions separately
-  const { data: competitionsData, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
+  // Fetch competitions separately (wait for tenant to be loaded)
+  const { data: competitionsData, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery(undefined, {
+    enabled: !!tenant?.id,
+  });
   const competitions = competitionsData?.competitions || [];
 
   const {

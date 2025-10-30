@@ -49,8 +49,8 @@ const handler = async (req: Request) => {
         studioId = studio?.id || null;
       }
 
-      // Tenant comes from subdomain only (no fallback to user profile)
-      const effectiveTenantId = tenantId;
+      // Tenant from subdomain (preferred) or fallback to user profile for client-side requests
+      const effectiveTenantId = tenantId || (userProfile as any)?.tenant_id || null;
 
       return {
         userId: user.id,
