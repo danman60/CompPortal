@@ -69,7 +69,7 @@ export function SupportChatButton({
 
     // Open Chatwoot widget after a brief delay
     setTimeout(() => {
-      if (window.$chatwoot) {
+      if (typeof window !== 'undefined' && window.$chatwoot) {
         window.$chatwoot.toggle();
       }
     }, 500);
@@ -120,7 +120,7 @@ export function SupportChatButton({
             setIsModalOpen(true);
           } else {
             // CD goes straight to tech support
-            if (window.$chatwoot) {
+            if (typeof window !== 'undefined' && window.$chatwoot) {
               window.$chatwoot.toggle();
             }
           }

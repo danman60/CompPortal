@@ -2,7 +2,9 @@
 **Version:** 1.0
 **Date:** October 29, 2025
 **Environment:** Production (empwr.compsync.net)
-**Prerequisites:** Authenticated as Studio Director (djamusic@gmail.com)
+**Test Credentials:**
+- **Competition Director:** empwrdance@gmail.com / 1CompSyncLogin!
+- **Studio Director:** daniel@streamstage.live / 123456
 
 ---
 
@@ -32,17 +34,16 @@
 ```sql
 -- Query to capture baseline
 SELECT
-  (SELECT COUNT(*) FROM dancers WHERE studio_id = 'de74304a-c0b3-4a5b-85d3-80c4d4c7073a') as dancer_count,
-  (SELECT COUNT(*) FROM reservations WHERE studio_id = 'de74304a-c0b3-4a5b-85d3-80c4d4c7073a') as reservation_count,
-  (SELECT COUNT(*) FROM entries WHERE reservation_id IN (
-    SELECT id FROM reservations WHERE studio_id = 'de74304a-c0b3-4a5b-85d3-80c4d4c7073a'
-  )) as entry_count;
+  (SELECT COUNT(*) FROM dancers WHERE studio_id = '2ade9fc1-3580-4d75-97a8-70ed2c8ba517') as dancer_count,
+  (SELECT COUNT(*) FROM reservations WHERE studio_id = '2ade9fc1-3580-4d75-97a8-70ed2c8ba517') as reservation_count,
+  (SELECT COUNT(*) FROM competition_entries WHERE studio_id = '2ade9fc1-3580-4d75-97a8-70ed2c8ba517') as entry_count;
 ```
 
 ### Test Studio Details
-- **Studio ID:** `de74304a-c0b3-4a5b-85d3-80c4d4c7073a`
-- **Studio Name:** "Dans Dancer"
-- **Owner ID:** `d72df930-c114-4de1-9f9d-06aa7d28b2ce`
+- **Studio ID:** `2ade9fc1-3580-4d75-97a8-70ed2c8ba517`
+- **Studio Name:** "Dancertons"
+- **Studio Code:** `43E4A`
+- **Owner:** daniel@streamstage.live
 - **Tenant ID:** `00000000-0000-0000-0000-000000000001` (EMPWR)
 
 ---
