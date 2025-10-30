@@ -51,8 +51,15 @@ jobs:
           # Create backup directory
           mkdir -p backups
 
-          # Run pg_dump
-          pg_dump "$DATABASE_URL" \
+          # Force IPv4 by using connection pooler (better GitHub Actions compatibility)
+          # Original direct connection might have IPv6 issues
+          POOLER_URL="${DATABASE_URL//db.cafugvuaatsgihrsmvvl.supabase.co:5432/aws-1-us-east-2.pooler.supabase.com:5432}"
+          POOLER_URL="${POOLER_URL//postgres:/postgres.cafugvuaatsgihrsmvvl:}"
+
+          echo "Using connection pooler for better network compatibility"
+
+          # Run pg_dump with session pooler
+          pg_dump "$POOLER_URL" \
             --clean \
             --if-exists \
             --no-owner \
