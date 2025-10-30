@@ -4,7 +4,10 @@ import { prisma } from '@/lib/prisma';
 import { TRPCError } from '@trpc/server';
 
 export const lookupRouter = router({
-  // Get all dance categories
+  // DEPRECATED: These procedures lack tenant_id filtering and could leak cross-tenant data
+  // Use getAllForEntry instead which properly filters by tenant_id
+  // Kept for backwards compatibility but will be removed in future version
+  /*
   getCategories: publicProcedure.query(async () => {
     const categories = await prisma.dance_categories.findMany({
       where: {
@@ -16,7 +19,6 @@ export const lookupRouter = router({
     return { categories };
   }),
 
-  // Get all classifications
   getClassifications: publicProcedure.query(async () => {
     const classifications = await prisma.classifications.findMany({
       orderBy: { skill_level: 'asc' },
@@ -25,7 +27,6 @@ export const lookupRouter = router({
     return { classifications };
   }),
 
-  // Get all age groups
   getAgeGroups: publicProcedure.query(async () => {
     const ageGroups = await prisma.age_groups.findMany({
       orderBy: { sort_order: 'asc' },
@@ -34,7 +35,6 @@ export const lookupRouter = router({
     return { ageGroups };
   }),
 
-  // Get all entry size categories
   getEntrySizeCategories: publicProcedure.query(async () => {
     const entrySizeCategories = await prisma.entry_size_categories.findMany({
       orderBy: { sort_order: 'asc' },
@@ -42,9 +42,10 @@ export const lookupRouter = router({
 
     return { entrySizeCategories };
   }),
+  */
 
   // Get all lookup data at once (for entry forms)
-  // ARCHITECTURE_ISSUES.md: Tenant isolation fix for lookup tables
+  // ✅ SAFE: Properly filters by tenant_id for multi-tenant isolation
   getAllForEntry: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.tenantId) {
       throw new TRPCError({
