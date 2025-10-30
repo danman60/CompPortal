@@ -5,6 +5,11 @@ on:
     # Run daily at 3 AM UTC (11 PM EST / 8 PM PST)
     - cron: '0 3 * * *'
   workflow_dispatch: # Allow manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/database-backup.yml' # Only run when workflow itself changes
 
 jobs:
   backup:
