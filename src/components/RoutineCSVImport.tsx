@@ -52,6 +52,7 @@ export default function RoutineCSVImport() {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [previewData, setPreviewData] = useState<ParsedRoutine[]>([]);
   const [eventStartDate, setEventStartDate] = useState<Date | null>(null);
+  const [selectedRoutines, setSelectedRoutines] = useState<Set<number>>(new Set());
 
   // Get user and studio data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -90,6 +91,13 @@ export default function RoutineCSVImport() {
       }
     }
   }, [reservationsData]);
+
+  // Auto-select all routines when preview data loads
+  useEffect(() => {
+    if (previewData.length > 0) {
+      setSelectedRoutines(new Set(previewData.map((_, i) => i)));
+    }
+  }, [previewData.length]);
 
   // Fuzzy match dancer name against existing dancers
   const matchDancerName = (name: string): { id: string; confidence: number } | null => {
@@ -458,8 +466,12 @@ export default function RoutineCSVImport() {
     const confirmedSpaces = reservation.spaces_confirmed || 0;
     const availableSpaces = confirmedSpaces - usedSpaces;
 
-    if (previewData.length > availableSpaces) {
-      setImportErrors([`Cannot import ${previewData.length} routines. Only ${availableSpaces} space(s) available (${confirmedSpaces} confirmed - ${usedSpaces} used).`]);
+    // Filter to only selected routines
+    const selectedIndices = Array.from(selectedRoutines);
+    const routinesToImport = previewData.filter((_, i) => selectedRoutines.has(i));
+
+    if (routinesToImport.length > availableSpaces) {
+      setImportErrors([`Cannot import ${routinesToImport.length} routines. Only ${availableSpaces} space(s) available (${confirmedSpaces} confirmed - ${usedSpaces} used).`]);
       setImportStatus('error');
       return;
     }
@@ -475,7 +487,8 @@ export default function RoutineCSVImport() {
     let errorCount = 0;
     const errors: string[] = [];
 
-    for (let i = 0; i < previewData.length; i++) {
+    for (let idx = 0; idx < selectedIndices.length; idx++) {
+      const i = selectedIndices[idx];
       const row = previewData[i];
       try {
         await createMutation.mutateAsync({
@@ -502,7 +515,7 @@ export default function RoutineCSVImport() {
       }
 
       // Update progress
-      setImportProgress(Math.round(((i + 1) / previewData.length) * 100));
+      setImportProgress(Math.round(((idx + 1) / selectedIndices.length) * 100));
     }
 
     setIsProcessing(false);
@@ -760,57 +773,9 @@ export default function RoutineCSVImport() {
             </div>
           )}
 
-          {/* Unmatched Dancers Warning */}
-          {dancerMatches.filter(m => !m.matched).length > 0 && (
-            <div className="bg-orange-500/10 backdrop-blur-md rounded-xl border border-orange-400/30 p-6">
-              <div className="flex items-start gap-4">
-                <div className="text-4xl">🔍</div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-orange-400 mb-2">
-                    {dancerMatches.filter(m => !m.matched).length} Unmatched Dancer(s)
-                  </h3>
-                  <p className="text-gray-300 mb-3">
-                    These dancers in your CSV don't match any existing dancers. They may need to be added first, or check for typos.
-                  </p>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {dancerMatches.filter(m => !m.matched).map((match, index) => (
-                      <div key={index} className="bg-black/40 p-2 rounded text-sm text-gray-200">
-                        • {match.dancerName} <span className="text-gray-400">(Routine {match.routineIndex + 1})</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Low Confidence Matches Warning */}
-          {dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length > 0 && (
-            <div className="bg-purple-500/10 backdrop-blur-md rounded-xl border border-purple-400/30 p-6">
-              <div className="flex items-start gap-4">
-                <div className="text-3xl">🤔</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-purple-400 mb-2">Fuzzy Matches Detected</h3>
-                  <p className="text-gray-300 text-sm mb-2">
-                    Some dancers were matched with less than 95% confidence. Please verify these are correct:
-                  </p>
-                  <div className="max-h-24 overflow-y-auto space-y-1">
-                    {dancerMatches
-                      .filter(m => m.matched && m.confidence && m.confidence < 0.95)
-                      .map((match, index) => (
-                        <div key={index} className="bg-black/40 p-2 rounded text-xs text-gray-200">
-                          • {match.dancerName} <span className="text-purple-400">({Math.round((match.confidence || 0) * 100)}% match)</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Sheet Selection */}
           {availableSheets.length > 1 && (
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
               <h3 className="text-lg font-semibold text-white mb-3">📊 Multiple Sheets Detected</h3>
               <p className="text-sm text-gray-400 mb-4">Select which sheet to import:</p>
               <div className="flex gap-2 flex-wrap">
@@ -831,140 +796,160 @@ export default function RoutineCSVImport() {
             </div>
           )}
 
-          {/* Select Reservation */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-            <h3 className="text-lg font-semibold text-white mb-3">🎫 Select Competition</h3>
-            <p className="text-sm text-gray-400 mb-4">Choose which competition to import these routines to:</p>
-            <select
-              value={selectedReservationId}
-              onChange={(e) => setSelectedReservationId(e.target.value)}
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white"
-            >
-              <option value="" className="bg-gray-900">Select approved reservation</option>
-              {reservationsData?.reservations?.map((res: any) => (
-                <option key={res.id} value={res.id} className="bg-gray-900">
-                  {res.competitions?.name} ({res.competitions?.year}) - {res.spaces_confirmed} spaces
-                </option>
-              ))}
-            </select>
-
-            {selectedReservationId && reservationsData?.reservations?.find(r => r.id === selectedReservationId) && (
-              <div className="mt-4 p-4 bg-white/5 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-sm text-gray-400">Spaces Available</div>
-                    <div className="text-2xl font-bold text-white">
-                      {(() => {
-                        const reservation = reservationsData.reservations.find(r => r.id === selectedReservationId);
-                        const usedSpaces = (reservation as any)?._count?.competition_entries || 0;
-                        const confirmedSpaces = reservation?.spaces_confirmed || 0;
-                        return `${confirmedSpaces - usedSpaces} / ${confirmedSpaces}`;
-                      })()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Routines to Import</div>
-                    <div className="text-2xl font-bold text-green-400">
-                      {parsedData.length}
-                    </div>
-                  </div>
-                </div>
+          {/* Compact Info Bar - replaces big cards */}
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-5 mb-4">
+            <div className="flex items-center gap-6 flex-wrap">
+              {/* Success - routines validated */}
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">✓</span>
+                <span className="text-sm text-green-400 font-semibold">{previewData.length} routines validated</span>
               </div>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-white/20" />
+
+              {/* Unmatched dancers warning */}
+              {dancerMatches.filter(m => !m.matched).length > 0 && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⚠️</span>
+                    <span className="text-sm text-orange-400 font-semibold">
+                      {dancerMatches.filter(m => !m.matched).length} unmatched dancers
+                    </span>
+                  </div>
+                  <div className="w-px h-6 bg-white/20" />
+                </>
+              )}
+
+              {/* Competition selector */}
+              <div className="flex items-center gap-3 flex-1 min-w-[300px]">
+                <span className="text-xl">🏆</span>
+                <span className="text-sm text-gray-300">Competition:</span>
+                <select
+                  value={selectedReservationId}
+                  onChange={(e) => setSelectedReservationId(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm"
+                >
+                  <option value="" className="bg-gray-900">Select approved reservation</option>
+                  {reservationsData?.reservations?.map((res: any) => (
+                    <option key={res.id} value={res.id} className="bg-gray-900">
+                      {res.competitions?.name} - {res.spaces_confirmed} spaces
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Expandable details for unmatched/fuzzy dancers */}
+            {(dancerMatches.filter(m => !m.matched).length > 0 || dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length > 0) && (
+              <details className="mt-4">
+                <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
+                  View dancer matching details
+                </summary>
+                <div className="mt-3 space-y-3">
+                  {dancerMatches.filter(m => !m.matched).length > 0 && (
+                    <div className="bg-orange-500/10 border border-orange-400/30 rounded-lg p-3">
+                      <div className="font-semibold text-orange-400 text-sm mb-2">
+                        Unmatched Dancers ({dancerMatches.filter(m => !m.matched).length})
+                      </div>
+                      <div className="max-h-24 overflow-y-auto space-y-1">
+                        {dancerMatches.filter(m => !m.matched).slice(0, 5).map((match, index) => (
+                          <div key={index} className="text-xs text-gray-300">
+                            • {match.dancerName}
+                          </div>
+                        ))}
+                        {dancerMatches.filter(m => !m.matched).length > 5 && (
+                          <div className="text-xs text-gray-400">
+                            ...and {dancerMatches.filter(m => !m.matched).length - 5} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length > 0 && (
+                    <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-3">
+                      <div className="font-semibold text-purple-400 text-sm mb-2">
+                        Fuzzy Matches ({dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length})
+                      </div>
+                      <div className="max-h-24 overflow-y-auto space-y-1">
+                        {dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).slice(0, 5).map((match, index) => (
+                          <div key={index} className="text-xs text-gray-300">
+                            • {match.dancerName} <span className="text-purple-400">({Math.round((match.confidence || 0) * 100)}%)</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </details>
             )}
           </div>
 
-          {/* Space Limit Warning */}
+          {/* Selection Bar - shows space validation */}
           {selectedReservationId && (() => {
             const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
             if (!reservation) return null;
             const usedSpaces = (reservation as any)._count?.competition_entries || 0;
             const confirmedSpaces = reservation.spaces_confirmed || 0;
             const availableSpaces = confirmedSpaces - usedSpaces;
+            const selectedCount = selectedRoutines.size;
+            const exceedsLimit = selectedCount > availableSpaces;
 
-            if (parsedData.length > availableSpaces) {
-              return (
-                <div className="bg-red-500/10 backdrop-blur-md rounded-xl border-2 border-red-400/50 p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">🚫</div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-red-400 mb-2">Insufficient Spaces</h3>
-                      <p className="text-gray-300 mb-2">
-                        Cannot import {previewData.length} routines. Only {availableSpaces} space(s) available.
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Confirmed: {confirmedSpaces} | Used: {usedSpaces} | Available: {availableSpaces}
-                      </p>
-                    </div>
+            return (
+              <div className={`backdrop-blur-md rounded-xl border p-4 mb-4 ${exceedsLimit ? 'bg-red-500/10 border-red-400/50' : 'bg-white/10 border-white/20'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-300">
+                      Selected: <span className={`font-bold ${exceedsLimit ? 'text-red-400' : 'text-white'}`}>{selectedCount}</span> / {availableSpaces} available
+                    </span>
+                    {exceedsLimit && (
+                      <span className="text-sm text-red-400">
+                        ⚠️ Uncheck {selectedCount - availableSpaces} routine{selectedCount - availableSpaces > 1 ? 's' : ''} to continue
+                      </span>
+                    )}
                   </div>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {/* File Validated Successfully - Appears First */}
-          <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
-            <div className="flex items-start gap-4">
-              <div className="text-4xl">✅</div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-green-400 mb-2">File Validated Successfully</h3>
-                <p className="text-gray-300 mb-4">
-                  Found {previewData.length} routine(s) ready to import. Fill in required fields below.
-                </p>
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleImport}
-                    disabled={createMutation.isPending || !selectedReservationId || (() => {
-                      const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
-                      if (!reservation) return true;
-                      const availableSpaces = (reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0);
-                      return previewData.length > availableSpaces;
-                    })() || previewData.some(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id)}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
-                    {createMutation.isPending ? 'Importing...' : 'Import'}
-                  </button>
-                  <button
-                    onClick={() => router.push('/dashboard/entries')}
-                    className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
-                  >
-                    Cancel
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedRoutines(new Set())}
+                      className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all text-sm"
+                    >
+                      Uncheck All
+                    </button>
+                    <button
+                      onClick={() => setSelectedRoutines(new Set(previewData.map((_, i) => i)))}
+                      className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all text-sm"
+                    >
+                      Check All
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Missing Fields Warning - Appears Below Success */}
-          {(() => {
-            const { missingCount } = validateBeforeImport();
-            if (missingCount > 0) {
-              return (
-                <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">⚠️</div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-yellow-400 mb-2">Missing Required Fields</h3>
-                      <p className="text-gray-300 mb-2">
-                        {missingCount} routine(s) need all 4 fields completed before import:
-                      </p>
-                      <ul className="text-gray-400 text-sm list-disc list-inside space-y-1">
-                        <li>Age Group (auto-detected if dancers matched)</li>
-                        <li>Classification (must select manually)</li>
-                        <li>Dance Category (must select manually)</li>
-                        <li>Entry Size (auto-detected if dancers matched)</li>
-                      </ul>
-                      <p className="text-purple-300 text-sm mt-3">
-                        💡 Fill in the dropdowns in the preview table below
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            return null;
+            );
           })()}
+
+          {/* Import/Cancel Buttons */}
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={handleImport}
+              disabled={createMutation.isPending || !selectedReservationId || (() => {
+                const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
+                if (!reservation) return true;
+                const availableSpaces = (reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0);
+                const selectedCount = selectedRoutines.size;
+                const selectedData = previewData.filter((_, i) => selectedRoutines.has(i));
+                return selectedCount > availableSpaces || selectedData.some(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id);
+              })()}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {createMutation.isPending ? 'Importing...' : `Import (${selectedRoutines.size} selected)`}
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/entries')}
+              className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
 
           {/* Preview Table */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 overflow-x-auto">
@@ -990,6 +975,20 @@ export default function RoutineCSVImport() {
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase bg-black/40 sticky top-0">
                   <tr>
+                    <th className="px-4 py-3 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedRoutines.size === previewData.length && previewData.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedRoutines(new Set(previewData.map((_, i) => i)));
+                          } else {
+                            setSelectedRoutines(new Set());
+                          }
+                        }}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-4 py-3">#</th>
                     <th className="px-4 py-3">Title</th>
                     <th className="px-4 py-3 min-w-[150px]">Age Group</th>
@@ -1019,6 +1018,22 @@ export default function RoutineCSVImport() {
                             : ''
                         }`}
                       >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedRoutines.has(index)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedRoutines);
+                              if (e.target.checked) {
+                                newSelected.add(index);
+                              } else {
+                                newSelected.delete(index);
+                              }
+                              setSelectedRoutines(newSelected);
+                            }}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                        </td>
                         <td className="px-4 py-3 text-gray-400">{index + 1}</td>
                         <td className="px-4 py-3 text-white">{routine.title}</td>
 
