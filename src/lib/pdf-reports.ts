@@ -211,7 +211,7 @@ export function generateEntryScoreSheet(data: {
     });
   }
 
-  addFooter(doc, 1, 1);
+  addFooter(doc, 1, 1, data.tenantName || 'Dance Competition');
 
   return doc.output('blob');
 }
@@ -220,6 +220,7 @@ export function generateEntryScoreSheet(data: {
  * Category Results Report - Rankings within a category
  */
 export function generateCategoryResultsReport(data: {
+  tenantName?: string;
   competition: {
     name: string;
     dates: string;
@@ -235,7 +236,7 @@ export function generateCategoryResultsReport(data: {
     award_level: string;
   }[];
 }): Blob {
-  const doc = initPDF(`Category Results - ${data.category} (${data.age_group})`);
+  const doc = initPDF(`Category Results - ${data.category} (${data.age_group})`, data.tenantName || 'Dance Competition');
 
   // Competition info
   let yPos = 40;
@@ -310,7 +311,7 @@ export function generateCategoryResultsReport(data: {
     },
   });
 
-  addFooter(doc, 1, 1);
+  addFooter(doc, 1, 1, data.tenantName || 'Dance Competition');
 
   return doc.output('blob');
 }
@@ -319,6 +320,7 @@ export function generateCategoryResultsReport(data: {
  * Judge Scorecard - All scores by a specific judge
  */
 export function generateJudgeScorecardReport(data: {
+  tenantName?: string;
   competition: {
     name: string;
     dates: string;
@@ -338,7 +340,7 @@ export function generateJudgeScorecardReport(data: {
     total_score: number;
   }[];
 }): Blob {
-  const doc = initPDF(`Judge Scorecard - ${data.judge.name}`, 'landscape');
+  const doc = initPDF(`Judge Scorecard - ${data.judge.name}`, data.tenantName || 'Dance Competition', 'landscape');
 
   // Competition info
   let yPos = 40;
@@ -408,7 +410,7 @@ export function generateJudgeScorecardReport(data: {
   yPos += 7;
   doc.text(`Average Score Given: ${avgTotal.toFixed(2)}`, 15, yPos);
 
-  addFooter(doc, 1, 1);
+  addFooter(doc, 1, 1, data.tenantName || 'Dance Competition');
 
   return doc.output('blob');
 }
@@ -417,6 +419,7 @@ export function generateJudgeScorecardReport(data: {
  * Competition Summary Report - Overall statistics
  */
 export function generateCompetitionSummaryReport(data: {
+  tenantName?: string;
   competition: {
     name: string;
     dates: string;
@@ -431,7 +434,7 @@ export function generateCompetitionSummaryReport(data: {
     award_distribution: { level: string; count: number }[];
   };
 }): Blob {
-  const doc = initPDF('Competition Summary Report');
+  const doc = initPDF('Competition Summary Report', data.tenantName || 'Dance Competition');
 
   // Competition header
   let yPos = 40;
@@ -515,7 +518,7 @@ export function generateCompetitionSummaryReport(data: {
     },
   });
 
-  addFooter(doc, 1, 1);
+  addFooter(doc, 1, 1, data.tenantName || 'Dance Competition');
 
   return doc.output('blob');
 }
@@ -855,7 +858,7 @@ export function generateInvoicePDF(invoice: {
   yPos += 5;
   doc.text('For questions about this invoice, please contact the competition organizers.', 15, yPos, { maxWidth: 180 });
 
-  addFooter(doc, 1, 1);
+  addFooter(doc, 1, 1, invoice.competition.name);
 
   return doc.output('blob');
 }
