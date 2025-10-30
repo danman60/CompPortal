@@ -1364,6 +1364,7 @@ export const reservationRouter = router({
         entryCount: r._count?.competition_entries || 0,
         status: r.status,
         invoiceId: invoice?.id || null,
+        invoiceStatus: invoice?.status || null,
         totalAmount: invoice?.total ? parseFloat(invoice.total.toString()) : null,
         invoicePaid: !!invoice?.paid_at,
         lastAction: r.status === 'approved' ? 'Approved by You' : 'Reservation submitted',

@@ -13,6 +13,7 @@ import { EventFilterDropdown } from './EventFilterDropdown';
 import { ReservationTable } from './ReservationTable';
 import { ApprovalModal } from './ApprovalModal';
 import { RejectModal } from './RejectModal';
+import { DraftInvoicesBanner } from './DraftInvoicesBanner';
 
 type PipelineStatus = 'all' | 'pending' | 'approved' | 'summary_in' | 'invoiced' | 'paid';
 
@@ -94,6 +95,11 @@ export function PipelinePageContainer() {
     eventFilter,
     setEventFilter,
   } = usePipelineFilters(reservations);
+
+  // Calculate draft invoices count
+  const draftInvoicesCount = reservations.filter(
+    (r: any) => r.invoiceId && r.invoiceStatus === 'DRAFT'
+  ).length;
 
   // Calculate event metrics
   const eventMetrics = competitions
@@ -211,6 +217,8 @@ export function PipelinePageContainer() {
         <PipelineHeader />
 
         <EventMetricsGrid metrics={eventMetrics} />
+
+        <DraftInvoicesBanner draftCount={draftInvoicesCount} />
 
         <EventFilterDropdown
           competitions={competitions}
