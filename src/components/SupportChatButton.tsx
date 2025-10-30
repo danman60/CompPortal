@@ -21,6 +21,10 @@ interface SupportChatButtonProps {
   userEmail?: string;
   userName?: string;
   userId?: string;
+  tenantName?: string;
+  subdomain?: string;
+  studioName?: string;
+  studioPublicCode?: string;
 }
 
 type ChatPath = 'sd_tech' | 'sd_cd' | 'cd_sa';
@@ -30,6 +34,10 @@ export function SupportChatButton({
   userEmail,
   userName,
   userId,
+  tenantName,
+  subdomain,
+  studioName,
+  studioPublicCode,
 }: SupportChatButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPath, setSelectedPath] = useState<ChatPath | null>(null);
@@ -80,6 +88,13 @@ export function SupportChatButton({
     const token = tokens[selectedPath];
     if (!token) return null;
 
+    // Build custom attributes for Chatwoot
+    const customAttributes: Record<string, string> = {};
+    if (tenantName) customAttributes.tenant_name = tenantName;
+    if (subdomain) customAttributes.subdomain = subdomain;
+    if (studioName) customAttributes.studio_name = studioName;
+    if (studioPublicCode) customAttributes.studio_public_code = studioPublicCode;
+
     return {
       websiteToken: token,
       baseUrl: baseUrl!,
@@ -89,6 +104,7 @@ export function SupportChatButton({
         email: userEmail,
         name: userName,
       },
+      customAttributes,
     };
   };
 
@@ -218,6 +234,7 @@ export function SupportChatButton({
           baseUrl={chatConfig.baseUrl}
           websocketURL={chatConfig.websocketURL}
           user={chatConfig.user}
+          customAttributes={chatConfig.customAttributes}
         />
       )}
     </>

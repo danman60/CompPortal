@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
 interface HealthStatus {
   status: string;
@@ -87,6 +88,7 @@ const ServiceCard = ({ name, status, description }: { name: string; status: stri
 );
 
 export default function StatusPage() {
+  const { tenant } = useTenantTheme();
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +142,7 @@ export default function StatusPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-white mb-4">EMPWR Status</h1>
+          <h1 className="text-5xl font-bold text-white mb-4">{tenant?.name || 'System'} Status</h1>
           <p className="text-white/70 text-lg">Real-time system health and uptime monitoring</p>
         </div>
 
@@ -156,7 +158,7 @@ export default function StatusPage() {
             <>
               <div className="text-6xl mb-4">✅</div>
               <h2 className="text-3xl font-bold text-green-300 mb-2">All Systems Operational</h2>
-              <p className="text-white/70">EMPWR is running smoothly</p>
+              <p className="text-white/70">{tenant?.name || 'System'} is running smoothly</p>
             </>
           ) : (
             <>
@@ -184,7 +186,7 @@ export default function StatusPage() {
               <ServiceCard
                 name="Application"
                 status={health.checks.application}
-                description="Core Next.js application serving the EMPWR web interface"
+                description={`Core Next.js application serving the ${tenant?.name || 'competition'} web interface`}
               />
             </div>
 

@@ -1,11 +1,18 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import MusicTrackingDashboard from '@/components/MusicTrackingDashboard';
+import { getTenantData } from '@/lib/tenant-context';
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: 'Music Tracking - EMPWR',
-  description: 'Track music uploads and send reminders',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const tenantData = await getTenantData();
+  const tenantShortName = tenantData?.subdomain?.toUpperCase() || 'COMP';
+
+  return {
+    title: `Music Tracking - ${tenantShortName}`,
+    description: 'Track music uploads and send reminders',
+  };
+}
 
 export default async function MusicTrackingPage() {
   const supabase = await createServerSupabaseClient();

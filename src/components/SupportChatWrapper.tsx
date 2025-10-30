@@ -63,6 +63,10 @@ function SupportChatWrapperInner() {
           : currentUser.first_name || currentUser.email || undefined
       }
       userId={currentUser.id}
+      tenantName={currentUser.tenant?.name}
+      subdomain={currentUser.tenant?.subdomain}
+      studioName={currentUser.studio?.name}
+      studioPublicCode={currentUser.studio?.public_code}
     />
   );
 }

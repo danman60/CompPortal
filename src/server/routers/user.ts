@@ -52,6 +52,15 @@ export const userRouter = router({
       },
     });
 
+    // Fetch tenant info for Chatwoot metadata
+    const tenant = await prisma.tenants.findUnique({
+      where: { id: ctx.tenantId! },
+      select: {
+        name: true,
+        subdomain: true,
+      },
+    });
+
     // Fetch studio info if user is a studio director
     let studio = null;
     if (userProfile?.role === 'studio_director') {
@@ -63,6 +72,7 @@ export const userRouter = router({
         select: {
           id: true,
           name: true,
+          public_code: true,
           status: true,
         },
       });
@@ -81,6 +91,7 @@ export const userRouter = router({
       notificationsEnabled,
       studio,
       tenantId: ctx.tenantId, // For tenant-scoped settings pages
+      tenant, // Tenant name and subdomain for Chatwoot
     };
   }),
 

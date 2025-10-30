@@ -20,6 +20,7 @@ interface ChatwootWidgetProps {
     email?: string;
     identifier?: string;
   };
+  customAttributes?: Record<string, string>;
   locale?: string;
 }
 
@@ -46,6 +47,7 @@ export function ChatwootWidget({
   baseUrl,
   websocketURL,
   user,
+  customAttributes,
   locale = 'en',
 }: ChatwootWidgetProps) {
   useEffect(() => {
@@ -98,6 +100,11 @@ export function ChatwootWidget({
           };
         }
 
+        // Add custom attributes for support context
+        if (customAttributes && Object.keys(customAttributes).length > 0) {
+          config.customAttributes = customAttributes;
+        }
+
         window.chatwootSDK.run(config);
       }
     };
@@ -130,7 +137,7 @@ export function ChatwootWidget({
       delete window.chatwootSettings;
       delete window.chatwootSDK;
     };
-  }, [websiteToken, baseUrl, websocketURL, user, locale]);
+  }, [websiteToken, baseUrl, websocketURL, user, customAttributes, locale]);
 
   // Widget is injected by script, no UI needed
   return null;
