@@ -158,11 +158,25 @@ export const adminRouter = router({
             },
           });
 
+          // Generate unique public code
+          const generatePublicCode = async (): Promise<string> => {
+            let attempts = 0;
+            while (attempts < 10) {
+              const code = Math.random().toString(36).substring(2, 7).toUpperCase()
+                .replace(/0/g, 'A').replace(/O/g, 'B').replace(/I/g, 'C').replace(/1/g, 'D');
+              const exists = await prisma.studios.findUnique({ where: { public_code: code } });
+              if (!exists) return code;
+              attempts++;
+            }
+            throw new Error('Failed to generate unique public code');
+          };
+
           // Create studio (pre-approved)
           const newStudio = await prisma.studios.create({
             data: {
               name: studio.studioName,
               code: studio.studioCode,
+              public_code: await generatePublicCode(),
               owner_id: authData.user.id,
               tenant_id: ctx.tenantId!,
               status: 'approved',

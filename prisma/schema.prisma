@@ -1112,6 +1112,7 @@ model studios {
   id                               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   owner_id                         String                @db.Uuid
   code                             String?               @unique @db.VarChar(5)
+  public_code                      String                @unique @db.VarChar(5) /// @description Client-facing 5-character lookup code. Display only - never use in database relations. All FKs must use id (UUID).
   name                             String                @db.VarChar(255)
   address1                         String?               @db.VarChar(255)
   address2                         String?               @db.VarChar(255)
