@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import superjson from 'superjson';
 import { trpc } from '@/lib/trpc';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
@@ -12,12 +12,12 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   // Store tenant ID in a ref that persists across renders
-  const tenantIdRef = useState<{ current: string | null }>(() => ({ current: tenant?.id || null }))[0];
+  const tenantIdRef = useRef<string | null>(tenant?.id || null);
 
   // Update ref whenever tenant changes
-  if (tenantIdRef.current !== (tenant?.id || null)) {
+  useEffect(() => {
     tenantIdRef.current = tenant?.id || null;
-  }
+  }, [tenant?.id]);
 
   const [trpcClient] = useState(() =>
     trpc.createClient({
