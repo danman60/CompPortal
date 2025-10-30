@@ -81,7 +81,23 @@ The `competition.getAll` tRPC endpoint is returning competition objects, but the
 - **Frontend unknown:** Console.log truncates array details, can't see actual field values
 - **Next:** Need JSON.stringify() in frontend log to see full data structure
 
+## Discovery 10: FOUND THE BUG! ✅
+- **JSON.stringify revealed:** Frontend DOES receive correct data!
+  - St. Catharines #2: `total: 600, available: 381` (219 used) ✅
+  - St. Catharines #1: `total: 600, available: 85` (515 used) ✅
+  - London: `total: 600, available: 538` (62 used) ✅
+- **allKeys shows:** `total_reservation_tokens` and `available_reservation_tokens` ARE in the object
+- **BUT:** The calculation code (line 115-116) accesses these fields and gets `null`/`undefined`
+- **Theory:** The fields exist in the object but their VALUES are null/undefined
+- **Proof needed:** Log the ACTUAL values of `comp.total_reservation_tokens` not just Object.keys()
+
 ## Files Modified
 - ✅ **DEPLOYED (commit 608f3fd):**
   - `D:\ClaudeCode\CompPortal\src\server\routers\competition.ts` - Added server-side debug log
   - `D:\ClaudeCode\CompPortal\src\components\rebuild\pipeline\PipelinePageContainer.tsx` - Added frontend debug log with Object.keys()
+
+- ✅ **DEPLOYED (commit be103a7):**
+  - `D:\ClaudeCode\CompPortal\src\components\rebuild\pipeline\PipelinePageContainer.tsx` - Changed to JSON.stringify for full data visibility
+  - `D:\ClaudeCode\CompPortal\CAPACITY_BUG_INVESTIGATION.md` - Updated with Discovery 9
+
+## Next: Wait for deployment then test

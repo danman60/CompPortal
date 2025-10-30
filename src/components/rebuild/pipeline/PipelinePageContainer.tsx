@@ -112,6 +112,13 @@ export function PipelinePageContainer() {
   const eventMetrics = competitions
     .filter((comp: any) => comp.name !== 'QA Automation' && comp.status !== 'cancelled')
     .map((comp: any) => {
+      // Debug: Log the calculation for EACH competition
+      console.log(`[EventMetrics] ${comp.name}:`, JSON.stringify({
+        total_reservation_tokens: comp.total_reservation_tokens,
+        available_reservation_tokens: comp.available_reservation_tokens,
+        venue_capacity: comp.venue_capacity
+      }));
+
       const totalCapacity = comp.total_reservation_tokens || comp.venue_capacity || 600;
       const availableCapacity = comp.available_reservation_tokens ?? totalCapacity;
       const reservedCount = totalCapacity - availableCapacity;

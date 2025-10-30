@@ -76,17 +76,20 @@ export async function updateSession(request: NextRequest) {
 
     const isPaused = siteSetting?.value === true || siteSetting?.value === 'true';
 
-    if (isPaused && user) {
-      // Get user role
-      const { data: userProfile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+    if (isPaused) {
+      // Check if user is super_admin (only they can bypass)
+      let isSuperAdmin = false;
+      if (user) {
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
 
-      // Only super_admin can bypass maintenance mode
-      const isSuperAdmin = userProfile?.role === 'super_admin';
+        isSuperAdmin = userProfile?.role === 'super_admin';
+      }
 
+      // Redirect to maintenance unless super_admin or already on maintenance page
       if (!isSuperAdmin && !request.nextUrl.pathname.startsWith('/maintenance')) {
         const url = request.nextUrl.clone();
         url.pathname = '/maintenance';
