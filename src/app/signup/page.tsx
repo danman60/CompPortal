@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
+import Footer from '@/components/Footer';
 
 interface SignupFormData {
   email: string;
@@ -21,7 +22,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const checkEmailMutation = trpc.user.checkEmailExists.useMutation();
-  const { tenant, isLoading: tenantLoading } = useTenantTheme();
+  const { tenant, isLoading: tenantLoading, primaryColor, secondaryColor } = useTenantTheme();
 
   // Resolve tenant id reliably to avoid 500s from email system
   const resolveTenantId = async (): Promise<string | null> => {
@@ -171,7 +172,12 @@ export default function SignupPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="mb-8 flex justify-center">
-          <div className="h-16 w-16 bg-gradient-to-br from-pink-500 via-purple-500 to-yellow-500 rounded-2xl flex items-center justify-center">
+          <div
+            className="h-16 w-16 rounded-2xl flex items-center justify-center"
+            style={{
+              background: `linear-gradient(135deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+            }}
+          >
             <span className="text-3xl">✨</span>
           </div>
         </div>
@@ -241,7 +247,10 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || tenantLoading}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold"
+              className="w-full text-white py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold"
+              style={{
+                background: `linear-gradient(90deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+              }}
             >
               {loading || tenantLoading ? 'Creating account...' : 'Create Account'}
             </button>
@@ -265,6 +274,8 @@ export default function SignupPage() {
           </Link>
         </div>
       </div>
+
+      <Footer />
     </main>
   );
 }

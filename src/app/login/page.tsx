@@ -5,9 +5,10 @@ import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
+import Footer from '@/components/Footer';
 
 export default function LoginPage() {
-  const { tenant } = useTenantTheme();
+  const { tenant, primaryColor, secondaryColor } = useTenantTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,7 +45,12 @@ export default function LoginPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="mb-8 flex justify-center">
-          <div className="h-16 w-16 bg-gradient-to-br from-pink-500 via-purple-500 to-yellow-500 rounded-2xl flex items-center justify-center">
+          <div
+            className="h-16 w-16 rounded-2xl flex items-center justify-center"
+            style={{
+              background: `linear-gradient(135deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+            }}
+          >
             <span className="text-3xl">✨</span>
           </div>
         </div>
@@ -102,7 +108,10 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              style={{
+                background: `linear-gradient(90deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+              }}
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -122,6 +131,8 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
+
+      <Footer />
     </main>
   );
 }

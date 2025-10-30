@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getTenantData } from '@/lib/tenant-context';
 import GenericLandingPage from '@/components/GenericLandingPage';
 import { superAdminLoginAction } from './actions/auth';
+import Footer from '@/components/Footer';
 
 export default async function Home() {
   // Get tenant data from subdomain
@@ -85,6 +86,8 @@ export default async function Home() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </main>
   );
 }
