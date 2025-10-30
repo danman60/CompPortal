@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Import Layout Mockup</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1419;
+      color: #fff;
+      padding: 20px;
+      margin: 0;
+    }
+
+    /* Compact info bar */
+    .info-bar {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-icon {
+      font-size: 20px;
+    }
+
+    .info-text {
+      font-size: 14px;
+    }
+
+    .success { color: #10b981; }
+    .warning { color: #f59e0b; }
+    .info { color: #3b82f6; }
+
+    .divider {
+      width: 1px;
+      height: 24px;
+      background: #374151;
+    }
+
+    select {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Selection controls */
+    .selection-bar {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .selection-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .counter {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .counter-warn {
+      color: #ef4444;
+    }
+
+    .btn {
+      background: #374151;
+      border: 1px solid #4b5563;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn:hover {
+      background: #4b5563;
+    }
+
+    /* Table */
+    .table-container {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #111827;
+      border-bottom: 1px solid #374151;
+    }
+
+    th {
+      padding: 12px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #9ca3af;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #1f2937;
+      font-size: 14px;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .dropdown {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #9ca3af;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      width: 140px;
+    }
+
+    h3 {
+      margin: 0 0 20px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <h3>📄 Upload CSV or Excel File</h3>
+
+  <!-- COMPACT INFO BAR (replaces 4 big cards) -->
+  <div class="info-bar">
+    <div class="info-item success">
+      <span class="info-icon">✓</span>
+      <span class="info-text">52 routines validated</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info-item warning">
+      <span class="info-icon">⚠️</span>
+      <span class="info-text">182 unmatched dancers</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info-item info">
+      <span class="info-icon">🏆</span>
+      <span class="info-text">Competition:</span>
+      <select>
+        <option>Select approved reservation</option>
+        <option>UDA 2026 - 50 spaces</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- SELECTION CONTROLS -->
+  <div class="selection-bar">
+    <div class="selection-left">
+      <span class="counter">Selected: <span class="counter-warn">52</span> / 50 available</span>
+      <span style="color: #ef4444; font-size: 13px;">⚠️ Uncheck 2 routines to continue</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn">Uncheck All</button>
+      <button class="btn">Check All</button>
+    </div>
+  </div>
+
+  <!-- PREVIEW TABLE (with checkbox column) -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;">
+            <input type="checkbox" checked />
+          </th>
+          <th style="width: 40px;">#</th>
+          <th>TITLE</th>
+          <th>AGE GROUP</th>
+          <th>CLASSIFICATION</th>
+          <th>DANCE CATEGORY</th>
+          <th>ENTRY SIZE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="checkbox" checked /></td>
+          <td>1</td>
+          <td>Banana Split</td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+              <option>Mini (5-7)</option>
+              <option>Junior (8-11)</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+              <option>Recreational</option>
+              <option>Competitive</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+              <option>Jazz</option>
+              <option>Contemporary</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+              <option>Solo</option>
+              <option>Duo</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" checked /></td>
+          <td>2</td>
+          <td>River Dance</td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" /></td>
+          <td>3</td>
+          <td>Moonlight Sonata</td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+          <td>
+            <select class="dropdown">
+              <option>Select...</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top: 20px; padding: 16px; background: #1a1f2e; border: 1px solid #2d3748; border-radius: 8px;">
+    <div style="display: flex; gap: 12px;">
+      <button style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; opacity: 0.5; cursor: not-allowed;">
+        Import (disabled - too many selected)
+      </button>
+      <button style="background: #374151; border: 1px solid #4b5563; color: white; padding: 10px 24px; border-radius: 6px; cursor: pointer;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</body>
+</html>

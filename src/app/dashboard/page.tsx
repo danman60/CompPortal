@@ -28,6 +28,7 @@ export default async function DashboardPage() {
   // Fetch studio info if user is a studio director
   let studioName: string | undefined;
   let studioCode: string | null | undefined;
+  let studioPublicCode: string | null | undefined;
   let studioStatus: string | null | undefined;
   if (userProfile?.role === 'studio_director') {
     const studio = await prisma.studios.findFirst({
@@ -35,10 +36,11 @@ export default async function DashboardPage() {
         owner_id: user.id,
         ...(tenantId ? { tenant_id: tenantId } : {}),
       },
-      select: { name: true, code: true, status: true },
+      select: { name: true, code: true, public_code: true, status: true },
     });
     studioName = studio?.name;
     studioCode = studio?.code;
+    studioPublicCode = studio?.public_code;
     studioStatus = studio?.status;
 
     // Redirect to onboarding if no studio on THIS tenant or no first name
@@ -94,6 +96,7 @@ export default async function DashboardPage() {
             firstName={userProfile?.first_name || ''}
             studioName={studioName}
             studioCode={studioCode}
+            studioPublicCode={studioPublicCode}
             studioStatus={studioStatus}
           />
         ) : (
