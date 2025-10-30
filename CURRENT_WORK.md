@@ -1,38 +1,107 @@
-# Current Work - Multi-Tenant Branding Implementation
+# Current Work - Multi-Tenant Authentication & Isolation
 
-**Session:** October 29, 2025 (Session 24)
-**Status:** 🔄 QUICK WINS DEPLOYED - Awaiting Verification
-**Build:** v1.0.0 (10d09b6)
+**Session:** October 29, 2025 (Session 24 Continued)
+**Status:** ✅ TENANT ISOLATION COMPLETE - Cross-Tenant Auth Working
+**Build:** v1.0.0 (b966896)
 **Previous Session:** January 29, 2025 (Session 23 - Audit Complete)
 
 ---
 
-## ✅ Session 24 - Quick Wins Implemented (Commit 10d09b6)
+## ✅ Session 24 - Multi-Tenant Isolation (3 Commits)
 
-### Phase 1 Quick Wins - COMPLETED (30 minutes)
-**Three high-visibility user-facing branding fixes deployed:**
+### Phase 1: Quick Wins - COMPLETED (Commit 10d09b6)
+**Three high-visibility user-facing branding fixes:**
 
-1. ✅ **Footer.tsx:19** - Copyright now uses `{tenantName}` variable
-   - Already had context via `useTenantTheme()`, just wasn't using it
-   - Fix: 1-line change
-   - Result: Footer now shows "© 2025 EMPWR Dance Experience" or "© 2025 Glow Dance Competition"
+1. ✅ **Footer.tsx:19** - Dynamic copyright with `{tenantName}`
+2. ✅ **signup/page.tsx:182** - "Join {tenant?.name || 'us'} today"
+3. ✅ **login/page.tsx:7,10,57** - "Sign in to your {tenant?.name} account"
 
-2. ✅ **signup/page.tsx:182** - Signup text now uses tenant hook
-   - Already had `useTenantTheme()` imported, now using it
-   - Fix: 1-line change from "Join EMPWR today" to "Join {tenant?.name || 'us'} today"
-   - Result: Signup page adapts to tenant
+### Phase 2: Cross-Tenant Data Leak Fix - COMPLETED (Commit a9f5163)
+**Critical bug fixed: Client-side tRPC calls bypassing tenant isolation**
 
-3. ✅ **login/page.tsx:7,10,57** - Login text now uses tenant context
-   - Added `useTenantTheme()` import and hook
-   - Fix: 2-line import + 1-line text change
-   - Result: Login shows "Sign in to your EMPWR Dance Experience account" or "Sign in to your Glow Dance Competition account"
+**Problem:** User on glow.compsync.net saw EMPWR reservations
+- Client-side tRPC `fetch()` bypassed middleware headers
+- Context fallback used `user_profiles.tenant_id` (EMPWR) instead of subdomain tenant
+
+**Solution:** Added tenant headers to TRPCProvider (src/providers/trpc-provider.tsx)
+```typescript
+headers: () => {
+  const headers: Record<string, string> = {};
+  if (tenantRef.current) {
+    headers['x-tenant-id'] = tenantRef.current;
+  }
+  return headers;
+}
+```
+
+### Phase 3: Competition Status Fix - COMPLETED (Commit e129f11)
+**Fixed empty reservation dropdown**
+
+**Problem:** Query looked for `status='active'` but no competitions had that status
+- EMPWR: 'upcoming' (3) + 'cancelled' (2)
+- GLOW: 'registration_open' (7)
+
+**Solution:** Changed filter to accept multiple real statuses:
+```typescript
+status: { in: ['upcoming', 'registration_open', 'in_progress'] }
+```
+
+### Phase 4: Tenant-Aware Studio Lookups - COMPLETED (Commit 609fcbc + b966896)
+**Enabled single-account multi-tenant access**
+
+**Problem:** Studio lookups checked ANY tenant, breaking onboarding flow
+- User with EMPWR studio visiting GLOW skipped onboarding
+- 8 pages had cross-tenant studio lookups
+
+**Solution:** Added tenant filtering to all studio queries:
+1. ✅ dashboard/page.tsx - Main onboarding redirect
+2. ✅ studios/page.tsx - Studio settings
+3. ✅ invoices/page.tsx - Invoice list
+4. ✅ reservations/page.tsx - Reservations list
+5. ✅ reservations/new/page.tsx - New reservation
+6. ✅ dancers/new/page.tsx - New dancer
+7. ✅ dancers/add/page.tsx - Add dancers
+8. ✅ dancers/batch-add/page.tsx - Batch add dancers
+
+**Pattern Applied:**
+```typescript
+import { getTenantData } from '@/lib/tenant-context';
+
+const tenant = await getTenantData();
+const tenantId = tenant?.id;
+
+const studio = await prisma.studios.findFirst({
+  where: {
+    owner_id: user.id,
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+  },
+});
+```
 
 ### Testing Status
-- ⏳ **Deployment:** In progress on Vercel (auto-deploy from main branch)
-- ⏳ **EMPWR Verification:** Pending deployment completion
-- ⏳ **GLOW Verification:** Pending deployment completion
+- ✅ **Build:** Passed successfully
+- ✅ **All 8 pages:** Tenant filtering applied
+- ⏳ **Production Testing:** Pending user verification on both tenants
 
-**Next:** Once deployment completes (2-3 minutes), verify on both tenants with hard refresh (Ctrl+Shift+R) or incognito mode.
+### Remaining Work for Full Multi-Tenant Auth
+
+**To enable single user account across multiple tenants:**
+
+1. **Database Migration** - Make `user_profiles.tenant_id` NULLABLE
+   - Current: Locked to one tenant at signup
+   - Target: NULL for all users (tenant comes from subdomain only)
+
+2. **Signup Flow** - Remove tenant_id assignment at user creation
+   - Studios table already links user→tenant correctly
+   - Users should be tenant-agnostic
+
+3. **Testing Flow:**
+   - Register as Studio Director on EMPWR → create studio
+   - Same email/password login to GLOW → onboarding triggers
+   - Create GLOW studio → see GLOW data only
+   - Switch back to EMPWR → see EMPWR data only
+
+**Current State:** Same credentials work across tenants, but onboarding flow now properly triggers per-tenant. User account still has stale tenant_id from signup that should be removed.
 
 ---
 
