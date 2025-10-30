@@ -28,10 +28,26 @@ const getCapacityBarColor = (percentage: number) => {
  * Metric card component with counter animation
  */
 const MetricCard = ({ event }: { event: EventMetric }) => {
+  // Debug: Log values before passing to useCountUp
+  console.log(`[MetricCard] ${event.name}:`, {
+    used: event.used,
+    remaining: event.remaining,
+    studioCount: event.studioCount,
+    pendingCount: event.pendingCount
+  });
+
   const { count: usedCount } = useCountUp(event.used);
   const { count: remainingCount } = useCountUp(event.remaining);
   const { count: studioCountNum } = useCountUp(event.studioCount);
   const { count: pendingCountNum } = useCountUp(event.pendingCount);
+
+  // Debug: Log final rendered values
+  console.log(`[MetricCard RENDER] ${event.name}:`, {
+    usedCount,
+    remainingCount,
+    studioCountNum,
+    pendingCountNum
+  });
 
   return (
     <Link

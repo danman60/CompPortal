@@ -199,6 +199,55 @@ Before marking feature complete:
 - [ ] Soft delete used (status='cancelled')
 - [ ] Matches Phase 1 spec (if business logic)
 
+## Console.log Truncation
+
+**Symptom:** `console.log(data)` shows `Array(3)` or `{...}` instead of full data.
+
+**Why:** Browser console truncates large objects/arrays for performance.
+
+**Fix:**
+```typescript
+// ❌ WRONG - Truncates
+console.log('[Debug]', competitions);
+// Shows: Array(3) {0: {...}, 1: {...}, 2: {...}}
+
+// ✅ CORRECT - Full visibility
+console.log('[Debug]', JSON.stringify(competitions, null, 2));
+// Shows: Full JSON with all fields
+```
+
+**October 30 Bug:** Spent time trying different logging methods before realizing browser was truncating. `JSON.stringify()` immediately revealed all fields were present.
+
+## Animation Hooks (React)
+
+**Symptom:** Numbers show 0 instead of actual values, but data is correct everywhere.
+
+**Common cause:** Animation hook initialization bug.
+
+**Example from useCountUp:**
+```typescript
+// ❌ WRONG - Won't animate on mount
+const prevEnd = useRef(end);  // Starts at target value
+
+useEffect(() => {
+  if (prevEnd.current !== end) {  // FALSE on first render!
+    // Animate...
+  }
+}, [end]);
+
+// ✅ CORRECT - Triggers animation
+const prevEnd = useRef(undefined);  // Starts different from target
+```
+
+**October 30 Bug:** Pipeline capacity showed "0 / 600" because `useCountUp` never triggered animation on mount. Data was correct through entire stack, bug was in display layer.
+
+**Lesson:** When investigating display bugs, check data through EVERY layer before assuming calculation is wrong:
+1. Database values ✅
+2. Backend response ✅
+3. Frontend reception ✅
+4. Calculation logic ✅
+5. Display/animation hooks ← Bug often here!
+
 ## Quick Debug Order
 
 When user reports "X isn't working":
@@ -209,5 +258,7 @@ When user reports "X isn't working":
 4. **Check tenant_id** (missing on create? schema has it?)
 5. **Check chunk cache** (old JS despite new build?)
 6. **Check schema drift** (DB column exists but not in Prisma?)
+7. **Check console.log output** (use JSON.stringify for full data!)
+8. **Check animation/display hooks** (if data is correct but display is wrong)
 
 Load full protocols only after quick checks fail.

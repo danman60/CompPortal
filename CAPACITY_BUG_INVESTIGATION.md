@@ -86,10 +86,17 @@ The `competition.getAll` tRPC endpoint is returning competition objects, but the
   - St. Catharines #2: `total: 600, available: 381` (219 used) ✅
   - St. Catharines #1: `total: 600, available: 85` (515 used) ✅
   - London: `total: 600, available: 538` (62 used) ✅
-- **allKeys shows:** `total_reservation_tokens` and `available_reservation_tokens` ARE in the object
-- **BUT:** The calculation code (line 115-116) accesses these fields and gets `null`/`undefined`
-- **Theory:** The fields exist in the object but their VALUES are null/undefined
-- **Proof needed:** Log the ACTUAL values of `comp.total_reservation_tokens` not just Object.keys()
+- **EventMetrics logs confirmed:** Calculation code correctly accesses fields
+  - `total_reservation_tokens: 600, available_reservation_tokens: 381` ✅
+- **Real bug:** `useCountUp` hook doesn't animate on mount!
+  - Initializes `prevEnd.current = end` (line 12)
+  - Check `prevEnd.current !== end` is FALSE on first render
+  - Animation never triggers, stays at initial value of 0
+
+## Fix Applied (commit e1177c0)
+- Changed `prevEnd.current` initialization from `end` to `undefined` when `startOnMount=true`
+- Now animation triggers on first render
+- Numbers should count up from 0 to correct values
 
 ## Files Modified
 - ✅ **DEPLOYED (commit 608f3fd):**
@@ -100,4 +107,13 @@ The `competition.getAll` tRPC endpoint is returning competition objects, but the
   - `D:\ClaudeCode\CompPortal\src\components\rebuild\pipeline\PipelinePageContainer.tsx` - Changed to JSON.stringify for full data visibility
   - `D:\ClaudeCode\CompPortal\CAPACITY_BUG_INVESTIGATION.md` - Updated with Discovery 9
 
-## Next: Wait for deployment then test
+## Discovery 11: Animation Works But Shows Wrong Numbers
+- **Tested build e1177c0:** Numbers ARE showing but incorrect
+  - St. Catharines #2: Shows "3 / 600" (should be 219/600)
+  - St. Catharines #1: Shows "8 / 600" (should be 515/600)
+  - London: Shows "1 / 600" (should be 62/600)
+- **Console logs confirm:** EventMetrics calculation correct (total: 600, available: 381)
+- **Math verified:** 600 - 381 = 219 used ✅ (but displays as 3)
+- **Hypothesis:** Either props passing wrong values OR useCountUp animation logic has bug
+
+## Next: Debug what value is passed to useCountUp hook
