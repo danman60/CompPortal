@@ -340,7 +340,8 @@ export default function RoutineCSVImport() {
     setPreviewData([...routines]); // Initialize preview data with auto-detected values
   };
 
-  const validateData = (data: ParsedRoutine[]): ValidationError[] => {
+  // Validate only title on upload (show preview)
+  const validateUpload = (data: ParsedRoutine[]): ValidationError[] => {
     const errors: ValidationError[] = [];
 
     data.forEach((routine, index) => {
@@ -349,23 +350,22 @@ export default function RoutineCSVImport() {
       if (!routine.title || routine.title.trim() === '') {
         errors.push({ row: rowNum, field: 'title', message: 'Title is required' });
       }
-
-      // Validate all required fields are present
-      if (!routine.age_group_id) {
-        errors.push({ row: rowNum, field: 'age_group', message: 'Age Group is required' });
-      }
-      if (!routine.classification_id) {
-        errors.push({ row: rowNum, field: 'classification', message: 'Classification is required' });
-      }
-      if (!routine.category_id) {
-        errors.push({ row: rowNum, field: 'category', message: 'Dance Category is required' });
-      }
-      if (!routine.entry_size_id) {
-        errors.push({ row: rowNum, field: 'entry_size', message: 'Entry Size is required' });
-      }
     });
 
     return errors;
+  };
+
+  // Validate all fields before import
+  const validateBeforeImport = (): { valid: boolean; missingCount: number } => {
+    let missingCount = 0;
+
+    previewData.forEach((routine) => {
+      if (!routine.age_group_id || !routine.classification_id || !routine.category_id || !routine.entry_size_id) {
+        missingCount++;
+      }
+    });
+
+    return { valid: missingCount === 0, missingCount };
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -412,7 +412,7 @@ export default function RoutineCSVImport() {
       // Match dancers
       matchDancersInRoutines(parsed);
 
-      const errors = validateData(parsed);
+      const errors = validateUpload(parsed);
       setValidationErrors(errors);
 
       if (errors.length === 0) {
@@ -525,7 +525,7 @@ export default function RoutineCSVImport() {
       // Match dancers
       matchDancersInRoutines(parsed);
 
-      const errors = validateData(parsed);
+      const errors = validateUpload(parsed);
       setValidationErrors(errors);
 
       if (errors.length === 0) {
@@ -894,13 +894,43 @@ export default function RoutineCSVImport() {
             return null;
           })()}
 
+          {/* Missing Fields Warning */}
+          {(() => {
+            const { missingCount } = validateBeforeImport();
+            if (missingCount > 0) {
+              return (
+                <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">⚠️</div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-yellow-400 mb-2">Missing Required Fields</h3>
+                      <p className="text-gray-300 mb-2">
+                        {missingCount} routine(s) need all 4 fields completed before import:
+                      </p>
+                      <ul className="text-gray-400 text-sm list-disc list-inside space-y-1">
+                        <li>Age Group (auto-detected if dancers matched)</li>
+                        <li>Classification (must select manually)</li>
+                        <li>Dance Category (must select manually)</li>
+                        <li>Entry Size (auto-detected if dancers matched)</li>
+                      </ul>
+                      <p className="text-purple-300 text-sm mt-3">
+                        💡 Fill in the dropdowns in the preview table below
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
             <div className="flex items-start gap-4">
               <div className="text-4xl">✅</div>
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-green-400 mb-2">File Validated Successfully</h3>
                 <p className="text-gray-300 mb-4">
-                  Found {previewData.length} routine(s) ready to import. Review the data below.
+                  Found {previewData.length} routine(s) ready to import. Fill in required fields below.
                 </p>
 
                 <div className="flex gap-4">
