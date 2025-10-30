@@ -51,16 +51,12 @@ jobs:
           # Create backup directory
           mkdir -p backups
 
-          # Force IPv4 by using transaction pooler (better GitHub Actions compatibility)
-          # Original direct connection might have IPv6 issues
-          # pg_dump requires transaction pooler (port 6543)
-          POOLER_URL="${DATABASE_URL//db.cafugvuaatsgihrsmvvl.supabase.co:5432/aws-1-us-east-2.pooler.supabase.com:6543}"
-          POOLER_URL="${POOLER_URL//postgres:/postgres.cafugvuaatsgihrsmvvl:}"
+          # Use DATABASE_URL as-is (should be transaction pooler from Vercel)
+          # Expected format: postgresql://postgres.xxx:password@aws-1-us-east-2.pooler.supabase.com:6543/postgres
+          echo "Using DATABASE_URL from Vercel (transaction pooler)"
 
-          echo "Using transaction pooler (port 6543) for pg_dump compatibility"
-
-          # Run pg_dump with transaction pooler
-          pg_dump "$POOLER_URL" \
+          # Run pg_dump
+          pg_dump "$DATABASE_URL" \
             --clean \
             --if-exists \
             --no-owner \
