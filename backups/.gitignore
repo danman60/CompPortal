@@ -1,0 +1,10 @@
+# Keep backup files in repository for disaster recovery
+# These are SQL dumps and should be version controlled
+
+# But ignore large uncompressed backups locally
+*.sql
+
+# Keep compressed backups and metadata
+!*.sql.gz
+!*.meta
+!.gitignore

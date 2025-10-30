@@ -1,0 +1,155 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC (11 PM EST / 8 PM PST)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Generate backup filename
+        id: filename
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          FILENAME="backup_${TIMESTAMP}.sql"
+          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+
+      - name: Create database backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Extract connection details from DATABASE_URL
+          # Format: postgresql://user:password@host:port/database
+
+          # Create backup directory
+          mkdir -p backups
+
+          # Run pg_dump
+          pg_dump "$DATABASE_URL" \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-privileges \
+            --format=plain \
+            --file=backups/${{ steps.filename.outputs.filename }}
+
+          # Create compressed version
+          gzip -k backups/${{ steps.filename.outputs.filename }}
+
+          # Generate backup metadata
+          cat > backups/${{ steps.filename.outputs.filename }}.meta << EOF
+          Backup Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          Database: CompPortal Production
+          Size (uncompressed): $(du -h backups/${{ steps.filename.outputs.filename }} | cut -f1)
+          Size (compressed): $(du -h backups/${{ steps.filename.outputs.filename }}.gz | cut -f1)
+          GitHub Run: ${{ github.run_id }}
+          EOF
+
+      - name: Verify backup integrity
+        run: |
+          # Check backup file exists and is not empty
+          if [ ! -s "backups/${{ steps.filename.outputs.filename }}" ]; then
+            echo "ERROR: Backup file is empty or doesn't exist"
+            exit 1
+          fi
+
+          # Check backup contains expected tables
+          if ! grep -q "CREATE TABLE" "backups/${{ steps.filename.outputs.filename }}"; then
+            echo "ERROR: Backup doesn't contain CREATE TABLE statements"
+            exit 1
+          fi
+
+          # Count tables in backup
+          TABLE_COUNT=$(grep -c "CREATE TABLE" backups/${{ steps.filename.outputs.filename }} || true)
+          echo "✅ Backup contains $TABLE_COUNT tables"
+
+          # Minimum expected tables (adjust based on your schema)
+          if [ "$TABLE_COUNT" -lt 20 ]; then
+            echo "WARNING: Expected at least 20 tables, found $TABLE_COUNT"
+          fi
+
+      - name: Cleanup old backups (keep last 30 days)
+        run: |
+          # Keep only the 30 most recent backups
+          cd backups
+          ls -t backup_*.sql.gz | tail -n +31 | xargs -r rm
+          ls -t backup_*.sql | tail -n +31 | xargs -r rm
+          ls -t backup_*.sql.meta | tail -n +31 | xargs -r rm
+
+          # List remaining backups
+          echo "=== Remaining backups ==="
+          ls -lh backup_*.sql.gz | tail -n 5
+
+      - name: Commit backup to repository
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+          git add backups/
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: database backup ${{ steps.filename.outputs.timestamp }}
+
+Automated daily backup via GitHub Actions
+Backup size: $(du -h backups/${{ steps.filename.outputs.filename }}.gz | cut -f1)
+Run ID: ${{ github.run_id }}"
+
+            git push
+          fi
+
+      - name: Create GitHub Release with backup (weekly)
+        if: github.event.schedule == '0 3 * * 0' # Sunday only
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: backup-${{ steps.filename.outputs.timestamp }}
+          name: Weekly Backup ${{ steps.filename.outputs.timestamp }}
+          body: |
+            Automated weekly database backup
+
+            **Backup Details:**
+            - Date: ${{ steps.filename.outputs.timestamp }}
+            - Size: $(du -h backups/${{ steps.filename.outputs.filename }}.gz | cut -f1)
+            - Format: PostgreSQL SQL dump (gzip compressed)
+
+            **Restoration:**
+            ```bash
+            # Download and restore
+            gunzip backup_${{ steps.filename.outputs.timestamp }}.sql.gz
+            psql "$DATABASE_URL" < backup_${{ steps.filename.outputs.timestamp }}.sql
+            ```
+          files: |
+            backups/${{ steps.filename.outputs.filename }}.gz
+            backups/${{ steps.filename.outputs.filename }}.meta
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send failure notification (if backup fails)
+        if: failure()
+        run: |
+          echo "❌ DATABASE BACKUP FAILED"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # TODO: Add email/Slack notification here
+          # For now, GitHub will send email on workflow failure if configured
