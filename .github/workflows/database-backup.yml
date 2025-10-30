@@ -51,12 +51,14 @@ jobs:
           # Create backup directory
           mkdir -p backups
 
-          # Use DATABASE_URL as-is (should be transaction pooler from Vercel)
-          # Expected format: postgresql://postgres.xxx:password@aws-1-us-east-2.pooler.supabase.com:6543/postgres
-          echo "Using DATABASE_URL from Vercel (transaction pooler)"
+          # Strip query parameters (?pgbouncer=true&connection_limit=1) that pg_dump doesn't understand
+          # Vercel adds these for application connections, but pg_dump needs clean URL
+          CLEAN_URL="${DATABASE_URL%%\?*}"
+
+          echo "Using transaction pooler (stripped query params for pg_dump compatibility)"
 
           # Run pg_dump
-          pg_dump "$DATABASE_URL" \
+          pg_dump "$CLEAN_URL" \
             --clean \
             --if-exists \
             --no-owner \
