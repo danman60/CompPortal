@@ -180,13 +180,14 @@ export default function RoutineCSVImport() {
     return match?.id;
   };
 
-  // Auto-detect entry size based on dancer count (from useEntryFormV2 logic lines 141-151)
-  const autoDetectEntrySize = (matchedDancerIds: string[]): string | undefined => {
-    if (!matchedDancerIds.length || !lookupData?.entrySizeCategories) {
+  // Auto-detect entry size based on TOTAL dancer count (matched + unmatched)
+  const autoDetectEntrySize = (matchedDancerIds: string[], totalDancerCount: number): string | undefined => {
+    if (totalDancerCount === 0 || !lookupData?.entrySizeCategories) {
       return undefined;
     }
 
-    const count = matchedDancerIds.length;
+    // Use total count (matched + unmatched) for entry size
+    const count = totalDancerCount;
 
     // Match to size categories
     const match = lookupData.entrySizeCategories.find(
@@ -345,10 +346,17 @@ export default function RoutineCSVImport() {
       routine.matchedDancers = matched;
       routine.unmatchedDancers = unmatched;
 
-      // Auto-detect age group and entry size based on matched dancers
+      // Auto-detect age group and entry size
+      // Age group: Only if we have matched dancers (need DOB)
+      // Entry size: Based on TOTAL count (matched + unmatched)
+      const totalDancerCount = matched.length + unmatched.length;
+
       if (matched.length > 0) {
         routine.age_group_id = autoDetectAgeGroup(matched);
-        routine.entry_size_id = autoDetectEntrySize(matched);
+      }
+
+      if (totalDancerCount > 0) {
+        routine.entry_size_id = autoDetectEntrySize(matched, totalDancerCount);
       }
     });
 
@@ -797,46 +805,57 @@ export default function RoutineCSVImport() {
           )}
 
           {/* Compact Info Bar - replaces big cards */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-5 mb-4">
-            <div className="flex items-center gap-6 flex-wrap">
+          <div className="bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 mb-5">
+            <div className="flex items-center gap-8 flex-wrap">
               {/* Success - routines validated */}
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">✓</span>
-                <span className="text-sm text-green-400 font-semibold">{previewData.length} routines validated</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <span className="text-xl">✓</span>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wide">Validated</div>
+                  <div className="text-lg font-bold text-green-400">{previewData.length} routines</div>
+                </div>
               </div>
-
-              {/* Divider */}
-              <div className="w-px h-6 bg-white/20" />
 
               {/* Unmatched dancers warning */}
               {dancerMatches.filter(m => !m.matched).length > 0 && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">⚠️</span>
-                    <span className="text-sm text-orange-400 font-semibold">
-                      {dancerMatches.filter(m => !m.matched).length} unmatched dancers
-                    </span>
+                  <div className="h-12 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                      <span className="text-xl">⚠️</span>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wide">Unmatched</div>
+                      <div className="text-lg font-bold text-orange-400">{dancerMatches.filter(m => !m.matched).length} dancers</div>
+                    </div>
                   </div>
-                  <div className="w-px h-6 bg-white/20" />
                 </>
               )}
 
               {/* Competition selector */}
-              <div className="flex items-center gap-3 flex-1 min-w-[300px]">
-                <span className="text-xl">🏆</span>
-                <span className="text-sm text-gray-300">Competition:</span>
-                <select
-                  value={selectedReservationId}
-                  onChange={(e) => setSelectedReservationId(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm"
-                >
-                  <option value="" className="bg-gray-900">Select approved reservation</option>
-                  {reservationsData?.reservations?.map((res: any) => (
-                    <option key={res.id} value={res.id} className="bg-gray-900">
-                      {res.competitions?.name} - {res.spaces_confirmed} spaces
-                    </option>
-                  ))}
-                </select>
+              <div className="flex-1 min-w-[320px]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xl">🏆</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Competition</div>
+                    <select
+                      value={selectedReservationId}
+                      onChange={(e) => setSelectedReservationId(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white/10 border border-white/30 rounded-lg text-white text-sm font-medium focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
+                    >
+                      <option value="" className="bg-gray-900">Select approved reservation</option>
+                      {reservationsData?.reservations?.map((res: any) => (
+                        <option key={res.id} value={res.id} className="bg-gray-900">
+                          {res.competitions?.name} - {res.spaces_confirmed} spaces
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 

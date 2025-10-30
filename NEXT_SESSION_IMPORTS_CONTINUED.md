@@ -1,12 +1,49 @@
 # Next Session: Import System Improvements (Continued)
 
-**Session 25 Completed:** October 29, 2025
-**Status:** Import UI polish complete, ready for advanced improvements
-**Context:** Preserve full import system knowledge for next session
+**Session 26 Completed:** October 30, 2025
+**Status:** Compact UX with selective import complete
+**Context:** Major UX overhaul - compact layout + routine selection system
 
 ---
 
-## Session 25 Achievements
+## Session 26 Achievements (THIS SESSION)
+
+### 1. Compact Import UX (Major Overhaul)
+- ✅ **Replaced 4 Big Cards** with single compact horizontal info bar (RoutineCSVImport.tsx:794-881)
+  - Shows: ✓ routines validated, ⚠️ unmatched dancers, 🏆 competition dropdown
+  - Expandable details section for dancer matching info
+  - **Saved ~650px vertical space!**
+
+- ✅ **Added Routine Selection System**
+  - Checkbox column (first column in table) for individual selection
+  - Header checkbox for select all / deselect all
+  - Auto-selects all routines on file load
+  - State management with Set<number> for selected indices
+
+- ✅ **Selection Counter Bar** with validation (RoutineCSVImport.tsx:883-923)
+  - Shows "Selected: X / Y available" with dynamic styling
+  - Red warning when exceeding space limit: "⚠️ Uncheck 2 routines to continue"
+  - "Uncheck All" / "Check All" buttons for bulk operations
+
+- ✅ **Updated Import Logic** to respect selection (RoutineCSVImport.tsx:469-518)
+  - Only imports selected routines (not all!)
+  - Validates space limit against selected count
+  - Import button shows count: `Import (52 selected)`
+  - Disabled when exceeds limit or missing required fields
+
+### 2. User Problem Solved
+**Original Issue:** "If CSV has 200 routines but only 50 spaces available, blocking entire import"
+
+**Solution:** Users can now:
+1. Upload 200-routine file
+2. See all routines in preview table
+3. Select exactly which 50 they want
+4. Import only those selected
+5. Re-run import later for remaining routines
+
+---
+
+## Session 25 Achievements (Previous Session)
 
 ### 1. Import UI/UX Polish (All Tasks Complete)
 - ✅ **Reordered Messages** - Success message now appears BEFORE warning (RoutineCSVImport.tsx:897-959)
@@ -35,7 +72,7 @@
 
 ### Architecture Overview
 
-**Entry Point:** `src/components/RoutineCSVImport.tsx` (968 lines)
+**Entry Point:** `src/components/RoutineCSVImport.tsx` (~1050 lines after Session 26 changes)
 **CSV Utilities:** `src/lib/csv-utils.ts` (180 lines)
 **Display Components:** RoutineCard.tsx, RoutineTable.tsx, LiveSummaryBar.tsx
 
@@ -46,6 +83,8 @@
 4. **Entry Size Auto-Detection** - Determines Solo/Duo/Trio/Group from dancer count
 5. **Multi-file Support** - Can import from different file structures
 6. **Validation at Upload** - Shows warnings for missing data before import
+7. **Selective Import** - NEW: Checkbox selection for partial imports
+8. **Space Validation** - NEW: Real-time validation against available spaces
 
 ### Key Data Flow
 
@@ -55,9 +94,28 @@
 3. Row Parsing → Extract routine data + dancer names
 4. Dancer Matching → Match names to existing dancers (fuzzy 80%)
 5. Auto-Detection → Calculate age group + entry size
-6. Preview Table → Show matched/unmatched with confidence scores
-7. Import Action → Create entries with matched dancers
-8. Summary Validation → Block if any routines have 0 dancers
+6. Preview Table → Show with checkboxes (all selected by default)
+7. User Selection → Check/uncheck routines to import
+8. Space Validation → Verify selected count ≤ available spaces
+9. Import Action → Create only selected entries with matched dancers
+10. Summary Validation → Block if any routines have 0 dancers
+```
+
+### Selection State Management
+
+**State:** `selectedRoutines: Set<number>` - stores indices of selected routines
+
+**Key Functions:**
+- Auto-select all on load: `useEffect(() => setSelectedRoutines(new Set(previewData.map((_, i) => i))))`
+- Toggle individual: checkbox `onChange` adds/removes from Set
+- Check all: `setSelectedRoutines(new Set(previewData.map((_, i) => i)))`
+- Uncheck all: `setSelectedRoutines(new Set())`
+
+**Import Filtering:**
+```typescript
+const selectedIndices = Array.from(selectedRoutines);
+const routinesToImport = previewData.filter((_, i) => selectedRoutines.has(i));
+// Only process routinesToImport in import loop
 ```
 
 ### Field Variations (csv-utils.ts:36-53)
@@ -92,7 +150,7 @@ props: [
 
 ### Debug Logging (Added Session 25)
 
-**Age Group Detection:** RoutineCSVImport.tsx:250-258
+**Age Group Detection:** RoutineCSVImport.tsx:136-142
 - Logs prerequisites check (dancer IDs, existing dancers, event date, age groups)
 - Logs individual dancer ages and event date
 - Logs age range and matched age group
@@ -104,25 +162,25 @@ props: [
 
 ## Test Files Ready
 
-**Location:** Provided by user in Session 25
+**Location:** User has test files from Session 25
 
 1. **Dancers_UDA_2026.xls** - 46 dancers
    - Tests: Dancer import, data normalization
 
 2. **Entries UDA 2026.xls** - 208 routines
-   - Tests: Bulk import, dancer matching, age detection, entry size detection
+   - Tests: Bulk import, dancer matching, age detection, entry size detection, **selective import**
    - Known column: "Dancers list (First Name Last Name)"
 
-**Test Workflow** (from NEXT_SESSION_IMPORT_UX.md):
+**Test Workflow:**
 ```
-1. Import Dancers_UDA_2026.xls
-2. Verify 46 dancers imported correctly
-3. Import Entries UDA 2026.xls
-4. Check dancer matching success rate
-5. Verify age group auto-detection
-6. Verify entry size auto-detection
-7. Check for any 0-dancer routines (orange indicators)
-8. Attempt summary submission (should block if issues)
+1. Import Dancers_UDA_2026.xls (46 dancers)
+2. Import Entries UDA 2026.xls (208 routines)
+3. Select competition with limited spaces (e.g., 50)
+4. See "Selected: 208 / 50 available" warning
+5. Uncheck routines until ≤ 50 selected
+6. Verify import button enables
+7. Import selected routines
+8. Verify only selected routines created
 ```
 
 ---
@@ -141,8 +199,9 @@ props: [
 
 ### 3. Batch Import Performance
 - **Issue:** 200+ routines processed synchronously
-- **Current:** Works but no progress indicator
+- **Current:** Works but no progress indicator during import
 - **Potential Improvement:** Batch processing with progress bar
+- **Note:** Progress bar shows AFTER import starts, not during
 
 ### 4. Error Recovery
 - **Issue:** Partial import failures don't rollback
@@ -154,19 +213,26 @@ props: [
 - **Current:** 70% threshold works for most files
 - **Potential Improvement:** Manual column mapping interface
 
+### 6. Re-import Workflow
+- **Issue:** No way to identify which routines already imported from same file
+- **Current:** User must manually track
+- **Potential Improvement:** Show "Already Imported" indicator based on title match
+
 ---
 
 ## Suggested Next Improvements
 
 ### Priority 1: User Testing Feedback
 - Run E2E test with Dancers_UDA_2026.xls + Entries UDA 2026.xls
-- Identify any new edge cases or bugs
+- Test selective import with space limits
 - Gather user feedback on UX flow
+- **SESSION 26 NOTE:** User requested this feature, should test it!
 
-### Priority 2: Progress Indicators
+### Priority 2: Progress Indicators During Import
 - Add spinner/progress bar for bulk imports
-- Show "Processing X of Y routines..."
+- Show "Processing X of Y routines..." during import loop
 - Disable import button during processing
+- **Note:** Current progress bar only shows after import starts
 
 ### Priority 3: Better Error Handling
 - Wrap import in try-catch with rollback
@@ -188,21 +254,36 @@ props: [
 - Export current entries to CSV for bulk editing
 - Import updated CSV to modify existing entries
 
+### Priority 7: Re-import Intelligence
+- Detect duplicate titles when re-importing
+- Show which routines already exist
+- Allow "Update existing" vs "Create new" choice
+
 ---
 
 ## Code Reference Map
 
+**Selection System (NEW in Session 26):**
+- `RoutineCSVImport.tsx:55` - selectedRoutines state declaration
+- `RoutineCSVImport.tsx:95-100` - Auto-select all on load
+- `RoutineCSVImport.tsx:794-881` - Compact info bar with competition dropdown
+- `RoutineCSVImport.tsx:883-923` - Selection counter bar with Check All/Uncheck All
+- `RoutineCSVImport.tsx:925-947` - Import/Cancel buttons with selection count
+- `RoutineCSVImport.tsx:973-985` - Header checkbox (select all)
+- `RoutineCSVImport.tsx:1016-1030` - Individual row checkboxes
+- `RoutineCSVImport.tsx:469-518` - Import logic filtering by selection
+
 **Import Logic:**
-- `RoutineCSVImport.tsx:84-92` - Event date auto-loading
-- `RoutineCSVImport.tsx:208-282` - Age group detection with logging
+- `RoutineCSVImport.tsx:95-100` - Event date auto-loading
+- `RoutineCSVImport.tsx:136-282` - Age group detection with logging
 - `RoutineCSVImport.tsx:284-298` - Entry size detection
 - `RoutineCSVImport.tsx:368-490` - Dancer matching with fuzzy search
-- `RoutineCSVImport.tsx:578-705` - CSV parsing and import execution
+- `RoutineCSVImport.tsx:447-529` - CSV parsing and import execution
 
 **Validation:**
 - `LiveSummaryBar.tsx:52-68` - 0-dancer validation
 - `LiveSummaryBar.tsx:151-194` - Dancer warning modal
-- `RoutineCSVImport.tsx:897-959` - Success/warning message display
+- `RoutineCSVImport.tsx:929-936` - Import button disabled logic
 
 **CSV Utilities:**
 - `csv-utils.ts:22-30` - Header normalization
@@ -236,21 +317,21 @@ props: [
 ## Session Continuity Notes
 
 **Context to preserve:**
-1. Import system architecture (fuzzy matching, auto-detection)
+1. Import system architecture (fuzzy matching, auto-detection, **selective import**)
 2. Field variations mapping (critical for Excel compatibility)
 3. Debug logging locations (for production monitoring)
 4. Test files available (Dancers_UDA_2026.xls, Entries UDA 2026.xls)
 5. Orange indicators for 0-dancer routines
 6. Summary blocking validation
 7. Studio public code system (display-only)
+8. **NEW: Selection system for partial imports**
 
 **Don't reload:**
-- NEXT_SESSION_IMPORT_UX.md (Session 25 tasks complete)
 - Detailed implementation of completed features
 
 **Do reference:**
 - csv-utils.ts for field variations
-- RoutineCSVImport.tsx for auto-detection logic
+- RoutineCSVImport.tsx for auto-detection + selection logic
 - This file for context and suggestions
 
 ---
@@ -267,15 +348,18 @@ props: [
 2. Verify field variations in csv-utils.ts
 3. Check Supabase for actual dancer data vs. matched data
 4. Use Playwright MCP to reproduce exact user steps
+5. Check selectedRoutines state if selection issues
 
 **If adding new features:**
 1. Review suggested improvements above
 2. Check existing auto-detection logic before duplicating
 3. Add field variations if new CSV headers needed
 4. Test with both test files
+5. Consider impact on selection system
 
 ---
 
-**Last Commit:** c3378f5 - Add studio public code lookup endpoint
+**Last Commit:** c2576f3 - Compact import UX with routine selection
 **Build Status:** ✅ Passing
-**Ready For:** User testing feedback or next improvement cycle
+**Deployment:** Waiting for Vercel (build c2576f3 not yet showing on production)
+**Ready For:** User testing with selective import feature
