@@ -894,36 +894,7 @@ export default function RoutineCSVImport() {
             return null;
           })()}
 
-          {/* Missing Fields Warning */}
-          {(() => {
-            const { missingCount } = validateBeforeImport();
-            if (missingCount > 0) {
-              return (
-                <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">⚠️</div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-yellow-400 mb-2">Missing Required Fields</h3>
-                      <p className="text-gray-300 mb-2">
-                        {missingCount} routine(s) need all 4 fields completed before import:
-                      </p>
-                      <ul className="text-gray-400 text-sm list-disc list-inside space-y-1">
-                        <li>Age Group (auto-detected if dancers matched)</li>
-                        <li>Classification (must select manually)</li>
-                        <li>Dance Category (must select manually)</li>
-                        <li>Entry Size (auto-detected if dancers matched)</li>
-                      </ul>
-                      <p className="text-purple-300 text-sm mt-3">
-                        💡 Fill in the dropdowns in the preview table below
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
+          {/* File Validated Successfully - Appears First */}
           <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-6">
             <div className="flex items-start gap-4">
               <div className="text-4xl">✅</div>
@@ -957,6 +928,36 @@ export default function RoutineCSVImport() {
             </div>
           </div>
 
+          {/* Missing Fields Warning - Appears Below Success */}
+          {(() => {
+            const { missingCount } = validateBeforeImport();
+            if (missingCount > 0) {
+              return (
+                <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">⚠️</div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-yellow-400 mb-2">Missing Required Fields</h3>
+                      <p className="text-gray-300 mb-2">
+                        {missingCount} routine(s) need all 4 fields completed before import:
+                      </p>
+                      <ul className="text-gray-400 text-sm list-disc list-inside space-y-1">
+                        <li>Age Group (auto-detected if dancers matched)</li>
+                        <li>Classification (must select manually)</li>
+                        <li>Dance Category (must select manually)</li>
+                        <li>Entry Size (auto-detected if dancers matched)</li>
+                      </ul>
+                      <p className="text-purple-300 text-sm mt-3">
+                        💡 Fill in the dropdowns in the preview table below
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Preview Table */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 overflow-x-auto">
             <h3 className="text-lg font-semibold text-white mb-4">Preview ({previewData.length} routines)</h3>
@@ -977,7 +978,7 @@ export default function RoutineCSVImport() {
               </div>
             )}
 
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[600px] overflow-y-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase bg-black/40 sticky top-0">
                   <tr>

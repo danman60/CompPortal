@@ -135,6 +135,7 @@ export function EntriesPageContainer() {
         estimatedTotal={summaryData.estimatedTotal}
         confirmedSpaces={summaryData.confirmedSpaces}
         reservation={selectedReservation}
+        entries={filteredEntries}
         onSubmitSummary={submitSummary}
       />
     </div>

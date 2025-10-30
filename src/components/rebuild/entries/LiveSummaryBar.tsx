@@ -13,11 +13,19 @@ interface Reservation {
   [key: string]: any;
 }
 
+interface Entry {
+  id: string;
+  title?: string;
+  entry_participants?: Array<{ dancer_name: string }>;
+  [key: string]: any;
+}
+
 interface LiveSummaryBarProps {
   created: number;
   estimatedTotal: number;
   confirmedSpaces: number;
   reservation: Reservation | null;
+  entries?: Entry[];
   onSubmitSummary: (payload: { studioId: string; competitionId: string }) => Promise<void>;
 }
 
@@ -30,18 +38,29 @@ export function LiveSummaryBar({
   estimatedTotal,
   confirmedSpaces,
   reservation,
+  entries = [],
   onSubmitSummary,
 }: LiveSummaryBarProps) {
   const [showModal, setShowModal] = useState(false);
+  const [showDancerWarning, setShowDancerWarning] = useState(false);
 
   if (!reservation) return null;
 
   const isIncomplete = created < confirmedSpaces;
   const isClosed = reservation.is_closed;
-  const canSubmit = created > 0 && !isClosed;
+
+  // Check for routines without dancers
+  const routinesNeedingDancers = entries.filter(
+    e => !e.entry_participants || e.entry_participants.length === 0
+  );
+  const hasMissingDancers = routinesNeedingDancers.length > 0;
+
+  const canSubmit = created > 0 && !isClosed && !hasMissingDancers;
 
   const handleSubmit = () => {
-    if (isIncomplete) {
+    if (hasMissingDancers) {
+      setShowDancerWarning(true); // Show dancer warning
+    } else if (isIncomplete) {
       setShowModal(true); // Show warning modal
     } else {
       setShowModal(true); // Show confirmation modal
@@ -127,6 +146,51 @@ export function LiveSummaryBar({
           onConfirm={onSubmitSummary}
           onCancel={() => setShowModal(false)}
         />
+      )}
+
+      {/* Dancer Warning Modal */}
+      {showDancerWarning && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-orange-900/90 via-red-900/90 to-orange-900/90 backdrop-blur-md rounded-xl border-2 border-orange-400/50 p-8 max-w-2xl w-full shadow-2xl">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="text-6xl">⚠️</div>
+              <div>
+                <h2 className="text-3xl font-bold text-orange-300 mb-2">
+                  Cannot Submit Summary
+                </h2>
+                <p className="text-white text-lg">
+                  {routinesNeedingDancers.length} routine(s) need dancers before you can submit
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-black/30 rounded-lg p-4 mb-6 max-h-60 overflow-y-auto">
+              <h3 className="text-white font-semibold mb-3">Routines needing dancers:</h3>
+              <ul className="space-y-2">
+                {routinesNeedingDancers.map((entry) => (
+                  <li key={entry.id} className="flex items-center gap-2 text-orange-200">
+                    <span className="text-orange-400">•</span>
+                    <span>{entry.title || 'Untitled'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Please edit each routine to attach at least one dancer before submitting your summary.
+            </p>
+
+            <div className="flex gap-4">
+              <Button
+                onClick={() => setShowDancerWarning(false)}
+                variant="primary"
+                className="flex-1"
+              >
+                Got It
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Spacer to prevent content from being hidden under fixed bar */}

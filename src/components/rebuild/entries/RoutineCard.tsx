@@ -35,8 +35,10 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
     }
   };
 
+  const needsDancers = !entry.entry_participants || entry.entry_participants.length === 0;
+
   return (
-    <Card>
+    <Card className={needsDancers ? 'border-2 border-orange-400/50' : ''}>
       <div className="flex items-start justify-between mb-4">
         <div>
           {entry.entry_number && (
@@ -46,7 +48,14 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
           )}
           <h3 className="text-xl font-bold text-white">{entry.title || 'Untitled'}</h3>
         </div>
-        <Badge status={entry.status || 'draft' as any} />
+        <div className="flex flex-col gap-2 items-end">
+          <Badge status={entry.status || 'draft' as any} />
+          {needsDancers && (
+            <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 border border-orange-400/50 rounded-full text-orange-300 text-xs font-semibold">
+              ⚠️ Needs Dancers
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2 mb-4 text-white/80">
