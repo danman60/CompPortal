@@ -184,17 +184,192 @@ export const testingRouter = router({
 
   /**
    * Populate Test Data - Generate realistic test data
-   * Creates studios, dancers, entries, reservations in various states
-   *
-   * TODO: Schema alignment needed - this function requires updates to match
-   * the actual Prisma schema for: studios, dancers, competition_entries, invoices
+   * Creates 25 studios across all pipeline stages with matching capacity
    */
   populateTestData: superAdminProcedure
     .mutation(async ({ ctx }) => {
-      throw new TRPCError({
-        code: 'NOT_IMPLEMENTED',
-        message: 'Populate Test Data feature requires schema alignment work. Use CLEAN SLATE for now.',
+      const tenantId = ctx.tenantId!;
+      const createdCounts: Record<string, number> = {};
+
+      // Get available competitions
+      const competitions = await prisma.competitions.findMany({
+        where: { tenant_id: tenantId, status: { not: 'cancelled' } },
+        orderBy: { competition_start_date: 'asc' },
+        take: 3,
       });
+
+      if (competitions.length === 0) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'No active competitions found. Please create competitions first.',
+        });
+      }
+
+      // Pipeline stage distribution (25 studios total)
+      const stageDistribution = [
+        { stage: 'pending', count: 5 },           // 5 pending reservations
+        { stage: 'approved', count: 6 },          // 6 approved (no summary yet)
+        { stage: 'summarized', count: 6 },        // 6 with summaries (ready to invoice)
+        { stage: 'invoiced_draft', count: 4 },    // 4 with draft invoices
+        { stage: 'invoiced_sent', count: 2 },     // 2 with sent invoices
+        { stage: 'paid', count: 2 },              // 2 fully paid
+      ];
+
+      let studioIndex = 0;
+      const password = 'TestPassword123!';
+
+      await prisma.$transaction(async (tx) => {
+        for (const { stage, count } of stageDistribution) {
+          for (let i = 0; i < count; i++) {
+            studioIndex++;
+            const studioName = `${faker.company.name()} Dance Studio`;
+            const email = `testsd${studioIndex}@test.com`;
+            const spacesRequested = faker.number.int({ min: 15, max: 35 });
+
+            // Create auth user
+            const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
+              email,
+              password,
+              email_confirm: true,
+            });
+
+            if (error || !authUser.user) {
+              console.error(`Failed to create auth user for ${email}:`, error);
+              continue;
+            }
+
+            // Create user profile
+            await tx.user_profiles.create({
+              data: {
+                id: authUser.user.id,
+                role: 'studio_director',
+                tenant_id: tenantId,
+              },
+            });
+
+            // Generate studio code
+            const studioCode = `TS${studioIndex.toString().padStart(3, '0')}`;
+
+            // Create studio
+            const studio = await tx.studios.create({
+              data: {
+                owner_id: authUser.user.id,
+                code: studioCode,
+                public_code: studioCode,
+                name: studioName,
+                city: faker.location.city(),
+                province: 'Ontario',
+                country: 'Canada',
+                phone: faker.phone.number(),
+                email,
+                tenant_id: tenantId,
+              },
+            });
+
+            createdCounts.studios = (createdCounts.studios || 0) + 1;
+
+            // Create 8-12 dancers per studio
+            const dancerCount = faker.number.int({ min: 8, max: 12 });
+            for (let d = 0; d < dancerCount; d++) {
+              await tx.dancers.create({
+                data: {
+                  studio_id: studio.id,
+                  first_name: faker.person.firstName(),
+                  last_name: faker.person.lastName(),
+                  date_of_birth: faker.date.birthdate({ min: 5, max: 18, mode: 'age' }),
+                  gender: faker.helpers.arrayElement(['Female', 'Male', 'Non-binary']),
+                  parent_name: faker.person.fullName(),
+                  parent_email: faker.internet.email(),
+                  parent_phone: faker.phone.number(),
+                  tenant_id: tenantId,
+                },
+              });
+              createdCounts.dancers = (createdCounts.dancers || 0) + 1;
+            }
+
+            // Select a competition for this studio
+            const competition = competitions[i % competitions.length];
+
+            // Create reservation based on stage
+            if (stage !== 'no_reservation') {
+              const reservation = await tx.reservations.create({
+                data: {
+                  studio_id: studio.id,
+                  competition_id: competition.id,
+                  spaces_requested: spacesRequested,
+                  spaces_confirmed: stage === 'pending' ? 0 : spacesRequested,
+                  status: stage === 'pending' ? 'pending' :
+                          stage.startsWith('approved') || stage.startsWith('summarized') || stage.startsWith('invoiced') || stage === 'paid' ? 'approved' :
+                          stage.startsWith('summarized') ? 'summarized' :
+                          'approved',
+                  requested_at: faker.date.recent({ days: 14 }),
+                  approved_at: stage !== 'pending' ? faker.date.recent({ days: 10 }) : null,
+                  agent_first_name: faker.person.firstName(),
+                  agent_last_name: faker.person.lastName(),
+                  agent_email: email,
+                  agent_phone: faker.phone.number(),
+                  age_of_consent: true,
+                  waiver_consent: true,
+                  media_consent: true,
+                  deposit_amount: 100,
+                  tenant_id: tenantId,
+                },
+              });
+
+              createdCounts.reservations = (createdCounts.reservations || 0) + 1;
+
+              // Deduct capacity for approved reservations
+              if (stage !== 'pending') {
+                await tx.competitions.update({
+                  where: { id: competition.id },
+                  data: {
+                    available_reservation_tokens: { decrement: spacesRequested },
+                  },
+                });
+
+                // Add capacity ledger entry
+                await tx.capacity_ledger.create({
+                  data: {
+                    competition_id: competition.id,
+                    reservation_id: reservation.id,
+                    change_amount: -spacesRequested,
+                    reason: 'approval',
+                    tenant_id: tenantId,
+                  },
+                });
+              }
+
+              // Create invoice for stages that need it
+              if (stage.startsWith('invoiced') || stage === 'paid') {
+                const invoiceStatus = stage === 'invoiced_draft' ? 'DRAFT' : 'SENT';
+                const paidAt = stage === 'paid' ? faker.date.recent({ days: 3 }) : null;
+
+                await tx.invoices.create({
+                  data: {
+                    studio_id: studio.id,
+                    competition_id: competition.id,
+                    reservation_id: reservation.id,
+                    status: invoiceStatus,
+                    subtotal: spacesRequested * 50, // $50 per entry
+                    total: spacesRequested * 50,
+                    paid_at: paidAt,
+                    payment_method: paidAt ? 'credit_card' : null,
+                    tenant_id: tenantId,
+                  },
+                });
+
+                createdCounts.invoices = (createdCounts.invoices || 0) + 1;
+              }
+            }
+          }
+        }
+      });
+
+      return {
+        success: true,
+        createdCounts,
+        message: `Created ${studioIndex} studios across all pipeline stages`,
+      };
     }),
 
   /**

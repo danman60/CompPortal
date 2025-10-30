@@ -180,13 +180,18 @@ export const studioRouter = router({
     }),
 
   // Get studios with statistics
-  getStats: publicProcedure.query(async () => {
+  getStats: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenantId) {
+      return { total: 0, pending: 0, approved: 0, withDancers: 0 };
+    }
+
     const [total, pending, approved, withDancers] = await Promise.all([
-      prisma.studios.count(),
-      prisma.studios.count({ where: { status: 'pending' } }),
-      prisma.studios.count({ where: { status: 'approved' } }),
+      prisma.studios.count({ where: { tenant_id: ctx.tenantId } }),
+      prisma.studios.count({ where: { status: 'pending', tenant_id: ctx.tenantId } }),
+      prisma.studios.count({ where: { status: 'approved', tenant_id: ctx.tenantId } }),
       prisma.studios.count({
         where: {
+          tenant_id: ctx.tenantId,
           dancers: {
             some: {},
           },
