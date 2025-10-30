@@ -66,7 +66,7 @@ export function ChatwootWidget({
 
     // Configure Chatwoot settings
     window.chatwootSettings = {
-      hideMessageBubble: false,
+      hideMessageBubble: true, // Hide default bubble - we use custom Support button
       position: 'right',
       locale,
       type: 'standard',

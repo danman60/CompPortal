@@ -20,9 +20,9 @@ const COLORS = {
 };
 
 /**
- * Initialize PDF with standard EMPWR branding
+ * Initialize PDF with tenant branding
  */
-function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrait'): jsPDF {
+function initPDF(title: string, tenantName: string = 'Dance Competition', orientation: 'portrait' | 'landscape' = 'portrait'): jsPDF {
   const doc = new jsPDF({
     orientation,
     unit: 'mm',
@@ -32,7 +32,7 @@ function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrai
   // Add header with branding
   doc.setFontSize(20);
   doc.setTextColor(COLORS.primary);
-  doc.text('✨ EMPWR Dance Experience', 15, 15);
+  doc.text(`✨ ${tenantName}`, 15, 15);
 
   doc.setFontSize(12);
   doc.setTextColor(COLORS.text);
@@ -53,7 +53,7 @@ function initPDF(title: string, orientation: 'portrait' | 'landscape' = 'portrai
 /**
  * Add footer with page numbers
  */
-function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
+function addFooter(doc: jsPDF, pageNum: number, totalPages: number, tenantName: string = 'Dance Competition') {
   const pageHeight = doc.internal.pageSize.height;
   doc.setFontSize(8);
   doc.setTextColor(COLORS.textLight);
@@ -63,13 +63,14 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
     pageHeight - 10,
     { align: 'center' }
   );
-  doc.text('EMPWR Dance Experience', 15, pageHeight - 10);
+  doc.text(tenantName, 15, pageHeight - 10);
 }
 
 /**
  * Entry Score Sheet - Individual entry with all judge scores
  */
 export function generateEntryScoreSheet(data: {
+  tenantName?: string;
   competition: {
     name: string;
     dates: string;
@@ -94,7 +95,7 @@ export function generateEntryScoreSheet(data: {
   average_score: number;
   award_level: string;
 }): Blob {
-  const doc = initPDF(`Entry Score Sheet - #${data.entry.entry_number}`);
+  const doc = initPDF(`Entry Score Sheet - #${data.entry.entry_number}`, data.tenantName || 'Dance Competition');
 
   // Competition info section
   let yPos = 40;
@@ -527,6 +528,7 @@ export function generateInvoicePDF(invoice: {
   invoiceDate: Date | string;
   studio: {
     name: string;
+    code?: string | null;
     address1?: string | null;
     address2?: string | null;
     city?: string | null;
@@ -654,6 +656,13 @@ export function generateInvoicePDF(invoice: {
   doc.setFontSize(9);
   doc.setTextColor(COLORS.textLight);
   let studioYPos = yPos + 5;
+  if (invoice.studio.code) {
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.primary);
+    doc.text(`Studio Code: ${invoice.studio.code}`, leftX, studioYPos);
+    studioYPos += 5;
+    doc.setTextColor(COLORS.textLight);
+  }
   if (invoice.studio.address1) {
     doc.text(invoice.studio.address1, leftX, studioYPos);
     studioYPos += 4;
