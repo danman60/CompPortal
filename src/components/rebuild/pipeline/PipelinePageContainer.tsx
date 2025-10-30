@@ -48,8 +48,20 @@ export function PipelinePageContainer() {
   const { tenant } = useTenantTheme();
 
   // Fetch competitions
-  const { data: competitionsData, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
+  const { data: competitionsData, isLoading: competitionsLoading, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
   const competitions = competitionsData?.competitions || [];
+
+  // Debug: Log what we receive
+  console.log('[Pipeline] Competitions data:', {
+    hasData: !!competitionsData,
+    count: competitions.length,
+    loading: competitionsLoading,
+    competitions: competitions.map(c => ({
+      name: c.name,
+      total: c.total_reservation_tokens,
+      available: c.available_reservation_tokens
+    }))
+  });
 
   const {
     reservations,
@@ -72,7 +84,7 @@ export function PipelinePageContainer() {
     await markAsPaidMutation.mutateAsync(payload);
   };
 
-  const isLoading = reservationsLoading;
+  const isLoading = reservationsLoading || competitionsLoading;
 
   const [approvalModal, setApprovalModal] = useState<ApprovalModalState>({
     isOpen: false,
