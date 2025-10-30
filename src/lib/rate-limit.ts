@@ -18,10 +18,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
-} else {
-  // Development mode: No rate limiting if Upstash not configured
-  logger.warn('Upstash Redis not configured - rate limiting disabled');
 }
+// Development mode: No rate limiting if Upstash not configured (silently disabled)
 
 /**
  * Rate limiters for different endpoints

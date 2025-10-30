@@ -108,6 +108,11 @@ const sentryWebpackPluginOptions = {
 
   // Only upload source maps in production
   disabled: process.env.NODE_ENV !== 'production',
+
+  // Suppress deprecation warnings
+  hideSourceMaps: false,
+  widenClientFileUpload: true,
+  disableLogger: true,
 };
 
 // Export wrapped config
