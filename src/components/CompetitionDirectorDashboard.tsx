@@ -146,7 +146,11 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
     ? reservations.reservations.filter((r) => r.status === 'summarized').length
     : 0;
 
-  const badgeCount = pendingCount + summarizedCount;
+  const draftInvoicesCount = invoicesData?.invoices
+    ? invoicesData.invoices.filter((inv: any) => inv.status === 'DRAFT').length
+    : 0;
+
+  const badgeCount = pendingCount + summarizedCount + draftInvoicesCount;
 
   // Handle pipeline click
   const handlePipelineClick = () => {
@@ -252,19 +256,59 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
             </div>
             <div className="text-xs mt-1 opacity-90">Manage all studio reservations from request to payment in one view</div>
             {showBadge && badgeCount > 0 && (
-              <div className="mt-3 flex flex-col gap-1.5 text-xs">
-                {pendingCount > 0 && (
-                  <div className="bg-yellow-500/20 border border-yellow-400/50 text-yellow-200 px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <span className="text-yellow-400">●</span>
-                    {pendingCount} Reservation{pendingCount !== 1 ? 's' : ''} Need{pendingCount === 1 ? 's' : ''} Approval
+              <div className="mt-4 bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-bold text-white/90 uppercase tracking-wider flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    Action Items
                   </div>
-                )}
-                {summarizedCount > 0 && (
-                  <div className="bg-blue-500/20 border border-blue-400/50 text-blue-200 px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <span className="text-blue-400">●</span>
-                    {summarizedCount} New Summar{summarizedCount !== 1 ? 'ies' : 'y'} Submitted
+                  <div className="flex items-center justify-center bg-purple-500/30 border border-purple-400/40 rounded-full w-7 h-7">
+                    <span className="text-xs font-bold text-purple-200">{badgeCount}</span>
                   </div>
-                )}
+                </div>
+                <div className="flex flex-col gap-2 text-xs">
+                  {pendingCount > 0 && (
+                    <div className="bg-gradient-to-r from-yellow-500/15 to-yellow-600/10 border border-yellow-400/40 text-yellow-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-yellow-500/20 hover:to-yellow-600/15 transition-all shadow-sm">
+                      <div className="flex items-center justify-center bg-yellow-500/30 rounded-full w-7 h-7 flex-shrink-0">
+                        <svg className="w-4 h-4 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-yellow-200 font-bold">{pendingCount} Reservation{pendingCount !== 1 ? 's' : ''} Awaiting Review</div>
+                        <div className="text-yellow-300/70 text-[10px] mt-0.5">Action required</div>
+                      </div>
+                    </div>
+                  )}
+                  {summarizedCount > 0 && (
+                    <div className="bg-gradient-to-r from-blue-500/15 to-blue-600/10 border border-blue-400/40 text-blue-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-blue-500/20 hover:to-blue-600/15 transition-all shadow-sm">
+                      <div className="flex items-center justify-center bg-blue-500/30 rounded-full w-7 h-7 flex-shrink-0">
+                        <svg className="w-4 h-4 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-blue-200 font-bold">{summarizedCount} New Summar{summarizedCount !== 1 ? 'ies' : 'y'} Received</div>
+                        <div className="text-blue-300/70 text-[10px] mt-0.5">Ready to invoice</div>
+                      </div>
+                    </div>
+                  )}
+                  {draftInvoicesCount > 0 && (
+                    <div className="bg-gradient-to-r from-orange-500/15 to-orange-600/10 border border-orange-400/40 text-orange-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-orange-500/20 hover:to-orange-600/15 transition-all shadow-sm">
+                      <div className="flex items-center justify-center bg-orange-500/30 rounded-full w-7 h-7 flex-shrink-0">
+                        <svg className="w-4 h-4 text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-orange-200 font-bold">{draftInvoicesCount} Unsent Invoice{draftInvoicesCount !== 1 ? 's' : ''}</div>
+                        <div className="text-orange-300/70 text-[10px] mt-0.5">Not yet sent to studios</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </button>
