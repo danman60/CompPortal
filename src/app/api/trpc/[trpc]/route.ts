@@ -50,7 +50,16 @@ const handler = async (req: Request) => {
       }
 
       // Tenant from subdomain (preferred) or fallback to user profile for client-side requests
-      const effectiveTenantId = tenantId || (userProfile as any)?.tenant_id || null;
+      const effectiveTenantId = tenantId || userProfile?.tenant_id || null;
+
+      // Debug logging
+      console.log('[tRPC Context]', {
+        headerTenantId: tenantId,
+        profileTenantId: userProfile?.tenant_id,
+        effectiveTenantId,
+        userId: user.id,
+        userRole: userProfile?.role,
+      });
 
       return {
         userId: user.id,
