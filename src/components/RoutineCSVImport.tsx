@@ -80,19 +80,16 @@ export default function RoutineCSVImport() {
 
   const createMutation = trpc.entry.create.useMutation();
 
-  // Update event date when reservation is selected
+  // Update event date from any available reservation (for age calculation)
   useEffect(() => {
-    if (selectedReservationId && reservationsData?.reservations) {
-      const reservation = reservationsData.reservations.find(r => r.id === selectedReservationId);
-      if (reservation?.competitions?.competition_start_date) {
-        setEventStartDate(new Date(reservation.competitions.competition_start_date));
-      } else {
-        setEventStartDate(null);
+    if (reservationsData?.reservations && reservationsData.reservations.length > 0) {
+      // Use the first reservation's event date for age calculations
+      const firstReservation = reservationsData.reservations[0];
+      if (firstReservation?.competitions?.competition_start_date) {
+        setEventStartDate(new Date(firstReservation.competitions.competition_start_date));
       }
-    } else {
-      setEventStartDate(null);
     }
-  }, [selectedReservationId, reservationsData]);
+  }, [reservationsData]);
 
   // Fuzzy match dancer name against existing dancers
   const matchDancerName = (name: string): { id: string; confidence: number } | null => {
