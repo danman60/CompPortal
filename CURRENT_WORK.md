@@ -597,7 +597,141 @@ These are still active (from previous session):
 
 ---
 
-**Last Updated:** January 29, 2025
-**Next Session:** Implementation Phase - Start with Footer
-**Status:** Ready to begin fixes
-**Build:** 9ec09ae
+---
+
+## 🚀 Next Session: Branding + Studio Public Code Implementation
+
+**Status:** Ready to implement
+**Estimated Time:** 12 hours total
+
+### Phase 1: P0 Critical Branding (3 hours)
+
+**1. Browser Tab Metadata (src/app/layout.tsx) - 45 min**
+- Lines: 18, 19, 23, 24, 25, 31, 33, 39, 45
+- Impact: SEO, social sharing, all page titles
+- Fix: Add tenant context to metadata generation
+
+**2. Status Page (src/app/status/page.tsx) - 30 min**
+- Lines: 143, 159, 187
+- Impact: Public-facing status page
+- Fix: Dynamic tenant name in status messages
+
+**3. Music Tracking Page (src/app/dashboard/music-tracking/page.tsx) - 15 min**
+- Line: 6
+- Impact: Browser tab title
+- Fix: Dynamic page title with tenant name
+
+**Testing:** 30 min - Verify on both EMPWR and GLOW subdomains
+
+---
+
+### Phase 2: P1 High + Studio Public Code (6 hours)
+
+**4. Onboarding Page (src/app/onboarding/page.tsx) - 30 min**
+- Lines: 178, 375
+- Fix: Add tenant context hook, use tenant name
+
+**5. PDF Reports (src/lib/pdf-reports.ts) - 90 min**
+- Lines: 35, 66
+- Fix: Add tenantName parameter to all functions
+- **NEW:** Add studio public_code to invoice PDFs
+- **NEW:** Display public_code prominently on all PDF headers
+
+**6. Email Service (src/lib/services/emailService.ts) - 45 min**
+- Lines: 59, 100, 145
+- Fix: Dynamic signatures with tenant name
+- **NEW:** Include studio public_code in all confirmation emails
+
+**7. Welcome Email (src/emails/WelcomeEmail.tsx) - 30 min**
+- Lines: 39, 44, 81
+- Fix: Use existing tenantBranding.tenantName prop
+- **NEW:** Add studio public_code to welcome email
+
+**8. Studio Approval Email (src/server/routers/studio.ts) - 30 min**
+- Line: 382
+- Fix: Dynamic subject line with tenant name
+- **NEW:** Include studio public_code in summary emails
+
+**9. Studio Dashboard Display (Dashboard Components) - 60 min**
+- **NEW:** Show public_code under studio name on dashboard
+- Find: StudioDirectorDashboard component
+- Add: Display "Studio Code: XXXXX" prominently
+- Style: Make it easily visible for reference
+
+**Testing:** 45 min - End-to-end verification
+
+---
+
+### Phase 3: P2 Medium (1.5 hours)
+
+**10. Test API (src/server/routers/test.ts) - 20 min**
+- Fix: Dynamic tenant references
+
+**11. Competition Placeholder (src/app/dashboard/competitions/new/page.tsx) - 20 min**
+- Fix: Remove hardcoded tenant name
+
+**12. Admin Testing Page (src/app/dashboard/admin/testing/page.tsx) - 20 min**
+- Fix: Dynamic tenant references
+
+**13. Notification Components - 30 min**
+- NotificationCenter.tsx - Line: 1 instance
+- NotificationPreferences.tsx - Line: 1 instance
+- Fix: Dynamic tenant names
+
+---
+
+### Phase 4: Studio Public Code - Comprehensive Integration (1.5 hours)
+
+**Verification Checklist:**
+- [ ] public_code displayed on studio dashboard
+- [ ] public_code on all invoice PDFs
+- [ ] public_code in reservation confirmation emails
+- [ ] public_code in routine summary emails
+- [ ] public_code in welcome emails
+- [ ] public_code in all studio-related communications
+
+**Database Verification:**
+```sql
+-- Check all studios have public_code
+SELECT id, name, code, public_code, tenant_id
+FROM studios
+WHERE public_code IS NULL;
+-- Should return 0 rows
+```
+
+**Code Locations to Update:**
+1. Dashboard: Find StudioDirectorDashboard component
+2. PDFs: Update all PDF generation functions in pdf-reports.ts
+3. Emails: Update emailService.ts templates
+4. Summary: Update routine summary email generation
+
+---
+
+### Success Criteria
+
+**Branding:**
+- [ ] All 32 hardcoded instances replaced with dynamic tenant
+- [ ] Browser tabs show correct tenant name
+- [ ] PDFs generated with correct branding
+- [ ] Emails sent with correct signatures
+- [ ] Cross-tenant isolation verified
+
+**Studio Public Code:**
+- [ ] Visible on dashboard under studio name
+- [ ] Included in all invoices/PDFs
+- [ ] Included in all email confirmations
+- [ ] Included in all summary emails
+- [ ] Easy to find and reference
+
+**Testing:**
+- [ ] Tested on empwr.compsync.net
+- [ ] Tested on glow.compsync.net
+- [ ] Build passes with zero errors
+- [ ] No cross-tenant data leakage
+
+---
+
+**Last Updated:** October 29, 2025 (Session 24)
+**Next Session:** Branding + Public Code Implementation
+**Status:** Fully planned and ready to execute
+**Build:** eac1567
