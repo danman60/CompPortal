@@ -11,9 +11,13 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const { tenant } = useTenantTheme();
   const [queryClient] = useState(() => new QueryClient());
 
-  // Store tenant in ref so headers function can access current value
-  const tenantRef = useState<{ current: string | null }>(() => ({ current: null }))[0];
-  tenantRef.current = tenant?.id || null;
+  // Store tenant ID in a ref that persists across renders
+  const tenantIdRef = useState<{ current: string | null }>(() => ({ current: tenant?.id || null }))[0];
+
+  // Update ref whenever tenant changes
+  if (tenantIdRef.current !== (tenant?.id || null)) {
+    tenantIdRef.current = tenant?.id || null;
+  }
 
   const [trpcClient] = useState(() =>
     trpc.createClient({
@@ -27,8 +31,9 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
             // Include tenant ID in headers for proper multi-tenant isolation
             // Read from ref to get current tenant (not stale closure value)
             const headers: Record<string, string> = {};
-            if (tenantRef.current) {
-              headers['x-tenant-id'] = tenantRef.current;
+            const currentTenantId = tenantIdRef.current;
+            if (currentTenantId) {
+              headers['x-tenant-id'] = currentTenantId;
             }
             return headers;
           },

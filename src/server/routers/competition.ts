@@ -61,14 +61,12 @@ export const competitionRouter = router({
         // No tenant filter if super admin and no specific tenant requested
       } else {
         // Non-super admins only see their own tenant's competitions
-        if (!ctx.tenantId) {
-          // If no tenant context, throw error to help debug
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'No tenant context available. Please ensure you are accessing the application via a tenant subdomain (e.g., empwr.compsync.net)',
-          });
+        if (ctx.tenantId) {
+          where.tenant_id = ctx.tenantId;
+        } else {
+          // If no tenant context, return empty results
+          return { competitions: [], total: 0 };
         }
-        where.tenant_id = ctx.tenantId;
       }
 
       if (year) {
