@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import { prisma } from '@/lib/prisma';
+import { getTenantData } from '@/lib/tenant-context';
 import Link from 'next/link';
 import DancerForm from '@/components/DancerForm';
 
@@ -13,17 +14,24 @@ export default async function NewDancerPage() {
     redirect('/login');
   }
 
+  // Get current tenant from subdomain
+  const tenant = await getTenantData();
+  const tenantId = tenant?.id;
+
   // Fetch user profile to get role and studio
   const userProfile = await prisma.user_profiles.findUnique({
     where: { id: user.id },
     select: { role: true },
   });
 
-  // Fetch studio if user is a studio director
+  // Fetch studio if user is a studio director on THIS tenant
   let studioId: string | undefined;
   if (userProfile?.role === 'studio_director') {
     const studio = await prisma.studios.findFirst({
-      where: { owner_id: user.id },
+      where: {
+        owner_id: user.id,
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      },
       select: { id: true, name: true },
     });
     studioId = studio?.id;
