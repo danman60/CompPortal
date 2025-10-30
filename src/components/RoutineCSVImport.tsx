@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, ROUTINE_CSV_FIELDS } from '@/lib/csv-utils';
-import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
 import levenshtein from 'fast-levenshtein';
 
 type ParsedRoutine = {
@@ -44,7 +44,7 @@ export default function RoutineCSVImport() {
   const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'importing' | 'success' | 'error'>('idle');
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
-  const [excelWorkbook, setExcelWorkbook] = useState<ExcelJS.Workbook | null>(null);
+  const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [selectedReservationId, setSelectedReservationId] = useState<string>('');
   const [dancerMatches, setDancerMatches] = useState<DancerMatch[]>([]);
   const [noDancersWarning, setNoDancersWarning] = useState(false);
@@ -180,43 +180,29 @@ export default function RoutineCSVImport() {
     return match?.id;
   };
 
-  const parseExcel = (workbook: ExcelJS.Workbook, sheetName: string): ParsedRoutine[] => {
-    const worksheet = workbook.getWorksheet(sheetName);
+  const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): ParsedRoutine[] => {
+    const worksheet = workbook.Sheets[sheetName];
     if (!worksheet) return [];
 
-    // Get rows as array (ExcelJS returns rows including header)
-    const rows = worksheet.getSheetValues();
-    if (!rows || rows.length < 2) return []; // Need at least header + 1 data row
+    // Convert sheet to array of arrays (includes header row)
+    const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
 
-    // First row is header (rows[1] in ExcelJS, it's 1-indexed)
-    const headerRow = rows[1];
-    if (!Array.isArray(headerRow)) return [];
+    if (data.length < 2) return []; // Need header + at least 1 row
 
-    // Convert header row to strings and filter out empty headers
-    const excelHeaders = headerRow
-      .map((cell: any) => (cell !== null && cell !== undefined ? String(cell).trim() : ''))
-      .filter((h: string) => h !== '');
+    const headers = data[0].map((h: any) => String(h || '').trim()).filter((h: string) => h !== '');
+    const { mapping } = mapCSVHeaders(headers, ROUTINE_CSV_FIELDS, 0.7);
 
-    const { mapping, unmatched, suggestions } = mapCSVHeaders(excelHeaders, ROUTINE_CSV_FIELDS, 0.7);
+    const parsed: ParsedRoutine[] = [];
 
-    setHeaderSuggestions(suggestions);
-
-    if (unmatched.length > 0) {
-      console.warn('Unmatched Excel headers:', unmatched);
-    }
-
-    const data: ParsedRoutine[] = [];
-
-    // Process data rows (skip row 1 which is header)
-    for (let i = 2; i < rows.length; i++) {
-      const row = rows[i];
-      if (!Array.isArray(row)) continue;
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row || row.length === 0) continue;
 
       const routineRow: any = {};
 
-      excelHeaders.forEach((excelHeader, colIndex) => {
-        const canonicalField = mapping[excelHeader];
-        const cellValue = row[colIndex + 1]; // ExcelJS columns are 1-indexed
+      headers.forEach((header, colIndex) => {
+        const canonicalField = mapping[header];
+        const cellValue = row[colIndex];
 
         if (canonicalField && cellValue !== undefined && cellValue !== null) {
           const value = String(cellValue).trim();
@@ -227,11 +213,11 @@ export default function RoutineCSVImport() {
       });
 
       if (Object.keys(routineRow).length > 0) {
-        data.push(routineRow as ParsedRoutine);
+        parsed.push(routineRow as ParsedRoutine);
       }
     }
 
-    return data;
+    return parsed;
   };
 
   // Proper CSV parsing that handles quoted values
@@ -400,46 +386,22 @@ export default function RoutineCSVImport() {
         const text = await uploadedFile.text();
         parsed = parseCSV(text);
       } else if (fileExt === 'xlsx' || fileExt === 'xls') {
-        // Handle Excel files
-        try {
-          const arrayBuffer = await uploadedFile.arrayBuffer();
-          const workbook = new ExcelJS.Workbook();
+        // Handle Excel files (both .xlsx and .xls)
+        const arrayBuffer = await uploadedFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetNames = workbook.SheetNames;
 
-          // Try to load the file - this may fail if the file is corrupted or not a valid Excel file
-          try {
-            await workbook.xlsx.load(arrayBuffer);
-          } catch (excelError: any) {
-            // ExcelJS only supports .xlsx format, not legacy .xls
-            throw new Error(
-              'This file appears to be in an old Excel format (.xls) or is corrupted.\n\n' +
-              'Try these solutions:\n' +
-              '1. Open the file in Excel and Save As → .xlsx format\n' +
-              '2. Save as CSV instead\n' +
-              '3. Upload your file to ChatGPT and ask: "Please reformat this as a clean CSV file"\n\n' +
-              'If the file is corrupted, ChatGPT can often extract and reformat the data.'
-            );
-          }
+        if (sheetNames.length === 0) {
+          throw new Error('The Excel file contains no worksheets.');
+        }
 
-          // Get worksheet names
-          const sheetNames = workbook.worksheets.map(ws => ws.name);
-          if (sheetNames.length === 0) {
-            throw new Error('The Excel file contains no worksheets.');
-          }
-
-          if (sheetNames.length > 1) {
-            setAvailableSheets(sheetNames);
-            setExcelWorkbook(workbook);
-            setSelectedSheet(sheetNames[0]);
-            parsed = parseExcel(workbook, sheetNames[0]);
-          } else if (sheetNames.length === 1) {
-            parsed = parseExcel(workbook, sheetNames[0]);
-          }
-        } catch (excelError) {
-          // Re-throw with context if not already handled
-          if (excelError instanceof Error) {
-            throw excelError;
-          }
-          throw new Error('Failed to process Excel file. Please ensure it is a valid .xlsx or .xls file.');
+        if (sheetNames.length > 1) {
+          setAvailableSheets(sheetNames);
+          setExcelWorkbook(workbook);
+          setSelectedSheet(sheetNames[0]);
+          parsed = parseExcel(workbook, sheetNames[0]);
+        } else if (sheetNames.length === 1) {
+          parsed = parseExcel(workbook, sheetNames[0]);
         }
       } else {
         throw new Error(`Unsupported file type: ${fileExt}. Please upload .csv, .xlsx, or .xls`);

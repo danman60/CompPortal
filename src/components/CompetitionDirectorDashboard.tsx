@@ -136,12 +136,16 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
     }
   }, []);
 
-  // Calculate badge count (pending + summarized)
-  const badgeCount = reservations?.reservations
-    ? reservations.reservations.filter(
-        (r) => r.status === 'pending' || r.status === 'summarized'
-      ).length
+  // Calculate separate counts for detailed notifications
+  const pendingCount = reservations?.reservations
+    ? reservations.reservations.filter((r) => r.status === 'pending').length
     : 0;
+
+  const summarizedCount = reservations?.reservations
+    ? reservations.reservations.filter((r) => r.status === 'summarized').length
+    : 0;
+
+  const badgeCount = pendingCount + summarizedCount;
 
   // Handle pipeline click
   const handlePipelineClick = () => {
@@ -239,14 +243,25 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
             <div className="flex items-center justify-center gap-3">
               <Target size={28} strokeWidth={2} />
               <span className="text-xl">Studio Pipeline</span>
-              {showBadge && badgeCount > 0 && (
-                <span className="absolute top-3 right-3 flex items-center justify-center min-w-[28px] h-7 px-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
-                  {badgeCount}
-                </span>
-              )}
               <span className="text-sm opacity-80">→</span>
             </div>
             <div className="text-xs mt-1 opacity-90">Manage all studio reservations from request to payment in one view</div>
+            {showBadge && badgeCount > 0 && (
+              <div className="mt-3 flex flex-col gap-1.5 text-xs">
+                {pendingCount > 0 && (
+                  <div className="bg-yellow-500/20 border border-yellow-400/50 text-yellow-200 px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+                    <span className="text-yellow-400">●</span>
+                    {pendingCount} Reservation{pendingCount !== 1 ? 's' : ''} Need{pendingCount === 1 ? 's' : ''} Approval
+                  </div>
+                )}
+                {summarizedCount > 0 && (
+                  <div className="bg-blue-500/20 border border-blue-400/50 text-blue-200 px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+                    <span className="text-blue-400">●</span>
+                    {summarizedCount} New Summar{summarizedCount !== 1 ? 'ies' : 'y'} Submitted
+                  </div>
+                )}
+              </div>
+            )}
           </button>
         )}
       </div>

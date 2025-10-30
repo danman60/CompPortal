@@ -30,29 +30,28 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
 
           const content = (
             <div className="relative">
-              {/* Notification badge centered on top */}
+              {/* Notification badge in top right corner */}
               {hasUnpaidInvoices && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 flex h-5 w-5 z-10">
+                <span className="absolute -top-2 -right-2 flex h-6 w-6 z-10">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-xs items-center justify-center font-bold">
+                  <span className="relative inline-flex rounded-full h-6 w-6 bg-red-500 text-white text-xs items-center justify-center font-bold">
                     {stat.value}
                   </span>
                 </span>
               )}
 
-              {/* Tooltip above CARD */}
-              {stat.tooltip && (
-                <div className="text-xs text-purple-300/80 font-medium mb-2">
-                  {stat.tooltip}
-                </div>
-              )}
-              <div className="mb-2 flex justify-center">
-                <IconComponent size={32} strokeWidth={1.5} className="text-purple-300/90" />
+              {/* Icon at top */}
+              <div className="mb-3 flex justify-center">
+                <IconComponent size={40} strokeWidth={1.5} className="text-purple-300/90" />
               </div>
-              <div className={`text-3xl font-bold leading-tight ${stat.color || 'text-white'}`}>
+
+              {/* Value in middle - consistent text size */}
+              <div className={`text-2xl font-bold leading-tight mb-2 ${stat.color || 'text-white'}`}>
                 {stat.value}
               </div>
-              <div className="text-xs text-gray-300 mt-2 font-semibold uppercase tracking-wide">{stat.label}</div>
+
+              {/* Label at bottom */}
+              <div className="text-xs text-gray-300 font-semibold uppercase tracking-wide">{stat.label}</div>
             </div>
           );
 

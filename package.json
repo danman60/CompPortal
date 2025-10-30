@@ -72,6 +72,7 @@
     "stripe": "^19.1.0",
     "superjson": "^2.2.1",
     "tailwind-merge": "^3.3.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

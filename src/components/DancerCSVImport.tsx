@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, DANCER_CSV_FIELDS } from '@/lib/csv-utils';
-import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
 
 type ParsedDancer = {
   first_name: string;
@@ -72,7 +72,7 @@ export default function DancerCSVImport() {
   const [studioId, setStudioId] = useState<string | null>(null);
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
-  const [excelWorkbook, setExcelWorkbook] = useState<ExcelJS.Workbook | null>(null);
+  const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [duplicates, setDuplicates] = useState<Array<{ row: number; name: string }>>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [importError, setImportError] = useState<string | null>(null);
@@ -98,65 +98,33 @@ export default function DancerCSVImport() {
   // Handle success/error logic in handleImport function instead
   const importMutation = trpc.dancer.batchCreate.useMutation();
 
-  const parseExcel = (workbook: ExcelJS.Workbook, sheetName: string): ParsedDancer[] => {
-    const worksheet = workbook.getWorksheet(sheetName);
+  const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): ParsedDancer[] => {
+    const worksheet = workbook.Sheets[sheetName];
     if (!worksheet) return [];
 
-    // Get rows as array (ExcelJS returns rows including header)
-    const rows = worksheet.getSheetValues();
-    if (!rows || rows.length < 2) return []; // Need at least header + 1 data row
+    // Convert sheet to array of arrays (includes header row)
+    const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
 
-    // First row is header (rows[1] in ExcelJS, it's 1-indexed)
-    const headerRow = rows[1];
-    if (!Array.isArray(headerRow)) return [];
+    if (data.length < 2) return []; // Need header + at least 1 row
 
-    // Convert header row to strings and filter out empty headers
-    const excelHeaders = headerRow
-      .map((cell: any) => (cell !== null && cell !== undefined ? String(cell).trim() : ''))
-      .filter((h: string) => h !== '');
+    const headers = data[0].map((h: any) => String(h || '').trim()).filter((h: string) => h !== '');
+    const { mapping } = mapCSVHeaders(headers, DANCER_CSV_FIELDS, 0.7);
 
-    // Map Excel headers to canonical field names using flexible matching
-    const { mapping, unmatched, suggestions } = mapCSVHeaders(excelHeaders, DANCER_CSV_FIELDS, 0.7);
+    const parsed: ParsedDancer[] = [];
 
-    // Store suggestions for display to user
-    setHeaderSuggestions(suggestions);
-
-    // Warn about unmatched headers
-    if (unmatched.length > 0) {
-      console.warn('Unmatched Excel headers:', unmatched);
-    }
-
-    const data: ParsedDancer[] = [];
-
-    // Process data rows (skip row 1 which is header)
-    for (let i = 2; i < rows.length; i++) {
-      const row = rows[i];
-      if (!Array.isArray(row)) continue;
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row || row.length === 0) continue;
 
       const dancerRow: any = {};
 
-      excelHeaders.forEach((excelHeader, colIndex) => {
-        const canonicalField = mapping[excelHeader];
-        const cellValue = row[colIndex + 1]; // ExcelJS columns are 1-indexed
+      headers.forEach((header, colIndex) => {
+        const canonicalField = mapping[header];
+        const cellValue = row[colIndex];
 
         if (canonicalField && cellValue !== undefined && cellValue !== null) {
-          // Handle Date objects from Excel
-          if (cellValue instanceof Date) {
-            if (canonicalField === 'date_of_birth') {
-              const year = cellValue.getFullYear();
-              const month = String(cellValue.getMonth() + 1).padStart(2, '0');
-              const day = String(cellValue.getDate()).padStart(2, '0');
-              dancerRow[canonicalField] = `${year}-${month}-${day}`;
-            } else {
-              dancerRow[canonicalField] = cellValue.toISOString().split('T')[0];
-            }
-          } else {
-            const value = String(cellValue).trim();
-
-            // Skip completely empty values
-            if (value === '') return;
-
-            // Use flexible date parsing for date_of_birth if string
+          const value = String(cellValue).trim();
+          if (value !== '') {
             if (canonicalField === 'date_of_birth') {
               const parsedDate = parseFlexibleDate(value);
               if (parsedDate) {
@@ -169,13 +137,12 @@ export default function DancerCSVImport() {
         }
       });
 
-      // Skip completely empty rows
       if (Object.keys(dancerRow).length > 0) {
-        data.push(dancerRow as ParsedDancer);
+        parsed.push(dancerRow as ParsedDancer);
       }
     }
 
-    return data;
+    return parsed;
   };
 
   // Proper CSV parsing that handles quoted values
@@ -332,26 +299,10 @@ export default function DancerCSVImport() {
       let parsed: ParsedDancer[] = [];
 
       if (fileExt === 'xlsx' || fileExt === 'xls') {
-        // Handle Excel files
+        // Handle Excel files (both .xlsx and .xls)
         const arrayBuffer = await uploadedFile.arrayBuffer();
-        const workbook = new ExcelJS.Workbook();
-
-        try {
-          await workbook.xlsx.load(arrayBuffer);
-        } catch (excelError: any) {
-          // ExcelJS only supports .xlsx format, not legacy .xls
-          throw new Error(
-            'This file appears to be in an old Excel format (.xls) or is corrupted.\n\n' +
-            'Try these solutions:\n' +
-            '1. Open the file in Excel and Save As → .xlsx format\n' +
-            '2. Save as CSV instead\n' +
-            '3. Upload your file to ChatGPT and ask: "Please reformat this as a clean CSV file"\n\n' +
-            'If the file is corrupted, ChatGPT can often extract and reformat the data.'
-          );
-        }
-
-        // Get worksheet names
-        const sheetNames = workbook.worksheets.map(ws => ws.name);
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetNames = workbook.SheetNames;
 
         // Check if multiple sheets
         if (sheetNames.length > 1) {
