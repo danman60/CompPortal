@@ -360,6 +360,13 @@ export const studioRouter = router({
               },
             },
           },
+          tenants: {
+            select: {
+              name: true,
+              subdomain: true,
+              branding: true,
+            },
+          },
         },
       });
 
@@ -408,17 +415,25 @@ export const studioRouter = router({
             });
 
             // Also send welcome email
+            const tenantName = studio.tenants?.name || 'Competition Portal';
+            const branding = studio.tenants?.branding as any;
             const welcomeHtml = await renderEmail(
               WelcomeEmail({
                 name: ownerName || 'Studio Owner',
                 email: studio.users_studios_owner_idTousers.email,
+                studioPublicCode: studio.public_code || undefined,
                 dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
-                tenantBranding: undefined,
+                tenantBranding: {
+                  tenantName: studio.tenants?.name,
+                  primaryColor: branding?.primaryColor,
+                  secondaryColor: branding?.secondaryColor,
+                  logo: branding?.logo,
+                },
               })
             );
             await sendEmail({
               to: studio.users_studios_owner_idTousers.email,
-              subject: 'Welcome to EMPWR - Studio Approved!',
+              subject: `Welcome to ${tenantName} - Studio Approved!`,
               html: welcomeHtml,
             });
           }
