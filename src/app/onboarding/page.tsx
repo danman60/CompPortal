@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { tenant } = useTenantTheme();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -92,11 +94,12 @@ export default function OnboardingPage() {
         throw new Error(`Failed to update profile: ${profileError.message}`);
       }
 
-      // Check if studio already exists
+      // Check if studio already exists on THIS tenant
       const { data: existingStudio } = await supabase
         .from('studios')
         .select('id')
         .eq('owner_id', user.id)
+        .eq('tenant_id', tenant?.id)
         .single();
 
       let studioError;
@@ -122,11 +125,15 @@ export default function OnboardingPage() {
           .eq('owner_id', user.id);
         studioError = error;
       } else {
-        // Create new studio
+        // Create new studio on current tenant
+        if (!tenant?.id) {
+          throw new Error('Unable to determine tenant. Please refresh and try again.');
+        }
+
         const { error } = await supabase
           .from('studios')
           .insert({
-            tenant_id: '00000000-0000-0000-0000-000000000001', // EMPWR tenant
+            tenant_id: tenant.id, // Current tenant from subdomain
             owner_id: user.id,
             name: formData.studioName,
             address1: formData.address1,
