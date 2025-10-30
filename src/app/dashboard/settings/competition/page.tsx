@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import { prisma } from '@/lib/prisma';
-import CompetitionSettingsForm from '@/components/CompetitionSettingsForm';
+import CompetitionSettingsDisplay from '@/components/CompetitionSettingsDisplay';
 
 export default async function CompetitionSettingsPage() {
   const supabase = await createServerSupabaseClient();
@@ -35,12 +35,12 @@ export default async function CompetitionSettingsPage() {
             ⚙️ Competition Settings
           </h1>
           <p className="text-white/80">
-            Configure routine types, age divisions, classifications, and more
+            View your tenant-specific competition settings
           </p>
         </div>
 
-        {/* Settings Form */}
-        <CompetitionSettingsForm />
+        {/* Settings Display */}
+        <CompetitionSettingsDisplay />
       </div>
     </main>
   );

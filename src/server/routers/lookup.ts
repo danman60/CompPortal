@@ -90,4 +90,49 @@ export const lookupRouter = router({
       entrySizeCategories,
     };
   }),
+
+  // Get all settings for Competition Settings display page
+  // ✅ SAFE: Properly filters by tenant_id for multi-tenant isolation
+  getAllForSettings: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenantId) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'No tenant associated with user'
+      });
+    }
+
+    const [categories, classifications, ageGroups, entrySizeCategories, scoringTiers] = await Promise.all([
+      prisma.dance_categories.findMany({
+        where: {
+          is_active: true,
+          tenant_id: ctx.tenantId,
+        },
+        orderBy: { sort_order: 'asc' },
+      }),
+      prisma.classifications.findMany({
+        where: { tenant_id: ctx.tenantId },
+        orderBy: { skill_level: 'asc' },
+      }),
+      prisma.age_groups.findMany({
+        where: { tenant_id: ctx.tenantId },
+        orderBy: { sort_order: 'asc' },
+      }),
+      prisma.entry_size_categories.findMany({
+        where: { tenant_id: ctx.tenantId },
+        orderBy: { sort_order: 'asc' },
+      }),
+      prisma.scoring_tiers.findMany({
+        where: { tenant_id: ctx.tenantId },
+        orderBy: { sort_order: 'asc' },
+      }),
+    ]);
+
+    return {
+      categories,
+      classifications,
+      ageGroups,
+      entrySizeCategories,
+      scoringTiers,
+    };
+  }),
 });
