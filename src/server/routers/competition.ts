@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { isAdmin, isSuperAdmin } from '@/lib/auth-utils';
@@ -60,12 +61,14 @@ export const competitionRouter = router({
         // No tenant filter if super admin and no specific tenant requested
       } else {
         // Non-super admins only see their own tenant's competitions
-        if (ctx.tenantId) {
-          where.tenant_id = ctx.tenantId;
-        } else {
-          // If no tenant context, return empty results
-          return { competitions: [], total: 0 };
+        if (!ctx.tenantId) {
+          // If no tenant context, throw error to help debug
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'No tenant context available. Please ensure you are accessing the application via a tenant subdomain (e.g., empwr.compsync.net)',
+          });
         }
+        where.tenant_id = ctx.tenantId;
       }
 
       if (year) {
