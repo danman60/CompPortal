@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import StudioDirectorDashboard from '@/components/StudioDirectorDashboard';
 import CompetitionDirectorDashboard from '@/components/CompetitionDirectorDashboard';
 import { signOutAction } from '@/app/actions/auth';
+import { getTenantData } from '@/lib/tenant-context';
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient();
@@ -13,6 +14,10 @@ export default async function DashboardPage() {
   if (error || !user) {
     redirect('/login');
   }
+
+  // Get current tenant from subdomain
+  const tenant = await getTenantData();
+  const tenantId = tenant?.id;
 
   // Fetch user profile with role
   const userProfile = await prisma.user_profiles.findUnique({
@@ -26,14 +31,17 @@ export default async function DashboardPage() {
   let studioStatus: string | null | undefined;
   if (userProfile?.role === 'studio_director') {
     const studio = await prisma.studios.findFirst({
-      where: { owner_id: user.id },
+      where: {
+        owner_id: user.id,
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      },
       select: { name: true, code: true, status: true },
     });
     studioName = studio?.name;
     studioCode = studio?.code;
     studioStatus = studio?.status;
 
-    // Redirect to onboarding if no studio or no first name
+    // Redirect to onboarding if no studio on THIS tenant or no first name
     if (!studio || !userProfile?.first_name) {
       redirect('/onboarding');
     }
