@@ -130,11 +130,31 @@ export default function OnboardingPage() {
           throw new Error('Unable to determine tenant. Please refresh and try again.');
         }
 
+        // Generate unique public code
+        const generatePublicCode = async (): Promise<string> => {
+          let attempts = 0;
+          while (attempts < 10) {
+            const code = Math.random().toString(36).substring(2, 7).toUpperCase()
+              .replace(/0/g, 'A').replace(/O/g, 'B').replace(/I/g, 'C').replace(/1/g, 'D');
+            const { data: exists } = await supabase
+              .from('studios')
+              .select('id')
+              .eq('public_code', code)
+              .single();
+            if (!exists) return code;
+            attempts++;
+          }
+          throw new Error('Failed to generate unique public code');
+        };
+
+        const publicCode = await generatePublicCode();
+
         const { error } = await supabase
           .from('studios')
           .insert({
             tenant_id: tenant.id, // Current tenant from subdomain
             owner_id: user.id,
+            public_code: publicCode,
             name: formData.studioName,
             address1: formData.address1,
             city: formData.city,

@@ -2,8 +2,10 @@ name: Database Backup
 
 on:
   schedule:
-    # Run daily at 3 AM UTC (11 PM EST / 8 PM PST)
-    - cron: '0 3 * * *'
+    # Run 3x daily: 11 AM, 7 PM, 2 AM EST (EDT = UTC-4)
+    - cron: '0 6 * * *'   # 2 AM EST
+    - cron: '0 15 * * *'  # 11 AM EST
+    - cron: '0 23 * * *'  # 7 PM EST
   workflow_dispatch: # Allow manual trigger
 
 jobs:
