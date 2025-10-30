@@ -54,15 +54,12 @@ export default function ReservationPipeline() {
   const approveMutation = trpc.reservation.approve.useMutation({
     onSuccess: async () => {
       toast.success('Reservation approved!');
-      // Invalidate and refetch all related queries
-      await Promise.all([
-        utils.reservation.getPipelineView.invalidate(),
-        utils.competition.getAll.invalidate(),
-      ]);
-      // Trigger immediate refetch to update UI
-      await refetch();
-      await refetchCompetitions();
       closeApprovalModal();
+      // Refetch immediately to update counters and table
+      await Promise.all([
+        refetch(),
+        refetchCompetitions(),
+      ]);
     },
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
@@ -70,9 +67,9 @@ export default function ReservationPipeline() {
   });
 
   const createInvoiceMutation = trpc.invoice.createFromReservation.useMutation({
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       toast.success('Invoice created! Click to view and send.');
-      refetch();
+      await refetch();
       // Find the reservation to get studioId and competitionId
       const reservation = reservations.find(r => r.id === variables.reservationId);
       if (reservation) {
@@ -85,9 +82,9 @@ export default function ReservationPipeline() {
   });
 
   const markAsPaidMutation = trpc.invoice.markAsPaid.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Invoice marked as paid!');
-      refetch();
+      await refetch();
     },
     onError: (error) => {
       toast.error(`Failed to mark as paid: ${error.message}`);
@@ -95,10 +92,13 @@ export default function ReservationPipeline() {
   });
 
   const rejectMutation = trpc.reservation.reject.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Reservation rejected');
-      refetch();
       setRejectModal(null);
+      await Promise.all([
+        refetch(),
+        refetchCompetitions(),
+      ]);
     },
     onError: (error) => {
       toast.error(`Failed to reject reservation: ${error.message}`);
@@ -421,7 +421,6 @@ export default function ReservationPipeline() {
                   <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Routines</th>
                   <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Status</th>
                   <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Last Action</th>
-                  <th className="px-4 py-4 text-right text-xs font-semibold text-gray-400 uppercase">Amount</th>
                   <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Actions</th>
                 </tr>
               </thead>
@@ -429,14 +428,14 @@ export default function ReservationPipeline() {
                 {/* 🐛 FIX Bug #19: Add loading state to prevent empty state flash */}
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-16 text-center text-gray-400">
+                    <td colSpan={8} className="px-6 py-16 text-center text-gray-400">
                       <div className="text-4xl mb-4 animate-pulse">⏳</div>
                       <div className="text-xl font-semibold mb-2">Loading reservations...</div>
                     </td>
                   </tr>
                 ) : filteredReservations.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-16 text-center text-gray-400">
+                    <td colSpan={8} className="px-6 py-16 text-center text-gray-400">
                       <div className="text-6xl mb-4 opacity-50">📋</div>
                       <div className="text-xl font-semibold mb-2">No reservations found</div>
                       <p>Try adjusting your filters or wait for studio directors to submit reservations</p>
@@ -547,23 +546,9 @@ export default function ReservationPipeline() {
                                   : reservation.lastAction || 'Submitted'}
                               </div>
                               <div className="text-xs text-gray-400">
-                                {reservation.lastActionDate ? (() => {
-                                  try {
-                                    const date = new Date(reservation.lastActionDate);
-                                    return isNaN(date.getTime()) ? 'Recently' : formatDistanceToNow(date, { addSuffix: true });
-                                  } catch {
-                                    return 'Recently';
-                                  }
-                                })() : 'Recently'}
+                                {reservation.lastActionDate ? formatDistanceToNow(new Date(reservation.lastActionDate), { addSuffix: true }) : '—'}
                               </div>
                             </div>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            {reservation.totalAmount ? (
-                              <div className="text-white font-semibold">${reservation.totalAmount.toFixed(2)}</div>
-                            ) : (
-                              <div className="text-sm text-gray-400">Not invoiced</div>
-                            )}
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex gap-2 justify-center">

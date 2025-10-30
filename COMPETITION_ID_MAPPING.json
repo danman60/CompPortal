@@ -1,0 +1,75 @@
+{
+  "competitions": {
+    "LONDON APRIL 10-12": {
+      "id": "79cef00c-e163-449c-9f3c-d021fbb4d672",
+      "name": "EMPWR Dance - London",
+      "dates": "April 10-12, 2026",
+      "total_capacity": 600,
+      "available_capacity": 538,
+      "csv_entries_needed": 583,
+      "csv_studio_count": 8,
+      "capacity_status": "SHORT_45",
+      "studios": [
+        "EN AVANT",
+        "STEP ABOVE",
+        "ELAN DANCE ARTS",
+        "WHITBY DANCE COMPANY",
+        "ONEILL ACADEMY",
+        "THE DANCE SHOPPE",
+        "A.B LUCAS DANCE TEAM",
+        "DANCENERGY"
+      ]
+    },
+    "ST CATHARINES APRIL 16-18": {
+      "id": "05c0eae4-cb2f-44cc-9c5e-6b2eed700904",
+      "name": "EMPWR Dance - St. Catharines #1",
+      "dates": "April 16-18, 2026",
+      "total_capacity": 600,
+      "available_capacity": 90,
+      "csv_entries_needed": 483,
+      "csv_studio_count": 8,
+      "capacity_status": "SHORT_393",
+      "studios": [
+        "POISE",
+        "ELITE STAR",
+        "ACADEMY OF DANCE ARTS",
+        "DANCETASTIC",
+        "CASSIAHS DANCE COMPANY",
+        "RIVERTOWN DANCE ACADEMY",
+        "DANCEOLOGY",
+        "POWERHOUSE DANCE COMPANY"
+      ]
+    },
+    "ST CATHARINES MAY 7-9": {
+      "id": "e5a6ee60-e440-4a3e-bc60-43eb40c46b30",
+      "name": "EMPWR Dance - St. Catharines #2",
+      "dates": "May 7-9, 2026",
+      "total_capacity": 600,
+      "available_capacity": 576,
+      "csv_entries_needed": 480,
+      "csv_studio_count": 6,
+      "capacity_status": "OK_SURPLUS_96",
+      "studios": [
+        "DANCESATIONS",
+        "ALIVE DANCE COMPANY",
+        "DANCEFX",
+        "STUDIO 22",
+        "FEVER",
+        "J'DANSE"
+      ]
+    }
+  },
+  "tenant": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "EMPWR Dance Experience",
+    "subdomain": "empwr.compsync.net",
+    "contact": "empwrdance@gmail.com"
+  },
+  "migration_summary": {
+    "total_studios": 22,
+    "total_entries": 1546,
+    "competitions": 3,
+    "capacity_shortfall": 438,
+    "status": "BLOCKED_INSUFFICIENT_CAPACITY"
+  }
+}

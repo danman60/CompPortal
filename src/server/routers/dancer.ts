@@ -5,6 +5,7 @@ import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
 import { isSuperAdmin } from '@/lib/auth-utils';
 import { logger } from '@/lib/logger';
+import { parseISODateToUTC } from '@/lib/date-utils';
 
 // Validation schema for dancer input
 const dancerInputSchema = z.object({
@@ -144,6 +145,11 @@ export const dancerRouter = router({
               },
             },
           },
+          _count: {
+            select: {
+              entry_participants: true,
+            },
+          },
         },
       });
 
@@ -262,7 +268,7 @@ export const dancerRouter = router({
         data: {
           ...data,
           tenant_id: ctx.tenantId!,
-          date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+          date_of_birth: parseISODateToUTC(date_of_birth),
         },
         include: {
           studios: {
@@ -354,7 +360,7 @@ export const dancerRouter = router({
         where: { id: input.id },
         data: {
           ...data,
-          date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+          date_of_birth: parseISODateToUTC(date_of_birth),
           updated_at: new Date(),
         },
         include: {
@@ -509,7 +515,7 @@ export const dancerRouter = router({
             data: {
               ...data,
               tenant_id: ctx.tenantId!,
-              date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+              date_of_birth: parseISODateToUTC(date_of_birth),
             },
           });
         })
@@ -578,8 +584,7 @@ export const dancerRouter = router({
               studios: { connect: { id: input.studio_id } },
               tenants: { connect: { id: studio.tenant_id } },
               ...data,
-              // Convert ISO date string to Date object in UTC to prevent timezone shifts
-              date_of_birth: date_of_birth ? new Date(date_of_birth + 'T00:00:00Z') : undefined,
+              date_of_birth: parseISODateToUTC(date_of_birth),
               gender: gender ? gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase() : undefined,
               status: 'active',
             },
@@ -719,7 +724,7 @@ export const dancerRouter = router({
               studio_id,
               tenant_id: ctx.tenantId!,
               ...data,
-              date_of_birth: date_of_birth ? new Date(date_of_birth) : undefined,
+              date_of_birth: parseISODateToUTC(date_of_birth),
               gender: data.gender ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1).toLowerCase() : undefined,
             },
           });
