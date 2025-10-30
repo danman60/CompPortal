@@ -14,6 +14,7 @@ import {
 export interface WelcomeEmailProps {
   name: string;
   email: string;
+  studioPublicCode?: string;
   dashboardUrl?: string;
   tenantBranding?: {
     primaryColor?: string;
@@ -26,26 +27,34 @@ export interface WelcomeEmailProps {
 export default function WelcomeEmail({
   name,
   email,
+  studioPublicCode,
   dashboardUrl,
   tenantBranding,
 }: WelcomeEmailProps) {
   const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
   const secondaryColor = tenantBranding?.secondaryColor || '#6366f1';
+  const tenantName = tenantBranding?.tenantName || 'Competition Portal';
   const portal = dashboardUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/dashboard`;
 
   return (
     <Html>
       <Head />
-      <Preview>Welcome to EMPWR — Let's get you set up</Preview>
+      <Preview>Welcome to {tenantName} — Let's get you set up</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={h1}>✨ Welcome, {name}!</Heading>
 
-          <Text style={text}>We're excited to have you on EMPWR.</Text>
+          <Text style={text}>We're excited to have you on {tenantName}.</Text>
 
           <Section style={calloutBox(primaryColor)}>
             <Text style={infoLabel}>Account</Text>
             <Text style={infoValue}>{email}</Text>
+            {studioPublicCode && (
+              <>
+                <Text style={infoLabel} className="mt-3">Studio Code</Text>
+                <Text style={{ ...infoValue, color: primaryColor }}>{studioPublicCode}</Text>
+              </>
+            )}
           </Section>
 
           <Text style={text}>Getting started is simple:</Text>
@@ -78,7 +87,7 @@ export default function WelcomeEmail({
           <Hr style={hr} />
 
           <Text style={footer}>
-            Welcome aboard! We're here to help you make the most of EMPWR.
+            Welcome aboard! We're here to help you make the most of {tenantName}.
           </Text>
         </Container>
       </Body>
