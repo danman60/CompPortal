@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { getTenantData } from '@/lib/tenant-context';
 import GenericLandingPage from '@/components/GenericLandingPage';
-import { superAdminLoginAction } from './actions/auth';
 
 export default async function Home() {
   // Get tenant data from subdomain
@@ -70,18 +69,6 @@ export default async function Home() {
               Studio Directors create accounts<br />
               Competition Directors login with provided credentials
             </div>
-          </div>
-
-          {/* Super Admin Quick Login (Hidden) */}
-          <div className="mt-8">
-            <form action={superAdminLoginAction}>
-              <button
-                type="submit"
-                className="w-full bg-red-500/10 border border-red-400/20 text-red-300 px-4 py-2 rounded-lg hover:bg-red-500/20 transition-all duration-200 text-xs"
-              >
-                👑 Super Admin Login
-              </button>
-            </form>
           </div>
         </div>
       </div>
