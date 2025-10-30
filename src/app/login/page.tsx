@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
-import Footer from '@/components/Footer';
 
 export default function LoginPage() {
   const { tenant, primaryColor, secondaryColor } = useTenantTheme();
@@ -131,8 +130,6 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
-
-      <Footer />
     </main>
   );
 }

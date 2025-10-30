@@ -47,10 +47,8 @@ export function PipelinePageContainer() {
   const router = useRouter();
   const { tenant } = useTenantTheme();
 
-  // Fetch competitions separately (wait for tenant to be loaded)
-  const { data: competitionsData, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery(undefined, {
-    enabled: !!tenant?.id,
-  });
+  // Fetch competitions
+  const { data: competitionsData, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
   const competitions = competitionsData?.competitions || [];
 
   const {
