@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { memo } from 'react';
 import { useCountUp } from '@/hooks/rebuild/useCountUp';
 
 interface EventMetric {
@@ -27,9 +26,8 @@ const getCapacityBarColor = (percentage: number) => {
 
 /**
  * Metric card component with counter animation
- * Memoized to prevent re-animation on parent state changes
  */
-const MetricCard = memo(({ event }: { event: EventMetric }) => {
+const MetricCard = ({ event }: { event: EventMetric }) => {
   const { count: usedCount } = useCountUp(event.used);
   const { count: remainingCount } = useCountUp(event.remaining);
   const { count: studioCountNum } = useCountUp(event.studioCount);
@@ -83,9 +81,7 @@ const MetricCard = memo(({ event }: { event: EventMetric }) => {
       </div>
     </Link>
   );
-});
-
-MetricCard.displayName = 'MetricCard';
+};
 
 /**
  * Event Capacity Metrics Grid
