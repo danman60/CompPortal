@@ -5,10 +5,6 @@ on:
     # Run daily at 3 AM UTC (11 PM EST / 8 PM PST)
     - cron: '0 3 * * *'
   workflow_dispatch: # Allow manual trigger
-  push:
-    branches:
-      - main
-    # TESTING: Runs on every push to main until we confirm backups work
 
 jobs:
   backup:
