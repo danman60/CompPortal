@@ -1083,6 +1083,12 @@ export const entryRouter = router({
           const perParticipantFee = Number(sizeCategory.per_participant_fee || 0);
           const participantCount = participants?.length || 0;
           finalEntryFee = baseFee + (perParticipantFee * participantCount);
+
+          // Add title upgrade fee if applicable
+          if (data.is_title_upgrade) {
+            finalEntryFee += 30;
+          }
+
           finalTotalFee = finalEntryFee + (late_fee || 0);
         }
       }

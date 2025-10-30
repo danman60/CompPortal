@@ -44,6 +44,11 @@ interface RejectModalState {
  */
 export function PipelinePageContainer() {
   const router = useRouter();
+
+  // Fetch competitions separately
+  const { data: competitionsData, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
+  const competitions = competitionsData?.competitions || [];
+
   const {
     reservations,
     isLoading: reservationsLoading,
@@ -51,16 +56,13 @@ export function PipelinePageContainer() {
     approve: approveReservation,
     reject: rejectReservation,
     createInvoice,
-  } = usePipelineReservations();
-
-  // Fetch competitions separately
-  const { data: competitionsData, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
-  const competitions = competitionsData?.competitions || [];
+  } = usePipelineReservations(refetchCompetitions);
 
   // Mark as paid mutation
   const markAsPaidMutation = trpc.invoice.markAsPaid.useMutation({
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
+      await refetchCompetitions();
     },
   });
 

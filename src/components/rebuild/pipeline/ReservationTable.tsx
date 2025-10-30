@@ -40,7 +40,7 @@ interface Reservation {
   invoiceId?: string | null;
   invoicePaid?: boolean;
   invoiceAmount?: number;
-  updatedAt?: string;
+  lastActionDate?: string;
   studioId?: string;
   competitionId?: string;
   [key: string]: any;
@@ -108,7 +108,6 @@ export function ReservationTable({
               <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Routines</th>
               <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Status</th>
               <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Last Action</th>
-              <th className="px-4 py-4 text-right text-xs font-semibold text-gray-400 uppercase">Amount</th>
               <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Actions</th>
             </tr>
           </thead>
@@ -154,10 +153,7 @@ export function ReservationTable({
                   </td>
                   <td className="px-4 py-4 text-white text-sm">
                     <div className="font-medium">{getLastAction(reservation)}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{formatDate(reservation.updatedAt)}</div>
-                  </td>
-                  <td className="px-4 py-4 text-right text-white font-medium">
-                    {reservation.invoiceAmount ? `$${reservation.invoiceAmount.toFixed(2)}` : '—'}
+                    <div className="text-xs text-gray-400 mt-0.5">{formatDate(reservation.lastActionDate)}</div>
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex gap-2 justify-center">

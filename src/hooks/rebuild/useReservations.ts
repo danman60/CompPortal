@@ -25,13 +25,14 @@ export function useReservations() {
  * - Reject mutation
  * - Create invoice mutation
  */
-export function usePipelineReservations() {
+export function usePipelineReservations(refetchCompetitions?: () => void) {
   const { data, isLoading, refetch } = trpc.reservation.getPipelineView.useQuery();
 
   const approveMutation = trpc.reservation.approve.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Reservation approved!');
-      refetch();
+      await refetch();
+      if (refetchCompetitions) await refetchCompetitions();
     },
     onError: (error) => {
       toast.error(`Error approving reservation: ${error.message}`);
@@ -39,9 +40,10 @@ export function usePipelineReservations() {
   });
 
   const rejectMutation = trpc.reservation.reject.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Reservation rejected');
-      refetch();
+      await refetch();
+      if (refetchCompetitions) await refetchCompetitions();
     },
     onError: (error) => {
       toast.error(`Failed to reject: ${error.message}`);
@@ -49,9 +51,10 @@ export function usePipelineReservations() {
   });
 
   const createInvoiceMutation = trpc.invoice.createFromReservation.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Invoice created successfully!');
-      refetch();
+      await refetch();
+      if (refetchCompetitions) await refetchCompetitions();
     },
     onError: (error) => {
       toast.error(`Failed to create invoice: ${error.message}`);
