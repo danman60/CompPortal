@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 export function useCountUp(end: number, duration = 1000, startOnMount = true) {
   const [count, setCount] = useState(startOnMount ? 0 : end);
   const [isAnimating, setIsAnimating] = useState(false);
-  const prevEnd = useRef(end);
+  const prevEnd = useRef<number | undefined>(startOnMount ? undefined : end);
 
   useEffect(() => {
     if (!startOnMount) return;
