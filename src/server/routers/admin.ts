@@ -147,10 +147,11 @@ export const adminRouter = router({
           }
 
           // Create user profile (email is in auth.users, not user_profiles)
+          // Note: tenant_id is NULL for multi-tenant users (handle_new_user trigger may create this first)
           await prisma.user_profiles.create({
             data: {
               id: authData.user.id,
-              tenant_id: ctx.tenantId!,
+              tenant_id: null, // Multi-tenant: user not locked to any tenant
               first_name: studio.firstName,
               last_name: studio.lastName,
               role: 'studio_director',

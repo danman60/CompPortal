@@ -30,27 +30,27 @@ const handler = async (req: Request) => {
         return { userId: null, userRole: null, studioId: null, tenantId, tenantData };
       }
 
-      // Fetch user profile with role and studio information
+      // Fetch user profile with role
       const userProfile = await prisma.user_profiles.findUnique({
         where: { id: user.id },
-        select: { role: true, tenant_id: true },
+        select: { role: true },
       });
 
-      // If user is a studio director, fetch their studio
+      // If user is a studio director, fetch their studio on CURRENT tenant
       let studioId: string | null = null;
-      if (userProfile?.role === 'studio_director' && userProfile?.tenant_id) {
+      if (userProfile?.role === 'studio_director' && tenantId) {
         const studio = await prisma.studios.findFirst({
           where: {
-            tenant_id: userProfile.tenant_id,  // Tenant isolation
-            owner_id: user.id                   // Studio isolation (prevent cross-contamination)
+            tenant_id: tenantId,  // Current tenant from subdomain
+            owner_id: user.id     // Studio ownership
           },
           select: { id: true },
         });
         studioId = studio?.id || null;
       }
 
-      // Fallback: Use tenant_id from user profile if header is missing
-      const effectiveTenantId = tenantId || userProfile?.tenant_id || null;
+      // Tenant comes from subdomain only (no fallback to user profile)
+      const effectiveTenantId = tenantId;
 
       return {
         userId: user.id,
