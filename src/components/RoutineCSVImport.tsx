@@ -142,8 +142,13 @@ export default function RoutineCSVImport() {
     // Calculate ages at event
     const agesAtEvent = matchedDancerIds
       .map(id => existingDancers.dancers.find(d => d.id === id))
-      .filter(d => d?.date_of_birth)
-      .map(d => calculateAgeAtEvent(d!.date_of_birth))
+      .filter(d => d && d.date_of_birth)
+      .map((d: any) => {
+        const dob = d.date_of_birth;
+        // Handle both Date objects and strings
+        const dobString = dob instanceof Date ? dob.toISOString().split('T')[0] : String(dob);
+        return calculateAgeAtEvent(dobString);
+      })
       .filter((age): age is number => age !== null);
 
     if (agesAtEvent.length === 0) return undefined;
@@ -161,14 +166,14 @@ export default function RoutineCSVImport() {
 
   // Auto-detect entry size based on dancer count (from useEntryFormV2 logic lines 141-151)
   const autoDetectEntrySize = (matchedDancerIds: string[]): string | undefined => {
-    if (!matchedDancerIds.length || !lookupData?.sizeCategories) {
+    if (!matchedDancerIds.length || !lookupData?.entrySizeCategories) {
       return undefined;
     }
 
     const count = matchedDancerIds.length;
 
     // Match to size categories
-    const match = lookupData.sizeCategories.find(
+    const match = lookupData.entrySizeCategories.find(
       (sc) => sc.min_participants <= count && count <= sc.max_participants
     );
 
@@ -483,21 +488,13 @@ export default function RoutineCSVImport() {
     const confirmedSpaces = reservation.spaces_confirmed || 0;
     const availableSpaces = confirmedSpaces - usedSpaces;
 
-    if (parsedData.length > availableSpaces) {
-      setImportErrors([`Cannot import ${parsedData.length} routines. Only ${availableSpaces} space(s) available (${confirmedSpaces} confirmed - ${usedSpaces} used).`]);
+    if (previewData.length > availableSpaces) {
+      setImportErrors([`Cannot import ${previewData.length} routines. Only ${availableSpaces} space(s) available (${confirmedSpaces} confirmed - ${usedSpaces} used).`]);
       setImportStatus('error');
       return;
     }
 
     const competitionId = reservation.competition_id;
-    const defaultClassification = lookupData?.classifications?.[0]?.id;
-    const defaultCategory = lookupData?.categories?.[0]?.id;
-
-    if (!defaultClassification || !defaultCategory) {
-      setImportErrors(['System configuration error: No categories or classifications available']);
-      setImportStatus('error');
-      return;
-    }
 
     setImportStatus('importing');
     setIsProcessing(true);
@@ -508,15 +505,17 @@ export default function RoutineCSVImport() {
     let errorCount = 0;
     const errors: string[] = [];
 
-    for (let i = 0; i < parsedData.length; i++) {
-      const row = parsedData[i];
+    for (let i = 0; i < previewData.length; i++) {
+      const row = previewData[i];
       try {
         await createMutation.mutateAsync({
           competition_id: competitionId,
           studio_id: studioId,
           title: row.title,
-          category_id: defaultCategory,
-          classification_id: defaultClassification,
+          category_id: row.category_id!,
+          classification_id: row.classification_id!,
+          age_group_id: row.age_group_id,
+          entry_size_id: row.entry_size_id,
           choreographer: row.choreographer,
           special_requirements: row.props,
           entry_fee: 0,
@@ -533,7 +532,7 @@ export default function RoutineCSVImport() {
       }
 
       // Update progress
-      setImportProgress(Math.round(((i + 1) / parsedData.length) * 100));
+      setImportProgress(Math.round(((i + 1) / previewData.length) * 100));
     }
 
     setIsProcessing(false);
@@ -597,6 +596,41 @@ export default function RoutineCSVImport() {
     URL.revokeObjectURL(url);
   };
 
+  const exportRoutines = () => {
+    if (!existingEntries?.entries || existingEntries.entries.length === 0) {
+      alert('No routines to export');
+      return;
+    }
+
+    const headers = ['Title', 'Props', 'Dancers', 'Choreographer'];
+    const rows = existingEntries.entries.map((entry: any) => {
+      const dancerNames = entry.participants
+        ?.map((p: any) => {
+          const first = p.dancers?.first_name || '';
+          const last = p.dancers?.last_name || '';
+          return `${first} ${last}`.trim();
+        })
+        .filter((name: string) => name)
+        .join(', ') || '';
+
+      return [
+        entry.title || '',
+        entry.special_requirements || '',
+        dancerNames,
+        entry.choreographer || '',
+      ];
+    });
+
+    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `routines_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleReset = () => {
     setFile(null);
     setParsedData([]);
@@ -616,7 +650,7 @@ export default function RoutineCSVImport() {
               Select a CSV, XLS, or XLSX file containing routine information
             </p>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap justify-center">
               <label className="cursor-pointer bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                 <input
                   type="file"
@@ -630,7 +664,14 @@ export default function RoutineCSVImport() {
                 onClick={downloadTemplate}
                 className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
               >
-                📥 Download Template
+                Download Template
+              </button>
+              <button
+                onClick={exportRoutines}
+                className="bg-green-600/20 text-green-300 border border-green-400/30 px-6 py-3 rounded-lg hover:bg-green-600/30 transition-all"
+                disabled={!existingEntries?.entries || existingEntries.entries.length === 0}
+              >
+                Export to CSV ({existingEntries?.entries?.length || 0})
               </button>
             </div>
           </div>
@@ -878,7 +919,7 @@ export default function RoutineCSVImport() {
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold text-red-400 mb-2">Insufficient Spaces</h3>
                       <p className="text-gray-300 mb-2">
-                        Cannot import {parsedData.length} routines. Only {availableSpaces} space(s) available.
+                        Cannot import {previewData.length} routines. Only {availableSpaces} space(s) available.
                       </p>
                       <p className="text-gray-400 text-sm">
                         Confirmed: {confirmedSpaces} | Used: {usedSpaces} | Available: {availableSpaces}
@@ -897,7 +938,7 @@ export default function RoutineCSVImport() {
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-green-400 mb-2">File Validated Successfully</h3>
                 <p className="text-gray-300 mb-4">
-                  Found {parsedData.length} routine(s) ready to import. Review the data below.
+                  Found {previewData.length} routine(s) ready to import. Review the data below.
                 </p>
 
                 <div className="flex gap-4">
@@ -907,8 +948,8 @@ export default function RoutineCSVImport() {
                       const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
                       if (!reservation) return true;
                       const availableSpaces = (reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0);
-                      return parsedData.length > availableSpaces;
-                    })()}
+                      return previewData.length > availableSpaces;
+                    })() || previewData.some(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id)}
                     className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {createMutation.isPending ? 'Importing...' : 'Import'}
@@ -926,30 +967,147 @@ export default function RoutineCSVImport() {
 
           {/* Preview Table */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 overflow-x-auto">
-            <h3 className="text-lg font-semibold text-white mb-4">Preview ({parsedData.length} routines)</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Preview ({previewData.length} routines)</h3>
+
+            {/* Missing Fields Warning */}
+            {previewData.some(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id) && (
+              <div className="mb-4 bg-orange-500/10 border border-orange-400/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚠️</div>
+                  <div>
+                    <h4 className="text-orange-400 font-semibold mb-1">Missing Required Fields</h4>
+                    <p className="text-sm text-gray-300">
+                      {previewData.filter(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id).length} routine(s) need all fields before import.
+                      Please select Age Group, Classification, Dance Category, and Entry Size for each routine.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase bg-black/40 sticky top-0">
                   <tr>
                     <th className="px-4 py-3">#</th>
                     <th className="px-4 py-3">Title</th>
-                    <th className="px-4 py-3">Props</th>
+                    <th className="px-4 py-3 min-w-[150px]">Age Group</th>
+                    <th className="px-4 py-3 min-w-[150px]">Classification</th>
+                    <th className="px-4 py-3 min-w-[150px]">Dance Category</th>
+                    <th className="px-4 py-3 min-w-[150px]">Entry Size</th>
                     <th className="px-4 py-3">Dancers</th>
+                    <th className="px-4 py-3">Props</th>
                     <th className="px-4 py-3">Choreographer</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {parsedData.map((routine, index) => {
+                  {previewData.map((routine, index) => {
                     // Get matches for this routine
                     const routineMatches = dancerMatches.filter(m => m.routineIndex === index);
                     const matched = routineMatches.filter(m => m.matched);
                     const unmatched = routineMatches.filter(m => !m.matched);
+                    const hasAutoAge = parsedData[index]?.age_group_id && routine.age_group_id === parsedData[index].age_group_id;
+                    const hasAutoSize = parsedData[index]?.entry_size_id && routine.entry_size_id === parsedData[index].entry_size_id;
 
                     return (
-                      <tr key={index} className="border-b border-white/10 hover:bg-white/5">
+                      <tr
+                        key={index}
+                        className={`border-b border-white/10 hover:bg-white/5 ${
+                          !routine.age_group_id || !routine.classification_id || !routine.category_id || !routine.entry_size_id
+                            ? 'bg-red-500/10'
+                            : ''
+                        }`}
+                      >
                         <td className="px-4 py-3 text-gray-400">{index + 1}</td>
                         <td className="px-4 py-3 text-white">{routine.title}</td>
-                        <td className="px-4 py-3 text-gray-300">{routine.props || '-'}</td>
+
+                        {/* Age Group Dropdown */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={routine.age_group_id || ''}
+                              onChange={(e) => {
+                                const updated = [...previewData];
+                                updated[index] = { ...updated[index], age_group_id: e.target.value };
+                                setPreviewData(updated);
+                              }}
+                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
+                                routine.age_group_id ? 'border-white/20' : 'border-red-400/50'
+                              } rounded text-white`}
+                            >
+                              <option value="" className="bg-gray-900">Select...</option>
+                              {lookupData?.ageGroups?.map(ag => (
+                                <option key={ag.id} value={ag.id} className="bg-gray-900">{ag.name}</option>
+                              ))}
+                            </select>
+                            {hasAutoAge && <span className="text-xs text-purple-400 whitespace-nowrap">AUTO</span>}
+                          </div>
+                        </td>
+
+                        {/* Classification Dropdown */}
+                        <td className="px-4 py-3">
+                          <select
+                            value={routine.classification_id || ''}
+                            onChange={(e) => {
+                              const updated = [...previewData];
+                              updated[index] = { ...updated[index], classification_id: e.target.value };
+                              setPreviewData(updated);
+                            }}
+                            className={`w-full px-2 py-1 text-xs bg-white/5 border ${
+                              routine.classification_id ? 'border-white/20' : 'border-red-400/50'
+                            } rounded text-white`}
+                          >
+                            <option value="" className="bg-gray-900">Select...</option>
+                            {lookupData?.classifications?.map(c => (
+                              <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>
+                            ))}
+                          </select>
+                        </td>
+
+                        {/* Dance Category Dropdown */}
+                        <td className="px-4 py-3">
+                          <select
+                            value={routine.category_id || ''}
+                            onChange={(e) => {
+                              const updated = [...previewData];
+                              updated[index] = { ...updated[index], category_id: e.target.value };
+                              setPreviewData(updated);
+                            }}
+                            className={`w-full px-2 py-1 text-xs bg-white/5 border ${
+                              routine.category_id ? 'border-white/20' : 'border-red-400/50'
+                            } rounded text-white`}
+                          >
+                            <option value="" className="bg-gray-900">Select...</option>
+                            {lookupData?.categories?.map(cat => (
+                              <option key={cat.id} value={cat.id} className="bg-gray-900">{cat.name}</option>
+                            ))}
+                          </select>
+                        </td>
+
+                        {/* Entry Size Dropdown */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={routine.entry_size_id || ''}
+                              onChange={(e) => {
+                                const updated = [...previewData];
+                                updated[index] = { ...updated[index], entry_size_id: e.target.value };
+                                setPreviewData(updated);
+                              }}
+                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
+                                routine.entry_size_id ? 'border-white/20' : 'border-red-400/50'
+                              } rounded text-white`}
+                            >
+                              <option value="" className="bg-gray-900">Select...</option>
+                              {lookupData?.entrySizeCategories?.map(sc => (
+                                <option key={sc.id} value={sc.id} className="bg-gray-900">{sc.name}</option>
+                              ))}
+                            </select>
+                            {hasAutoSize && <span className="text-xs text-purple-400 whitespace-nowrap">AUTO</span>}
+                          </div>
+                        </td>
+
+                        {/* Dancers (Read-only) */}
                         <td className="px-4 py-3">
                           {routineMatches.length > 0 ? (
                             <div className="space-y-1">
@@ -968,6 +1126,8 @@ export default function RoutineCSVImport() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
+
+                        <td className="px-4 py-3 text-gray-300">{routine.props || '-'}</td>
                         <td className="px-4 py-3 text-gray-300">{routine.choreographer || '-'}</td>
                       </tr>
                     );
@@ -985,7 +1145,7 @@ export default function RoutineCSVImport() {
           <div className="text-center">
             <div className="animate-bounce text-6xl mb-4">⬆️</div>
             <h3 className="text-xl font-semibold text-white mb-2">Importing Routines...</h3>
-            <p className="text-gray-400 mb-6">Please wait while we add {parsedData.length} routine(s) to the database</p>
+            <p className="text-gray-400 mb-6">Please wait while we add {previewData.length} routine(s) to the database</p>
           </div>
 
           {/* Progress Bar */}
@@ -1008,7 +1168,7 @@ export default function RoutineCSVImport() {
             <div className="text-6xl mb-4">🎉</div>
             <h3 className="text-xl font-semibold text-green-400 mb-2">Import Successful!</h3>
             <p className="text-gray-300">
-              Successfully imported {parsedData.length - importErrors.length} of {parsedData.length} routine(s). Redirecting to entries list...
+              Successfully imported {previewData.length - importErrors.length} of {previewData.length} routine(s). Redirecting to entries list...
             </p>
           </div>
 
