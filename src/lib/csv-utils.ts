@@ -48,7 +48,7 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
   // Routine fields
   title: ['routine_title', 'routinetitle', 'routine_name', 'routinename', 'name', 'routine', 'piece', 'dance_title', 'dancetitle', 'dance_name', 'entry_title'],
   props: ['prop', 'properties', 'prop_list', 'proplist', 'prop_description', 'propdescription', 'special_requirements', 'items', 'equipment', 'stage_props', 'stageprops'],
-  dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_list', 'dancers_list', 'dancerslist'],
+  dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_list', 'dancers_list', 'dancerslist', 'dancers_list_first_name_last_name'],
   choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'teacher', 'instructor', 'coach', 'director', 'creator', 'choreography_by'],
 };
 
