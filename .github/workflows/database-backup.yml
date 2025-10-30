@@ -38,8 +38,15 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          # Extract connection details from DATABASE_URL
-          # Format: postgresql://user:password@host:port/database
+          # Verify DATABASE_URL is set (without exposing password)
+          if [ -z "$DATABASE_URL" ]; then
+            echo "ERROR: DATABASE_URL secret is not set or is empty"
+            echo "Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "Add secret named: DATABASE_URL"
+            exit 1
+          fi
+
+          echo "✅ DATABASE_URL is set (length: ${#DATABASE_URL} chars)"
 
           # Create backup directory
           mkdir -p backups
