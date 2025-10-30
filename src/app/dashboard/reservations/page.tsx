@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 import { prisma } from '@/lib/prisma';
+import { getTenantData } from '@/lib/tenant-context';
 import Link from 'next/link';
 import ReservationsList from '@/components/ReservationsList';
 
@@ -13,9 +14,16 @@ export default async function ReservationsPage() {
     redirect('/login');
   }
 
-  // Check if user is a studio director (owns a studio)
+  // Get current tenant from subdomain
+  const tenant = await getTenantData();
+  const tenantId = tenant?.id;
+
+  // Check if user is a studio director on THIS tenant (owns a studio)
   const isStudioDirector = await prisma.studios.findFirst({
-    where: { owner_id: user.id },
+    where: {
+      owner_id: user.id,
+      ...(tenantId ? { tenant_id: tenantId } : {}),
+    },
     select: { id: true },
   });
 

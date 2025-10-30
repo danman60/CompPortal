@@ -136,6 +136,12 @@ export default function RoutineCSVImport() {
   // Auto-detect age group based on youngest dancer (from useEntryFormV2 logic lines 116-135)
   const autoDetectAgeGroup = (matchedDancerIds: string[]): string | undefined => {
     if (!matchedDancerIds.length || !existingDancers?.dancers || !eventStartDate || !lookupData?.ageGroups) {
+      console.log('[Age Detection] Missing prerequisites:', {
+        hasDancerIds: matchedDancerIds.length > 0,
+        hasDancers: !!existingDancers?.dancers,
+        hasEventDate: !!eventStartDate,
+        hasAgeGroups: !!lookupData?.ageGroups
+      });
       return undefined;
     }
 
@@ -151,16 +157,21 @@ export default function RoutineCSVImport() {
       })
       .filter((age): age is number => age !== null);
 
-    if (agesAtEvent.length === 0) return undefined;
+    if (agesAtEvent.length === 0) {
+      console.log('[Age Detection] No valid ages calculated from dancers');
+      return undefined;
+    }
 
     // Find youngest age
     const youngestAge = Math.min(...agesAtEvent);
+    console.log('[Age Detection] Youngest age:', youngestAge, 'Available age groups:', lookupData.ageGroups.map(ag => `${ag.name} (${ag.min_age}-${ag.max_age})`));
 
     // Match to age divisions
     const match = lookupData.ageGroups.find(
       (ag) => ag.min_age <= youngestAge && youngestAge <= ag.max_age
     );
 
+    console.log('[Age Detection] Matched age group:', match?.name || 'No match');
     return match?.id;
   };
 
