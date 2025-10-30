@@ -33,9 +33,12 @@ jobs:
 
       - name: Verify PostgreSQL version
         run: |
-          echo "Checking installed pg_dump version:"
+          echo "Checking default pg_dump version:"
           pg_dump --version
-          echo "Expected: PostgreSQL 17.x"
+          echo ""
+          echo "Checking PostgreSQL 17 pg_dump:"
+          /usr/lib/postgresql/17/bin/pg_dump --version
+          echo "Will use PostgreSQL 17 for backup"
 
       - name: Generate backup filename
         id: filename
@@ -68,8 +71,8 @@ jobs:
 
           echo "Using transaction pooler (stripped query params for pg_dump compatibility)"
 
-          # Run pg_dump
-          pg_dump "$CLEAN_URL" \
+          # Run pg_dump using PostgreSQL 17 (full path to avoid version 16)
+          /usr/lib/postgresql/17/bin/pg_dump "$CLEAN_URL" \
             --clean \
             --if-exists \
             --no-owner \
