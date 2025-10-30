@@ -13,53 +13,60 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: {
-    default: 'EMPWR Dance Experience',
-    template: '%s | EMPWR',
-  },
-  description: 'Modern dance competition management platform for studios, directors, and judges. Streamline registrations, scheduling, scoring, and results.',
-  keywords: ['dance competition', 'competition management', 'dance studio', 'competition software', 'dance registration', 'scoring system'],
-  authors: [{ name: 'EMPWR Team' }],
-  creator: 'EMPWR',
-  publisher: 'EMPWR',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'),
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: '/',
-    title: 'EMPWR Dance Experience',
+// Dynamic metadata based on tenant
+export async function generateMetadata(): Promise<Metadata> {
+  const tenantData = await getTenantData();
+  const tenantName = tenantData?.name || 'Dance Competition';
+  const tenantShortName = tenantData?.subdomain?.toUpperCase() || 'COMP';
+
+  return {
+    title: {
+      default: tenantName,
+      template: `%s | ${tenantShortName}`,
+    },
     description: 'Modern dance competition management platform for studios, directors, and judges. Streamline registrations, scheduling, scoring, and results.',
-    siteName: 'EMPWR',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'EMPWR Dance Experience',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'EMPWR Dance Experience',
-    description: 'Modern dance competition management platform for studios, directors, and judges.',
-    images: ['/og-image.png'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    keywords: ['dance competition', 'competition management', 'dance studio', 'competition software', 'dance registration', 'scoring system'],
+    authors: [{ name: `${tenantName} Team` }],
+    creator: tenantName,
+    publisher: tenantName,
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'),
+    openGraph: {
+      type: 'website',
+      locale: 'en_US',
+      url: '/',
+      title: tenantName,
+      description: 'Modern dance competition management platform for studios, directors, and judges. Streamline registrations, scheduling, scoring, and results.',
+      siteName: tenantName,
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: tenantName,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: tenantName,
+      description: 'Modern dance competition management platform for studios, directors, and judges.',
+      images: ['/og-image.png'],
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
-  },
-  // Icons auto-generated from icon.tsx and apple-icon.tsx
-  manifest: '/manifest.json',
-};
+    // Icons auto-generated from icon.tsx and apple-icon.tsx
+    manifest: '/manifest.json',
+  };
+}
 
 export const viewport = {
   width: 'device-width',

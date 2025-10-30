@@ -58,6 +58,31 @@ async function getUserEmail(userId: string): Promise<string | null> {
 }
 
 export const studioRouter = router({
+  // Lookup studio by public code
+  lookupByCode: publicProcedure
+    .input(z.object({
+      code: z.string().length(5, 'Code must be exactly 5 characters'),
+    }))
+    .query(async ({ input }) => {
+      const studio = await prisma.studios.findUnique({
+        where: { public_code: input.code.toUpperCase() },
+        select: {
+          id: true,
+          name: true,
+          public_code: true,
+          city: true,
+          province: true,
+          status: true,
+        },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
+      return studio;
+    }),
+
   // Get all studios
   // Super admins can see studios across all tenants
   getAll: publicProcedure
