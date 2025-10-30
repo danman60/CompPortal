@@ -75,6 +75,13 @@ The `competition.getAll` tRPC endpoint is returning competition objects, but the
    - Verify what endpoint EventMetricsGrid should be using
    - Check if `competition.getAll` is the wrong endpoint for capacity display
 
-## Files Modified (Not Yet Built)
-- `D:\ClaudeCode\CompPortal\src\server\routers\competition.ts` - Added server-side debug log
-- `D:\ClaudeCode\CompPortal\src\components\rebuild\pipeline\PipelinePageContainer.tsx` - Added frontend debug log with Object.keys()
+## Discovery 9: Console Log Truncation Issue
+- **Tested:** Playwright console captures show `Array(3)` but truncated
+- **Backend verified:** Vercel logs confirm backend sends `available_reservation_tokens: 381`
+- **Frontend unknown:** Console.log truncates array details, can't see actual field values
+- **Next:** Need JSON.stringify() in frontend log to see full data structure
+
+## Files Modified
+- ✅ **DEPLOYED (commit 608f3fd):**
+  - `D:\ClaudeCode\CompPortal\src\server\routers\competition.ts` - Added server-side debug log
+  - `D:\ClaudeCode\CompPortal\src\components\rebuild\pipeline\PipelinePageContainer.tsx` - Added frontend debug log with Object.keys()

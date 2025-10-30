@@ -51,8 +51,8 @@ export function PipelinePageContainer() {
   const { data: competitionsData, isLoading: competitionsLoading, refetch: refetchCompetitions } = trpc.competition.getAll.useQuery();
   const competitions = competitionsData?.competitions || [];
 
-  // Debug: Log what we receive
-  console.log('[Pipeline] Competitions data:', {
+  // Debug: Log what we receive with JSON.stringify to see full data
+  console.log('[Pipeline] Competitions data:', JSON.stringify({
     hasData: !!competitionsData,
     count: competitions.length,
     loading: competitionsLoading,
@@ -62,7 +62,7 @@ export function PipelinePageContainer() {
       available: c.available_reservation_tokens,
       allKeys: Object.keys(c)
     }))
-  });
+  }, null, 2));
 
   const {
     reservations,
