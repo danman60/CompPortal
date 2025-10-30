@@ -122,6 +122,13 @@ export const competitionRouter = router({
         prisma.competitions.count({ where }),
       ]);
 
+      // Debug: Log what we're actually returning
+      console.log('[competition.getAll] Sample competition:', competitions[0] ? {
+        name: competitions[0].name,
+        total_reservation_tokens: competitions[0].total_reservation_tokens,
+        available_reservation_tokens: competitions[0].available_reservation_tokens,
+      } : 'No competitions');
+
       return {
         competitions,
         total,

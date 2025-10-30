@@ -59,7 +59,8 @@ export function PipelinePageContainer() {
     competitions: competitions.map(c => ({
       name: c.name,
       total: c.total_reservation_tokens,
-      available: c.available_reservation_tokens
+      available: c.available_reservation_tokens,
+      allKeys: Object.keys(c)
     }))
   });
 

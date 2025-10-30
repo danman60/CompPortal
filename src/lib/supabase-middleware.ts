@@ -65,6 +65,36 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Check if site is paused (maintenance mode)
+  // Only check for subdomain users (not compsync.net main landing)
+  if (subdomain) {
+    const { data: siteSetting } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'site_paused')
+      .single();
+
+    const isPaused = siteSetting?.value === true || siteSetting?.value === 'true';
+
+    if (isPaused && user) {
+      // Get user role
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      // Only super_admin can bypass maintenance mode
+      const isSuperAdmin = userProfile?.role === 'super_admin';
+
+      if (!isSuperAdmin && !request.nextUrl.pathname.startsWith('/maintenance')) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/maintenance';
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   // Protect dashboard routes
   if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
     const url = request.nextUrl.clone();

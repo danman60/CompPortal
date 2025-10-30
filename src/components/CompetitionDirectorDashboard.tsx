@@ -6,6 +6,7 @@ import DashboardStats from './DashboardStats';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
+import SitePauseButton from './SitePauseButton';
 import { trpc } from '@/lib/trpc';
 import { Sparkles, Target, Settings as SettingsIcon } from '@/lib/icons';
 import { useRouter } from 'next/navigation';
@@ -223,9 +224,13 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       <div className="space-y-8">
       {/* Header */}
       <div className="flex-1">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          {greeting}, {firstName}!
-        </h1>
+        <div className="flex items-center gap-4 mb-2">
+          <h1 className="text-4xl font-bold text-white">
+            {greeting}, {firstName}!
+          </h1>
+          {/* Site Pause Control - Super Admin Only */}
+          {isAdmin && <SitePauseButton />}
+        </div>
         <p className="text-gray-400 mb-4">
           {isAdmin ? 'Super Admin Dashboard' : 'Competition Director Dashboard'}
           <span className="ml-2 px-2 py-1 bg-purple-500/20 border border-purple-400/30 rounded text-purple-300 text-xs font-semibold">
