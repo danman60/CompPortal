@@ -1,18 +1,66 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-29 (Session 23 - Blocker Investigation: RESOLVED)
+**Last Updated:** 2025-10-30 (Session 24 - Import System Overhaul)
 
 ---
 
-## Current Status: ✅ READY FOR LAUNCH - No P0 Blockers
+## Current Status: ✅ READY FOR LAUNCH - Import System Enhanced
 
-### Latest Work: Session 23 - P0 Investigation & Resolution (45 min)
+### Latest Work: Session 24 - Import System Overhaul (3 hours)
 
-**Date:** October 29, 2025
-**Status:** ✅ NO BLOCKERS - Safe to launch
-**Build:** v1.0.0 (7f52cbf)
+**Date:** October 30, 2025
+**Status:** ✅ Import system complete - UI polish pending
+**Build:** v1.0.0 (6b81e91)
 
-**SESSION 23 ACHIEVEMENTS:**
+**SESSION 24 ACHIEVEMENTS:**
+
+1. ✅ **Full .xls/.xlsx/.csv Support Added**
+   - Replaced ExcelJS with xlsx library (SheetJS)
+   - Supports legacy .xls (Excel 97-2003) + modern .xlsx + CSV
+   - Better error messages suggesting ChatGPT for corrupted files
+   - Both dancer and routine imports work with all formats
+
+2. ✅ **Export Functionality Added**
+   - Export to CSV button on both dancer and routine import pages
+   - Dancers export: First Name, Last Name, Date of Birth, Gender, Email, Phone
+   - Routines export: Title, Props, Dancers (comma-separated), Choreographer
+   - Timestamped filenames (e.g., dancers_export_2025-10-30.csv)
+
+3. ✅ **Birthdate Required in Dancer Import**
+   - Inline editing in preview table
+   - Red border for missing, green checkmark for valid
+   - Hard block on import until all birthdates filled
+   - Real-time validation as user types
+   - Supports MM/DD/YYYY, YYYY-MM-DD, DD.MM.YYYY formats
+
+4. ✅ **All Fields Required in Routine Import**
+   - Age Group: Auto-detects from youngest dancer's age (editable)
+   - Entry Size: Auto-detects from dancer count (editable)
+   - Classification: User must select manually
+   - Dance Category: User must select manually
+   - Preview shows ALWAYS (only title validated on upload)
+   - Import blocked until all 4 fields complete
+   - Warning banner shows count of routines needing fields
+
+5. ✅ **Allow 0-Dancer Routines**
+   - Routines can be imported without matched dancers
+   - Created as draft entries with empty participants list
+   - SD can attach dancers later in detail view
+
+6. ✅ **Comprehensive Guidance Added**
+   - "How Routine Import Works" section
+   - "What Your File Should Contain" with examples
+   - "Excel Format Requirements"
+   - Dancer match quality dashboard
+   - Color-coded warnings (green/yellow/orange/red)
+   - Non-tech-savvy friendly language
+
+7. ✅ **Sample Test Files Created**
+   - `Dancers_UDA_2026.xls` - 46 dancers with birthdates
+   - `Entries UDA 2026.xls` - 208 routines (user provided)
+   - Perfect for E2E testing of import workflow
+
+### Previous Work: Session 23 - P0 Investigation & Resolution (45 min)
 
 1. ✅ **P0 "Blocker" Investigated and Resolved**
    - **Finding:** NOT a race condition or double-click bug
@@ -88,19 +136,23 @@
    - Documented title upgrade logic requirements
    - Documented scoring rubric normalization needs
 
-**Files Modified:**
-- docs/PHASE2_NORMALIZATION_REQUIREMENTS.md (NEW - 400+ lines)
-- CURRENT_WORK.md (UPDATED)
+**Files Modified (Session 24):**
+- src/components/DancerCSVImport.tsx (xlsx library, export, inline editing)
+- src/components/RoutineCSVImport.tsx (xlsx library, export, field validation)
+- package.json (added xlsx dependency)
+- NEXT_SESSION_IMPORT_UX.md (NEW - next session plan)
 - PROJECT_STATUS.md (UPDATED - this file)
 
-**Database Changes:**
-- Updated Glow `entry_size_categories` (7 changes)
-- Added Glow `award_types` score tiers (6 inserts)
-- Updated Glow competitions late_fee (7 updates)
-- Corrected EMPWR dancer birthdates (82 rows)
+**Sample Files Created:**
+- C:\Users\Danie\Downloads\Dancers_UDA_2026.xls (46 dancers, generated)
+- C:\Users\Danie\Downloads\Entries UDA 2026.xls (208 routines, user provided)
 
-**Commits:** e08a8f6 (existing)
-**Build Status:** ✅ 64/64 pages passing
+**Commits (Session 24):**
+- 5b32704: Excel error messages + export buttons
+- 9da1462: Replace ExcelJS with xlsx library
+- 6b81e91: Allow routine import preview without required fields
+
+**Build Status:** ✅ All pages compiling successfully
 
 ---
 
