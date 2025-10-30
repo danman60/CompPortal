@@ -175,7 +175,7 @@ export const reservationRouter = router({
         prisma.competitions.findMany({
           where: {
             ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
-            status: 'active', // Only show active competitions for reservation creation
+            status: { in: ['upcoming', 'registration_open', 'in_progress'] }, // Show open competitions for reservation creation
           },
           select: {
             id: true,
