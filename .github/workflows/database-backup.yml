@@ -108,12 +108,10 @@ jobs:
             echo "No changes to commit"
           else
             BACKUP_SIZE=$(du -h backups/${{ steps.filename.outputs.filename }}.gz | cut -f1)
-            git commit -m "chore: database backup ${{ steps.filename.outputs.timestamp }}
-
-            Automated daily backup via GitHub Actions
-            Backup size: ${BACKUP_SIZE}
-            Run ID: ${{ github.run_id }}"
-
+            git commit -m "chore: database backup ${{ steps.filename.outputs.timestamp }}" \
+                       -m "Automated daily backup via GitHub Actions" \
+                       -m "Backup size: ${BACKUP_SIZE}" \
+                       -m "Run ID: ${{ github.run_id }}"
             git push
           fi
 
