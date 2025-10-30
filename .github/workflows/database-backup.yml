@@ -14,6 +14,8 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write  # Allow pushing backup commits
 
     steps:
       - name: Checkout code
