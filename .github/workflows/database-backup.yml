@@ -8,8 +8,7 @@ on:
   push:
     branches:
       - main
-    paths:
-      - '.github/workflows/database-backup.yml' # Only run when workflow itself changes
+    # TESTING: Runs on every push to main until we confirm backups work
 
 jobs:
   backup:
