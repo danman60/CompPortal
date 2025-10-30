@@ -182,7 +182,7 @@ export default function OnboardingPage() {
         <div className="text-center mb-8">
           <div className="text-6xl mb-4 animate-bounce">🎭</div>
           <h1 className="text-4xl font-bold text-white mb-2">
-            Welcome to EMPWR!
+            Welcome to {tenant?.name || 'CompPortal'}!
           </h1>
           <p className="text-gray-300">
             Let's get your studio set up in just a few steps
@@ -379,7 +379,7 @@ export default function OnboardingPage() {
                       />
                       <div className="flex-1">
                         <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                          I consent to sharing legal information (studio name, contact details, liability acknowledgment) with the EMPWR platform for registration and competition management purposes. <span className="text-red-400">*</span>
+                          I consent to sharing legal information (studio name, contact details, liability acknowledgment) with the {tenant?.name || 'competition'} platform for registration and competition management purposes. <span className="text-red-400">*</span>
                         </span>
                       </div>
                     </label>
