@@ -1,13 +1,13 @@
 # Current Work - Multi-Tenant Authentication & Isolation
 
-**Session:** October 29, 2025 (Session 24 Continued)
-**Status:** ✅ TENANT ISOLATION COMPLETE - Cross-Tenant Auth Working
-**Build:** v1.0.0 (b966896)
+**Session:** October 29, 2025 (Session 24 Complete)
+**Status:** ✅ FULL MULTI-TENANT AUTH ENABLED - Single Account Across Tenants
+**Build:** v1.0.0 (1aaa369)
 **Previous Session:** January 29, 2025 (Session 23 - Audit Complete)
 
 ---
 
-## ✅ Session 24 - Multi-Tenant Isolation (3 Commits)
+## ✅ Session 24 - Multi-Tenant Isolation & Authentication (6 Commits)
 
 ### Phase 1: Quick Wins - COMPLETED (Commit 10d09b6)
 **Three high-visibility user-facing branding fixes:**
@@ -78,30 +78,46 @@ const studio = await prisma.studios.findFirst({
 });
 ```
 
+### Phase 5: Full Multi-Tenant Authentication - COMPLETED (Commit 1aaa369)
+**Enabled single-account access across multiple tenants**
+
+**Database Migration:**
+```sql
+-- Updated handle_new_user() trigger
+INSERT INTO user_profiles (id, role, first_name, last_name, tenant_id)
+VALUES (NEW.id, 'studio_director', ..., NULL);  -- Multi-tenant
+
+-- Set all existing users to NULL
+UPDATE user_profiles SET tenant_id = NULL WHERE tenant_id IS NOT NULL;
+```
+
+**Code Changes:**
+1. ✅ **admin.ts:154** - Removed tenant_id from bulk import user creation
+2. ✅ **route.ts:33-53** - Fixed tRPC context:
+   - Removed `user_profiles.tenant_id` from query
+   - Studio lookup now uses subdomain tenant only
+   - Removed fallback to user profile tenant_id
+
+**Authentication Architecture:**
+- **User Account:** Tenant-agnostic (tenant_id = NULL for all users)
+- **Tenant Resolution:** Subdomain only (empwr.compsync.net vs glow.compsync.net)
+- **User→Tenant Mapping:** Studios table (owner_id + tenant_id)
+- **Data Isolation:** All queries filter by `ctx.tenantId` from subdomain
+
+**Testing Flow (Now Enabled):**
+1. User signs up on empwr.compsync.net → account created with tenant_id = NULL
+2. User creates EMPWR studio → studios table: `{owner_id: user.id, tenant_id: empwr}`
+3. Same user logs into glow.compsync.net → onboarding triggers (no studio found)
+4. User creates GLOW studio → studios table: `{owner_id: user.id, tenant_id: glow}`
+5. User switches back to empwr.compsync.net → sees EMPWR data only
+6. User switches to glow.compsync.net → sees GLOW data only
+
 ### Testing Status
 - ✅ **Build:** Passed successfully
 - ✅ **All 8 pages:** Tenant filtering applied
-- ⏳ **Production Testing:** Pending user verification on both tenants
-
-### Remaining Work for Full Multi-Tenant Auth
-
-**To enable single user account across multiple tenants:**
-
-1. **Database Migration** - Make `user_profiles.tenant_id` NULLABLE
-   - Current: Locked to one tenant at signup
-   - Target: NULL for all users (tenant comes from subdomain only)
-
-2. **Signup Flow** - Remove tenant_id assignment at user creation
-   - Studios table already links user→tenant correctly
-   - Users should be tenant-agnostic
-
-3. **Testing Flow:**
-   - Register as Studio Director on EMPWR → create studio
-   - Same email/password login to GLOW → onboarding triggers
-   - Create GLOW studio → see GLOW data only
-   - Switch back to EMPWR → see EMPWR data only
-
-**Current State:** Same credentials work across tenants, but onboarding flow now properly triggers per-tenant. User account still has stale tenant_id from signup that should be removed.
+- ✅ **Database Migration:** Applied successfully
+- ✅ **Multi-Tenant Auth:** Fully implemented
+- ⏳ **Production Testing:** Ready for user verification on both tenants
 
 ---
 
