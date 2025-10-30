@@ -107,11 +107,12 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
+            BACKUP_SIZE=$(du -h backups/${{ steps.filename.outputs.filename }}.gz | cut -f1)
             git commit -m "chore: database backup ${{ steps.filename.outputs.timestamp }}
 
-Automated daily backup via GitHub Actions
-Backup size: $(du -h backups/${{ steps.filename.outputs.filename }}.gz | cut -f1)
-Run ID: ${{ github.run_id }}"
+            Automated daily backup via GitHub Actions
+            Backup size: ${BACKUP_SIZE}
+            Run ID: ${{ github.run_id }}"
 
             git push
           fi
@@ -127,7 +128,6 @@ Run ID: ${{ github.run_id }}"
 
             **Backup Details:**
             - Date: ${{ steps.filename.outputs.timestamp }}
-            - Size: $(du -h backups/${{ steps.filename.outputs.filename }}.gz | cut -f1)
             - Format: PostgreSQL SQL dump (gzip compressed)
 
             **Restoration:**
