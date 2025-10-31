@@ -1,36 +1,57 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-31 (Session 26 - Client Data Seeded + Validation Complete)
+**Last Updated:** 2025-10-31 (Session 26 - Studio Invitations & Account Claiming COMPLETE)
 
 ---
 
-## Current Status: ✅ CLIENT DATA SEEDED - READY FOR ACCOUNT CLAIMING WORKFLOW
+## Current Status: ✅ READY FOR TESTING - Account Claiming System Complete
 
-### Session 26: Client Data Seeding & Business Logic Validation (2 hours)
+### Session 26: Studio Invitations & Account Claiming (4 hours)
 **Date:** October 31, 2025
-**Status:** ✅ COMPLETE - All data seeded, validation complete
+**Status:** ✅ COMPLETE - Ready for production testing
 
 **COMPLETED:**
-- ✅ Seeded 54 studios (22 EMPWR + 32 Glow) with status='approved', owner_id=NULL
-- ✅ Seeded 61 approved reservations across 7 competitions
-- ✅ Applied 2 migrations (NULL owner_id, discount/credits columns)
-- ✅ Validated business logic against Phase 1 spec
-- ✅ Verified tenant isolation (0 cross-tenant leaks)
-- ✅ Confirmed test account preserved (daniel@streamstage.live)
-- ✅ Build passing (67/67 pages)
-- ✅ Created VALIDATION_COMPLETE.md
+1. ✅ **Super Admin Dashboard Controls**
+   - Pause site button (already working, verified permissions)
+   - Studio invitation button (NEW - manual email trigger)
+   - Both buttons side-by-side in dashboard header
+
+2. ✅ **Email Invitation System**
+   - Beautiful HTML email template with reservation details
+   - Shows entries, deposits, credits per competition
+   - Unique claim URL with public code
+   - Handles missing emails gracefully (skip with error)
+
+3. ✅ **Studio Email Extraction**
+   - 24 Glow studios updated with emails from Excel files
+   - 30 studios missing emails (22 EMPWR + 8 Glow)
+
+4. ✅ **Account Claiming Workflow**
+   - `/claim?code=PUBLIC_CODE` route implemented
+   - Validates code, checks tenant isolation
+   - Updates owner_id on claim
+   - Redirects to onboarding or dashboard
+
+5. ✅ **Business Logic Validation**
+   - NULL owner_id safe (tenant isolation via tenant_id)
+   - 61 approved reservations verified
+   - Test account preserved (daniel@streamstage.live)
+   - Entry spaces = reservation spaces (Phase 1 confirmed)
 
 **DATA SUMMARY:**
 - **EMPWR:** 29 approved reservations, 2,428 entry spaces, $13,000+ deposits
 - **Glow:** 32 approved reservations, 1,920 entry spaces, $16,000 deposits, $9,475 credits
-- **Total:** 4,348 entry spaces across both tenants
+- **Total:** 54 studios, 4,348 entry spaces across both tenants
+
+**BUILD STATUS:** ✅ Passing (68/68 pages), 3 commits deployed
 
 **NEXT PRIORITIES:**
-1. 🔴 **IMMEDIATE:** Super admin email controls (manual button for account claiming invites)
-2. 🟡 **HIGH:** Fix pause site button (permissions issue)
-3. 🟢 **REQUIRED:** Implement account claiming workflow (`/claim?code=PUBLIC_CODE`)
+1. 🔴 **IMMEDIATE:** Test buttons on production (EMPWR + Glow tenants)
+2. 🟡 **HIGH:** Test account claiming flow end-to-end
+3. 🟢 **REQUIRED:** Obtain 30 missing studio emails
+4. 🟢 **REQUIRED:** Send test invitations before mass send
 
-**See:** `VALIDATION_COMPLETE.md` for complete analysis
+**See:** `SESSION_26_COMPLETE.md` for full details
 
 ---
 
@@ -343,10 +364,10 @@ Both tenants use same tables with proper `tenant_id` filtering:
 
 **EMPWR Tenant:**
 - **Studio Director:** danieljohnabrahamson@gmail.com / 123456
-- **Competition Director:** empwrdance@gmail.com (1-click demo)
+- **Competition Director:** empwrdance@gmail.com / 1CompSyncLogin!
 
 **Glow Tenant:**
-- **Competition Director:** glowdance@gmail.com (1-click demo)
+- **Competition Director:** stefanoalyessia@gmail.com / 1CompSyncLogin!
 - **Studio Director:** (pending first registration)
 
 ---
