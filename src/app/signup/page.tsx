@@ -22,42 +22,35 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [emailLocked, setEmailLocked] = useState(false);
+  const [studioCode, setStudioCode] = useState<string | null>(null);
   const checkEmailMutation = trpc.user.checkEmailExists.useMutation();
   const { tenant, isLoading: tenantLoading, primaryColor, secondaryColor } = useTenantTheme();
   const searchParams = useSearchParams();
 
-  // Pre-populate email from studio claim code
+  // Extract studio code from returnUrl
   useEffect(() => {
-    async function loadStudioEmail() {
-      const returnUrl = searchParams.get('returnUrl');
-      if (!returnUrl) return;
+    const returnUrl = searchParams.get('returnUrl');
+    if (!returnUrl) return;
 
-      // Extract code from returnUrl like "/claim?code=TEST1"
-      const match = returnUrl.match(/code=([A-Z0-9]+)/i);
-      if (!match) return;
-
-      const code = match[1];
-
-      try {
-        // Use tRPC to lookup studio (avoids RLS issues)
-        const response = await fetch('/api/trpc/studio.lookupByCode?input=' + encodeURIComponent(JSON.stringify({ code })));
-        if (!response.ok) return;
-
-        const result = await response.json();
-        const studio = result.result?.data;
-
-        if (studio?.email) {
-          setFormData(prev => ({ ...prev, email: studio.email }));
-          setEmailLocked(true);
-        }
-      } catch (err) {
-        // Silently fail - email pre-population is optional
-        console.error('Failed to load studio email:', err);
-      }
+    const match = returnUrl.match(/code=([A-Z0-9]+)/i);
+    if (match) {
+      setStudioCode(match[1]);
     }
-
-    loadStudioEmail();
   }, [searchParams]);
+
+  // Lookup studio by code using tRPC (avoids RLS issues)
+  const { data: studioData } = trpc.studio.lookupByCode.useQuery(
+    { code: studioCode! },
+    { enabled: !!studioCode && studioCode.length === 5 }
+  );
+
+  // Pre-populate email when studio data loads
+  useEffect(() => {
+    if (studioData?.email) {
+      setFormData(prev => ({ ...prev, email: studioData.email || '' }));
+      setEmailLocked(true);
+    }
+  }, [studioData]);
 
   // Resolve tenant id reliably to avoid 500s from email system
   const resolveTenantId = async (): Promise<string | null> => {
