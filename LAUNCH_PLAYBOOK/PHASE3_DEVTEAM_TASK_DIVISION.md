@@ -2,8 +2,78 @@
 
 **Created:** October 30, 2025
 **Timeline:** October 30 (Tonight) → November 8 (Launch)
-**Team:** 5 Parallel Agents + 1 Test Suite Agent (Separate Instance)
-**Protocol:** DevTeam parallel execution with dependency management
+**Team:** Parallel agents via DevTeam protocol
+**Protocol:** Iterative deployment with production verification
+
+---
+
+## 🔄 EXECUTION PROTOCOL (CRITICAL)
+
+### Workflow Loop (Repeat Until Complete)
+
+**1. DEVTEAM PARALLEL EXECUTION**
+- Launch ALL independent agents in parallel (single message, multiple Task calls)
+- Use DevTeam protocol for batch implementation
+- Agents work on their assigned tasks simultaneously
+- Complete all code changes for current iteration
+
+**2. UPDATE TRACKER**
+- Create/update `LAUNCH_TRACKER.md` with:
+  - ✅ Completed tasks
+  - ⏳ In-progress tasks
+  - 📋 Pending tasks
+  - 🐛 Issues found
+  - 📝 Notes from testing
+
+**3. RUN TESTING AGENT (PRODUCTION ONLY)**
+- Use Playwright MCP on PRODUCTION URLs:
+  - empwr.compsync.net
+  - glow.compsync.net
+- **NEVER** test on localhost
+- **CAPTURE SCREENSHOTS** for every feature tested
+- **CHECK CONSOLE LOGS** for errors/warnings
+- Test on BOTH tenants
+- Document all findings
+
+**4. GET LIST OF NOTES**
+- Review all testing results
+- Identify bugs, issues, improvements
+- Document console errors
+- Note UI/UX issues
+- Check for cross-tenant leaks
+
+**5. CONSIDER FINDINGS**
+- Analyze what's working vs broken
+- Determine if logging needed for debugging
+- Identify root causes
+- Prioritize fixes
+
+**6. DEPLOY LOGGING WHERE NECESSARY**
+- Add console.log for debugging (temporarily)
+- Add error tracking
+- Add state logging for complex flows
+- Document what was logged and why
+
+**7. MAKE NEW TODOS**
+- Create TodoWrite with:
+  - Bugs to fix
+  - Features to complete
+  - Improvements to make
+  - Logging to add/remove
+
+**8. REPEAT**
+- Go back to step 1 with new task list
+- Continue until all features working on production
+- Remove debugging logs before final deployment
+
+### Success Criteria for Each Loop
+- ✅ All parallel agents complete their tasks
+- ✅ Production tested on BOTH tenants
+- ✅ Screenshots captured as evidence
+- ✅ Console logs checked for errors
+- ✅ Tracker updated with progress
+- ✅ New todos created for next iteration
+- ✅ User informed of progress and blockers
 
 ---
 
@@ -53,11 +123,16 @@
 **Runs:** After all features implemented
 
 ### Agent 6: Automated Test Suite (TEST_AGENT) ⭐
-**Specialization:** Playwright E2E tests, validation tests, regression suite
-**Total Time:** 8 hours
-**Runs In:** **SEPARATE CLAUDE CODE INSTANCE**
-**Deliverable:** Automated test suite to run before Nov 8 launch
-**Independent:** Can work in parallel with all other agents
+**Specialization:** Playwright E2E tests on PRODUCTION, validation verification, regression suite
+**Total Time:** Continuous (runs after each deployment)
+**Runs In:** **SAME INSTANCE** (not separate)
+**Testing Strategy:**
+- Test on PRODUCTION ONLY (empwr.compsync.net + glow.compsync.net)
+- NEVER test on localhost
+- Take screenshots to verify all changes
+- Capture console logs for errors
+- Document findings in notes tracker
+**Deliverable:** Verified production functionality with screenshot evidence
 
 ---
 
@@ -76,26 +151,31 @@
 ---
 
 ### **Day 2: October 31 (Friday) - Foundation**
-**Focus:** Database migrations + data seeding
-**Parallel Agents:** 1 (DB_AGENT) + 6 (TEST_AGENT starts)
+**Focus:** Database migrations (NO DATA SEEDING YET - waiting on spreadsheet)
+**Parallel Agents:** DB_AGENT
 
-#### DB_AGENT (6 hours):
+#### DB_AGENT:
 - [ ] Create all database migrations
-- [ ] Run migrations on staging database
-- [ ] Seed EMPWR reservation data
-- [ ] Seed GLOW reservation data
-- [ ] Remove Orlando event
 - [ ] Add "Production" classification (both tenants)
 - [ ] Add "Production" dance category (both tenants)
 - [ ] Populate time limits in entry_size_categories
-- [ ] Verify all data seeded correctly
+- [ ] Make classification_id NOT NULL on dancers table
+- [ ] Add extended_time fields to competition_settings
+- [ ] Add scheduling_notes to entries table
+- [ ] Run migrations via Supabase MCP
+- [ ] Verify schema changes on BOTH tenants
 
-#### TEST_AGENT (starts, separate instance):
-- [ ] Set up Playwright test framework
-- [ ] Create test data fixtures
-- [ ] Begin writing classification validation tests
+#### TESTING (After DB_AGENT Deploys):
+- [ ] Use Playwright MCP on empwr.compsync.net
+- [ ] Use Playwright MCP on glow.compsync.net
+- [ ] Screenshot database state verification
+- [ ] Check console for migration errors
+- [ ] Verify "Production" classification exists on BOTH tenants
+- [ ] Update LAUNCH_TRACKER.md with results
 
-**Deliverable:** Database ready for backend development
+**Deliverable:** Database schema ready for backend development
+
+**NOTE:** Reservation data seeding deferred until Selena's spreadsheet received
 
 ---
 
