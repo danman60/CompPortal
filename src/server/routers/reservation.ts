@@ -245,7 +245,7 @@ export const reservationRouter = router({
               title: true,
             },
           },
-          users: {
+          users_reservations_approved_byTousers: {
             select: {
               id: true,
               email: true,

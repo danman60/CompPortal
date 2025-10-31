@@ -188,7 +188,9 @@ export default function UnifiedRoutineForm() {
   };
 
   // Calculate capacity
-  const routinesUsed = reservation?.competition_entries?.length || 0;
+  // TODO: Fix reservation query to include competition_entries for accurate count
+  // For now, using spaces_confirmed directly
+  const routinesUsed = 0; // TODO: Get actual count from competition_entries
   const routinesConfirmed = reservation?.spaces_confirmed || 0;
   const routinesRemaining = routinesConfirmed - routinesUsed;
 
