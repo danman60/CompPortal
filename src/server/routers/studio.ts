@@ -73,6 +73,7 @@ export const studioRouter = router({
           city: true,
           province: true,
           status: true,
+          email: true,
         },
       });
 

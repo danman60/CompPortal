@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
-import { createClient } from '@/lib/supabase';
 
 interface SignupFormData {
   email: string;
@@ -38,25 +37,27 @@ export default function SignupPage() {
       if (!match) return;
 
       const code = match[1];
-      const supabase = createClient();
 
-      const { data: studio } = await supabase
-        .from('studios')
-        .select('email')
-        .eq('public_code', code.toUpperCase())
-        .eq('tenant_id', tenant?.id)
-        .single();
+      try {
+        // Use tRPC to lookup studio (avoids RLS issues)
+        const response = await fetch('/api/trpc/studio.lookupByCode?input=' + encodeURIComponent(JSON.stringify({ code })));
+        if (!response.ok) return;
 
-      if (studio?.email) {
-        setFormData(prev => ({ ...prev, email: studio.email }));
-        setEmailLocked(true);
+        const result = await response.json();
+        const studio = result.result?.data;
+
+        if (studio?.email) {
+          setFormData(prev => ({ ...prev, email: studio.email }));
+          setEmailLocked(true);
+        }
+      } catch (err) {
+        // Silently fail - email pre-population is optional
+        console.error('Failed to load studio email:', err);
       }
     }
 
-    if (tenant?.id) {
-      loadStudioEmail();
-    }
-  }, [searchParams, tenant?.id]);
+    loadStudioEmail();
+  }, [searchParams]);
 
   // Resolve tenant id reliably to avoid 500s from email system
   const resolveTenantId = async (): Promise<string | null> => {
