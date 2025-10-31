@@ -35,6 +35,7 @@ import { superAdminRouter } from './superAdmin';
 import { summaryRouter } from './summary';
 import { tenantDebugRouter } from './tenantDebug';
 import { siteControlRouter } from './site-control';
+import { studioInvitationsRouter } from './studio-invitations';
 
 /**
  * Main tRPC router
@@ -77,6 +78,7 @@ export const appRouter = router({
   superAdmin: superAdminRouter,
   summary: summaryRouter,
   siteControl: siteControlRouter,
+  studioInvitations: studioInvitationsRouter,
 });
 
 // Export type definition of API
