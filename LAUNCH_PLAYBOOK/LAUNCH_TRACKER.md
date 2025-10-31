@@ -8,10 +8,10 @@
 
 ## 🎯 Overall Progress
 
-**Status:** 🚨 BLOCKER FOUND - Phase 2 Incomplete
-**Iteration:** 5 (+ Production Testing - BLOCKER DISCOVERED)
-**Last Deploy:** 1f03ce0 (live on production)
-**Last Test Run:** October 31, 2025 05:45 - EMPWR ❌ (Wrong component updated)
+**Status:** ✅ Phase 2 Core Complete - Blocker Resolved
+**Iteration:** 5 (+ Blocker Fix + Production Verification COMPLETE)
+**Last Deploy:** 3f6a2cc (live on production)
+**Last Test Run:** October 31, 2025 06:15 - EMPWR ✅ (All Phase 2 features working)
 
 ---
 
@@ -313,6 +313,39 @@ None - Phase 2 core complete
 - Backend router validation (Iteration 4) expects extended time fields
 - Mismatch between backend validation and frontend UI
 
+---
+
+### Test Run 3 - October 31, 2025 06:15
+**Deployment Hash:** 3f6a2cc
+**Tested By:** Playwright MCP
+**Tenants Tested:** EMPWR
+
+**Features Tested:**
+- ✅ Entry Form (Phase 2): Choreographer required + extended time fields
+  - Choreographer field shows red asterisk (*) and "Required" helper text
+  - Extended time checkbox present with ⏱️ emoji label
+  - Minute/second inputs appear when checkbox checked
+  - Scheduling notes textarea visible when extended time enabled
+  - Validation working: "Choreographer is required" in error list
+
+**Screenshots:**
+- phase2_fix_verified_part1_choreographer.png - Choreographer field with required asterisk
+- phase2_fix_verified_part3_extended_time_section.png - Extended Time section (unchecked)
+- phase2_fix_verified_part4_extended_time_expanded.png - Extended Time inputs visible when checked
+
+**Console Errors:**
+- None
+
+**Issues Found:**
+- None - All Phase 2 features working as expected
+
+**Notes:**
+- Build 3f6a2cc deployed successfully
+- Footer confirms correct version: v1.0.0 (3f6a2cc)
+- Blocker 1 RESOLVED - all Phase 2 extended time functionality present
+- Checkbox interaction tested - conditional inputs show/hide correctly
+- Form validation prevents submission without choreographer
+
 **Format for each test run:**
 ```
 ### Test Run [N] - [Date] [Time]
@@ -344,25 +377,28 @@ None - Phase 2 core complete
 ## 🚨 Blockers
 
 ### Active Blockers
-
-**BLOCKER 1: Phase 2 Entry Form Changes Applied to Wrong Component**
-- **Severity:** P1 (HIGH) - Blocks Phase 2 launch
-- **Discovered:** October 31, 2025 05:45 (Test Run 2)
-- **Impact:** Extended time functionality completely missing from production entry form
-- **Root Cause:** Iteration 3 updated UnifiedRoutineForm.tsx (legacy component) instead of EntryCreateFormV2.tsx (active component)
-- **Missing Features:**
-  - Choreographer field not marked as required (shows "optional")
-  - Extended time checkbox missing
-  - Routine length inputs (minutes/seconds) missing
-  - Scheduling notes textarea missing
-- **Required Fix:** Apply all Iteration 3 changes to EntryCreateFormV2.tsx
-- **Files Affected:**
-  - src/components/rebuild/entries/EntryCreateFormV2.tsx (needs Phase 2 UI)
-  - src/hooks/rebuild/useEntryFormV2.ts (needs extended time state)
-- **Evidence:** Screenshots empwr_entry_form_phase2_test_part1.png, part2.png, part3.png
+*None - Phase 2 core functionality complete and verified*
 
 ### Resolved Blockers
-*None yet*
+
+**BLOCKER 1: Phase 2 Entry Form Changes Applied to Wrong Component** ✅ RESOLVED
+- **Severity:** P1 (HIGH) - Blocked Phase 2 launch
+- **Discovered:** October 31, 2025 05:45 (Test Run 2)
+- **Resolved:** October 31, 2025 06:15 (Commit 3f6a2cc)
+- **Impact:** Extended time functionality completely missing from production entry form
+- **Root Cause:** Iteration 3 updated UnifiedRoutineForm.tsx (legacy component) instead of EntryCreateFormV2.tsx (active component)
+- **Resolution:**
+  - Created ExtendedTimeSection.tsx component (125 lines)
+  - Updated useEntryFormV2.ts hook with extended time state fields
+  - Updated RoutineDetailsSection.tsx to mark choreographer as required
+  - Updated EntryCreateFormV2.tsx to integrate ExtendedTimeSection
+  - Enhanced validation to require choreographer
+- **Files Fixed:**
+  - src/hooks/rebuild/useEntryFormV2.ts (extended time state)
+  - src/components/rebuild/entries/RoutineDetailsSection.tsx (choreographer required)
+  - src/components/rebuild/entries/ExtendedTimeSection.tsx (NEW - extended time UI)
+  - src/components/rebuild/entries/EntryCreateFormV2.tsx (integration)
+- **Verification:** Test Run 3 - all features working on production (empwr.compsync.net)
 
 ---
 
