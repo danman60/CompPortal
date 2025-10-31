@@ -104,10 +104,15 @@ const entryInputSchema = z.object({
   late_fee: z.number().min(0).default(0),
   total_fee: z.number().min(0).optional(),
   status: z.enum(['draft', 'registered', 'confirmed', 'cancelled', 'completed']).default('draft'),
-  choreographer: z.string().max(255).optional(),
+  choreographer: z.string().min(1).max(255), // Phase 2 spec lines 36-42: Required
   costume_description: z.string().optional(),
   props_required: z.string().optional(),
   accessibility_needs: z.string().optional(),
+  // Phase 2 spec lines 324-373: Extended time fields
+  extended_time_requested: z.boolean().default(false),
+  routine_length_minutes: z.number().int().min(0).max(15).optional(),
+  routine_length_seconds: z.number().int().min(0).max(59).optional(),
+  scheduling_notes: z.string().optional(),
   participants: z.array(entryParticipantSchema).optional(),
 });
 
@@ -1049,8 +1054,10 @@ export const entryRouter = router({
       }
       if (data.session_id) createData.session_id = data.session_id;
 
+      // Required string fields (Phase 2 spec lines 36-42)
+      createData.choreographer = data.choreographer;
+
       // Optional string fields
-      if (data.choreographer) createData.choreographer = data.choreographer;
       if (data.props_required) createData.props_required = data.props_required;
       if (data.special_requirements) createData.special_requirements = data.special_requirements;
       if (data.costume_description) createData.costume_description = data.costume_description;
@@ -1061,6 +1068,12 @@ export const entryRouter = router({
       if (data.heat) createData.heat = data.heat;
       if (data.running_order !== undefined) createData.running_order = data.running_order;
       if (data.duration) createData.duration = data.duration;
+
+      // Phase 2 spec lines 324-373: Extended time fields
+      if (data.extended_time_requested) createData.extended_time_requested = data.extended_time_requested;
+      if (data.routine_length_minutes !== undefined) createData.routine_length_minutes = data.routine_length_minutes;
+      if (data.routine_length_seconds !== undefined) createData.routine_length_seconds = data.routine_length_seconds;
+      if (data.scheduling_notes) createData.scheduling_notes = data.scheduling_notes;
 
       // Date/time fields
       if (performance_date) createData.performance_date = new Date(performance_date);

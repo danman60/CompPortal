@@ -101,7 +101,7 @@ export function EntryCreateFormV2() {
         competition_id: reservation.competition_id,
         studio_id: reservation.studio_id,
         title: formHook.form.title,
-        choreographer: formHook.form.choreographer || undefined,
+        choreographer: formHook.form.choreographer || '', // Phase 2: required
         category_id: formHook.form.category_id,
         classification_id: formHook.form.classification_id,
         special_requirements: formHook.form.special_requirements || undefined,
