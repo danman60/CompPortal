@@ -42,10 +42,38 @@ None yet
 - ✅ Updated CLAUDE.md to production mode
 - ✅ Removed feature freeze
 - ✅ Established execution protocol
+- ✅ Added production login credentials to CLAUDE.md
+- ✅ Updated execution protocol with iterative workflow
 
 **Next Steps:**
 - Start Iteration 1: Database migrations
 - Wait for Selena's spreadsheet (data seeding deferred)
+
+---
+
+### Iteration 1: Database Migrations (ATTEMPTED)
+**Date:** October 30, 2025
+**Status:** BLOCKED - Session restart required
+
+**Issue Found:**
+- Supabase MCP tool not available in current session
+- Migration file already exists: `supabase/migrations/20251031_phase2_schema_changes.sql`
+- Cannot apply migrations programmatically
+
+**Completed:**
+- ✅ Migration file created by previous agent (MIGRATION_READY.md)
+- ✅ Identified login credentials issue (now documented)
+- ✅ Updated CLAUDE.md with production login credentials
+
+**Blocker:**
+- **CRITICAL:** Supabase MCP unavailable
+- **Action Required:** Session restart to reinitialize MCP connections
+
+**Next Steps After Restart:**
+1. Verify Supabase MCP available
+2. Apply migration via Supabase MCP
+3. Test on production with Playwright MCP (using documented credentials)
+4. Continue with execution protocol
 
 ---
 
