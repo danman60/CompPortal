@@ -25,6 +25,11 @@ export default function ClaimPage() {
         return;
       }
 
+      // Wait for tenant to load
+      if (!tenant?.id) {
+        return; // Keep loading while tenant loads
+      }
+
       const supabase = createClient();
 
       // Check authentication
@@ -43,7 +48,7 @@ export default function ClaimPage() {
         .from('studios')
         .select('id, name, public_code, owner_id, tenant_id')
         .eq('public_code', code.toUpperCase())
-        .eq('tenant_id', tenant?.id) // Must be on current tenant
+        .eq('tenant_id', tenant.id) // Must be on current tenant
         .single();
 
       if (studioError || !studioData) {
@@ -63,7 +68,7 @@ export default function ClaimPage() {
     }
 
     init();
-  }, [code, router, tenant]);
+  }, [code, router, tenant?.id]);
 
   const handleClaim = async () => {
     if (!studio || !user) return;
