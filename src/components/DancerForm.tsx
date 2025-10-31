@@ -16,10 +16,8 @@ interface DancerFormProps {
 const DancerSchema = z.object({
   first_name: z.string().min(1, 'First name is required').max(100, 'First name must be less than 100 characters'),
   last_name: z.string().min(1, 'Last name is required').max(100, 'Last name must be less than 100 characters'),
-  date_of_birth: z.string().optional().or(z.literal('')),
-  gender: z.string().optional().or(z.literal('')),
-  email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-  phone: z.string().min(7, 'Phone number must be at least 7 characters').max(50, 'Phone number must be less than 50 characters').optional().or(z.literal('')),
+  date_of_birth: z.string().min(1, 'Date of birth is required'),
+  classification_id: z.string().min(1, 'Classification is required'),
 });
 
 type DancerFormValues = z.infer<typeof DancerSchema>;
@@ -35,9 +33,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
       first_name: '',
       last_name: '',
       date_of_birth: '',
-      gender: '',
-      email: '',
-      phone: '',
+      classification_id: '',
     },
   });
 
@@ -46,6 +42,9 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
     { id: dancerId! },
     { enabled: isEditMode }
   );
+
+  // Fetch classifications for dropdown
+  const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
 
   // Pre-populate form data when editing
   useEffect(() => {
@@ -56,9 +55,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
         date_of_birth: existingDancer.date_of_birth
           ? new Date(existingDancer.date_of_birth).toISOString().split('T')[0]
           : '',
-        gender: existingDancer.gender || '',
-        email: existingDancer.email || '',
-        phone: existingDancer.phone || '',
+        classification_id: existingDancer.classification_id || '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,10 +113,8 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
           data: {
             first_name: values.first_name,
             last_name: values.last_name,
-            date_of_birth: values.date_of_birth || undefined,
-            gender: values.gender || undefined,
-            email: values.email || undefined,
-            phone: values.phone || undefined,
+            date_of_birth: values.date_of_birth,
+            classification_id: values.classification_id,
           },
         });
       } else {
@@ -128,10 +123,8 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
           studio_id: studioId!,
           first_name: values.first_name,
           last_name: values.last_name,
-          date_of_birth: values.date_of_birth || undefined,
-          gender: values.gender || undefined,
-          email: values.email || undefined,
-          phone: values.phone || undefined,
+          date_of_birth: values.date_of_birth,
+          classification_id: values.classification_id,
           status: 'active',
         });
       }
@@ -245,68 +238,48 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
           {/* Date of Birth */}
           <div>
             <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-300 mb-2">
-              Date of Birth
+              Date of Birth <span className="text-red-400">*</span>
             </label>
             <input
               type="date"
               id="date_of_birth"
               {...form.register('date_of_birth')}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-
-          {/* Gender */}
-          <div>
-            <label htmlFor="gender" className="block text-sm font-medium text-gray-300 mb-2">
-              Gender
-            </label>
-            <select
-              id="gender"
-              {...form.register('gender')}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              {...form.register('email')}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                form.formState.errors.email ? 'border-red-500' : 'border-white/20'
+                form.formState.errors.date_of_birth ? 'border-red-500' : 'border-white/20'
               }`}
-              placeholder="dancer@example.com"
             />
-            {form.formState.errors.email && (
-              <p className="text-red-400 text-sm mt-1">{form.formState.errors.email.message}</p>
+            {form.formState.errors.date_of_birth && (
+              <p className="text-red-400 text-sm mt-1">{form.formState.errors.date_of_birth.message}</p>
             )}
           </div>
 
-          {/* Phone */}
+          {/* Classification */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-2">
-              Phone
+            <label htmlFor="classification_id" className="block text-sm font-medium text-gray-300 mb-2">
+              Classification <span className="text-red-400">*</span>
             </label>
-            <input
-              type="tel"
-              id="phone"
-              maxLength={50}
-              {...form.register('phone')}
-              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                form.formState.errors.phone ? 'border-red-500' : 'border-white/20'
-              }`}
-              placeholder="(555) 123-4567"
-            />
-            {form.formState.errors.phone && (
-              <p className="text-red-400 text-sm mt-1">{form.formState.errors.phone.message}</p>
+            <select
+              id="classification_id"
+              {...form.register('classification_id')}
+              disabled={isEditMode && entriesCount > 0}
+              className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                form.formState.errors.classification_id ? 'border-red-500' : 'border-white/20'
+              } ${isEditMode && entriesCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <option value="">Select classification</option>
+              {lookupData?.classifications?.map((classification: any) => (
+                <option key={classification.id} value={classification.id}>
+                  {classification.name}
+                </option>
+              ))}
+            </select>
+            {form.formState.errors.classification_id && (
+              <p className="text-red-400 text-sm mt-1">{form.formState.errors.classification_id.message}</p>
+            )}
+            {isEditMode && entriesCount > 0 && (
+              <p className="text-yellow-300 text-sm mt-1">
+                Cannot change classification - dancer has existing entries
+              </p>
             )}
           </div>
         </div>
