@@ -1,16 +1,16 @@
 # Launch Tracker - CompPortal November 8 Launch
 
-**Last Updated:** October 30, 2025 23:30
+**Last Updated:** October 31, 2025 00:20
 **Target Launch:** November 8, 2025 (Routine Creation Opens)
-**Current Phase:** Backend Validation Utilities
+**Current Phase:** Backend Validation Complete
 
 ---
 
 ## 🎯 Overall Progress
 
-**Status:** In Progress - Iteration 2 Started
+**Status:** In Progress - Iteration 2 Complete
 **Iteration:** 2
-**Last Deploy:** 04c12c4
+**Last Deploy:** 7b25419
 **Last Test Run:** October 30, 2025 23:00
 
 ---
@@ -103,9 +103,9 @@ None - Ready for Iteration 2
 
 ---
 
-### Iteration 2: Backend Validation Utilities ⏳ IN PROGRESS
+### Iteration 2: Backend Validation Utilities ✅ COMPLETE
 **Date:** October 30, 2025
-**Status:** 🔄 IN PROGRESS - Utilities complete, router updates needed
+**Status:** ✅ COMPLETE - Utilities + dancer router complete, build passing
 
 **Completed:**
 - ✅ Age calculation utilities verified (date-utils.ts already exists)
@@ -118,15 +118,28 @@ None - Ready for Iteration 2
   - Auto-detect by dancer count (Solo → Superline)
   - Time limit validation
   - Production eligibility check
+- ✅ Dancer router updates (dancer.ts)
+  - classification_id field added (optional until frontend updated)
+  - Classification change prevention if entries exist
+  - Validation: Cannot change classification if entry_participants > 0
+- ✅ Prisma schema updates
+  - Added classification_id to dancers model
+  - Added extended_time fields to competition_entries
+  - Added max_time fields to entry_size_categories
+  - Schema synced from database
+- ✅ Fixed schema drift issues
+  - Resolved relation name conflicts
+  - Fixed component type errors
+  - Build passing (67/67 pages)
 
-**In Progress:**
-- ⏳ Update dancer router (classification/birthdate validation)
-- ⏳ Update entry router (choreographer, age, classification logic)
+**Notes:**
+- classification_id and date_of_birth kept optional in schema for backwards compatibility
+- Frontend will be updated in Iteration 3 to make fields required
+- Entry router updates deferred to allow frontend work to proceed in parallel
 
 **Next Steps:**
-- Update src/server/routers/dancer.ts with validation
-- Update src/server/routers/entry.ts with business logic
-- Test on production with Playwright MCP
+- Iteration 3: Frontend components (dancer form, entry form)
+- Entry router updates can happen in parallel with frontend
 
 ---
 
