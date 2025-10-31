@@ -8,16 +8,16 @@
 
 ## 🎯 Overall Progress
 
-**Status:** In Progress - Iteration 2 Complete
-**Iteration:** 2
-**Last Deploy:** 7b25419
-**Last Test Run:** October 30, 2025 23:00
+**Status:** In Progress - Iteration 3 Complete
+**Iteration:** 3
+**Last Deploy:** 5d187c2 (deploying)
+**Last Test Run:** October 31, 2025 04:45 (pending deployment)
 
 ---
 
 ## 📊 Task Status Summary
 
-### ✅ Completed (12)
+### ✅ Completed (17)
 - Production classification added (EMPWR + Glow)
 - Production dance category added (EMPWR + Glow)
 - Time limits populated (16 entry size categories)
@@ -30,15 +30,20 @@
 - Classification validation utilities (classificationValidation.ts)
 - Entry size detection utilities (entrySizeDetection.ts)
 - Age calculation utilities (already existed - date-utils.ts)
+- Dancer form: classification required + DOB required
+- Dancer form: gender/email/phone removed
+- Entry form: choreographer required
+- Entry form: extended time selector + scheduling notes
+- Entry form: entry size auto-detection (verified existing)
 
-### ⏳ In Progress (0)
-None - Ready for Iteration 2
+### ⏳ In Progress (1)
+- Deployment to production (build 5d187c2)
 
-### 📋 Pending (Backend + Frontend Features)
-- Backend validation utilities (age calc, classification)
-- tRPC router updates (dancers, entries)
-- Frontend form updates (dancer, entry creation)
-- UI/UX polish (tooltips, error messages)
+### 📋 Pending (Backend + Testing)
+- Entry router validation (choreographer, classification, extended time)
+- Dancer CSV import updates (classification field)
+- Production testing on both tenants
+- UI/UX polish (classification hints, tooltips)
 - Integration testing
 
 ### 🐛 Issues Found (1)
@@ -140,6 +145,41 @@ None - Ready for Iteration 2
 **Next Steps:**
 - Iteration 3: Frontend components (dancer form, entry form)
 - Entry router updates can happen in parallel with frontend
+
+---
+
+### Iteration 3: Frontend Components ✅ COMPLETE
+**Date:** October 31, 2025
+**Status:** ✅ COMPLETE - Dancer + entry forms updated, build passing
+
+**Completed:**
+- ✅ Dancer form updates (DancerForm.tsx)
+  - classification_id field required (dropdown with tenant classifications)
+  - date_of_birth field required
+  - Removed gender, email, phone fields (Phase 2 spec)
+  - Classification locked if dancer has entries (validation from backend)
+  - Fetches classifications via lookup API
+- ✅ Entry form updates (UnifiedRoutineForm.tsx)
+  - Choreographer field now required (Phase 2 spec lines 36-42)
+  - Extended time checkbox + routine length inputs (Phase 2 spec lines 324-373)
+  - Scheduling notes textarea
+  - Extended time fields submitted with entry
+  - Display max time limit for selected entry size
+  - Entry size auto-detection already implemented (verified)
+- ✅ Build passing (67/67 pages)
+- ✅ Commits: 88a7ecc (dancer form), 341da16 (entry form)
+- ✅ Pushed to GitHub: 5d187c2
+
+**Notes:**
+- Deployment to production in progress (awaiting Vercel)
+- Production testing deferred until deployment completes
+- Classification smart validation UI deferred (backend validation exists)
+- Entry router updates still pending (will validate on server side)
+
+**Next Steps:**
+- Wait for deployment to complete (build 5d187c2)
+- Test on both tenants via Playwright MCP
+- Iteration 4: Entry router validation + CSV import updates
 
 ---
 
