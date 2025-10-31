@@ -1,0 +1,54 @@
+Tenant,Tenant_ID,Studio_Name,Email,Contact_Person,Total_Entries,Event_1,Event_1_Entries,Event_2,Event_2_Entries,Event_3,Event_3_Entries,Event_4,Event_4_Entries,Has_Email,Ready_For_Invitation
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"NJADS","hello@njads.ca",,100,"St. Catharines Spring",100,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Northern Lights","christineeagle@ymail.com",,55,"St. Catharines Spring",55,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Taylors Dance","tdataylorsdanceacademy@gmail.com",,40,"St. Catharines Spring",40,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Dancecore","info@dancecoreinc.com",,50,"St. Catharines Spring",50,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"The Dance Extension","danceextension@bellnet.ca",,60,"St. Catharines Spring",60,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Expressions Dance","misskennedy@expressionsdancecompany.ca",,120,"St. Catharines Spring",120,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Impact Dance Complex","info@impactdancecomplex.ca",,70,"St. Catharines Spring",70,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Studio 519","studio519da@gmail.com",,25,"St. Catharines Spring",25,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Poise Dance Academy","comp@poisedance.ca & artisticdirector@poisedance.ca",,70,"Blue Mountain Spring",70,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Danceology","dmkdanceology@gmail.com",,160,"Blue Mountain Spring",80,"Toronto",80,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Dancetastic","fidei@rogers.com",,90,"Blue Mountain Spring",90,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Cassiahs Dance Company","cassiahsdancecompany@gmail.com",,30,"Blue Mountain Spring",30,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Dancesations","dance@dancesationsacademy.com",,80,"Blue Mountain Spring",80,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Uxbridge","emily.einsmann@gmail.com",,50,"Blue Mountain Spring",50,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Fever","info@thedancefever.com",,160,"Blue Mountain Spring",160,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Dancing Angels","dancingangelsacademy@hotmail.com",,30,"Blue Mountain Spring",30,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"CDA","comp.cda@gmail.com & frontdeskcdadance@gmail.com & cdadance@rogers.com",,22,"Blue Mountain Spring",22,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Dancepirations","krystal.m.eisa@gmail.com",,45,"Blue Mountain Spring",45,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Body Lines Dance & Fitness","bodylinesdanceandfitnessmkm@gmail.com",,120,"Toronto",120,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"JDanse","dance@jdansestudio.com",,35,"Toronto",35,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Sabuccos","mariah@sabuccosdancecompany.com",,100,"Toronto",100,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Precisions","precisiondcinc@gmail.com",,50,"Toronto",50,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"TK","director@tkdanceworx.com",,80,"Toronto",80,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Fame School","theresa@fameperformingarts.com",,30,"Toronto",30,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Kingston Dance Force","sarrah@danceforce.ca & kdfcomp@danceforce.ca",,0,"Blue Mountain Summer",0,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Dancemakers","mijkahooper@yahoo.ca",,0,"Blue Mountain Summer",0,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Rebel","rebel.danceco@gmail.com",,0,"Blue Mountain Summer",0,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Prodigy Dance","prodigydancearts@gmail.com",,0,"Blue Mountain Summer",0,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Legacy Acro","info@legacyacrobatics.ca",,0,"Blue Mountain Summer",0,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Mariposa","mariposadancecompany@gmail.com",,0,"Blue Mountain Summer",0,,,,,,,YES,YES
+Glow,4b9c1713-40ab-460b-8dda-5a8cf6cbc9b5,"Goddards","ashley@goddardsstudio.com",,0,"Blue Mountain Summer",0,,,,,,,YES,YES
+EMPWR,00000000-0000-0000-0000-000000000001,"EN AVANT",,"Tracey Coward & Angelina",30,"LONDON APRIL 10-12",30,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"STEP ABOVE",,"Jacqueline",125,"LONDON APRIL 10-12",125,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"ELAN DANCE ARTS",,"Shawna",40,"LONDON APRIL 10-12",40,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"WHITBY DANCE COMPANY",,"Samantha & Madison",90,"LONDON APRIL 10-12",90,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"ONEILL ACADEMY",,"Kim",70,"LONDON APRIL 10-12",70,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"THE DANCE SHOPPE",,"Ruth-Ann & Rachelle",193,"LONDON APRIL 10-12",193,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"A.B LUCAS DANCE TEAM",,"Lianna & Aria Kruger",5,"LONDON APRIL 10-12",5,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"DANCENERGY",,"Ashley",30,"LONDON APRIL 10-12",30,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"POISE",,"Linda",70,"ST CATHARINES APRIL 16-18",70,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"ELITE STAR",,"Lynette & Alice",38,"ST CATHARINES APRIL 16-18",38,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"ACADEMY OF DANCE ARTS",,"Nancy & Kim",80,"ST CATHARINES APRIL 16-18",80,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"DANCETASTIC",,"Lia",70,"ST CATHARINES APRIL 16-18",70,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"CASSIAHS DANCE COMPANY",,"Cassiah",40,"ST CATHARINES APRIL 16-18",40,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"RIVERTOWN DANCE ACADEMY",,"Catherine & Megan",60,"ST CATHARINES APRIL 16-18",60,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"DANCEOLOGY",,"Denise",80,"ST CATHARINES APRIL 16-18",80,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"POWERHOUSE DANCE COMPANY",,"Kristen",145,"ST CATHARINES APRIL 16-18",145,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"DANCESATIONS",,"Tracy",70,"ST CATHARINES MAY 7-9",70,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"ALIVE DANCE COMPANY",,"Aysha",65,"ST CATHARINES MAY 7-9",65,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"DANCEFX",,"Ang",110,"ST CATHARINES MAY 7-9",110,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"STUDIO 22",,"Stephanie & Lisa",95,"ST CATHARINES MAY 7-9",95,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"FEVER",,"Cristina & Cassandra",160,"ST CATHARINES MAY 7-9",160,,,,,,,NO,NO
+EMPWR,00000000-0000-0000-0000-000000000001,"J'DANSE",,"Janie",30,"ST CATHARINES MAY 7-9",30,,,,,,,NO,NO
