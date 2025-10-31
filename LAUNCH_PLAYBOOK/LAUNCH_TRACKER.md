@@ -259,7 +259,29 @@
 ## 📝 Testing Notes
 
 ### Test Run Log
-*No tests run yet - will populate after first deployment*
+
+### Test Run 1 - October 31, 2025 05:15
+**Deployment Hash:** a1c69ae
+**Tested By:** Playwright MCP
+**Tenants Tested:** EMPWR
+
+**Features Tested:**
+- ✅ Dancer Form (Phase 2): Classification & DOB required, gender/email/phone removed
+  - Screenshot: phase2_dancer_form_test.png
+  - Form shows: First Name*, Last Name*, Date of Birth*, Classification*
+  - Gender, Email, Phone fields successfully removed
+  - Classification dropdown populated with tenant classifications
+
+**Console Errors:**
+- None reported
+
+**Issues Found:**
+- None - Phase 2 dancer form working as expected
+
+**Notes:**
+- Build a1c69ae successfully deployed
+- Frontend changes verified on production
+- Entry form testing deferred (requires more complex test setup)
 
 **Format for each test run:**
 ```
