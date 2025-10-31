@@ -47,6 +47,7 @@ export default function SignupPage() {
   // Pre-populate email when studio data loads
   useEffect(() => {
     if (studioData?.email) {
+      console.log('[Claim] Pre-filling email:', studioData.email);
       setFormData(prev => ({ ...prev, email: studioData.email || '' }));
       setEmailLocked(true);
     }
