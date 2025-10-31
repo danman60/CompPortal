@@ -261,10 +261,9 @@ export const studioInvitationsRouter = router({
                 Once you claim your account, you'll be able to:
               </p>
               <ul style="margin: 10px 0; padding-left: 25px; color: #6b7280; font-size: 14px; line-height: 1.8;">
-                <li>Add your dancers</li>
-                <li>Create routine entries using your approved spaces</li>
-                <li>Submit summaries and manage invoices</li>
-                <li>Track your competition schedule</li>
+                <li>Enter your studio contact details</li>
+                <li>Add your dancers to the roster</li>
+                <li>View your approved reservations and competition schedule</li>
               </ul>
 
               <p style="margin: 20px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">

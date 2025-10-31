@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
-import Footer from '@/components/Footer';
+import { createClient } from '@/lib/supabase';
 
 interface SignupFormData {
   email: string;
@@ -21,8 +22,41 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [emailLocked, setEmailLocked] = useState(false);
   const checkEmailMutation = trpc.user.checkEmailExists.useMutation();
   const { tenant, isLoading: tenantLoading, primaryColor, secondaryColor } = useTenantTheme();
+  const searchParams = useSearchParams();
+
+  // Pre-populate email from studio claim code
+  useEffect(() => {
+    async function loadStudioEmail() {
+      const returnUrl = searchParams.get('returnUrl');
+      if (!returnUrl) return;
+
+      // Extract code from returnUrl like "/claim?code=TEST1"
+      const match = returnUrl.match(/code=([A-Z0-9]+)/i);
+      if (!match) return;
+
+      const code = match[1];
+      const supabase = createClient();
+
+      const { data: studio } = await supabase
+        .from('studios')
+        .select('email')
+        .eq('public_code', code.toUpperCase())
+        .eq('tenant_id', tenant?.id)
+        .single();
+
+      if (studio?.email) {
+        setFormData(prev => ({ ...prev, email: studio.email }));
+        setEmailLocked(true);
+      }
+    }
+
+    if (tenant?.id) {
+      loadStudioEmail();
+    }
+  }, [searchParams, tenant?.id]);
 
   // Resolve tenant id reliably to avoid 500s from email system
   const resolveTenantId = async (): Promise<string | null> => {
@@ -205,10 +239,14 @@ export default function SignupPage() {
                 value={formData.email}
                 onChange={(e) => updateFormData('email', e.target.value)}
                 required
-                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                disabled={emailLocked}
+                className={`w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 ${emailLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                 placeholder="you@example.com"
-                autoFocus
+                autoFocus={!emailLocked}
               />
+              {emailLocked && (
+                <p className="text-xs text-gray-400 mt-1">Email pre-filled from your studio invitation</p>
+              )}
             </div>
 
             <div>
@@ -274,8 +312,6 @@ export default function SignupPage() {
           </Link>
         </div>
       </div>
-
-      <Footer />
     </main>
   );
 }
