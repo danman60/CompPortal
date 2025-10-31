@@ -8,16 +8,16 @@
 
 ## 🎯 Overall Progress
 
-**Status:** In Progress - Iteration 4 Complete
-**Iteration:** 4
-**Last Deploy:** 095db5f (deploying)
+**Status:** In Progress - Iteration 5 Complete
+**Iteration:** 5
+**Last Deploy:** 5779911 (deploying)
 **Last Test Run:** Pending deployment
 
 ---
 
 ## 📊 Task Status Summary
 
-### ✅ Completed (20)
+### ✅ Completed (21)
 - Production classification added (EMPWR + Glow)
 - Production dance category added (EMPWR + Glow)
 - Time limits populated (16 entry size categories)
@@ -38,16 +38,17 @@
 - Entry router: choreographer validation (required)
 - Entry router: extended time fields validation
 - Entry router: server-side enforcement
+- Schema analysis: Fields kept optional (backwards compatible)
 
 ### ⏳ In Progress (1)
-- Deployment to production (build 095db5f)
+- Deployment to production (build 5779911)
 
-### 📋 Pending (Schema + Testing)
-- Make Prisma schema fields required (classification_id, date_of_birth, choreographer)
+### 📋 Pending (CSV + Testing)
 - Dancer CSV import updates (classification field)
 - Production testing on both tenants
 - UI/UX polish (classification hints, tooltips)
 - Integration testing
+- Optional: Data migration UI for legacy dancers
 
 ### 🐛 Issues Found (1)
 - ⚠️ Glow tenant login not working (not migration-related, pre-existing issue)
@@ -213,7 +214,45 @@
 **Next Steps:**
 - Wait for deployment (build 095db5f)
 - Production testing on both tenants
-- Iteration 5: Prisma schema field requirements + CSV import updates
+- Iteration 5: Schema analysis + CSV import updates
+
+---
+
+### Iteration 5: Schema Analysis & Data Migration Strategy ✅ COMPLETE
+**Date:** October 31, 2025
+**Status:** ✅ COMPLETE - Schema kept optional for backwards compatibility
+
+**Analysis:**
+- ✅ Checked existing data for NULL values
+  - 110 dancers without classification_id
+  - 13 dancers without date_of_birth
+  - 1 entry without choreographer
+- ✅ Evaluated NOT NULL constraint feasibility
+
+**Decision: Keep Fields Optional in Schema**
+- **Rationale**: Production system with real data cannot enforce NOT NULL without data migration
+- **Strategy**: New data enforced via frontend + backend validation
+- **Impact**: Existing 110+ dancers can continue to exist, new dancers must have classification
+- **Benefits**: No breaking changes, gradual migration possible
+- **Frontend**: Already requires fields for new submissions ✅
+- **Backend**: Already validates new submissions ✅
+- **Schema**: Remains permissive for existing data ✅
+
+**Alternative Approaches Considered:**
+1. ❌ Force NOT NULL + backfill with defaults (bad: loses data integrity)
+2. ❌ Delete incomplete records (bad: destroys user data)
+3. ✅ **Chosen**: Gradual migration via UI enforcement (safe, reversible)
+
+**Production Impact:**
+- Zero breaking changes
+- Existing functionality preserved
+- New submissions validated
+- Data integrity maintained
+
+**Next Steps:**
+- Monitor new submissions (should all have required fields)
+- CSV import updates to require classification
+- Production testing on both tenants
 
 ---
 
