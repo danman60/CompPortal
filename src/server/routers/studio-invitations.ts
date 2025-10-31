@@ -142,6 +142,15 @@ export const studioInvitationsRouter = router({
       // Send emails to each studio
       for (const studio of studios) {
         try {
+          // Skip if no email
+          if (!studio.email) {
+            results.failed.push({
+              studio: studio.name,
+              error: 'No email address on file',
+            });
+            continue;
+          }
+
           const claimUrl = `https://${studio.tenants.subdomain}.compsync.net/claim?code=${studio.public_code}`;
 
           // Calculate totals from all reservations
