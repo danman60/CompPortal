@@ -37,7 +37,7 @@ export interface SizeCategory {
 export type SaveAction = 'cancel' | 'save' | 'save-another' | 'save-like-this';
 
 /**
- * Entry form state (Phase 1 Spec lines 457-461)
+ * Entry form state (Phase 1 Spec lines 457-461 + Phase 2 extended time)
  */
 export interface EntryFormV2State {
   // Required fields
@@ -58,6 +58,12 @@ export interface EntryFormV2State {
 
   // Title upgrade option (empwrDefaults.ts:45)
   is_title_upgrade: boolean;
+
+  // Phase 2 spec lines 324-373: Extended time tracking
+  extended_time_requested: boolean;
+  routine_length_minutes: number;
+  routine_length_seconds: number;
+  scheduling_notes: string;
 }
 
 const initialState: EntryFormV2State = {
@@ -70,6 +76,10 @@ const initialState: EntryFormV2State = {
   age_group_override: null,
   size_category_override: null,
   is_title_upgrade: false,
+  extended_time_requested: false,
+  routine_length_minutes: 0,
+  routine_length_seconds: 0,
+  scheduling_notes: '',
 };
 
 interface UseEntryFormV2Props {
@@ -175,12 +185,13 @@ export function useEntryFormV2({
 
   /**
    * Check if form can be saved
-   * Phase 1 Spec lines 842-850: Validation rules
+   * Phase 1 Spec lines 842-850: Validation rules + Phase 2 choreographer required
    */
   const canSave = useMemo(() => {
     return (
       form.title.trim().length >= 3 && // Min 3 chars (spec line 843)
       form.title.trim().length <= 255 && // Max 255 chars
+      form.choreographer.trim().length > 0 && // Phase 2 spec lines 36-42: Required
       form.category_id.length > 0 &&
       form.classification_id.length > 0 &&
       form.selectedDancers.length >= 1 && // Min 1 dancer (spec line 844)
@@ -189,6 +200,7 @@ export function useEntryFormV2({
     );
   }, [
     form.title,
+    form.choreographer,
     form.category_id,
     form.classification_id,
     form.selectedDancers,
@@ -204,6 +216,9 @@ export function useEntryFormV2({
 
     if (form.title.trim().length > 0 && form.title.trim().length < 3) {
       errors.push('Routine title must be at least 3 characters');
+    }
+    if (!form.choreographer.trim()) {
+      errors.push('Choreographer is required');
     }
     if (!form.category_id) {
       errors.push('Dance category is required');
@@ -222,6 +237,7 @@ export function useEntryFormV2({
     return errors;
   }, [
     form.title,
+    form.choreographer,
     form.category_id,
     form.classification_id,
     form.selectedDancers,
@@ -248,6 +264,10 @@ export function useEntryFormV2({
       choreographer: '',
       special_requirements: '',
       is_title_upgrade: false,
+      extended_time_requested: false,
+      routine_length_minutes: 0,
+      routine_length_seconds: 0,
+      scheduling_notes: '',
       // Keep: category, classification, selectedDancers, overrides
     }));
   }, []);

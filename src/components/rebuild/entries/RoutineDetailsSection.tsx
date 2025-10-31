@@ -64,13 +64,13 @@ export function RoutineDetailsSection({
           )}
         </div>
 
-        {/* Choreographer */}
+        {/* Choreographer - Phase 2 spec lines 36-42: Required */}
         <div>
           <label
             htmlFor="choreographer"
             className="block text-sm font-medium text-gray-300 mb-2"
           >
-            Choreographer
+            Choreographer <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
@@ -78,9 +78,14 @@ export function RoutineDetailsSection({
             value={form.choreographer}
             onChange={(e) => updateField('choreographer', e.target.value)}
             className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            placeholder="Choreographer name (optional)"
+            placeholder="Enter choreographer name"
             maxLength={255}
           />
+          {form.choreographer.trim().length === 0 && (
+            <p className="text-gray-400 text-xs mt-1">
+              Required - enter the choreographer's name for this routine
+            </p>
+          )}
         </div>
 
         {/* Category */}

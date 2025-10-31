@@ -6,6 +6,7 @@ import { useEntryFormV2 } from '@/hooks/rebuild/useEntryFormV2';
 import { RoutineDetailsSection } from './RoutineDetailsSection';
 import { DancerSelectionSection } from './DancerSelectionSection';
 import { AutoCalculatedSection } from './AutoCalculatedSection';
+import { ExtendedTimeSection } from './ExtendedTimeSection';
 import { ReservationContextBar } from './ReservationContextBar';
 import { EntryFormActions } from './EntryFormActions';
 import toast from 'react-hot-toast';
@@ -108,6 +109,11 @@ export function EntryCreateFormV2() {
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
         is_title_upgrade: formHook.form.is_title_upgrade,
+        // Phase 2 spec lines 324-373: Extended time fields
+        extended_time_requested: formHook.form.extended_time_requested,
+        routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
+        routine_length_seconds: formHook.form.extended_time_requested ? formHook.form.routine_length_seconds : undefined,
+        scheduling_notes: formHook.form.scheduling_notes || undefined,
         status: 'draft',
         participants: formHook.form.selectedDancers.map((d, idx) => ({
           dancer_id: d.dancer_id,
@@ -169,6 +175,13 @@ export function EntryCreateFormV2() {
         ageGroups={lookups.ageGroups}
         sizeCategories={lookups.entrySizeCategories}
         selectedDancerCount={formHook.form.selectedDancers.length}
+      />
+
+      {/* Extended Time Section - Phase 2 spec lines 324-373 */}
+      <ExtendedTimeSection
+        form={formHook.form}
+        updateField={formHook.updateField}
+        effectiveSizeCategory={formHook.effectiveSizeCategory}
       />
 
       {/* Title Upgrade Option (empwrDefaults.ts:45) */}
