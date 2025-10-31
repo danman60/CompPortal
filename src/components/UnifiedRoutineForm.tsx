@@ -48,6 +48,12 @@ export default function UnifiedRoutineForm() {
   const [selectedDancers, setSelectedDancers] = useState<SelectedDancer[]>([]);
   const [dancerSortBy, setDancerSortBy] = useState<'name' | 'age'>('name');
 
+  // Extended time state (Phase 2 spec lines 324-373)
+  const [extendedTimeRequested, setExtendedTimeRequested] = useState(false);
+  const [routineLengthMinutes, setRoutineLengthMinutes] = useState<number>(0);
+  const [routineLengthSeconds, setRoutineLengthSeconds] = useState<number>(0);
+  const [schedulingNotes, setSchedulingNotes] = useState('');
+
   // Overrides for inferred values (Step 3)
   const [overrides, setOverrides] = useState({
     age_group_id: '',
@@ -122,13 +128,14 @@ export default function UnifiedRoutineForm() {
     },
   });
 
-  // Step 1 validation
+  // Step 1 validation (Phase 2 spec lines 36-42: choreographer required)
   const canProceedToStep2 =
     !!form.title &&
     !!form.studio_id &&
     !!form.competition_id &&
     !!form.category_id &&
-    !!form.classification_id;
+    !!form.classification_id &&
+    !!form.choreographer;
 
   // Step 2 validation
   const canProceedToStep3 = selectedDancers.length > 0;
@@ -159,12 +166,16 @@ export default function UnifiedRoutineForm() {
       classification_id: form.classification_id,
       age_group_id: ageGroupId,
       entry_size_category_id: sizeCategoryId,
-      choreographer: form.choreographer || undefined,
+      choreographer: form.choreographer,
       special_requirements: form.special_requirements || undefined,
       entry_fee: calculatedFee,
       total_fee: calculatedFee,
       status: 'draft',
       participants: selectedDancers,
+      extended_time_requested: extendedTimeRequested,
+      routine_length_minutes: extendedTimeRequested ? routineLengthMinutes : undefined,
+      routine_length_seconds: extendedTimeRequested ? routineLengthSeconds : undefined,
+      scheduling_notes: schedulingNotes || undefined,
     } as any, {
       onSuccess: () => {
         toast.success('Routine created successfully!');
@@ -259,10 +270,12 @@ export default function UnifiedRoutineForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-300 mb-1">Choreographer</label>
+                  <label className="block text-sm text-gray-300 mb-1">
+                    Choreographer <span className="text-red-400">*</span>
+                  </label>
                   <input
                     className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
-                    placeholder="Optional"
+                    placeholder="Required"
                     value={form.choreographer}
                     onChange={(e) => setForm({ ...form, choreographer: e.target.value })}
                   />
@@ -642,6 +655,82 @@ export default function UnifiedRoutineForm() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Extended Time Selector (Phase 2 spec lines 324-373) */}
+            <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Extended Time Options</h2>
+
+              <div className="space-y-4">
+                {/* Extended Time Checkbox */}
+                <div className="flex items-start gap-4">
+                  <input
+                    type="checkbox"
+                    id="extendedTime"
+                    checked={extendedTimeRequested}
+                    onChange={(e) => setExtendedTimeRequested(e.target.checked)}
+                    className="w-5 h-5 mt-1 rounded border-blue-400/30 bg-white/10 checked:bg-blue-500 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="extendedTime" className="text-lg font-bold text-white cursor-pointer block mb-2">
+                      ⏱️ Request Extended Time
+                    </label>
+                    <p className="text-sm text-gray-300">
+                      Check this if your routine exceeds the standard time limit for this entry size.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Routine Length (shown only if extended time requested) */}
+                {extendedTimeRequested && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
+                    <div>
+                      <label className="block text-sm text-gray-300 mb-1">Routine Length</label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="15"
+                            placeholder="Min"
+                            value={routineLengthMinutes || ''}
+                            onChange={(e) => setRoutineLengthMinutes(parseInt(e.target.value) || 0)}
+                            className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                          />
+                          <div className="text-xs text-gray-400 mt-1">Minutes</div>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            placeholder="Sec"
+                            value={routineLengthSeconds || ''}
+                            onChange={(e) => setRoutineLengthSeconds(parseInt(e.target.value) || 0)}
+                            className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                          />
+                          <div className="text-xs text-gray-400 mt-1">Seconds</div>
+                        </div>
+                      </div>
+                      {inferredSizeCategory && (
+                        <div className="text-xs text-blue-300 mt-2">
+                          Max time for {inferredSizeCategory.name}: {inferredSizeCategory.max_time_minutes || 0}:{String(inferredSizeCategory.max_time_seconds || 0).padStart(2, '0')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm text-gray-300 mb-1">Scheduling Notes</label>
+                      <textarea
+                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white"
+                        rows={2}
+                        placeholder="Any special scheduling requests or notes..."
+                        value={schedulingNotes}
+                        onChange={(e) => setSchedulingNotes(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
