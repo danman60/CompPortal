@@ -1,23 +1,23 @@
 # Launch Tracker - CompPortal November 8 Launch
 
-**Last Updated:** October 30, 2025 23:05
+**Last Updated:** October 30, 2025 23:30
 **Target Launch:** November 8, 2025 (Routine Creation Opens)
-**Current Phase:** Database Migrations
+**Current Phase:** Backend Validation Utilities
 
 ---
 
 ## 🎯 Overall Progress
 
-**Status:** In Progress - Iteration 1 Complete
-**Iteration:** 1
-**Last Deploy:** 22a2a4a (v1.0.0)
+**Status:** In Progress - Iteration 2 Started
+**Iteration:** 2
+**Last Deploy:** 04c12c4
 **Last Test Run:** October 30, 2025 23:00
 
 ---
 
 ## 📊 Task Status Summary
 
-### ✅ Completed (9)
+### ✅ Completed (12)
 - Production classification added (EMPWR + Glow)
 - Production dance category added (EMPWR + Glow)
 - Time limits populated (16 entry size categories)
@@ -27,6 +27,9 @@
 - classification_id column (dancers table)
 - Orlando event removed (Glow tenant)
 - Migration verification complete (both tenants)
+- Classification validation utilities (classificationValidation.ts)
+- Entry size detection utilities (entrySizeDetection.ts)
+- Age calculation utilities (already existed - date-utils.ts)
 
 ### ⏳ In Progress (0)
 None - Ready for Iteration 2
@@ -97,6 +100,33 @@ None - Ready for Iteration 2
 
 **Next Steps:**
 - Begin Iteration 2: Backend validation utilities (age calc, classification validation)
+
+---
+
+### Iteration 2: Backend Validation Utilities ⏳ IN PROGRESS
+**Date:** October 30, 2025
+**Status:** 🔄 IN PROGRESS - Utilities complete, router updates needed
+
+**Completed:**
+- ✅ Age calculation utilities verified (date-utils.ts already exists)
+- ✅ Classification validation utilities (classificationValidation.ts - 306 lines)
+  - Solo: locked to dancer classification
+  - Duet/Trio: highest wins, can bump +1 level
+  - Group: 60% majority rule, can bump +1 level
+  - Production: auto-lock to Production classification
+- ✅ Entry size detection utilities (entrySizeDetection.ts - 178 lines)
+  - Auto-detect by dancer count (Solo → Superline)
+  - Time limit validation
+  - Production eligibility check
+
+**In Progress:**
+- ⏳ Update dancer router (classification/birthdate validation)
+- ⏳ Update entry router (choreographer, age, classification logic)
+
+**Next Steps:**
+- Update src/server/routers/dancer.ts with validation
+- Update src/server/routers/entry.ts with business logic
+- Test on production with Playwright MCP
 
 ---
 
