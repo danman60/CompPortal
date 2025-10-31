@@ -8,11 +8,14 @@ import { logger } from '@/lib/logger';
 import { parseISODateToUTC } from '@/lib/date-utils';
 
 // Validation schema for dancer input
+// Phase 2 spec lines 40-82: Classification and birthdate will be REQUIRED
+// TODO: Make required after frontend updated (Iteration 3)
 const dancerInputSchema = z.object({
   studio_id: z.string().uuid(),
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
-  date_of_birth: z.string().optional(), // ISO date string
+  date_of_birth: z.string().optional(), // TODO: Make required in Iteration 3 (Phase 2 spec line 50)
+  classification_id: z.string().uuid().optional(), // TODO: Make required in Iteration 3 (Phase 2 spec line 50)
   age_override: z.number().int().min(0).max(150).optional(),
   gender: z.string().max(20).optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -312,7 +315,32 @@ export const dancerRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { date_of_birth, ...data } = input.data;
+      const { date_of_birth, classification_id, ...data } = input.data;
+
+      // Phase 2 spec lines 73-82: Prevent classification change if dancer has entries
+      if (classification_id) {
+        const existingDancer = await prisma.dancers.findUnique({
+          where: { id: input.id },
+          select: {
+            classification_id: true,
+            _count: {
+              select: {
+                entry_participants: true
+              }
+            }
+          },
+        });
+
+        if (!existingDancer) {
+          throw new Error('Dancer not found');
+        }
+
+        // If dancer has entries and trying to change classification
+        if (existingDancer._count.entry_participants > 0 &&
+            existingDancer.classification_id !== classification_id) {
+          throw new Error('Cannot change classification - dancer has existing entries');
+        }
+      }
 
       // Studio directors can only update dancers from their own studio
       if (isStudioDirector(ctx.userRole)) {
@@ -360,6 +388,7 @@ export const dancerRouter = router({
         where: { id: input.id },
         data: {
           ...data,
+          classification_id: classification_id || undefined,
           date_of_birth: parseISODateToUTC(date_of_birth),
           updated_at: new Date(),
         },
