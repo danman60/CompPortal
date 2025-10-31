@@ -549,6 +549,7 @@ model classifications {
   tenant_id            String                @db.Uuid
   tenants              tenants               @relation(fields: [tenant_id], references: [id], onUpdate: NoAction, map: "fk_classifications_tenant")
   competition_entries  competition_entries[]
+  dancers              dancers[]
   rankings             rankings[]
 
   @@unique([tenant_id, name], map: "classifications_tenant_name_key")
@@ -607,6 +608,10 @@ model competition_entries {
   category_placement                                                                   Int?
   tenant_id                                                                            String                   @db.Uuid
   routine_number                                                                       Int?
+  extended_time_requested                                                              Boolean?                 @default(false)
+  routine_length_minutes                                                               Int?
+  routine_length_seconds                                                               Int?
+  scheduling_notes                                                                     String?
   awards                                                                               awards[]
   age_groups                                                                           age_groups               @relation(fields: [age_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   dance_categories                                                                     dance_categories         @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -867,6 +872,8 @@ model dancers {
   created_at              DateTime?            @default(now()) @db.Timestamp(6)
   updated_at              DateTime?            @default(now()) @db.Timestamp(6)
   tenant_id               String               @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classification_id       String?              @db.Uuid
+  classifications         classifications?     @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   studios                 studios              @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                 tenants              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   entry_participants      entry_participants[]
@@ -1064,6 +1071,8 @@ model entry_size_categories {
   sort_order          Int?
   created_at          DateTime?             @default(now()) @db.Timestamp(6)
   tenant_id           String                @db.Uuid
+  max_time_minutes    Int?
+  max_time_seconds    Int?                  @default(0)
   competition_entries competition_entries[]
   tenants             tenants               @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
