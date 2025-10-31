@@ -346,6 +346,79 @@ None - Phase 2 core complete
 - Checkbox interaction tested - conditional inputs show/hide correctly
 - Form validation prevents submission without choreographer
 
+---
+
+### Test Run 4 (E2E) - October 31, 2025 12:00
+**Deployment Hash:** 023ae26
+**Tested By:** Playwright MCP
+**Tenants Tested:** EMPWR
+**Test Type:** Complete End-to-End Entry Creation Flow
+
+**Test Scenario:**
+Complete entry creation with all Phase 2 features:
+- Title: "E2E Test Routine - Extended Time"
+- Choreographer: "Jane Smith" (Phase 2 required field)
+- Category: Contemporary
+- Classification: Competitive
+- Dancer: Ava Singh (13 years old)
+- Extended Time: Requested (3 min 30 sec)
+- Scheduling Notes: "E2E Test - Please schedule in afternoon session if possible"
+
+**Results:**
+- ✅ Form loaded with all Phase 2 fields
+- ✅ Choreographer validation working (required field)
+- ✅ Auto-calculation: Age Group detected as "Intermediate" (13 yrs = 12-14 range)
+- ✅ Auto-calculation: Size Category detected as "Solo" (1 dancer)
+- ✅ Extended time checkbox functional
+- ✅ Conditional inputs (minutes/seconds) appear when checkbox checked
+- ✅ Max time limit displayed: "Max time for Solo: 3:00"
+- ✅ Scheduling notes textarea functional
+- ✅ Form submission successful
+- ✅ Redirected to entries page
+- ✅ Entry appears in list with correct title and status (draft)
+- ✅ Entry ID: 287a7667-9e31-4e6e-851d-26b73252869f
+
+**Database Verification:**
+```sql
+-- competition_entries table
+title: "E2E Test Routine - Extended Time" ✅
+choreographer: "Jane Smith" ✅
+category_id: 01048636-14a4-4f11-9edc-c1d699e7b6ab ✅
+classification_id: 3804704c-3552-412a-9fc8-afa1c3a04536 ✅
+age_group_id: 57e16217-3742-4535-bad8-34e0d6fcdca6 ✅
+entry_size_category_id: 390f9890-9ca4-4741-8d68-0f488a4f6860 ✅
+extended_time_requested: true ✅
+routine_length_minutes: 3 ✅
+routine_length_seconds: 30 ✅
+scheduling_notes: "E2E Test - Please schedule in afternoon session if possible" ✅
+status: draft ✅
+
+-- entry_participants table
+dancer_id: 25b22de1-a5aa-48c8-b847-027286a9bc67 ✅
+dancer_name: "Ava Singh" ✅
+dancer_age: 13 ✅
+display_order: 0 ✅
+```
+
+**Screenshots:**
+- e2e_test_complete_form_before_submit.png - Full form with all Phase 2 fields filled
+- e2e_test_entry_created_success.png - Successful entry on entries page
+
+**Console Errors:**
+- None
+
+**Issues Found:**
+- None - Complete E2E flow working perfectly
+
+**Notes:**
+- All Phase 2 required fields enforced at UI level
+- Backend validation working (choreographer required)
+- Extended time data persisting correctly to database
+- Auto-calculation logic working for age groups and size categories
+- Entry participants properly linked with correct dancer information
+- Form validation preventing submission without required fields
+- Submission UX smooth with button state changes (Saving... → redirect)
+
 **Format for each test run:**
 ```
 ### Test Run [N] - [Date] [Time]
