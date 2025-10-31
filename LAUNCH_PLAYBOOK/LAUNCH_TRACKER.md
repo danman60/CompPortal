@@ -8,10 +8,10 @@
 
 ## 🎯 Overall Progress
 
-**Status:** ✅ PHASE 2 CORE COMPLETE - Production Verified
-**Iteration:** 5 (+ Production Testing)
-**Last Deploy:** fcdb2c4 (live on production)
-**Last Test Run:** October 31, 2025 05:15 - EMPWR ✅
+**Status:** 🚨 BLOCKER FOUND - Phase 2 Incomplete
+**Iteration:** 5 (+ Production Testing - BLOCKER DISCOVERED)
+**Last Deploy:** 1f03ce0 (live on production)
+**Last Test Run:** October 31, 2025 05:45 - EMPWR ❌ (Wrong component updated)
 
 ---
 
@@ -283,6 +283,36 @@ None - Phase 2 core complete
 - Frontend changes verified on production
 - Entry form testing deferred (requires more complex test setup)
 
+---
+
+### Test Run 2 - October 31, 2025 05:45
+**Deployment Hash:** 1f03ce0
+**Tested By:** Playwright MCP
+**Tenants Tested:** EMPWR
+
+**Features Tested:**
+- ❌ Entry Form (Phase 2): Choreographer required + extended time fields
+  - Screenshots: empwr_entry_form_phase2_test_part1.png, part2.png, part3.png
+  - Form loaded: EntryCreateFormV2.tsx component
+  - Choreographer field showing as OPTIONAL ("optional" placeholder text)
+  - Extended time fields NOT PRESENT (no checkbox, no minute/second inputs, no scheduling notes)
+
+**Console Errors:**
+- None reported
+
+**Issues Found:**
+- 🚨 **CRITICAL**: Wrong entry form component has Phase 2 changes
+  - Iteration 3 updated UnifiedRoutineForm.tsx (legacy/unused component)
+  - Production uses EntryCreateFormV2.tsx (from create/page.tsx:line 2)
+  - EntryCreateFormV2.tsx missing ALL Phase 2 extended time UI
+  - EntryCreateFormV2.tsx choreographer field shows as optional
+
+**Notes:**
+- Build 1f03ce0 deployed successfully
+- Entry form loads without errors but missing Phase 2 functionality
+- Backend router validation (Iteration 4) expects extended time fields
+- Mismatch between backend validation and frontend UI
+
 **Format for each test run:**
 ```
 ### Test Run [N] - [Date] [Time]
@@ -314,7 +344,22 @@ None - Phase 2 core complete
 ## 🚨 Blockers
 
 ### Active Blockers
-*None currently*
+
+**BLOCKER 1: Phase 2 Entry Form Changes Applied to Wrong Component**
+- **Severity:** P1 (HIGH) - Blocks Phase 2 launch
+- **Discovered:** October 31, 2025 05:45 (Test Run 2)
+- **Impact:** Extended time functionality completely missing from production entry form
+- **Root Cause:** Iteration 3 updated UnifiedRoutineForm.tsx (legacy component) instead of EntryCreateFormV2.tsx (active component)
+- **Missing Features:**
+  - Choreographer field not marked as required (shows "optional")
+  - Extended time checkbox missing
+  - Routine length inputs (minutes/seconds) missing
+  - Scheduling notes textarea missing
+- **Required Fix:** Apply all Iteration 3 changes to EntryCreateFormV2.tsx
+- **Files Affected:**
+  - src/components/rebuild/entries/EntryCreateFormV2.tsx (needs Phase 2 UI)
+  - src/hooks/rebuild/useEntryFormV2.ts (needs extended time state)
+- **Evidence:** Screenshots empwr_entry_form_phase2_test_part1.png, part2.png, part3.png
 
 ### Resolved Blockers
 *None yet*
