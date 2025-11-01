@@ -26,14 +26,18 @@ export default function OnboardingPage() {
   });
 
   const updateFormData = (field: keyof typeof formData, value: string | boolean) => {
+    console.log('updateFormData called', { field, value });
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const validateStep1 = () => {
+    console.log('validateStep1 called', { firstName: formData.firstName, lastName: formData.lastName });
     if (!formData.firstName || !formData.lastName) {
+      console.log('Validation failed - missing name');
       setError('First and last name are required');
       return false;
     }
+    console.log('Validation passed');
     return true;
   };
 
@@ -54,12 +58,17 @@ export default function OnboardingPage() {
   };
 
   const handleNext = () => {
+    console.log('handleNext called, step:', step);
     setError('');
 
     if (step === 1 && validateStep1()) {
+      console.log('Moving to step 2');
       setStep(2);
     } else if (step === 2 && validateStep2()) {
+      console.log('Moving to step 3');
       setStep(3);
+    } else {
+      console.log('Validation failed, staying on step', step);
     }
   };
 
