@@ -102,6 +102,17 @@ export default function ClaimPage() {
       return;
     }
 
+    // Update user role to studio_director (critical for permissions)
+    const { error: roleError } = await supabase
+      .from('user_profiles')
+      .update({ role: 'studio_director' })
+      .eq('id', user.id);
+
+    if (roleError) {
+      console.error('Failed to set studio_director role:', roleError);
+      // Continue anyway - role might already be set
+    }
+
     // Check if onboarding complete
     const { data: profile } = await supabase
       .from('user_profiles')
