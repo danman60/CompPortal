@@ -610,15 +610,18 @@ export const dancerRouter = router({
       // Process each dancer in batch
       const results = await Promise.allSettled(
         input.dancers.map(async (dancerData) => {
-          const { date_of_birth, gender, ...data } = dancerData;
-
           return prisma.dancers.create({
             data: {
-              studios: { connect: { id: input.studio_id } },
-              tenants: { connect: { id: studio.tenant_id } },
-              ...data,
-              date_of_birth: parseISODateToUTC(date_of_birth),
-              gender: gender ? gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase() : undefined,
+              studio_id: input.studio_id,
+              tenant_id: studio.tenant_id,
+              first_name: dancerData.first_name,
+              last_name: dancerData.last_name,
+              date_of_birth: parseISODateToUTC(dancerData.date_of_birth),
+              classification_id: dancerData.classification_id,
+              gender: dancerData.gender ? dancerData.gender.charAt(0).toUpperCase() + dancerData.gender.slice(1).toLowerCase() : undefined,
+              email: dancerData.email,
+              phone: dancerData.phone,
+              skill_level: dancerData.skill_level,
               status: 'active',
             },
           });
