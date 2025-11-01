@@ -68,6 +68,19 @@ export default function TestingToolsPage() {
     },
   });
 
+  const sendTestInvitationEmilyMutation = trpc.studioInvitations.sendInvitations.useMutation({
+    onSuccess: (data) => {
+      if (data.sent > 0) {
+        toast.success(`Test invitation sent to emily.einsmann@gmail.com`);
+      } else {
+        toast.error('Failed to send test invitation');
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleCleanSlate = async () => {
     if (confirmationText !== 'DELETE ALL DATA') {
       toast.error('Please type "DELETE ALL DATA" to confirm');
@@ -95,7 +108,16 @@ export default function TestingToolsPage() {
     }
   };
 
-  const isProcessing = cleanSlateMutation.isPending || populateTestDataMutation.isPending || sendTestInvitationMutation.isPending;
+  const handleSendTestInvitationEmily = async () => {
+    if (confirm('Send test invitation to emily.einsmann@gmail.com?')) {
+      // Test Studio - Emily (TEST2)
+      await sendTestInvitationEmilyMutation.mutateAsync({
+        studioIds: ['a9d3aef6-93ed-43bd-84bb-2cebc7bb51ef'],
+      });
+    }
+  };
+
+  const isProcessing = cleanSlateMutation.isPending || populateTestDataMutation.isPending || sendTestInvitationMutation.isPending || sendTestInvitationEmilyMutation.isPending;
 
   if (isLoading) {
     return (
@@ -177,35 +199,67 @@ export default function TestingToolsPage() {
           </div>
         </div>
 
-        {/* Test Invitation Section */}
+        {/* Test Invitation Section - Two side by side */}
         <div className="mb-8">
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-green-500 p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <span className="text-4xl">✉️</span>
-              <div>
-                <h2 className="text-2xl font-bold text-white">TEST INVITATION</h2>
-                <p className="text-white/70 text-sm">Send test email to daniel@streamstage.live</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Daniel Test */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-green-500 p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <span className="text-4xl">✉️</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">TEST 1 - Daniel</h2>
+                  <p className="text-white/70 text-sm">daniel@streamstage.live</p>
+                </div>
               </div>
+
+              <div className="bg-green-500/10 rounded-lg p-4 mb-4">
+                <div className="text-green-200 text-sm mb-2 font-semibold">Studio details:</div>
+                <ul className="text-green-200/80 text-xs space-y-1 list-disc list-inside">
+                  <li>Studio: Test Studio - Daniel</li>
+                  <li>Claim Code: TEST1</li>
+                  <li>Tenant: EMPWR</li>
+                  <li>Status: Unclaimed</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleSendTestInvitation}
+                disabled={isProcessing}
+                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {sendTestInvitationMutation.isPending ? 'Sending...' : 'SEND INVITATION'}
+              </button>
             </div>
 
-            <div className="bg-green-500/10 rounded-lg p-4 mb-4">
-              <div className="text-green-200 text-sm mb-2 font-semibold">Test studio details:</div>
-              <ul className="text-green-200/80 text-xs space-y-1 list-disc list-inside">
-                <li>Studio: Test Studio - Daniel</li>
-                <li>Email: daniel@streamstage.live</li>
-                <li>Claim Code: TEST1</li>
-                <li>Tenant: EMPWR</li>
-                <li>Status: Unclaimed (owner_id = NULL)</li>
-              </ul>
-            </div>
+            {/* Emily Test */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-500 p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <span className="text-4xl">✉️</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">TEST 2 - Emily</h2>
+                  <p className="text-white/70 text-sm">emily.einsmann@gmail.com</p>
+                </div>
+              </div>
 
-            <button
-              onClick={handleSendTestInvitation}
-              disabled={isProcessing}
-              className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {sendTestInvitationMutation.isPending ? 'Sending...' : 'SEND TEST INVITATION'}
-            </button>
+              <div className="bg-blue-500/10 rounded-lg p-4 mb-4">
+                <div className="text-blue-200 text-sm mb-2 font-semibold">Studio details:</div>
+                <ul className="text-blue-200/80 text-xs space-y-1 list-disc list-inside">
+                  <li>Studio: Test Studio - Emily</li>
+                  <li>Claim Code: TEST2</li>
+                  <li>Reservation: EMPWR Dance - London</li>
+                  <li>Deposit: $2,000 • 50 entries</li>
+                  <li>Status: Unclaimed</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleSendTestInvitationEmily}
+                disabled={isProcessing}
+                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {sendTestInvitationEmilyMutation.isPending ? 'Sending...' : 'SEND INVITATION'}
+              </button>
+            </div>
           </div>
         </div>
 
