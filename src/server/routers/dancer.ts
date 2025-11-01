@@ -251,6 +251,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
+              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
             },
             select: { id: true },
           });
@@ -353,6 +354,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
+              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
             },
             select: { id: true },
           });
@@ -421,6 +423,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
+              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
             },
             select: { id: true },
           });
@@ -480,6 +483,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
+              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
             },
             select: { id: true },
           });
