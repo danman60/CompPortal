@@ -81,13 +81,23 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
       return;
     }
 
-    // Validate required fields
-    const incompleteRows = validDancers.filter(
-      (dancer) => !dancer.first_name.trim() || !dancer.last_name.trim() || !dancer.date_of_birth || !dancer.classification_id
-    );
+    // Validate required fields with specific error messages
+    const missingNames = validDancers.filter(d => !d.first_name.trim() || !d.last_name.trim());
+    const missingDOB = validDancers.filter(d => !d.date_of_birth);
+    const missingClassification = validDancers.filter(d => !d.classification_id);
 
-    if (incompleteRows.length > 0) {
-      toast.error('All dancers must have first name, last name, birth date, and classification.');
+    if (missingNames.length > 0) {
+      toast.error(`${missingNames.length} dancer(s) missing first or last name.`, { duration: 5000 });
+      return;
+    }
+
+    if (missingDOB.length > 0) {
+      toast.error(`${missingDOB.length} dancer(s) missing date of birth. This is required.`, { duration: 5000 });
+      return;
+    }
+
+    if (missingClassification.length > 0) {
+      toast.error(`${missingClassification.length} dancer(s) missing classification. Please select a classification for each dancer.`, { duration: 5000 });
       return;
     }
 
