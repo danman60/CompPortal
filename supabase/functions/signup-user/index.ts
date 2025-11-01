@@ -87,7 +87,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, tenant_id } = await req.json();
+    const { email, password, tenant_id, claim_code } = await req.json();
 
     // Validate required fields
     if (!email || !password || !tenant_id) {
@@ -144,6 +144,7 @@ serve(async (req) => {
       email_confirm: false, // Don't confirm yet, send custom email
       user_metadata: {
         tenant_id, // Store in auth metadata for reference
+        claim_code, // Store claim code to preserve through email confirmation
       },
     });
 

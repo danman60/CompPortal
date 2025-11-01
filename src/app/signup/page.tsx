@@ -148,6 +148,7 @@ export default function SignupPage() {
           email: formData.email,
           password: formData.password,
           tenant_id: tenantId,
+          claim_code: studioCode, // Pass claim code to store in metadata
         }),
       });
 

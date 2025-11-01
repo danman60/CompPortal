@@ -47,9 +47,19 @@ export default function ConfirmEmailPage() {
 
         if (data.user) {
           setStatus('success');
-          // Redirect to dashboard after 2 seconds
+
+          // Check if user has a claim code in metadata
+          const claimCode = data.user.user_metadata?.claim_code;
+
+          // Redirect after 2 seconds
           setTimeout(() => {
-            router.push('/dashboard');
+            if (claimCode) {
+              // Return to claim flow with the code
+              router.push(`/claim?code=${claimCode}`);
+            } else {
+              // Normal signup flow - go to dashboard
+              router.push('/dashboard');
+            }
           }, 2000);
         } else {
           setStatus('error');

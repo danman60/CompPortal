@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, tenant_id } = body;
+    const { email, password, tenant_id, claim_code } = body;
 
     // Validate required fields
     if (!email || !password || !tenant_id) {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
       },
-      body: JSON.stringify({ email, password, tenant_id }),
+      body: JSON.stringify({ email, password, tenant_id, claim_code }),
     });
 
     const data = await response.json();
