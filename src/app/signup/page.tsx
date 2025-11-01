@@ -164,6 +164,13 @@ export default function SignupPage() {
         return;
       }
 
+      // If invited user (has redirect_to), go directly to claim page
+      if (result.redirect_to) {
+        window.location.href = result.redirect_to;
+        return;
+      }
+
+      // Otherwise show success message (email confirmation required)
       setSuccess(true);
     } catch (err) {
       setError('An unexpected error occurred');

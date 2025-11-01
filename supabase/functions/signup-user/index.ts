@@ -137,14 +137,16 @@ serve(async (req) => {
       );
     }
 
-    // 3. Create auth user (email_confirm: false, we'll send custom email)
+    // 3. Create auth user
+    // If claim_code exists, auto-confirm email (invited user, email already verified by CD)
+    // If no claim_code, require email confirmation (self-signup)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: false, // Don't confirm yet, send custom email
+      email_confirm: !!claim_code, // Auto-confirm if invited via claim code
       user_metadata: {
         tenant_id, // Store in auth metadata for reference
-        claim_code, // Store claim code to preserve through email confirmation
+        claim_code, // Store claim code to preserve through claim flow
       },
     });
 
@@ -159,8 +161,23 @@ serve(async (req) => {
     console.log('Auth user created:', authData.user.id, email);
     // Note: user_profiles record is created automatically by handle_new_user() trigger
 
-    // 4. Generate email confirmation token with tenant-scoped redirect
     const tenantUrl = `https://${tenant.subdomain}.compsync.net`;
+
+    // If user has claim_code, skip email confirmation (invited user, email pre-verified)
+    if (claim_code) {
+      console.log('Invited user - skipping email confirmation, redirecting to claim page');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Account created! Redirecting to claim your studio...',
+          redirect_to: `${tenantUrl}/claim?code=${claim_code}`,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Non-invited signup: Send email confirmation
+    // 4. Generate email confirmation token with tenant-scoped redirect
     const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email,
