@@ -77,6 +77,7 @@ export default function DancerCSVImport() {
   const [duplicates, setDuplicates] = useState<Array<{ row: number; name: string }>>([]);
   const [importProgress, setImportProgress] = useState(0);
   const [importError, setImportError] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<ParsedDancer[]>([]); // Editable preview
 
   // Get the current user's studio information
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
@@ -87,6 +88,10 @@ export default function DancerCSVImport() {
     { enabled: !!studioId }
   );
 
+  // Fetch classifications for dropdown
+  const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
+  const classifications = lookupData?.classifications || [];
+
   // Extract studio_id when user data loads
   useEffect(() => {
     if (currentUser?.studio?.id) {
@@ -94,6 +99,13 @@ export default function DancerCSVImport() {
       setStudioId(currentUser.studio.id);
     }
   }, [currentUser]);
+
+  // Initialize preview data when parsed data changes
+  useEffect(() => {
+    if (parsedData.length > 0) {
+      setPreviewData([...parsedData]); // Create editable copy
+    }
+  }, [parsedData.length]);
 
   // Bug Fix: Remove onSuccess/onError to avoid race condition
   // Handle success/error logic in handleImport function instead
@@ -422,6 +434,13 @@ export default function DancerCSVImport() {
       return;
     }
 
+    // Validate all dancers have classification and date_of_birth
+    const incomplete = previewData.filter(d => !d.classification_id || !d.date_of_birth);
+    if (incomplete.length > 0) {
+      setImportError(`${incomplete.length} dancer(s) missing classification or date of birth. Please complete all fields.`);
+      return;
+    }
+
     setImportStatus('importing');
     setImportProgress(50);
     setImportError(null);
@@ -429,7 +448,7 @@ export default function DancerCSVImport() {
     try {
       const result = await importMutation.mutateAsync({
         studio_id: studioId,
-        dancers: parsedData,
+        dancers: previewData, // Use editable preview data
       });
 
       setImportProgress(100);
@@ -454,6 +473,7 @@ export default function DancerCSVImport() {
   const handleReset = () => {
     setFile(null);
     setParsedData([]);
+    setPreviewData([]);
     setValidationErrors([]);
     setImportStatus('idle');
   };
@@ -637,14 +657,31 @@ export default function DancerCSVImport() {
             </div>
           </div>
 
-          {/* Preview Table */}
+          {/* Preview Table - Editable */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 overflow-x-auto">
-            <h3 className="text-lg font-semibold text-white mb-4">Preview ({parsedData.length} dancers)</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Preview ({previewData.length} dancers)</h3>
             {currentUser?.studio && (
               <p className="text-sm text-gray-400 mb-4">
                 Importing to: <span className="text-purple-400 font-semibold">{currentUser.studio.name}</span>
               </p>
             )}
+
+            {/* Warning if any dancer missing required fields */}
+            {previewData.some(d => !d.classification_id || !d.date_of_birth) && (
+              <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-400/30 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚠️</div>
+                  <div>
+                    <p className="text-yellow-300 font-semibold mb-1">Missing Required Fields</p>
+                    <p className="text-yellow-200 text-sm">
+                      {previewData.filter(d => !d.classification_id || !d.date_of_birth).length} dancer(s) need classification and date of birth before import.
+                      Please complete all fields below.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase bg-black/40 sticky top-0">
@@ -652,22 +689,44 @@ export default function DancerCSVImport() {
                     <th className="px-4 py-3">#</th>
                     <th className="px-4 py-3">First Name</th>
                     <th className="px-4 py-3">Last Name</th>
-                    <th className="px-4 py-3">Date of Birth</th>
-                    <th className="px-4 py-3">Gender</th>
-                    <th className="px-4 py-3">Email</th>
-                    <th className="px-4 py-3">Phone</th>
+                    <th className="px-4 py-3">Date of Birth <span className="text-red-400">*</span></th>
+                    <th className="px-4 py-3 min-w-[200px]">Classification <span className="text-red-400">*</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {parsedData.map((dancer, index) => (
+                  {previewData.map((dancer, index) => (
                     <tr key={index} className="border-b border-white/10 hover:bg-white/5">
                       <td className="px-4 py-3 text-gray-400">{index + 1}</td>
                       <td className="px-4 py-3 text-white">{dancer.first_name}</td>
                       <td className="px-4 py-3 text-white">{dancer.last_name}</td>
-                      <td className="px-4 py-3 text-gray-300">{dancer.date_of_birth || '-'}</td>
-                      <td className="px-4 py-3 text-gray-300">{dancer.gender || '-'}</td>
-                      <td className="px-4 py-3 text-gray-300">{dancer.email || '-'}</td>
-                      <td className="px-4 py-3 text-gray-300">{dancer.phone || '-'}</td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="date"
+                          value={dancer.date_of_birth || ''}
+                          onChange={(e) => {
+                            const updated = [...previewData];
+                            updated[index] = { ...updated[index], date_of_birth: e.target.value };
+                            setPreviewData(updated);
+                          }}
+                          className="px-2 py-1 bg-white/5 border border-white/20 rounded text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={dancer.classification_id || ''}
+                          onChange={(e) => {
+                            const updated = [...previewData];
+                            updated[index] = { ...updated[index], classification_id: e.target.value };
+                            setPreviewData(updated);
+                          }}
+                          className="px-2 py-1 bg-gray-800 border border-white/20 rounded text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full"
+                        >
+                          <option value="">Select...</option>
+                          {classifications.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -683,7 +742,7 @@ export default function DancerCSVImport() {
           <div className="text-center mb-6">
             <div className="animate-bounce text-6xl mb-4">⬆️</div>
             <h3 className="text-xl font-semibold text-white mb-2">Importing Dancers...</h3>
-            <p className="text-gray-400">Please wait while we add {parsedData.length} dancer(s) to the database</p>
+            <p className="text-gray-400">Please wait while we add {previewData.length} dancer(s) to the database</p>
           </div>
 
           {/* Progress Bar */}
@@ -705,7 +764,7 @@ export default function DancerCSVImport() {
           <div className="text-6xl mb-4">🎉</div>
           <h3 className="text-xl font-semibold text-green-400 mb-2">Import Successful!</h3>
           <p className="text-gray-300">
-            Successfully imported {parsedData.length} dancer(s). Redirecting to dancers list...
+            Successfully imported {previewData.length} dancer(s). Redirecting to dancers list...
           </p>
         </div>
       )}
