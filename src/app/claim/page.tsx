@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
+import { trpc } from '@/lib/trpc';
 
 export default function ClaimPage() {
   const router = useRouter();
@@ -16,6 +17,12 @@ export default function ClaimPage() {
   const [studio, setStudio] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [claiming, setClaiming] = useState(false);
+
+  // Lookup studio by code using tRPC (avoids RLS issues)
+  const { data: studioData, isLoading: studioLoading, error: studioQueryError } = trpc.studio.lookupByCode.useQuery(
+    { code: code?.toUpperCase() || '' },
+    { enabled: !!code && code.length === 5 }
+  );
 
   useEffect(() => {
     async function init() {
@@ -43,15 +50,19 @@ export default function ClaimPage() {
 
       setUser(authUser);
 
-      // Validate studio code
-      const { data: studioData, error: studioError } = await supabase
-        .from('studios')
-        .select('id, name, public_code, owner_id, tenant_id')
-        .eq('public_code', code.toUpperCase())
-        .eq('tenant_id', tenant.id) // Must be on current tenant
-        .single();
+      // Wait for studio data from tRPC
+      if (studioLoading) {
+        return; // Keep loading
+      }
 
-      if (studioError || !studioData) {
+      if (studioQueryError || !studioData) {
+        setError('Invalid or expired studio code. Please check the code and try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Check if studio matches current tenant
+      if (studioData.tenant_id && studioData.tenant_id !== tenant.id) {
         setError('Invalid or expired studio code. Please check the code and try again.');
         setLoading(false);
         return;
@@ -68,7 +79,7 @@ export default function ClaimPage() {
     }
 
     init();
-  }, [code, router, tenant?.id]);
+  }, [code, router, tenant?.id, studioData, studioLoading, studioQueryError]);
 
   const handleClaim = async () => {
     if (!studio || !user) return;

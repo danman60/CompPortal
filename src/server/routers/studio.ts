@@ -74,6 +74,8 @@ export const studioRouter = router({
           province: true,
           status: true,
           email: true,
+          tenant_id: true,
+          owner_id: true,
         },
       });
 
