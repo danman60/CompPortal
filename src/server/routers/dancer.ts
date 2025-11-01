@@ -8,14 +8,13 @@ import { logger } from '@/lib/logger';
 import { parseISODateToUTC } from '@/lib/date-utils';
 
 // Validation schema for dancer input
-// Phase 2 spec lines 40-82: Classification and birthdate will be REQUIRED
-// TODO: Make required after frontend updated (Iteration 3)
+// Phase 2 spec lines 40-82: Classification and birthdate REQUIRED
 const dancerInputSchema = z.object({
   studio_id: z.string().uuid(),
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
-  date_of_birth: z.string().optional(), // TODO: Make required in Iteration 3 (Phase 2 spec line 50)
-  classification_id: z.string().uuid().optional(), // TODO: Make required in Iteration 3 (Phase 2 spec line 50)
+  date_of_birth: z.string().min(1, 'Date of birth is required'), // REQUIRED (Phase 2 spec line 50)
+  classification_id: z.string().uuid({ message: 'Classification is required' }), // REQUIRED (Phase 2 spec line 50)
   age_override: z.number().int().min(0).max(150).optional(),
   gender: z.string().max(20).optional(),
   email: z.string().email().optional().or(z.literal('')),
