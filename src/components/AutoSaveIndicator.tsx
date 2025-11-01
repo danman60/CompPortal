@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface AutoSaveIndicatorProps {
@@ -6,6 +9,22 @@ interface AutoSaveIndicatorProps {
 }
 
 export default function AutoSaveIndicator({ status, lastSaved }: AutoSaveIndicatorProps) {
+  const [timeAgo, setTimeAgo] = useState<string>('');
+
+  // Client-only rendering to avoid hydration mismatch
+  useEffect(() => {
+    if (lastSaved) {
+      setTimeAgo(formatDistanceToNow(lastSaved, { addSuffix: true }));
+
+      // Update every minute
+      const interval = setInterval(() => {
+        setTimeAgo(formatDistanceToNow(lastSaved, { addSuffix: true }));
+      }, 60000);
+
+      return () => clearInterval(interval);
+    }
+  }, [lastSaved]);
+
   if (status === 'idle') return null;
 
   const getStatusDisplay = () => {
@@ -29,9 +48,9 @@ export default function AutoSaveIndicator({ status, lastSaved }: AutoSaveIndicat
             </svg>
             <span>
               Draft saved{' '}
-              {lastSaved && (
+              {timeAgo && (
                 <span className="text-gray-500">
-                  {formatDistanceToNow(lastSaved, { addSuffix: true })}
+                  {timeAgo}
                 </span>
               )}
             </span>
