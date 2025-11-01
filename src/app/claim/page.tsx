@@ -180,8 +180,8 @@ export default function ClaimPage() {
         </div>
 
         <div className="bg-white/5 rounded-xl p-5 mb-6 border border-white/10">
-          <p className="text-gray-300 text-xs uppercase tracking-wider mb-2">Your account</p>
-          <p className="text-white font-semibold">{user?.email}</p>
+          <p className="text-gray-300 text-xs uppercase tracking-wider mb-2">Studio Contact Email</p>
+          <p className="text-white font-semibold">{studio.email || 'No email on file'}</p>
         </div>
 
         <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4 mb-6">
