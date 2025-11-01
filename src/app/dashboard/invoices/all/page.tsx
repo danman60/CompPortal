@@ -20,8 +20,19 @@ export default function AllInvoicesPage() {
         return;
       }
 
-      // Check if user is a competition director (NOT a studio director)
-      // For now, allow access - CD role check can be done server-side later if needed
+      // Check if user is CD or SA - SDs should NOT access global invoices
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || !['competition_director', 'super_admin'].includes(profile.role)) {
+        // SD trying to access global invoices - redirect to their studio invoices
+        router.push('/dashboard/invoices');
+        return;
+      }
+
       setIsChecking(false);
     };
 
