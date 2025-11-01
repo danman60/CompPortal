@@ -119,34 +119,34 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
           </Link>
         </div>
 
-        {/* My Routines Card */}
+        {/* My Routines Card - DISABLED (Coming Soon) */}
         <div>
           <div className="text-sm text-gray-400 mb-2 font-medium">Create your routines</div>
-          <Link
-            href="/dashboard/entries"
-            className={`block bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer ${
-              nextActionCard === 'routines'
-                ? 'border-2 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.4)] animate-pulse'
-                : 'border border-blue-400/30'
-            }`}
-            title="Create and manage your competition routines. Build routines from approved reservations, assign dancers, upload music files, and track submission status. Edit routine details and view confirmation status."
+          <div
+            className="block bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-md rounded-xl p-6 border border-blue-400/20 opacity-60 cursor-not-allowed"
+            title="Routine creation is coming soon. This feature is currently under construction."
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">My Routines</h3>
-              <div className="text-3xl">🎭</div>
+              <div className="text-3xl opacity-50">🎭</div>
             </div>
-            <div className="text-4xl font-bold text-white mb-2">{totalEntries}</div>
+            <div className="text-4xl font-bold text-white mb-2 opacity-50">{totalEntries}</div>
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-gray-300">
+              <div className="flex justify-between text-gray-300 opacity-50">
                 <span>Submitted:</span>
                 <span className="font-semibold text-green-400">{submittedEntries}</span>
               </div>
-              <div className="flex justify-between text-gray-300">
+              <div className="flex justify-between text-gray-300 opacity-50">
                 <span>Drafts:</span>
                 <span className="font-semibold text-yellow-400">{draftEntries}</span>
               </div>
             </div>
-          </Link>
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <p className="text-center text-sm text-yellow-300">
+                🚧 Routine creation coming soon
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
