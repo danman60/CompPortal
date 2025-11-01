@@ -94,7 +94,7 @@ export default function ClaimPage() {
       .from('studios')
       .update({ owner_id: user.id })
       .eq('id', studio.id)
-      .eq('owner_id', null); // Double-check still unclaimed
+      .is('owner_id', null); // Double-check still unclaimed
 
     if (updateError) {
       setError(`Failed to claim studio: ${updateError.message}`);
