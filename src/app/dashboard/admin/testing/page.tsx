@@ -88,9 +88,9 @@ export default function TestingToolsPage() {
 
   const handleSendTestInvitation = async () => {
     if (confirm('Send test invitation to daniel@streamstage.live?')) {
-      // Find the test studio ID
+      // Test Studio - Daniel (TEST1)
       await sendTestInvitationMutation.mutateAsync({
-        studioIds: ['a64db808-ff4e-4799-9f27-8550db3fff9e'], // Test Studio - Daniel
+        studioIds: ['ea510039-6bdd-425c-9ef9-fa3e2d83888a'],
       });
     }
   };
