@@ -9,7 +9,8 @@ import * as XLSX from 'xlsx';
 type ParsedDancer = {
   first_name: string;
   last_name: string;
-  date_of_birth?: string;
+  date_of_birth: string; // REQUIRED
+  classification_id: string; // REQUIRED (to be set in preview before import)
   gender?: string;
   email?: string;
   phone?: string;

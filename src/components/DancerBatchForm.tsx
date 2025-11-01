@@ -9,11 +9,11 @@ import toast from 'react-hot-toast';
 interface DancerRow {
   first_name: string;
   last_name: string;
-  date_of_birth?: string;
+  date_of_birth: string; // REQUIRED
+  classification_id: string; // REQUIRED
   gender?: string;
   email?: string;
   phone?: string;
-  skill_level?: string;
 }
 
 interface DancerBatchFormProps {
@@ -24,6 +24,10 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch classifications for dropdown
+  const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
+  const classifications = lookupData?.classifications || [];
+
   const { register, control, handleSubmit, formState: { errors } } = useForm<{
     dancers: DancerRow[];
   }>({
@@ -32,10 +36,10 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
         first_name: '',
         last_name: '',
         date_of_birth: '',
+        classification_id: '',
         gender: '',
         email: '',
         phone: '',
-        skill_level: '',
       }),
     },
   });
@@ -77,13 +81,13 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
       return;
     }
 
-    // Validate that all dancers have both first and last name
+    // Validate required fields
     const incompleteRows = validDancers.filter(
-      (dancer) => !dancer.first_name.trim() || !dancer.last_name.trim()
+      (dancer) => !dancer.first_name.trim() || !dancer.last_name.trim() || !dancer.date_of_birth || !dancer.classification_id
     );
 
     if (incompleteRows.length > 0) {
-      toast.error('All dancers must have both first name and last name.');
+      toast.error('All dancers must have first name, last name, birth date, and classification.');
       return;
     }
 
@@ -96,8 +100,8 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
         email: dancer.email?.trim() || undefined,
         phone: dancer.phone?.trim() || undefined,
         gender: dancer.gender?.trim() || undefined,
-        skill_level: dancer.skill_level?.trim() || undefined,
-        date_of_birth: dancer.date_of_birth?.trim() || undefined,
+        date_of_birth: dancer.date_of_birth, // REQUIRED
+        classification_id: dancer.classification_id, // REQUIRED
       })),
     });
   };
@@ -107,10 +111,10 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
       first_name: '',
       last_name: '',
       date_of_birth: '',
+      classification_id: '',
       gender: '',
       email: '',
       phone: '',
-      skill_level: '',
     });
   };
 
@@ -120,10 +124,10 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
         first_name: '',
         last_name: '',
         date_of_birth: '',
+        classification_id: '',
         gender: '',
         email: '',
         phone: '',
-        skill_level: '',
       });
     }
   };
@@ -135,7 +139,7 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
         <h3 className="text-lg font-semibold text-blue-200 mb-2">📝 Instructions</h3>
         <ul className="text-blue-300 text-sm space-y-1">
           <li>• Fill in dancer information in the table below</li>
-          <li>• First Name and Last Name are required</li>
+          <li>• First Name, Last Name, Birth Date, and Classification are required</li>
           <li>• Empty rows will be skipped automatically</li>
           <li>• Click "+ Add Row" to add more dancers</li>
           <li>• Click "Save All Dancers" when you're done</li>
@@ -183,7 +187,10 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                   Last Name <span className="text-red-400">*</span>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Birth Date
+                  Birth Date <span className="text-red-400">*</span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                  Classification <span className="text-red-400">*</span>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Gender
@@ -193,9 +200,6 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Phone
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Classification
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-16">
                   Action
@@ -226,10 +230,25 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                   </td>
                   <td className="px-4 py-2">
                     <input
-                      {...register(`dancers.${index}.date_of_birth` as const)}
+                      {...register(`dancers.${index}.date_of_birth` as const, { required: true })}
                       type="date"
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
                     />
+                  </td>
+                  <td className="px-4 py-2">
+                    <select
+                      {...register(`dancers.${index}.classification_id` as const, { required: true })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent [&>option]:bg-gray-800 [&>option]:text-white"
+                      required
+                    >
+                      <option value="" className="bg-gray-800 text-white">Select...</option>
+                      {classifications.map((c) => (
+                        <option key={c.id} value={c.id} className="bg-gray-800 text-white">
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-4 py-2">
                     <select
@@ -258,19 +277,6 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                       placeholder="555-1234"
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
-                  </td>
-                  <td className="px-4 py-2">
-                    <select
-                      {...register(`dancers.${index}.skill_level` as const)}
-                      className="w-full px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent [&>option]:bg-gray-800 [&>option]:text-white"
-                    >
-                      <option value="" className="bg-gray-800 text-white">Select...</option>
-                      <option value="Beginner" className="bg-gray-800 text-white">Beginner</option>
-                      <option value="Novice" className="bg-gray-800 text-white">Novice</option>
-                      <option value="Intermediate" className="bg-gray-800 text-white">Intermediate</option>
-                      <option value="Advanced" className="bg-gray-800 text-white">Advanced</option>
-                      <option value="Elite" className="bg-gray-800 text-white">Elite</option>
-                    </select>
                   </td>
                   <td className="px-4 py-2">
                     <button
