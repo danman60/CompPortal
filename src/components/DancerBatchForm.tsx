@@ -240,17 +240,15 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                   </td>
                   <td className="px-4 py-2">
                     <input
-                      {...register(`dancers.${index}.date_of_birth` as const, { required: true })}
+                      {...register(`dancers.${index}.date_of_birth` as const)}
                       type="date"
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
                     />
                   </td>
                   <td className="px-4 py-2">
                     <select
-                      {...register(`dancers.${index}.classification_id` as const, { required: true })}
+                      {...register(`dancers.${index}.classification_id` as const)}
                       className="w-full px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent [&>option]:bg-gray-800 [&>option]:text-white"
-                      required
                     >
                       <option value="" className="bg-gray-800 text-white">Select...</option>
                       {classifications.map((c) => (
