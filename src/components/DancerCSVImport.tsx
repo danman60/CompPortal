@@ -703,6 +703,20 @@ export default function DancerCSVImport() {
               </div>
             )}
 
+            {/* Classification Info Banner */}
+            <div className="mb-4 p-4 bg-orange-500/10 border border-orange-400/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">⚠️</div>
+                <div>
+                  <p className="text-orange-300 font-semibold mb-1">Classification Determines Routine Placement</p>
+                  <p className="text-orange-200 text-sm">
+                    Dancer classification determines routine classification. Solos must match dancer's level.
+                    Groups use highest/majority level and can bump up one level.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase bg-black/40 sticky top-0">

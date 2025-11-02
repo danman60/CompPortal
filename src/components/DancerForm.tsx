@@ -253,6 +253,20 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             )}
           </div>
 
+          {/* Classification Info Banner */}
+          <div className="p-4 bg-orange-500/10 border border-orange-400/30 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">⚠️</div>
+              <div>
+                <p className="text-orange-300 font-semibold mb-1">Classification Determines Routine Placement</p>
+                <p className="text-orange-200 text-sm">
+                  Dancer classification determines routine classification. Solos must match dancer's level.
+                  Groups use highest/majority level and can bump up one level.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Classification */}
           <div>
             <label htmlFor="classification_id" className="block text-sm font-medium text-gray-300 mb-2">
