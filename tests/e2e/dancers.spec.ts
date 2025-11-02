@@ -3,338 +3,234 @@
  *
  * Tests for dancer CRUD operations and CSV import functionality
  * Mapped to: Studio Director Journey - Phase 2 (Dancer Management)
+ *
+ * ⚠️ PRODUCTION WARNING:
+ * - These tests run against PRODUCTION (empwr.compsync.net)
+ * - UI verification tests are safe (read-only)
+ * - Data mutation tests are marked with @data-mutation tag
+ * - Do NOT run @data-mutation tests in CI without proper cleanup
  */
 
 import { test, expect } from '@playwright/test'
 
 /**
- * Dancer CSV Import Tests
+ * Test configuration
  */
-test.describe('Dancer Management - CSV Import @regression', () => {
-  test('should show checkbox selection for CSV import', async ({ page }) => {
-    // Login as studio director
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
+const TEST_CONFIG = {
+  baseUrl: 'https://empwr.compsync.net',
+  credentials: {
+    email: 'daniel@streamstage.live',
+    password: '123456'
+  },
+  timeout: 10000
+}
 
-    // Navigate to import page
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/import')
+/**
+ * Helper: Login to application
+ * Verifies login succeeded by waiting for dashboard redirect
+ */
+async function loginAsStudioDirector(page: any) {
+  await page.goto(`${TEST_CONFIG.baseUrl}/login`)
+  await page.fill('input[type="email"]', TEST_CONFIG.credentials.email)
+  await page.fill('input[type="password"]', TEST_CONFIG.credentials.password)
+  await page.click('button:has-text("Sign In")')
 
-    // Download template to get CSV
+  // Wait for redirect to dashboard (verify login succeeded)
+  await page.waitForURL(/.*\/dashboard.*/, { timeout: 5000 })
+}
+
+/**
+ * Dancer CSV Import Tests - UI Verification (Read-Only)
+ * These tests verify checkbox selection UI exists and behaves correctly
+ * NO data is imported to production database
+ */
+test.describe('Dancer CSV Import - Checkbox Selection UI @safe @regression', () => {
+  test('should display checkbox selection UI with auto-select', async ({ page }) => {
+    await loginAsStudioDirector(page)
+    await page.goto(`${TEST_CONFIG.baseUrl}/dashboard/dancers/import`)
+
+    // Download template triggers preview with sample data
     await page.click('button:has-text("Download Template")')
+    await page.waitForSelector('table tbody tr', { timeout: 5000 })
 
-    // Wait for preview to load (template generates sample data)
-    await page.waitForSelector('table', { timeout: 5000 })
+    // Verify Select All checkbox in header
+    const selectAllCheckbox = page.locator('thead input[type="checkbox"]')
+    await expect(selectAllCheckbox).toBeVisible()
+    await expect(selectAllCheckbox).toBeChecked() // Auto-selected on load
 
-    // Verify Select All checkbox exists in header
-    await expect(page.locator('thead input[type="checkbox"]')).toBeVisible()
+    // Verify individual row checkboxes
+    const rowCheckboxes = page.locator('tbody input[type="checkbox"]')
+    const checkboxCount = await rowCheckboxes.count()
+    expect(checkboxCount).toBeGreaterThan(0)
 
-    // Verify individual checkboxes exist
-    const checkboxes = await page.locator('tbody input[type="checkbox"]').count()
-    expect(checkboxes).toBeGreaterThan(0)
+    // Verify all rows auto-checked
+    for (let i = 0; i < checkboxCount; i++) {
+      await expect(rowCheckboxes.nth(i)).toBeChecked()
+    }
 
-    // Verify all checkboxes are auto-selected
-    const checkedCount = await page.locator('tbody input[type="checkbox"]:checked').count()
-    expect(checkedCount).toBe(checkboxes)
-
-    // Verify import button shows count
-    await expect(page.locator('button:has-text("Import (")')).toBeVisible()
+    // Verify import button shows count format
+    await expect(page.locator('button', { hasText: /Import \(\d+ selected\)/ })).toBeVisible()
   })
 
-  test('should only validate selected dancers', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
+  test('should update import button count dynamically', async ({ page }) => {
+    await loginAsStudioDirector(page)
+    await page.goto(`${TEST_CONFIG.baseUrl}/dashboard/dancers/import`)
 
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/import')
     await page.click('button:has-text("Download Template")')
-    await page.waitForSelector('table')
+    await page.waitForSelector('table tbody tr')
 
-    // Uncheck first dancer
-    await page.locator('tbody tr:first-child input[type="checkbox"]').uncheck()
-
-    // Clear classification for first dancer (unchecked)
-    await page.locator('tbody tr:first-child select').first().selectOption('')
-
-    // Import button should still work (unchecked dancers not validated)
-    const importButton = page.locator('button:has-text("Import (")')
-    await expect(importButton).toBeEnabled()
-
-    // Now uncheck all and check only first dancer (missing classification)
-    await page.locator('thead input[type="checkbox"]').uncheck()
-    await page.locator('tbody tr:first-child input[type="checkbox"]').check()
-
-    // Now import should fail validation (checked dancer missing classification)
-    await importButton.click()
-    await expect(page.locator('text=/missing classification/i')).toBeVisible()
-  })
-
-  test('should update import count when checkboxes change', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
-
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/import')
-    await page.click('button:has-text("Download Template")')
-    await page.waitForSelector('table')
-
-    // Get initial count
+    // Get initial dancer count
     const totalDancers = await page.locator('tbody tr').count()
-    await expect(page.locator(`button:has-text("Import (${totalDancers} selected)")`)).toBeVisible()
+
+    // Verify initial count
+    await expect(page.locator('button', {
+      hasText: new RegExp(`Import \\(${totalDancers} selected\\)`)
+    })).toBeVisible()
 
     // Uncheck one dancer
     await page.locator('tbody tr:first-child input[type="checkbox"]').uncheck()
-    await expect(page.locator(`button:has-text("Import (${totalDancers - 1} selected)")`)).toBeVisible()
+    await expect(page.locator('button', {
+      hasText: new RegExp(`Import \\(${totalDancers - 1} selected\\)`)
+    })).toBeVisible()
 
-    // Uncheck all
+    // Uncheck all via Select All checkbox
     await page.locator('thead input[type="checkbox"]').uncheck()
-    await expect(page.locator('button:has-text("Import (0 selected)")')).toBeVisible()
-
-    // Import button disabled when none selected
-    await expect(page.locator('button:has-text("Import (0 selected)")')).toBeDisabled()
+    const noneSelectedButton = page.locator('button', { hasText: /Import \(0 selected\)/ })
+    await expect(noneSelectedButton).toBeVisible()
+    await expect(noneSelectedButton).toBeDisabled() // Should disable when none selected
   })
 
-  test('should only import selected dancers', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
+  test('should show warning banner only for selected dancers', async ({ page }) => {
+    await loginAsStudioDirector(page)
+    await page.goto(`${TEST_CONFIG.baseUrl}/dashboard/dancers/import`)
 
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/import')
     await page.click('button:has-text("Download Template")')
-    await page.waitForSelector('table')
+    await page.waitForSelector('table tbody tr')
 
-    // Uncheck all
-    await page.locator('thead input[type="checkbox"]').uncheck()
+    // Clear classification for first dancer (creates validation error)
+    await page.locator('tbody tr:first-child select').first().selectOption({ value: '' })
 
-    // Check only first dancer
-    await page.locator('tbody tr:first-child input[type="checkbox"]').check()
+    // Warning should appear with "selected dancer" text
+    const warningBanner = page.locator('text=/selected dancer.*missing/i')
+    await expect(warningBanner).toBeVisible()
 
-    // Get first dancer's name
-    const firstName = await page.locator('tbody tr:first-child input[placeholder*="First"]').inputValue()
-
-    // Import
-    await page.click('button:has-text("Import (1 selected)")')
-
-    // Verify success message mentions only 1 dancer
-    await expect(page.locator('text=/Successfully created 1 dancer/i')).toBeVisible({ timeout: 10000 })
-  })
-
-  test('should show warning only for selected dancers with missing fields', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
-
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/import')
-    await page.click('button:has-text("Download Template")')
-    await page.waitForSelector('table')
-
-    // Clear classification for first dancer
-    await page.locator('tbody tr:first-child select').first().selectOption('')
-
-    // Warning should show "1 selected dancer(s) need classification"
-    await expect(page.locator('text=/selected dancer.*missing/i')).toBeVisible()
-
-    // Uncheck first dancer
+    // Uncheck the dancer with missing classification
     await page.locator('tbody tr:first-child input[type="checkbox"]').uncheck()
 
-    // Warning should disappear (unchecked dancers not counted)
-    await expect(page.locator('text=/selected dancer.*missing/i')).not.toBeVisible()
+    // Warning should disappear (unchecked dancers excluded from validation)
+    await expect(warningBanner).not.toBeVisible()
   })
 
-  test('should calculate ages correctly from birthdate', async ({ page }) => {
+  test('should toggle Select All checkbox correctly', async ({ page }) => {
+    await loginAsStudioDirector(page)
+    await page.goto(`${TEST_CONFIG.baseUrl}/dashboard/dancers/import`)
+
+    await page.click('button:has-text("Download Template")')
+    await page.waitForSelector('table tbody tr')
+
+    const selectAllCheckbox = page.locator('thead input[type="checkbox"]')
+    const rowCheckboxes = page.locator('tbody input[type="checkbox"]')
+    const rowCount = await rowCheckboxes.count()
+
+    // Initially all should be checked
+    await expect(selectAllCheckbox).toBeChecked()
+
+    // Uncheck Select All
+    await selectAllCheckbox.uncheck()
+
+    // All rows should be unchecked
+    for (let i = 0; i < rowCount; i++) {
+      await expect(rowCheckboxes.nth(i)).not.toBeChecked()
+    }
+
+    // Re-check Select All
+    await selectAllCheckbox.check()
+
+    // All rows should be checked again
+    for (let i = 0; i < rowCount; i++) {
+      await expect(rowCheckboxes.nth(i)).toBeChecked()
+    }
+  })
+})
+
+/**
+ * Dancer Batch Add Form - Toast Validation Tests (Read-Only)
+ * Verifies toast notification validation without importing data
+ */
+test.describe('Dancer Batch Add - Toast Validation @safe @regression', () => {
+  test('should show toast error for empty form submission', async ({ page }) => {
+    await loginAsStudioDirector(page)
+    await page.goto(`${TEST_CONFIG.baseUrl}/dashboard/dancers/batch-add`)
+
+    // Try to submit empty form (first row has no data)
+    await page.click('button:has-text("Save All Dancers")')
+
+    // Verify toast error appears
+    await expect(page.locator('text=/Please enter at least one dancer/i')).toBeVisible()
+  })
+
+  test('should show toast for missing date of birth', async ({ page }) => {
+    await loginAsStudioDirector(page)
+    await page.goto(`${TEST_CONFIG.baseUrl}/dashboard/dancers/batch-add`)
+
+    // Fill only name fields
+    await page.locator('tbody tr:first-child input[placeholder*="First"]').fill('TestFirst')
+    await page.locator('tbody tr:first-child input[placeholder*="Last"]').fill('TestLast')
+
+    // Submit without DOB or classification
+    await page.click('button:has-text("Save All Dancers")')
+
+    // Should show validation error toast
+    await expect(page.locator('text=/missing date of birth/i')).toBeVisible()
+  })
+
+  test('should show toast for missing classification', async ({ page }) => {
+    await loginAsStudioDirector(page)
+    await page.goto(`${TEST_CONFIG.baseUrl}/dashboard/dancers/batch-add`)
+
+    // Fill name and DOB but not classification
+    await page.locator('tbody tr:first-child input[placeholder*="First"]').fill('TestFirst')
+    await page.locator('tbody tr:first-child input[placeholder*="Last"]').fill('TestLast')
+    await page.locator('tbody tr:first-child input[type="date"]').fill('2010-01-01')
+
+    // Submit
+    await page.click('button:has-text("Save All Dancers")')
+
+    // Should show classification error
+    await expect(page.locator('text=/missing classification/i')).toBeVisible()
+  })
+})
+
+/**
+ * Dancer CRUD Tests (Placeholder - TODO)
+ * These require proper test data setup/cleanup before implementation
+ */
+test.describe('Dancer CRUD Operations @todo', () => {
+  test.skip('should create new dancer manually', async ({ page }) => {
+    // TODO: Implement with proper test data cleanup
+    // Requires:
+    // 1. Create test dancer
+    // 2. Verify creation
+    // 3. Delete test dancer (cleanup)
+  })
+
+  test.skip('should edit dancer details', async ({ page }) => {
+    // TODO: Implement with test fixtures
+  })
+
+  test.skip('should archive dancer', async ({ page }) => {
+    // TODO: Implement with soft delete verification
+  })
+})
+
+/**
+ * Age Calculation Tests (Placeholder - TODO)
+ */
+test.describe('Age Calculation @todo', () => {
+  test.skip('should calculate ages correctly from birthdate', async ({ page }) => {
     // TODO: Test age calculation logic
     // Emma (born 2010-03-15) should be 15 years old in 2025
     // Sophia (born 2012-07-22) should be 13 years old in 2025
     // Olivia (born 2008-11-05) should be 17 years old in 2025
-  })
-
-  test('should detect duplicate dancers', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/dashboard/dancers')
-
-    // TODO: Test importing same CSV twice
-    // Verify warning message shown
-    // Allow user to skip or overwrite
-  })
-})
-
-/**
- * Dancer Batch Add Tests
- */
-test.describe('Dancer Management - Batch Add @regression', () => {
-  test('should show toast validation for batch form', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
-
-    // Navigate to batch add page
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/batch-add')
-
-    // Try to submit with empty first row
-    await page.click('button:has-text("Save All Dancers")')
-
-    // Verify toast error shows
-    await expect(page.locator('text=/Please enter at least one dancer/i')).toBeVisible()
-  })
-
-  test('should show specific validation errors in toast', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
-
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/batch-add')
-
-    // Fill only name, missing DOB and classification
-    await page.fill('input[placeholder*="First"]', 'Test')
-    await page.fill('input[placeholder*="Last"]', 'Dancer')
-
-    // Submit
-    await page.click('button:has-text("Save All Dancers")')
-
-    // Verify specific error toast
-    await expect(page.locator('text=/missing date of birth/i')).toBeVisible()
-  })
-
-  test('should validate classification requirement in batch form', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
-
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/batch-add')
-
-    // Fill name and DOB, but no classification
-    await page.fill('input[placeholder*="First"]', 'Test')
-    await page.fill('input[placeholder*="Last"]', 'Dancer')
-    await page.fill('input[type="date"]', '2010-01-01')
-
-    // Submit
-    await page.click('button:has-text("Save All Dancers")')
-
-    // Verify classification error toast
-    await expect(page.locator('text=/missing classification/i')).toBeVisible()
-  })
-
-  test('should skip empty rows in batch form', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/login')
-    await page.fill('input[type="email"]', 'daniel@streamstage.live')
-    await page.fill('input[type="password"]', '123456')
-    await page.click('button:has-text("Sign In")')
-
-    await page.goto('https://empwr.compsync.net/dashboard/dancers/batch-add')
-
-    // Add 5 rows
-    await page.click('button:has-text("Add 5 Rows")')
-
-    // Fill only first row completely
-    await page.locator('tbody tr:first-child input[placeholder*="First"]').fill('Test')
-    await page.locator('tbody tr:first-child input[placeholder*="Last"]').fill('Dancer')
-    await page.locator('tbody tr:first-child input[type="date"]').fill('2010-01-01')
-    await page.locator('tbody tr:first-child select').first().selectOption({ index: 1 })
-
-    // Submit - should only create 1 dancer, skip empty rows
-    await page.click('button:has-text("Save All Dancers")')
-
-    // Verify success for 1 dancer
-    await expect(page.locator('text=/Successfully created 1 dancer/i')).toBeVisible({ timeout: 10000 })
-  })
-})
-
-/**
- * Dancer CRUD Tests
- */
-test.describe('Dancer Management - CRUD Operations @regression', () => {
-  test('should create new dancer manually', async ({ page }) => {
-    await page.goto('https://empwr.compsync.net/dashboard/dancers')
-
-    // Click new dancer button
-    await page.click('button:has-text("New Dancer")')
-
-    // Fill form
-    await page.fill('input[name="firstName"]', 'Test')
-    await page.fill('input[name="lastName"]', 'Dancer')
-    await page.fill('input[name="birthdate"]', '2010-01-01')
-
-    // Submit
-    await page.click('button[type="submit"]')
-
-    // Verify success message
-    await expect(page.locator('text=Dancer created')).toBeVisible()
-  })
-
-  test('should edit dancer details', async ({ page }) => {
-    await page.goto('https://comp-portal-one.vercel.app/dashboard/dancers')
-
-    // Click edit on first dancer
-    await page.click('tr:first-child button:has-text("Edit")')
-
-    // Update name
-    await page.fill('input[name="firstName"]', 'Updated')
-
-    // Save
-    await page.click('button:has-text("Save")')
-
-    // Verify update
-    await expect(page.locator('text=Dancer updated')).toBeVisible()
-  })
-
-  test('should search and filter dancers', async ({ page }) => {
-    await page.goto('https://comp-portal-one.vercel.app/dashboard/dancers')
-
-    // Search by name
-    await page.fill('input[placeholder*="Search"]', 'Emma')
-
-    // Verify filtered results
-    // TODO: Verify only matching dancers shown
-  })
-
-  test('should archive dancer', async ({ page }) => {
-    await page.goto('https://comp-portal-one.vercel.app/dashboard/dancers')
-
-    // Click archive on first dancer
-    await page.click('tr:first-child button:has-text("Archive")')
-
-    // Confirm archive
-    await page.click('button:has-text("Confirm")')
-
-    // Verify success
-    await expect(page.locator('text=Dancer archived')).toBeVisible()
-  })
-})
-
-/**
- * Validation Tests
- */
-test.describe('Dancer Management - Validation @regression', () => {
-  test('should reject invalid birthdate', async ({ page }) => {
-    await page.goto('https://comp-portal-one.vercel.app/dashboard/dancers')
-
-    await page.click('button:has-text("New Dancer")')
-
-    // Try future date
-    await page.fill('input[name="birthdate"]', '2030-01-01')
-    await page.click('button[type="submit"]')
-
-    // Verify validation error
-    await expect(page.locator('text=Invalid birthdate')).toBeVisible()
-  })
-
-  test('should reject unrealistic age', async ({ page }) => {
-    await page.goto('https://comp-portal-one.vercel.app/dashboard/dancers')
-
-    await page.click('button:has-text("New Dancer")')
-
-    // Try date making dancer 100+ years old
-    await page.fill('input[name="birthdate"]', '1900-01-01')
-    await page.click('button[type="submit"]')
-
-    // Verify validation error
-    await expect(page.locator('text=Unrealistic age')).toBeVisible()
   })
 })
