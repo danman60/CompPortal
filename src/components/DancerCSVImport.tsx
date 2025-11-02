@@ -78,9 +78,10 @@ export default function DancerCSVImport() {
   const [importProgress, setImportProgress] = useState(0);
   const [importError, setImportError] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<ParsedDancer[]>([]); // Editable preview
+  const [selectedDancers, setSelectedDancers] = useState<Set<number>>(new Set());
 
   // Get the current user's studio information
-  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
+  const { data: currentUser} = trpc.user.getCurrentUser.useQuery();
 
   // Get existing dancers for duplicate detection
   const { data: existingDancers } = trpc.dancer.getAll.useQuery(
@@ -106,6 +107,13 @@ export default function DancerCSVImport() {
       setPreviewData([...parsedData]); // Create editable copy
     }
   }, [parsedData.length]);
+
+  // Auto-select all dancers when preview data loads
+  useEffect(() => {
+    if (previewData.length > 0) {
+      setSelectedDancers(new Set(previewData.map((_, i) => i)));
+    }
+  }, [previewData.length]);
 
   // Bug Fix: Remove onSuccess/onError to avoid race condition
   // Handle success/error logic in handleImport function instead
@@ -434,10 +442,18 @@ export default function DancerCSVImport() {
       return;
     }
 
-    // Validate all dancers have classification and date_of_birth
-    const incomplete = previewData.filter(d => !d.classification_id || !d.date_of_birth);
+    // Filter to only selected dancers
+    const selectedDancersData = previewData.filter((_, i) => selectedDancers.has(i));
+
+    if (selectedDancersData.length === 0) {
+      setImportError('No dancers selected. Please select at least one dancer to import.');
+      return;
+    }
+
+    // Validate only selected dancers have classification and date_of_birth
+    const incomplete = selectedDancersData.filter(d => !d.classification_id || !d.date_of_birth);
     if (incomplete.length > 0) {
-      setImportError(`${incomplete.length} dancer(s) missing classification or date of birth. Please complete all fields.`);
+      setImportError(`${incomplete.length} selected dancer(s) missing classification or date of birth. Please complete all required fields for selected dancers.`);
       return;
     }
 
@@ -448,7 +464,7 @@ export default function DancerCSVImport() {
     try {
       const result = await importMutation.mutateAsync({
         studio_id: studioId,
-        dancers: previewData, // Use editable preview data
+        dancers: selectedDancersData, // Only import selected dancers
       });
 
       setImportProgress(100);
@@ -641,10 +657,10 @@ export default function DancerCSVImport() {
                 <div className="flex gap-4">
                   <button
                     onClick={handleImport}
-                    disabled={importMutation.isPending}
+                    disabled={importMutation.isPending || selectedDancers.size === 0}
                     className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    {importMutation.isPending ? 'Importing...' : 'Import'}
+                    {importMutation.isPending ? 'Importing...' : `Import (${selectedDancers.size} selected)`}
                   </button>
                   <button
                     onClick={() => router.push('/dashboard/dancers')}
@@ -666,16 +682,16 @@ export default function DancerCSVImport() {
               </p>
             )}
 
-            {/* Warning if any dancer missing required fields */}
-            {previewData.some(d => !d.classification_id || !d.date_of_birth) && (
+            {/* Warning if any SELECTED dancer missing required fields */}
+            {previewData.filter((_, i) => selectedDancers.has(i)).some(d => !d.classification_id || !d.date_of_birth) && (
               <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-400/30 rounded-lg">
                 <div className="flex items-start gap-3">
                   <div className="text-2xl">⚠️</div>
                   <div>
                     <p className="text-yellow-300 font-semibold mb-1">Missing Required Fields</p>
                     <p className="text-yellow-200 text-sm">
-                      {previewData.filter(d => !d.classification_id || !d.date_of_birth).length} dancer(s) need classification and date of birth before import.
-                      Please complete all fields below.
+                      {previewData.filter((_, i) => selectedDancers.has(i)).filter(d => !d.classification_id || !d.date_of_birth).length} selected dancer(s) need classification and date of birth before import.
+                      Please complete all required fields for selected dancers.
                     </p>
                   </div>
                 </div>
@@ -686,6 +702,20 @@ export default function DancerCSVImport() {
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-400 uppercase bg-black/40 sticky top-0">
                   <tr>
+                    <th className="px-4 py-3 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedDancers.size === previewData.length && previewData.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedDancers(new Set(previewData.map((_, i) => i)));
+                          } else {
+                            setSelectedDancers(new Set());
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500 focus:ring-2 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-4 py-3">#</th>
                     <th className="px-4 py-3">First Name</th>
                     <th className="px-4 py-3">Last Name</th>
@@ -696,6 +726,22 @@ export default function DancerCSVImport() {
                 <tbody>
                   {previewData.map((dancer, index) => (
                     <tr key={index} className="border-b border-white/10 hover:bg-white/5">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedDancers.has(index)}
+                          onChange={(e) => {
+                            const newSelected = new Set(selectedDancers);
+                            if (e.target.checked) {
+                              newSelected.add(index);
+                            } else {
+                              newSelected.delete(index);
+                            }
+                            setSelectedDancers(newSelected);
+                          }}
+                          className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500 focus:ring-2 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-4 py-3 text-gray-400">{index + 1}</td>
                       <td className="px-4 py-3 text-white">{dancer.first_name}</td>
                       <td className="px-4 py-3 text-white">{dancer.last_name}</td>
