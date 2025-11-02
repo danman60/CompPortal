@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, DANCER_CSV_FIELDS } from '@/lib/csv-utils';
 import * as XLSX from 'xlsx';
+import toast from 'react-hot-toast';
 
 type ParsedDancer = {
   first_name: string;
@@ -446,14 +447,18 @@ export default function DancerCSVImport() {
     const selectedDancersData = previewData.filter((_, i) => selectedDancers.has(i));
 
     if (selectedDancersData.length === 0) {
-      setImportError('No dancers selected. Please select at least one dancer to import.');
+      const errorMsg = 'No dancers selected. Please select at least one dancer to import.';
+      toast.error(errorMsg);
+      setImportError(errorMsg);
       return;
     }
 
     // Validate only selected dancers have classification and date_of_birth
     const incomplete = selectedDancersData.filter(d => !d.classification_id || !d.date_of_birth);
     if (incomplete.length > 0) {
-      setImportError(`${incomplete.length} selected dancer(s) missing classification or date of birth. Please complete all required fields for selected dancers.`);
+      const errorMsg = `${incomplete.length} selected dancer(s) missing classification or date of birth. Please complete all required fields for selected dancers.`;
+      toast.error(errorMsg, { duration: 5000 });
+      setImportError(errorMsg);
       return;
     }
 
