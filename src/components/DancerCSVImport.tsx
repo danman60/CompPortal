@@ -810,7 +810,7 @@ export default function DancerCSVImport() {
           <div className="text-6xl mb-4">🎉</div>
           <h3 className="text-xl font-semibold text-green-400 mb-2">Import Successful!</h3>
           <p className="text-gray-300">
-            Successfully imported {previewData.length} dancer(s). Redirecting to dancers list...
+            Successfully imported {selectedDancers.size} dancer(s). Redirecting to dancers list...
           </p>
         </div>
       )}
