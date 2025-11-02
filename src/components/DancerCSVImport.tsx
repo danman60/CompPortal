@@ -779,6 +779,17 @@ export default function DancerCSVImport() {
               </table>
             </div>
           </div>
+
+          {/* Bottom Import Button */}
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={handleImport}
+              disabled={importMutation.isPending || selectedDancers.size === 0}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {importMutation.isPending ? 'Importing...' : `Import (${selectedDancers.size} selected)`}
+            </button>
+          </div>
         </div>
       )}
 
