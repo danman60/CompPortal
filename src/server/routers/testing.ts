@@ -485,10 +485,42 @@ export const testingRouter = router({
       });
     }
 
+    // Step 3: Create sample reservation with deposit data (like real studios)
+    // First, get a competition to attach the reservation to
+    const competition = await prisma.competitions.findFirst({
+      where: {
+        tenant_id: empwrTenantId,
+        status: { in: ['upcoming', 'registration_open'] },
+      },
+    });
+
+    if (competition) {
+      // Delete any existing test reservations for this studio
+      await prisma.reservations.deleteMany({
+        where: {
+          studio_id: studio.id,
+        },
+      });
+
+      // Create a sample approved reservation with deposit
+      await prisma.reservations.create({
+        data: {
+          studio_id: studio.id,
+          competition_id: competition.id,
+          status: 'approved',
+          spaces_requested: 50,
+          spaces_confirmed: 50,
+          deposit_amount: 2000.00,
+          credits_applied: 0,
+          discount_percentage: 0,
+        },
+      });
+    }
+
     return {
       success: true,
       studioId: studio.id,
-      message: `Test account prepared: ${testEmail} is now unclaimed`,
+      message: `Test account prepared: ${testEmail} is now unclaimed with sample reservation data`,
     };
   }),
 

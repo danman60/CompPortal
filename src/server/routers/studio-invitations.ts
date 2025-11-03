@@ -37,7 +37,7 @@ export const studioInvitationsRouter = router({
         },
         reservations: {
           where: {
-            status: 'approved',
+            status: { in: ['approved', 'adjusted'] },
           },
           select: {
             spaces_confirmed: true,
@@ -119,7 +119,7 @@ export const studioInvitationsRouter = router({
           },
           reservations: {
             where: {
-              status: 'approved',
+              status: { in: ['approved', 'adjusted'] },
             },
             select: {
               spaces_confirmed: true,
