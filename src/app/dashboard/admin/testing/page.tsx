@@ -55,25 +55,22 @@ export default function TestingToolsPage() {
     },
   });
 
-  const sendTestInvitationMutation = trpc.studioInvitations.sendInvitations.useMutation({
+  const prepareTestAccountMutation = trpc.testing.prepareTestAccount.useMutation({
     onSuccess: (data) => {
-      if (data.sent > 0) {
-        toast.success(`Test invitation sent to daniel@streamstage.live`);
-      } else {
-        toast.error('Failed to send test invitation');
-      }
+      toast.success(data.message);
+      return data.studioId;
     },
     onError: (error) => {
       toast.error(error.message);
     },
   });
 
-  const sendTestInvitationEmilyMutation = trpc.studioInvitations.sendInvitations.useMutation({
+  const sendTestInvitationMutation = trpc.studioInvitations.sendInvitations.useMutation({
     onSuccess: (data) => {
       if (data.sent > 0) {
-        toast.success(`Test invitation sent to emily.einsmann@gmail.com`);
+        toast.success(`Test invitation sent to daniel@streamstage.live! Check your email.`);
       } else {
-        toast.error('Failed to send test invitation');
+        toast.error('Failed to send test invitation - studio may not exist or already claimed');
       }
     },
     onError: (error) => {
@@ -100,24 +97,22 @@ export default function TestingToolsPage() {
   };
 
   const handleSendTestInvitation = async () => {
-    if (confirm('Send test invitation to daniel@streamstage.live?')) {
-      // Test Studio - Daniel (TEST1)
-      await sendTestInvitationMutation.mutateAsync({
-        studioIds: ['ea510039-6bdd-425c-9ef9-fa3e2d83888a'],
-      });
+    if (confirm('Prepare and send test invitation to daniel@streamstage.live?\n\nThis will:\n1. Delete any existing user account for this email\n2. Reset the test studio to unclaimed state\n3. Send invitation email using the SAME process as real studios')) {
+      try {
+        // Step 1: Prepare test account
+        const prepareResult = await prepareTestAccountMutation.mutateAsync();
+
+        // Step 2: Send invitation using the studio ID
+        await sendTestInvitationMutation.mutateAsync({
+          studioIds: [prepareResult.studioId],
+        });
+      } catch (error) {
+        console.error('Test invitation failed:', error);
+      }
     }
   };
 
-  const handleSendTestInvitationEmily = async () => {
-    if (confirm('Send test invitation to emily.einsmann@gmail.com?')) {
-      // Test Studio - Emily (TEST2)
-      await sendTestInvitationEmilyMutation.mutateAsync({
-        studioIds: ['a9d3aef6-93ed-43bd-84bb-2cebc7bb51ef'],
-      });
-    }
-  };
-
-  const isProcessing = cleanSlateMutation.isPending || populateTestDataMutation.isPending || sendTestInvitationMutation.isPending || sendTestInvitationEmilyMutation.isPending;
+  const isProcessing = cleanSlateMutation.isPending || populateTestDataMutation.isPending || sendTestInvitationMutation.isPending || prepareTestAccountMutation.isPending;
 
   if (isLoading) {
     return (
@@ -199,67 +194,44 @@ export default function TestingToolsPage() {
           </div>
         </div>
 
-        {/* Test Invitation Section - Two side by side */}
+        {/* Test Invitation Section */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Daniel Test */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-green-500 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <span className="text-4xl">✉️</span>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">TEST 1 - Daniel</h2>
-                  <p className="text-white/70 text-sm">daniel@streamstage.live</p>
-                </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-green-500 p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <span className="text-4xl">✉️</span>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Test Account Claiming Workflow</h2>
+                <p className="text-white/70 text-sm">daniel@streamstage.live</p>
               </div>
-
-              <div className="bg-green-500/10 rounded-lg p-4 mb-4">
-                <div className="text-green-200 text-sm mb-2 font-semibold">Studio details:</div>
-                <ul className="text-green-200/80 text-xs space-y-1 list-disc list-inside">
-                  <li>Studio: Test Studio - Daniel</li>
-                  <li>Claim Code: TEST1</li>
-                  <li>Tenant: EMPWR</li>
-                  <li>Status: Unclaimed</li>
-                </ul>
-              </div>
-
-              <button
-                onClick={handleSendTestInvitation}
-                disabled={isProcessing}
-                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {sendTestInvitationMutation.isPending ? 'Sending...' : 'SEND INVITATION'}
-              </button>
             </div>
 
-            {/* Emily Test */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-500 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <span className="text-4xl">✉️</span>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">TEST 2 - Emily</h2>
-                  <p className="text-white/70 text-sm">emily.einsmann@gmail.com</p>
-                </div>
-              </div>
-
-              <div className="bg-blue-500/10 rounded-lg p-4 mb-4">
-                <div className="text-blue-200 text-sm mb-2 font-semibold">Studio details:</div>
-                <ul className="text-blue-200/80 text-xs space-y-1 list-disc list-inside">
-                  <li>Studio: Test Studio - Emily</li>
-                  <li>Claim Code: TEST2</li>
-                  <li>Reservation: EMPWR Dance - London</li>
-                  <li>Deposit: $2,000 • 50 entries</li>
-                  <li>Status: Unclaimed</li>
-                </ul>
-              </div>
-
-              <button
-                onClick={handleSendTestInvitationEmily}
-                disabled={isProcessing}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {sendTestInvitationEmilyMutation.isPending ? 'Sending...' : 'SEND INVITATION'}
-              </button>
+            <div className="bg-green-500/10 rounded-lg p-4 mb-4">
+              <div className="text-green-200 text-sm mb-2 font-semibold">This button will:</div>
+              <ul className="text-green-200/80 text-xs space-y-1 list-disc list-inside">
+                <li>Delete any existing user account for daniel@streamstage.live</li>
+                <li>Reset test studio to unclaimed state (owner_id = NULL)</li>
+                <li>Send invitation email using SAME process as real studios</li>
+                <li>Email will contain claim URL: empwr.compsync.net/claim?code=TEST1</li>
+              </ul>
             </div>
+
+            <div className="bg-yellow-500/10 rounded-lg p-4 mb-4">
+              <div className="text-yellow-200 text-sm mb-2 font-semibold">After clicking:</div>
+              <ul className="text-yellow-200/80 text-xs space-y-1 list-disc list-inside">
+                <li>Check daniel@streamstage.live inbox for invitation email</li>
+                <li>Click "Claim Your Account" button in email</li>
+                <li>Complete onboarding flow as a real studio would</li>
+                <li>Verify all steps work correctly before sending to real studios</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={handleSendTestInvitation}
+              disabled={isProcessing}
+              className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {prepareTestAccountMutation.isPending ? 'Preparing...' : sendTestInvitationMutation.isPending ? 'Sending...' : 'PREPARE & SEND TEST INVITATION'}
+            </button>
           </div>
         </div>
 

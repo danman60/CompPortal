@@ -421,6 +421,78 @@ export const testingRouter = router({
     }),
 
   /**
+   * Prepare Test Account - Ensures daniel@streamstage.live is in unclaimed state
+   * 1. Deletes any existing user account
+   * 2. Finds or creates test studio with owner_id = NULL
+   * 3. Returns studio ID for invitation
+   */
+  prepareTestAccount: superAdminProcedure.mutation(async ({ ctx }) => {
+    const testEmail = 'daniel@streamstage.live';
+    const empwrTenantId = '00000000-0000-0000-0000-000000000001';
+
+    // Step 1: Delete any existing user account
+    try {
+      const existingUser = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM auth.users WHERE email = ${testEmail}
+      `;
+
+      if (existingUser && existingUser.length > 0) {
+        const userId = existingUser[0].id;
+
+        // Delete profile first
+        try {
+          await prisma.user_profiles.delete({ where: { id: userId } });
+        } catch (e) {
+          // Profile might not exist
+        }
+
+        // Delete auth user
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      }
+    } catch (error) {
+      // User might not exist, that's okay
+    }
+
+    // Step 2: Find or create test studio with owner_id = NULL
+    let studio = await prisma.studios.findFirst({
+      where: {
+        email: testEmail,
+        tenant_id: empwrTenantId,
+      },
+    });
+
+    if (!studio) {
+      // Create new test studio (minimal required fields only)
+      studio = await prisma.studios.create({
+        data: {
+          tenant_id: empwrTenantId,
+          name: 'Test Studio - Daniel',
+          email: testEmail,
+          public_code: 'TEST1',
+          status: 'approved',
+          owner_id: null,
+        },
+      });
+    } else {
+      // Ensure existing studio is unclaimed
+      studio = await prisma.studios.update({
+        where: { id: studio.id },
+        data: {
+          owner_id: null,
+          status: 'approved',
+          email: testEmail,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      studioId: studio.id,
+      message: `Test account prepared: ${testEmail} is now unclaimed`,
+    };
+  }),
+
+  /**
    * Get current data counts (for UI display)
    */
   getDataCounts: superAdminProcedure.query(async () => {
