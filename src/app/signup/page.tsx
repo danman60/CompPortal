@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
+import { createClient } from '@/lib/supabase';
 
 interface SignupFormData {
   email: string;
@@ -175,9 +176,23 @@ export default function SignupPage() {
         return;
       }
 
-      // If invited user (has redirect_to), go directly to claim page
+      // If invited user (has redirect_to), login first then redirect to claim page
       if (result.redirect_to) {
-        console.log('[Signup] Redirecting to:', result.redirect_to);
+        console.log('[Signup] Invited user - logging in before redirect...');
+        const supabase = createClient();
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (loginError) {
+          console.error('[Signup] Login after signup failed:', loginError);
+          setError('Account created but login failed. Please try logging in manually.');
+          setLoading(false);
+          return;
+        }
+
+        console.log('[Signup] Login successful, redirecting to:', result.redirect_to);
         window.location.href = result.redirect_to;
         return;
       }
