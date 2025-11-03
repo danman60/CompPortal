@@ -432,11 +432,13 @@ export const testingRouter = router({
       email: z.string().email(),
       spaces: z.number().min(0).default(50),
       deposit: z.number().min(0).default(2000),
+      competitionId: z.string().uuid(),
     }))
     .mutation(async ({ ctx, input }) => {
     const testEmail = input.email;
     const testSpaces = input.spaces;
     const testDeposit = input.deposit;
+    const competitionId = input.competitionId;
     const empwrTenantId = '00000000-0000-0000-0000-000000000001';
 
     // Step 1: Delete any existing user account
@@ -495,42 +497,61 @@ export const testingRouter = router({
     }
 
     // Step 3: Create sample reservation with deposit data (like real studios)
-    // First, get a competition to attach the reservation to
-    const competition = await prisma.competitions.findFirst({
+    // Delete any existing test reservations for this studio
+    await prisma.reservations.deleteMany({
       where: {
-        tenant_id: empwrTenantId,
-        status: { in: ['upcoming', 'registration_open'] },
+        studio_id: studio.id,
       },
     });
 
-    if (competition) {
-      // Delete any existing test reservations for this studio
-      await prisma.reservations.deleteMany({
-        where: {
-          studio_id: studio.id,
-        },
-      });
+    // Create a sample approved reservation with selected competition
+    await prisma.reservations.create({
+      data: {
+        studio_id: studio.id,
+        competition_id: competitionId,
+        status: 'approved',
+        spaces_requested: testSpaces,
+        spaces_confirmed: testSpaces,
+        deposit_amount: testDeposit,
+        credits_applied: 0,
+        discount_percentage: 0,
+      },
+    });
 
-      // Create a sample approved reservation with custom deposit/spaces
-      await prisma.reservations.create({
-        data: {
-          studio_id: studio.id,
-          competition_id: competition.id,
-          status: 'approved',
-          spaces_requested: testSpaces,
-          spaces_confirmed: testSpaces,
-          deposit_amount: testDeposit,
-          credits_applied: 0,
-          discount_percentage: 0,
-        },
-      });
-    }
+    // Get competition name for message
+    const competition = await prisma.competitions.findUnique({
+      where: { id: competitionId },
+      select: { name: true },
+    });
 
     return {
       success: true,
       studioId: studio.id,
-      message: `Test account prepared: ${testEmail} (${testSpaces} entries, $${testDeposit} deposit)`,
+      message: `Test account prepared: ${testEmail} • ${competition?.name} • ${testSpaces} entries • $${testDeposit} deposit`,
     };
+  }),
+
+  /**
+   * Get Active Competitions - For testing dropdown
+   */
+  getActiveCompetitions: superAdminProcedure.query(async () => {
+    const empwrTenantId = '00000000-0000-0000-0000-000000000001';
+
+    const competitions = await prisma.competitions.findMany({
+      where: {
+        tenant_id: empwrTenantId,
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    return competitions;
   }),
 
   /**

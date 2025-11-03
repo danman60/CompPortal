@@ -35,8 +35,10 @@ export default function TestingToolsPage() {
   const [testEmail, setTestEmail] = useState('daniel@streamstage.live');
   const [testSpaces, setTestSpaces] = useState(50);
   const [testDeposit, setTestDeposit] = useState(2000);
+  const [testCompetitionId, setTestCompetitionId] = useState('');
 
   const { data: counts, refetch: refetchCounts, isLoading } = trpc.testing.getDataCounts.useQuery();
+  const { data: competitions } = trpc.testing.getActiveCompetitions.useQuery();
 
   const cleanSlateMutation = trpc.testing.cleanSlate.useMutation({
     onSuccess: (data) => {
@@ -102,13 +104,22 @@ export default function TestingToolsPage() {
   };
 
   const handleSendTestInvitation = async () => {
-    if (confirm(`Prepare and send test invitation to ${testEmail}?\n\nThis will:\n1. Delete any existing user account for this email\n2. Reset the test studio to unclaimed state\n3. Create reservation: ${testSpaces} entries, $${testDeposit} deposit\n4. Send invitation email using the SAME process as real studios`)) {
+    if (!testCompetitionId) {
+      toast.error('Please select a competition');
+      return;
+    }
+
+    const selectedComp = competitions?.find(c => c.id === testCompetitionId);
+    const confirmMsg = `Prepare and send test invitation to ${testEmail}?\n\nReservation Details:\n• Competition: ${selectedComp?.name}\n• Spaces: ${testSpaces} entries\n• Deposit: $${testDeposit}\n\nThis will:\n1. Delete any existing user account\n2. Reset studio to unclaimed state\n3. Create sample reservation\n4. Send invitation email`;
+
+    if (confirm(confirmMsg)) {
       try {
         // Step 1: Prepare test account with custom data
         const prepareResult = await prepareTestAccountMutation.mutateAsync({
           email: testEmail,
           spaces: testSpaces,
           deposit: testDeposit,
+          competitionId: testCompetitionId,
         });
 
         // Step 2: Send invitation using the studio ID
@@ -239,7 +250,7 @@ export default function TestingToolsPage() {
             </div>
 
             {/* Configuration Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-white/70 text-sm block mb-2">Test Email</label>
                 <input
@@ -249,6 +260,21 @@ export default function TestingToolsPage() {
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-green-500"
                   placeholder="email@example.com"
                 />
+              </div>
+              <div>
+                <label className="text-white/70 text-sm block mb-2">Competition <span className="text-red-400">*</span></label>
+                <select
+                  value={testCompetitionId}
+                  onChange={(e) => setTestCompetitionId(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-500"
+                >
+                  <option value="">Select competition</option>
+                  {competitions?.map((comp) => (
+                    <option key={comp.id} value={comp.id}>
+                      {comp.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-white/70 text-sm block mb-2">Entry Spaces</label>
