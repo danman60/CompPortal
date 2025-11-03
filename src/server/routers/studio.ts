@@ -101,7 +101,7 @@ export const studioRouter = router({
       // Use Prisma (bypasses RLS) to update studio ownership
       const studio = await prisma.studios.findUnique({
         where: { id: input.studioId },
-        select: { id: true, owner_id: true, tenant_id: true, name: true },
+        select: { id: true, owner_id: true, tenant_id: true, name: true, public_code: true },
       });
 
       if (!studio) {
@@ -111,6 +111,24 @@ export const studioRouter = router({
       if (studio.owner_id !== null) {
         throw new Error('Studio already claimed');
       }
+
+      // Get user details for notification
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: userId },
+        select: {
+          first_name: true,
+          last_name: true,
+          users: {
+            select: { email: true }
+          }
+        },
+      });
+
+      // Get tenant details
+      const tenant = await prisma.tenants.findUnique({
+        where: { id: studio.tenant_id },
+        select: { name: true, subdomain: true },
+      });
 
       // Update ownership
       await prisma.studios.update({
@@ -123,6 +141,54 @@ export const studioRouter = router({
         where: { id: userId },
         data: { role: 'studio_director' },
       });
+
+      // Send notification email to Super Admin
+      const { sendEmail } = await import('@/lib/email');
+      try {
+        await sendEmail({
+          to: 'danieljohnabrahamson@gmail.com',
+          subject: `🎉 Studio Claimed: ${studio.name} (${tenant?.name})`,
+          html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Studio Claimed</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f3f4f6; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <h1 style="color: #8b5cf6; margin: 0 0 20px 0;">🎉 Studio Account Claimed!</h1>
+
+    <div style="background-color: #f9fafb; border-left: 4px solid #8b5cf6; padding: 20px; margin: 20px 0; border-radius: 8px;">
+      <p style="margin: 0 0 10px 0; color: #374151;"><strong>Studio:</strong> ${studio.name}</p>
+      <p style="margin: 0 0 10px 0; color: #374151;"><strong>Code:</strong> ${studio.public_code}</p>
+      <p style="margin: 0 0 10px 0; color: #374151;"><strong>Competition:</strong> ${tenant?.name || 'Unknown'}</p>
+      <p style="margin: 0 0 10px 0; color: #374151;"><strong>Subdomain:</strong> ${tenant?.subdomain}.compsync.net</p>
+    </div>
+
+    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
+      <p style="margin: 0 0 10px 0; color: #374151;"><strong>Claimed By:</strong> ${userProfile?.first_name || ''} ${userProfile?.last_name || ''}</p>
+      <p style="margin: 0 0 0 0; color: #374151;"><strong>Email:</strong> ${userProfile?.users?.email || 'Unknown'}</p>
+    </div>
+
+    <p style="color: #6b7280; font-size: 14px; margin: 20px 0 0 0;">
+      This studio account has been successfully claimed. The user now has Studio Director access.
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+
+    <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">
+      CompSync Notification System
+    </p>
+  </div>
+</body>
+</html>
+          `,
+        });
+      } catch (emailError) {
+        // Don't fail the claim if email fails - just log it
+        console.error('Failed to send claim notification email:', emailError);
+      }
 
       return { success: true, studioId: input.studioId };
     }),
