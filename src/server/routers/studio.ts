@@ -86,6 +86,47 @@ export const studioRouter = router({
       return studio;
     }),
 
+  // Claim studio ownership (bypasses RLS for unclaimed studios)
+  claimStudio: protectedProcedure
+    .input(z.object({
+      studioId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.userId;
+
+      if (!userId) {
+        throw new Error('Not authenticated');
+      }
+
+      // Use Prisma (bypasses RLS) to update studio ownership
+      const studio = await prisma.studios.findUnique({
+        where: { id: input.studioId },
+        select: { id: true, owner_id: true, tenant_id: true, name: true },
+      });
+
+      if (!studio) {
+        throw new Error('Studio not found');
+      }
+
+      if (studio.owner_id !== null) {
+        throw new Error('Studio already claimed');
+      }
+
+      // Update ownership
+      await prisma.studios.update({
+        where: { id: input.studioId },
+        data: { owner_id: userId },
+      });
+
+      // Update user role to studio_director
+      await prisma.user_profiles.update({
+        where: { id: userId },
+        data: { role: 'studio_director' },
+      });
+
+      return { success: true, studioId: input.studioId };
+    }),
+
   // Get all studios
   // Super admins can see studios across all tenants
   getAll: publicProcedure

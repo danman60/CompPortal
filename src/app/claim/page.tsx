@@ -24,6 +24,9 @@ export default function ClaimPage() {
     { enabled: !!code && code.length === 5 }
   );
 
+  // Claim studio mutation
+  const claimMutation = trpc.studio.claimStudio.useMutation();
+
   useEffect(() => {
     async function init() {
       if (!code) {
@@ -87,45 +90,28 @@ export default function ClaimPage() {
     setClaiming(true);
     setError('');
 
-    const supabase = createClient();
+    try {
+      // Use tRPC mutation to claim studio (bypasses RLS)
+      await claimMutation.mutateAsync({ studioId: studio.id });
 
-    // Update studio ownership
-    const { error: updateError } = await supabase
-      .from('studios')
-      .update({ owner_id: user.id })
-      .eq('id', studio.id)
-      .is('owner_id', null); // Double-check still unclaimed
+      // Check if onboarding complete
+      const supabase = createClient();
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
 
-    if (updateError) {
-      setError(`Failed to claim studio: ${updateError.message}`);
+      if (!profile?.first_name || !profile?.last_name) {
+        // Need to complete onboarding
+        router.push('/onboarding');
+      } else {
+        // Go straight to dashboard
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to claim studio');
       setClaiming(false);
-      return;
-    }
-
-    // Update user role to studio_director (critical for permissions)
-    const { error: roleError } = await supabase
-      .from('user_profiles')
-      .update({ role: 'studio_director' })
-      .eq('id', user.id);
-
-    if (roleError) {
-      console.error('Failed to set studio_director role:', roleError);
-      // Continue anyway - role might already be set
-    }
-
-    // Check if onboarding complete
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('first_name, last_name')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile?.first_name || !profile?.last_name) {
-      // Need to complete onboarding
-      router.push('/onboarding');
-    } else {
-      // Go straight to dashboard
-      router.push('/dashboard');
     }
   };
 
