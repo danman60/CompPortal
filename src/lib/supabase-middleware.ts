@@ -74,7 +74,9 @@ export async function updateSession(request: NextRequest) {
       .eq('key', 'site_paused')
       .single();
 
-    const isPaused = siteSetting?.value === true || siteSetting?.value === 'true';
+    // JSONB values are returned as their native type (boolean in this case)
+    // The Supabase client automatically parses JSONB to JavaScript types
+    const isPaused = siteSetting?.value === true;
 
     if (isPaused) {
       // Check if user is super_admin (only they can bypass)
