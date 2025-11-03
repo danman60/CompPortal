@@ -32,7 +32,7 @@ export default function TestingToolsPage() {
   });
 
   // Test invitation configuration
-  const [testEmail, setTestEmail] = useState('daniel@streamstage.live');
+  const [testEmail, setTestEmail] = useState('djamusic@gmail.com');
   const [testSpaces, setTestSpaces] = useState(50);
   const [testDeposit, setTestDeposit] = useState(2000);
   const [testCompetitionId, setTestCompetitionId] = useState('');
@@ -75,7 +75,7 @@ export default function TestingToolsPage() {
   const sendTestInvitationMutation = trpc.studioInvitations.sendInvitations.useMutation({
     onSuccess: (data) => {
       if (data.sent > 0) {
-        toast.success(`Test invitation sent to daniel@streamstage.live! Check your email.`);
+        toast.success(`Test invitation sent successfully! Check the test email.`);
       } else {
         toast.error('Failed to send test invitation - studio may not exist or already claimed');
       }
@@ -229,7 +229,7 @@ export default function TestingToolsPage() {
             <div className="flex gap-2 mb-4">
               <button
                 onClick={() => {
-                  setTestEmail('daniel@streamstage.live');
+                  setTestEmail('djamusic@gmail.com');
                   setTestSpaces(50);
                   setTestDeposit(2000);
                 }}
