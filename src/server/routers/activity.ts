@@ -85,4 +85,53 @@ export const activityRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Get recent activity across ALL tenants
+   * Super Admin only - for live activity dashboard
+   */
+  getRecentActivityForSuperAdmin: publicProcedure.query(async ({ ctx }) => {
+    // Check if user is super_admin
+    if (ctx.userRole !== 'super_admin') {
+      throw new Error('Only Super Admin can view global activity feed');
+    }
+
+    // Use raw SQL to get recent activity with user and tenant info
+    const activities = await prisma.$queryRaw<any[]>`
+      SELECT
+        al.id,
+        al.action,
+        al.entity_type,
+        al.entity_name,
+        al.created_at,
+        up.first_name,
+        up.last_name,
+        up.role,
+        t.name as tenant_name,
+        t.subdomain as tenant_subdomain
+      FROM activity_logs al
+      LEFT JOIN user_profiles up ON al.user_id = up.id
+      LEFT JOIN tenants t ON al.tenant_id = t.id
+      ORDER BY al.created_at DESC
+      LIMIT 5
+    `;
+
+    return activities.map((activity) => ({
+      id: activity.id,
+      action: activity.action,
+      entityType: activity.entity_type,
+      entityName: activity.entity_name,
+      createdAt: activity.created_at,
+      user: {
+        name: `${activity.first_name || ''} ${activity.last_name || ''}`.trim() || 'Unknown User',
+        role: activity.role,
+      },
+      tenant: activity.tenant_name
+        ? {
+            name: activity.tenant_name,
+            subdomain: activity.tenant_subdomain,
+          }
+        : null,
+    }));
+  }),
 });
