@@ -70,7 +70,7 @@ export default async function DashboardPage() {
               <span>Studio Profile</span>
             </a>
           )}
-          {(role === 'competition_director' || role === 'super_admin') && (
+          {role === 'competition_director' && (
             <a
               href="/dashboard/settings/tenant"
               className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 flex items-center gap-2"
