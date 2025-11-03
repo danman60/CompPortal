@@ -435,6 +435,14 @@ export default function DancersList() {
                 </div>
               )}
 
+              {/* Classification */}
+              {dancer.classifications && (
+                <div className="flex items-center gap-2 text-purple-300 text-sm mb-3">
+                  <span>🏆</span>
+                  <span className="font-semibold">{dancer.classifications.name}</span>
+                </div>
+              )}
+
               {/* Status */}
               {dancer.status && (
                 <div className="mt-4 pt-4 border-t border-white/10">
@@ -478,12 +486,13 @@ export default function DancersList() {
                       className="w-4 h-4 cursor-pointer"
                     />
                   </th>
-                  <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '250px' }} />
-                  <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '120px' }} />
-                  <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '200px' }} />
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '180px' }}>Studio</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '120px' }}>Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '150px' }}>Actions</th>
+                  <SortableHeader label="Name" sortKey="first_name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '230px' }} />
+                  <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '100px' }} />
+                  <SortableHeader label="Age" sortKey="date_of_birth" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '150px' }} />
+                  <SortableHeader label="Classification" sortKey="classifications.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '160px' }} />
+                  <SortableHeader label="Studio" sortKey="studios.name" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '160px' }} />
+                  <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={requestSort} className="bg-gray-800" style={{ width: '100px' }} />
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '130px' }}>Actions</th>
                 </tr>
               </thead>
             </table>
@@ -516,7 +525,7 @@ export default function DancersList() {
                         className="w-4 h-4 cursor-pointer"
                       />
                     </td>
-                    <td className="px-6 py-4" style={{ width: '250px' }}>
+                    <td className="px-6 py-4" style={{ width: '230px' }}>
                       <div className="text-white font-medium">
                         {highlightText(`${dancer.first_name} ${dancer.last_name}`, searchTerm)}
                       </div>
@@ -524,7 +533,7 @@ export default function DancersList() {
                         <div className="text-xs text-gray-400 mt-1">#{dancer.registration_number}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4" style={{ width: '120px' }}>
+                    <td className="px-6 py-4" style={{ width: '100px' }}>
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           dancer.gender === 'Male'
@@ -534,10 +543,10 @@ export default function DancersList() {
                             : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
                         }`}
                       >
-                        {dancer.gender || 'Unknown'}
+                        {dancer.gender || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4" style={{ width: '200px' }}>
+                    <td className="px-6 py-4" style={{ width: '150px' }}>
                       {dancer.date_of_birth ? (
                         <div className="text-white">
                           {new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()} yrs
@@ -549,10 +558,19 @@ export default function DancersList() {
                         <span className="text-gray-500">N/A</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-300" style={{ width: '180px' }}>
+                    <td className="px-6 py-4" style={{ width: '160px' }}>
+                      {dancer.classifications ? (
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                          {dancer.classifications.name}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">N/A</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-gray-300" style={{ width: '160px' }}>
                       {dancer.studios?.name || 'N/A'}
                     </td>
-                    <td className="px-6 py-4" style={{ width: '120px' }}>
+                    <td className="px-6 py-4" style={{ width: '100px' }}>
                       {dancer.status && (
                         <span
                           className={`px-2 py-1 rounded text-xs uppercase font-semibold ${
@@ -565,7 +583,7 @@ export default function DancersList() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4" style={{ width: '150px' }}>
+                    <td className="px-6 py-4" style={{ width: '130px' }}>
                       <div onClick={(e) => e.stopPropagation()}>
                         <Link
                           href={`/dashboard/dancers/${dancer.id}`}

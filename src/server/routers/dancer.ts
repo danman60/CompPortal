@@ -92,6 +92,13 @@ export const dancerRouter = router({
                 code: true,
               },
             },
+            classifications: {
+              select: {
+                id: true,
+                name: true,
+                skill_level: true,
+              },
+            },
             _count: {
               select: {
                 entry_participants: true,

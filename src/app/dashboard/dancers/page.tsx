@@ -94,21 +94,21 @@ export default function DancersPage() {
           </div>
 
           <div className="flex gap-3">
-            <Button asChild variant="primary" size="lg">
-              <Link href="/dashboard/dancers/add">
+            <Link href="/dashboard/dancers/add">
+              <Button variant="primary" size="lg">
                 <Plus size={20} strokeWidth={2} />
-                Add Dancers
-              </Link>
-            </Button>
-            <Button asChild variant="secondary" size="lg">
-              <Link href="/dashboard/dancers/import">
+                <span>Add Dancers</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/dancers/import">
+              <Button variant="secondary" size="lg">
                 <Upload size={20} strokeWidth={2} />
-                Import
-              </Link>
-            </Button>
+                <span>Import</span>
+              </Button>
+            </Link>
             <Button variant="secondary" size="lg" onClick={handleExportCSV}>
               <Download size={20} strokeWidth={2} />
-              Export CSV
+              <span>Export CSV</span>
             </Button>
           </div>
         </div>
