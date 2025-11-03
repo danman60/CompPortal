@@ -1343,6 +1343,7 @@ model studios {
   consent_marketing                DateTime?             @db.Timestamptz(6)
   consent_data_processing          DateTime?             @db.Timestamptz(6)
   public_code                      String                @unique @db.VarChar(5)
+  invited_at                       DateTime?             @db.Timestamptz(6)
   activity_logs                    activity_logs[]
   competition_entries              competition_entries[]
   dancers                          dancers[]

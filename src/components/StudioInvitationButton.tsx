@@ -171,9 +171,9 @@ export default function StudioInvitationButton() {
                               </div>
                               <div>
                                 📋 {studio.reservationCount} reservation{studio.reservationCount !== 1 ? 's' : ''}
-                                {studio.competitions.length > 0 && (
+                                {studio.events?.length > 0 && (
                                   <span className="ml-2 text-gray-500">
-                                    • {studio.competitions.join(', ')}
+                                    • {studio.events.map((e: any) => e.name).join(', ')}
                                   </span>
                                 )}
                               </div>

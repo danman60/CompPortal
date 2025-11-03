@@ -28,7 +28,12 @@ export const studioInvitationsRouter = router({
         owner_id: null,
         status: 'approved',
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        public_code: true,
+        email: true,
+        invited_at: true,
         tenants: {
           select: {
             name: true,
@@ -44,36 +49,62 @@ export const studioInvitationsRouter = router({
             deposit_amount: true,
             competitions: {
               select: {
+                id: true,
                 name: true,
+                competition_start_date: true,
+                competition_end_date: true,
               },
             },
           },
         },
       },
-      orderBy: {
-        tenant_id: 'asc',
-      },
+    });
+
+    // Map studios with event details
+    const studiosWithDetails = studios.map((studio) => {
+      const totalSpaces = studio.reservations.reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0);
+      const totalDeposit = studio.reservations.reduce((sum, r) => sum + parseFloat(r.deposit_amount?.toString() || '0'), 0);
+
+      // Get earliest event date for sorting
+      const eventDates = studio.reservations
+        .map((r) => r.competitions.competition_start_date)
+        .filter((date): date is Date => date !== null);
+      const earliestEvent = eventDates.length > 0 ? new Date(Math.min(...eventDates.map((d) => d.getTime()))) : null;
+
+      return {
+        id: studio.id,
+        name: studio.name,
+        publicCode: studio.public_code,
+        email: studio.email,
+        tenantName: studio.tenants.name,
+        tenantSubdomain: studio.tenants.subdomain,
+        invitedAt: studio.invited_at,
+        reservationCount: studio.reservations.length,
+        events: studio.reservations.map((r) => ({
+          competitionId: r.competitions.id,
+          name: r.competitions.name,
+          startDate: r.competitions.competition_start_date,
+          endDate: r.competitions.competition_end_date,
+          spaces: r.spaces_confirmed || 0,
+          deposit: parseFloat(r.deposit_amount?.toString() || '0'),
+        })),
+        totalSpaces,
+        totalDeposit,
+        earliestEvent,
+      };
+    });
+
+    // Sort by earliest event date (soonest first), then by studio name
+    const sortedStudios = studiosWithDetails.sort((a, b) => {
+      if (!a.earliestEvent && !b.earliestEvent) return a.name.localeCompare(b.name);
+      if (!a.earliestEvent) return 1;
+      if (!b.earliestEvent) return -1;
+      return a.earliestEvent.getTime() - b.earliestEvent.getTime();
     });
 
     return {
-      studios: studios.map((studio) => {
-        const totalSpaces = studio.reservations.reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0);
-        const totalDeposit = studio.reservations.reduce((sum, r) => sum + parseFloat(r.deposit_amount?.toString() || '0'), 0);
-
-        return {
-          id: studio.id,
-          name: studio.name,
-          publicCode: studio.public_code,
-          email: studio.email,
-          tenantName: studio.tenants.name,
-          tenantSubdomain: studio.tenants.subdomain,
-          reservationCount: studio.reservations.length,
-          competitions: studio.reservations.map((r) => r.competitions.name),
-          totalSpaces,
-          totalDeposit,
-        };
-      }),
-      count: studios.length,
+      studios: sortedStudios,
+      count: sortedStudios.length,
     };
   }),
 
@@ -253,7 +284,7 @@ export const studioInvitationsRouter = router({
               </ul>
 
               <p style="margin: 20px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-                Questions? Reply to this email and we'll be happy to help!
+                Questions? Contact us at <a href="mailto:techsupport@compsync.net" style="color: #667eea; text-decoration: none; font-weight: 600;">techsupport@compsync.net</a>
               </p>
             </td>
           </tr>
@@ -265,7 +296,7 @@ export const studioInvitationsRouter = router({
                 — ${studio.tenants.name} Team
               </p>
               <p style="margin: 10px 0 0; color: #9ca3af; font-size: 11px;">
-                This is an automated invitation email. Do not reply if you have questions.
+                This is an automated invitation. For support, email techsupport@compsync.net
               </p>
             </td>
           </tr>
@@ -282,6 +313,12 @@ export const studioInvitationsRouter = router({
             to: studio.email,
             subject: `Claim Your ${studio.tenants.name} Account - ${studio.name}`,
             html: emailHtml,
+          });
+
+          // Mark invitation as sent
+          await prisma.studios.update({
+            where: { id: studio.id },
+            data: { invited_at: new Date() },
           });
 
           results.sent.push(studio.name);
