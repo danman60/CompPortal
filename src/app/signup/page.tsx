@@ -116,15 +116,22 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[Signup] Form submitted');
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log('[Signup] Validation failed');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
       // Ensure tenant is resolved before signup
+      console.log('[Signup] Resolving tenant...');
       const tenantId = await resolveTenantId();
+      console.log('[Signup] Tenant resolved:', tenantId);
+
       if (!tenantId) {
         setError('Unable to determine tenant. Please refresh and try again.');
         setLoading(false);
@@ -132,7 +139,9 @@ export default function SignupPage() {
       }
 
       // Check if email already exists before attempting signup
+      console.log('[Signup] Checking if email exists...');
       const emailCheck = await checkEmailMutation.mutateAsync({ email: formData.email });
+      console.log('[Signup] Email check result:', emailCheck);
 
       if (emailCheck.exists) {
         setError('This email is already registered. Please sign in or reset your password.');
@@ -141,6 +150,7 @@ export default function SignupPage() {
       }
 
       // Create auth account via edge function (handles tenant_id, user_profiles, and email)
+      console.log('[Signup] Creating account...', { email: formData.email, tenant_id: tenantId, claim_code: studioCode });
       const response = await fetch('/api/signup-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,6 +163,7 @@ export default function SignupPage() {
       });
 
       const result = await response.json();
+      console.log('[Signup] API response:', result);
 
       if (!response.ok) {
         const msg = result.error || '';
@@ -166,13 +177,16 @@ export default function SignupPage() {
 
       // If invited user (has redirect_to), go directly to claim page
       if (result.redirect_to) {
+        console.log('[Signup] Redirecting to:', result.redirect_to);
         window.location.href = result.redirect_to;
         return;
       }
 
       // Otherwise show success message (email confirmation required)
+      console.log('[Signup] Showing success message');
       setSuccess(true);
     } catch (err) {
+      console.error('[Signup] Error:', err);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
