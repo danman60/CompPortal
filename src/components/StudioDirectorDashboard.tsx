@@ -182,10 +182,15 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
     const totalDancers = myDancers?.dancers?.length || 0;
     const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
 
+    // Always pulse dancers first, regardless of reservation status
+    // Most SDs join with existing confirmed reservations, dancers come first
     if (totalDancers === 0) return 'dancers';
-    if (approvedReservations === 0) return 'reservations';
-    if (routinesLeftToCreate > 0) return 'routines';
-    return null; // All caught up
+
+    // Skip reservations pulsing (most SDs join with existing reservations)
+    // Only pulse routines if there are approved reservations and routines left to create
+    if (approvedReservations > 0 && routinesLeftToCreate > 0) return 'routines';
+
+    return null; // Tutorial complete or waiting for routine creation
   };
 
   return (
