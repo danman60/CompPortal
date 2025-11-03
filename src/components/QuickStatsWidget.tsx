@@ -10,6 +10,7 @@ interface Stat {
   color?: string; // Tailwind text color class
   tooltip?: string; // Tooltip text displayed above CARD
   href?: string; // Optional link to make card clickable
+  subtitle?: string; // Optional subtitle below the label (e.g., "$1,500 deposit")
 }
 
 interface QuickStatsWidgetProps {
@@ -52,6 +53,13 @@ export default function QuickStatsWidget({ stats, className = '' }: QuickStatsWi
 
               {/* Label */}
               <div className="text-xs text-gray-300 font-semibold uppercase tracking-wide mb-1">{stat.label}</div>
+
+              {/* Subtitle (optional, below label) */}
+              {stat.subtitle && (
+                <div className="text-sm text-green-300 font-medium">
+                  {stat.subtitle}
+                </div>
+              )}
 
               {/* Tooltip at bottom */}
               {stat.tooltip && (

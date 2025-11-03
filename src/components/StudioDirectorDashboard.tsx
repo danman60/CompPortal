@@ -94,6 +94,10 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
   // getByStudio returns both SENT and PAID invoices (invoice.ts:336-338)
   const unpaidInvoices = myInvoices?.invoices?.filter(i => i.status === 'SENT').length || 0;
 
+  // Calculate total deposit amount from all reservations
+  const totalDeposit = myReservations?.reservations
+    ?.reduce((total, r) => total + (Number(r.deposit_amount) || 0), 0) || 0;
+
   // Determine next action for user
   const getNextAction = () => {
     const totalDancers = myDancers?.dancers?.length || 0;
@@ -252,7 +256,8 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
             label: 'Unpaid Invoices',
             color: 'text-red-300',
             href: '/dashboard/invoices',
-            tooltip: 'Invoices awaiting payment'
+            tooltip: 'Invoices awaiting payment',
+            subtitle: totalDeposit > 0 ? `$${totalDeposit.toFixed(2)} deposit` : undefined
           },
           {
             icon: '🎟️',
