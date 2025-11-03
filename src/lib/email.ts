@@ -143,4 +143,5 @@ export type EmailTemplate =
   | 'invoice-delivery'
   | 'reservation-approved'
   | 'reservation-declined'
-  | 'entry-submitted';
+  | 'entry-submitted'
+  | 'studio-claimed';

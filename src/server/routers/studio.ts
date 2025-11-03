@@ -145,9 +145,11 @@ export const studioRouter = router({
       // Send notification email to Super Admin
       const { sendEmail } = await import('@/lib/email');
       try {
-        await sendEmail({
+        const emailResult = await sendEmail({
           to: 'danieljohnabrahamson@gmail.com',
           subject: `🎉 Studio Claimed: ${studio.name} (${tenant?.name})`,
+          templateType: 'studio-claimed',
+          studioId: studio.id,
           html: `
 <!DOCTYPE html>
 <html>
@@ -185,9 +187,28 @@ export const studioRouter = router({
 </html>
           `,
         });
+
+        // Log email result
+        if (!emailResult.success) {
+          logger.error('Failed to send claim notification email', {
+            error: new Error(emailResult.error || 'Unknown email error'),
+            studioId: studio.id,
+            studioName: studio.name,
+          });
+        } else {
+          logger.info('Claim notification email sent', {
+            studioId: studio.id,
+            studioName: studio.name,
+            to: 'danieljohnabrahamson@gmail.com',
+          });
+        }
       } catch (emailError) {
         // Don't fail the claim if email fails - just log it
-        console.error('Failed to send claim notification email:', emailError);
+        logger.error('Failed to send claim notification email - exception', {
+          error: emailError instanceof Error ? emailError : new Error(String(emailError)),
+          studioId: studio.id,
+          studioName: studio.name,
+        });
       }
 
       return { success: true, studioId: input.studioId };
