@@ -20,10 +20,29 @@ export default function ResetPasswordPage() {
         ? `https://${tenant.subdomain}.compsync.net/login`
         : `${window.location.origin}/login`;
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
-      if (error) throw error;
+      // Call Edge Function instead of Supabase API to bypass rate limits
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/password-reset`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email,
+            tenant_id: tenant?.id,
+            redirect_to: redirectUrl,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset email');
+      }
+
       toast.success('Password reset email sent. Check your inbox.');
       setEmail('');
     } catch (err: any) {
