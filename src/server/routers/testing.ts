@@ -464,37 +464,27 @@ export const testingRouter = router({
       // User might not exist, that's okay
     }
 
-    // Step 2: Find or create test studio with owner_id = NULL
-    let studio = await prisma.studios.findFirst({
+    // Step 2: Clean slate - delete ALL existing studios with this email OR TEST1 code to avoid duplicates
+    await prisma.studios.deleteMany({
       where: {
-        email: testEmail,
-        tenant_id: empwrTenantId,
+        OR: [
+          { email: testEmail, tenant_id: empwrTenantId },
+          { public_code: 'TEST1', tenant_id: empwrTenantId },
+        ],
       },
     });
 
-    if (!studio) {
-      // Create new test studio (minimal required fields only)
-      studio = await prisma.studios.create({
-        data: {
-          tenant_id: empwrTenantId,
-          name: 'Test Studio - Daniel',
-          email: testEmail,
-          public_code: 'TEST1',
-          status: 'approved',
-          owner_id: null,
-        },
-      });
-    } else {
-      // Ensure existing studio is unclaimed
-      studio = await prisma.studios.update({
-        where: { id: studio.id },
-        data: {
-          owner_id: null,
-          status: 'approved',
-          email: testEmail,
-        },
-      });
-    }
+    // Create fresh test studio (minimal required fields only)
+    const studio = await prisma.studios.create({
+      data: {
+        tenant_id: empwrTenantId,
+        name: 'Test Studio - Daniel',
+        email: testEmail,
+        public_code: 'TEST1',
+        status: 'approved',
+        owner_id: null,
+      },
+    });
 
     // Step 3: Create sample reservation with deposit data (like real studios)
     // Delete any existing test reservations for this studio
