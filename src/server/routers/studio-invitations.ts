@@ -162,20 +162,6 @@ export const studioInvitationsRouter = router({
 
           const claimUrl = `https://${studio.tenants.subdomain}.compsync.net/claim?code=${studio.public_code}`;
 
-          // Calculate totals from all reservations
-          const totalEntries = studio.reservations.reduce(
-            (sum, r) => sum + (r.spaces_confirmed || 0),
-            0
-          );
-          const totalDeposit = studio.reservations.reduce(
-            (sum, r) => sum + parseFloat(r.deposit_amount?.toString() || '0'),
-            0
-          );
-          const totalCredits = studio.reservations.reduce(
-            (sum, r) => sum + parseFloat(r.credits_applied?.toString() || '0'),
-            0
-          );
-
           // Build email HTML
           const emailHtml = `
 <!DOCTYPE html>
@@ -236,15 +222,6 @@ export const studioInvitationsRouter = router({
                     `
                       )
                       .join('')}
-
-                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-                      <strong style="color: #1f2937;">Total:</strong>
-                      <div style="color: #6b7280; font-size: 14px; margin-top: 5px;">
-                        ${totalEntries} entries • $${totalDeposit.toFixed(2)} deposits${
-            totalCredits > 0 ? ` • $${totalCredits.toFixed(2)} credits` : ''
-          }
-                      </div>
-                    </div>
                   </td>
                 </tr>
               </table>
