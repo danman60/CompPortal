@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
@@ -10,7 +10,9 @@ export default function OnboardingPage() {
   const { tenant } = useTenantTheme();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState('');
+  const [isClaimedStudio, setIsClaimedStudio] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -24,6 +26,49 @@ export default function OnboardingPage() {
     consentPhotoVideo: false,
     consentLegalInfo: false,
   });
+
+  // Load existing claimed studio data on mount
+  useEffect(() => {
+    async function loadClaimedStudio() {
+      if (!tenant?.id) return;
+
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) return;
+
+        // Check for existing studio (claimed)
+        const { data: studio } = await supabase
+          .from('studios')
+          .select('name, email, address1, city, province, postal_code, phone')
+          .eq('owner_id', user.id)
+          .eq('tenant_id', tenant.id)
+          .maybeSingle();
+
+        if (studio) {
+          // Pre-fill form with claimed studio data
+          setFormData(prev => ({
+            ...prev,
+            studioName: studio.name || '',
+            email: studio.email || '',
+            address1: studio.address1 || '',
+            city: studio.city || '',
+            province: studio.province || '',
+            postalCode: studio.postal_code || '',
+            phone: studio.phone || '',
+          }));
+          setIsClaimedStudio(true);
+        }
+      } catch (err) {
+        console.error('Error loading studio:', err);
+      } finally {
+        setInitializing(false);
+      }
+    }
+
+    loadClaimedStudio();
+  }, [tenant?.id]);
 
   const updateFormData = (field: keyof typeof formData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -311,10 +356,20 @@ export default function OnboardingPage() {
                     required
                     value={formData.studioName}
                     onChange={(e) => updateFormData('studioName', e.target.value)}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                    readOnly={isClaimedStudio}
+                    className={`w-full px-4 py-3 border rounded-lg text-white placeholder-gray-500 focus:outline-none transition-all ${
+                      isClaimedStudio
+                        ? 'bg-white/10 border-white/30 cursor-not-allowed'
+                        : 'bg-white/5 border-white/20 focus:ring-2 focus:ring-purple-500'
+                    }`}
                     placeholder="Your Dance Studio"
-                    autoFocus
+                    autoFocus={!isClaimedStudio}
                   />
+                  {isClaimedStudio && (
+                    <p className="text-sm text-gray-400 mt-2">
+                      Studio name from your pre-approved registration. You can update this later in Studio Settings if needed.
+                    </p>
+                  )}
                 </div>
 
                 <div>

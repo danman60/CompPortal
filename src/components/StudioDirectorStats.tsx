@@ -71,11 +71,11 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* My Dancers Card */}
-        <div>
+        <div className="flex flex-col">
           <div className="text-sm text-gray-400 mb-2 font-medium">Add or import your dancers</div>
           <Link
             href="/dashboard/dancers"
-            className={`block bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl p-6 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer ${
+            className={`flex-1 flex flex-col bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl p-6 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 cursor-pointer ${
               nextActionCard === 'dancers'
                 ? 'border-2 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.4)] animate-pulse'
                 : 'border border-purple-400/30'
@@ -101,11 +101,11 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
         </div>
 
         {/* My Reservations Card */}
-        <div>
+        <div className="flex flex-col">
           <div className="text-sm text-gray-400 mb-2 font-medium">Reserve routine slots</div>
           <Link
             href="/dashboard/reservations"
-            className={`block bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl p-6 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-200 cursor-pointer ${
+            className={`flex-1 flex flex-col bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl p-6 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-200 cursor-pointer ${
               nextActionCard === 'reservations'
                 ? 'border-2 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.4)] animate-pulse'
                 : 'border border-green-400/30'
@@ -135,10 +135,10 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
         </div>
 
         {/* My Routines Card - DISABLED (Coming Soon) */}
-        <div>
+        <div className="flex flex-col">
           <div className="text-sm text-gray-400 mb-2 font-medium">Create your routines</div>
           <div
-            className="block bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-md rounded-xl p-6 border border-blue-400/20 opacity-60 cursor-not-allowed"
+            className="flex-1 flex flex-col bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-md rounded-xl p-6 border border-blue-400/20 opacity-60 cursor-not-allowed"
             title="Routine creation is coming soon. This feature is currently under construction."
           >
             <div className="flex items-center justify-between mb-4">
