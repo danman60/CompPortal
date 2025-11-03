@@ -1,9 +1,149 @@
-# Current Work - Multi-Tenant Authentication & Isolation
+# Current Work - Testing Tools & Classification Updates
 
-**Session:** October 29, 2025 (Session 24 Complete)
-**Status:** ✅ ROLE-BASED MULTI-TENANT COMPLETE - Production Ready
-**Build:** v1.0.0 (b26b949)
-**Previous Session:** January 29, 2025 (Session 23 - Audit Complete)
+**Session:** November 3, 2025 (Session 27 Complete)
+**Status:** ✅ TESTING WORKFLOW ENHANCED - Ready for Production Verification
+**Build:** 206c90b
+**Previous Session:** October 31, 2025 (Session 26 - Studio Invitations)
+
+---
+
+## ✅ Session 27 - Testing Tools Enhancement (November 3, 2025)
+
+### Overview
+User needed to test the studio invitation workflow but test emails weren't arriving. Investigation revealed the test system was using a hardcoded studio ID that no longer existed after database resets. Session focused on creating a robust, configurable testing workflow that exactly mirrors the production invitation system.
+
+### Phase 1: Credential Update - COMPLETED
+**Updated CLAUDE.md with correct SA credentials**
+- Changed SA login from `daniel@streamstage.live` to `danieljohnabrahamson@gmail.com`
+- Updated SD login to match (SA and SD are same account for testing)
+- Password remains `123456`
+
+### Phase 2: Test Invitation System Rebuild - COMPLETED
+**Problem:** Test button wasn't sending emails because hardcoded studio ID didn't exist
+**Solution:** Created dynamic `prepareTestAccount` endpoint
+
+**src/server/routers/testing.ts (Lines 430-555)**
+1. `prepareTestAccount` mutation:
+   - Accepts: email, spaces, deposit, competitionId
+   - Deletes existing user account for test email (via auth.users)
+   - Creates/resets test studio with `owner_id = NULL` (unclaimed state)
+   - Deletes old test studio reservations (scoped to test studio ID only)
+   - Creates new reservation with selected competition
+   - Returns success with studio ID
+
+2. `getActiveCompetitions` query:
+   - Returns all EMPWR competitions for dropdown
+   - Filters by EMPWR tenant ID
+   - Provides id, name, status for selection
+
+**src/app/dashboard/admin/testing/page.tsx**
+1. Added state management (lines 35-38):
+   - `testEmail` (default: daniel@streamstage.live)
+   - `testSpaces` (default: 50)
+   - `testDeposit` (default: 2000)
+   - `testCompetitionId` (required field)
+
+2. Added preset buttons (lines 218-239):
+   - **Daniel Preset:** daniel@streamstage.live, 50 spaces, $2000
+   - **Emily Preset:** emily.einsmann@gmail.com, 75 spaces, $3000
+   - One-click configuration for common test scenarios
+
+3. Added 4 input fields (lines 253-302):
+   - Email input (text)
+   - Competition dropdown (required, populates from getActiveCompetitions)
+   - Spaces input (number, min 0)
+   - Deposit input (number, min 0)
+
+4. Updated handler logic (lines 106-133):
+   - Validates competition is selected
+   - Calls prepareTestAccount with all 4 parameters
+   - Shows success/error toasts
+   - Existing sendInvitations logic unchanged
+
+### Phase 3: Reservation Status Bug Fix - COMPLETED
+**Problem:** Emily's test email showed $0 deposits despite having $3000 reservation
+**Root Cause:** Queries only looked for `status = 'approved'` but Emily's reservation was `'adjusted'`
+**Reference:** Phase 1 spec shows reservations can be 'approved' OR 'adjusted'
+
+**src/server/routers/studio-invitations.ts**
+- Line 40: Changed `status: 'approved'` to `status: { in: ['approved', 'adjusted'] }`
+- Line 122: Same fix in second location
+- Both queries now correctly include adjusted reservations in calculations
+
+### Phase 4: Classification Text Update - COMPLETED
+**Updated explanation banner across 3 dancer creation components**
+
+**Files Modified:**
+1. **src/components/DancerForm.tsx** (lines 256-276)
+2. **src/components/DancerBatchForm.tsx** (lines 165-185)
+3. **src/components/DancerCSVImport.tsx** (lines 707-727)
+
+**New Text:**
+```
+Your dancer's classification decides which classification their routines go into.
+
+• Solos: Must match the dancer's classification.
+  ie. If a dancer is doing a solo for the first time they will be classified as a Novice dancer.
+
+• Duets/Trios/Groups: Use the classification of the highest or majority dancers
+  in the duet/trio/group (you can move up one level if needed).
+```
+
+**Changes:**
+- Added detailed bullet list format
+- Separated solo rules from group rules
+- Added inline example for solos (first-time = Novice)
+- Clarified majority/highest logic for groups
+
+### Build Errors & Fixes
+1. **Wrong field name:** Used `address` instead of `address1` in studio creation → Fixed
+2. **Non-existent fields:** Used `primary_contact_*` fields that don't exist in schema → Removed
+3. **Linter modification:** Had to re-read testing.ts after linter changed it → Re-read before editing
+
+### Safety Verification
+**User Concern:** "Does deleting reservations affect real studios?"
+**Verification:**
+- `prepareTestAccount` scopes ALL deletes to test studio ID only
+- Line 480: `WHERE studio_id = testStudio.id` (not global delete)
+- Real studio data completely unaffected
+- Only test studio's reservations deleted
+
+**Workflow Verification:**
+User requested confirmation that test suite EXACTLY matches production workflow.
+**Confirmed:**
+- Production button: Calls `studioInvitations.sendInvitations`
+- Test button: Calls `studioInvitations.sendInvitations` (same endpoint)
+- Only difference: Test workflow has prepare/reset steps first
+- Email template, logic, database queries: IDENTICAL
+
+### Testing Status
+- ✅ Build passed (68/68 pages)
+- ✅ All type checks passed
+- ✅ Committed as 206c90b
+- ✅ Pushed to production
+- ⏳ Production verification pending
+
+### Key Technical Decisions
+1. **Multi-parameter configuration:** Chose configurable fields over hardcoded test data for flexibility
+2. **Competition dropdown:** Required field to ensure predictable test data
+3. **Preset buttons:** Added back Emily's button per user request, added Daniel preset
+4. **Status filtering:** Updated to match Phase 1 spec (both approved AND adjusted)
+5. **Safety scoping:** All test operations scoped to test studio ID only
+
+### Files Modified
+- `CLAUDE.md` - Updated SA credentials
+- `src/server/routers/studio-invitations.ts` - Status filter fix (2 locations)
+- `src/server/routers/testing.ts` - prepareTestAccount + getActiveCompetitions endpoints
+- `src/app/dashboard/admin/testing/page.tsx` - UI with presets + 4 inputs
+- `src/components/DancerForm.tsx` - Classification text
+- `src/components/DancerBatchForm.tsx` - Classification text
+- `src/components/DancerCSVImport.tsx` - Classification text
+
+### Next Session
+Ready to test invitation system on production with:
+- Competition selector working
+- Email showing deposit, spaces, and event name
+- Test workflow matching production exactly
 
 ---
 

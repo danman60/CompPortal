@@ -507,6 +507,7 @@ export const testingRouter = router({
     // Create a sample approved reservation with selected competition
     await prisma.reservations.create({
       data: {
+        tenant_id: empwrTenantId,
         studio_id: studio.id,
         competition_id: competitionId,
         status: 'approved',

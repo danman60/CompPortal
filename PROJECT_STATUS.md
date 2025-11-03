@@ -1,10 +1,51 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-10-31 (Session 26 - Studio Invitations & Account Claiming COMPLETE)
+**Last Updated:** 2025-11-03 (Session 27 - Testing Tools Enhanced & Classification Text Updated)
 
 ---
 
-## Current Status: ✅ READY FOR TESTING - Account Claiming System Complete
+## Current Status: ✅ READY FOR TESTING - Complete Testing Workflow with Competition Selection
+
+### Session 27: Testing Tools Enhancement & Classification Updates (2 hours)
+**Date:** November 3, 2025
+**Status:** ✅ COMPLETE - Full testing workflow ready for production verification
+
+**COMPLETED:**
+1. ✅ **Testing Workflow Fixed**
+   - Fixed test invitation system (was using hardcoded studio ID)
+   - Created `prepareTestAccount` endpoint with configurable fields
+   - Added competition dropdown to choose event for test reservations
+   - Email, spaces, deposit now all configurable
+   - Preset buttons for Daniel and Emily test accounts
+
+2. ✅ **Reservation Status Fix**
+   - Fixed Emily's test email showing $0 deposits
+   - Updated queries to check both 'approved' AND 'adjusted' status
+   - Fixed in two locations: studio-invitations.ts lines 40 and 122
+
+3. ✅ **Classification Text Simplified**
+   - Updated explanation banner across 3 files
+   - DancerForm, DancerBatchForm, DancerCSVImport all updated
+   - Clearer bullet-point format with solo/group rules
+
+4. ✅ **Safety & Verification**
+   - Test workflow exactly matches production workflow
+   - Test data deletion scoped to test studio ID only
+   - No impact on real studio data
+
+**CREDENTIALS UPDATED:**
+- SA login changed from daniel@streamstage.live to danieljohnabrahamson@gmail.com
+
+**BUILD STATUS:** ✅ Passing (68/68 pages), commit 206c90b deployed
+
+**NEXT PRIORITIES:**
+1. 🔴 **IMMEDIATE:** Test invitation system on production
+2. 🟡 **HIGH:** Verify email delivery and competition data accuracy
+3. 🟢 **REQUIRED:** Test account claiming flow end-to-end
+
+**See:** Session 27 summary above for details
+
+---
 
 ### Session 26: Studio Invitations & Account Claiming (4 hours)
 **Date:** October 31, 2025
