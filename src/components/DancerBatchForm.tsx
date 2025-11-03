@@ -11,9 +11,6 @@ interface DancerRow {
   last_name: string;
   date_of_birth: string; // REQUIRED
   classification_id: string; // REQUIRED
-  gender?: string;
-  email?: string;
-  phone?: string;
 }
 
 interface DancerBatchFormProps {
@@ -37,9 +34,6 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
         last_name: '',
         date_of_birth: '',
         classification_id: '',
-        gender: '',
-        email: '',
-        phone: '',
       }),
     },
   });
@@ -104,15 +98,7 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
     setIsSubmitting(true);
     batchCreateMutation.mutate({
       studio_id: studioId,
-      dancers: validDancers.map((dancer) => ({
-        ...dancer,
-        // Clean up empty strings
-        email: dancer.email?.trim() || undefined,
-        phone: dancer.phone?.trim() || undefined,
-        gender: dancer.gender?.trim() || undefined,
-        date_of_birth: dancer.date_of_birth, // REQUIRED
-        classification_id: dancer.classification_id, // REQUIRED
-      })),
+      dancers: validDancers,
     });
   };
 
@@ -122,9 +108,6 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
       last_name: '',
       date_of_birth: '',
       classification_id: '',
-      gender: '',
-      email: '',
-      phone: '',
     });
   };
 
@@ -135,9 +118,6 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
         last_name: '',
         date_of_birth: '',
         classification_id: '',
-        gender: '',
-        email: '',
-        phone: '',
       });
     }
   };
@@ -216,15 +196,6 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Classification <span className="text-red-400">*</span>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Gender
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Phone
-                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-16">
                   Action
                 </th>
@@ -271,34 +242,6 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
                         </option>
                       ))}
                     </select>
-                  </td>
-                  <td className="px-4 py-2">
-                    <select
-                      {...register(`dancers.${index}.gender` as const)}
-                      className="w-full px-3 py-2 bg-gray-800 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent [&>option]:bg-gray-800 [&>option]:text-white"
-                    >
-                      <option value="" className="bg-gray-800 text-white">Select...</option>
-                      <option value="Male" className="bg-gray-800 text-white">Male</option>
-                      <option value="Female" className="bg-gray-800 text-white">Female</option>
-                      <option value="Non-binary" className="bg-gray-800 text-white">Non-binary</option>
-                      <option value="Other" className="bg-gray-800 text-white">Other</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-2">
-                    <input
-                      {...register(`dancers.${index}.email` as const)}
-                      type="email"
-                      placeholder="email@example.com"
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </td>
-                  <td className="px-4 py-2">
-                    <input
-                      {...register(`dancers.${index}.phone` as const)}
-                      type="tel"
-                      placeholder="555-1234"
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
                   </td>
                   <td className="px-4 py-2">
                     <button
