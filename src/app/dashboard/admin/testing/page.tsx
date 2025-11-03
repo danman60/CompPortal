@@ -31,6 +31,11 @@ export default function TestingToolsPage() {
     scores: true,
   });
 
+  // Test invitation configuration
+  const [testEmail, setTestEmail] = useState('daniel@streamstage.live');
+  const [testSpaces, setTestSpaces] = useState(50);
+  const [testDeposit, setTestDeposit] = useState(2000);
+
   const { data: counts, refetch: refetchCounts, isLoading } = trpc.testing.getDataCounts.useQuery();
 
   const cleanSlateMutation = trpc.testing.cleanSlate.useMutation({
@@ -97,10 +102,14 @@ export default function TestingToolsPage() {
   };
 
   const handleSendTestInvitation = async () => {
-    if (confirm('Prepare and send test invitation to daniel@streamstage.live?\n\nThis will:\n1. Delete any existing user account for this email\n2. Reset the test studio to unclaimed state\n3. Send invitation email using the SAME process as real studios')) {
+    if (confirm(`Prepare and send test invitation to ${testEmail}?\n\nThis will:\n1. Delete any existing user account for this email\n2. Reset the test studio to unclaimed state\n3. Create reservation: ${testSpaces} entries, $${testDeposit} deposit\n4. Send invitation email using the SAME process as real studios`)) {
       try {
-        // Step 1: Prepare test account
-        const prepareResult = await prepareTestAccountMutation.mutateAsync();
+        // Step 1: Prepare test account with custom data
+        const prepareResult = await prepareTestAccountMutation.mutateAsync({
+          email: testEmail,
+          spaces: testSpaces,
+          deposit: testDeposit,
+        });
 
         // Step 2: Send invitation using the studio ID
         await sendTestInvitationMutation.mutateAsync({
@@ -201,27 +210,88 @@ export default function TestingToolsPage() {
               <span className="text-4xl">✉️</span>
               <div>
                 <h2 className="text-2xl font-bold text-white">Test Account Claiming Workflow</h2>
-                <p className="text-white/70 text-sm">daniel@streamstage.live</p>
+                <p className="text-white/70 text-sm">Configure test reservation data</p>
+              </div>
+            </div>
+
+            {/* Quick Preset Buttons */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => {
+                  setTestEmail('daniel@streamstage.live');
+                  setTestSpaces(50);
+                  setTestDeposit(2000);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Daniel Preset
+              </button>
+              <button
+                onClick={() => {
+                  setTestEmail('emily.einsmann@gmail.com');
+                  setTestSpaces(75);
+                  setTestDeposit(3000);
+                }}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Emily Preset
+              </button>
+            </div>
+
+            {/* Configuration Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="text-white/70 text-sm block mb-2">Test Email</label>
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-green-500"
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div>
+                <label className="text-white/70 text-sm block mb-2">Entry Spaces</label>
+                <input
+                  type="number"
+                  value={testSpaces}
+                  onChange={(e) => setTestSpaces(parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-green-500"
+                  placeholder="50"
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="text-white/70 text-sm block mb-2">Deposit Amount ($)</label>
+                <input
+                  type="number"
+                  value={testDeposit}
+                  onChange={(e) => setTestDeposit(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-green-500"
+                  placeholder="2000"
+                  min="0"
+                  step="0.01"
+                />
               </div>
             </div>
 
             <div className="bg-green-500/10 rounded-lg p-4 mb-4">
               <div className="text-green-200 text-sm mb-2 font-semibold">This button will:</div>
               <ul className="text-green-200/80 text-xs space-y-1 list-disc list-inside">
-                <li>Delete any existing user account for daniel@streamstage.live</li>
+                <li>Delete any existing user account for {testEmail}</li>
                 <li>Reset test studio to unclaimed state (owner_id = NULL)</li>
+                <li>Create sample reservation: {testSpaces} entries, ${testDeposit} deposit</li>
                 <li>Send invitation email using SAME process as real studios</li>
-                <li>Email will contain claim URL: empwr.compsync.net/claim?code=TEST1</li>
               </ul>
             </div>
 
             <div className="bg-yellow-500/10 rounded-lg p-4 mb-4">
               <div className="text-yellow-200 text-sm mb-2 font-semibold">After clicking:</div>
               <ul className="text-yellow-200/80 text-xs space-y-1 list-disc list-inside">
-                <li>Check daniel@streamstage.live inbox for invitation email</li>
+                <li>Check {testEmail} inbox for invitation email</li>
+                <li>Email will show: {testSpaces} entries • ${testDeposit} deposit</li>
                 <li>Click "Claim Your Account" button in email</li>
                 <li>Complete onboarding flow as a real studio would</li>
-                <li>Verify all steps work correctly before sending to real studios</li>
               </ul>
             </div>
 

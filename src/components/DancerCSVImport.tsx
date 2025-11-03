@@ -710,10 +710,18 @@ export default function DancerCSVImport() {
                 <div className="text-2xl">⚠️</div>
                 <div>
                   <p className="text-orange-300 font-semibold mb-1">Classification Determines Routine Placement</p>
-                  <p className="text-orange-200 text-sm">
-                    Dancer classification determines routine classification. Solos must match dancer's level.
-                    Groups use highest/majority level and can bump up one level.
+                  <p className="text-orange-200 text-sm mb-2">
+                    Your dancer's classification decides which classification their routines go into.
                   </p>
+                  <ul className="text-orange-200 text-sm space-y-1 list-disc list-inside">
+                    <li>
+                      <strong>Solos:</strong> Must match the dancer's classification.
+                      <em className="text-orange-300/80"> ie. If a dancer is doing a solo for the first time they will be classified as a Novice dancer.</em>
+                    </li>
+                    <li>
+                      <strong>Duets/Trios/Groups:</strong> Use the classification of the highest or majority dancers in the duet/trio/group (you can move up one level if needed).
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>

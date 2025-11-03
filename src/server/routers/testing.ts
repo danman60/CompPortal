@@ -421,13 +421,22 @@ export const testingRouter = router({
     }),
 
   /**
-   * Prepare Test Account - Ensures daniel@streamstage.live is in unclaimed state
+   * Prepare Test Account - Configurable test account setup
    * 1. Deletes any existing user account
    * 2. Finds or creates test studio with owner_id = NULL
-   * 3. Returns studio ID for invitation
+   * 3. Creates sample reservation with custom spaces/deposit
+   * 4. Returns studio ID for invitation
    */
-  prepareTestAccount: superAdminProcedure.mutation(async ({ ctx }) => {
-    const testEmail = 'daniel@streamstage.live';
+  prepareTestAccount: superAdminProcedure
+    .input(z.object({
+      email: z.string().email(),
+      spaces: z.number().min(0).default(50),
+      deposit: z.number().min(0).default(2000),
+    }))
+    .mutation(async ({ ctx, input }) => {
+    const testEmail = input.email;
+    const testSpaces = input.spaces;
+    const testDeposit = input.deposit;
     const empwrTenantId = '00000000-0000-0000-0000-000000000001';
 
     // Step 1: Delete any existing user account
@@ -502,15 +511,15 @@ export const testingRouter = router({
         },
       });
 
-      // Create a sample approved reservation with deposit
+      // Create a sample approved reservation with custom deposit/spaces
       await prisma.reservations.create({
         data: {
           studio_id: studio.id,
           competition_id: competition.id,
           status: 'approved',
-          spaces_requested: 50,
-          spaces_confirmed: 50,
-          deposit_amount: 2000.00,
+          spaces_requested: testSpaces,
+          spaces_confirmed: testSpaces,
+          deposit_amount: testDeposit,
           credits_applied: 0,
           discount_percentage: 0,
         },
@@ -520,7 +529,7 @@ export const testingRouter = router({
     return {
       success: true,
       studioId: studio.id,
-      message: `Test account prepared: ${testEmail} is now unclaimed with sample reservation data`,
+      message: `Test account prepared: ${testEmail} (${testSpaces} entries, $${testDeposit} deposit)`,
     };
   }),
 
