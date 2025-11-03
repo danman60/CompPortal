@@ -172,6 +172,13 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       description: 'Clean slate & test data',
     },
     {
+      id: 'studio-invitations',
+      href: '/dashboard/admin/studio-invitations',
+      icon: '📧',
+      title: 'Studio Invitations',
+      description: 'Send & track invitations',
+    },
+    {
       id: 'studios',
       href: '/dashboard/studios',
       icon: '🏢',

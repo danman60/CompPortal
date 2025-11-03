@@ -381,14 +381,17 @@ export const invoiceRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const { competitionId, paymentStatus } = input ?? {};
-      const tenantId = ctx.tenantId!;
+
+      // Super Admin gets cross-tenant invoices, others get tenant-filtered
+      const isSuperAdmin = ctx.userRole === 'super_admin';
+      const whereClause = isSuperAdmin ? {} : { tenant_id: ctx.tenantId! };
 
       // PERFORMANCE FIX: Fetch all data in bulk instead of N+1 queries
       // Get all studio × competition combinations with entries
       const entryGroups = await prisma.competition_entries.groupBy({
         by: ['studio_id', 'competition_id'],
         where: {
-          tenant_id: tenantId,
+          ...whereClause,
           status: { not: 'cancelled' },
           ...(competitionId && { competition_id: competitionId }),
         },
@@ -446,7 +449,7 @@ export const invoiceRouter = router({
         }),
         prisma.invoices.findMany({
           where: {
-            tenant_id: tenantId,
+            ...whereClause,
             studio_id: { in: studioIds },
             competition_id: { in: competitionIds },
           },

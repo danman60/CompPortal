@@ -11,8 +11,131 @@ import { logger } from '@/lib/logger';
  */
 export const studioInvitationsRouter = router({
   /**
+   * Get ALL studios with full status tracking
+   * Super Admin only
+   */
+  getAllStudios: publicProcedure.query(async ({ ctx }) => {
+    // Check if user is super_admin
+    if (ctx.userRole !== 'super_admin') {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only Super Admin can view studio invitations',
+      });
+    }
+
+    const studios = await prisma.studios.findMany({
+      where: {
+        status: { in: ['approved', 'active'] },
+      },
+      select: {
+        id: true,
+        name: true,
+        public_code: true,
+        email: true,
+        owner_id: true,
+        invited_at: true,
+        status: true,
+        tenants: {
+          select: {
+            id: true,
+            name: true,
+            subdomain: true,
+          },
+        },
+        reservations: {
+          where: {
+            status: { in: ['approved', 'adjusted', 'summarized'] },
+          },
+          select: {
+            spaces_confirmed: true,
+            deposit_amount: true,
+            competitions: {
+              select: {
+                id: true,
+                name: true,
+                competition_start_date: true,
+                competition_end_date: true,
+              },
+            },
+          },
+        },
+        users_studios_owner_idTousers: {
+          select: {
+            user_profiles: {
+              select: {
+                first_name: true,
+                last_name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Map studios with full status tracking
+    const studiosWithDetails = studios.map((studio) => {
+      const totalSpaces = studio.reservations.reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0);
+      const totalDeposit = studio.reservations.reduce((sum, r) => sum + parseFloat(r.deposit_amount?.toString() || '0'), 0);
+
+      // Get earliest event date for sorting
+      const eventDates = studio.reservations
+        .map((r) => r.competitions.competition_start_date)
+        .filter((date): date is Date => date !== null);
+      const earliestEvent = eventDates.length > 0 ? new Date(Math.min(...eventDates.map((d) => d.getTime()))) : null;
+
+      // Determine statuses
+      const isClaimed = studio.owner_id !== null;
+      const userProfile = studio.users_studios_owner_idTousers?.user_profiles;
+      const hasCompletedOnboarding = userProfile?.first_name !== null && userProfile?.first_name !== '';
+      const wasInvited = studio.invited_at !== null;
+
+      return {
+        id: studio.id,
+        name: studio.name,
+        publicCode: studio.public_code,
+        email: studio.email,
+        tenantId: studio.tenants.id,
+        tenantName: studio.tenants.name,
+        tenantSubdomain: studio.tenants.subdomain,
+        invitedAt: studio.invited_at,
+        isClaimed,
+        hasCompletedOnboarding,
+        wasInvited,
+        ownerName: hasCompletedOnboarding && userProfile
+          ? `${userProfile.first_name} ${userProfile.last_name}`.trim()
+          : null,
+        reservationCount: studio.reservations.length,
+        events: studio.reservations.map((r) => ({
+          competitionId: r.competitions.id,
+          name: r.competitions.name,
+          startDate: r.competitions.competition_start_date,
+          endDate: r.competitions.competition_end_date,
+          spaces: r.spaces_confirmed || 0,
+          deposit: parseFloat(r.deposit_amount?.toString() || '0'),
+        })),
+        totalSpaces,
+        totalDeposit,
+        earliestEvent,
+      };
+    });
+
+    return {
+      studios: studiosWithDetails,
+      count: studiosWithDetails.length,
+      stats: {
+        total: studiosWithDetails.length,
+        unclaimed: studiosWithDetails.filter(s => !s.isClaimed).length,
+        claimed: studiosWithDetails.filter(s => s.isClaimed).length,
+        invited: studiosWithDetails.filter(s => s.wasInvited).length,
+        onboardingComplete: studiosWithDetails.filter(s => s.hasCompletedOnboarding).length,
+      },
+    };
+  }),
+
+  /**
    * Get list of unclaimed studios (owner_id = NULL)
    * Super Admin only
+   * @deprecated Use getAllStudios instead
    */
   getUnclaimedStudios: publicProcedure.query(async ({ ctx }) => {
     // Check if user is super_admin

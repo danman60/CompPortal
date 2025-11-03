@@ -225,17 +225,22 @@ export const studioRouter = router({
 
   // Get studios with statistics
   getStats: publicProcedure.query(async ({ ctx }) => {
-    if (!ctx.tenantId) {
+    // Super Admin gets cross-tenant stats, others get tenant-filtered
+    const isSuperAdmin = ctx.userRole === 'super_admin';
+
+    if (!isSuperAdmin && !ctx.tenantId) {
       return { total: 0, pending: 0, approved: 0, withDancers: 0 };
     }
 
+    const whereClause = isSuperAdmin ? {} : { tenant_id: ctx.tenantId! };
+
     const [total, pending, approved, withDancers] = await Promise.all([
-      prisma.studios.count({ where: { tenant_id: ctx.tenantId } }),
-      prisma.studios.count({ where: { status: 'pending', tenant_id: ctx.tenantId } }),
-      prisma.studios.count({ where: { status: 'approved', tenant_id: ctx.tenantId } }),
+      prisma.studios.count({ where: whereClause }),
+      prisma.studios.count({ where: { ...whereClause, status: 'pending' } }),
+      prisma.studios.count({ where: { ...whereClause, status: 'approved' } }),
       prisma.studios.count({
         where: {
-          tenant_id: ctx.tenantId,
+          ...whereClause,
           dancers: {
             some: {},
           },

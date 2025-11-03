@@ -1,20 +1,29 @@
 'use client';
 
 /**
- * Studio Invitations Management
- * Super Admin Only - Send account claiming invitations to pre-approved studios
+ * Studio Invitations Management Suite
+ * Super Admin Only - Comprehensive studio invitation and onboarding tracking
+ * Features: Sort by event date, studio name, tenant, invited status, claimed status, onboarding status
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
+type SortField = 'name' | 'eventDate' | 'tenant' | 'invited' | 'claimed' | 'onboarding';
+type SortDirection = 'asc' | 'desc';
+type FilterStatus = 'all' | 'unclaimed' | 'claimed' | 'invited' | 'not-invited' | 'onboarding-complete' | 'onboarding-pending';
+
 export default function StudioInvitationsPage() {
   const [selectedStudios, setSelectedStudios] = useState<Set<string>>(new Set());
   const [sendingInvites, setSendingInvites] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('eventDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const { data, refetch, isLoading } = trpc.studioInvitations.getUnclaimedStudios.useQuery();
+  const { data, refetch, isLoading} = trpc.studioInvitations.getAllStudios.useQuery();
   const sendInvitationsMutation = trpc.studioInvitations.sendInvitations.useMutation({
     onSuccess: (result) => {
       toast.success(`Sent ${result.sent} invitation(s)`);
@@ -31,6 +40,95 @@ export default function StudioInvitationsPage() {
     },
   });
 
+  // Filter and sort studios
+  const filteredAndSortedStudios = useMemo(() => {
+    if (!data?.studios) return [];
+
+    let filtered = data.studios;
+
+    // Apply status filter
+    switch (filterStatus) {
+      case 'unclaimed':
+        filtered = filtered.filter((s) => !s.isClaimed);
+        break;
+      case 'claimed':
+        filtered = filtered.filter((s) => s.isClaimed);
+        break;
+      case 'invited':
+        filtered = filtered.filter((s) => s.wasInvited);
+        break;
+      case 'not-invited':
+        filtered = filtered.filter((s) => !s.wasInvited);
+        break;
+      case 'onboarding-complete':
+        filtered = filtered.filter((s) => s.hasCompletedOnboarding);
+        break;
+      case 'onboarding-pending':
+        filtered = filtered.filter((s) => s.isClaimed && !s.hasCompletedOnboarding);
+        break;
+    }
+
+    // Apply search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) ||
+          (s.email?.toLowerCase().includes(query) ?? false) ||
+          s.publicCode.toLowerCase().includes(query) ||
+          s.tenantName.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'eventDate':
+          if (!a.earliestEvent && !b.earliestEvent) comparison = 0;
+          else if (!a.earliestEvent) comparison = 1;
+          else if (!b.earliestEvent) comparison = -1;
+          else comparison = a.earliestEvent.getTime() - b.earliestEvent.getTime();
+          break;
+        case 'tenant':
+          comparison = a.tenantName.localeCompare(b.tenantName);
+          break;
+        case 'invited':
+          if (a.invitedAt && b.invitedAt) {
+            comparison = new Date(a.invitedAt).getTime() - new Date(b.invitedAt).getTime();
+          } else if (a.invitedAt) {
+            comparison = -1;
+          } else if (b.invitedAt) {
+            comparison = 1;
+          }
+          break;
+        case 'claimed':
+          comparison = (a.isClaimed ? 1 : 0) - (b.isClaimed ? 1 : 0);
+          break;
+        case 'onboarding':
+          comparison = (a.hasCompletedOnboarding ? 1 : 0) - (b.hasCompletedOnboarding ? 1 : 0);
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [data?.studios, filterStatus, searchQuery, sortField, sortDirection]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   const handleToggleStudio = (studioId: string) => {
     const newSelected = new Set(selectedStudios);
     if (newSelected.has(studioId)) {
@@ -41,12 +139,15 @@ export default function StudioInvitationsPage() {
     setSelectedStudios(newSelected);
   };
 
-  const handleToggleAll = () => {
-    if (selectedStudios.size === data?.studios.length) {
-      setSelectedStudios(new Set());
-    } else {
-      setSelectedStudios(new Set(data?.studios.map((s) => s.id) || []));
-    }
+  const handleSelectAllUnclaimed = () => {
+    const unclaimedIds = filteredAndSortedStudios
+      .filter((s) => !s.isClaimed)
+      .map((s) => s.id);
+    setSelectedStudios(new Set(unclaimedIds));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedStudios(new Set());
   };
 
   const handleSendInvitations = async () => {
@@ -76,6 +177,18 @@ export default function StudioInvitationsPage() {
     });
   };
 
+  const SortButton = ({ field, label }: { field: SortField; label: string }) => (
+    <button
+      onClick={() => handleSort(field)}
+      className="text-xs text-gray-300 hover:text-white flex items-center gap-1 transition-colors"
+    >
+      {label}
+      {sortField === field && (
+        <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+      )}
+    </button>
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-8">
@@ -84,120 +197,212 @@ export default function StudioInvitationsPage() {
     );
   }
 
-  const unclaimedStudios = data?.studios || [];
-  const invitedStudios = unclaimedStudios.filter((s) => s.invitedAt !== null);
-  const notInvitedStudios = unclaimedStudios.filter((s) => s.invitedAt === null);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Studio Invitations</h1>
-          <p className="text-gray-300">Send account claiming invitations to pre-approved studios</p>
-        </div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">Studio Invitations Suite</h1>
+              <p className="text-gray-300">Comprehensive studio invitation and onboarding tracking</p>
+            </div>
+            <a
+              href="/dashboard"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-colors"
+            >
+              ← Back to Dashboard
+            </a>
+          </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-            <div className="text-3xl font-bold text-white mb-2">{unclaimedStudios.length}</div>
-            <div className="text-gray-300 text-sm">Total Unclaimed Studios</div>
-          </div>
-          <div className="bg-green-500/20 backdrop-blur-md rounded-xl p-6 border border-green-400/30">
-            <div className="text-3xl font-bold text-green-300 mb-2">{invitedStudios.length}</div>
-            <div className="text-gray-300 text-sm">Invitations Sent</div>
-          </div>
-          <div className="bg-yellow-500/20 backdrop-blur-md rounded-xl p-6 border border-yellow-400/30">
-            <div className="text-3xl font-bold text-yellow-300 mb-2">{notInvitedStudios.length}</div>
-            <div className="text-gray-300 text-sm">Pending Invitations</div>
-          </div>
-        </div>
-
-        {/* Bulk Actions */}
-        {unclaimedStudios.length > 0 && (
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-white cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedStudios.size === unclaimedStudios.length}
-                    onChange={handleToggleAll}
-                    className="w-5 h-5 rounded border-gray-300"
-                  />
-                  <span className="font-medium">
-                    {selectedStudios.size === unclaimedStudios.length ? 'Deselect All' : 'Select All'}
-                  </span>
-                </label>
-                {selectedStudios.size > 0 && (
-                  <span className="text-gray-300 text-sm">{selectedStudios.size} selected</span>
-                )}
+          {/* Stats */}
+          {data?.stats && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
+                <div className="text-2xl font-bold text-white">{data.stats.total}</div>
+                <div className="text-xs text-gray-300 mt-1">Total Studios</div>
               </div>
+              <div className="bg-orange-500/20 backdrop-blur-md rounded-xl p-4 border border-orange-400/30">
+                <div className="text-2xl font-bold text-orange-300">{data.stats.unclaimed}</div>
+                <div className="text-xs text-gray-300 mt-1">Unclaimed</div>
+              </div>
+              <div className="bg-green-500/20 backdrop-blur-md rounded-xl p-4 border border-green-400/30">
+                <div className="text-2xl font-bold text-green-300">{data.stats.claimed}</div>
+                <div className="text-xs text-gray-300 mt-1">Claimed</div>
+              </div>
+              <div className="bg-blue-500/20 backdrop-blur-md rounded-xl p-4 border border-blue-400/30">
+                <div className="text-2xl font-bold text-blue-300">{data.stats.invited}</div>
+                <div className="text-xs text-gray-300 mt-1">Invited</div>
+              </div>
+              <div className="bg-purple-500/20 backdrop-blur-md rounded-xl p-4 border border-purple-400/30">
+                <div className="text-2xl font-bold text-purple-300">{data.stats.onboardingComplete}</div>
+                <div className="text-xs text-gray-300 mt-1">Onboarding Done</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            {/* Search */}
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search by name, email, code, or competition..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            {/* Filter */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+              className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="all">All Studios</option>
+              <option value="unclaimed">Unclaimed Only</option>
+              <option value="claimed">Claimed Only</option>
+              <option value="invited">Invited Only</option>
+              <option value="not-invited">Not Invited</option>
+              <option value="onboarding-complete">Onboarding Complete</option>
+              <option value="onboarding-pending">Onboarding Pending</option>
+            </select>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleSelectAllUnclaimed}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg text-sm text-white transition-colors"
+              >
+                Select All Unclaimed
+              </button>
+              <button
+                onClick={handleDeselectAll}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg text-sm text-white transition-colors"
+              >
+                Deselect All
+              </button>
               <button
                 onClick={handleSendInvitations}
-                disabled={selectedStudios.size === 0 || sendingInvites}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={sendingInvites || selectedStudios.size === 0}
+                className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {sendingInvites ? 'Sending...' : `Send Invitations (${selectedStudios.size})`}
+                {sendingInvites ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>📧</span>
+                    <span>Send ({selectedStudios.size})</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
-        )}
+
+          {/* Sort Controls */}
+          <div className="flex flex-wrap gap-4 pt-4 border-t border-white/10">
+            <span className="text-sm text-gray-400">Sort by:</span>
+            <SortButton field="eventDate" label="Event Date" />
+            <SortButton field="name" label="Studio Name" />
+            <SortButton field="tenant" label="Competition" />
+            <SortButton field="invited" label="Invited Date" />
+            <SortButton field="claimed" label="Claim Status" />
+            <SortButton field="onboarding" label="Onboarding" />
+          </div>
+        </div>
 
         {/* Studios List */}
-        {unclaimedStudios.length === 0 ? (
+        {filteredAndSortedStudios.length === 0 ? (
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-12 border border-white/20 text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h3 className="text-2xl font-bold text-white mb-2">All Studios Claimed!</h3>
-            <p className="text-gray-300">There are no unclaimed studios at this time.</p>
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-2xl font-bold text-white mb-2">No Studios Found</h3>
+            <p className="text-gray-300">No studios match your current filters.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {unclaimedStudios.map((studio) => (
+          <div className="space-y-3">
+            {filteredAndSortedStudios.map((studio) => (
               <div
                 key={studio.id}
-                className={`bg-white/10 backdrop-blur-md rounded-xl p-6 border transition-all duration-200 ${
+                className={`bg-white/10 backdrop-blur-md rounded-xl p-5 border transition-all duration-200 ${
                   selectedStudios.has(studio.id)
-                    ? 'border-green-400 bg-green-500/10'
-                    : 'border-white/20 hover:border-white/40'
+                    ? 'border-purple-400 bg-purple-500/10'
+                    : 'border-white/20 hover:border-white/30'
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  {/* Checkbox */}
-                  <input
-                    type="checkbox"
-                    checked={selectedStudios.has(studio.id)}
-                    onChange={() => handleToggleStudio(studio.id)}
-                    className="w-5 h-5 mt-1 rounded border-gray-300 cursor-pointer"
-                  />
+                  {/* Checkbox - only show for unclaimed */}
+                  {!studio.isClaimed && (
+                    <input
+                      type="checkbox"
+                      checked={selectedStudios.has(studio.id)}
+                      onChange={() => handleToggleStudio(studio.id)}
+                      className="w-5 h-5 mt-1 rounded border-gray-300 cursor-pointer"
+                    />
+                  )}
 
                   {/* Studio Info */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="text-xl font-bold text-white mb-1">{studio.name}</h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-300">
-                          <span>Code: <span className="font-mono font-bold text-purple-300">{studio.publicCode}</span></span>
-                          <span>•</span>
-                          <span>{studio.email}</span>
-                          <span>•</span>
-                          <span className="text-blue-300">{studio.tenantName}</span>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-xl font-bold text-white">{studio.name}</h3>
+                          <span className="font-mono text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-400/30">
+                            {studio.publicCode}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-300 mb-2">{studio.email}</div>
+                        <div className="text-xs text-gray-400">
+                          {studio.tenantName} ({studio.tenantSubdomain}.compsync.net)
                         </div>
                       </div>
-                      {studio.invitedAt && (
-                        <div className="flex flex-col items-end gap-2">
-                          <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-xs font-semibold">
-                            Invited {formatDistanceToNow(new Date(studio.invitedAt), { addSuffix: true })}
-                          </span>
-                          <button
-                            onClick={() => handleResendInvitation(studio.id, studio.name)}
-                            disabled={sendingInvites}
-                            className="text-xs text-blue-300 hover:text-blue-200 underline disabled:opacity-50"
-                          >
-                            Re-send
-                          </button>
+
+                      {/* Status Badges */}
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-wrap gap-2 justify-end">
+                          {studio.isClaimed ? (
+                            <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs font-semibold border border-green-400/30">
+                              ✓ Claimed
+                            </span>
+                          ) : (
+                            <span className="bg-orange-500/20 text-orange-300 px-2 py-1 rounded text-xs font-semibold border border-orange-400/30">
+                              ⚠ Unclaimed
+                            </span>
+                          )}
+                          {studio.wasInvited && (
+                            <span className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs font-semibold border border-blue-400/30">
+                              📧 Invited
+                            </span>
+                          )}
+                          {studio.hasCompletedOnboarding && (
+                            <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs font-semibold border border-purple-400/30">
+                              ✓ Onboarded
+                            </span>
+                          )}
                         </div>
-                      )}
+                        {studio.invitedAt && (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs text-gray-400">
+                              Invited {formatDistanceToNow(new Date(studio.invitedAt), { addSuffix: true })}
+                            </span>
+                            <button
+                              onClick={() => handleResendInvitation(studio.id, studio.name)}
+                              disabled={sendingInvites}
+                              className="text-xs text-blue-300 hover:text-blue-200 underline disabled:opacity-50"
+                            >
+                              Re-send invitation
+                            </button>
+                          </div>
+                        )}
+                        {studio.ownerName && (
+                          <span className="text-xs text-gray-400">Owner: {studio.ownerName}</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Events */}
@@ -254,6 +459,11 @@ export default function StudioInvitationsPage() {
             ))}
           </div>
         )}
+
+        {/* Results Count */}
+        <div className="mt-6 text-center text-sm text-gray-400">
+          Showing {filteredAndSortedStudios.length} of {data?.studios.length || 0} studios
+        </div>
       </div>
     </div>
   );
