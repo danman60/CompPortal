@@ -94,19 +94,19 @@ export default function OnboardingPage() {
         throw new Error(`Failed to update profile: ${profileError.message}`);
       }
 
-      // Check if studio already exists on THIS tenant
+      // Check if studio already exists on THIS tenant (claimed or created)
       const { data: existingStudio } = await supabase
         .from('studios')
         .select('id')
         .eq('owner_id', user.id)
         .eq('tenant_id', tenant?.id)
-        .single();
+        .maybeSingle();
 
       let studioError;
       const now = new Date().toISOString();
 
       if (existingStudio) {
-        // Update existing studio
+        // Update existing studio (claimed or previously created)
         const { error } = await supabase
           .from('studios')
           .update({
@@ -122,7 +122,9 @@ export default function OnboardingPage() {
             consent_photo_video: formData.consentPhotoVideo ? now : null,
             consent_legal_info: formData.consentLegalInfo ? now : null,
           })
-          .eq('owner_id', user.id);
+          .eq('id', existingStudio.id)
+          .eq('owner_id', user.id)
+          .eq('tenant_id', tenant?.id);
         studioError = error;
       } else {
         // Create new studio on current tenant
