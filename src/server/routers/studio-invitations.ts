@@ -39,7 +39,9 @@ export const studioInvitationsRouter = router({
           where: {
             status: 'approved',
           },
-          include: {
+          select: {
+            spaces_confirmed: true,
+            deposit_amount: true,
             competitions: {
               select: {
                 name: true,
@@ -54,16 +56,23 @@ export const studioInvitationsRouter = router({
     });
 
     return {
-      studios: studios.map((studio) => ({
-        id: studio.id,
-        name: studio.name,
-        publicCode: studio.public_code,
-        email: studio.email,
-        tenantName: studio.tenants.name,
-        tenantSubdomain: studio.tenants.subdomain,
-        reservationCount: studio.reservations.length,
-        competitions: studio.reservations.map((r) => r.competitions.name),
-      })),
+      studios: studios.map((studio) => {
+        const totalSpaces = studio.reservations.reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0);
+        const totalDeposit = studio.reservations.reduce((sum, r) => sum + parseFloat(r.deposit_amount?.toString() || '0'), 0);
+
+        return {
+          id: studio.id,
+          name: studio.name,
+          publicCode: studio.public_code,
+          email: studio.email,
+          tenantName: studio.tenants.name,
+          tenantSubdomain: studio.tenants.subdomain,
+          reservationCount: studio.reservations.length,
+          competitions: studio.reservations.map((r) => r.competitions.name),
+          totalSpaces,
+          totalDeposit,
+        };
+      }),
       count: studios.length,
     };
   }),

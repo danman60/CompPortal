@@ -177,6 +177,12 @@ export default function StudioInvitationButton() {
                                   </span>
                                 )}
                               </div>
+                              <div className="flex items-center gap-3">
+                                <span>🎭 {studio.totalSpaces} space{studio.totalSpaces !== 1 ? 's' : ''}</span>
+                                {studio.totalDeposit > 0 && (
+                                  <span>💰 ${studio.totalDeposit.toFixed(2)} deposit</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
