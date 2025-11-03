@@ -541,6 +541,9 @@ export default function OnboardingPage() {
                 <p className="text-center text-xs text-gray-400 pt-2">
                   You can update these details anytime in Studio Settings
                 </p>
+                <p className="text-center text-xs text-gray-400 pt-2">
+                  Need help? Email <a href="mailto:techsupport@compsync.net" className="text-purple-400 hover:text-purple-300 underline">techsupport@compsync.net</a>
+                </p>
               </div>
             )}
           </form>

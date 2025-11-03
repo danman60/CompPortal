@@ -2,19 +2,26 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 import toast from 'react-hot-toast';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const { tenant } = useTenantTheme();
   const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Build proper redirect URL using tenant subdomain
+      const redirectUrl = tenant?.subdomain
+        ? `https://${tenant.subdomain}.compsync.net/login`
+        : `${window.location.origin}/login`;
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: redirectUrl,
       });
       if (error) throw error;
       toast.success('Password reset email sent. Check your inbox.');

@@ -124,10 +124,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="mt-4 text-center">
-          <Link href="/" className="text-gray-400 hover:text-gray-300 text-sm">
+        <div className="mt-4 text-center space-y-2">
+          <Link href="/" className="block text-gray-400 hover:text-gray-300 text-sm">
             ← Back to home
           </Link>
+          <p className="text-gray-400 text-xs">
+            Need help? Email <a href="mailto:techsupport@compsync.net" className="text-purple-400 hover:text-purple-300 underline">techsupport@compsync.net</a>
+          </p>
         </div>
       </div>
     </main>
