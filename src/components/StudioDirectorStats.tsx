@@ -52,6 +52,21 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
     ['summarized', 'invoiced', 'closed'].includes(r.status || '')
   ).length || 0;
 
+  // Calculate approved spaces and spaces remaining
+  const approvedSpaces = myReservations?.reservations
+    ?.filter(r => r.status === 'approved' || r.status === 'adjusted')
+    ?.reduce((total, r) => total + (r.spaces_requested || 0), 0) || 0;
+
+  const approvedReservationIds = myReservations?.reservations
+    ?.filter(r => r.status === 'approved' || r.status === 'adjusted')
+    ?.map(r => r.id) || [];
+
+  const createdRoutinesForApproved = myEntries?.entries
+    ?.filter(e => e.reservation_id && approvedReservationIds.includes(e.reservation_id))
+    ?.length || 0;
+
+  const spacesRemaining = Math.max(0, approvedSpaces - createdRoutinesForApproved);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -108,8 +123,8 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
                 <span className="font-semibold text-green-400">{approvedReservations}</span>
               </div>
               <div className="flex justify-between text-gray-300">
-                <span>Submitted:</span>
-                <span className="font-semibold text-blue-400">{submittedReservations}</span>
+                <span>Spaces Remaining:</span>
+                <span className="font-semibold text-blue-400">{spacesRemaining}</span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>Pending:</span>
