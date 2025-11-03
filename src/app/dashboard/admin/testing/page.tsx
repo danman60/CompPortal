@@ -75,7 +75,7 @@ export default function TestingToolsPage() {
   const sendTestInvitationMutation = trpc.studioInvitations.sendInvitations.useMutation({
     onSuccess: (data) => {
       if (data.sent > 0) {
-        toast.success(`Test invitation sent successfully! Check the test email.`);
+        toast.success(`Test invitation sent! IMPORTANT: Open claim link in INCOGNITO MODE to test full signup flow.`);
       } else {
         toast.error('Failed to send test invitation - studio may not exist or already claimed');
       }
@@ -316,8 +316,10 @@ export default function TestingToolsPage() {
               <ul className="text-yellow-200/80 text-xs space-y-1 list-disc list-inside">
                 <li>Check {testEmail} inbox for invitation email</li>
                 <li>Email will show: {testSpaces} entries • ${testDeposit} deposit</li>
-                <li>Click "Claim Your Account" button in email</li>
-                <li>Complete onboarding flow as a real studio would</li>
+                <li><strong>IMPORTANT: Open claim link in INCOGNITO MODE</strong> (to test signup flow)</li>
+                <li>Complete signup with email/password</li>
+                <li>After signup, you'll auto-claim the studio and see onboarding</li>
+                <li>Dashboard should show the reservation with correct data</li>
               </ul>
             </div>
 

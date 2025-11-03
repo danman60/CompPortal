@@ -1,13 +1,116 @@
-# Current Work - Testing Tools & Classification Updates
+# Current Work - Studio Data Cleanup & Test Account Fix
 
-**Session:** November 3, 2025 (Session 27 Complete)
-**Status:** ✅ TESTING WORKFLOW ENHANCED - Ready for Production Verification
-**Build:** 206c90b
+**Session:** November 3, 2025 (Session 27 Extended - Complete)
+**Status:** ✅ PRODUCTION READY - Studio Data Cleaned, Testing Suite Fixed
+**Build:** 3338d07
 **Previous Session:** October 31, 2025 (Session 26 - Studio Invitations)
 
 ---
 
-## ✅ Session 27 - Testing Tools Enhancement (November 3, 2025)
+## ✅ Session 27 Extended - Studio Cleanup & Test Account Fix (November 3, 2025)
+
+### Part 1: Testing Suite Fixed
+**Fixed tenant_id foreign key error in reservation creation**
+- testing.ts:510 - Added missing tenant_id field
+- Error: `Foreign key constraint violated on reservations_tenant_id_fkey`
+- Fix: Include tenant_id when creating test reservation
+
+### Part 2: Studio Data Cleanup (Database Operations)
+
+**1. DANCENERGY Removed**
+- Studio had no email, 1 empty reservation
+- Deleted reservation + studio completely
+- Tenant: EMPWR
+
+**2. Danceology Architecture Fixed**
+- Initial mistake: Merged both studios into one (EMPWR tenant)
+- Problem: EMPWR studio had GLOW reservations (wrong tenant)
+- Correct architecture: Separate studios per tenant
+- Final state:
+  - EMPWR Danceology: 1 EMPWR reservation (80 spaces, $1000)
+  - GLOW Danceology: 2 GLOW reservations (160 spaces, $1000)
+- Same email gets 2 onboarding invitations (correct multi-tenant flow)
+
+**3. Email Corrections**
+- Dancetastic (GLOW): → `info@dancetastic.ca`
+- JDanse (GLOW): → `jdansestudio@gmail.com`
+- Kingston Dance Force: → `kdfcomp@danceforce.ca` (removed "&" format)
+
+**4. Test Studios Cleaned**
+- Removed: 123, Test Claim Studio, Test Workflow Studio (x2)
+- Kept: Jsjs (djamusic@), Test Studio - Emily, Uxbridge (x2)
+
+**Final Counts:**
+- EMPWR: 27 studios (was 29)
+- GLOW: 31 studios (was 32)
+- Missing emails: 0 (was 2)
+- Multiple emails: 0 (was 1)
+
+### Part 3: Email Template Improvement
+**Removed TOTAL section from invitation email**
+- studio-invitations.ts:240-247 - Removed duplicate totals
+- Removed unused calculation variables (totalEntries, totalDeposit, totalCredits)
+- Cleaner for studios with single reservations
+
+### Part 4: SA Account Fix
+**Problem:** SA account had studio_director role and owned test studio
+- User: danieljohnabrahamson@gmail.com
+- Role: studio_director → super_admin
+- Name: "123 123" → "Daniel Abrahamson"
+- Studios owned: 1 → 0
+- Test studio unclaimed (owner_id = NULL)
+
+**Impact:** SA now sees admin dashboard, not studio dashboard
+
+### Part 5: Test Account Migration
+**Problem:** daniel@streamstage.live is email alias of danieljohnabrahamson@gmail.com
+- Caused claim flow to skip signup (already authenticated)
+- Couldn't test full signup → claim workflow
+
+**Solution:** Migrate to djamusic@gmail.com
+1. Testing Tools UI:
+   - Default email: djamusic@gmail.com
+   - Daniel preset: djamusic@gmail.com
+   - Toast: Generic message
+2. CLAUDE.md:
+   - SD test credentials updated
+3. Database:
+   - Test studio email updated
+
+**Full Test Flow Now:**
+1. Sign out or use incognito
+2. Prepare test account (deletes user, resets studio)
+3. Send invitation
+4. Click claim link → Redirects to signup (no account exists)
+5. Complete signup with password
+6. Return to claim page, claim studio
+7. Complete onboarding
+
+### Commits
+- f5d8dfb - Testing fix + database cleanup
+- 020fbf9 - Email template improvement
+- 3338d07 - Test account migration
+
+### Files Modified
+- src/server/routers/testing.ts
+- src/server/routers/studio-invitations.ts
+- src/app/dashboard/admin/testing/page.tsx
+- CLAUDE.md
+- src/components/DancerForm.tsx
+- src/components/DancerBatchForm.tsx
+- src/components/DancerCSVImport.tsx
+
+### Database Changes
+- Deleted: DANCENERGY studio + reservation
+- Updated: Danceology emails (GLOW)
+- Updated: 3 studio emails (Dancetastic, JDanse, Kingston)
+- Deleted: 4 test studios
+- Updated: Test studio email (daniel@ → djamusic@)
+- Updated: SA account role and name
+
+---
+
+## ✅ Session 27 Initial - Testing Tools Enhancement (November 3, 2025)
 
 ### Overview
 User needed to test the studio invitation workflow but test emails weren't arriving. Investigation revealed the test system was using a hardcoded studio ID that no longer existed after database resets. Session focused on creating a robust, configurable testing workflow that exactly mirrors the production invitation system.
