@@ -23,7 +23,8 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
 
   // Fetch classifications for dropdown
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
-  const classifications = lookupData?.classifications || [];
+  // Filter out Production - it's only for routines, not dancers
+  const classifications = lookupData?.classifications?.filter(c => c.name !== 'Production') || [];
 
   const { register, control, handleSubmit, formState: { errors } } = useForm<{
     dancers: DancerRow[];

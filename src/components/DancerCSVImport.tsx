@@ -92,7 +92,8 @@ export default function DancerCSVImport() {
 
   // Fetch classifications for dropdown
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
-  const classifications = lookupData?.classifications || [];
+  // Filter out Production - it's only for routines, not dancers
+  const classifications = lookupData?.classifications?.filter(c => c.name !== 'Production') || [];
 
   // Extract studio_id when user data loads
   useEffect(() => {

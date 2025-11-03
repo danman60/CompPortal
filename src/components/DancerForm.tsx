@@ -281,7 +281,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
               } ${isEditMode && entriesCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <option value="">Select classification</option>
-              {lookupData?.classifications?.map((classification: any) => (
+              {lookupData?.classifications?.filter((c: any) => c.name !== 'Production').map((classification: any) => (
                 <option key={classification.id} value={classification.id}>
                   {classification.name}
                 </option>
