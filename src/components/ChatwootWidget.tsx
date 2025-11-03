@@ -51,11 +51,17 @@ export function ChatwootWidget({
   locale = 'en',
 }: ChatwootWidgetProps) {
   useEffect(() => {
-    // Skip if no token
+    // Skip if no token or baseUrl
     if (!websiteToken || !baseUrl) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('ChatwootWidget: Missing websiteToken or baseUrl');
+        console.warn('ChatwootWidget: Missing websiteToken or baseUrl', { websiteToken, baseUrl });
       }
+      return;
+    }
+
+    // Additional safety check to prevent undefined in template literal
+    if (typeof baseUrl !== 'string' || baseUrl.trim() === '') {
+      console.error('ChatwootWidget: Invalid baseUrl', { baseUrl });
       return;
     }
 
