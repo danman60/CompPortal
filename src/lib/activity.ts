@@ -3,6 +3,7 @@ import { logger } from './logger';
 
 interface LogActivityParams {
   userId: string;
+  tenantId?: string;
   studioId?: string;
   action: string;
   entityType: string;
@@ -20,10 +21,35 @@ interface LogActivityParams {
  */
 export async function logActivity(params: LogActivityParams) {
   try {
+    // Get tenant_id from studio if not provided
+    let tenantId = params.tenantId;
+    if (!tenantId && params.studioId) {
+      const studio = await prisma.studios.findUnique({
+        where: { id: params.studioId },
+        select: { tenant_id: true },
+      });
+      tenantId = studio?.tenant_id;
+    }
+
+    // If still no tenant_id, get from user profile
+    if (!tenantId) {
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: params.userId },
+        select: { tenant_id: true },
+      });
+      tenantId = userProfile?.tenant_id || undefined;
+    }
+
+    // Throw error if tenant_id is still missing (required by table schema)
+    if (!tenantId) {
+      throw new Error(`Cannot log activity: tenant_id is required but could not be determined for user ${params.userId}`);
+    }
+
     await prisma.$executeRaw`
-      INSERT INTO public.activity_logs (user_id, studio_id, action, entity_type, entity_id, entity_name, details, ip_address)
+      INSERT INTO public.activity_logs (user_id, tenant_id, studio_id, action, entity_type, entity_id, entity_name, details, ip_address)
       VALUES (
         ${params.userId}::uuid,
+        ${tenantId}::uuid,
         ${params.studioId || null}::uuid,
         ${params.action},
         ${params.entityType},
