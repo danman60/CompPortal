@@ -194,6 +194,27 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       description: 'Send & track invitations',
     },
     {
+      id: 'email-monitor',
+      href: '/dashboard/admin/emails',
+      icon: '📮',
+      title: 'Email Monitor',
+      description: 'Track delivery & debug failures',
+    },
+    {
+      id: 'backup-restore',
+      href: '/dashboard/admin/backup',
+      icon: '💾',
+      title: 'Backup & Restore',
+      description: 'Database backups & recovery',
+    },
+    {
+      id: 'impersonate',
+      href: '/dashboard/admin/impersonate',
+      icon: '👤',
+      title: 'Impersonation',
+      description: 'View as another user (audited)',
+    },
+    {
       id: 'studios',
       href: '/dashboard/studios',
       icon: '🏢',
