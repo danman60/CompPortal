@@ -9,6 +9,7 @@ export interface SelectedDancer {
   dancer_name: string;
   dancer_age: number | null;
   date_of_birth: string | null; // For accurate age calculation
+  classification_id?: string | null; // For classification auto-calculation
 }
 
 /**

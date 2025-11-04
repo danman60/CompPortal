@@ -8,6 +8,7 @@ interface Dancer {
   first_name: string;
   last_name: string;
   date_of_birth: string | null;
+  classification_id: string | null;
 }
 
 interface Props {
@@ -127,6 +128,7 @@ export function DancerSelectionSection({
                     dancer_name: fullName,
                     dancer_age: age,
                     date_of_birth: dancer.date_of_birth,
+                    classification_id: dancer.classification_id,
                   })
                 }
                 className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
