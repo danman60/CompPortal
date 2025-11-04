@@ -124,10 +124,8 @@ export default async function DashboardPage() {
             Need help? Email{' '}
             <a
               href="mailto:techsupport@compsync.net"
-              className="underline transition-colors"
+              className="underline hover:opacity-80 transition-opacity"
               style={{ color: primaryColor }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
               techsupport@compsync.net
             </a>
