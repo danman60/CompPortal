@@ -114,6 +114,14 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     description: '🚧 Under construction',
     disabled: true,
   },
+  {
+    id: 'classification-requests',
+    href: '/dashboard/classification-requests',
+    icon: '📋',
+    title: 'Classification Requests',
+    description: 'Review exception requests',
+    badge: 'classification-requests',
+  },
 ];
 
 export default function CompetitionDirectorDashboard({ userEmail, firstName, role }: CompetitionDirectorDashboardProps) {
@@ -125,6 +133,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
   const { data: studios } = trpc.studio.getAll.useQuery();
   const { data: reservations } = trpc.reservation.getAll.useQuery();
   const { data: invoicesData } = trpc.invoice.getAllInvoices.useQuery({});
+  const { data: classificationRequestsData } = trpc.classificationRequest.getCount.useQuery();
 
   // Set greeting on client mount to prevent hydration mismatch
   useEffect(() => {
