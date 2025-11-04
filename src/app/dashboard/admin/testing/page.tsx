@@ -240,15 +240,15 @@ export default function TestingToolsPage() {
               <div className="text-yellow-200 text-sm mb-2 font-semibold">Prerequisites:</div>
               <ul className="text-yellow-200/80 text-xs space-y-1 list-disc list-inside">
                 <li>Button redirects to EMPWR tenant (empwr.compsync.net)</li>
-                <li>SA owns djamusic studio with 100 dancers (classifications assigned)</li>
-                <li>Reservation 088e86aa approved for djamusic studio</li>
-                <li>Session will transfer - you'll stay logged in as SA</li>
+                <li>SA owns "Test Studio - Daniel" with 100 dancers (all have classifications)</li>
+                <li>Reservation e0c1eb3f approved for 100 entries</li>
+                <li>Session transfers seamlessly - you stay logged in as SA</li>
               </ul>
             </div>
 
             <button
               onClick={() => {
-                window.location.href = 'https://empwr.compsync.net/dashboard/entries/create?reservation=088e86aa-6280-4bd1-bb19-c34d93de4bc7';
+                window.location.href = 'https://empwr.compsync.net/dashboard/entries/create?reservation=e0c1eb3f-e9f6-4822-9d8b-0d2de864ae68';
               }}
               className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-bold text-lg transition-colors"
             >
