@@ -9,6 +9,11 @@ interface Dancer {
   last_name: string;
   date_of_birth: string | null;
   classification_id: string | null;
+  classifications?: {
+    id: string;
+    name: string;
+    skill_level: number | null;
+  } | null;
 }
 
 interface Props {
@@ -162,11 +167,19 @@ export function DancerSelectionSection({
                 </div>
                 <div className="flex-1 text-left">
                   <div className="text-white font-medium">{fullName}</div>
-                  {age !== null && (
-                    <div className="text-sm text-gray-400">
-                      {age} years old at event
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-sm">
+                    {age !== null && (
+                      <span className="text-gray-400">{age} years old</span>
+                    )}
+                    {age !== null && dancer.classifications && (
+                      <span className="text-gray-500">•</span>
+                    )}
+                    {dancer.classifications ? (
+                      <span className="text-purple-300 font-medium">{dancer.classifications.name}</span>
+                    ) : (
+                      <span className="text-yellow-400 text-xs">No classification</span>
+                    )}
+                  </div>
                 </div>
               </button>
             );
