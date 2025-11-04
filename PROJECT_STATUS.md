@@ -1,10 +1,55 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-03 (Session 27 Extended - Studio Data Cleanup & Test Account Fix)
+**Last Updated:** 2025-11-03 (Session 28 - Mobile Usability Improvements)
 
 ---
 
-## Current Status: ✅ PRODUCTION READY - Studio Data Cleaned, Testing Suite Complete
+## Current Status: ✅ PRODUCTION READY - Mobile Optimized
+
+### Session 28: Mobile Usability Improvements (2 hours)
+**Date:** November 3, 2025
+**Status:** ✅ COMPLETE - All critical mobile issues fixed
+
+**COMPLETED:**
+1. ✅ **Comprehensive Mobile Audit**
+   - Tested all pages on 375x667 mobile viewport
+   - Documented 13 issues (3 critical, 4 high, 4 medium, 2 low)
+   - Created MOBILE_USABILITY_AUDIT.md
+
+2. ✅ **Bottom Navigation Overlap Fixed**
+   - Increased padding from pb-20 to pb-28 (layout.tsx:26)
+   - Content no longer hidden behind bottom nav
+
+3. ✅ **Add Dancers Page Mobile Optimization**
+   - Collapsible instructions (collapsed by default on mobile)
+   - Collapsible classification warning (collapsed by default on mobile)
+   - Table horizontal scroll with visual indicator
+   - Touch targets increased to 44px min-height
+   - Better button spacing with flex-wrap
+
+4. ✅ **Reservations Filter Buttons Fixed**
+   - Buttons now wrap properly on mobile (flex-wrap)
+   - All 4 filter buttons accessible without overflow
+   - Touch-friendly sizing maintained
+
+5. ✅ **Desktop Unaffected**
+   - All mobile-specific changes use responsive classes (md:)
+   - Desktop experience identical to before
+
+**COMMITS DEPLOYED:**
+- 2228791 - Mobile usability improvements
+
+**BUILD STATUS:** ✅ Passing (76/76 pages)
+
+**VERIFIED ON PRODUCTION:**
+- ✅ Add Dancers: Collapsible UI, horizontal scroll indicator working
+- ✅ Reservations: Filter buttons wrap, all accessible
+- ✅ Bottom nav: No content overlap
+- ⚠️ Dashboard page: Pre-existing error (not related to mobile changes)
+
+**See:** MOBILE_USABILITY_AUDIT.md for complete issue list
+
+---
 
 ### Session 27 Extended: Complete Studio Cleanup & Testing Suite (4 hours)
 **Date:** November 3, 2025
