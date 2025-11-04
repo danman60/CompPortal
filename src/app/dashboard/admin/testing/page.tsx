@@ -214,6 +214,49 @@ export default function TestingToolsPage() {
           </div>
         </div>
 
+        {/* Test New Routine Form Button */}
+        <div className="mb-8">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-cyan-500 p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <span className="text-4xl">🎵</span>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Test New Routine Form</h2>
+                <p className="text-white/70 text-sm">Test classification logic, extended time, title upgrade</p>
+              </div>
+            </div>
+
+            <div className="bg-cyan-500/10 rounded-lg p-4 mb-4">
+              <div className="text-cyan-200 text-sm mb-2 font-semibold">What you'll test:</div>
+              <ul className="text-cyan-200/80 text-xs space-y-1 list-disc list-inside">
+                <li><strong>Classification Auto-Calculation:</strong> Solo locked + "+1 Bump", Groups unlocked</li>
+                <li><strong>Exception Request:</strong> "Exception Required" button for +2 levels or going down</li>
+                <li><strong>Extended Time Pricing:</strong> $5 flat for solos, $2 per dancer for groups</li>
+                <li><strong>Title Upgrade:</strong> Only shows for solos</li>
+                <li>Age group and size category detection</li>
+              </ul>
+            </div>
+
+            <div className="bg-yellow-500/10 rounded-lg p-4 mb-4">
+              <div className="text-yellow-200 text-sm mb-2 font-semibold">Prerequisites:</div>
+              <ul className="text-yellow-200/80 text-xs space-y-1 list-disc list-inside">
+                <li>Log in as Studio Director (djamusic@gmail.com / 123456)</li>
+                <li>Ensure you have an approved reservation</li>
+                <li>Create dancers with classifications assigned</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => {
+                // Get first reservation from test account
+                window.location.href = '/dashboard/entries';
+              }}
+              className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-bold text-lg transition-colors"
+            >
+              GO TO ENTRIES PAGE
+            </button>
+          </div>
+        </div>
+
         {/* Test Invitation Section */}
         <div className="mb-8">
           <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-green-500 p-6">
