@@ -861,6 +861,132 @@ const bulkOperationsRouter = router({
 });
 
 // ============================================================================
+// ACTIVITY LOGS
+// ============================================================================
+
+const activityLogsRouter = router({
+  // Get activity logs with advanced filtering
+  getActivityLogs: protectedProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        tenantId: z.string().uuid().optional(),
+        userId: z.string().uuid().optional(),
+        action: z.string().optional(),
+        entityType: z.string().optional(),
+        limit: z.number().int().min(1).max(100).default(50),
+        offset: z.number().int().min(0).default(0),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can access activity logs');
+      }
+
+      const { search, tenantId, userId, action, entityType, limit, offset } = input;
+
+      // Build WHERE clause
+      const conditions: string[] = ['1=1'];
+      const params: any[] = [];
+
+      if (tenantId) {
+        conditions.push(`al.tenant_id = $${params.length + 1}::uuid`);
+        params.push(tenantId);
+      }
+
+      if (userId) {
+        conditions.push(`al.user_id = $${params.length + 1}::uuid`);
+        params.push(userId);
+      }
+
+      if (action) {
+        conditions.push(`al.action ILIKE $${params.length + 1}`);
+        params.push(`%${action}%`);
+      }
+
+      if (entityType) {
+        conditions.push(`al.entity_type = $${params.length + 1}`);
+        params.push(entityType);
+      }
+
+      if (search) {
+        conditions.push(`(
+          al.entity_name ILIKE $${params.length + 1} OR
+          al.action ILIKE $${params.length + 1} OR
+          up.first_name ILIKE $${params.length + 1} OR
+          up.last_name ILIKE $${params.length + 1} OR
+          t.name ILIKE $${params.length + 1}
+        )`);
+        params.push(`%${search}%`);
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      // Get total count
+      const countResult = await prisma.$queryRawUnsafe<{ count: bigint }[]>(`
+        SELECT COUNT(*) as count
+        FROM activity_logs al
+        LEFT JOIN user_profiles up ON al.user_id = up.id
+        LEFT JOIN tenants t ON al.tenant_id = t.id
+        WHERE ${whereClause}
+      `, ...params);
+
+      const total = Number(countResult[0]?.count || 0);
+
+      // Get paginated results
+      const activities = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT
+          al.id,
+          al.action,
+          al.entity_type,
+          al.entity_name,
+          al.entity_id,
+          al.details,
+          al.created_at,
+          up.id as user_id,
+          up.first_name,
+          up.last_name,
+          up.role,
+          t.id as tenant_id,
+          t.name as tenant_name,
+          t.subdomain as tenant_subdomain
+        FROM activity_logs al
+        LEFT JOIN user_profiles up ON al.user_id = up.id
+        LEFT JOIN tenants t ON al.tenant_id = t.id
+        WHERE ${whereClause}
+        ORDER BY al.created_at DESC
+        LIMIT $${params.length + 1}
+        OFFSET $${params.length + 2}
+      `, ...params, limit, offset);
+
+      return {
+        activities: activities.map((activity) => ({
+          id: activity.id,
+          action: activity.action,
+          entityType: activity.entity_type,
+          entityName: activity.entity_name,
+          entityId: activity.entity_id,
+          details: activity.details,
+          createdAt: activity.created_at,
+          user: {
+            id: activity.user_id,
+            name: `${activity.first_name || ''} ${activity.last_name || ''}`.trim() || 'Unknown User',
+            role: activity.role,
+          },
+          tenant: activity.tenant_name
+            ? {
+                id: activity.tenant_id,
+                name: activity.tenant_name,
+                subdomain: activity.tenant_subdomain,
+              }
+            : null,
+        })),
+        total,
+      };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -868,4 +994,5 @@ export const superAdminRouter = router({
   users: userManagementRouter,
   tenants: tenantManagementRouter,
   bulk: bulkOperationsRouter,
+  activityLogs: activityLogsRouter,
 });
