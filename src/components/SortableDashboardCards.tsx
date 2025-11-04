@@ -32,6 +32,7 @@ export interface DashboardCard {
   description: string;
   tooltip?: string;
   disabled?: boolean;
+  badge?: string;
 }
 
 interface SortableCardProps {

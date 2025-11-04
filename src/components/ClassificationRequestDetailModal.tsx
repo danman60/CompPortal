@@ -90,7 +90,7 @@ export function ClassificationRequestDetailModal({ requestId, onClose }: Classif
             </div>
             <div>
               <span className="text-gray-400">Competition:</span>
-              <span className="text-white ml-2">{competition?.event_name || 'Unknown'}</span>
+              <span className="text-white ml-2">{competition?.name || 'Unknown'}</span>
             </div>
           </div>
         </div>

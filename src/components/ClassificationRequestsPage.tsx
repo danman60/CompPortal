@@ -116,7 +116,7 @@ export function ClassificationRequestsPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-white mb-1">{studio?.name || 'Unknown Studio'}</h3>
-                    <p className="text-gray-300 text-sm">{competition?.event_name || 'Unknown Competition'}</p>
+                    <p className="text-gray-300 text-sm">{competition?.name || 'Unknown Competition'}</p>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
                     request.status === 'pending'
