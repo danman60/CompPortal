@@ -29,6 +29,19 @@ export default async function InvoiceDetailPage({ params }: Props) {
 
   const isCD = userProfile?.role === 'competition_director' || userProfile?.role === 'super_admin';
 
+  // UX Isolation: Verify Studio Director owns the studio they're viewing
+  if (userProfile?.role === 'studio_director') {
+    const { data: userStudio } = await supabase
+      .from('studios')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!userStudio || userStudio.id !== studioId) {
+      redirect('/dashboard/invoices'); // Redirect to their own invoices
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
       <div className="container mx-auto px-4 py-8">
