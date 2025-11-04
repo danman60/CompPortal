@@ -247,12 +247,11 @@ export default function TestingToolsPage() {
 
             <button
               onClick={() => {
-                // Get first reservation from test account
-                window.location.href = '/dashboard/entries';
+                window.location.href = '/dashboard/entries/create?reservation=088e86aa-6280-4bd1-bb19-c34d93de4bc7';
               }}
               className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-bold text-lg transition-colors"
             >
-              GO TO ENTRIES PAGE
+              TEST NEW ROUTINE FORM
             </button>
           </div>
         </div>
