@@ -381,17 +381,17 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           })()}
         </div>
 
-        {/* Status Filter */}
-        <div className="flex gap-2">
+        {/* Status Filter - Wraps on Mobile */}
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilter('all')}
-            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 flex-1 md:flex-none justify-center ${
               filter === 'all'
                 ? 'bg-purple-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            All
+            <span className="whitespace-nowrap">All</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
               filter === 'all'
                 ? 'bg-white/30 text-white'
@@ -402,13 +402,13 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </button>
           <button
             onClick={() => setFilter('pending')}
-            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 flex-1 md:flex-none justify-center ${
               filter === 'pending'
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Pending
+            <span className="whitespace-nowrap">Pending</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
               filter === 'pending'
                 ? 'bg-white/30 text-white'
@@ -419,13 +419,13 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </button>
           <button
             onClick={() => setFilter('approved')}
-            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 flex-1 md:flex-none justify-center ${
               filter === 'approved'
                 ? 'bg-green-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Approved
+            <span className="whitespace-nowrap">Approved</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
               filter === 'approved'
                 ? 'bg-white/30 text-white'
@@ -436,13 +436,13 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           </button>
           <button
             onClick={() => setFilter('rejected')}
-            className={`min-h-[44px] px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+            className={`min-h-[44px] px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 flex-1 md:flex-none justify-center ${
               filter === 'rejected'
                 ? 'bg-red-500 text-white'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
-            Rejected
+            <span className="whitespace-nowrap">Rejected</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
               filter === 'rejected'
                 ? 'bg-white/30 text-white'

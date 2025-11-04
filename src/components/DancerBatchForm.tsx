@@ -20,6 +20,8 @@ interface DancerBatchFormProps {
 export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+  const [classificationInfoExpanded, setClassificationInfoExpanded] = useState(false);
 
   // Fetch classifications for dropdown
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
@@ -125,69 +127,90 @@ export default function DancerBatchForm({ studioId }: DancerBatchFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Instructions */}
-      <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-blue-200 mb-2">📝 Instructions</h3>
-        <ul className="text-blue-300 text-sm space-y-1">
-          <li>• Fill in dancer information in the table below</li>
-          <li>• First Name, Last Name, Birth Date, and Classification are required</li>
-          <li>• Empty rows will be skipped automatically</li>
-          <li>• Click "+ Add Row" to add more dancers</li>
-          <li>• Click "Save All Dancers" when you're done</li>
-        </ul>
+      {/* Instructions - Collapsible on Mobile */}
+      <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+          className="w-full p-4 md:p-6 flex items-center justify-between md:cursor-default"
+        >
+          <h3 className="text-base md:text-lg font-semibold text-blue-200">📝 Instructions</h3>
+          <span className="text-blue-300 text-xl md:hidden">{instructionsExpanded ? '−' : '+'}</span>
+        </button>
+        <div className={`${instructionsExpanded ? 'block' : 'hidden'} md:block px-4 pb-4 md:px-6 md:pb-6 md:pt-0`}>
+          <ul className="text-blue-300 text-sm space-y-1">
+            <li>• Fill in dancer information in the table below</li>
+            <li>• First Name, Last Name, Birth Date, and Classification are required</li>
+            <li>• Empty rows will be skipped automatically</li>
+            <li>• Click "+ Add Row" to add more dancers</li>
+            <li>• Click "Save All Dancers" when you're done</li>
+          </ul>
+        </div>
       </div>
 
-      {/* Quick Add Buttons */}
-      <div className="flex gap-2">
+      {/* Quick Add Buttons - Better Mobile Touch Targets */}
+      <div className="flex gap-3 md:gap-2 flex-wrap">
         <button
           type="button"
           onClick={addRow}
-          className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30"
+          className="px-4 md:px-4 py-3 md:py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30 min-h-[44px] flex-1 md:flex-none"
         >
           + Add 1 Row
         </button>
         <button
           type="button"
           onClick={() => addMultipleRows(5)}
-          className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30"
+          className="px-4 md:px-4 py-3 md:py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30 min-h-[44px] flex-1 md:flex-none"
         >
           + Add 5 Rows
         </button>
         <button
           type="button"
           onClick={() => addMultipleRows(10)}
-          className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30"
+          className="px-4 md:px-4 py-3 md:py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30 min-h-[44px] flex-1 md:flex-none"
         >
           + Add 10 Rows
         </button>
       </div>
 
-      {/* Classification Info Banner */}
-      <div className="p-4 bg-orange-500/10 border border-orange-400/30 rounded-xl">
-        <div className="flex items-start gap-3">
-          <div className="text-2xl">⚠️</div>
-          <div>
-            <p className="text-orange-300 font-semibold mb-1">Classification Determines Routine Placement</p>
-            <p className="text-orange-200 text-sm mb-2">
-              Your dancer's classification decides which classification their routines go into.
-            </p>
-            <ul className="text-orange-200 text-sm space-y-1 list-disc list-inside">
-              <li>
-                <strong>Solos:</strong> Must match the dancer's classification.
-                <em className="text-orange-300/80"> ie. If a dancer is doing a solo for the first time they will be classified as a Novice dancer.</em>
-              </li>
-              <li>
-                <strong>Duets/Trios/Groups:</strong> Use the classification of the highest or majority dancers in the duet/trio/group (you can move up one level if needed).
-              </li>
-            </ul>
+      {/* Classification Info Banner - Collapsible on Mobile */}
+      <div className="bg-orange-500/10 border border-orange-400/30 rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setClassificationInfoExpanded(!classificationInfoExpanded)}
+          className="w-full p-4 flex items-start gap-3 md:cursor-default"
+        >
+          <div className="text-xl md:text-2xl">⚠️</div>
+          <div className="flex-1 text-left">
+            <p className="text-orange-300 font-semibold text-sm md:text-base">Classification Determines Routine Placement</p>
+            <span className="text-orange-200/60 text-xs md:hidden">Tap to {classificationInfoExpanded ? 'hide' : 'show'} details</span>
           </div>
+          <span className="text-orange-300 text-xl md:hidden">{classificationInfoExpanded ? '−' : '+'}</span>
+        </button>
+        <div className={`${classificationInfoExpanded ? 'block' : 'hidden'} md:block px-4 pb-4 md:px-14 md:pb-4`}>
+          <p className="text-orange-200 text-sm mb-2">
+            Your dancer's classification decides which classification their routines go into.
+          </p>
+          <ul className="text-orange-200 text-sm space-y-1 list-disc list-inside">
+            <li>
+              <strong>Solos:</strong> Must match the dancer's classification.
+              <em className="text-orange-300/80"> ie. If a dancer is doing a solo for the first time they will be classified as a Novice dancer.</em>
+            </li>
+            <li>
+              <strong>Duets/Trios/Groups:</strong> Use the classification of the highest or majority dancers in the duet/trio/group (you can move up one level if needed).
+            </li>
+          </ul>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table - With Mobile Scroll Indicator */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        {/* Mobile scroll hint */}
+        <div className="md:hidden bg-purple-500/20 border-b border-purple-400/30 px-4 py-2 text-center">
+          <p className="text-purple-200 text-xs">← Scroll table horizontally to see all fields →</p>
+        </div>
+        <div className="overflow-x-auto touch-pan-x">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-white/5 border-b border-white/20">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider w-8">
