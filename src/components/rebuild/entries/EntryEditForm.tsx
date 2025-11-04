@@ -191,6 +191,10 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
             ageGroups={lookups.ageGroups}
             sizeCategories={lookups.entrySizeCategories}
             selectedDancerCount={formHook.form.selectedDancers.length}
+            selectedDancers={formHook.form.selectedDancers}
+            classifications={lookups.classifications}
+            classificationId={formHook.form.classification_id}
+            setClassificationId={(id) => formHook.updateField('classification_id', id)}
           />
 
           {/* Title Upgrade Option */}

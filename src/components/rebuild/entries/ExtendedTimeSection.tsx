@@ -19,17 +19,25 @@ interface Props {
     value: EntryFormV2State[K]
   ) => void;
   effectiveSizeCategory: SizeCategory | null;
+  selectedDancerCount: number;
 }
 
 /**
  * Extended Time Section
  * Phase 2 spec lines 324-373: Extended time tracking
+ * Pricing (Nov 4 transcript lines 808-817):
+ * - Solo: $5 flat
+ * - Non-Solo: $2 per dancer
  */
 export function ExtendedTimeSection({
   form,
   updateField,
   effectiveSizeCategory,
+  selectedDancerCount,
 }: Props) {
+  // Calculate extended time pricing (Nov 4 transcript lines 808-817)
+  const extendedTimeFee = selectedDancerCount === 1 ? 5 : selectedDancerCount * 2;
+
   return (
     <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
       <h2 className="text-xl font-bold text-white mb-4">Extended Time Options</h2>
@@ -50,6 +58,11 @@ export function ExtendedTimeSection({
               className="text-lg font-bold text-white cursor-pointer block mb-2"
             >
               ⏱️ Request Extended Time
+              {selectedDancerCount > 0 && (
+                <span className="ml-2 text-blue-300 font-normal">
+                  (${extendedTimeFee} {selectedDancerCount === 1 ? 'flat' : `= $2 × ${selectedDancerCount} dancers`})
+                </span>
+              )}
             </label>
             <p className="text-sm text-gray-300">
               Check this if your routine exceeds the standard time limit for this entry size.
