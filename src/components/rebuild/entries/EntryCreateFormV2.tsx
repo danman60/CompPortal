@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { useEntryFormV2 } from '@/hooks/rebuild/useEntryFormV2';
@@ -51,6 +51,27 @@ export function EntryCreateFormV2() {
     ageGroups: lookups?.ageGroups || [],
     sizeCategories: lookups?.entrySizeCategories || [],
   });
+
+  // Production Auto-Lock: When size = Production, lock dance category and classification
+  useEffect(() => {
+    if (!lookups) return;
+
+    const isProduction = formHook.effectiveSizeCategory?.name === 'Production';
+
+    if (isProduction) {
+      // Lock dance category to Production
+      const productionCategory = lookups.categories.find(c => c.name === 'Production');
+      if (productionCategory && formHook.form.category_id !== productionCategory.id) {
+        formHook.updateField('category_id', productionCategory.id);
+      }
+
+      // Lock classification to Production
+      const productionClass = lookups.classifications.find(c => c.name === 'Production');
+      if (productionClass && formHook.form.classification_id !== productionClass.id) {
+        formHook.updateField('classification_id', productionClass.id);
+      }
+    }
+  }, [formHook.effectiveSizeCategory, lookups, formHook.form.category_id, formHook.form.classification_id]);
 
   const createMutation = trpc.entry.create.useMutation({
     onError: (error) => {
@@ -170,13 +191,16 @@ export function EntryCreateFormV2() {
       />
 
       <AutoCalculatedSection
+        calculatedAge={formHook.calculatedAge}
+        allowedAges={formHook.allowedAges}
+        effectiveAge={formHook.effectiveAge}
         inferredAgeGroup={formHook.inferredAgeGroup}
         inferredSizeCategory={formHook.inferredSizeCategory}
         effectiveAgeGroup={formHook.effectiveAgeGroup}
         effectiveSizeCategory={formHook.effectiveSizeCategory}
-        ageGroupOverride={formHook.form.age_group_override}
+        form={formHook.form}
+        updateField={formHook.updateField}
         sizeCategoryOverride={formHook.form.size_category_override}
-        setAgeGroupOverride={(id) => formHook.updateField('age_group_override', id)}
         setSizeCategoryOverride={(id) => formHook.updateField('size_category_override', id)}
         ageGroups={lookups.ageGroups}
         sizeCategories={lookups.entrySizeCategories}

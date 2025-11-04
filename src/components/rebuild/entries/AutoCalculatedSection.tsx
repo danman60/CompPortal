@@ -17,15 +17,18 @@ interface SelectedDancer {
 }
 
 interface Props {
-  inferredAgeGroup: AgeGroup | null;
+  calculatedAge: number | null;
+  allowedAges: number[];
+  effectiveAge: number | null;
+  inferredAgeGroup: AgeGroup | null; // Keep for DB compatibility
   inferredSizeCategory: SizeCategory | null;
-  effectiveAgeGroup: AgeGroup | null;
+  effectiveAgeGroup: AgeGroup | null; // Keep for DB compatibility
   effectiveSizeCategory: SizeCategory | null;
-  ageGroupOverride: string | null;
+  form: EntryFormV2State;
+  updateField: <K extends keyof EntryFormV2State>(field: K, value: EntryFormV2State[K]) => void;
   sizeCategoryOverride: string | null;
-  setAgeGroupOverride: (id: string | null) => void;
   setSizeCategoryOverride: (id: string | null) => void;
-  ageGroups: AgeGroup[];
+  ageGroups: AgeGroup[]; // Keep for DB compatibility
   sizeCategories: SizeCategory[];
   selectedDancerCount: number;
   selectedDancers: SelectedDancer[];
@@ -46,13 +49,16 @@ interface Props {
  * Cache Bust: 2025-01-04-17:00 UTC
  */
 export function AutoCalculatedSection({
+  calculatedAge,
+  allowedAges,
+  effectiveAge,
   inferredAgeGroup,
   inferredSizeCategory,
   effectiveAgeGroup,
   effectiveSizeCategory,
-  ageGroupOverride,
+  form,
+  updateField,
   sizeCategoryOverride,
-  setAgeGroupOverride,
   setSizeCategoryOverride,
   ageGroups,
   sizeCategories,
@@ -137,55 +143,54 @@ export function AutoCalculatedSection({
       <h2 className="text-xl font-bold text-white mb-4">Auto-Calculated</h2>
 
       <div className="space-y-4">
-        {/* Age Group */}
+        {/* Age (Numerical) */}
         <div>
           <label className="block text-sm font-semibold text-white/90 mb-2">
-            Age Group
+            Age
           </label>
 
-          {/* Inferred Display */}
+          {/* Calculated Age Display */}
           <div className="mb-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
             <div className="text-sm text-blue-300">
-              {inferredAgeGroup ? (
+              {calculatedAge !== null ? (
                 <>
-                  <span className="font-semibold">Detected: {inferredAgeGroup.name}</span>
+                  <span className="font-semibold">Calculated: {calculatedAge}</span>
                   <span className="text-blue-400 ml-2">
-                    (based on average age, rounded down)
+                    (can select {calculatedAge} or {calculatedAge + 1})
                   </span>
                 </>
               ) : (
-                <span className="text-white/60">Select dancers with ages to auto-detect</span>
+                <span className="text-white/60">Select dancers with birthdates to calculate age</span>
               )}
             </div>
           </div>
 
-          {/* Override Dropdown */}
-          <select
-            value={ageGroupOverride || ''}
-            onChange={(e) => setAgeGroupOverride(e.target.value || null)}
-            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
-          >
-            <option value="" className="bg-gray-900">
-              {inferredAgeGroup ? `Use detected (${inferredAgeGroup.name})` : 'Select age group'}
-            </option>
-            {ageGroups.map((group) => {
-              // Cap display at 80 years (cosmetic only, doesn't affect logic)
-              const displayMaxAge = group.max_age > 80 ? 80 : group.max_age;
-              // Check if name already contains age range to avoid duplicates
-              const hasAgeInName = /\(\d+[-\d]*\)/.test(group.name);
-              const displayName = hasAgeInName
-                ? group.name
-                : `${group.name} (${group.min_age}-${displayMaxAge} yrs)`;
-
-              return (
-                <option key={group.id} value={group.id} className="bg-gray-900">
-                  {displayName}
+          {/* Age Dropdown - Only 2 Options */}
+          {allowedAges.length > 0 ? (
+            <>
+              <select
+                value={effectiveAge || ''}
+                onChange={(e) => {
+                  const val = e.target.value ? parseInt(e.target.value) : null;
+                  updateField('age_override', val);
+                }}
+                className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+              >
+                <option value={allowedAges[0]} className="bg-gray-900">
+                  Age {allowedAges[0]} (use calculated)
                 </option>
-              );
-            })}
-          </select>
-          {ageGroupOverride && (
-            <p className="text-xs text-yellow-400 mt-1">⚠️ Manual override active</p>
+                <option value={allowedAges[1]} className="bg-gray-900">
+                  Age {allowedAges[1]} (+1 bump)
+                </option>
+              </select>
+              {form.age_override !== null && (
+                <p className="text-xs text-yellow-400 mt-1">⚠️ +1 age bump active</p>
+              )}
+            </>
+          ) : (
+            <div className="text-sm text-white/60 italic">
+              Select dancers to enable age selection
+            </div>
           )}
         </div>
 
@@ -270,6 +275,9 @@ export function AutoCalculatedSection({
                   disabled={isSolo}
                   className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  <option value="" className="bg-gray-900">
+                    Use detected ({autoCalculatedClassification.name})
+                  </option>
                   {classifications.map((cls) => (
                     <option key={cls.id} value={cls.id} className="bg-gray-900">
                       {cls.name}
@@ -316,17 +324,6 @@ export function AutoCalculatedSection({
             )}
           </div>
         )}
-
-        {/* Info Message */}
-        <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-          <div className="flex items-start gap-2">
-            <div className="text-purple-400 text-xl">ⓘ</div>
-            <div className="text-sm text-purple-200">
-              <strong>Note:</strong> Fees will be calculated at summary submission based on competition settings.
-              No fees are displayed during entry creation.
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

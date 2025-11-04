@@ -176,6 +176,13 @@ export const dancerRouter = router({
       const dancers = await prisma.dancers.findMany({
         where: { studio_id: input.studioId },
         include: {
+          classifications: {
+            select: {
+              id: true,
+              name: true,
+              skill_level: true,
+            },
+          },
           _count: {
             select: {
               entry_participants: true,

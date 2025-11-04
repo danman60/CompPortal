@@ -180,13 +180,16 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
           />
 
           <AutoCalculatedSection
+            calculatedAge={formHook.calculatedAge}
+            allowedAges={formHook.allowedAges}
+            effectiveAge={formHook.effectiveAge}
             inferredAgeGroup={formHook.inferredAgeGroup}
             inferredSizeCategory={formHook.inferredSizeCategory}
             effectiveAgeGroup={formHook.effectiveAgeGroup}
             effectiveSizeCategory={formHook.effectiveSizeCategory}
-            ageGroupOverride={formHook.form.age_group_override}
+            form={formHook.form}
+            updateField={formHook.updateField}
             sizeCategoryOverride={formHook.form.size_category_override}
-            setAgeGroupOverride={(id) => formHook.updateField('age_group_override', id)}
             setSizeCategoryOverride={(id) => formHook.updateField('size_category_override', id)}
             ageGroups={lookups.ageGroups}
             sizeCategories={lookups.entrySizeCategories}

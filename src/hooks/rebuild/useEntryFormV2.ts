@@ -54,7 +54,7 @@ export interface EntryFormV2State {
   selectedDancers: SelectedDancer[];
 
   // Overrides for auto-calculated fields
-  age_group_override: string | null;
+  age_override: number | null; // Numerical age override (can only be calculated or calculated+1)
   size_category_override: string | null;
 
   // Title upgrade option (empwrDefaults.ts:45)
@@ -74,7 +74,7 @@ const initialState: EntryFormV2State = {
   choreographer: '',
   special_requirements: '',
   selectedDancers: [],
-  age_group_override: null,
+  age_override: null,
   size_category_override: null,
   is_title_upgrade: false,
   extended_time_requested: false,
@@ -121,29 +121,37 @@ export function useEntryFormV2({
   );
 
   /**
-   * Infer age group from AVERAGE dancer age (rounded down)
-   * Phase 1 Spec lines 552-564
+   * Calculate numerical age (Phase 2 spec: Dec 31 cutoff)
+   * Solo: Exact dancer age
+   * Group: Average age, drop decimal
    */
-  const inferredAgeGroup = useMemo((): AgeGroup | null => {
+  const calculatedAge = useMemo((): number | null => {
     if (form.selectedDancers.length === 0 || !eventStartDate) return null;
 
-    // Calculate ages at event
+    // Calculate ages at event (Dec 31 cutoff)
     const agesAtEvent = form.selectedDancers
       .map((d) => calculateAgeAtEvent(d.date_of_birth))
       .filter((age): age is number => age !== null);
 
     if (agesAtEvent.length === 0) return null;
 
-    // Calculate average age (drop decimal)
-    const avgAge = Math.floor(agesAtEvent.reduce((sum, age) => sum + age, 0) / agesAtEvent.length);
+    // Solo: Exact age
+    if (form.selectedDancers.length === 1) {
+      return agesAtEvent[0];
+    }
 
-    // Match to age divisions (spec line 557-561)
-    const match = ageGroups.find(
-      (ag) => ag.min_age <= avgAge && avgAge <= ag.max_age
-    );
+    // Group: Average age, drop decimal
+    const avgAge = agesAtEvent.reduce((sum, age) => sum + age, 0) / agesAtEvent.length;
+    return Math.floor(avgAge);
+  }, [form.selectedDancers, eventStartDate, calculateAgeAtEvent]);
 
-    return match || null;
-  }, [form.selectedDancers, eventStartDate, ageGroups, calculateAgeAtEvent]);
+  /**
+   * Allowed ages for dropdown: [calculated, calculated+1]
+   */
+  const allowedAges = useMemo((): number[] => {
+    if (calculatedAge === null) return [];
+    return [calculatedAge, calculatedAge + 1];
+  }, [calculatedAge]);
 
   /**
    * Infer size category from dancer count
@@ -162,14 +170,28 @@ export function useEntryFormV2({
   }, [form.selectedDancers, sizeCategories]);
 
   /**
-   * Get effective age group (override takes precedence)
+   * Get effective age (override takes precedence)
    */
-  const effectiveAgeGroup = useMemo((): AgeGroup | null => {
-    if (form.age_group_override) {
-      return ageGroups.find((ag) => ag.id === form.age_group_override) || null;
+  const effectiveAge = useMemo((): number | null => {
+    if (form.age_override !== null) {
+      return form.age_override;
     }
-    return inferredAgeGroup;
-  }, [form.age_group_override, inferredAgeGroup, ageGroups]);
+    return calculatedAge;
+  }, [form.age_override, calculatedAge]);
+
+  /**
+   * Map age to age group for database compatibility (temporary)
+   * TODO: Remove when age_group_id is removed from schema
+   */
+  const inferredAgeGroup = useMemo((): AgeGroup | null => {
+    if (effectiveAge === null) return null;
+    const match = ageGroups.find(
+      (ag) => ag.min_age <= effectiveAge && effectiveAge <= ag.max_age
+    );
+    return match || null;
+  }, [effectiveAge, ageGroups]);
+
+  const effectiveAgeGroup = inferredAgeGroup;
 
   /**
    * Get effective size category (override takes precedence)
@@ -309,10 +331,10 @@ export function useEntryFormV2({
   }, []);
 
   /**
-   * Clear age group override
+   * Clear age override
    */
-  const clearAgeGroupOverride = useCallback(() => {
-    setForm((prev) => ({ ...prev, age_group_override: null }));
+  const clearAgeOverride = useCallback(() => {
+    setForm((prev) => ({ ...prev, age_override: null }));
   }, []);
 
   /**
@@ -326,15 +348,18 @@ export function useEntryFormV2({
     form,
     updateField,
     toggleDancer,
-    inferredAgeGroup,
+    calculatedAge,
+    allowedAges,
+    effectiveAge,
+    inferredAgeGroup, // Keep for DB compatibility
     inferredSizeCategory,
-    effectiveAgeGroup,
+    effectiveAgeGroup, // Keep for DB compatibility
     effectiveSizeCategory,
     canSave,
     validationErrors,
     resetForm,
     resetDetailsOnly,
-    clearAgeGroupOverride,
+    clearAgeOverride,
     clearSizeCategoryOverride,
   };
 }

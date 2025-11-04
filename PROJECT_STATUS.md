@@ -29,6 +29,32 @@
 
 ## Recent Sessions
 
+### Session 30: Routine Form Testing & Fixes (Nov 4, 2025)
+**Status:** ✅ COMPLETE - Critical bug fixes + comprehensive next session guide
+
+**COMPLETED:**
+1. ✅ **PRODUCTION BUG FIXED:** Dancer count limit 50→1000 (dancer.ts:48,54)
+2. ✅ Test environment setup (SA → EMPWR tenant redirect)
+3. ✅ Test data diversified (100 dancers, 4 classifications, ages 6-18, realistic names)
+4. ✅ Classification field added to SelectedDancer interface
+5. ✅ Classification display in dancer selection list
+6. ✅ Identified 8 missing features from Phase 2 spec
+7. ✅ Created ROUTINE_FORM_FIX_LIST_NOV4.md (comprehensive fix list)
+8. ✅ Created NEXT_SESSION_PRIORITIES.md (6-8 hour implementation guide)
+
+**CRITICAL DISCOVERIES:**
+- ❌ Age system uses groups (Mini, Junior) - should be numerical (8, 14)
+- ❌ Production auto-lock missing (dance category + classification)
+- ❌ Exception workflow needs draft status + CD notification
+- ❌ Classification needs "Use detected" default
+- ❌ 60% majority rule not implemented for groups
+
+**BUILD STATUS:** ✅ Passing (76/76 pages)
+**COMMITS:** c4ea53f, b65a29e, dab78ea, 7532362
+**TEST ENVIRONMENT:** https://empwr.compsync.net/dashboard/entries/create?reservation=e0c1eb3f (100 test dancers ready)
+
+---
+
 ### Session 29: Housekeeping & Launch Prep (Nov 4, 2025)
 **Status:** ✅ COMPLETE - Documentation updated, launch checklist ready
 
@@ -209,12 +235,26 @@
 
 ## 📈 Next Steps
 
-### Before Routine Creation Launch (4 days):
-1. Monitor soft launch usage patterns
-2. Watch for any authentication issues
-3. Monitor dancer registration activity
-4. Verify email delivery rates
-5. Check database performance
+### URGENT: Before Routine Creation Launch (4 days)
+
+**Critical Blockers (Must Fix - 6-8 hours):**
+1. **Age System Rewrite** (3-4h) - Replace age groups with numerical age + bump
+2. **Production Auto-Lock** (2h) - Lock dance/classification when Production selected
+3. **Exception Workflow** (1-2h) - Save as draft + CD notification
+
+**Important Fixes (Should Fix - 2 hours):**
+4. **Classification "Use Detected"** (30m) - Default selection like size category
+5. **Remove Fees Notice** (5m) - Delete purple info box
+6. **60% Majority Rule** (1h) - Group classification calculation
+7. **+1 Bump Validation** (1h) - Enforce classification +1 maximum
+
+**Implementation Guide:** See `NEXT_SESSION_PRIORITIES.md` for detailed pseudocode and test scenarios.
+
+### Monitoring (Days 1-4):
+1. Watch for any authentication issues
+2. Monitor dancer registration activity
+3. Verify email delivery rates
+4. Check database performance
 
 ### After Launch (Nov 8+):
 1. Monitor routine creation activity
