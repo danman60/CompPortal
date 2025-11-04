@@ -1360,6 +1360,128 @@ const backupRestoreRouter = router({
 });
 
 // ============================================================================
+// IMPERSONATION
+// ============================================================================
+
+const impersonationRouter = router({
+  // Start impersonating a user
+  startImpersonation: protectedProcedure
+    .input(z.object({ userId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can impersonate users');
+      }
+
+      // Get target user info
+      const targetUser = await prisma.user_profiles.findUnique({
+        where: { id: input.userId },
+        include: { users: true, tenants: true },
+      });
+
+      if (!targetUser) {
+        throw new Error('User not found');
+      }
+
+      // Log impersonation start
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          action: 'impersonation.start',
+          entityType: 'user',
+          entityId: input.userId,
+          details: {
+            targetUser: {
+              id: targetUser.id,
+              email: targetUser.users.email,
+              role: targetUser.role,
+              tenant: targetUser.tenants?.name,
+            },
+            impersonatedBy: ctx.userId,
+            startedAt: new Date().toISOString(),
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log impersonation start', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
+      return {
+        success: true,
+        targetUser: {
+          id: targetUser.id,
+          email: targetUser.users.email,
+          firstName: targetUser.first_name,
+          lastName: targetUser.last_name,
+          role: targetUser.role,
+          tenantId: targetUser.tenant_id,
+          tenantName: targetUser.tenants?.name,
+        },
+      };
+    }),
+
+  // Stop impersonating
+  stopImpersonation: protectedProcedure
+    .input(z.object({ targetUserId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can stop impersonation');
+      }
+
+      // Log impersonation end
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          action: 'impersonation.stop',
+          entityType: 'user',
+          entityId: input.targetUserId,
+          details: {
+            impersonatedBy: ctx.userId,
+            endedAt: new Date().toISOString(),
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log impersonation stop', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
+      return { success: true };
+    }),
+
+  // Get impersonation history
+  getImpersonationHistory: protectedProcedure.query(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can view impersonation history');
+    }
+
+    const history = await prisma.$queryRaw<any[]>`
+      SELECT
+        al.id,
+        al.action,
+        al.entity_id as target_user_id,
+        al.details,
+        al.created_at,
+        up.first_name,
+        up.last_name,
+        u.email
+      FROM activity_logs al
+      LEFT JOIN user_profiles up ON al.entity_id = up.id
+      LEFT JOIN auth.users u ON al.entity_id = u.id
+      WHERE al.action LIKE 'impersonation.%'
+      ORDER BY al.created_at DESC
+      LIMIT 100
+    `;
+
+    return history.map((record) => ({
+      id: record.id,
+      action: record.action,
+      targetUserId: record.target_user_id,
+      targetUserName: `${record.first_name || ''} ${record.last_name || ''}`.trim() || 'Unknown',
+      targetUserEmail: record.email,
+      details: record.details,
+      createdAt: record.created_at,
+    }));
+  }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -1371,4 +1493,5 @@ export const superAdminRouter = router({
   health: systemHealthRouter,
   emails: emailMonitoringRouter,
   backup: backupRestoreRouter,
+  impersonation: impersonationRouter,
 });
