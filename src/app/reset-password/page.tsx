@@ -11,10 +11,17 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate tenant is loaded
+    if (!tenant?.id) {
+      toast.error('Unable to determine tenant. Please refresh the page.');
+      return;
+    }
+
     setLoading(true);
     try {
       // Build proper redirect URL using tenant subdomain
-      const redirectUrl = tenant?.subdomain
+      const redirectUrl = tenant.subdomain
         ? `https://${tenant.subdomain}.compsync.net/login`
         : `${window.location.origin}/login`;
 
@@ -29,7 +36,7 @@ export default function ResetPasswordPage() {
           },
           body: JSON.stringify({
             email,
-            tenant_id: tenant?.id,
+            tenant_id: tenant.id,
             redirect_to: redirectUrl,
           }),
         }
@@ -73,10 +80,10 @@ export default function ResetPasswordPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !tenant?.id}
               className="w-full bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending…' : 'Send Reset Link'}
+              {loading ? 'Sending…' : !tenant?.id ? 'Loading…' : 'Send Reset Link'}
             </button>
           </form>
         </div>
