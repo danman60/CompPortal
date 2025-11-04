@@ -30,36 +30,53 @@
 
 ---
 
-## 🚧 In Progress (NOT YET COMMITTED)
+## ✅ Completed (Commits e65fb9d, e70611f, ea2ccba)
 
-### Files Created (Need Commit):
-1. `src/app/dashboard/classification-requests/page.tsx`
-2. `src/components/ClassificationRequestsPage.tsx`
-3. `src/components/ClassificationRequestDetailModal.tsx`
+### Backend (100% Complete):
+- [x] Database migration applied (`classification_exception_requests` table)
+- [x] RLS policies configured (SD/CD access control)
+- [x] Prisma schema updated and generated
+- [x] 6 tRPC routes implemented
+- [x] Activity logging integrated
+- [x] Build passes ✅
 
-### Files Modified (Need Commit):
-1. `src/components/CompetitionDirectorDashboard.tsx` - Added classification requests card
+### Frontend - CD Components (100% Complete):
+- [x] CD dashboard card added (with badge support)
+- [x] `/dashboard/classification-requests` route created
+- [x] `ClassificationRequestsPage` component (card + table views)
+- [x] `ClassificationRequestDetailModal` component (full decision flow)
+- [x] Type fixes (event_name → name, DashboardCard.badge)
+
+### Frontend - SD Components (100% Complete):
+- [x] `ClassificationRequestExceptionModal.tsx` created
+- [x] Request button added to `EntryCreateFormV2.tsx`
+- [x] Button shows when dancers selected
+- [x] Modal integration complete
+- [x] Build passes ✅
 
 ---
 
 ## ⏳ Remaining Work
 
-### High Priority (For Demo):
-1. **SD Request Exception Modal** - NOT STARTED
-   - Component: `ClassificationRequestExceptionModal.tsx`
-   - Props: entry data, requested classification, auto-calculated
-   - Warning: "Entry will be created immediately"
-   - Textarea for justification (min 10 chars)
+### High Priority (For Production):
+1. **Phase 2 Classification Auto-Calculation** - NOT STARTED
+   - Implement classification calculation based on dancer classifications
+   - Solo: Exact dancer classification
+   - Duet/Trio: Highest OR +1 level
+   - Group: 60% majority OR +1 level
+   - Production: Auto-locked to "Production"
 
-2. **SD Entry Form Integration** - NOT STARTED
-   - Add "Request Exception" button to `EntryCreateFormV2.tsx`
-   - Show button when classification doesn't match SD's need
-   - Button location: Below `AutoCalculatedSection`
+2. **Production Testing** - NOT STARTED
+   - Test CD dashboard card and badge
+   - Test CD requests page (card/table views)
+   - Test CD decision flow (approve/set different)
+   - Test SD request button visibility
+   - Test SD modal UX
 
-3. **Build & Test** - NOT STARTED
-   - Run build to check for errors
-   - Test CD flow on production
-   - Test SD request flow on production
+3. **Integration with Entry Creation** - NOT STARTED
+   - Pass actual entryId to modal (currently placeholder)
+   - Show button only when classification mismatch detected
+   - Update entry status to `pending_classification_approval`
 
 ### Lower Priority (Post-Demo):
 4. **Summary Submission Blocker**

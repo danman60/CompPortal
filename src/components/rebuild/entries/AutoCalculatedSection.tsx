@@ -14,6 +14,7 @@ interface Props {
   ageGroups: AgeGroup[];
   sizeCategories: SizeCategory[];
   selectedDancerCount: number;
+  onRequestClassificationException?: () => void;
 }
 
 /**
@@ -33,6 +34,7 @@ export function AutoCalculatedSection({
   ageGroups,
   sizeCategories,
   selectedDancerCount,
+  onRequestClassificationException,
 }: Props) {
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -132,6 +134,40 @@ export function AutoCalculatedSection({
             <p className="text-xs text-yellow-400 mt-1">⚠️ Manual override active</p>
           )}
         </div>
+
+        {/* Classification - Phase 2 Feature */}
+        {selectedDancerCount > 0 && (
+          <div>
+            <label className="block text-sm font-semibold text-white/90 mb-2">
+              Classification
+            </label>
+
+            {/* Detected Display with Exception Button */}
+            <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-purple-300">
+                  <span className="font-semibold">Detected: </span>
+                  <span className="text-purple-400">Coming in Phase 2</span>
+                  <span className="text-purple-400/60 ml-2">
+                    (based on dancer classifications)
+                  </span>
+                </div>
+                {onRequestClassificationException && (
+                  <button
+                    type="button"
+                    onClick={onRequestClassificationException}
+                    className="ml-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg font-semibold transition-colors whitespace-nowrap"
+                  >
+                    Request Exception
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Classification is automatically determined and locked. Request an exception if needed.
+            </p>
+          </div>
+        )}
 
         {/* Info Message */}
         <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">

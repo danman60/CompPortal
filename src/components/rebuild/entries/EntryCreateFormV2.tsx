@@ -181,31 +181,8 @@ export function EntryCreateFormV2() {
         ageGroups={lookups.ageGroups}
         sizeCategories={lookups.entrySizeCategories}
         selectedDancerCount={formHook.form.selectedDancers.length}
+        onRequestClassificationException={() => setShowClassificationModal(true)}
       />
-
-      {/* Classification Exception Request - Phase 2 Feature */}
-      {/* TODO: Show button only when auto-calculated classification doesn't match SD's need */}
-      {/* TODO: Pass actual auto-calculated classification when Phase 2 is implemented */}
-      {formHook.form.selectedDancers.length > 0 && (
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">📋</div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-2">Need a Different Classification?</h3>
-              <p className="text-gray-300 text-sm mb-4">
-                If the auto-calculated classification doesn't match your needs, you can request an exception from the Competition Director.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowClassificationModal(true)}
-                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
-              >
-                Request Classification Exception
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Extended Time Section - Phase 2 spec lines 324-373 */}
       <ExtendedTimeSection
