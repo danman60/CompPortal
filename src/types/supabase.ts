@@ -1,3 +1,8 @@
+/**
+ * Supabase Database Types
+ * Auto-generated placeholder - actual types generated via Supabase CLI
+ */
+
 export type Json =
   | string
   | number
@@ -6,71 +11,33 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
-      studios: {
-        Row: {
-          id: string
-          name: string
-          code: string | null
-          city: string | null
-          province: string | null
-          country: string | null
-          status: string | null
-          email: string | null
-          phone: string | null
-          created_at: string | null
-          owner_id: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          code?: string | null
-          city?: string | null
-          province?: string | null
-          country?: string | null
-          status?: string | null
-          email?: string | null
-          phone?: string | null
-          created_at?: string | null
-          owner_id: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          code?: string | null
-          city?: string | null
-          province?: string | null
-          country?: string | null
-          status?: string | null
-          email?: string | null
-          phone?: string | null
-          created_at?: string | null
-          owner_id?: string
-        }
+      [_ in string]: {
+        Row: Record<string, any>
+        Insert: Record<string, any>
+        Update: Record<string, any>
+        Relationships: any[]
       }
-      dancers: {
-        Row: {
-          id: string
-          first_name: string
-          last_name: string
-          date_of_birth: string | null
-          studio_id: string
-        }
+    }
+    Views: {
+      [_ in string]: {
+        Row: Record<string, any>
+        Relationships: any[]
       }
-      reservations: {
-        Row: {
-          id: string
-          studio_id: string
-        }
+    }
+    Functions: {
+      [_ in string]: {
+        Args: Record<string, any>
+        Returns: any
       }
-      competition_entries: {
-        Row: {
-          id: string
-          studio_id: string
-        }
-      }
+    }
+    Enums: {
+      [_ in string]: string
+    }
+    CompositeTypes: {
+      [_ in string]: Record<string, any>
     }
   }
 }
