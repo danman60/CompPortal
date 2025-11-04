@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { useEntryFormV2 } from '@/hooks/rebuild/useEntryFormV2';
@@ -9,11 +10,13 @@ import { AutoCalculatedSection } from './AutoCalculatedSection';
 import { ExtendedTimeSection } from './ExtendedTimeSection';
 import { ReservationContextBar } from './ReservationContextBar';
 import { EntryFormActions } from './EntryFormActions';
+import { ClassificationRequestExceptionModal } from '@/components/ClassificationRequestExceptionModal';
 import toast from 'react-hot-toast';
 
 export function EntryCreateFormV2() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [showClassificationModal, setShowClassificationModal] = useState(false);
   const reservationId = searchParams.get('reservation');
 
   const { data: reservation, isLoading: reservationLoading } = trpc.reservation.getById.useQuery(
@@ -180,6 +183,30 @@ export function EntryCreateFormV2() {
         selectedDancerCount={formHook.form.selectedDancers.length}
       />
 
+      {/* Classification Exception Request - Phase 2 Feature */}
+      {/* TODO: Show button only when auto-calculated classification doesn't match SD's need */}
+      {/* TODO: Pass actual auto-calculated classification when Phase 2 is implemented */}
+      {formHook.form.selectedDancers.length > 0 && (
+        <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">📋</div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white mb-2">Need a Different Classification?</h3>
+              <p className="text-gray-300 text-sm mb-4">
+                If the auto-calculated classification doesn't match your needs, you can request an exception from the Competition Director.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowClassificationModal(true)}
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
+              >
+                Request Classification Exception
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Extended Time Section - Phase 2 spec lines 324-373 */}
       <ExtendedTimeSection
         form={formHook.form}
@@ -216,6 +243,23 @@ export function EntryCreateFormV2() {
         validationErrors={formHook.validationErrors}
         onSave={handleSave}
       />
+
+      {/* Classification Exception Modal - Placeholder for Phase 2 */}
+      {/* TODO: Pass actual entryId and classification data when Phase 2 is implemented */}
+      {showClassificationModal && lookups.classifications && lookups.classifications.length > 0 && (
+        <ClassificationRequestExceptionModal
+          entryId="" // Placeholder - will be filled when entry is created
+          autoCalculatedClassification={{
+            id: lookups.classifications[0].id,
+            name: lookups.classifications[0].name,
+          }}
+          onClose={() => setShowClassificationModal(false)}
+          onSuccess={() => {
+            toast.success('Classification exception feature coming in Phase 2');
+            setShowClassificationModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
