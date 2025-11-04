@@ -987,6 +987,135 @@ const activityLogsRouter = router({
 });
 
 // ============================================================================
+// SYSTEM HEALTH
+// ============================================================================
+
+const systemHealthRouter = router({
+  // Get system health metrics
+  getHealthMetrics: protectedProcedure.query(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can access system health');
+    }
+
+    try {
+      // Database health check
+      const dbStart = Date.now();
+      const dbCheck = await prisma.$queryRaw<any[]>`SELECT 1 as ok`;
+      const dbLatency = Date.now() - dbStart;
+      const dbHealthy = dbCheck[0]?.ok === 1;
+
+      // Count totals
+      const [userCount, tenantCount, competitionCount, entryCount] = await Promise.all([
+        prisma.user_profiles.count(),
+        prisma.tenants.count(),
+        prisma.competitions.count(),
+        prisma.competition_entries.count(),
+      ]);
+
+      // Recent activity (last 24 hours)
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentActivity = await prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(*) as count
+        FROM activity_logs
+        WHERE created_at >= ${yesterday}
+      `;
+
+      // Recent errors (from activity logs with error actions)
+      const recentErrors = await prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(*) as count
+        FROM activity_logs
+        WHERE created_at >= ${yesterday}
+          AND (action LIKE '%error%' OR action LIKE '%fail%')
+      `;
+
+      // Check for capacity inconsistencies
+      const capacityIssues = await prisma.$queryRaw<any[]>`
+        SELECT
+          c.id,
+          c.name,
+          c.max_capacity,
+          c.reserved_capacity,
+          c.available_reservation_tokens,
+          (c.max_capacity - c.reserved_capacity - c.available_reservation_tokens) as discrepancy
+        FROM competitions c
+        WHERE (c.max_capacity - c.reserved_capacity - c.available_reservation_tokens) != 0
+        LIMIT 10
+      `;
+
+      // Storage usage (approximate)
+      const storageEstimate = await prisma.$queryRaw<{ size_mb: number }[]>`
+        SELECT
+          ROUND(SUM(pg_total_relation_size(quote_ident(table_name))) / (1024 * 1024), 2) as size_mb
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+      `;
+
+      return {
+        database: {
+          healthy: dbHealthy,
+          latency: dbLatency,
+          storageMB: storageEstimate[0]?.size_mb || 0,
+        },
+        counts: {
+          users: userCount,
+          tenants: tenantCount,
+          competitions: competitionCount,
+          entries: entryCount,
+        },
+        activity: {
+          last24Hours: Number(recentActivity[0]?.count || 0),
+          errors: Number(recentErrors[0]?.count || 0),
+        },
+        issues: {
+          capacityInconsistencies: capacityIssues.length,
+          capacityDetails: capacityIssues,
+        },
+      };
+    } catch (error) {
+      logger.error('Failed to get health metrics', { error: error instanceof Error ? error : new Error(String(error)) });
+      throw new Error('Failed to retrieve system health metrics');
+    }
+  }),
+
+  // Get slow queries (queries taking >1s from pg_stat_statements if available)
+  getSlowQueries: protectedProcedure.query(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can access slow queries');
+    }
+
+    try {
+      // Check if pg_stat_statements extension is enabled
+      const extensionCheck = await prisma.$queryRaw<any[]>`
+        SELECT * FROM pg_extension WHERE extname = 'pg_stat_statements'
+      `;
+
+      if (extensionCheck.length === 0) {
+        return { enabled: false, queries: [] };
+      }
+
+      // Get slow queries
+      const slowQueries = await prisma.$queryRaw<any[]>`
+        SELECT
+          query,
+          calls,
+          ROUND(total_exec_time::numeric, 2) as total_time_ms,
+          ROUND(mean_exec_time::numeric, 2) as mean_time_ms,
+          ROUND(max_exec_time::numeric, 2) as max_time_ms
+        FROM pg_stat_statements
+        WHERE mean_exec_time > 1000
+        ORDER BY mean_exec_time DESC
+        LIMIT 10
+      `;
+
+      return { enabled: true, queries: slowQueries };
+    } catch (error) {
+      logger.error('Failed to get slow queries', { error: error instanceof Error ? error : new Error(String(error)) });
+      return { enabled: false, queries: [], error: 'Failed to retrieve slow queries' };
+    }
+  }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -995,4 +1124,5 @@ export const superAdminRouter = router({
   tenants: tenantManagementRouter,
   bulk: bulkOperationsRouter,
   activityLogs: activityLogsRouter,
+  health: systemHealthRouter,
 });
