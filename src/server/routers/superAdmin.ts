@@ -1116,6 +1116,145 @@ const systemHealthRouter = router({
 });
 
 // ============================================================================
+// EMAIL MONITORING
+// ============================================================================
+
+const emailMonitoringRouter = router({
+  // Get email logs with filtering
+  getEmailLogs: protectedProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        tenantId: z.string().uuid().optional(),
+        status: z.enum(['all', 'success', 'failed']).default('all'),
+        templateType: z.string().optional(),
+        limit: z.number().int().min(1).max(100).default(50),
+        offset: z.number().int().min(0).default(0),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can access email logs');
+      }
+
+      const { search, tenantId, status, templateType, limit, offset } = input;
+
+      // Build WHERE clause
+      const conditions: string[] = ['1=1'];
+      const params: any[] = [];
+
+      if (tenantId) {
+        conditions.push(`el.tenant_id = $${params.length + 1}::uuid`);
+        params.push(tenantId);
+      }
+
+      if (status === 'success') {
+        conditions.push(`el.success = true`);
+      } else if (status === 'failed') {
+        conditions.push(`el.success = false`);
+      }
+
+      if (templateType) {
+        conditions.push(`el.template_type = $${params.length + 1}`);
+        params.push(templateType);
+      }
+
+      if (search) {
+        conditions.push(`(
+          el.recipient_email ILIKE $${params.length + 1} OR
+          el.subject ILIKE $${params.length + 1} OR
+          el.error_message ILIKE $${params.length + 1}
+        )`);
+        params.push(`%${search}%`);
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      // Get total count
+      const countResult = await prisma.$queryRawUnsafe<{ count: bigint }[]>(`
+        SELECT COUNT(*) as count
+        FROM email_logs el
+        WHERE ${whereClause}
+      `, ...params);
+
+      const total = Number(countResult[0]?.count || 0);
+
+      // Get paginated results
+      const emails = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT
+          el.id,
+          el.template_type,
+          el.recipient_email,
+          el.subject,
+          el.success,
+          el.error_message,
+          el.sent_at,
+          el.tenant_id,
+          t.name as tenant_name,
+          t.subdomain as tenant_subdomain,
+          s.name as studio_name,
+          c.name as competition_name
+        FROM email_logs el
+        LEFT JOIN tenants t ON el.tenant_id = t.id
+        LEFT JOIN studios s ON el.studio_id = s.id
+        LEFT JOIN competitions c ON el.competition_id = c.id
+        WHERE ${whereClause}
+        ORDER BY el.sent_at DESC
+        LIMIT $${params.length + 1}
+        OFFSET $${params.length + 2}
+      `, ...params, limit, offset);
+
+      return {
+        emails: emails.map((email) => ({
+          id: email.id,
+          templateType: email.template_type,
+          recipientEmail: email.recipient_email,
+          subject: email.subject,
+          success: email.success,
+          errorMessage: email.error_message,
+          sentAt: email.sent_at,
+          tenant: email.tenant_name
+            ? {
+                id: email.tenant_id,
+                name: email.tenant_name,
+                subdomain: email.tenant_subdomain,
+              }
+            : null,
+          studioName: email.studio_name,
+          competitionName: email.competition_name,
+        })),
+        total,
+      };
+    }),
+
+  // Get email statistics
+  getEmailStats: protectedProcedure.query(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can access email stats');
+    }
+
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [total, last24h, last7d, failed24h, failed7d] = await Promise.all([
+      prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) as count FROM email_logs`,
+      prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) as count FROM email_logs WHERE sent_at >= ${last24Hours}`,
+      prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) as count FROM email_logs WHERE sent_at >= ${last7Days}`,
+      prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) as count FROM email_logs WHERE sent_at >= ${last24Hours} AND success = false`,
+      prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) as count FROM email_logs WHERE sent_at >= ${last7Days} AND success = false`,
+    ]);
+
+    return {
+      total: Number(total[0]?.count || 0),
+      last24Hours: Number(last24h[0]?.count || 0),
+      last7Days: Number(last7d[0]?.count || 0),
+      failed24Hours: Number(failed24h[0]?.count || 0),
+      failed7Days: Number(failed7d[0]?.count || 0),
+    };
+  }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -1125,4 +1264,5 @@ export const superAdminRouter = router({
   bulk: bulkOperationsRouter,
   activityLogs: activityLogsRouter,
   health: systemHealthRouter,
+  emails: emailMonitoringRouter,
 });

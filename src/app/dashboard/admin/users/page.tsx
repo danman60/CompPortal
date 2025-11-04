@@ -6,12 +6,16 @@ import { trpc } from '@/lib/trpc';
 import { formatDistanceToNow } from 'date-fns';
 
 type ViewMode = 'cards' | 'table';
+type SortField = 'name' | 'email' | 'role' | 'tenant' | 'last_sign_in';
+type SortDirection = 'asc' | 'desc';
 
 export default function UserManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<'all' | 'studio_director' | 'competition_director' | 'super_admin'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const { data, isLoading, error, refetch } = trpc.superAdmin.users.getAllUsers.useQuery({
     search: searchQuery || undefined,
@@ -29,8 +33,52 @@ export default function UserManagementPage() {
     },
   });
 
-  const users = data?.users || [];
+  const rawUsers = data?.users || [];
   const total = data?.total || 0;
+
+  // Sort users client-side
+  const users = [...rawUsers].sort((a, b) => {
+    let aValue: any;
+    let bValue: any;
+
+    switch (sortField) {
+      case 'name':
+        aValue = `${a.first_name} ${a.last_name}`.toLowerCase();
+        bValue = `${b.first_name} ${b.last_name}`.toLowerCase();
+        break;
+      case 'email':
+        aValue = (a.users.email || '').toLowerCase();
+        bValue = (b.users.email || '').toLowerCase();
+        break;
+      case 'role':
+        aValue = a.role || '';
+        bValue = b.role || '';
+        break;
+      case 'tenant':
+        aValue = (a.tenants?.name || '').toLowerCase();
+        bValue = (b.tenants?.name || '').toLowerCase();
+        break;
+      case 'last_sign_in':
+        aValue = a.users.last_sign_in_at ? new Date(a.users.last_sign_in_at).getTime() : 0;
+        bValue = b.users.last_sign_in_at ? new Date(b.users.last_sign_in_at).getTime() : 0;
+        break;
+      default:
+        return 0;
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   const handleSelectAll = () => {
     if (selectedUserIds.size === users.length) {
@@ -216,20 +264,70 @@ export default function UserManagementPage() {
                         className="w-4 h-4 rounded border-white/20 bg-white/10 text-purple-500 focus:ring-purple-500"
                       />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                      Name
+                    <th
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                      onClick={() => handleSort('name')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Name
+                        {sortField === 'name' && (
+                          <span className="text-purple-400">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                      Email
+                    <th
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                      onClick={() => handleSort('email')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Email
+                        {sortField === 'email' && (
+                          <span className="text-purple-400">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                      Role
+                    <th
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                      onClick={() => handleSort('role')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Role
+                        {sortField === 'role' && (
+                          <span className="text-purple-400">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                      Tenant
+                    <th
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                      onClick={() => handleSort('tenant')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Tenant
+                        {sortField === 'tenant' && (
+                          <span className="text-purple-400">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                      Last Sign In
+                    <th
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                      onClick={() => handleSort('last_sign_in')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Last Sign In
+                        {sortField === 'last_sign_in' && (
+                          <span className="text-purple-400">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
                       Actions
