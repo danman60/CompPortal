@@ -191,5 +191,45 @@ allowedUserIds: [], // Remove test SD access
 
 ---
 
-**Status:** AWAITING USER INFO
-**Priority:** P1 - Block production access until resolved
+## RESOLUTION (November 4, 2025)
+
+### Root Cause
+1. **Race Condition:** `StudioDirectorStats.tsx` rendered before `currentUser` query loaded
+2. **Missing Loading State:** `userLoading` not included in loading check
+3. **Data Integrity Issue:** 5 users had `tenant_id = null` in user_profiles, causing activity logging to fail silently
+
+### Actions Taken
+1. **Fixed Race Condition** (commit 0805f3b):
+   - Added `isLoading: userLoading` to `getCurrentUser` query
+   - Added `userLoading` to loading check before feature flag evaluation
+
+2. **Changed Strategy** (commits f436b68, 05a7f80):
+   - Removed all Studio Directors from feature flag allowedUserIds
+   - Created `/dashboard/entries-beta` route for testing (no feature flags)
+   - Main route stays blocked with "Coming Soon" for all SDs until Nov 8
+
+3. **Database Cleanup**:
+   - Deleted 12 draft entries created by Impact Dance during incident
+   - Updated Impact Dance reservation from 40 to 61 spaces
+   - Fixed tenant_id for 5 users (Impact Dance, NJADS, Test Studio, Academy of Dance Arts, Uxbridge Dance Academy)
+
+4. **Age Calculation Fix** (commit 69302f3):
+   - Changed from "youngest dancer" to "average age (rounded down)"
+   - Updated useEntryFormV2.ts, AutoCalculatedSection.tsx, RoutineCSVImport.tsx
+
+### Why Activity Logging Failed
+- Impact Dance user (Linnea White) had `tenant_id = null`
+- Activity logging requires tenant_id (line 44 in activity.ts)
+- Error was caught and logged but didn't block entry creation
+- Result: No activity logs created for the 12 entries
+- Fixed by setting tenant_id for all affected users
+
+### Prevention
+- Feature flags removed for all SDs until launch
+- Beta URL for safe testing without affecting dashboard
+- Data integrity: All users now have proper tenant_id
+
+---
+
+**Status:** RESOLVED
+**Priority:** P1 - Resolved

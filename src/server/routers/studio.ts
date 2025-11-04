@@ -136,10 +136,13 @@ export const studioRouter = router({
         data: { owner_id: userId },
       });
 
-      // Update user role to studio_director
+      // Update user role to studio_director AND set tenant_id
       await prisma.user_profiles.update({
         where: { id: userId },
-        data: { role: 'studio_director' },
+        data: {
+          role: 'studio_director',
+          tenant_id: studio.tenant_id, // CRITICAL: Set tenant to prevent cross-contamination
+        },
       });
 
       // Activity logging
