@@ -19,7 +19,7 @@ interface Props {
 /**
  * Auto-Calculated Section V2
  * Phase 1 Spec lines 546-585: Auto-classification logic
- * Shows age group (from youngest) and size category (from count)
+ * Shows age group (from average age, rounded down) and size category (from count)
  */
 export function AutoCalculatedSection({
   inferredAgeGroup,
@@ -52,7 +52,7 @@ export function AutoCalculatedSection({
                 <>
                   <span className="font-semibold">Detected: {inferredAgeGroup.name}</span>
                   <span className="text-blue-400 ml-2">
-                    (based on youngest dancer)
+                    (based on average age, rounded down)
                   </span>
                 </>
               ) : (

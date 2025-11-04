@@ -120,7 +120,7 @@ export function useEntryFormV2({
   );
 
   /**
-   * Infer age group from YOUNGEST dancer's age
+   * Infer age group from AVERAGE dancer age (rounded down)
    * Phase 1 Spec lines 552-564
    */
   const inferredAgeGroup = useMemo((): AgeGroup | null => {
@@ -133,12 +133,12 @@ export function useEntryFormV2({
 
     if (agesAtEvent.length === 0) return null;
 
-    // Find youngest age (spec line 553)
-    const youngestAge = Math.min(...agesAtEvent);
+    // Calculate average age (drop decimal)
+    const avgAge = Math.floor(agesAtEvent.reduce((sum, age) => sum + age, 0) / agesAtEvent.length);
 
     // Match to age divisions (spec line 557-561)
     const match = ageGroups.find(
-      (ag) => ag.min_age <= youngestAge && youngestAge <= ag.max_age
+      (ag) => ag.min_age <= avgAge && avgAge <= ag.max_age
     );
 
     return match || null;
