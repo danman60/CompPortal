@@ -141,7 +141,7 @@ export function AutoCalculatedSection({
         {selectedDancerCount > 0 && (
           <div>
             <label className="block text-sm font-semibold text-white/90 mb-2">
-              Classification
+              Classification (Auto-Detected)
             </label>
 
             {/* Detected Display with Exception Button */}
@@ -149,9 +149,9 @@ export function AutoCalculatedSection({
               <div className="flex items-center justify-between">
                 <div className="text-sm text-purple-300">
                   <span className="font-semibold">Detected: </span>
-                  <span className="text-purple-400">Coming in Phase 2</span>
+                  <span className="text-purple-400">Phase 2 Coming Soon</span>
                   <span className="text-purple-400/60 ml-2">
-                    (based on dancer classifications)
+                    (will be based on dancer levels)
                   </span>
                 </div>
                 {onRequestClassificationException && (
@@ -166,7 +166,7 @@ export function AutoCalculatedSection({
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              Classification is automatically determined and locked. Request an exception if needed.
+              Classification will be auto-determined and locked. Request an exception if needed.
             </p>
           </div>
         )}
