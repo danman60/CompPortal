@@ -12,14 +12,10 @@ interface EntriesHeaderProps {
  * Shows title and action buttons
  */
 export function EntriesHeader({ selectedReservationId, selectedCompetitionId, isRegistrationClosed = false }: EntriesHeaderProps) {
-  // Build create URL with context
+  // Build create URL with context (consolidated to single create route)
   const createUrl = selectedReservationId
     ? `/dashboard/entries/create?reservation=${selectedReservationId}`
     : '/dashboard/entries/create';
-
-  const createV2Url = selectedReservationId
-    ? `/dashboard/entries/create-v2?reservation=${selectedReservationId}`
-    : '/dashboard/entries/create-v2';
 
   return (
     <div className="mb-6">
@@ -42,7 +38,7 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
             Import
           </Button>
           <Button
-            href={createV2Url}
+            href={createUrl}
             variant="primary"
             disabled={isRegistrationClosed}
             title={isRegistrationClosed ? 'Reservation has been summarized - no more routines can be added' : 'Create a new routine'}

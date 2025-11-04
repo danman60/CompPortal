@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
+import { FEATURES, isFeatureEnabled } from '@/lib/feature-flags';
 
 interface StudioDirectorStatsProps {
   nextActionCard?: 'dancers' | 'reservations' | 'routines' | null;
@@ -11,6 +12,7 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
   const { data: myDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
   const { data: myEntries, isLoading: entriesLoading } = trpc.entry.getAll.useQuery();
   const { data: myReservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
+  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
 
   if (dancersLoading || entriesLoading || reservationsLoading) {
     return (
@@ -66,6 +68,13 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
     ?.length || 0;
 
   const spacesRemaining = Math.max(0, approvedSpaces - createdRoutinesForApproved);
+
+  // Check if user can access routine creation (NEW_ROUTINE_PAGE feature flag)
+  const canAccessRoutines = isFeatureEnabled(
+    FEATURES.NEW_ROUTINE_PAGE,
+    currentUser?.role || 'studio_director',
+    currentUser?.id
+  );
 
   return (
     <div className="space-y-6">
@@ -134,34 +143,62 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
           </Link>
         </div>
 
-        {/* My Routines Card - DISABLED (Coming Soon) */}
+        {/* My Routines Card */}
         <div className="flex flex-col">
           <div className="text-sm text-gray-400 mb-2 font-medium">Create your routines</div>
-          <div
-            className="flex-1 flex flex-col bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-md rounded-xl p-6 border border-blue-400/20 opacity-60 cursor-not-allowed"
-            title="Routine creation is coming soon. This feature is currently under construction."
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">My Routines</h3>
-              <div className="text-3xl opacity-50">🎭</div>
-            </div>
-            <div className="text-4xl font-bold text-white mb-2 opacity-50">{totalEntries}</div>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-gray-300 opacity-50">
-                <span>Submitted:</span>
-                <span className="font-semibold text-green-400">{submittedEntries}</span>
+          {canAccessRoutines ? (
+            <Link
+              href="/dashboard/entries"
+              className={`flex-1 flex flex-col bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl p-6 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 cursor-pointer ${
+                nextActionCard === 'routines'
+                  ? 'border-2 border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.4)] animate-pulse'
+                  : 'border border-blue-400/30'
+              }`}
+              title="Manage your competition routines. Create new entries, edit existing routines, and submit your registration summary to the competition director."
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">My Routines</h3>
+                <div className="text-3xl">🎭</div>
               </div>
-              <div className="flex justify-between text-gray-300 opacity-50">
-                <span>Drafts:</span>
-                <span className="font-semibold text-yellow-400">{draftEntries}</span>
+              <div className="text-4xl font-bold text-white mb-2">{totalEntries}</div>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between text-gray-300">
+                  <span>Submitted:</span>
+                  <span className="font-semibold text-green-400">{submittedEntries}</span>
+                </div>
+                <div className="flex justify-between text-gray-300">
+                  <span>Drafts:</span>
+                  <span className="font-semibold text-yellow-400">{draftEntries}</span>
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <div
+              className="flex-1 flex flex-col bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-md rounded-xl p-6 border border-blue-400/20 opacity-60 cursor-not-allowed"
+              title="Routine creation is coming soon. This feature is currently under construction."
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">My Routines</h3>
+                <div className="text-3xl opacity-50">🎭</div>
+              </div>
+              <div className="text-4xl font-bold text-white mb-2 opacity-50">{totalEntries}</div>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between text-gray-300 opacity-50">
+                  <span>Submitted:</span>
+                  <span className="font-semibold text-green-400">{submittedEntries}</span>
+                </div>
+                <div className="flex justify-between text-gray-300 opacity-50">
+                  <span>Drafts:</span>
+                  <span className="font-semibold text-yellow-400">{draftEntries}</span>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <p className="text-center text-sm text-yellow-300">
+                  🚧 Routine creation coming soon
+                </p>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <p className="text-center text-sm text-yellow-300">
-                🚧 Routine creation coming soon
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

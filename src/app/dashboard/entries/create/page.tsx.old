@@ -1,7 +1,15 @@
 import { Suspense } from 'react';
 import { EntryCreateFormV2 } from '@/components/rebuild/entries/EntryCreateFormV2';
 
-export default function EntryCreateV2Page() {
+/**
+ * Entry creation page (REBUILD V2)
+ * Clean rebuild with proper tenant isolation
+ * Phase 1 Spec lines 503-585
+ *
+ * Required query params:
+ * - reservation: Reservation ID (required)
+ */
+export default function EntryCreatePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
       <Suspense fallback={

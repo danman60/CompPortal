@@ -44,6 +44,7 @@ interface FeatureConfig {
   roles: string[];
   description: string;
   status: 'testing' | 'beta' | 'released';
+  allowedUserIds?: string[]; // Optional: specific user IDs that can access regardless of role
 }
 
 /**
@@ -53,12 +54,17 @@ interface FeatureConfig {
  * - 'super_admin': Developer (always has access for testing)
  * - 'competition_director': Client (can demo features)
  * - 'studio_director': End users (add when ready to launch)
+ *
+ * User-Specific Access:
+ * - allowedUserIds: Array of user IDs that can access feature regardless of role
+ * - Useful for beta testing with specific users
  */
 const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
   // NEW ROUTINE CREATION PAGE
-  // Status: Testing with SA + CD, hidden from SD
+  // Status: Testing with SA + CD + test SD account
   [FEATURES.NEW_ROUTINE_PAGE]: {
     roles: ['super_admin', 'competition_director'],
+    allowedUserIds: ['4383d45e-bdf7-45df-a349-0c9b8421ff59'], // djamusic@gmail.com (test account)
     description: 'New routine creation page with improved UX and validation',
     status: 'testing',
   },
@@ -132,12 +138,13 @@ export const isFeatureEnabled = (
     return false;
   }
 
+  // Check if user ID is specifically allowed (regardless of role)
+  if (userId && config.allowedUserIds?.includes(userId)) {
+    return true;
+  }
+
   // Check if role is in allowed list
   const isAllowed = config.roles.includes(userRole);
-
-  // Optional: Add user-specific overrides here
-  // Example: Enable for specific test user IDs
-  // if (userId === 'test-user-123') return true;
 
   return isAllowed;
 };
