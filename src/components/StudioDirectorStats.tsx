@@ -12,9 +12,9 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
   const { data: myDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
   const { data: myEntries, isLoading: entriesLoading } = trpc.entry.getAll.useQuery();
   const { data: myReservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
-  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
+  const { data: currentUser, isLoading: userLoading } = trpc.user.getCurrentUser.useQuery();
 
-  if (dancersLoading || entriesLoading || reservationsLoading) {
+  if (dancersLoading || entriesLoading || reservationsLoading || userLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
