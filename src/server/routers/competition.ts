@@ -96,6 +96,13 @@ export const competitionRouter = router({
                 competition_sessions: true,
               },
             },
+            tenants: {
+              select: {
+                id: true,
+                name: true,
+                subdomain: true,
+              },
+            },
             reservations: {
               select: {
                 id: true,

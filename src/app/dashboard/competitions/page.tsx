@@ -1,17 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { Plus } from '@/lib/icons';
 
+type ViewMode = 'grid' | 'table';
+type SortColumn = 'name' | 'year' | 'tenant' | 'status' | 'capacity';
+type SortDirection = 'asc' | 'desc';
+
 export default function CompetitionsPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.competition.getAll.useQuery();
+  const { data: userData } = trpc.user.getCurrentUser.useQuery();
+  const { data: tenantsData } = trpc.user.getAllTenants.useQuery(undefined, {
+    enabled: userData?.role === 'super_admin',
+  });
+
   const [filter, setFilter] = useState<'active' | 'all' | 'upcoming' | 'registration_open' | 'in_progress' | 'completed' | 'cancelled'>('active');
+  const [selectedTenantId, setSelectedTenantId] = useState<string | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortColumn, setSortColumn] = useState<SortColumn>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const { data, isLoading } = trpc.competition.getAll.useQuery({
+    tenantId: selectedTenantId,
+  });
 
   const deleteMutation = trpc.competition.delete.useMutation({
     onSuccess: () => {
@@ -72,6 +88,15 @@ export default function CompetitionsPage() {
     }
   };
 
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
@@ -88,11 +113,57 @@ export default function CompetitionsPage() {
   }
 
   const competitions = data?.competitions || [];
+  const tenants = tenantsData?.tenants || [];
+  const isSuperAdmin = userData?.role === 'super_admin';
+
   const filteredCompetitions = filter === 'all'
     ? competitions
     : filter === 'active'
     ? competitions.filter(c => c.status !== 'cancelled')
     : competitions.filter(c => c.status === filter);
+
+  // Sort competitions for table view
+  const sortedCompetitions = useMemo(() => {
+    if (viewMode !== 'table') return filteredCompetitions;
+
+    return [...filteredCompetitions].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'year':
+          aValue = a.year;
+          bValue = b.year;
+          break;
+        case 'tenant':
+          aValue = a.tenants?.name.toLowerCase() || '';
+          bValue = b.tenants?.name.toLowerCase() || '';
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'capacity':
+          const aReserved = a.reservations?.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+          const bReserved = b.reservations?.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+          aValue = (a.venue_capacity || 600) - aReserved;
+          bValue = (b.venue_capacity || 600) - bReserved;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredCompetitions, viewMode, sortColumn, sortDirection]);
+
+  const displayCompetitions = viewMode === 'table' ? sortedCompetitions : filteredCompetitions;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
@@ -120,7 +191,58 @@ export default function CompetitionsPage() {
           </Button>
         </div>
 
-        {/* Filters */}
+        {/* SA Controls: Tenant Filter + View Toggle */}
+        {isSuperAdmin && (
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Tenant Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-300">Tenant:</label>
+                <select
+                  value={selectedTenantId || 'all'}
+                  onChange={(e) => setSelectedTenantId(e.target.value === 'all' ? undefined : e.target.value)}
+                  className="px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Tenants ({competitions.length})</option>
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name} ({competitions.filter(c => c.tenant_id === tenant.id).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 ml-auto">
+                <label className="text-sm font-medium text-gray-300">View:</label>
+                <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`px-3 py-1 rounded text-sm transition-all ${
+                      viewMode === 'grid'
+                        ? 'bg-purple-500 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Grid
+                  </button>
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-1 rounded text-sm transition-all ${
+                      viewMode === 'table'
+                        ? 'bg-purple-500 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Table
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status Filters */}
         <div className="flex gap-3 flex-wrap">
           <button
             onClick={() => setFilter('active')}
@@ -195,8 +317,8 @@ export default function CompetitionsPage() {
         </div>
       </div>
 
-      {/* Competitions Grid */}
-      {filteredCompetitions.length === 0 ? (
+      {/* Competitions Display */}
+      {displayCompetitions.length === 0 ? (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
           <div className="text-6xl mb-4">🎭</div>
           <h3 className="text-xl font-semibold text-white mb-2">No events found</h3>
@@ -214,9 +336,157 @@ export default function CompetitionsPage() {
             </Link>
           </Button>
         </div>
+      ) : viewMode === 'table' ? (
+        /* Table View */
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-white/10 border-b border-white/10">
+                <tr>
+                  <th
+                    onClick={() => handleSort('name')}
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      Name
+                      {sortColumn === 'name' && (
+                        <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('year')}
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      Year
+                      {sortColumn === 'year' && (
+                        <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  {isSuperAdmin && (
+                    <th
+                      onClick={() => handleSort('tenant')}
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        Tenant
+                        {sortColumn === 'tenant' && (
+                          <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                  )}
+                  <th
+                    onClick={() => handleSort('status')}
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      Status
+                      {sortColumn === 'status' && (
+                        <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('capacity')}
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      Capacity Remaining
+                      {sortColumn === 'capacity' && (
+                        <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {displayCompetitions.map((competition) => {
+                  const totalCapacity = competition.venue_capacity || 600;
+                  const reservedCount = competition.reservations
+                    ?.filter(r => r.status === 'approved')
+                    .reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+                  const remainingSlots = totalCapacity - reservedCount;
+
+                  return (
+                    <tr
+                      key={competition.id}
+                      className="hover:bg-white/5 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/dashboard/competitions/${competition.id}/edit`)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-white">{competition.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-300">{competition.year}</div>
+                      </td>
+                      {isSuperAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-300">
+                            {competition.tenants?.name || 'Unknown'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {competition.tenants?.subdomain}.compsync.net
+                          </div>
+                        </td>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          competition.status === 'registration_open' ? 'bg-green-500/20 text-green-400' :
+                          competition.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-400' :
+                          competition.status === 'completed' ? 'bg-purple-500/20 text-purple-400' :
+                          competition.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
+                          'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {competition.status?.replace('_', ' ') || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm">
+                          <span className="text-blue-400 font-semibold">{remainingSlots}</span>
+                          <span className="text-gray-500"> / {totalCapacity}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleClone(competition.id, competition.name, competition.year);
+                            }}
+                            className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-400/30 rounded hover:bg-green-500/30 transition-all"
+                            disabled={cloneMutation.isPending}
+                          >
+                            Clone
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(competition.id, competition.name);
+                            }}
+                            className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-400/30 rounded hover:bg-red-500/30 transition-all"
+                            disabled={deleteMutation.isPending}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* Grid View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCompetitions.map((competition) => {
+          {displayCompetitions.map((competition) => {
             // Calculate capacity metrics
             const totalCapacity = competition.venue_capacity || 600;
             const reservedCount = competition.reservations
@@ -234,6 +504,9 @@ export default function CompetitionsPage() {
                 <div className="mb-4">
                   <h3 className="text-xl font-bold text-white mb-1 line-clamp-1">{competition.name}</h3>
                   <p className="text-gray-400 text-xs">Year: {competition.year}</p>
+                  {isSuperAdmin && competition.tenants && (
+                    <p className="text-gray-500 text-xs mt-1">{competition.tenants.name}</p>
+                  )}
                 </div>
 
                 {/* Capacity Summary */}
