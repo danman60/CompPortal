@@ -8,6 +8,7 @@ import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
 import SitePauseButton from './SitePauseButton';
 import StudioInvitationButton from './StudioInvitationButton';
+import { SuperAdminActivityBar } from './SuperAdminActivityBar';
 import { trpc } from '@/lib/trpc';
 import { Sparkles, Target, Settings as SettingsIcon } from '@/lib/icons';
 import { useRouter } from 'next/navigation';
@@ -165,6 +166,20 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
   // Super Admin gets streamlined admin-focused dashboard
   const SA_DASHBOARD_CARDS: DashboardCard[] = [
     {
+      id: 'users',
+      href: '/dashboard/admin/users',
+      icon: '👥',
+      title: 'User Management',
+      description: 'Search & manage all users',
+    },
+    {
+      id: 'tenants',
+      href: '/dashboard/admin/tenants',
+      icon: '🏛️',
+      title: 'Tenant Management',
+      description: 'Manage competitions & branding',
+    },
+    {
       id: 'testing',
       href: '/dashboard/admin/testing',
       icon: '🧪',
@@ -234,6 +249,9 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       )}
 
       <div className="space-y-8">
+      {/* Super Admin Activity Feed */}
+      {isAdmin && <SuperAdminActivityBar />}
+
       {/* Header */}
       <div className="flex-1">
         <div className="flex items-center gap-4 mb-2">
