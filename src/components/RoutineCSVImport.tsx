@@ -84,10 +84,11 @@ export default function RoutineCSVImport() {
   // Update event date from any available reservation (for age calculation)
   useEffect(() => {
     if (reservationsData?.reservations && reservationsData.reservations.length > 0) {
-      // Use the first reservation's event date for age calculations
+      // Age calculation uses December 31st of competition year (not competition date)
       const firstReservation = reservationsData.reservations[0];
       if (firstReservation?.competitions?.competition_start_date) {
-        setEventStartDate(new Date(firstReservation.competitions.competition_start_date));
+        const compDate = new Date(firstReservation.competitions.competition_start_date);
+        setEventStartDate(new Date(compDate.getFullYear(), 11, 31)); // Dec 31st
       }
     }
   }, [reservationsData]);
