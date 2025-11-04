@@ -51,11 +51,22 @@ export default async function DashboardPage() {
 
   const role = userProfile?.role || 'studio_director';
 
+  // Get branding colors from tenant (defaults to pink/purple for non-admin)
+  const branding = tenant?.branding as any;
+  const primaryColor = branding?.primaryColor || '#FF1493';
+  const secondaryColor = branding?.secondaryColor || '#EC4899';
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black relative overflow-hidden">
       {/* Animated Gradient Overlay */}
       <div className="absolute inset-0 opacity-15 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-purple-500 to-pink-500 animate-gradient-shift" style={{ backgroundSize: '200% 200%' }}></div>
+        <div
+          className="absolute inset-0 bg-gradient-to-br animate-gradient-shift"
+          style={{
+            backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+            backgroundSize: '200% 200%'
+          }}
+        ></div>
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
@@ -110,7 +121,16 @@ export default async function DashboardPage() {
         {/* Support Footer */}
         <div className="mt-12 pt-8 border-t border-white/10 text-center">
           <p className="text-gray-400 text-sm">
-            Need help? Email <a href="mailto:techsupport@compsync.net" className="text-purple-400 hover:text-purple-300 underline">techsupport@compsync.net</a>
+            Need help? Email{' '}
+            <a
+              href="mailto:techsupport@compsync.net"
+              className="underline transition-colors"
+              style={{ color: primaryColor }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+            >
+              techsupport@compsync.net
+            </a>
           </p>
         </div>
 
