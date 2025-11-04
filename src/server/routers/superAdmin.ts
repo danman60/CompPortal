@@ -1255,6 +1255,111 @@ const emailMonitoringRouter = router({
 });
 
 // ============================================================================
+// BACKUP & RESTORE
+// ============================================================================
+
+const backupRestoreRouter = router({
+  // Get backup history (using activity logs)
+  getBackupHistory: protectedProcedure.query(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can access backup history');
+    }
+
+    // Get backup-related activity from logs
+    const backups = await prisma.$queryRaw<any[]>`
+      SELECT
+        id,
+        action,
+        details,
+        created_at,
+        user_id
+      FROM activity_logs
+      WHERE action LIKE '%backup%' OR action LIKE '%restore%'
+      ORDER BY created_at DESC
+      LIMIT 50
+    `;
+
+    return backups.map((backup) => ({
+      id: backup.id,
+      action: backup.action,
+      details: backup.details,
+      createdAt: backup.created_at,
+      userId: backup.user_id,
+    }));
+  }),
+
+  // Get database size and table counts
+  getDatabaseInfo: protectedProcedure.query(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can access database info');
+    }
+
+    // Get database size
+    const sizeResult = await prisma.$queryRaw<{ size_mb: number }[]>`
+      SELECT
+        ROUND(SUM(pg_total_relation_size(quote_ident(table_name))) / (1024 * 1024), 2) as size_mb
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+    `;
+
+    // Get table counts
+    const tableCounts = await prisma.$queryRaw<any[]>`
+      SELECT
+        table_name,
+        (xpath('/row/cnt/text()', xml_count))[1]::text::int as row_count
+      FROM (
+        SELECT
+          table_name,
+          query_to_xml(format('SELECT COUNT(*) as cnt FROM %I.%I', table_schema, table_name), false, true, '') as xml_count
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+      ) t
+      ORDER BY row_count DESC
+      LIMIT 20
+    `;
+
+    return {
+      sizeMB: sizeResult[0]?.size_mb || 0,
+      tables: tableCounts.map((t) => ({
+        name: t.table_name,
+        rowCount: t.row_count || 0,
+      })),
+    };
+  }),
+
+  // Create backup metadata (actual backup happens via Supabase dashboard/CLI)
+  createBackupLog: protectedProcedure
+    .input(
+      z.object({
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can create backups');
+      }
+
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          action: 'backup.initiated',
+          entityType: 'database',
+          entityId: ctx.userId,
+          details: {
+            notes: input.notes,
+            timestamp: new Date().toISOString(),
+          },
+        });
+
+        return { success: true, message: 'Backup initiated. Use Supabase Dashboard to download.' };
+      } catch (error) {
+        logger.error('Failed to log backup activity', { error: error instanceof Error ? error : new Error(String(error)) });
+        throw new Error('Failed to create backup log');
+      }
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -1265,4 +1370,5 @@ export const superAdminRouter = router({
   activityLogs: activityLogsRouter,
   health: systemHealthRouter,
   emails: emailMonitoringRouter,
+  backup: backupRestoreRouter,
 });

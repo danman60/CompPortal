@@ -261,14 +261,15 @@ export default function StudioInvitationsPage() {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
               className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              style={{ color: 'white' }}
             >
-              <option value="all">All Studios</option>
-              <option value="unclaimed">Unclaimed Only</option>
-              <option value="claimed">Claimed Only</option>
-              <option value="invited">Invited Only</option>
-              <option value="not-invited">Not Invited</option>
-              <option value="onboarding-complete">Onboarding Complete</option>
-              <option value="onboarding-pending">Onboarding Pending</option>
+              <option value="all" style={{ backgroundColor: '#1e293b', color: 'white' }}>All Studios</option>
+              <option value="unclaimed" style={{ backgroundColor: '#1e293b', color: 'white' }}>Unclaimed Only</option>
+              <option value="claimed" style={{ backgroundColor: '#1e293b', color: 'white' }}>Claimed Only</option>
+              <option value="invited" style={{ backgroundColor: '#1e293b', color: 'white' }}>Invited Only</option>
+              <option value="not-invited" style={{ backgroundColor: '#1e293b', color: 'white' }}>Not Invited</option>
+              <option value="onboarding-complete" style={{ backgroundColor: '#1e293b', color: 'white' }}>Onboarding Complete</option>
+              <option value="onboarding-pending" style={{ backgroundColor: '#1e293b', color: 'white' }}>Onboarding Pending</option>
             </select>
 
             {/* Actions */}
