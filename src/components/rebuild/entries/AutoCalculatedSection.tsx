@@ -22,6 +22,7 @@ interface Props {
  * Phase 1 Spec lines 546-585: Auto-classification logic
  * Shows age group (from average age, rounded down) and size category (from count)
  * Updated: Classification field added with inline exception button
+ * Cache Bust: 2025-01-04-16:45 UTC
  */
 export function AutoCalculatedSection({
   inferredAgeGroup,
