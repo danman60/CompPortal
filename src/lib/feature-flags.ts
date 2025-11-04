@@ -64,7 +64,7 @@ const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
   // Status: Testing with SA + CD + test SD account
   [FEATURES.NEW_ROUTINE_PAGE]: {
     roles: ['super_admin', 'competition_director'],
-    allowedUserIds: ['4383d45e-bdf7-45df-a349-0c9b8421ff59'], // djamusic@gmail.com (test account)
+    allowedUserIds: [], // Removed test account - use /dashboard/entries-beta URL for testing
     description: 'New routine creation page with improved UX and validation',
     status: 'testing',
   },
