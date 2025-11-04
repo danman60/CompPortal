@@ -1319,7 +1319,7 @@ const backupRestoreRouter = router({
     `;
 
     return {
-      sizeMB: sizeResult[0]?.size_mb || 0,
+      sizeMB: Number(sizeResult[0]?.size_mb) || 0,
       tables: tableCounts.map((t) => ({
         name: t.table_name,
         rowCount: t.row_count || 0,
