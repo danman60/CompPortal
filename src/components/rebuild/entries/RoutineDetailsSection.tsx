@@ -114,31 +114,7 @@ export function RoutineDetailsSection({
           </select>
         </div>
 
-        {/* Classification */}
-        <div>
-          <label
-            htmlFor="classification_id"
-            className="block text-sm font-medium text-gray-300 mb-2"
-          >
-            Classification <span className="text-red-400">*</span>
-          </label>
-          <select
-            id="classification_id"
-            value={form.classification_id}
-            onChange={(e) => updateField('classification_id', e.target.value)}
-            disabled={disabled}
-            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="" className="bg-gray-900">
-              Select a classification
-            </option>
-            {classifications.map((cls) => (
-              <option key={cls.id} value={cls.id} className="bg-gray-900">
-                {cls.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Classification REMOVED - Now in Auto-Calculated Section (Nov 4 transcript requirements) */}
 
         {/* Special Requirements */}
         <div>

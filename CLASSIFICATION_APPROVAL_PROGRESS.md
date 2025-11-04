@@ -1,9 +1,9 @@
 # Classification Exception Approval System - Implementation Progress
 
 **Started:** November 4, 2025
-**Status:** BLOCKED - Waiting for requirements clarification
+**Status:** ✅ IMPLEMENTATION COMPLETE - Ready for Testing
 **Spec:** `docs/specs/CLASSIFICATION_EXCEPTION_APPROVAL_SPEC.md`
-**Latest Commits:** e65fb9d, e70611f, ea2ccba, eb5c214, 828dca2, af753ae, 87e7c87
+**Latest Commits:** 1d6f81d (classification logic), 786a966 (testing button)
 
 ---
 
@@ -41,97 +41,100 @@
 
 ---
 
-## 🚨 BLOCKED - Requirements Clarification Needed
+## ✅ RESOLVED - Requirements Clarified (Nov 4, 2025)
 
-**Status:** Cannot proceed with classification implementation until requirements conflicts are resolved.
+**Status:** All conflicts resolved via user clarification. Implementation complete.
 
-**Document:** `TRANSCRIPT_VS_SPEC_COMPARISON.md` (detailed analysis created)
+**Document:** `TRANSCRIPT_VS_SPEC_COMPARISON.md` (detailed analysis)
 
-### Critical Conflicts Preventing Implementation:
+### Resolved Requirements:
 
-1. **Classification Manual Override for Groups**
-   - **Phase 2 Spec says:** Classification ALWAYS locked, cannot manually change (spec line 11)
-   - **Zoom Transcript says:** Groups CAN be manually changed by SD (transcript lines 129-133)
-   - **Question:** Which is correct?
-   - **Impact:** Fundamental UX difference - dropdown vs read-only display
+1. **Classification Manual Override for Groups** ✅
+   - **Decision:** Solos LOCKED, non-solos UNLOCKED
+   - **Implementation:** Solo dropdown disabled + "+1 Bump" button, non-solo dropdown enabled
+   - **Commit:** 1d6f81d (AutoCalculatedSection.tsx:270-289)
 
-2. **Exception Request Trigger**
-   - **Phase 2 Spec says:** Exception needed for ANY classification change (implied by "locked")
-   - **Zoom Transcript says:** Exception ONLY for going down OR up 2+ levels (NOT for +1 bump)
-   - **Question:** When should "Request Exception" button appear?
-   - **Impact:** Button visibility logic
+2. **Exception Request Trigger** ✅
+   - **Decision:** Exception ONLY for going down OR up 2+ levels
+   - **Implementation:** "Exception Required" button shows when levelDiff < 0 OR levelDiff >= 2
+   - **Commit:** 1d6f81d (AutoCalculatedSection.tsx:98-114)
 
-3. **Classification +1 Bump**
-   - **Phase 2 Spec says:** Classification locked, implies +1 needs exception
-   - **Zoom Transcript says:** +1 bump allowed WITHOUT exception (transcript lines 658-668)
-   - **Question:** Is +1 bump allowed without exception?
-   - **Impact:** Dropdown options vs exception workflow
-
-**Until Resolved:** Cannot implement classification auto-calculation or manual selection logic.
+3. **Classification +1 Bump** ✅
+   - **Decision:** +1 bump allowed WITHOUT exception
+   - **Implementation:** Solos get "+1 Bump" button, no exception request needed
+   - **Commit:** 1d6f81d (AutoCalculatedSection.tsx:117-126, 281-289)
 
 ---
 
 ## ⏳ Remaining Work (Post-Clarification)
 
-### High Priority (For Tomorrow's SD Launch):
-1. **Classification Logic** - BLOCKED (waiting on Q1-Q3 above)
-   - Implement based on user clarification
-   - Solo: Exact dancer classification (confirmed in transcript)
-   - Group: Manual selection OR locked with +1 bump? (CONFLICT)
-   - Production: Auto-locked to "Production" (confirmed in spec)
+### ✅ COMPLETED (Commit 1d6f81d + 786a966):
+1. **Classification Logic** ✅
+   - Solo: Locked dropdown + "+1 Bump" button (AutoCalculatedSection.tsx:270-289)
+   - Non-Solo: Unlocked dropdown with exception logic (AutoCalculatedSection.tsx:267-278)
+   - Auto-calculation from dancer classifications (AutoCalculatedSection.tsx:66-93)
+   - Exception button visibility (AutoCalculatedSection.tsx:292-300)
 
-2. **Extended Time Pricing Display** - NOT STARTED (NEW from transcript)
-   - Solo: Show "$5 flat"
-   - Groups: Show "$2 per dancer"
-   - Location: ExtendedTimeSection.tsx
-   - (Transcript lines 808-817)
+2. **Extended Time Pricing Display** ✅
+   - Solo: "$5 flat" displayed (ExtendedTimeSection.tsx:61-65)
+   - Non-Solo: "$X = $2 × Y dancers" displayed (ExtendedTimeSection.tsx:61-65)
+   - Pricing calculation (ExtendedTimeSection.tsx:39)
 
-3. **Title Upgrade Visibility** - NOT STARTED (NEW from transcript)
-   - Hide title upgrade checkbox for non-solos
-   - Only show for solos
-   - (Transcript lines 820-844)
+3. **Title Upgrade Visibility** ✅
+   - Only shows for solos (EntryCreateFormV2.tsx:200)
+   - Hidden for non-solos (EntryCreateFormV2.tsx:200)
+   - Updated description text
 
-4. **Pre-Summary Warning Checklist** - NOT STARTED (NEW from transcript)
+4. **SA Testing Tools Button** ✅
+   - Added test section to SA testing tools page (testing/page.tsx:217-258)
+   - Quick access to test routine form
+   - Prerequisites checklist
+   - Feature testing list
+
+### Pending (Lower Priority):
+5. **Pre-Summary Warning Checklist** - NOT STARTED (NEW from transcript)
    - Show checklist before summary submission
    - Warn about dancer classifications being locked
    - (Transcript lines 445-514)
 
-5. **Dancer Classification Locking Warning** - NOT STARTED (NEW from transcript)
+6. **Dancer Classification Locking Warning** - NOT STARTED (NEW from transcript)
    - Add warning to dancer creation form
    - "If you need to change classification, you must detach from routines first"
    - (Transcript lines 286-290, 406-442)
 
-6. **Production Testing** - NOT STARTED
-   - Test CD dashboard card and badge
-   - Test CD requests page (card/table views)
-   - Test CD decision flow (approve/set different)
-   - Test SD request button visibility
-   - Test SD modal UX
+7. **Production End-to-End Testing** - READY TO TEST
+   - Test classification auto-calculation (solo + group)
+   - Test "+1 Bump" button (solo only)
+   - Test "Exception Required" button (+2 levels / going down)
+   - Test extended time pricing display
+   - Test title upgrade visibility (solos only)
+   - Test exception request modal workflow
    - Verify on BOTH tenants (EMPWR + Glow)
 
-7. **Integration with Entry Creation** - NOT STARTED
-   - Pass actual entryId to modal (currently placeholder)
-   - Show button based on clarified trigger rules
-   - Update entry status to `pending_classification_approval`
+8. **Integration with Entry Creation** - PARTIAL
+   - Classification props passed to form ✅
+   - Exception modal integrated ✅
+   - TODO: Pass actual entryId when entry created
+   - TODO: Update entry status to `pending_classification_approval` when exception requested
 
 ### Lower Priority (Post-Launch):
-8. **Summary Submission Blocker**
+9. **Summary Submission Blocker**
    - Block if any entries have status `pending_classification_approval`
    - Show warning with list of pending entries
 
-9. **CSV Import Integration**
-   - Grey out rows with requested exceptions
-   - Show "Exception Requested" badge
-   - Entry already created (greyed row stays in preview)
+10. **CSV Import Integration**
+    - Grey out rows with requested exceptions
+    - Show "Exception Requested" badge
+    - Entry already created (greyed row stays in preview)
 
-10. **Email Templates** (5 templates)
+11. **Email Templates** (5 templates)
     - new-request (to CD)
     - approved (to SD)
     - resolved (to SD when CD sets different)
     - reminder (5-day to CD)
     - daily-digest (9 AM to CD)
 
-11. **Daily Digest Cron Job**
+12. **Daily Digest Cron Job**
     - 9 AM email
     - Only if pending items exist
     - Includes: requests, reservations, invoices
@@ -202,7 +205,8 @@ classification_exception_requests {
 
 ---
 
-**Status:** BLOCKED - Waiting for user to resolve spec conflicts
-**Deadline:** Tomorrow (Nov 5) for SD launch
-**Latest Build:** ✅ Passing (commit 87e7c87)
-**Latest Deployment:** Waiting for Vercel (~2-3 min from push)
+**Status:** ✅ READY FOR TESTING
+**Deadline:** November 5, 2025 for SD launch
+**Latest Build:** ✅ Passing (commit 786a966)
+**Latest Deployment:** Live on production (empwr.compsync.net)
+**Testing URL:** https://empwr.compsync.net/dashboard/admin/testing (SA login → "Test New Routine Form" button)
