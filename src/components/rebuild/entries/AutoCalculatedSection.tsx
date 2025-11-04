@@ -88,8 +88,26 @@ export function AutoCalculatedSection({
       return dancerClassifications[0];
     }
 
-    // Non-Solo: Use highest classification (simplified for now)
-    // TODO: Implement 60% majority rule for groups
+    // Non-Solo: 60% majority rule
+    // Count dancers per classification
+    const counts: Record<string, { classification: Classification; count: number }> = {};
+    dancerClassifications.forEach(cls => {
+      if (!counts[cls.id]) {
+        counts[cls.id] = { classification: cls, count: 0 };
+      }
+      counts[cls.id].count++;
+    });
+
+    const total = dancerClassifications.length;
+
+    // Check for 60%+ majority
+    for (const entry of Object.values(counts)) {
+      if (entry.count / total >= 0.6) {
+        return entry.classification;
+      }
+    }
+
+    // No clear majority: return highest
     const highest = dancerClassifications.reduce((prev, curr) => {
       const prevLevel = prev.skill_level ?? 0;
       const currLevel = curr.skill_level ?? 0;

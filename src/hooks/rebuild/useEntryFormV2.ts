@@ -211,6 +211,10 @@ export function useEntryFormV2({
    * Phase 1 Spec lines 842-850: Validation rules + Phase 2 choreographer required
    */
   const canSave = useMemo(() => {
+    // Production validation: minimum 10 dancers
+    const isProduction = effectiveSizeCategory?.name === 'Production';
+    const meetsProductionMin = !isProduction || form.selectedDancers.length >= 10;
+
     return (
       form.title.trim().length >= 3 && // Min 3 chars (spec line 843)
       form.title.trim().length <= 255 && // Max 255 chars
@@ -219,7 +223,8 @@ export function useEntryFormV2({
       form.classification_id.length > 0 &&
       form.selectedDancers.length >= 1 && // Min 1 dancer (spec line 844)
       effectiveAgeGroup !== null &&
-      effectiveSizeCategory !== null
+      effectiveSizeCategory !== null &&
+      meetsProductionMin // Productions require 10+ dancers
     );
   }, [
     form.title,
@@ -255,6 +260,11 @@ export function useEntryFormV2({
     }
     if (form.selectedDancers.length > 0 && !effectiveSizeCategory) {
       errors.push('Cannot determine size category - please select manually');
+    }
+
+    // Production validation: minimum 10 dancers
+    if (effectiveSizeCategory?.name === 'Production' && form.selectedDancers.length < 10) {
+      errors.push('Productions require minimum 10 dancers');
     }
 
     return errors;
