@@ -60,9 +60,51 @@ export function SuperAdminActivityBar() {
     }
   }, [data]);
 
-  // Don't show if not visible, error (not SA), loading, or no data
-  if (!isVisible || error || isLoading || !activities || activities.length === 0) {
+  // Don't show if not visible or error (not SA)
+  if (!isVisible || error) {
     return null;
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="relative bg-gradient-to-r from-purple-900/20 via-indigo-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg mb-6 overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <h3 className="text-sm font-semibold text-purple-300">Live Activity Feed</h3>
+          <span className="text-xs text-gray-400">Loading...</span>
+        </div>
+        <div className="px-4 py-8 text-center text-gray-400 text-sm">
+          Loading recent activity...
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no activities
+  if (!activities || activities.length === 0) {
+    return (
+      <div className="relative bg-gradient-to-r from-purple-900/20 via-indigo-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg mb-6 overflow-hidden">
+        <button
+          onClick={() => setIsVisible(false)}
+          className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded transition-colors text-gray-400 hover:text-white z-10"
+          aria-label="Hide activity bar"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10">
+          <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+          <h3 className="text-sm font-semibold text-purple-300">Live Activity Feed</h3>
+          <span className="text-xs text-gray-400">Auto-refreshes every 10s</span>
+        </div>
+        <div className="px-4 py-8 text-center">
+          <p className="text-gray-400 text-sm mb-2">No recent activity</p>
+          <p className="text-gray-500 text-xs">User actions will appear here as they happen</p>
+        </div>
+      </div>
+    );
   }
 
   const getActionEmoji = (action: string) => {
