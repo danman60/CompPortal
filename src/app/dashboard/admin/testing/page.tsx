@@ -267,10 +267,11 @@ export default function TestingToolsPage() {
                   value={testCompetitionId}
                   onChange={(e) => setTestCompetitionId(e.target.value)}
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-500"
+                  style={{ color: 'white' }}
                 >
-                  <option value="">Select competition</option>
+                  <option value="" style={{ backgroundColor: '#1e293b', color: 'white' }}>Select competition</option>
                   {competitions?.map((comp) => (
-                    <option key={comp.id} value={comp.id}>
+                    <option key={comp.id} value={comp.id} style={{ backgroundColor: '#1e293b', color: 'white' }}>
                       {comp.name}
                     </option>
                   ))}
