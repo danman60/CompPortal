@@ -3,6 +3,8 @@ import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { z } from 'zod';
+import { logActivity } from '@/lib/activity';
+import { logger } from '@/lib/logger';
 
 /**
  * User Router - User profile and session data
@@ -237,6 +239,22 @@ export const userRouter = router({
           notification_preferences: updatedPrefs,
         },
       });
+
+      // Activity logging
+      try {
+        await logActivity({
+          userId: ctx.userId!,
+          action: 'profile.update',
+          entityType: 'user',
+          entityId: ctx.userId!,
+          details: {
+            first_name: input.first_name,
+            last_name: input.last_name,
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log activity (profile.update)', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
 
       return { success: true };
     }),

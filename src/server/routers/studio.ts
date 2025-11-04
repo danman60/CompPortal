@@ -142,6 +142,24 @@ export const studioRouter = router({
         data: { role: 'studio_director' },
       });
 
+      // Activity logging
+      try {
+        await logActivity({
+          userId,
+          studioId: studio.id,
+          action: 'studio.claim',
+          entityType: 'studio',
+          entityId: studio.id,
+          details: {
+            studio_name: studio.name,
+            studio_code: studio.public_code,
+            tenant_id: studio.tenant_id,
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log activity (studio.claim)', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
       // Send notification email to Super Admin
       const { sendEmail } = await import('@/lib/email');
       try {
