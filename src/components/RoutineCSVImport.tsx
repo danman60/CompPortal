@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, ROUTINE_CSV_FIELDS } from '@/lib/csv-utils';
@@ -12,12 +12,14 @@ type ParsedRoutine = {
   props?: string;
   dancers?: string;
   choreographer?: string;
-  matchedDancers?: string[]; // IDs of matched dancers
-  unmatchedDancers?: string[]; // Names that couldn't be matched
-  age_group_id?: string; // Auto-detected or manually selected
-  classification_id?: string; // Manually selected
-  category_id?: string; // Manually selected
-  entry_size_id?: string; // Auto-detected or manually selected
+  matched_dancers: Array<{
+    dancer_id: string;
+    dancer_name: string;
+    dancer_age: number | null;
+    date_of_birth: string | null;
+    classification_id?: string | null;
+  }>;
+  unmatched_dancers: string[];
 };
 
 type ValidationError = {
@@ -26,32 +28,17 @@ type ValidationError = {
   message: string;
 };
 
-type DancerMatch = {
-  routineIndex: number;
-  dancerName: string;
-  matched: boolean;
-  matchedId?: string;
-  confidence?: number;
-};
-
 export default function RoutineCSVImport() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedRoutine[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-  const [headerSuggestions, setHeaderSuggestions] = useState<Array<{ header: string; field: string; confidence: number }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'importing' | 'success' | 'error'>('idle');
+  const [importStatus, setImportStatus] = useState<'idle' | 'parsing' | 'validated' | 'creating' | 'error'>('idle');
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [excelWorkbook, setExcelWorkbook] = useState<XLSX.WorkBook | null>(null);
   const [selectedReservationId, setSelectedReservationId] = useState<string>('');
-  const [dancerMatches, setDancerMatches] = useState<DancerMatch[]>([]);
-  const [noDancersWarning, setNoDancersWarning] = useState(false);
-  const [importProgress, setImportProgress] = useState(0);
-  const [importErrors, setImportErrors] = useState<string[]>([]);
-  const [previewData, setPreviewData] = useState<ParsedRoutine[]>([]);
-  const [eventStartDate, setEventStartDate] = useState<Date | null>(null);
   const [selectedRoutines, setSelectedRoutines] = useState<Set<number>>(new Set());
 
   // Get user and studio data
@@ -64,12 +51,9 @@ export default function RoutineCSVImport() {
     { enabled: !!studioId }
   );
 
-  // Fetch lookup data for categories and classifications
-  const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
-
   // Fetch existing dancers for matching
-  const { data: existingDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery(
-    { limit: 1000 },
+  const { data: existingDancers, isLoading: dancersLoading } = trpc.dancer.getByStudio.useQuery(
+    { studioId: studioId || '' },
     { enabled: !!studioId }
   );
 
@@ -79,71 +63,21 @@ export default function RoutineCSVImport() {
     { enabled: !!studioId }
   );
 
-  const createMutation = trpc.entry.create.useMutation();
+  const createSessionMutation = trpc.importSession.create.useMutation();
 
-  // Update event date from any available reservation (for age calculation)
-  useEffect(() => {
-    if (reservationsData?.reservations && reservationsData.reservations.length > 0) {
-      // Age calculation uses December 31st of competition year (not competition date)
-      const firstReservation = reservationsData.reservations[0];
-      if (firstReservation?.competitions?.competition_start_date) {
-        const compDate = new Date(firstReservation.competitions.competition_start_date);
-        setEventStartDate(new Date(compDate.getFullYear(), 11, 31)); // Dec 31st
-      }
-    }
-  }, [reservationsData]);
-
-  // Auto-select all routines when preview data loads
-  useEffect(() => {
-    if (previewData.length > 0) {
-      setSelectedRoutines(new Set(previewData.map((_, i) => i)));
-    }
-  }, [previewData.length]);
-
-  // Production Auto-Lock: When size category = "Production", lock dance category and classification
-  useEffect(() => {
-    if (!lookupData || previewData.length === 0) return;
-
-    const productionCategory = lookupData.categories?.find(c => c.name === 'Production');
-    const productionClass = lookupData.classifications?.find(c => c.name === 'Production');
-    const productionSize = lookupData.entrySizeCategories?.find(sc => sc.name === 'Production');
-
-    if (!productionCategory || !productionClass || !productionSize) return;
-
-    const updated = previewData.map(routine => {
-      const isProduction = routine.entry_size_id === productionSize.id;
-
-      if (isProduction) {
-        // Lock to Production
-        return {
-          ...routine,
-          category_id: productionCategory.id,
-          classification_id: productionClass.id,
-        };
-      }
-
-      return routine;
-    });
-
-    // Only update if changes were made
-    if (JSON.stringify(updated) !== JSON.stringify(previewData)) {
-      setPreviewData(updated);
-    }
-  }, [previewData, lookupData]);
-
-  // Fuzzy match dancer name against existing dancers
-  const matchDancerName = (name: string): { id: string; confidence: number } | null => {
-    if (!existingDancers?.dancers) return null;
+  // Fuzzy match dancer name against existing dancers (merges first + last name columns)
+  const matchDancerName = (name: string): { dancer: any; confidence: number } | null => {
+    if (!existingDancers?.dancers || existingDancers.dancers.length === 0) return null;
 
     const normalized = name.toLowerCase().trim();
-    let bestMatch: { id: string; confidence: number } | null = null;
+    let bestMatch: { dancer: any; confidence: number } | null = null;
 
     for (const dancer of existingDancers.dancers) {
       const dancerFullName = `${dancer.first_name} ${dancer.last_name}`.toLowerCase();
 
       // Exact match
       if (dancerFullName === normalized) {
-        return { id: dancer.id, confidence: 1.0 };
+        return { dancer, confidence: 1.0 };
       }
 
       // Fuzzy match with Levenshtein distance
@@ -152,155 +86,36 @@ export default function RoutineCSVImport() {
       const confidence = 1 - (distance / maxLength);
 
       if (confidence >= 0.8 && (!bestMatch || confidence > bestMatch.confidence)) {
-        bestMatch = { id: dancer.id, confidence };
+        bestMatch = { dancer, confidence };
       }
     }
 
     return bestMatch;
   };
 
-  // Calculate age at event date - Phase 2: Dec 31 cutoff (from useEntryFormV2 lines 111-120)
-  const calculateAgeAtEvent = (dateOfBirth: string | null): number | null => {
-    if (!dateOfBirth || !eventStartDate) return null;
+  // Calculate age at event date - Dec 31 cutoff
+  const calculateAgeAtEvent = (dateOfBirth: string | null, eventYear: number): number | null => {
+    if (!dateOfBirth) return null;
 
     const birthDate = new Date(dateOfBirth);
-    // Use Dec 31 of competition year (not competition date)
-    const cutoffDate = new Date(eventStartDate.getFullYear(), 11, 31);
+    const cutoffDate = new Date(eventYear, 11, 31); // Dec 31
     const diffMs = cutoffDate.getTime() - birthDate.getTime();
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
     return Math.floor(diffDays / 365);
   };
 
-  // Auto-detect age group based on numerical age (Phase 2: Maps numerical age → age group for scheduling)
-  const autoDetectAgeGroup = (matchedDancerIds: string[]): string | undefined => {
-    if (!matchedDancerIds.length || !existingDancers?.dancers || !eventStartDate || !lookupData?.ageGroups) {
-      console.log('[Age Detection] Missing prerequisites:', {
-        hasDancerIds: matchedDancerIds.length > 0,
-        hasDancers: !!existingDancers?.dancers,
-        hasEventDate: !!eventStartDate,
-        hasAgeGroups: !!lookupData?.ageGroups
-      });
-      return undefined;
-    }
-
-    // Calculate numerical ages at event (Dec 31 cutoff)
-    const agesAtEvent = matchedDancerIds
-      .map(id => existingDancers.dancers.find(d => d.id === id))
-      .filter(d => d && d.date_of_birth)
-      .map((d: any) => {
-        const dob = d.date_of_birth;
-        const dobString = dob instanceof Date ? dob.toISOString().split('T')[0] : String(dob);
-        return calculateAgeAtEvent(dobString);
-      })
-      .filter((age): age is number => age !== null);
-
-    if (agesAtEvent.length === 0) {
-      console.log('[Age Detection] No valid ages calculated from dancers');
-      return undefined;
-    }
-
-    // Solo: Exact age. Group: Average age (drop decimal)
-    const calculatedAge = matchedDancerIds.length === 1
-      ? agesAtEvent[0]
-      : Math.floor(agesAtEvent.reduce((sum, age) => sum + age, 0) / agesAtEvent.length);
-
-    console.log('[Age Detection] Calculated age:', calculatedAge, 'Dancer count:', matchedDancerIds.length);
-
-    // Map numerical age → age group (for scheduling)
-    const match = lookupData.ageGroups.find(
-      (ag) => ag.min_age <= calculatedAge && calculatedAge <= ag.max_age
-    );
-
-    console.log('[Age Detection] Matched age group:', match?.name || 'No match');
-    return match?.id;
-  };
-
-  // Auto-detect classification based on dancers - Phase 2: 60% majority rule
-  const autoDetectClassification = (matchedDancerIds: string[]): string | undefined => {
-    if (!matchedDancerIds.length || !existingDancers?.dancers || !lookupData?.classifications) {
-      return undefined;
-    }
-
-    // Get classifications for matched dancers
-    const dancerClassifications = matchedDancerIds
-      .map(id => existingDancers.dancers.find(d => d.id === id))
-      .filter(d => d && d.classification_id)
-      .map((d: any) => {
-        return lookupData.classifications.find(c => c.id === d.classification_id);
-      })
-      .filter((c): c is any => c !== null && c !== undefined);
-
-    if (dancerClassifications.length === 0) {
-      console.log('[Classification Detection] No dancers with classifications');
-      return undefined;
-    }
-
-    // Solo: Use dancer's exact classification
-    if (matchedDancerIds.length === 1) {
-      return dancerClassifications[0].id;
-    }
-
-    // Non-Solo: 60% majority rule (from AutoCalculatedSection.tsx:91-117)
-    const counts: Record<string, { classification: any; count: number }> = {};
-    dancerClassifications.forEach(cls => {
-      if (!counts[cls.id]) {
-        counts[cls.id] = { classification: cls, count: 0 };
-      }
-      counts[cls.id].count++;
-    });
-
-    const total = dancerClassifications.length;
-
-    // Check for 60%+ majority
-    for (const entry of Object.values(counts)) {
-      if (entry.count / total >= 0.6) {
-        console.log('[Classification Detection] 60% majority:', entry.classification.name);
-        return entry.classification.id;
-      }
-    }
-
-    // No clear majority: return highest skill level
-    const highest = dancerClassifications.reduce((prev, curr) => {
-      const prevLevel = prev.skill_level ?? 0;
-      const currLevel = curr.skill_level ?? 0;
-      return currLevel > prevLevel ? curr : prev;
-    });
-
-    console.log('[Classification Detection] No majority, using highest:', highest.name);
-    return highest.id;
-  };
-
-  // Auto-detect entry size based on TOTAL dancer count (matched + unmatched)
-  const autoDetectEntrySize = (matchedDancerIds: string[], totalDancerCount: number): string | undefined => {
-    if (totalDancerCount === 0 || !lookupData?.entrySizeCategories) {
-      return undefined;
-    }
-
-    // Use total count (matched + unmatched) for entry size
-    const count = totalDancerCount;
-
-    // Match to size categories
-    const match = lookupData.entrySizeCategories.find(
-      (sc) => sc.min_participants <= count && count <= sc.max_participants
-    );
-
-    return match?.id;
-  };
-
-  const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): ParsedRoutine[] => {
+  const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): any[] => {
     const worksheet = workbook.Sheets[sheetName];
     if (!worksheet) return [];
 
-    // Convert sheet to array of arrays (includes header row)
     const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
-
-    if (data.length < 2) return []; // Need header + at least 1 row
+    if (data.length < 2) return [];
 
     const headers = data[0].map((h: any) => String(h || '').trim()).filter((h: string) => h !== '');
     const { mapping } = mapCSVHeaders(headers, ROUTINE_CSV_FIELDS, 0.7);
 
-    const parsed: ParsedRoutine[] = [];
+    const parsed: any[] = [];
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
@@ -321,14 +136,13 @@ export default function RoutineCSVImport() {
       });
 
       if (Object.keys(routineRow).length > 0) {
-        parsed.push(routineRow as ParsedRoutine);
+        parsed.push(routineRow);
       }
     }
 
     return parsed;
   };
 
-  // Proper CSV parsing that handles quoted values
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -340,15 +154,12 @@ export default function RoutineCSVImport() {
 
       if (char === '"') {
         if (inQuotes && nextChar === '"') {
-          // Escaped quote
           current += '"';
-          i++; // Skip next quote
+          i++;
         } else {
-          // Toggle quote state
           inQuotes = !inQuotes;
         }
       } else if (char === ',' && !inQuotes) {
-        // End of field
         result.push(current.trim());
         current = '';
       } else {
@@ -356,25 +167,18 @@ export default function RoutineCSVImport() {
       }
     }
 
-    // Add last field
     result.push(current.trim());
     return result;
   };
 
-  const parseCSV = (text: string): ParsedRoutine[] => {
+  const parseCSV = (text: string): any[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
 
     const csvHeaders = parseCSVLine(lines[0]);
-    const { mapping, unmatched, suggestions } = mapCSVHeaders(csvHeaders, ROUTINE_CSV_FIELDS, 0.7);
+    const { mapping } = mapCSVHeaders(csvHeaders, ROUTINE_CSV_FIELDS, 0.7);
 
-    setHeaderSuggestions(suggestions);
-
-    if (unmatched.length > 0) {
-      console.warn('Unmatched CSV headers:', unmatched);
-    }
-
-    const data: ParsedRoutine[] = [];
+    const data: any[] = [];
 
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
@@ -390,7 +194,7 @@ export default function RoutineCSVImport() {
       });
 
       if (Object.keys(row).length > 0) {
-        data.push(row as ParsedRoutine);
+        data.push(row);
       }
     }
 
@@ -398,67 +202,48 @@ export default function RoutineCSVImport() {
   };
 
   // Match dancers for all routines
-  const matchDancersInRoutines = (routines: ParsedRoutine[]): void => {
-    const matches: DancerMatch[] = [];
-    let hasNoDancers = !dancersLoading && (!existingDancers?.dancers || existingDancers.dancers.length === 0);
+  const matchDancersInRoutines = (routines: any[], eventYear: number): ParsedRoutine[] => {
+    return routines.map(routine => {
+      if (!routine.dancers) {
+        return {
+          ...routine,
+          matched_dancers: [],
+          unmatched_dancers: [],
+        };
+      }
 
-    setNoDancersWarning(hasNoDancers);
+      // Split dancer names by comma (handles "First Last" or separate "First,Last" columns)
+      const dancerNames = routine.dancers.split(',').map((n: string) => n.trim()).filter((n: string) => n.length > 0);
 
-    routines.forEach((routine, index) => {
-      if (!routine.dancers) return;
-
-      // Split dancer names by comma
-      const dancerNames = routine.dancers.split(',').map(n => n.trim()).filter(n => n.length > 0);
-
-      const matched: string[] = [];
+      const matched: any[] = [];
       const unmatched: string[] = [];
 
-      dancerNames.forEach(name => {
+      dancerNames.forEach((name: string) => {
         const match = matchDancerName(name);
         if (match) {
-          matched.push(match.id);
-          matches.push({
-            routineIndex: index,
-            dancerName: name,
-            matched: true,
-            matchedId: match.id,
-            confidence: match.confidence
+          const age = calculateAgeAtEvent(match.dancer.date_of_birth, eventYear);
+          matched.push({
+            dancer_id: match.dancer.id,
+            dancer_name: name,
+            dancer_age: age,
+            date_of_birth: match.dancer.date_of_birth,
+            classification_id: match.dancer.classification_id || null,
           });
         } else {
           unmatched.push(name);
-          matches.push({
-            routineIndex: index,
-            dancerName: name,
-            matched: false
-          });
         }
       });
 
-      routine.matchedDancers = matched;
-      routine.unmatchedDancers = unmatched;
-
-      // Auto-detect all fields (Phase 2: age, classification, size)
-      // Age group: Maps numerical age → age group (for scheduling)
-      // Classification: 60% majority rule for groups
-      // Entry size: Based on TOTAL count (matched + unmatched)
-      const totalDancerCount = matched.length + unmatched.length;
-
-      if (matched.length > 0) {
-        routine.age_group_id = autoDetectAgeGroup(matched);
-        routine.classification_id = autoDetectClassification(matched);
-      }
-
-      if (totalDancerCount > 0) {
-        routine.entry_size_id = autoDetectEntrySize(matched, totalDancerCount);
-      }
+      return {
+        ...routine,
+        matched_dancers: matched,
+        unmatched_dancers: unmatched,
+      };
     });
-
-    setDancerMatches(matches);
-    setPreviewData([...routines]); // Initialize preview data with auto-detected values
   };
 
-  // Validate only title on upload (show preview)
-  const validateUpload = (data: ParsedRoutine[]): ValidationError[] => {
+  // Validate only title on upload
+  const validateUpload = (data: any[]): ValidationError[] => {
     const errors: ValidationError[] = [];
 
     data.forEach((routine, index) => {
@@ -472,31 +257,6 @@ export default function RoutineCSVImport() {
     return errors;
   };
 
-  // Validate all fields before import - Phase 2: includes Production validation
-  const validateBeforeImport = (): { valid: boolean; missingCount: number } => {
-    let missingCount = 0;
-
-    const productionSize = lookupData?.entrySizeCategories?.find(sc => sc.name === 'Production');
-
-    previewData.forEach((routine) => {
-      // Required fields check
-      if (!routine.age_group_id || !routine.classification_id || !routine.category_id || !routine.entry_size_id) {
-        missingCount++;
-        return;
-      }
-
-      // Production validation: minimum 10 dancers
-      const isProduction = routine.entry_size_id === productionSize?.id;
-      const totalDancers = (routine.matchedDancers?.length || 0) + (routine.unmatchedDancers?.length || 0);
-
-      if (isProduction && totalDancers < 10) {
-        missingCount++;
-      }
-    });
-
-    return { valid: missingCount === 0, missingCount };
-  };
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
     if (!uploadedFile) return;
@@ -508,14 +268,12 @@ export default function RoutineCSVImport() {
 
     try {
       const fileExt = uploadedFile.name.split('.').pop()?.toLowerCase();
-      let parsed: ParsedRoutine[] = [];
+      let parsed: any[] = [];
 
       if (fileExt === 'csv') {
-        // Handle CSV files
         const text = await uploadedFile.text();
         parsed = parseCSV(text);
       } else if (fileExt === 'xlsx' || fileExt === 'xls') {
-        // Handle Excel files (both .xlsx and .xls)
         const arrayBuffer = await uploadedFile.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetNames = workbook.SheetNames;
@@ -529,19 +287,25 @@ export default function RoutineCSVImport() {
           setExcelWorkbook(workbook);
           setSelectedSheet(sheetNames[0]);
           parsed = parseExcel(workbook, sheetNames[0]);
-        } else if (sheetNames.length === 1) {
+        } else {
           parsed = parseExcel(workbook, sheetNames[0]);
         }
       } else {
         throw new Error(`Unsupported file type: ${fileExt}. Please upload .csv, .xlsx, or .xls`);
       }
 
-      setParsedData(parsed);
+      // Get event year from first available reservation
+      const eventYear = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
+        ? new Date(reservationsData.reservations[0].competitions.competition_start_date).getFullYear()
+        : new Date().getFullYear();
 
-      // Match dancers
-      matchDancersInRoutines(parsed);
+      const matched = matchDancersInRoutines(parsed, eventYear);
+      setParsedData(matched);
 
-      const errors = validateUpload(parsed);
+      // Auto-select all routines
+      setSelectedRoutines(new Set(matched.map((_, i) => i)));
+
+      const errors = validateUpload(matched);
       setValidationErrors(errors);
 
       if (errors.length === 0) {
@@ -557,92 +321,38 @@ export default function RoutineCSVImport() {
     }
   };
 
-  const handleImport = async () => {
+  const handleConfirmRoutines = async () => {
     if (!selectedReservationId) {
-      setImportStatus('error');
+      alert('Please select a competition');
       return;
     }
 
-    if (!studioId) {
-      setImportStatus('error');
+    if (selectedRoutines.size === 0) {
+      alert('Please select at least one routine');
       return;
     }
 
-    const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
-    if (!reservation) {
-      setImportStatus('error');
-      return;
-    }
-
-    // Check available spaces
-    const usedSpaces = (reservation as any)._count?.competition_entries || 0;
-    const confirmedSpaces = reservation.spaces_confirmed || 0;
-    const availableSpaces = confirmedSpaces - usedSpaces;
-
-    // Filter to only selected routines
-    const selectedIndices = Array.from(selectedRoutines);
-    const routinesToImport = previewData.filter((_, i) => selectedRoutines.has(i));
-
-    if (routinesToImport.length > availableSpaces) {
-      setImportErrors([`Cannot import ${routinesToImport.length} routines. Only ${availableSpaces} space(s) available (${confirmedSpaces} confirmed - ${usedSpaces} used).`]);
-      setImportStatus('error');
-      return;
-    }
-
-    const competitionId = reservation.competition_id;
-
-    setImportStatus('importing');
+    setImportStatus('creating');
     setIsProcessing(true);
-    setImportProgress(0);
-    setImportErrors([]);
 
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
+    try {
+      // Filter to only selected routines
+      const routinesToImport = parsedData.filter((_, i) => selectedRoutines.has(i));
 
-    for (let idx = 0; idx < selectedIndices.length; idx++) {
-      const i = selectedIndices[idx];
-      const row = previewData[i];
-      try {
-        await createMutation.mutateAsync({
-          competition_id: competitionId,
-          studio_id: studioId,
-          title: row.title,
-          category_id: row.category_id!,
-          classification_id: row.classification_id!,
-          age_group_id: row.age_group_id,
-          entry_size_id: row.entry_size_id,
-          choreographer: row.choreographer,
-          special_requirements: row.props,
-          entry_fee: 0,
-          total_fee: 0,
-          status: 'draft',
-          participants: dancerMatches.filter(m => m.routineIndex === i && m.matched && m.matchedId).map(m => ({ dancer_id: m.matchedId })),
-        } as any);
+      // Create import session
+      const session = await createSessionMutation.mutateAsync({
+        reservation_id: selectedReservationId,
+        routines: routinesToImport,
+      });
 
-        successCount++;
-      } catch (error: any) {
-        console.error(`Error importing ${row.title}:`, error);
-        errorCount++;
-        errors.push(`${row.title}: ${error?.message || 'Unknown error'}`);
-      }
-
-      // Update progress
-      setImportProgress(Math.round(((idx + 1) / selectedIndices.length) * 100));
-    }
-
-    setIsProcessing(false);
-    setImportErrors(errors);
-
-    if (successCount > 0) {
-      // Show success even if some failed
-      setImportStatus('success');
-      setTimeout(() => {
-        router.push('/dashboard/entries');
-      }, 2000);
-    } else {
-      // All failed
+      // Redirect to EntryCreateFormV2 with import session ID
+      router.push(`/dashboard/entries/create?importSession=${session.id}`);
+    } catch (error: any) {
+      console.error('Error creating import session:', error);
+      alert(`Failed to create import session: ${error?.message || 'Unknown error'}`);
       setImportStatus('error');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -654,12 +364,16 @@ export default function RoutineCSVImport() {
 
     try {
       const parsed = parseExcel(excelWorkbook, sheetName);
-      setParsedData(parsed);
 
-      // Match dancers
-      matchDancersInRoutines(parsed);
+      const eventYear = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
+        ? new Date(reservationsData.reservations[0].competitions.competition_start_date).getFullYear()
+        : new Date().getFullYear();
 
-      const errors = validateUpload(parsed);
+      const matched = matchDancersInRoutines(parsed, eventYear);
+      setParsedData(matched);
+      setSelectedRoutines(new Set(matched.map((_, i) => i)));
+
+      const errors = validateUpload(matched);
       setValidationErrors(errors);
 
       if (errors.length === 0) {
@@ -779,7 +493,7 @@ export default function RoutineCSVImport() {
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 text-center">
           <div className="animate-spin text-6xl mb-4">⚙️</div>
           <h3 className="text-xl font-semibold text-white mb-2">Processing File...</h3>
-          <p className="text-gray-400">Parsing and validating data</p>
+          <p className="text-gray-400">Parsing and matching dancers</p>
         </div>
       )}
 
@@ -817,48 +531,18 @@ export default function RoutineCSVImport() {
         </div>
       )}
 
-      {/* Import Errors (all failed) */}
-      {importStatus === 'error' && importErrors.length > 0 && validationErrors.length === 0 && (
-        <div className="bg-red-500/10 backdrop-blur-md rounded-xl border border-red-400/30 p-6">
-          <div className="flex items-start gap-4">
-            <div className="text-4xl">❌</div>
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold text-red-400 mb-2">Import Failed</h3>
-              <p className="text-gray-300 mb-4">
-                All {importErrors.length} routine(s) failed to import. See errors below:
-              </p>
-
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {importErrors.map((error, index) => (
-                  <div key={index} className="bg-black/40 p-3 rounded-lg text-sm text-gray-200">
-                    {error}
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => router.push('/dashboard/entries')}
-                className="mt-4 bg-white/10 text-white px-6 py-2 rounded-lg hover:bg-white/20 transition-all"
-              >
-                Back to Entries
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Validated - Ready to Import */}
+      {/* Validated - Ready to Confirm */}
       {importStatus === 'validated' && (
         <div className="space-y-6">
           {/* No Dancers Warning */}
-          {noDancersWarning && (
+          {!dancersLoading && (!existingDancers?.dancers || existingDancers.dancers.length === 0) && (
             <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
               <div className="flex items-start gap-4">
                 <div className="text-4xl">⚠️</div>
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-yellow-400 mb-2">No Dancers Found</h3>
                   <p className="text-gray-300 mb-3">
-                    You haven't added any dancers yet. Import dancers first to enable automatic dancer matching for routines.
+                    You haven't added any dancers yet. Import dancers first to enable automatic dancer matching.
                   </p>
                   <a
                     href="/dashboard/dancers/import"
@@ -871,24 +555,9 @@ export default function RoutineCSVImport() {
             </div>
           )}
 
-          {/* Few Dancers Warning */}
-          {!noDancersWarning && existingDancers?.dancers && existingDancers.dancers.length < 5 && (
-            <div className="bg-blue-500/10 backdrop-blur-md rounded-xl border border-blue-400/30 p-6">
-              <div className="flex items-start gap-4">
-                <div className="text-3xl">ℹ️</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-blue-400 mb-2">Limited Dancer Pool</h3>
-                  <p className="text-gray-300 text-sm">
-                    You only have {existingDancers.dancers.length} dancer(s) in your system. Dancer matching may be limited.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Sheet Selection */}
           {availableSheets.length > 1 && (
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
               <h3 className="text-lg font-semibold text-white mb-3">📊 Multiple Sheets Detected</h3>
               <p className="text-sm text-gray-400 mb-4">Select which sheet to import:</p>
               <div className="flex gap-2 flex-wrap">
@@ -909,191 +578,30 @@ export default function RoutineCSVImport() {
             </div>
           )}
 
-          {/* Compact Info Bar - replaces big cards */}
-          <div className="bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 mb-5">
-            <div className="flex items-center gap-8 flex-wrap">
-              {/* Success - routines validated */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <span className="text-xl">✓</span>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wide">Validated</div>
-                  <div className="text-lg font-bold text-green-400">{previewData.length} routines</div>
-                </div>
-              </div>
-
-              {/* Unmatched dancers warning */}
-              {dancerMatches.filter(m => !m.matched).length > 0 && (
-                <>
-                  <div className="h-12 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                      <span className="text-xl">⚠️</span>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-400 uppercase tracking-wide">Unmatched</div>
-                      <div className="text-lg font-bold text-orange-400">{dancerMatches.filter(m => !m.matched).length} dancers</div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Competition selector */}
-              <div className="flex-1 min-w-[320px]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xl">🏆</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Competition</div>
-                    <select
-                      value={selectedReservationId}
-                      onChange={(e) => setSelectedReservationId(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white/10 border border-white/30 rounded-lg text-white text-sm font-medium focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
-                    >
-                      <option value="" className="bg-gray-900">Select approved reservation</option>
-                      {reservationsData?.reservations?.map((res: any) => (
-                        <option key={res.id} value={res.id} className="bg-gray-900">
-                          {res.competitions?.name} - {res.spaces_confirmed} spaces
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Expandable details for unmatched/fuzzy dancers */}
-            {(dancerMatches.filter(m => !m.matched).length > 0 || dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length > 0) && (
-              <details className="mt-4">
-                <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
-                  View dancer matching details
-                </summary>
-                <div className="mt-3 space-y-3">
-                  {dancerMatches.filter(m => !m.matched).length > 0 && (
-                    <div className="bg-orange-500/10 border border-orange-400/30 rounded-lg p-3">
-                      <div className="font-semibold text-orange-400 text-sm mb-2">
-                        Unmatched Dancers ({dancerMatches.filter(m => !m.matched).length})
-                      </div>
-                      <div className="max-h-24 overflow-y-auto space-y-1">
-                        {dancerMatches.filter(m => !m.matched).slice(0, 5).map((match, index) => (
-                          <div key={index} className="text-xs text-gray-300">
-                            • {match.dancerName}
-                          </div>
-                        ))}
-                        {dancerMatches.filter(m => !m.matched).length > 5 && (
-                          <div className="text-xs text-gray-400">
-                            ...and {dancerMatches.filter(m => !m.matched).length - 5} more
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length > 0 && (
-                    <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-3">
-                      <div className="font-semibold text-purple-400 text-sm mb-2">
-                        Fuzzy Matches ({dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).length})
-                      </div>
-                      <div className="max-h-24 overflow-y-auto space-y-1">
-                        {dancerMatches.filter(m => m.matched && m.confidence && m.confidence < 0.95).slice(0, 5).map((match, index) => (
-                          <div key={index} className="text-xs text-gray-300">
-                            • {match.dancerName} <span className="text-purple-400">({Math.round((match.confidence || 0) * 100)}%)</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </details>
-            )}
-          </div>
-
-          {/* Selection Bar - shows space validation */}
-          {selectedReservationId && (() => {
-            const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
-            if (!reservation) return null;
-            const usedSpaces = (reservation as any)._count?.competition_entries || 0;
-            const confirmedSpaces = reservation.spaces_confirmed || 0;
-            const availableSpaces = confirmedSpaces - usedSpaces;
-            const selectedCount = selectedRoutines.size;
-            const exceedsLimit = selectedCount > availableSpaces;
-
-            return (
-              <div className={`backdrop-blur-md rounded-xl border p-4 mb-4 ${exceedsLimit ? 'bg-red-500/10 border-red-400/50' : 'bg-white/10 border-white/20'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-300">
-                      Selected: <span className={`font-bold ${exceedsLimit ? 'text-red-400' : 'text-white'}`}>{selectedCount}</span> / {availableSpaces} available
-                    </span>
-                    {exceedsLimit && (
-                      <span className="text-sm text-red-400">
-                        ⚠️ Uncheck {selectedCount - availableSpaces} routine{selectedCount - availableSpaces > 1 ? 's' : ''} to continue
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSelectedRoutines(new Set())}
-                      className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all text-sm"
-                    >
-                      Uncheck All
-                    </button>
-                    <button
-                      onClick={() => setSelectedRoutines(new Set(previewData.map((_, i) => i)))}
-                      className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all text-sm"
-                    >
-                      Check All
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Import/Cancel Buttons */}
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={handleImport}
-              disabled={createMutation.isPending || !selectedReservationId || (() => {
-                const reservation = reservationsData?.reservations?.find(r => r.id === selectedReservationId);
-                if (!reservation) return true;
-                const availableSpaces = (reservation.spaces_confirmed || 0) - ((reservation as any)._count?.competition_entries || 0);
-                const selectedCount = selectedRoutines.size;
-                const selectedData = previewData.filter((_, i) => selectedRoutines.has(i));
-                return selectedCount > availableSpaces || selectedData.some(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id);
-              })()}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          {/* Competition Selector */}
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Select Competition
+            </label>
+            <select
+              value={selectedReservationId}
+              onChange={(e) => setSelectedReservationId(e.target.value)}
+              className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
             >
-              {createMutation.isPending ? 'Importing...' : `Import (${selectedRoutines.size} selected)`}
-            </button>
-            <button
-              onClick={() => router.push('/dashboard/entries')}
-              className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
-            >
-              Cancel
-            </button>
+              <option value="" className="bg-gray-900">Select approved reservation</option>
+              {reservationsData?.reservations?.map((res: any) => (
+                <option key={res.id} value={res.id} className="bg-gray-900">
+                  {res.competitions?.name} - {res.spaces_confirmed} spaces
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Preview Table */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 overflow-x-auto">
-            <h3 className="text-lg font-semibold text-white mb-4">Preview ({previewData.length} routines)</h3>
-
-            {/* Missing Fields Warning */}
-            {previewData.some(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id) && (
-              <div className="mb-4 bg-orange-500/10 border border-orange-400/30 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="text-2xl">⚠️</div>
-                  <div>
-                    <h4 className="text-orange-400 font-semibold mb-1">Missing Required Fields</h4>
-                    <p className="text-sm text-gray-300">
-                      {previewData.filter(r => !r.age_group_id || !r.classification_id || !r.category_id || !r.entry_size_id).length} routine(s) need all fields before import.
-                      Please select Age Group, Classification, Dance Category, and Entry Size for each routine.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Preview - Select Routines to Import ({selectedRoutines.size} selected)
+            </h3>
 
             <div className="max-h-[600px] overflow-y-auto">
               <table className="w-full text-sm text-left">
@@ -1102,10 +610,10 @@ export default function RoutineCSVImport() {
                     <th className="px-4 py-3 w-12">
                       <input
                         type="checkbox"
-                        checked={selectedRoutines.size === previewData.length && previewData.length > 0}
+                        checked={selectedRoutines.size === parsedData.length && parsedData.length > 0}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedRoutines(new Set(previewData.map((_, i) => i)));
+                            setSelectedRoutines(new Set(parsedData.map((_, i) => i)));
                           } else {
                             setSelectedRoutines(new Set());
                           }
@@ -1115,47 +623,18 @@ export default function RoutineCSVImport() {
                     </th>
                     <th className="px-4 py-3">#</th>
                     <th className="px-4 py-3">Title</th>
-                    <th className="px-4 py-3 min-w-[150px]">Age Group</th>
-                    <th className="px-4 py-3 min-w-[150px]">Classification</th>
-                    <th className="px-4 py-3 min-w-[150px]">Dance Category</th>
-                    <th className="px-4 py-3 min-w-[150px]">Entry Size</th>
                     <th className="px-4 py-3">Dancers</th>
-                    <th className="px-4 py-3">Props</th>
-                    <th className="px-4 py-3">Choreographer</th>
+                    <th className="px-4 py-3">Warnings</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {previewData.map((routine, index) => {
-                    // Get matches for this routine
-                    const routineMatches = dancerMatches.filter(m => m.routineIndex === index);
-                    const matched = routineMatches.filter(m => m.matched);
-                    const unmatched = routineMatches.filter(m => !m.matched);
-                    const totalDancers = matched.length + unmatched.length;
-
-                    // Check if auto-detected (Phase 2: age, classification, size all auto-detected)
-                    const hasAutoAge = parsedData[index]?.age_group_id && routine.age_group_id === parsedData[index].age_group_id;
-                    const hasAutoClassification = parsedData[index]?.classification_id && routine.classification_id === parsedData[index].classification_id;
-                    const hasAutoSize = parsedData[index]?.entry_size_id && routine.entry_size_id === parsedData[index].entry_size_id;
-
-                    // Production checks
-                    const productionSize = lookupData?.entrySizeCategories?.find(sc => sc.name === 'Production');
-                    const isProduction = routine.entry_size_id === productionSize?.id;
-                    const productionError = isProduction && totalDancers < 10;
-
-                    // Get detected names for display
-                    const detectedAge = lookupData?.ageGroups?.find(ag => ag.id === parsedData[index]?.age_group_id);
-                    const detectedClassification = lookupData?.classifications?.find(c => c.id === parsedData[index]?.classification_id);
-                    const detectedSize = lookupData?.entrySizeCategories?.find(sc => sc.id === parsedData[index]?.entry_size_id);
+                  {parsedData.map((routine, index) => {
+                    const matchedCount = routine.matched_dancers.length;
+                    const unmatchedCount = routine.unmatched_dancers.length;
+                    const totalCount = matchedCount + unmatchedCount;
 
                     return (
-                      <tr
-                        key={index}
-                        className={`border-b border-white/10 hover:bg-white/5 ${
-                          !routine.age_group_id || !routine.classification_id || !routine.category_id || !routine.entry_size_id || productionError
-                            ? 'bg-red-500/10'
-                            : ''
-                        }`}
-                      >
+                      <tr key={index} className="border-b border-white/10 hover:bg-white/5">
                         <td className="px-4 py-3">
                           <input
                             type="checkbox"
@@ -1173,201 +652,80 @@ export default function RoutineCSVImport() {
                           />
                         </td>
                         <td className="px-4 py-3 text-gray-400">{index + 1}</td>
-                        <td className="px-4 py-3 text-white">{routine.title}</td>
-
-                        {/* Age Group Dropdown - Phase 2: Show "Use detected" */}
+                        <td className="px-4 py-3 text-white font-medium">{routine.title}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <select
-                              value={routine.age_group_id || ''}
-                              onChange={(e) => {
-                                const updated = [...previewData];
-                                updated[index] = { ...updated[index], age_group_id: e.target.value };
-                                setPreviewData(updated);
-                              }}
-                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
-                                routine.age_group_id ? 'border-white/20' : 'border-red-400/50'
-                              } rounded text-white`}
-                            >
-                              <option value="" className="bg-gray-900">
-                                {detectedAge ? `Use detected (${detectedAge.name})` : 'Select age...'}
-                              </option>
-                              {lookupData?.ageGroups?.map(ag => (
-                                <option key={ag.id} value={ag.id} className="bg-gray-900">{ag.name}</option>
-                              ))}
-                            </select>
-                            {hasAutoAge && <span className="text-xs text-purple-400 whitespace-nowrap">AUTO</span>}
+                            <span className="text-gray-300">{totalCount} total</span>
+                            {matchedCount > 0 && (
+                              <span className="text-green-400 text-xs">({matchedCount} matched)</span>
+                            )}
+                            {unmatchedCount > 0 && (
+                              <span className="text-orange-400 text-xs">({unmatchedCount} unmatched)</span>
+                            )}
                           </div>
                         </td>
-
-                        {/* Classification Dropdown - Phase 2: Show "Use detected", disable when Production */}
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={routine.classification_id || ''}
-                              onChange={(e) => {
-                                const updated = [...previewData];
-                                updated[index] = { ...updated[index], classification_id: e.target.value };
-                                setPreviewData(updated);
-                              }}
-                              disabled={isProduction}
-                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
-                                routine.classification_id ? 'border-white/20' : 'border-red-400/50'
-                              } rounded text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                              <option value="" className="bg-gray-900">
-                                {detectedClassification ? `Use detected (${detectedClassification.name})` : 'Select classification...'}
-                              </option>
-                              {lookupData?.classifications?.map(c => (
-                                <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>
-                              ))}
-                            </select>
-                            {hasAutoClassification && <span className="text-xs text-purple-400 whitespace-nowrap">AUTO</span>}
-                            {isProduction && <span className="text-xs text-blue-400 whitespace-nowrap">🔒 LOCKED</span>}
-                          </div>
-                        </td>
-
-                        {/* Dance Category Dropdown - Phase 2: Disable when Production */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={routine.category_id || ''}
-                              onChange={(e) => {
-                                const updated = [...previewData];
-                                updated[index] = { ...updated[index], category_id: e.target.value };
-                                setPreviewData(updated);
-                              }}
-                              disabled={isProduction}
-                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
-                                routine.category_id ? 'border-white/20' : 'border-red-400/50'
-                              } rounded text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                              <option value="" className="bg-gray-900">Select category...</option>
-                              {lookupData?.categories?.map(cat => (
-                                <option key={cat.id} value={cat.id} className="bg-gray-900">{cat.name}</option>
-                              ))}
-                            </select>
-                            {isProduction && <span className="text-xs text-blue-400 whitespace-nowrap">🔒 LOCKED</span>}
-                          </div>
-                        </td>
-
-                        {/* Entry Size Dropdown - Phase 2: Show "Use detected", triggers Production auto-lock */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={routine.entry_size_id || ''}
-                              onChange={(e) => {
-                                const updated = [...previewData];
-                                updated[index] = { ...updated[index], entry_size_id: e.target.value };
-                                setPreviewData(updated);
-                              }}
-                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
-                                routine.entry_size_id ? 'border-white/20' : 'border-red-400/50'
-                              } rounded text-white`}
-                            >
-                              <option value="" className="bg-gray-900">
-                                {detectedSize ? `Use detected (${detectedSize.name})` : 'Select size...'}
-                              </option>
-                              {lookupData?.entrySizeCategories?.map(sc => (
-                                <option key={sc.id} value={sc.id} className="bg-gray-900">{sc.name}</option>
-                              ))}
-                            </select>
-                            {hasAutoSize && <span className="text-xs text-purple-400 whitespace-nowrap">AUTO</span>}
-                          </div>
-                        </td>
-
-                        {/* Dancers (Read-only) - Phase 2: Show Production validation error */}
-                        <td className="px-4 py-3">
-                          {routineMatches.length > 0 ? (
-                            <div className="space-y-1">
-                              {matched.map((m, i) => (
-                                <div key={i} className="text-green-400 text-xs">
-                                  ✓ {m.dancerName}
-                                </div>
-                              ))}
-                              {unmatched.map((m, i) => (
-                                <div key={i} className="text-orange-400 text-xs">
-                                  ? {m.dancerName}
-                                </div>
-                              ))}
-                              {productionError && (
-                                <div className="text-red-400 text-xs font-semibold mt-1">
-                                  ⚠️ Productions require 10+ dancers ({totalDancers} found)
-                                </div>
-                              )}
+                          {unmatchedCount > 0 && (
+                            <div className="text-orange-400 text-xs">
+                              ⚠️ {unmatchedCount} dancer{unmatchedCount > 1 ? 's' : ''} not found
                             </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
+                          )}
+                          {!routine.choreographer && (
+                            <div className="text-gray-400 text-xs">
+                              ℹ️ No choreographer (can add later)
+                            </div>
                           )}
                         </td>
-
-                        <td className="px-4 py-3 text-gray-300">{routine.props || '-'}</td>
-                        <td className="px-4 py-3 text-gray-300">{routine.choreographer || '-'}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Importing */}
-      {importStatus === 'importing' && (
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
-          <div className="text-center">
-            <div className="animate-bounce text-6xl mb-4">⬆️</div>
-            <h3 className="text-xl font-semibold text-white mb-2">Importing Routines...</h3>
-            <p className="text-gray-400 mb-6">Please wait while we add {previewData.length} routine(s) to the database</p>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="relative w-full h-8 bg-black/40 rounded-lg overflow-hidden">
-            <div
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300 ease-out"
-              style={{ width: `${importProgress}%` }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center text-white font-semibold text-sm">
-              {importProgress}%
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success */}
-      {importStatus === 'success' && (
-        <div className="space-y-6">
-          <div className="bg-green-500/10 backdrop-blur-md rounded-xl border border-green-400/30 p-8 text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-xl font-semibold text-green-400 mb-2">Import Successful!</h3>
-            <p className="text-gray-300">
-              Successfully imported {previewData.length - importErrors.length} of {previewData.length} routine(s). Redirecting to entries list...
-            </p>
-          </div>
-
-          {/* Partial Failure Warning */}
-          {importErrors.length > 0 && (
-            <div className="bg-yellow-500/10 backdrop-blur-md rounded-xl border border-yellow-400/30 p-6">
-              <div className="flex items-start gap-4">
-                <div className="text-4xl">⚠️</div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-yellow-400 mb-2">Partial Import</h3>
-                  <p className="text-gray-300 mb-4">
-                    {importErrors.length} routine(s) failed to import:
-                  </p>
-
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {importErrors.map((error, index) => (
-                      <div key={index} className="bg-black/40 p-3 rounded-lg text-sm text-gray-200">
-                        {error}
+            {/* Unmatched Dancers Details */}
+            {parsedData.some(r => r.unmatched_dancers.length > 0) && (
+              <details className="mt-4">
+                <summary className="text-sm text-orange-400 cursor-pointer hover:text-orange-300">
+                  View unmatched dancer details
+                </summary>
+                <div className="mt-3 bg-orange-500/10 border border-orange-400/30 rounded-lg p-4 max-h-48 overflow-y-auto">
+                  {parsedData.map((routine, index) => {
+                    if (routine.unmatched_dancers.length === 0) return null;
+                    return (
+                      <div key={index} className="mb-3 last:mb-0">
+                        <div className="text-sm font-semibold text-white mb-1">
+                          {routine.title}
+                        </div>
+                        <div className="text-xs text-gray-300 space-y-1">
+                          {routine.unmatched_dancers.map((name, i) => (
+                            <div key={i}>• {name}</div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-              </div>
-            </div>
-          )}
+              </details>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            <button
+              onClick={handleConfirmRoutines}
+              disabled={!selectedReservationId || selectedRoutines.size === 0 || isProcessing}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isProcessing ? 'Creating Session...' : `Confirm Routines (${selectedRoutines.size})`}
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/entries')}
+              className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>

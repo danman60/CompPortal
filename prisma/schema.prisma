@@ -1240,6 +1240,7 @@ model reservations {
   studios                                        studios                             @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                                        tenants                             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   summaries                                      summaries?
+  routine_import_sessions                        routine_import_sessions[]
 
   @@index([approved_by], map: "idx_reservations_approved_by")
   @@index([competition_id], map: "idx_reservations_competition")
@@ -1361,6 +1362,7 @@ model studios {
   users_studios_owner_idTousers     users?                              @relation("studios_owner_idTousers", fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                           tenants                             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   users_studios_verified_byTousers  users?                              @relation("studios_verified_byTousers", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  routine_import_sessions           routine_import_sessions[]
 
   @@index([code], map: "idx_studios_code")
   @@index([owner_id], map: "idx_studios_owner")
@@ -1735,5 +1737,27 @@ enum user_role {
   competition_director
   super_admin
 
+  @@schema("public")
+}
+
+/// Routine import sessions for CSV import workflow
+/// Stores parsed routines from CSV upload for step-through entry creation
+model routine_import_sessions {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studio_id      String   @db.Uuid
+  reservation_id String   @db.Uuid
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now()) @updatedAt
+  completed      Boolean  @default(false)
+  current_index  Int      @default(0)
+  total_routines Int
+  routines       Json
+
+  studios      studios      @relation(fields: [studio_id], references: [id], onDelete: Cascade)
+  reservations reservations @relation(fields: [reservation_id], references: [id], onDelete: Cascade)
+
+  @@index([studio_id])
+  @@index([completed])
+  @@index([created_at])
   @@schema("public")
 }
