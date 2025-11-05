@@ -1,13 +1,15 @@
 import SubInvoiceDetail from '@/components/SubInvoiceDetail';
 
 type Props = {
-  params: { subInvoiceId: string };
+  params: Promise<{ subInvoiceId: string }>;
 };
 
-export default function SubInvoiceDetailPage({ params }: Props) {
+export default async function SubInvoiceDetailPage({ params }: Props) {
+  const { subInvoiceId } = await params;
+
   return (
     <div className="min-h-screen bg-background p-6">
-      <SubInvoiceDetail subInvoiceId={params.subInvoiceId} />
+      <SubInvoiceDetail subInvoiceId={subInvoiceId} />
     </div>
   );
 }

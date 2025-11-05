@@ -1046,8 +1046,16 @@ export const invoiceRouter = router({
       }
 
       // Guard: Must be studio owner or super admin
-      if (ctx.user.role !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+      if (ctx.userRole !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized to split this invoice' });
+      }
+
+      // Guard: Invoice must be PAID before splitting
+      if (invoice.status !== 'PAID') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invoice must be marked as PAID before splitting by dancer. This ensures the Competition Director has finalized all pricing.'
+        });
       }
 
       // 2. Get all entries for this invoice (from line_items)
@@ -1084,33 +1092,16 @@ export const invoiceRouter = router({
         },
       });
 
-      // 4. Validate all dancers have parent_email
-      const dancersWithoutEmail: string[] = [];
-      entries.forEach(entry => {
-        entry.entry_participants.forEach(ep => {
-          if (!ep.dancers.parent_email) {
-            dancersWithoutEmail.push(`${ep.dancers.first_name} ${ep.dancers.last_name}`);
-          }
-        });
-      });
-
-      if (dancersWithoutEmail.length > 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot split invoice: ${dancersWithoutEmail.length} dancer(s) missing parent email`,
-          cause: { dancers: dancersWithoutEmail },
-        });
-      }
-
-      // 5. Group dancers by parent_email and calculate family shares
-      type FamilyData = {
-        identifier: string;
-        name: string;
+      // 4. Create one sub-invoice per dancer
+      type DancerData = {
+        dancer_id: string;
+        dancer_name: string;
+        parent_email: string | null;
         lineItems: any[];
         subtotal: number;
       };
 
-      const familyMap = new Map<string, FamilyData>();
+      const dancerMap = new Map<string, DancerData>();
 
       entries.forEach(entry => {
         const totalDancers = entry.entry_participants.length;
@@ -1119,69 +1110,59 @@ export const invoiceRouter = router({
 
         // Find corresponding line item from invoice
         const invoiceLineItem = lineItems.find((li: any) => li.id === entry.id);
-        const entryNumber = invoiceLineItem?.entryNumber || entry.entry_number || 0;
+        const entryNumber = invoiceLineItem?.entryNumber || entry.entry_number || '—';
 
-        // Group by parent_email
-        const familyGroups = new Map<string, typeof entry.entry_participants>();
+        // Calculate share for each dancer in this entry
         entry.entry_participants.forEach(ep => {
-          const email = ep.dancers.parent_email!;
-          if (!familyGroups.has(email)) {
-            familyGroups.set(email, []);
-          }
-          familyGroups.get(email)!.push(ep);
-        });
+          const dancerId = ep.dancer_id;
+          const dancerName = `${ep.dancers.first_name} ${ep.dancers.last_name}`;
+          const parentEmail = ep.dancers.parent_email;
 
-        // Calculate share for each family in this entry
-        familyGroups.forEach((participants, parentEmail) => {
-          const familyDancerCount = participants.length;
-          const familyShare = sharePerDancer * familyDancerCount;
-
-          if (!familyMap.has(parentEmail)) {
-            // Use parent_name from first dancer, fallback to email
-            const parentName = participants[0]?.dancers.parent_name || parentEmail.split('@')[0];
-            familyMap.set(parentEmail, {
-              identifier: parentEmail,
-              name: parentName,
+          if (!dancerMap.has(dancerId)) {
+            dancerMap.set(dancerId, {
+              dancer_id: dancerId,
+              dancer_name: dancerName,
+              parent_email: parentEmail,
               lineItems: [],
               subtotal: 0,
             });
           }
 
-          const familyData = familyMap.get(parentEmail)!;
-          familyData.lineItems.push({
+          const dancerData = dancerMap.get(dancerId)!;
+          dancerData.lineItems.push({
             entry_id: entry.id,
             entry_number: entryNumber,
             title: entry.title,
             category: entry.dance_categories?.name || 'Unknown',
             size_category: entry.entry_size_categories?.name || 'Unknown',
-            dancer_ids: participants.map(p => p.dancer_id),
-            dancer_names: participants.map(p => `${p.dancers.first_name} ${p.dancers.last_name}`),
+            dancer_ids: [dancerId],
+            dancer_names: [dancerName],
             total_dancers: totalDancers,
-            family_dancer_count: familyDancerCount,
-            amount: Number(familyShare.toFixed(2)),
+            dancer_share: sharePerDancer,
+            amount: Number(sharePerDancer.toFixed(2)),
           });
-          familyData.subtotal += Number(familyShare.toFixed(2));
+          dancerData.subtotal += Number(sharePerDancer.toFixed(2));
         });
       });
 
-      // 6. Calculate tax for each family and apply rounding adjustment
+      // 5. Calculate tax for each dancer and apply rounding adjustment
       const taxRate = Number(invoice.tax_rate || 13);
-      const families = Array.from(familyMap.values());
+      const dancers = Array.from(dancerMap.values());
 
       let calculatedTotal = 0;
-      families.forEach((family, index) => {
-        const taxAmount = Number((family.subtotal * taxRate / 100).toFixed(2));
-        const total = family.subtotal + taxAmount;
+      dancers.forEach((dancer, index) => {
+        const taxAmount = Number((dancer.subtotal * taxRate / 100).toFixed(2));
+        const total = dancer.subtotal + taxAmount;
 
         // Store for rounding adjustment check
         calculatedTotal += total;
 
-        (family as any).tax_rate = taxRate;
-        (family as any).tax_amount = taxAmount;
-        (family as any).total = total;
+        (dancer as any).tax_rate = taxRate;
+        (dancer as any).tax_amount = taxAmount;
+        (dancer as any).total = total;
       });
 
-      // 7. Apply penny rounding adjustment to last family if needed
+      // 6. Apply penny rounding adjustment to last dancer if needed
       const mainInvoiceTotal = Number(invoice.total);
       const difference = mainInvoiceTotal - calculatedTotal;
 
@@ -1193,11 +1174,11 @@ export const invoiceRouter = router({
       }
 
       if (difference !== 0) {
-        const lastFamily: any = families[families.length - 1];
-        lastFamily.total = Number((lastFamily.total + difference).toFixed(2));
+        const lastDancer: any = dancers[dancers.length - 1];
+        lastDancer.total = Number((lastDancer.total + difference).toFixed(2));
       }
 
-      // 8. Delete existing sub-invoices for this invoice (allow regeneration)
+      // 7. Delete existing sub-invoices for this invoice (allow regeneration)
       await prisma.sub_invoices.deleteMany({
         where: {
           parent_invoice_id: input.invoiceId,
@@ -1205,21 +1186,22 @@ export const invoiceRouter = router({
         },
       });
 
-      // 9. Create sub-invoices in transaction
+      // 8. Create sub-invoices in transaction (one per dancer)
       const subInvoices = await prisma.$transaction(
-        families.map((family: any) =>
+        dancers.map((dancer: any) =>
           prisma.sub_invoices.create({
             data: {
               parent_invoice_id: input.invoiceId,
-              family_identifier: family.identifier,
-              family_name: family.name,
-              line_items: family.lineItems as any,
-              subtotal: family.subtotal,
-              tax_rate: family.tax_rate,
-              tax_amount: family.tax_amount,
-              total: family.total,
+              family_identifier: dancer.dancer_id, // Use dancer_id as identifier
+              family_name: dancer.dancer_name, // Use dancer name
+              line_items: dancer.lineItems as any,
+              subtotal: dancer.subtotal,
+              tax_rate: dancer.tax_rate,
+              tax_amount: dancer.tax_amount,
+              total: dancer.total,
               status: 'GENERATED',
               tenant_id: ctx.tenantId!,
+              notes: dancer.parent_email ? `Parent email: ${dancer.parent_email}` : null,
             },
           })
         )
@@ -1245,10 +1227,10 @@ export const invoiceRouter = router({
       return {
         success: true,
         sub_invoice_count: subInvoices.length,
-        families: families.map((f: any) => ({
-          name: f.name,
-          identifier: f.identifier,
-          total: f.total,
+        dancers: dancers.map((d: any) => ({
+          name: d.dancer_name,
+          identifier: d.dancer_id,
+          total: d.total,
         })),
       };
     }),
@@ -1271,7 +1253,7 @@ export const invoiceRouter = router({
       }
 
       // Guard: Must be studio owner or super admin
-      if (ctx.user.role !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+      if (ctx.userRole !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
 
@@ -1326,7 +1308,7 @@ export const invoiceRouter = router({
       }
 
       // Guard: Must be studio owner or super admin
-      if (ctx.user.role !== 'super_admin' && subInvoice.invoices.studios.owner_id !== ctx.userId) {
+      if (ctx.userRole !== 'super_admin' && subInvoice.invoices.studios.owner_id !== ctx.userId) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
 
@@ -1351,7 +1333,7 @@ export const invoiceRouter = router({
       }
 
       // Guard: Must be studio owner or super admin
-      if (ctx.user.role !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+      if (ctx.userRole !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
 

@@ -1,8 +1,7 @@
 'use client';
 
-import { api } from '@/lib/trpc-client';
-import { Button } from '@/components/ui/Card';
-import { Card } from '@/components/ui/Card';
+import { trpc } from '@/lib/trpc';
+import { Button } from '@/components/rebuild/ui/Button';
 import { Download, Mail, Printer, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,31 +10,31 @@ type SubInvoiceDetailProps = {
 };
 
 export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps) {
-  const { data: subInvoice, isLoading, error } = api.invoice.getSubInvoiceById.useQuery({
+  const { data: subInvoice, isLoading, error } = trpc.invoice.getSubInvoiceById.useQuery({
     subInvoiceId,
   });
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <div className="p-6 bg-white rounded-lg shadow border">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin text-4xl mb-4">⏳</div>
             <p className="text-muted-foreground">Loading invoice...</p>
           </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
   if (error || !subInvoice) {
     return (
-      <Card className="p-6">
+      <div className="p-6 bg-white rounded-lg shadow border">
         <div className="flex items-center gap-3 text-red-600">
           <AlertCircle className="w-5 h-5" />
           <p>Error loading invoice: {error?.message || 'Not found'}</p>
         </div>
-      </Card>
+      </div>
     );
   }
 
@@ -56,14 +55,14 @@ export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps
         </Link>
         <div className="flex gap-2">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => window.print()}
           >
             <Printer className="w-4 h-4 mr-2" />
             Print
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               alert('Download PDF - Coming soon!');
             }}
@@ -83,7 +82,7 @@ export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps
       </div>
 
       {/* Invoice Card */}
-      <Card className="p-8 print:shadow-none">
+      <div className="p-8 bg-white rounded-lg shadow border print:shadow-none">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between mb-6">
@@ -122,7 +121,7 @@ export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps
               <h3 className="font-semibold mb-2">Studio:</h3>
               <div className="text-sm space-y-1">
                 <p className="font-medium">{studio.name}</p>
-                {studio.address && <p className="text-muted-foreground">{studio.address}</p>}
+                {studio.address1 && <p className="text-muted-foreground">{studio.address1}</p>}
                 {studio.city && studio.province && (
                   <p className="text-muted-foreground">
                     {studio.city}, {studio.province} {studio.postal_code}
@@ -137,9 +136,9 @@ export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps
         <div className="mb-6 p-4 bg-muted rounded-lg">
           <h3 className="font-semibold mb-2">Competition</h3>
           <p className="text-sm">{competition.name}</p>
-          {competition.start_date && (
+          {competition.competition_start_date && (
             <p className="text-sm text-muted-foreground">
-              {new Date(competition.start_date).toLocaleDateString()}
+              {new Date(competition.competition_start_date).toLocaleDateString()}
             </p>
           )}
         </div>
@@ -229,7 +228,7 @@ export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps
           <p>Generated on {new Date(subInvoice.created_at!).toLocaleString()}</p>
           <p className="mt-1">This invoice is part of a split family billing system</p>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

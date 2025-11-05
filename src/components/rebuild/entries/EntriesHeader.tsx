@@ -47,9 +47,9 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
             <Button
               href={resumeUrl}
               variant="primary"
-              title={`Resume CSV import - ${activeSession.total_routines - activeSession.current_index} routine(s) remaining`}
+              title={`Resume CSV import - ${activeSession.total_routines - (activeSession.current_index ?? 0)} routine(s) remaining`}
             >
-              ▶ Resume Import ({activeSession.total_routines - activeSession.current_index} left)
+              ▶ Resume Import ({activeSession.total_routines - (activeSession.current_index ?? 0)} left)
             </Button>
           )}
 

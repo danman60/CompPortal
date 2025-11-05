@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { api } from '@/lib/trpc-client';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { trpc } from '@/lib/trpc';
+import { Button } from '@/components/rebuild/ui/Button';
 import { X, Users, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 
 type SplitInvoiceWizardProps = {
@@ -20,7 +19,7 @@ export default function SplitInvoiceWizard({
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [error, setError] = useState<string | null>(null);
 
-  const splitMutation = api.invoice.splitInvoice.useMutation({
+  const splitMutation = trpc.invoice.splitInvoice.useMutation({
     onSuccess: (data) => {
       setStep(3);
     },
@@ -41,7 +40,7 @@ export default function SplitInvoiceWizard({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
@@ -96,7 +95,7 @@ export default function SplitInvoiceWizard({
             />
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -237,7 +236,7 @@ function Step3Success({
   result: {
     success: boolean;
     sub_invoice_count: number;
-    families: Array<{ name: string; identifier: string; total: number }>;
+    dancers: Array<{ name: string; identifier: string; total: number }>;
   };
   onFinish: () => void;
 }) {
@@ -251,7 +250,7 @@ function Step3Success({
           Successfully Split Invoice!
         </h3>
         <p className="text-sm text-muted-foreground">
-          Created {result.sub_invoice_count} family invoice{result.sub_invoice_count !== 1 ? 's' : ''}
+          Created {result.sub_invoice_count} dancer invoice{result.sub_invoice_count !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -259,21 +258,21 @@ function Step3Success({
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
-              <th className="text-left px-4 py-2 font-medium">Family</th>
+              <th className="text-left px-4 py-2 font-medium">Dancer</th>
               <th className="text-right px-4 py-2 font-medium">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y">
-            {result.families.map((family, i) => (
+            {result.dancers.map((dancer, i) => (
               <tr key={i} className="hover:bg-muted/50">
                 <td className="px-4 py-2">
                   <div>
-                    <p className="font-medium">{family.name}</p>
-                    <p className="text-xs text-muted-foreground">{family.identifier}</p>
+                    <p className="font-medium">{dancer.name}</p>
+                    <p className="text-xs text-muted-foreground">{dancer.identifier}</p>
                   </div>
                 </td>
                 <td className="px-4 py-2 text-right font-medium">
-                  ${family.total.toFixed(2)}
+                  ${dancer.total.toFixed(2)}
                 </td>
               </tr>
             ))}
@@ -283,8 +282,8 @@ function Step3Success({
 
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <p className="text-sm text-green-900">
-          ✅ All family invoices have been generated and validated.
-          You can now view, download, or send these invoices to families.
+          ✅ All dancer invoices have been generated and validated.
+          You can now view, download, or send these invoices to dancers.
         </p>
       </div>
 
@@ -293,7 +292,7 @@ function Step3Success({
           onClick={onFinish}
           className="bg-purple-600 hover:bg-purple-700"
         >
-          View Family Invoices
+          View Dancer Invoices
         </Button>
       </div>
     </div>

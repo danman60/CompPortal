@@ -1,8 +1,7 @@
 'use client';
 
-import { api } from '@/lib/trpc-client';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { trpc } from '@/lib/trpc';
+import { Button } from '@/components/rebuild/ui/Button';
 import { FileText, Download, Mail, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -15,37 +14,37 @@ export default function SubInvoiceList({
   parentInvoiceId,
   onBack,
 }: SubInvoiceListProps) {
-  const { data, isLoading, error } = api.invoice.getSubInvoices.useQuery({
+  const { data, isLoading, error } = trpc.invoice.getSubInvoices.useQuery({
     parentInvoiceId,
   });
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <div className="p-6 bg-white rounded-lg shadow border">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin text-4xl mb-4">⏳</div>
             <p className="text-muted-foreground">Loading family invoices...</p>
           </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="p-6">
+      <div className="p-6 bg-white rounded-lg shadow border">
         <div className="flex items-center gap-3 text-red-600">
           <AlertCircle className="w-5 h-5" />
           <p>Error loading sub-invoices: {error.message}</p>
         </div>
-      </Card>
+      </div>
     );
   }
 
   if (!data || data.sub_invoices.length === 0) {
     return (
-      <Card className="p-6">
+      <div className="p-6 bg-white rounded-lg shadow border">
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Family Invoices</h3>
@@ -57,7 +56,7 @@ export default function SubInvoiceList({
             Back to Invoice
           </Button>
         </div>
-      </Card>
+      </div>
     );
   }
 
@@ -80,7 +79,7 @@ export default function SubInvoiceList({
       </div>
 
       {/* Validation Summary */}
-      <Card className={`p-4 ${summary.matches_parent ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+      <div className={`p-4 rounded-lg shadow border ${summary.matches_parent ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
         <div className="flex items-center gap-3">
           {summary.matches_parent ? (
             <>
@@ -104,12 +103,12 @@ export default function SubInvoiceList({
             </>
           )}
         </div>
-      </Card>
+      </div>
 
       {/* Bulk Actions */}
       <div className="flex gap-3">
         <Button
-          variant="outline"
+          variant="secondary"
           onClick={() => {
             alert('Download All PDFs - Coming soon!');
           }}
@@ -118,7 +117,7 @@ export default function SubInvoiceList({
           Download All PDFs
         </Button>
         <Button
-          variant="outline"
+          variant="secondary"
           onClick={() => {
             alert('Send All Emails - Coming soon!');
           }}
@@ -129,7 +128,7 @@ export default function SubInvoiceList({
       </div>
 
       {/* Sub-Invoice List */}
-      <Card>
+      <div className="bg-white rounded-lg shadow border">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted border-b">
@@ -173,12 +172,11 @@ export default function SubInvoiceList({
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-2 justify-end">
                         <Link href={`/dashboard/invoices/family/${subInvoice.id}`}>
-                          <Button size="sm" variant="ghost">
+                          <Button variant="ghost">
                             <FileText className="w-4 h-4" />
                           </Button>
                         </Link>
                         <Button
-                          size="sm"
                           variant="ghost"
                           onClick={() => {
                             alert(`Download PDF for ${subInvoice.family_name} - Coming soon!`);
@@ -187,7 +185,6 @@ export default function SubInvoiceList({
                           <Download className="w-4 h-4" />
                         </Button>
                         <Button
-                          size="sm"
                           variant="ghost"
                           onClick={() => {
                             alert(`Send email to ${subInvoice.family_identifier} - Coming soon!`);
@@ -220,7 +217,7 @@ export default function SubInvoiceList({
             </tfoot>
           </table>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

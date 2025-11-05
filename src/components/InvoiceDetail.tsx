@@ -501,7 +501,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           </div>
         )}
 
-        {/* Studio Director: Split Invoice / View Family Invoices */}
+        {/* Studio Director: Split Invoice / View Dancer Invoices */}
         {isStudioDirector && dbInvoice && (
           <div className="mb-4">
             {hasSubInvoices ? (
@@ -509,15 +509,27 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 onClick={() => setShowSubInvoices(true)}
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
               >
-                👨‍👩‍👧‍👦 View Family Invoices ({subInvoicesData?.summary.count || 0})
+                👤 View Dancer Invoices ({subInvoicesData?.summary.count || 0})
               </button>
             ) : (
-              <button
-                onClick={() => setShowSplitWizard(true)}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
-              >
-                ✂️ Split Invoice by Family
-              </button>
+              <div>
+                <button
+                  onClick={() => setShowSplitWizard(true)}
+                  disabled={dbInvoice.status !== 'PAID'}
+                  className={`w-full px-6 py-3 rounded-lg transition-all font-semibold ${
+                    dbInvoice.status === 'PAID'
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:shadow-lg'
+                      : 'bg-gray-600 text-gray-300 cursor-not-allowed opacity-60'
+                  }`}
+                >
+                  ✂️ Split Invoice by Dancer
+                </button>
+                {dbInvoice.status !== 'PAID' && (
+                  <p className="text-sm text-yellow-400 mt-2">
+                    💡 Mark invoice as PAID before splitting by dancer. This ensures pricing is finalized.
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

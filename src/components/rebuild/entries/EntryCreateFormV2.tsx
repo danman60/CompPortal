@@ -30,7 +30,7 @@ export function EntryCreateFormV2() {
 
   // Get current routine from import session
   const currentRoutine = importSession && !importSession.completed
-    ? (importSession.routines as any[])[importSession.current_index]
+    ? (importSession.routines as any[])[importSession.current_index ?? 0]
     : null;
 
   // Use session's reservation if in import mode, otherwise use query param
@@ -303,7 +303,7 @@ export function EntryCreateFormV2() {
       toast.success('Routine saved!');
 
       // Move to next routine or complete
-      const nextIndex = importSession!.current_index + 1;
+      const nextIndex = (importSession!.current_index ?? 0) + 1;
       if (nextIndex >= importSession!.total_routines) {
         // Mark session as complete
         await markCompleteMutation.mutateAsync({ id: importSessionId! });
@@ -323,7 +323,7 @@ export function EntryCreateFormV2() {
 
   const handleSkipRoutine = async () => {
     try {
-      const nextIndex = importSession!.current_index + 1;
+      const nextIndex = (importSession!.current_index ?? 0) + 1;
       if (nextIndex >= importSession!.total_routines) {
         await markCompleteMutation.mutateAsync({ id: importSessionId! });
         toast.success('Import complete!');
@@ -342,7 +342,7 @@ export function EntryCreateFormV2() {
     try {
       await deleteRoutineMutation.mutateAsync({
         id: importSessionId!,
-        routine_index: importSession!.current_index,
+        routine_index: importSession!.current_index ?? 0,
       });
 
       toast.success('Routine deleted from import queue');
@@ -431,7 +431,7 @@ export function EntryCreateFormV2() {
           canSave={formHook.canSave}
           isLoading={createMutation.isPending}
           validationErrors={formHook.validationErrors}
-          currentIndex={importSession.current_index}
+          currentIndex={importSession.current_index ?? 0}
           totalRoutines={importSession.total_routines}
           onSaveAndNext={handleSaveAndNext}
           onSkip={handleSkipRoutine}
@@ -524,7 +524,7 @@ export function EntryCreateFormV2() {
           canSave={formHook.canSave}
           isLoading={createMutation.isPending}
           validationErrors={formHook.validationErrors}
-          currentIndex={importSession.current_index}
+          currentIndex={importSession.current_index ?? 0}
           totalRoutines={importSession.total_routines}
           onSaveAndNext={handleSaveAndNext}
           onSkip={handleSkipRoutine}

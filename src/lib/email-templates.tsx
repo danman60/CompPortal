@@ -12,6 +12,7 @@ import StudioRejected from '@/emails/StudioRejected';
 import PaymentConfirmed from '@/emails/PaymentConfirmed';
 import MissingMusicReminder from '@/emails/MissingMusicReminder';
 import WelcomeEmail from '@/emails/WelcomeEmail';
+import DailyDigest from '@/emails/DailyDigest';
 
 /**
  * Render email templates to HTML
@@ -161,6 +162,40 @@ export interface StudioProfileSubmittedData {
   tenantBranding?: TenantBranding;
 }
 
+export interface DailyDigestData {
+  userName: string;
+  tenantName: string;
+  portalUrl: string;
+  pendingActions: {
+    classificationRequests: Array<{
+      id: string;
+      entryTitle: string;
+      studioName: string;
+      requestedClassification: string;
+      submittedAt: Date;
+    }>;
+    reservationReviews: Array<{
+      id: string;
+      studioName: string;
+      competitionName: string;
+      entriesRequested: number;
+      submittedAt: Date;
+    }>;
+  };
+  upcomingEvents: Array<{
+    id: string;
+    name: string;
+    startDate: Date;
+    daysUntil: number;
+  }>;
+  recentActivity: Array<{
+    action: string;
+    description: string;
+    timestamp: Date;
+  }>;
+  tenantBranding?: TenantBranding;
+}
+
 /**
  * Render registration confirmation email
  */
@@ -253,10 +288,17 @@ export async function renderStudioProfileSubmitted(data: StudioProfileSubmittedD
 }
 
 /**
+ * Render daily digest email (for CD)
+ */
+export async function renderDailyDigest(data: DailyDigestData) {
+  return render(<DailyDigest {...data} />);
+}
+
+/**
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music' | 'daily-digest',
   data: { [key: string]: any }
 ): string {
   const subjects = {
@@ -272,6 +314,7 @@ export function getEmailSubject(
     'studio-rejected': `Studio Registration Status Update`,
     'payment-confirmed': `Payment ${data.paymentStatus ? data.paymentStatus.toUpperCase() : 'CONFIRMED'} - ${data.competitionName} (${data.competitionYear})`,
     'missing-music': `⏰ Reminder: Upload Music Files - ${data.competitionName}`,
+    'daily-digest': `${data.tenantName} Daily Digest - ${new Date().toLocaleDateString()}`,
   };
 
   return subjects[template];

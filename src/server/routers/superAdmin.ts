@@ -1482,6 +1482,251 @@ const impersonationRouter = router({
 });
 
 // ============================================================================
+// DAILY DIGEST MANAGEMENT
+// ============================================================================
+
+const digestRouter = router({
+  // Send digest to specific user (test send)
+  sendDigestToUser: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can trigger digest emails');
+      }
+
+      const { generateDigestForUser } = await import('@/lib/digest-generator');
+      const { renderDailyDigest, getEmailSubject } = await import('@/lib/email-templates');
+      const { sendEmail } = await import('@/lib/email');
+
+      // Get user preferences (default to all enabled for manual trigger)
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: input.userId },
+        select: {
+          notification_preferences: true,
+          role: true,
+        },
+      });
+
+      if (!userProfile || userProfile.role !== 'competition_director') {
+        throw new Error('User is not a Competition Director');
+      }
+
+      const preferences = (userProfile.notification_preferences as any)?.email_digest || {
+        includeActivities: true,
+        includeUpcomingEvents: true,
+        includePendingActions: true,
+        minimumActivityCount: 0, // For manual test, send even if empty
+      };
+
+      // Generate digest content
+      const digestContent = await generateDigestForUser(input.userId, preferences);
+
+      if (!digestContent) {
+        throw new Error('No digest content generated (user may not be eligible)');
+      }
+
+      // Get tenant branding
+      const tenant = await prisma.tenants.findUnique({
+        where: { id: digestContent.tenantId },
+        select: {
+          name: true,
+          branding: true,
+        },
+      });
+
+      // Extract branding from JSON field
+      const branding = tenant?.branding as any || {};
+
+      // Render email
+      const emailHtml = await renderDailyDigest({
+        userName: digestContent.userName,
+        tenantName: digestContent.tenantName,
+        portalUrl: `https://${tenant?.name.toLowerCase().replace(/\s+/g, '')}.compsync.net`,
+        pendingActions: digestContent.pendingActions,
+        upcomingEvents: digestContent.upcomingEvents,
+        recentActivity: digestContent.recentActivity,
+        tenantBranding: {
+          primaryColor: branding.primary_color || undefined,
+          logo: branding.logo_url || undefined,
+          tenantName: tenant?.name || undefined,
+        },
+      });
+
+      const subject = getEmailSubject('daily-digest', {
+        tenantName: digestContent.tenantName,
+      });
+
+      // Send email
+      await sendEmail({
+        to: digestContent.userEmail,
+        subject,
+        html: emailHtml,
+        from: process.env.RESEND_FROM_EMAIL || 'noreply@compsync.net',
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: digestContent.tenantId,
+        action: 'digest.send',
+        entityType: 'user_profile',
+        entityId: input.userId,
+        details: {
+          summary: digestContent.summary,
+          sentBy: 'super_admin',
+        },
+      });
+
+      return {
+        success: true,
+        summary: digestContent.summary,
+      };
+    }),
+
+  // Send digest to all users due for digest
+  sendScheduledDigests: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can trigger scheduled digests');
+    }
+
+    const { getUsersDueForDigest, generateDigestForUser } = await import(
+      '@/lib/digest-generator'
+    );
+    const { renderDailyDigest, getEmailSubject } = await import('@/lib/email-templates');
+    const { sendEmail } = await import('@/lib/email');
+
+    const usersDue = await getUsersDueForDigest();
+
+    const results = {
+      sent: [] as string[],
+      failed: [] as Array<{ userId: string; error: string }>,
+      skipped: [] as string[],
+    };
+
+    for (const { userId, preferences } of usersDue) {
+      try {
+        // Generate digest content
+        const digestContent = await generateDigestForUser(userId, preferences);
+
+        if (!digestContent) {
+          results.skipped.push(userId);
+          continue;
+        }
+
+        // Get tenant branding
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: digestContent.tenantId },
+          select: {
+            name: true,
+            branding: true,
+          },
+        });
+
+        // Extract branding from JSON field
+        const branding = tenant?.branding as any || {};
+
+        // Render email
+        const emailHtml = await renderDailyDigest({
+          userName: digestContent.userName,
+          tenantName: digestContent.tenantName,
+          portalUrl: `https://${tenant?.name.toLowerCase().replace(/\s+/g, '')}.compsync.net`,
+          pendingActions: digestContent.pendingActions,
+          upcomingEvents: digestContent.upcomingEvents,
+          recentActivity: digestContent.recentActivity,
+          tenantBranding: {
+            primaryColor: branding.primary_color || undefined,
+            logo: branding.logo_url || undefined,
+            tenantName: tenant?.name || undefined,
+          },
+        });
+
+        const subject = getEmailSubject('daily-digest', {
+          tenantName: digestContent.tenantName,
+        });
+
+        // Send email
+        await sendEmail({
+          to: digestContent.userEmail,
+          subject,
+          html: emailHtml,
+          from: process.env.RESEND_FROM_EMAIL || 'noreply@compsync.net',
+        });
+
+        // Log activity
+        await logActivity({
+          userId: ctx.userId!,
+          tenantId: digestContent.tenantId,
+          action: 'digest.send',
+          entityType: 'user_profile',
+          entityId: userId,
+          details: {
+            summary: digestContent.summary,
+            sentBy: 'scheduled_cron',
+          },
+        });
+
+        results.sent.push(userId);
+      } catch (error) {
+        logger.error('Failed to send digest to user', {
+          error: error instanceof Error ? error : new Error(String(error)),
+          userId,
+        });
+        results.failed.push({
+          userId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return results;
+  }),
+
+  // Preview digest content for user without sending
+  previewDigest: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string().uuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can preview digests');
+      }
+
+      const { generateDigestForUser } = await import('@/lib/digest-generator');
+
+      // Get user preferences
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: input.userId },
+        select: {
+          notification_preferences: true,
+          role: true,
+        },
+      });
+
+      if (!userProfile || userProfile.role !== 'competition_director') {
+        throw new Error('User is not a Competition Director');
+      }
+
+      const preferences = (userProfile.notification_preferences as any)?.email_digest || {
+        includeActivities: true,
+        includeUpcomingEvents: true,
+        includePendingActions: true,
+        minimumActivityCount: 0,
+      };
+
+      // Generate digest content
+      const digestContent = await generateDigestForUser(input.userId, preferences);
+
+      return digestContent;
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -1494,4 +1739,5 @@ export const superAdminRouter = router({
   emails: emailMonitoringRouter,
   backup: backupRestoreRouter,
   impersonation: impersonationRouter,
+  digest: digestRouter,
 });
