@@ -1,10 +1,10 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-01-04 (CSV Import Phase 2 Testing)
+**Last Updated:** 2025-01-05 (Entry Form Bug Fixes Complete)
 
 ---
 
-## Current Status: 🔧 CSV IMPORT BUG FIX - Critical Blocker Found
+## Current Status: ✅ ENTRY FORM READY - Bug Fixes Complete
 
 **Milestone Achievement:**
 - ✅ Soft launch completed - Studios invited, accounts claimed, dancers registered
@@ -28,6 +28,40 @@
 ---
 
 ## Recent Sessions
+
+### Session 33: Entry Form Bug Fixes + Testing Feedback (Jan 5, 2025)
+**Status:** ✅ COMPLETE - All 10 bugs fixed
+
+**COMPLETED:**
+1. ✅ Classification validation - accept auto-detected (ba89da3)
+2. ✅ Exception modal race condition - validate entry exists
+3. ✅ Size category dropdown removed - read-only display
+4. ✅ Extended time display - shows max time label
+5. ✅ Exception modal styling - white text fixed
+6. ✅ Exception modal classification - correct data passed
+7. ✅ Back button added to entry form
+8. ✅ "Import CSV" renamed to "Import Routines"
+9. ✅ Classification box - shows on page load (25fce96)
+10. ✅ Dance category lock fixed - remains changeable
+11. ✅ UUID error fixed - "Use detected" classification saves correctly
+
+**COMMITS:**
+- ba89da3: Entry form bug fixes (7 bugs + 2 UX improvements)
+- 51299a0: Instructions for Supabase MCP agent
+- 1f82e1a: Session summary documentation
+- 25fce96: Testing feedback fixes (3 critical issues)
+
+**FILES CREATED:**
+- update_time_limits.sql (ready for database execution)
+- TIME_LIMITS_SOURCE.md (industry standard documentation)
+- INSTRUCTIONS_FOR_AGENT_WITH_SUPABASE_MCP.md
+- MANUAL_TASKS_NEEDED.md
+- SESSION_COMPLETE_BUG_FIXES.md
+- NEXT_SESSION_BUGS.md (bug report from user)
+
+**REMAINING TASKS:**
+- ⏳ Run update_time_limits.sql (requires Supabase MCP)
+- ⏳ Fix SA testing environment studio issue
 
 ### Session 32: CSV Import CRITICAL BUG FIXED (Jan 5, 2025)
 **Status:** ✅ COMPLETE - Major breakthrough achieved!
