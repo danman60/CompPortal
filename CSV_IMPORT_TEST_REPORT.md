@@ -279,5 +279,51 @@ Failed: [{
 
 ---
 
-**Testing Status:** 🟡 IN PROGRESS - Blocked by data loading bug
-**Next Action:** Investigate entry form's importSession data initialization
+## ✅ FINAL UPDATE - CRITICAL BUG FIXED (Jan 5, 2025)
+
+**Build:** 4a6c9a6
+**Breakthrough:** CSV import data loading bug RESOLVED!
+
+### What Was Fixed
+
+**File:** EntryCreateFormV2.tsx lines 87-108
+**Issue:** toggleDancer called with raw dancer object instead of formatted SelectedDancer
+**Fix:** Added calculateAge helper and proper object formatting before toggleDancer call
+
+### Database Verification
+
+```sql
+SELECT id, title, choreographer, COUNT(p.id) as participant_count
+FROM competition_entries e
+LEFT JOIN entry_participants p ON e.id = p.entry_id
+WHERE title = 'Test Solo Age 15'
+```
+
+**Result:**
+- Entry ID: 47b4b165-d247-44a7-9905-0047505c31ff
+- Title: "Test Solo Age 15" ✅
+- Choreographer: "Jane Smith" ✅
+- **participant_count: 1** ✅ (CRITICAL PROOF)
+- Import session current_index: 1 (advanced from 0) ✅
+
+### New Bug Found (Non-Critical)
+
+**Issue:** Form doesn't reload with next routine after save
+- Backend correctly saves entry and advances current_index
+- Frontend doesn't refetch import session to load routine 2
+- **Workaround:** Manual page reload
+- **Impact:** Medium - UX issue, not a blocker
+
+### Updated Test Results
+
+- **Tests Passed:** 7/8 (87.5%)
+- **Critical Bugs Fixed:** 2 (date serialization + data loading)
+- **Critical Bugs Remaining:** 0
+- **Medium Priority Bugs:** 1 (form navigation)
+- **Testing Coverage:** CSV upload → session creation → entry save (✅)
+- **Phase 2 Logic:** Fully verified (age calc, classification lock, extended time, title upgrade)
+
+---
+
+**Testing Status:** ✅ MAJOR BREAKTHROUGH - Core CSV import functionality WORKING
+**Next Action:** Fix form navigation bug (non-blocking)
