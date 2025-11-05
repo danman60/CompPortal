@@ -24,7 +24,7 @@ export function EntryCreateFormV2() {
   const importSessionId = searchParams.get('importSession');
 
   // Load import session if present
-  const { data: importSession, isLoading: importSessionLoading } = trpc.importSession.getById.useQuery(
+  const { data: importSession, isLoading: importSessionLoading, refetch: refetchImportSession } = trpc.importSession.getById.useQuery(
     { id: importSessionId! },
     { enabled: !!importSessionId }
   );
@@ -375,10 +375,17 @@ export function EntryCreateFormV2() {
         toast.success('Import complete!');
         router.push('/dashboard/entries');
       } else {
-        // Update index and reload
+        // Update index and refetch session data
+        console.log('[NAVIGATION] Advancing to routine', nextIndex + 1, 'of', importSession!.total_routines);
         await updateIndexMutation.mutateAsync({ id: importSessionId!, current_index: nextIndex });
+
+        // Reset form before refetching (clears old data)
         formHook.resetForm();
-        router.replace(`/dashboard/entries/create?importSession=${importSessionId}`);
+
+        // Refetch import session with updated index (triggers prefill useEffect)
+        await refetchImportSession();
+
+        console.log('[NAVIGATION] Session refetched, ready for prefill');
       }
     } catch (error: any) {
       console.error('Failed to save and move to next:', error);
@@ -398,9 +405,17 @@ export function EntryCreateFormV2() {
         toast.success('Import complete!');
         router.push('/dashboard/entries');
       } else {
+        // Update index and refetch session data
+        console.log('[NAVIGATION] Skipping to routine', nextIndex + 1, 'of', importSession!.total_routines);
         await updateIndexMutation.mutateAsync({ id: importSessionId!, current_index: nextIndex });
+
+        // Reset form before refetching
         formHook.resetForm();
-        router.replace(`/dashboard/entries/create?importSession=${importSessionId}`);
+
+        // Refetch import session with updated index
+        await refetchImportSession();
+
+        console.log('[NAVIGATION] Session refetched after skip');
       }
     } catch (error: any) {
       toast.error(`Failed to skip: ${error?.message || 'Unknown error'}`);
