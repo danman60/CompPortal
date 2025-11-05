@@ -43,7 +43,9 @@ export default function RoutineCSVImport() {
 
   // Get user and studio data
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
-  const studioId = currentUser?.role === 'studio_director' ? currentUser.studio?.id : '';
+  const studioId = (currentUser?.role === 'studio_director' || currentUser?.role === 'super_admin')
+    ? currentUser.studio?.id
+    : '';
 
   // DEBUG: Log user data
   console.log('[RoutineCSVImport] currentUser:', JSON.stringify({
