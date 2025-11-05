@@ -26,8 +26,10 @@ export function EntriesPageContainer() {
   const { entries, isLoading: entriesLoading, submitSummary: submitSummaryMutation, deleteEntry: deleteEntryMutation } = useEntries();
   const { reservations, isLoading: reservationsLoading } = useReservations();
   const { data: dancersData, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
+  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
 
   const hasDancers = (dancersData?.dancers?.length || 0) > 0;
+  const studioId = currentUser?.role === 'studio_director' ? currentUser.studio?.id : undefined;
 
   // Wrap mutations to match component signatures
   const deleteEntry = async (id: string) => {
@@ -106,6 +108,7 @@ export function EntriesPageContainer() {
         selectedReservationId={selectedReservation?.id}
         selectedCompetitionId={selectedReservation?.competition_id}
         isRegistrationClosed={isRegistrationClosed}
+        studioId={studioId}
       />
 
       <EntriesFilters
