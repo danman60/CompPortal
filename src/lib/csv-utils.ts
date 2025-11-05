@@ -34,9 +34,9 @@ export function normalizeHeader(header: string): string {
  * Maps various input formats to canonical field names
  */
 export const FIELD_VARIATIONS: Record<string, string[]> = {
-  // Dancer fields
-  first_name: ['firstname', 'fname', 'given_name', 'givenname', 'first', 'name', 'dancer_first_name'],
-  last_name: ['lastname', 'lname', 'surname', 'family_name', 'familyname', 'last', 'dancer_last_name'],
+  // Dancer fields - MAXIMUM FUZZINESS for name variations
+  first_name: ['firstname', 'fname', 'given_name', 'givenname', 'given name', 'first', 'name', 'dancer_first_name', 'dancer first name', 'dancer_first', 'dancer first', 'f_name', 'f name', 'first_name'],
+  last_name: ['lastname', 'lname', 'surname', 'family_name', 'familyname', 'family name', 'last', 'dancer_last_name', 'dancer last name', 'dancer_last', 'dancer last', 'l_name', 'l name', 'last_name'],
   date_of_birth: ['dob', 'birthdate', 'birth_date', 'dateofbirth', 'birthday', 'birth', 'bday', 'bd', 'born', 'age', 'dancer_dob', 'dancer_birth_date'],
   gender: ['sex', 'male_female', 'm_f', 'mf', 'gender_identity', 'dancer_gender', 'gender_female_male', 'female_male'],
   email: ['email_address', 'e_mail', 'emailaddress', 'mail'],
@@ -46,13 +46,24 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
   parent_phone: ['guardian_phone', 'guardian_tel', 'parent_tel', 'guardian_phone_number', 'parent_phone_number'],
 
   // Routine fields
-  title: ['routine_title', 'routinetitle', 'routine_name', 'routinename', 'name', 'routine', 'piece', 'dance_title', 'dancetitle', 'dance_name', 'entry_title'],
-  props: ['prop', 'properties', 'prop_list', 'proplist', 'prop_description', 'propdescription', 'special_requirements', 'items', 'equipment', 'stage_props', 'stageprops'],
-  dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_list', 'dancers_list', 'dancerslist', 'dancers_list_first_name_last_name'],
-  choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'teacher', 'instructor', 'coach', 'director', 'creator', 'choreography_by'],
-  duration_seconds: ['length_seconds', 'lengthseconds', 'length', 'duration', 'time_seconds', 'timeseconds'],
-  // Dance category variations (all map to 'category' canonical field)
-  category: ['dance category', 'dance_category', 'dancecategory', 'genre', 'style', 'type', 'dance_type', 'dancetype', 'category_type'],
+  title: ['routine_title', 'routinetitle', 'routine_name', 'routinename', 'name', 'routine', 'piece', 'dance_title', 'dancetitle', 'dance_name', 'entry_title', 'entry_name', 'entryname', 'performance_title', 'act', 'number'],
+  props: ['prop', 'properties', 'prop_list', 'proplist', 'prop_description', 'propdescription', 'special_requirements', 'special_req', 'requirements', 'req', 'items', 'equipment', 'stage_props', 'stageprops', 'stage_equipment', 'materials', 'accessories'],
+  dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_name', 'dancer_list', 'dancers_list', 'dancerslist', 'dancers_list_first_name_last_name', 'dancer_first_last', 'first_name_last_name', 'full_name', 'fullname', 'cast', 'talent'],
+  choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'choreographed by', 'teacher', 'instructor', 'coach', 'director', 'creator', 'choreography_by', 'choreography by', 'choreo_by', 'choreo by', 'choreographed', 'created_by', 'created by', 'taught_by', 'taught by', 'instructor_name', 'teacher_name'],
+  duration_seconds: ['length_seconds', 'lengthseconds', 'length', 'duration', 'time_seconds', 'timeseconds', 'time', 'runtime', 'routine_length', 'routine_duration', 'performance_time', 'track_length'],
+  // Dance category variations (all map to 'category' canonical field) - MAXIMUM FUZZINESS
+  category: [
+    // With spaces (most common in real CSVs)
+    'dance category', 'dance style', 'dance genre', 'dance type',
+    // With underscores
+    'dance_category', 'dance_style', 'dance_genre', 'dance_type',
+    // CamelCase / no separators
+    'dancecategory', 'dancestyle', 'dancegenre', 'dancetype',
+    // Single words
+    'category', 'genre', 'style', 'type',
+    // Other variations
+    'cat', 'discipline', 'performance_style', 'performance style', 'dance_discipline', 'category_type'
+  ],
 };
 
 /**
