@@ -10,6 +10,7 @@ import { AutoCalculatedSection } from './AutoCalculatedSection';
 import { ExtendedTimeSection } from './ExtendedTimeSection';
 import { ReservationContextBar } from './ReservationContextBar';
 import { EntryFormActions } from './EntryFormActions';
+import { ImportActions } from './ImportActions';
 import { ClassificationRequestExceptionModal } from '@/components/ClassificationRequestExceptionModal';
 import toast from 'react-hot-toast';
 
@@ -18,10 +19,27 @@ export function EntryCreateFormV2() {
   const router = useRouter();
   const [showClassificationModal, setShowClassificationModal] = useState(false);
   const reservationId = searchParams.get('reservation');
+  const importSessionId = searchParams.get('importSession');
+
+  // Load import session if present
+  const { data: importSession, isLoading: importSessionLoading } = trpc.importSession.getById.useQuery(
+    { id: importSessionId! },
+    { enabled: !!importSessionId }
+  );
+
+  // Get current routine from import session
+  const currentRoutine = importSession && !importSession.completed
+    ? (importSession.routines as any[])[importSession.current_index]
+    : null;
+
+  // Use session's reservation if in import mode, otherwise use query param
+  const actualReservationId = importSessionId && importSession
+    ? importSession.reservation_id
+    : reservationId;
 
   const { data: reservation, isLoading: reservationLoading } = trpc.reservation.getById.useQuery(
-    { id: reservationId! },
-    { enabled: !!reservationId }
+    { id: actualReservationId! },
+    { enabled: !!actualReservationId }
   );
 
   const { data: competition, isLoading: competitionLoading } = trpc.competition.getById.useQuery(
@@ -52,6 +70,28 @@ export function EntryCreateFormV2() {
     sizeCategories: lookups?.entrySizeCategories || [],
   });
 
+  // Pre-fill form from import session
+  useEffect(() => {
+    if (!currentRoutine || !dancers.length) return;
+
+    // Pre-fill title and choreographer
+    formHook.updateField('title', currentRoutine.title || '');
+    if (currentRoutine.choreographer) {
+      formHook.updateField('choreographer', currentRoutine.choreographer);
+    }
+    if (currentRoutine.props) {
+      formHook.updateField('special_requirements', currentRoutine.props);
+    }
+
+    // Pre-select dancers
+    const matchedDancerIds = new Set(currentRoutine.matched_dancers.map((d: any) => d.dancer_id));
+    dancers.forEach(dancer => {
+      if (matchedDancerIds.has(dancer.id) && !formHook.form.selectedDancers.some(d => d.dancer_id === dancer.id)) {
+        formHook.toggleDancer(dancer);
+      }
+    });
+  }, [currentRoutine?.title, dancers.length]); // Only run when routine or dancers change
+
   // Production Auto-Lock: When size = Production, lock dance category and classification
   useEffect(() => {
     if (!lookups) return;
@@ -79,7 +119,11 @@ export function EntryCreateFormV2() {
     },
   });
 
-  if (!reservationId) {
+  const updateIndexMutation = trpc.importSession.updateIndex.useMutation();
+  const deleteRoutineMutation = trpc.importSession.deleteRoutine.useMutation();
+  const markCompleteMutation = trpc.importSession.markComplete.useMutation();
+
+  if (!actualReservationId && !importSessionId) {
     return (
       <div className="max-w-4xl mx-auto mt-20 bg-red-500/20 border border-red-500/50 rounded-xl p-8 text-center">
         <h2 className="text-2xl font-bold text-red-300 mb-4">Missing Reservation</h2>
@@ -90,7 +134,7 @@ export function EntryCreateFormV2() {
     );
   }
 
-  if (reservationLoading || competitionLoading || lookupsLoading || dancersLoading) {
+  if (reservationLoading || competitionLoading || lookupsLoading || dancersLoading || importSessionLoading) {
     return (
       <div className="max-w-4xl mx-auto mt-20 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 text-center text-white">
         Loading form...
@@ -125,7 +169,7 @@ export function EntryCreateFormV2() {
 
     try {
       await createMutation.mutateAsync({
-        reservation_id: reservationId,
+        reservation_id: actualReservationId!,
         competition_id: reservation.competition_id,
         studio_id: reservation.studio_id,
         title: formHook.form.title,
@@ -163,6 +207,99 @@ export function EntryCreateFormV2() {
     } catch (error) {
       console.error('Failed to create entry:', error);
       toast.error('Failed to save routine. Please try again.');
+    }
+  };
+
+  // Import mode handlers
+  const handleSaveAndNext = async () => {
+    try {
+      // Save the entry
+      await createMutation.mutateAsync({
+        reservation_id: actualReservationId!,
+        competition_id: reservation!.competition_id,
+        studio_id: reservation!.studio_id,
+        title: formHook.form.title,
+        choreographer: formHook.form.choreographer || '',
+        category_id: formHook.form.category_id,
+        classification_id: formHook.form.classification_id,
+        special_requirements: formHook.form.special_requirements || undefined,
+        age_group_id: formHook.effectiveAgeGroup?.id,
+        entry_size_category_id: formHook.effectiveSizeCategory?.id,
+        is_title_upgrade: formHook.form.is_title_upgrade,
+        extended_time_requested: formHook.form.extended_time_requested,
+        routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
+        routine_length_seconds: formHook.form.extended_time_requested ? formHook.form.routine_length_seconds : undefined,
+        scheduling_notes: formHook.form.scheduling_notes || undefined,
+        status: 'draft',
+        participants: formHook.form.selectedDancers.map((d, idx) => ({
+          dancer_id: d.dancer_id,
+          dancer_name: d.dancer_name,
+          dancer_age: d.dancer_age || undefined,
+          display_order: idx,
+        })),
+      });
+
+      toast.success('Routine saved!');
+
+      // Move to next routine or complete
+      const nextIndex = importSession!.current_index + 1;
+      if (nextIndex >= importSession!.total_routines) {
+        // Mark session as complete
+        await markCompleteMutation.mutateAsync({ id: importSessionId! });
+        toast.success('Import complete!');
+        router.push('/dashboard/entries');
+      } else {
+        // Update index and reload
+        await updateIndexMutation.mutateAsync({ id: importSessionId!, current_index: nextIndex });
+        formHook.resetForm();
+        router.replace(`/dashboard/entries/create?importSession=${importSessionId}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to save and move to next:', error);
+      toast.error(`Failed: ${error?.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleSkipRoutine = async () => {
+    try {
+      const nextIndex = importSession!.current_index + 1;
+      if (nextIndex >= importSession!.total_routines) {
+        await markCompleteMutation.mutateAsync({ id: importSessionId! });
+        toast.success('Import complete!');
+        router.push('/dashboard/entries');
+      } else {
+        await updateIndexMutation.mutateAsync({ id: importSessionId!, current_index: nextIndex });
+        formHook.resetForm();
+        router.replace(`/dashboard/entries/create?importSession=${importSessionId}`);
+      }
+    } catch (error: any) {
+      toast.error(`Failed to skip: ${error?.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleDeleteRoutine = async () => {
+    try {
+      await deleteRoutineMutation.mutateAsync({
+        id: importSessionId!,
+        routine_index: importSession!.current_index,
+      });
+
+      toast.success('Routine deleted from import queue');
+
+      // Check if there are any routines left
+      const routines = importSession!.routines as any[];
+      if (routines.length <= 1) {
+        // This was the last routine
+        await markCompleteMutation.mutateAsync({ id: importSessionId! });
+        toast.success('Import complete!');
+        router.push('/dashboard/entries');
+      } else {
+        // Reload to show next routine (index stays the same since we deleted current)
+        formHook.resetForm();
+        router.replace(`/dashboard/entries/create?importSession=${importSessionId}`);
+      }
+    } catch (error: any) {
+      toast.error(`Failed to delete: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -245,12 +382,26 @@ export function EntryCreateFormV2() {
         </div>
       )}
 
-      <EntryFormActions
-        canSave={formHook.canSave}
-        isLoading={createMutation.isPending}
-        validationErrors={formHook.validationErrors}
-        onSave={handleSave}
-      />
+      {/* Show different actions based on mode */}
+      {importSessionId && importSession ? (
+        <ImportActions
+          canSave={formHook.canSave}
+          isLoading={createMutation.isPending}
+          validationErrors={formHook.validationErrors}
+          currentIndex={importSession.current_index}
+          totalRoutines={importSession.total_routines}
+          onSaveAndNext={handleSaveAndNext}
+          onSkip={handleSkipRoutine}
+          onDelete={handleDeleteRoutine}
+        />
+      ) : (
+        <EntryFormActions
+          canSave={formHook.canSave}
+          isLoading={createMutation.isPending}
+          validationErrors={formHook.validationErrors}
+          onSave={handleSave}
+        />
+      )}
 
       {/* Classification Exception Modal - Placeholder for Phase 2 */}
       {/* TODO: Pass actual entryId and classification data when Phase 2 is implemented */}
