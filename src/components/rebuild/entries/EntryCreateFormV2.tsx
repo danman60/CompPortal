@@ -110,26 +110,39 @@ export function EntryCreateFormV2() {
     });
   }, [currentRoutine?.title, dancers.length, eventStartDate]); // Only run when routine or dancers change
 
-  // Production Auto-Lock: When size = Production, lock dance category and classification
+  // Production Auto-Lock: Bi-directional locking between Production dance category and Production size category
   useEffect(() => {
     if (!lookups) return;
 
-    const isProduction = formHook.effectiveSizeCategory?.name === 'Production';
+    const productionCategory = lookups.categories.find(c => c.name === 'Production');
+    const productionSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Production');
+    const isProductionCategory = productionCategory && formHook.form.category_id === productionCategory.id;
+    const isProductionSize = formHook.effectiveSizeCategory?.name === 'Production';
 
-    if (isProduction) {
-      // Lock dance category to Production
-      const productionCategory = lookups.categories.find(c => c.name === 'Production');
-      if (productionCategory && formHook.form.category_id !== productionCategory.id) {
-        formHook.updateField('category_id', productionCategory.id);
-      }
+    // If Production dance category selected → lock size category to Production
+    if (isProductionCategory && productionSizeCategory && formHook.form.size_category_override !== productionSizeCategory.id) {
+      formHook.updateField('size_category_override', productionSizeCategory.id);
+    }
 
-      // Lock classification to Production
+    // If Production size category detected → lock dance category to Production
+    if (isProductionSize && productionCategory && formHook.form.category_id !== productionCategory.id) {
+      formHook.updateField('category_id', productionCategory.id);
+    }
+
+    // Lock classification to Production when either condition is true
+    if ((isProductionCategory || isProductionSize)) {
       const productionClass = lookups.classifications.find(c => c.name === 'Production');
       if (productionClass && formHook.form.classification_id !== productionClass.id) {
         formHook.updateField('classification_id', productionClass.id);
       }
     }
-  }, [formHook.effectiveSizeCategory, lookups, formHook.form.category_id, formHook.form.classification_id]);
+  }, [
+    formHook.effectiveSizeCategory,
+    formHook.form.category_id,
+    formHook.form.size_category_override,
+    formHook.form.classification_id,
+    lookups
+  ]);
 
   const createMutation = trpc.entry.create.useMutation({
     onError: (error) => {
