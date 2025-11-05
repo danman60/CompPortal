@@ -73,7 +73,9 @@ export function EntryCreateFormV2() {
 
   // Pre-fill form from import session
   useEffect(() => {
-    if (!currentRoutine || !dancers.length || !eventStartDate) return;
+    // Only run this effect if we're in import mode (have currentRoutine)
+    if (!currentRoutine) return;
+    if (!dancers.length || !eventStartDate) return;
 
     // Clear previous selections when switching routines
     if (formHook.form.selectedDancers.length > 0) {
@@ -102,11 +104,12 @@ export function EntryCreateFormV2() {
       );
       if (matchedCategory) {
         formHook.updateField('category_id', matchedCategory.id);
+      } else {
+        // CSV had category value but no match found - clear it
+        formHook.updateField('category_id', '');
       }
-    } else {
-      // Clear category if no value in CSV
-      formHook.updateField('category_id', '');
     }
+    // Don't clear category_id if no CSV value - user may have selected manually
 
     // Helper to calculate age
     const calculateAge = (dateOfBirth: string | null): number | null => {
@@ -135,7 +138,7 @@ export function EntryCreateFormV2() {
         }
       });
     }
-  }, [currentRoutine?.title, importSession?.current_index, dancers.length, eventStartDate]); // Trigger on routine change
+  }, [currentRoutine?.title, importSession?.current_index, dancers.length, eventStartDate, lookups]); // Trigger on routine change or lookups load
 
   // Production Auto-Lock: Lock size category and classification when Production dance category selected
   useEffect(() => {
@@ -549,7 +552,15 @@ export function EntryCreateFormV2() {
             toast.success('Exception request submitted');
             setShowClassificationModal(false);
             setSavedEntryId(null);
-            router.push('/dashboard/entries');
+
+            // If in import mode, stay on import flow; otherwise go to entries list
+            if (importSessionId) {
+              // Stay on current page (import flow continues)
+              formHook.resetForm();
+            } else {
+              // Manual entry - go back to entries list
+              router.push('/dashboard/entries');
+            }
           }}
         />
       )}

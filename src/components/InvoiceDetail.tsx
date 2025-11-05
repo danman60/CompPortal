@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { generateInvoicePDF } from '@/lib/pdf-reports';
 import toast from 'react-hot-toast';
+import SplitInvoiceWizard from '@/components/SplitInvoiceWizard';
+import SubInvoiceList from '@/components/SubInvoiceList';
 
 type Props = {
   studioId: string;
@@ -16,6 +18,8 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [isEditingPrices, setIsEditingPrices] = useState(false);
   const [editableLineItems, setEditableLineItems] = useState<any[]>([]);
+  const [showSplitWizard, setShowSplitWizard] = useState(false);
+  const [showSubInvoices, setShowSubInvoices] = useState(false);
 
   // Get current user role
   const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
@@ -40,6 +44,15 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const invoice = dbInvoice || generatedInvoice;
   const isLoading = dbLoading || genLoading;
   const refetch = refetchDb;
+
+  // Check for existing sub-invoices
+  const { data: subInvoicesData } = trpc.invoice.getSubInvoices.useQuery({
+    parentInvoiceId: dbInvoice?.id || '',
+  }, {
+    enabled: !!dbInvoice?.id && isStudioDirector,
+  });
+
+  const hasSubInvoices = (subInvoicesData?.sub_invoices?.length || 0) > 0;
 
   const sendInvoiceMutation = trpc.invoice.sendInvoice.useMutation({
     onSuccess: () => {
@@ -488,6 +501,27 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           </div>
         )}
 
+        {/* Studio Director: Split Invoice / View Family Invoices */}
+        {isStudioDirector && dbInvoice && (
+          <div className="mb-4">
+            {hasSubInvoices ? (
+              <button
+                onClick={() => setShowSubInvoices(true)}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
+              >
+                👨‍👩‍👧‍👦 View Family Invoices ({subInvoicesData?.summary.count || 0})
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowSplitWizard(true)}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
+              >
+                ✂️ Split Invoice by Family
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Export Actions */}
         <div className="flex gap-4">
         <button
@@ -607,6 +641,31 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Split Invoice Wizard Modal */}
+      {showSplitWizard && dbInvoice && (
+        <SplitInvoiceWizard
+          invoiceId={dbInvoice.id}
+          onClose={() => setShowSplitWizard(false)}
+          onSuccess={() => {
+            setShowSplitWizard(false);
+            setShowSubInvoices(true);
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Sub-Invoices View */}
+      {showSubInvoices && dbInvoice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="w-full max-w-6xl">
+            <SubInvoiceList
+              parentInvoiceId={dbInvoice.id}
+              onBack={() => setShowSubInvoices(false)}
+            />
           </div>
         </div>
       )}

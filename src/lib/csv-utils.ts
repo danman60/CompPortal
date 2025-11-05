@@ -51,6 +51,8 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
   dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_list', 'dancers_list', 'dancerslist', 'dancers_list_first_name_last_name'],
   choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'teacher', 'instructor', 'coach', 'director', 'creator', 'choreography_by'],
   duration_seconds: ['length_seconds', 'lengthseconds', 'length', 'duration', 'time_seconds', 'timeseconds'],
+  // Dance category variations (all map to 'category' canonical field)
+  category: ['dance_category', 'dancecategory', 'genre', 'style', 'type', 'dance_type', 'dancetype', 'category_type'],
 };
 
 /**

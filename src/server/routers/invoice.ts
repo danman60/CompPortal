@@ -1022,4 +1022,360 @@ export const invoiceRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Split invoice into family-specific sub-invoices
+   * Calculates per-family costs based on dancer participation in entries
+   */
+  splitInvoice: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 1. Fetch main invoice with validation
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId, tenant_id: ctx.tenantId! },
+        include: {
+          studios: true,
+          competitions: true,
+        },
+      });
+
+      if (!invoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Guard: Must be studio owner or super admin
+      if (ctx.user.role !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized to split this invoice' });
+      }
+
+      // 2. Get all entries for this invoice (from line_items)
+      const lineItems = invoice.line_items as any[];
+      const entryIds = lineItems.map((item: any) => item.id);
+
+      if (entryIds.length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invoice has no entries to split' });
+      }
+
+      // 3. Fetch entries with participants and dancer details
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          id: { in: entryIds },
+          tenant_id: ctx.tenantId!,
+          status: { not: 'cancelled' },
+        },
+        include: {
+          entry_participants: {
+            include: {
+              dancers: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  last_name: true,
+                  parent_email: true,
+                  parent_name: true,
+                },
+              },
+            },
+          },
+          dance_categories: { select: { name: true } },
+          entry_size_categories: { select: { name: true } },
+        },
+      });
+
+      // 4. Validate all dancers have parent_email
+      const dancersWithoutEmail: string[] = [];
+      entries.forEach(entry => {
+        entry.entry_participants.forEach(ep => {
+          if (!ep.dancers.parent_email) {
+            dancersWithoutEmail.push(`${ep.dancers.first_name} ${ep.dancers.last_name}`);
+          }
+        });
+      });
+
+      if (dancersWithoutEmail.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot split invoice: ${dancersWithoutEmail.length} dancer(s) missing parent email`,
+          cause: { dancers: dancersWithoutEmail },
+        });
+      }
+
+      // 5. Group dancers by parent_email and calculate family shares
+      type FamilyData = {
+        identifier: string;
+        name: string;
+        lineItems: any[];
+        subtotal: number;
+      };
+
+      const familyMap = new Map<string, FamilyData>();
+
+      entries.forEach(entry => {
+        const totalDancers = entry.entry_participants.length;
+        const entryTotal = Number(entry.total_fee || 0);
+        const sharePerDancer = entryTotal / totalDancers;
+
+        // Find corresponding line item from invoice
+        const invoiceLineItem = lineItems.find((li: any) => li.id === entry.id);
+        const entryNumber = invoiceLineItem?.entryNumber || entry.entry_number || 0;
+
+        // Group by parent_email
+        const familyGroups = new Map<string, typeof entry.entry_participants>();
+        entry.entry_participants.forEach(ep => {
+          const email = ep.dancers.parent_email!;
+          if (!familyGroups.has(email)) {
+            familyGroups.set(email, []);
+          }
+          familyGroups.get(email)!.push(ep);
+        });
+
+        // Calculate share for each family in this entry
+        familyGroups.forEach((participants, parentEmail) => {
+          const familyDancerCount = participants.length;
+          const familyShare = sharePerDancer * familyDancerCount;
+
+          if (!familyMap.has(parentEmail)) {
+            // Use parent_name from first dancer, fallback to email
+            const parentName = participants[0]?.dancers.parent_name || parentEmail.split('@')[0];
+            familyMap.set(parentEmail, {
+              identifier: parentEmail,
+              name: parentName,
+              lineItems: [],
+              subtotal: 0,
+            });
+          }
+
+          const familyData = familyMap.get(parentEmail)!;
+          familyData.lineItems.push({
+            entry_id: entry.id,
+            entry_number: entryNumber,
+            title: entry.title,
+            category: entry.dance_categories?.name || 'Unknown',
+            size_category: entry.entry_size_categories?.name || 'Unknown',
+            dancer_ids: participants.map(p => p.dancer_id),
+            dancer_names: participants.map(p => `${p.dancers.first_name} ${p.dancers.last_name}`),
+            total_dancers: totalDancers,
+            family_dancer_count: familyDancerCount,
+            amount: Number(familyShare.toFixed(2)),
+          });
+          familyData.subtotal += Number(familyShare.toFixed(2));
+        });
+      });
+
+      // 6. Calculate tax for each family and apply rounding adjustment
+      const taxRate = Number(invoice.tax_rate || 13);
+      const families = Array.from(familyMap.values());
+
+      let calculatedTotal = 0;
+      families.forEach((family, index) => {
+        const taxAmount = Number((family.subtotal * taxRate / 100).toFixed(2));
+        const total = family.subtotal + taxAmount;
+
+        // Store for rounding adjustment check
+        calculatedTotal += total;
+
+        (family as any).tax_rate = taxRate;
+        (family as any).tax_amount = taxAmount;
+        (family as any).total = total;
+      });
+
+      // 7. Apply penny rounding adjustment to last family if needed
+      const mainInvoiceTotal = Number(invoice.total);
+      const difference = mainInvoiceTotal - calculatedTotal;
+
+      if (Math.abs(difference) > 0.01) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Split calculation error: difference of $${difference.toFixed(2)}`,
+        });
+      }
+
+      if (difference !== 0) {
+        const lastFamily: any = families[families.length - 1];
+        lastFamily.total = Number((lastFamily.total + difference).toFixed(2));
+      }
+
+      // 8. Delete existing sub-invoices for this invoice (allow regeneration)
+      await prisma.sub_invoices.deleteMany({
+        where: {
+          parent_invoice_id: input.invoiceId,
+          tenant_id: ctx.tenantId!,
+        },
+      });
+
+      // 9. Create sub-invoices in transaction
+      const subInvoices = await prisma.$transaction(
+        families.map((family: any) =>
+          prisma.sub_invoices.create({
+            data: {
+              parent_invoice_id: input.invoiceId,
+              family_identifier: family.identifier,
+              family_name: family.name,
+              line_items: family.lineItems as any,
+              subtotal: family.subtotal,
+              tax_rate: family.tax_rate,
+              tax_amount: family.tax_amount,
+              total: family.total,
+              status: 'GENERATED',
+              tenant_id: ctx.tenantId!,
+            },
+          })
+        )
+      );
+
+      // 10. Activity log
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          action: 'invoice.split',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: {
+            sub_invoice_count: subInvoices.length,
+            total_verified: subInvoices.reduce((sum, si) => sum + Number(si.total), 0) === mainInvoiceTotal,
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity (invoice.split)', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      return {
+        success: true,
+        sub_invoice_count: subInvoices.length,
+        families: families.map((f: any) => ({
+          name: f.name,
+          identifier: f.identifier,
+          total: f.total,
+        })),
+      };
+    }),
+
+  /**
+   * Get all sub-invoices for a parent invoice
+   */
+  getSubInvoices: protectedProcedure
+    .input(z.object({
+      parentInvoiceId: z.string().uuid(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.parentInvoiceId, tenant_id: ctx.tenantId! },
+        include: { studios: true },
+      });
+
+      if (!invoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Guard: Must be studio owner or super admin
+      if (ctx.user.role !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      const subInvoices = await prisma.sub_invoices.findMany({
+        where: {
+          parent_invoice_id: input.parentInvoiceId,
+          tenant_id: ctx.tenantId!,
+        },
+        orderBy: { family_name: 'asc' },
+      });
+
+      // Calculate summary
+      const totalSum = subInvoices.reduce((sum, si) => sum + Number(si.total), 0);
+      const matchesParent = Math.abs(totalSum - Number(invoice.total)) < 0.01;
+
+      return {
+        sub_invoices: subInvoices,
+        summary: {
+          count: subInvoices.length,
+          total: totalSum,
+          matches_parent: matchesParent,
+          parent_total: Number(invoice.total),
+        },
+      };
+    }),
+
+  /**
+   * Get single sub-invoice by ID
+   */
+  getSubInvoiceById: protectedProcedure
+    .input(z.object({
+      subInvoiceId: z.string().uuid(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const subInvoice = await prisma.sub_invoices.findUnique({
+        where: {
+          id: input.subInvoiceId,
+          tenant_id: ctx.tenantId!,
+        },
+        include: {
+          invoices: {
+            include: {
+              studios: true,
+              competitions: true,
+            },
+          },
+        },
+      });
+
+      if (!subInvoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Sub-invoice not found' });
+      }
+
+      // Guard: Must be studio owner or super admin
+      if (ctx.user.role !== 'super_admin' && subInvoice.invoices.studios.owner_id !== ctx.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      return subInvoice;
+    }),
+
+  /**
+   * Delete all sub-invoices for a parent invoice (for regeneration)
+   */
+  deleteSubInvoices: protectedProcedure
+    .input(z.object({
+      parentInvoiceId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.parentInvoiceId, tenant_id: ctx.tenantId! },
+        include: { studios: true },
+      });
+
+      if (!invoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Guard: Must be studio owner or super admin
+      if (ctx.user.role !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      const result = await prisma.sub_invoices.deleteMany({
+        where: {
+          parent_invoice_id: input.parentInvoiceId,
+          tenant_id: ctx.tenantId!,
+        },
+      });
+
+      // Activity log
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          action: 'invoice.deleteSubInvoices',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: { deleted_count: result.count },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity (invoice.deleteSubInvoices)', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      return { success: true, deleted_count: result.count };
+    }),
 });
