@@ -607,12 +607,27 @@ export const invoiceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { reservationId, spacesConfirmed } = input;
 
+      console.log('[INVOICE_GEN] Starting invoice generation:', {
+        reservation_id: reservationId,
+        user_id: ctx.userId,
+        tenant_id: ctx.tenantId,
+        spaces_confirmed: spacesConfirmed
+      });
+
       const reservation = await prisma.reservations.findUnique({
         where: { id: reservationId },
         include: { studios: true, competitions: true },
       });
 
       if (!reservation) throw new Error('Reservation not found');
+
+      console.log('[INVOICE_GEN] Reservation loaded:', {
+        studio_id: reservation.studio_id,
+        studio_name: reservation.studios.name,
+        competition_id: reservation.competition_id,
+        competition_name: reservation.competitions.name,
+        status: reservation.status
+      });
 
       // 🛡️ GUARD: Validate reservation is in summarized state
       if (reservation.status !== 'summarized') {
@@ -637,6 +652,11 @@ export const invoiceRouter = router({
       }
 
       // Build line items from all entries for this reservation (summary was already validated)
+      console.log('[INVOICE_CALC] Fetching entries for invoice generation:', {
+        reservation_id: reservationId,
+        tenant_id: ctx.tenantId
+      });
+
       const entries = await prisma.competition_entries.findMany({
         where: {
           reservation_id: reservationId,
@@ -646,8 +666,16 @@ export const invoiceRouter = router({
         orderBy: { entry_number: 'asc' },
       });
 
+      console.log('[INVOICE_CALC] Entries loaded:', {
+        entries_count: entries.length,
+        entry_ids: entries.map(e => e.id),
+        entry_numbers: entries.map(e => e.entry_number),
+        entry_titles: entries.map(e => e.title)
+      });
+
       // 🛡️ GUARD: Must have entries to create invoice
       if (entries.length === 0) {
+        console.error('[INVOICE_CALC] No entries found - cannot create invoice');
         throw new Error('Cannot create invoice: no entries submitted yet');
       }
 
@@ -662,11 +690,40 @@ export const invoiceRouter = router({
         total: Number(entry.entry_fee || 0) + Number(entry.late_fee || 0),
       }));
 
+      console.log('[INVOICE_CALC] Line items calculated:', {
+        line_items_count: lineItems.length,
+        line_items: lineItems.map(li => ({
+          entry_number: li.entryNumber,
+          title: li.title,
+          entry_fee: li.entryFee,
+          late_fee: li.lateFee,
+          total: li.total
+        }))
+      });
+
       const subtotal = lineItems.reduce((sum, i) => sum + i.total, 0);
 
+      console.log('[INVOICE_CALC] Invoice totals calculated:', {
+        line_items_count: lineItems.length,
+        subtotal,
+        total: subtotal
+      });
+
       // 🔐 TRANSACTION: Wrap invoice creation + reservation update for atomicity
+      console.log('[INVOICE_GEN] Starting transaction for invoice creation');
+
       const invoice = await prisma.$transaction(async (tx) => {
         // Create invoice record with DRAFT status (not visible to studio yet)
+        console.log('[INVOICE_GEN] Creating invoice record:', {
+          tenant_id: reservation.tenant_id,
+          studio_id: reservation.studio_id,
+          competition_id: reservation.competition_id,
+          reservation_id: reservationId,
+          subtotal,
+          total: subtotal,
+          status: 'DRAFT'
+        });
+
         const newInvoice = await tx.invoices.create({
           data: {
             tenant_id: reservation.tenant_id,
@@ -680,7 +737,19 @@ export const invoiceRouter = router({
           },
         });
 
+        console.log('[INVOICE_GEN] Invoice created successfully:', {
+          invoice_id: newInvoice.id,
+          status: newInvoice.status
+        });
+
         // Mark reservation as invoiced (Phase 1 spec: summarized → invoiced)
+        console.log('[INVOICE_GEN] Updating reservation status to invoiced:', {
+          reservation_id: reservationId,
+          old_status: reservation.status,
+          new_status: 'invoiced',
+          spaces_confirmed: spacesConfirmed ?? reservation.spaces_requested
+        });
+
         await tx.reservations.update({
           where: { id: reservationId },
           data: {
@@ -690,7 +759,15 @@ export const invoiceRouter = router({
           },
         });
 
+        console.log('[INVOICE_GEN] Reservation updated successfully');
+
         return newInvoice;
+      });
+
+      console.log('[INVOICE_GEN] Transaction completed successfully:', {
+        invoice_id: invoice.id,
+        reservation_id: reservationId,
+        total: invoice.total
       });
 
       // Activity log (non-blocking)
@@ -1032,6 +1109,13 @@ export const invoiceRouter = router({
       invoiceId: z.string().uuid(),
     }))
     .mutation(async ({ ctx, input }) => {
+      console.log('[SUBINVOICE_SPLIT] Starting invoice split:', {
+        invoice_id: input.invoiceId,
+        user_id: ctx.userId,
+        user_role: ctx.userRole,
+        tenant_id: ctx.tenantId
+      });
+
       // 1. Fetch main invoice with validation
       const invoice = await prisma.invoices.findUnique({
         where: { id: input.invoiceId, tenant_id: ctx.tenantId! },
@@ -1042,16 +1126,35 @@ export const invoiceRouter = router({
       });
 
       if (!invoice) {
+        console.error('[SUBINVOICE_SPLIT] Invoice not found:', input.invoiceId);
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
       }
 
+      console.log('[SUBINVOICE_SPLIT] Invoice loaded:', {
+        invoice_id: invoice.id,
+        studio_id: invoice.studio_id,
+        studio_name: invoice.studios.name,
+        competition_id: invoice.competition_id,
+        competition_name: invoice.competitions.name,
+        status: invoice.status,
+        total: invoice.total
+      });
+
       // Guard: Must be studio owner or super admin
       if (ctx.userRole !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+        console.error('[SUBINVOICE_SPLIT] Unauthorized split attempt:', {
+          user_id: ctx.userId,
+          studio_owner_id: invoice.studios.owner_id
+        });
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized to split this invoice' });
       }
 
       // Guard: Invoice must be PAID before splitting
       if (invoice.status !== 'PAID') {
+        console.error('[SUBINVOICE_SPLIT] Invoice not paid yet:', {
+          status: invoice.status,
+          invoice_id: invoice.id
+        });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Invoice must be marked as PAID before splitting by dancer. This ensures the Competition Director has finalized all pricing.'
@@ -1062,7 +1165,13 @@ export const invoiceRouter = router({
       const lineItems = invoice.line_items as any[];
       const entryIds = lineItems.map((item: any) => item.id);
 
+      console.log('[SUBINVOICE_SPLIT] Extracting entries from invoice:', {
+        line_items_count: lineItems.length,
+        entry_ids: entryIds
+      });
+
       if (entryIds.length === 0) {
+        console.error('[SUBINVOICE_SPLIT] No entries found in invoice line items');
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invoice has no entries to split' });
       }
 
@@ -1092,7 +1201,22 @@ export const invoiceRouter = router({
         },
       });
 
+      console.log('[SUBINVOICE_SPLIT] Entries with participants loaded:', {
+        entries_count: entries.length,
+        total_participants: entries.reduce((sum, e) => sum + e.entry_participants.length, 0),
+        entries_detail: entries.map(e => ({
+          entry_id: e.id,
+          entry_number: e.entry_number,
+          title: e.title,
+          total_fee: e.total_fee,
+          participants_count: e.entry_participants.length,
+          dancers: e.entry_participants.map(ep => `${ep.dancers.first_name} ${ep.dancers.last_name}`)
+        }))
+      });
+
       // 4. Create one sub-invoice per dancer
+      console.log('[SUBINVOICE_SPLIT] Building dancer-level sub-invoices');
+
       type DancerData = {
         dancer_id: string;
         dancer_name: string;
@@ -1108,6 +1232,15 @@ export const invoiceRouter = router({
         const entryTotal = Number(entry.total_fee || 0);
         const sharePerDancer = entryTotal / totalDancers;
 
+        console.log('[SUBINVOICE_SPLIT] Processing entry for split:', {
+          entry_id: entry.id,
+          entry_number: entry.entry_number,
+          title: entry.title,
+          entry_total: entryTotal,
+          total_dancers: totalDancers,
+          share_per_dancer: sharePerDancer
+        });
+
         // Find corresponding line item from invoice
         const invoiceLineItem = lineItems.find((li: any) => li.id === entry.id);
         const entryNumber = invoiceLineItem?.entryNumber || entry.entry_number || '—';
@@ -1119,6 +1252,12 @@ export const invoiceRouter = router({
           const parentEmail = ep.dancers.parent_email;
 
           if (!dancerMap.has(dancerId)) {
+            console.log('[SUBINVOICE_SPLIT] Creating new dancer entry in map:', {
+              dancer_id: dancerId,
+              dancer_name: dancerName,
+              parent_email: parentEmail
+            });
+
             dancerMap.set(dancerId, {
               dancer_id: dancerId,
               dancer_name: dancerName,
@@ -1142,12 +1281,36 @@ export const invoiceRouter = router({
             amount: Number(sharePerDancer.toFixed(2)),
           });
           dancerData.subtotal += Number(sharePerDancer.toFixed(2));
+
+          console.log('[SUBINVOICE_SPLIT] Added line item to dancer:', {
+            dancer_id: dancerId,
+            dancer_name: dancerName,
+            entry_title: entry.title,
+            dancer_share: sharePerDancer,
+            new_subtotal: dancerData.subtotal
+          });
         });
+      });
+
+      console.log('[SUBINVOICE_SPLIT] Dancer map built:', {
+        unique_dancers: dancerMap.size,
+        dancers: Array.from(dancerMap.values()).map(d => ({
+          dancer_id: d.dancer_id,
+          dancer_name: d.dancer_name,
+          entries_count: d.lineItems.length,
+          subtotal: d.subtotal
+        }))
       });
 
       // 5. Calculate tax for each dancer and apply rounding adjustment
       const taxRate = Number(invoice.tax_rate || 13);
       const dancers = Array.from(dancerMap.values());
+
+      console.log('[SUBINVOICE_VALIDATE] Calculating tax and totals:', {
+        tax_rate: taxRate,
+        dancers_count: dancers.length,
+        invoice_total: invoice.total
+      });
 
       let calculatedTotal = 0;
       dancers.forEach((dancer, index) => {
@@ -1160,13 +1323,33 @@ export const invoiceRouter = router({
         (dancer as any).tax_rate = taxRate;
         (dancer as any).tax_amount = taxAmount;
         (dancer as any).total = total;
+
+        console.log('[SUBINVOICE_VALIDATE] Dancer totals calculated:', {
+          dancer_id: dancer.dancer_id,
+          dancer_name: dancer.dancer_name,
+          subtotal: dancer.subtotal,
+          tax_amount: taxAmount,
+          total
+        });
       });
 
       // 6. Apply penny rounding adjustment to last dancer if needed
       const mainInvoiceTotal = Number(invoice.total);
       const difference = mainInvoiceTotal - calculatedTotal;
 
+      console.log('[SUBINVOICE_VALIDATE] Checking totals match:', {
+        main_invoice_total: mainInvoiceTotal,
+        calculated_total: calculatedTotal,
+        difference,
+        acceptable: Math.abs(difference) <= 0.01
+      });
+
       if (Math.abs(difference) > 0.01) {
+        console.error('[SUBINVOICE_VALIDATE] Split calculation error - difference too large:', {
+          main_invoice_total: mainInvoiceTotal,
+          calculated_total: calculatedTotal,
+          difference
+        });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: `Split calculation error: difference of $${difference.toFixed(2)}`,
@@ -1175,21 +1358,51 @@ export const invoiceRouter = router({
 
       if (difference !== 0) {
         const lastDancer: any = dancers[dancers.length - 1];
+        const oldTotal = lastDancer.total;
         lastDancer.total = Number((lastDancer.total + difference).toFixed(2));
+
+        console.log('[SUBINVOICE_VALIDATE] Applied rounding adjustment to last dancer:', {
+          dancer_id: lastDancer.dancer_id,
+          dancer_name: lastDancer.dancer_name,
+          old_total: oldTotal,
+          adjustment: difference,
+          new_total: lastDancer.total
+        });
       }
 
       // 7. Delete existing sub-invoices for this invoice (allow regeneration)
-      await prisma.sub_invoices.deleteMany({
+      console.log('[SUBINVOICE_CREATE] Deleting existing sub-invoices for regeneration:', {
+        parent_invoice_id: input.invoiceId
+      });
+
+      const deleted = await prisma.sub_invoices.deleteMany({
         where: {
           parent_invoice_id: input.invoiceId,
           tenant_id: ctx.tenantId!,
         },
       });
 
+      console.log('[SUBINVOICE_CREATE] Deleted existing sub-invoices:', {
+        count: deleted.count
+      });
+
       // 8. Create sub-invoices in transaction (one per dancer)
+      console.log('[SUBINVOICE_CREATE] Creating sub-invoices in transaction:', {
+        dancers_count: dancers.length
+      });
+
       const subInvoices = await prisma.$transaction(
-        dancers.map((dancer: any) =>
-          prisma.sub_invoices.create({
+        dancers.map((dancer: any) => {
+          console.log('[SUBINVOICE_CREATE] Creating sub-invoice for dancer:', {
+            dancer_id: dancer.dancer_id,
+            dancer_name: dancer.dancer_name,
+            subtotal: dancer.subtotal,
+            tax_amount: dancer.tax_amount,
+            total: dancer.total,
+            line_items_count: dancer.lineItems.length
+          });
+
+          return prisma.sub_invoices.create({
             data: {
               parent_invoice_id: input.invoiceId,
               family_identifier: dancer.dancer_id, // Use dancer_id as identifier
@@ -1203,9 +1416,15 @@ export const invoiceRouter = router({
               tenant_id: ctx.tenantId!,
               notes: dancer.parent_email ? `Parent email: ${dancer.parent_email}` : null,
             },
-          })
-        )
+          });
+        })
       );
+
+      console.log('[SUBINVOICE_CREATE] Sub-invoices created successfully:', {
+        count: subInvoices.length,
+        sub_invoice_ids: subInvoices.map(si => si.id),
+        total_sum: subInvoices.reduce((sum, si) => sum + Number(si.total), 0)
+      });
 
       // 10. Activity log
       try {

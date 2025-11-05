@@ -190,10 +190,6 @@ export const ROUTINE_CSV_FIELDS = [
   'props',
   'dancers',
   'choreographer',
-  'dance category',
-  'category',
-  'genre',
-  'style',
-  'type',
+  'category',        // Canonical field for dance category/genre/style/type
   'duration_seconds',
 ];

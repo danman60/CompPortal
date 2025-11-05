@@ -31,12 +31,41 @@ export function SubmitSummaryModal({
   onConfirm,
   onCancel,
 }: SubmitSummaryModalProps) {
+  console.log('[SUMMARY_MODAL] Modal opened:', {
+    reservation_id: reservation.id,
+    studio_id: reservation.studio_id,
+    competition_id: reservation.competition_id,
+    competition_name: (reservation as any).competitions?.name,
+    routines_created: created,
+    spaces_confirmed: confirmedSpaces,
+    is_incomplete: isIncomplete,
+    spaces_to_refund: isIncomplete ? confirmedSpaces - created : 0
+  });
+
   const handleConfirm = async () => {
-    await onConfirm({
+    console.log('[SUMMARY_SUBMIT] Submitting summary:', {
       studioId: reservation.studio_id,
       competitionId: reservation.competition_id,
+      routines_count: created,
+      confirmed_spaces: confirmedSpaces
     });
-    onCancel();
+
+    try {
+      await onConfirm({
+        studioId: reservation.studio_id,
+        competitionId: reservation.competition_id,
+      });
+
+      console.log('[SUMMARY_SUBMIT] Success:', {
+        reservation_id: reservation.id,
+        status: 'summarized'
+      });
+
+      onCancel();
+    } catch (error) {
+      console.error('[SUMMARY_SUBMIT] Error:', error);
+      throw error;
+    }
   };
 
   return (
