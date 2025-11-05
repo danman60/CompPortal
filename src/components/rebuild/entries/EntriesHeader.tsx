@@ -58,7 +58,7 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
             variant="secondary"
             title="Import routines from CSV/Excel file"
           >
-            Import CSV
+            Import Routines
           </Button>
           <Button
             href={createUrl}

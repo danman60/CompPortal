@@ -58,6 +58,11 @@ export function ExtendedTimeSection({
               className="text-lg font-bold text-white cursor-pointer block mb-2"
             >
               ⏱️ Request Extended Time
+              {effectiveSizeCategory && (effectiveSizeCategory.max_time_minutes || effectiveSizeCategory.max_time_seconds) && (
+                <span className="ml-2 text-gray-300 font-normal">
+                  ({effectiveSizeCategory.name}, {effectiveSizeCategory.max_time_minutes || 0}:{String(effectiveSizeCategory.max_time_seconds || 0).padStart(2, '0')} max)
+                </span>
+              )}
               {selectedDancerCount > 0 && (
                 <span className="ml-2 text-blue-300 font-normal">
                   (${extendedTimeFee} {selectedDancerCount === 1 ? 'flat' : `= $2 × ${selectedDancerCount} dancers`})

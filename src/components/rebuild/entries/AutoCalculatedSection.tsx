@@ -212,14 +212,14 @@ export function AutoCalculatedSection({
           )}
         </div>
 
-        {/* Size Category */}
+        {/* Size Category - Read Only Display */}
         <div>
           <label className="block text-sm font-semibold text-white/90 mb-2">
             Size Category
           </label>
 
-          {/* Inferred Display */}
-          <div className="mb-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          {/* Auto-Detected Display (Read-Only) */}
+          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
             <div className="text-sm text-green-300">
               {inferredSizeCategory ? (
                 <>
@@ -233,25 +233,6 @@ export function AutoCalculatedSection({
               )}
             </div>
           </div>
-
-          {/* Override Dropdown */}
-          <select
-            value={sizeCategoryOverride || ''}
-            onChange={(e) => setSizeCategoryOverride(e.target.value || null)}
-            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
-          >
-            <option value="" className="bg-gray-900">
-              {inferredSizeCategory ? `Use detected (${inferredSizeCategory.name})` : 'Select size category'}
-            </option>
-            {sizeCategories.map((size) => (
-              <option key={size.id} value={size.id} className="bg-gray-900">
-                {size.name} ({size.min_participants}-{size.max_participants} performers)
-              </option>
-            ))}
-          </select>
-          {sizeCategoryOverride && (
-            <p className="text-xs text-yellow-400 mt-1">⚠️ Manual override active</p>
-          )}
         </div>
 
         {/* Classification - Nov 4 Requirements */}

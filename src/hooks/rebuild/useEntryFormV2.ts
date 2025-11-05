@@ -210,17 +210,47 @@ export function useEntryFormV2({
    * Check if form can be saved
    * Phase 1 Spec lines 842-850: Validation rules + Phase 2 choreographer required
    */
+  // Expose autoCalculatedClassification for validation
+  const autoCalculatedClassification = useMemo(() => {
+    if (form.selectedDancers.length === 0) return null;
+
+    const dancerClassifications = form.selectedDancers
+      .map(d => d.classification_id)
+      .filter((id): id is string => !!id);
+
+    if (dancerClassifications.length === 0) return null;
+
+    // Solo: Use dancer's classification
+    if (form.selectedDancers.length === 1) {
+      return dancerClassifications[0];
+    }
+
+    // Group: Count majority (60% rule simplified)
+    const counts: Record<string, number> = {};
+    dancerClassifications.forEach(id => {
+      counts[id] = (counts[id] || 0) + 1;
+    });
+
+    // Return most common classification
+    return Object.entries(counts).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+  }, [form.selectedDancers]);
+
   const canSave = useMemo(() => {
     // Production validation: minimum 10 dancers
     const isProduction = effectiveSizeCategory?.name === 'Production';
     const meetsProductionMin = !isProduction || form.selectedDancers.length >= 10;
+
+    // Classification validation: accept auto-detected OR manual selection
+    const hasValidClassification =
+      form.classification_id.length > 0 || // Manual selection
+      (autoCalculatedClassification !== null); // OR auto-detected
 
     return (
       form.title.trim().length >= 3 && // Min 3 chars (spec line 843)
       form.title.trim().length <= 255 && // Max 255 chars
       form.choreographer.trim().length > 0 && // Phase 2 spec lines 36-42: Required
       form.category_id.length > 0 &&
-      form.classification_id.length > 0 &&
+      hasValidClassification &&
       form.selectedDancers.length >= 1 && // Min 1 dancer (spec line 844)
       effectiveAgeGroup !== null &&
       effectiveSizeCategory !== null &&
@@ -234,6 +264,7 @@ export function useEntryFormV2({
     form.selectedDancers,
     effectiveAgeGroup,
     effectiveSizeCategory,
+    autoCalculatedClassification,
   ]);
 
   /**
@@ -251,7 +282,8 @@ export function useEntryFormV2({
     if (!form.category_id) {
       errors.push('Dance category is required');
     }
-    if (!form.classification_id) {
+    // Classification: accept auto-detected OR manual selection
+    if (!form.classification_id && !autoCalculatedClassification) {
       errors.push('Classification is required');
     }
     // Allow 0 dancers - can be attached later. Summary submission will validate.
@@ -276,6 +308,7 @@ export function useEntryFormV2({
     form.selectedDancers,
     effectiveAgeGroup,
     effectiveSizeCategory,
+    autoCalculatedClassification,
   ]);
 
   /**
@@ -371,5 +404,6 @@ export function useEntryFormV2({
     resetDetailsOnly,
     clearAgeOverride,
     clearSizeCategoryOverride,
+    autoCalculatedClassification, // Expose for exception modal
   };
 }

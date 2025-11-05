@@ -336,6 +336,14 @@ export function EntryCreateFormV2() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="text-white/60 hover:text-white transition-colors inline-flex items-center gap-2 mb-4"
+      >
+        ← Back
+      </button>
+
       <ReservationContextBar
         reservation={reservation}
         competition={competition}
@@ -434,18 +442,21 @@ export function EntryCreateFormV2() {
         />
       )}
 
-      {/* Classification Exception Modal - Placeholder for Phase 2 */}
-      {/* TODO: Pass actual entryId and classification data when Phase 2 is implemented */}
-      {showClassificationModal && lookups.classifications && lookups.classifications.length > 0 && (
+      {/* Classification Exception Modal */}
+      {showClassificationModal && formHook.autoCalculatedClassification && (
         <ClassificationRequestExceptionModal
-          entryId="" // Placeholder - will be filled when entry is created
-          autoCalculatedClassification={{
-            id: lookups.classifications[0].id,
-            name: lookups.classifications[0].name,
-          }}
+          entryId="" // Entry not yet created - save entry first
+          autoCalculatedClassification={
+            formHook.autoCalculatedClassification
+              ? {
+                  id: formHook.autoCalculatedClassification,
+                  name: lookups?.classifications.find(c => c.id === formHook.autoCalculatedClassification)?.name || 'Unknown',
+                }
+              : { id: '', name: '' }
+          }
           onClose={() => setShowClassificationModal(false)}
           onSuccess={() => {
-            toast.success('Classification exception feature coming in Phase 2');
+            toast.success('Exception request submitted');
             setShowClassificationModal(false);
           }}
         />

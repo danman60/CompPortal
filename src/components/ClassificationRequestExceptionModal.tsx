@@ -33,6 +33,12 @@ export function ClassificationRequestExceptionModal({
   });
 
   const handleSubmit = async () => {
+    if (!entryId) {
+      toast.error('Please save the entry first before requesting an exception');
+      onClose();
+      return;
+    }
+
     if (!requestedClassificationId) {
       toast.error('Please select a classification');
       return;
@@ -98,9 +104,9 @@ export function ClassificationRequestExceptionModal({
             onChange={(e) => setRequestedClassificationId(e.target.value)}
             className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/20 text-white"
           >
-            <option value="">Select classification...</option>
+            <option value="" className="bg-gray-900 text-white">Select classification...</option>
             {classifications?.classifications.map((c: any) => (
-              <option key={c.id} value={c.id}>
+              <option key={c.id} value={c.id} className="bg-gray-900 text-white">
                 {c.name}
               </option>
             ))}
