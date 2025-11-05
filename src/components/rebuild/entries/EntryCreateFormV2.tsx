@@ -110,34 +110,28 @@ export function EntryCreateFormV2() {
     });
   }, [currentRoutine?.title, dancers.length, eventStartDate]); // Only run when routine or dancers change
 
-  // Production Auto-Lock: Bi-directional locking between Production dance category and Production size category
+  // Production Auto-Lock: Lock size category and classification when Production dance category selected
   useEffect(() => {
     if (!lookups) return;
 
     const productionCategory = lookups.categories.find(c => c.name === 'Production');
     const productionSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Production');
     const isProductionCategory = productionCategory && formHook.form.category_id === productionCategory.id;
-    const isProductionSize = formHook.effectiveSizeCategory?.name === 'Production';
 
-    // If Production dance category selected → lock size category to Production
-    if (isProductionCategory && productionSizeCategory && formHook.form.size_category_override !== productionSizeCategory.id) {
-      formHook.updateField('size_category_override', productionSizeCategory.id);
-    }
+    // If Production dance category selected → lock size category AND classification to Production
+    if (isProductionCategory) {
+      // Lock size category to Production
+      if (productionSizeCategory && formHook.form.size_category_override !== productionSizeCategory.id) {
+        formHook.updateField('size_category_override', productionSizeCategory.id);
+      }
 
-    // If Production size category detected → lock dance category to Production
-    if (isProductionSize && productionCategory && formHook.form.category_id !== productionCategory.id) {
-      formHook.updateField('category_id', productionCategory.id);
-    }
-
-    // Lock classification to Production when either condition is true
-    if ((isProductionCategory || isProductionSize)) {
+      // Lock classification to Production
       const productionClass = lookups.classifications.find(c => c.name === 'Production');
       if (productionClass && formHook.form.classification_id !== productionClass.id) {
         formHook.updateField('classification_id', productionClass.id);
       }
     }
   }, [
-    formHook.effectiveSizeCategory,
     formHook.form.category_id,
     formHook.form.size_category_override,
     formHook.form.classification_id,
@@ -199,6 +193,9 @@ export function EntryCreateFormV2() {
     }
 
     try {
+      // Use auto-calculated classification if "Use detected" is selected (empty string)
+      const effectiveClassificationId = formHook.form.classification_id || formHook.autoCalculatedClassification || '';
+
       await createMutation.mutateAsync({
         reservation_id: actualReservationId!,
         competition_id: reservation.competition_id,
@@ -206,7 +203,7 @@ export function EntryCreateFormV2() {
         title: formHook.form.title,
         choreographer: formHook.form.choreographer || '', // Phase 2: required
         category_id: formHook.form.category_id,
-        classification_id: formHook.form.classification_id,
+        classification_id: effectiveClassificationId,
         special_requirements: formHook.form.special_requirements || undefined,
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
@@ -244,6 +241,9 @@ export function EntryCreateFormV2() {
   // Import mode handlers
   const handleSaveAndNext = async () => {
     try {
+      // Use auto-calculated classification if "Use detected" is selected (empty string)
+      const effectiveClassificationId = formHook.form.classification_id || formHook.autoCalculatedClassification || '';
+
       // Save the entry
       await createMutation.mutateAsync({
         reservation_id: actualReservationId!,
@@ -252,7 +252,7 @@ export function EntryCreateFormV2() {
         title: formHook.form.title,
         choreographer: formHook.form.choreographer || '',
         category_id: formHook.form.category_id,
-        classification_id: formHook.form.classification_id,
+        classification_id: effectiveClassificationId,
         special_requirements: formHook.form.special_requirements || undefined,
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,

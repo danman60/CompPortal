@@ -235,35 +235,46 @@ export function AutoCalculatedSection({
           </div>
         </div>
 
-        {/* Classification - Nov 4 Requirements */}
-        {selectedDancerCount > 0 && (
-          <div>
-            <label className="block text-sm font-semibold text-white/90 mb-2">
-              Classification
-            </label>
+        {/* Classification - Always visible */}
+        <div>
+          <label className="block text-sm font-semibold text-white/90 mb-2">
+            Classification
+          </label>
 
-            {/* Auto-Detected Display */}
-            {autoCalculatedClassification && (
-              <div className="mb-3 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-                <div className="text-sm text-purple-300">
-                  <span className="font-semibold">Detected: {autoCalculatedClassification.name}</span>
-                  <span className="text-purple-400 ml-2">
-                    (based on dancer classifications)
-                  </span>
-                </div>
+          {/* Auto-Detected Display */}
+          {selectedDancerCount > 0 && autoCalculatedClassification && (
+            <div className="mb-3 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <div className="text-sm text-purple-300">
+                <span className="font-semibold">Detected: {autoCalculatedClassification.name}</span>
+                <span className="text-purple-400 ml-2">
+                  (based on dancer classifications)
+                </span>
               </div>
-            )}
+            </div>
+          )}
 
-            {!autoCalculatedClassification && (
-              <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <div className="text-sm text-yellow-300">
-                  <span className="font-semibold">⚠️ Dancers need classifications</span>
-                  <span className="text-yellow-400 ml-2">
-                    (assign classifications to dancers first)
-                  </span>
-                </div>
+          {/* Pending State */}
+          {selectedDancerCount === 0 && (
+            <div className="mb-3 p-3 bg-gray-500/10 border border-gray-500/30 rounded-lg">
+              <div className="text-sm text-gray-300">
+                <span className="font-semibold">Pending</span>
+                <span className="text-gray-400 ml-2">
+                  (select dancers to auto-detect)
+                </span>
               </div>
-            )}
+            </div>
+          )}
+
+          {selectedDancerCount > 0 && !autoCalculatedClassification && (
+            <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="text-sm text-yellow-300">
+                <span className="font-semibold">⚠️ Dancers need classifications</span>
+                <span className="text-yellow-400 ml-2">
+                  (assign classifications to dancers first)
+                </span>
+              </div>
+            </div>
+          )}
 
             {/* Classification Dropdown + Buttons */}
             {autoCalculatedClassification && (
@@ -321,8 +332,7 @@ export function AutoCalculatedSection({
                 ⚠️ This selection requires CD approval before summary submission
               </p>
             )}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
