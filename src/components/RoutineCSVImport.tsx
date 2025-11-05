@@ -45,17 +45,34 @@ export default function RoutineCSVImport() {
   const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
   const studioId = currentUser?.role === 'studio_director' ? currentUser.studio?.id : '';
 
+  // DEBUG: Log user data
+  console.log('[RoutineCSVImport] currentUser:', JSON.stringify({
+    role: currentUser?.role,
+    studioId: currentUser?.studio?.id,
+    email: currentUser?.email,
+  }, null, 2));
+  console.log('[RoutineCSVImport] Computed studioId:', studioId);
+
   // Fetch approved reservations for the studio
   const { data: reservationsData } = trpc.reservation.getAll.useQuery(
     { studioId: studioId || '', status: 'approved' },
     { enabled: !!studioId }
   );
 
+  // DEBUG: Log reservations query result
+  console.log('[RoutineCSVImport] Reservations query enabled:', !!studioId);
+  console.log('[RoutineCSVImport] Reservations data:', reservationsData);
+
   // Fetch existing dancers for matching
   const { data: existingDancers, isLoading: dancersLoading } = trpc.dancer.getByStudio.useQuery(
     { studioId: studioId || '' },
     { enabled: !!studioId }
   );
+
+  // DEBUG: Log dancers query result
+  console.log('[RoutineCSVImport] Dancers query enabled:', !!studioId);
+  console.log('[RoutineCSVImport] Dancers loading:', dancersLoading);
+  console.log('[RoutineCSVImport] Dancers count:', existingDancers?.dancers?.length);
 
   // Fetch existing entries for export
   const { data: existingEntries } = trpc.entry.getAll.useQuery(
