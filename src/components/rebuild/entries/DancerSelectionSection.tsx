@@ -51,6 +51,13 @@ export function DancerSelectionSection({
   };
 
   /**
+   * Check if dancer is selected
+   */
+  const isSelected = (dancerId: string): boolean => {
+    return selectedDancers.some((d) => d.dancer_id === dancerId);
+  };
+
+  /**
    * Filter dancers by search query
    */
   const filteredDancers = dancers.filter((d) => {
@@ -80,13 +87,6 @@ export function DancerSelectionSection({
       return ageA - ageB;
     }
   });
-
-  /**
-   * Check if dancer is selected
-   */
-  const isSelected = (dancerId: string): boolean => {
-    return selectedDancers.some((d) => d.dancer_id === dancerId);
-  };
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
