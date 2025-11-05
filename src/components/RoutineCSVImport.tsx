@@ -88,24 +88,61 @@ export default function RoutineCSVImport() {
   const matchDancerName = (name: string): { dancer: any; confidence: number } | null => {
     if (!existingDancers?.dancers || existingDancers.dancers.length === 0) return null;
 
-    const normalized = name.toLowerCase().trim();
+    // Clean name: remove age in parentheses, extra spaces, special chars
+    let cleaned = name
+      .replace(/\s*\(Age\s+\d+\)/gi, '') // Remove "(Age 15)" or "(age 15)"
+      .replace(/\s*\(\d+\)/g, '') // Remove "(15)" alone
+      .replace(/[^\w\s-]/g, '') // Remove special chars except hyphens
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' '); // Normalize spaces
+
     let bestMatch: { dancer: any; confidence: number } | null = null;
 
     for (const dancer of existingDancers.dancers) {
       const dancerFullName = `${dancer.first_name} ${dancer.last_name}`.toLowerCase();
+      const firstName = dancer.first_name.toLowerCase();
+      const lastName = dancer.last_name.toLowerCase();
 
-      // Exact match
-      if (dancerFullName === normalized) {
+      // Exact match on full name
+      if (dancerFullName === cleaned) {
         return { dancer, confidence: 1.0 };
       }
 
-      // Fuzzy match with Levenshtein distance
-      const distance = levenshtein.get(normalized, dancerFullName);
-      const maxLength = Math.max(normalized.length, dancerFullName.length);
+      // Match first name + last name (handles "First Last" format)
+      const nameParts = cleaned.split(' ');
+      if (nameParts.length >= 2) {
+        const csvFirst = nameParts[0];
+        const csvLast = nameParts[nameParts.length - 1];
+
+        if (csvFirst === firstName && csvLast === lastName) {
+          return { dancer, confidence: 1.0 };
+        }
+      }
+
+      // Fuzzy match with Levenshtein distance on full name
+      const distance = levenshtein.get(cleaned, dancerFullName);
+      const maxLength = Math.max(cleaned.length, dancerFullName.length);
       const confidence = 1 - (distance / maxLength);
 
-      if (confidence >= 0.8 && (!bestMatch || confidence > bestMatch.confidence)) {
+      if (confidence >= 0.7 && (!bestMatch || confidence > bestMatch.confidence)) {
         bestMatch = { dancer, confidence };
+      }
+
+      // Partial match: first name only (if CSV only has first name)
+      if (nameParts.length === 1 && cleaned === firstName) {
+        const partialConfidence = 0.75; // Good but not perfect
+        if (!bestMatch || partialConfidence > bestMatch.confidence) {
+          bestMatch = { dancer, confidence: partialConfidence };
+        }
+      }
+
+      // Partial match: last name only (if CSV only has last name)
+      if (nameParts.length === 1 && cleaned === lastName) {
+        const partialConfidence = 0.75;
+        if (!bestMatch || partialConfidence > bestMatch.confidence) {
+          bestMatch = { dancer, confidence: partialConfidence };
+        }
       }
     }
 

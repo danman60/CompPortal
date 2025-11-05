@@ -1,10 +1,10 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-05 (Entry Form Bug Fixes Complete)
+**Last Updated:** 2025-11-05 (Database Tasks + Testing Environment Fixed)
 
 ---
 
-## Current Status: ✅ ENTRY FORM READY - Bug Fixes Complete
+## Current Status: ✅ TESTING READY - SA Environment Operational
 
 **Milestone Achievement:**
 - ✅ Soft launch completed - Studios invited, accounts claimed, dancers registered
@@ -29,21 +29,45 @@
 
 ## Recent Sessions
 
-### Session 33: Entry Form Bug Fixes + Testing Feedback (Jan 5, 2025)
-**Status:** ✅ COMPLETE - All 10 bugs fixed
+### Session 34: Database Tasks + SA Testing Environment (Jan 5, 2025)
+**Status:** ✅ COMPLETE - Testing environment operational
 
 **COMPLETED:**
-1. ✅ Classification validation - accept auto-detected (ba89da3)
-2. ✅ Exception modal race condition - validate entry exists
-3. ✅ Size category dropdown removed - read-only display
-4. ✅ Extended time display - shows max time label
-5. ✅ Exception modal styling - white text fixed
-6. ✅ Exception modal classification - correct data passed
-7. ✅ Back button added to entry form
-8. ✅ "Import CSV" renamed to "Import Routines"
-9. ✅ Classification box - shows on page load (25fce96)
-10. ✅ Dance category lock fixed - remains changeable
-11. ✅ UUID error fixed - "Use detected" classification saves correctly
+1. ✅ **Task 1: Populated time limits** - All entry size categories configured (14+ rows)
+   - EMPWR: Solo 3min, Duet/Trio 3min, Small Group 4min, Large Group 5min, Line 5min, Super Line 6min, Production 7min
+   - Glow: Same time limits applied
+   - Note: Glow "Adult Group" has null time limit (may need config)
+
+2. ✅ **Task 2: Fixed SA testing environment** - Deleted blocking empty studio
+   - Root cause: SA owned TWO studios (empty "Testing" + "Test Studio - Daniel")
+   - Solution: Hard deleted empty studio blocking access
+   - Result: SA now has clean access to studio with 105 dancers
+
+3. ✅ **Created test CSV** - 15 routines with varied group sizes
+   - Solos, duets, trios, small groups, large groups
+   - Includes 2 fake dancers for unmatched testing
+   - File: `test_routines_15.csv`
+
+4. ❌ **Attempted cross-subdomain auth** - Reverted for safety
+   - Tried: Shared cookie domain `.compsync.net`
+   - Concern: Could affect production clients, cause cross-tenant confusion
+   - Reverted: commit fcb4f0e
+
+**DATABASE CHANGES:**
+- Time limits populated via Supabase MCP (14+ categories)
+- Deleted studio: b3e05ada-9385-4185-9d26-eb4af3c6af45 (empty "Testing")
+
+**COMMITS:**
+- bf5be1f: Cross-subdomain auth (REVERTED)
+- fcb4f0e: Revert cross-subdomain auth
+
+**TESTING WORKFLOW:**
+- SA must login directly to empwr.compsync.net (no session transfer)
+- Use credentials: danieljohnabrahamson@gmail.com / 123456
+- Access: /dashboard/entries → 105 dancers available ✅
+
+### Session 33: Entry Form Bug Fixes + Testing Feedback (Jan 5, 2025)
+**Status:** ✅ COMPLETE - All 10 bugs fixed
 
 **COMMITS:**
 - ba89da3: Entry form bug fixes (7 bugs + 2 UX improvements)
