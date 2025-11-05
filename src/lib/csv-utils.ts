@@ -176,4 +176,6 @@ export const ROUTINE_CSV_FIELDS = [
   'props',
   'dancers',
   'choreographer',
+  'dance category',
+  'category',
 ];

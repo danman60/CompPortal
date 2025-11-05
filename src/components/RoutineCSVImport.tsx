@@ -12,6 +12,8 @@ type ParsedRoutine = {
   props?: string;
   dancers?: string;
   choreographer?: string;
+  category?: string; // Dance Category from CSV
+  'dance category'?: string; // Alternative column name
   matched_dancers: Array<{
     dancer_id: string;
     dancer_name: string;
@@ -683,6 +685,9 @@ export default function RoutineCSVImport() {
                     </th>
                     <th className="px-4 py-3">#</th>
                     <th className="px-4 py-3">Title</th>
+                    <th className="px-4 py-3">Choreographer</th>
+                    <th className="px-4 py-3">Category</th>
+                    <th className="px-4 py-3">Props</th>
                     <th className="px-4 py-3">Dancers</th>
                     <th className="px-4 py-3">Warnings</th>
                   </tr>
@@ -713,6 +718,15 @@ export default function RoutineCSVImport() {
                         </td>
                         <td className="px-4 py-3 text-gray-400">{index + 1}</td>
                         <td className="px-4 py-3 text-white font-medium">{routine.title}</td>
+                        <td className="px-4 py-3 text-gray-300">
+                          {routine.choreographer || <span className="text-gray-500 italic">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-300">
+                          {(routine.category || routine['dance category']) || <span className="text-gray-500 italic">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-300">
+                          {routine.props || <span className="text-gray-500 italic">—</span>}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span className="text-gray-300">{totalCount} total</span>
