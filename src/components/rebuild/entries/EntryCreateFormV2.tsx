@@ -117,16 +117,38 @@ export function EntryCreateFormV2() {
     const categoryValue = currentRoutine.category || currentRoutine['dance category'] ||
                           currentRoutine.genre || currentRoutine.style || currentRoutine.type;
 
+    console.log('[PREFILL] Dance category from CSV:', {
+      category: currentRoutine.category,
+      'dance category': currentRoutine['dance category'],
+      genre: currentRoutine.genre,
+      style: currentRoutine.style,
+      type: currentRoutine.type,
+      selectedValue: categoryValue,
+      hasLookups: !!lookups,
+      availableCategories: lookups?.categories.map(c => c.name)
+    });
+
     if (categoryValue && lookups) {
       const matchedCategory = lookups.categories.find(cat =>
         cat.name.toLowerCase() === categoryValue.toLowerCase()
       );
+
+      console.log('[PREFILL] Category matching:', {
+        csvValue: categoryValue,
+        matchedCategory: matchedCategory ? { id: matchedCategory.id, name: matchedCategory.name } : null,
+        willUpdate: !!matchedCategory
+      });
+
       if (matchedCategory) {
+        console.log('[PREFILL] Setting category_id:', matchedCategory.id);
         formHook.updateField('category_id', matchedCategory.id);
       } else {
+        console.log('[PREFILL] No category match found, clearing category_id');
         // CSV had category value but no match found - clear it
         formHook.updateField('category_id', '');
       }
+    } else {
+      console.log('[PREFILL] Skipping category prefill:', { categoryValue, hasLookups: !!lookups });
     }
     // Don't clear category_id if no CSV value - user may have selected manually
 

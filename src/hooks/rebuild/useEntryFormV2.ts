@@ -343,6 +343,14 @@ export function useEntryFormV2({
    */
   const updateField = useCallback(
     <K extends keyof EntryFormV2State>(field: K, value: EntryFormV2State[K]) => {
+      // Log category_id updates to track when it's set/cleared
+      if (field === 'category_id') {
+        console.log('[UPDATE_FIELD] category_id changed:', {
+          from: 'current state',
+          to: value,
+          stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+        });
+      }
       setForm((prev) => ({ ...prev, [field]: value }));
     },
     []
