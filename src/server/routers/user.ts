@@ -63,9 +63,9 @@ export const userRouter = router({
       },
     });
 
-    // Fetch studio info if user is a studio director
+    // Fetch studio info if user is a studio director OR super admin (for testing)
     let studio = null;
-    if (userProfile?.role === 'studio_director') {
+    if (userProfile?.role === 'studio_director' || userProfile?.role === 'super_admin') {
       studio = await prisma.studios.findFirst({
         where: {
           tenant_id: ctx.tenantId!,  // Tenant isolation
