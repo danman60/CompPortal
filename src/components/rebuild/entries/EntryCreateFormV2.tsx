@@ -74,6 +74,14 @@ export function EntryCreateFormV2() {
   useEffect(() => {
     if (!currentRoutine || !dancers.length || !eventStartDate) return;
 
+    // Clear previous selections when switching routines
+    if (formHook.form.selectedDancers.length > 0) {
+      // Clear all dancers first
+      formHook.form.selectedDancers.forEach(d => {
+        formHook.toggleDancer(d);
+      });
+    }
+
     // Pre-fill title and choreographer
     formHook.updateField('title', currentRoutine.title || '');
     if (currentRoutine.choreographer) {
@@ -92,23 +100,25 @@ export function EntryCreateFormV2() {
       return Math.floor(diffDays / 365.25);
     };
 
-    // Pre-select dancers with properly formatted objects
-    const matchedDancerIds = new Set(currentRoutine.matched_dancers.map((d: any) => d.dancer_id));
-    dancers.forEach(dancer => {
-      if (matchedDancerIds.has(dancer.id) && !formHook.form.selectedDancers.some(d => d.dancer_id === dancer.id)) {
-        const fullName = `${dancer.first_name} ${dancer.last_name}`;
-        const age = calculateAge(dancer.date_of_birth);
+    // Pre-select matched dancers
+    if (currentRoutine.matched_dancers && currentRoutine.matched_dancers.length > 0) {
+      const matchedDancerIds = new Set(currentRoutine.matched_dancers.map((d: any) => d.dancer_id));
+      dancers.forEach(dancer => {
+        if (matchedDancerIds.has(dancer.id)) {
+          const fullName = `${dancer.first_name} ${dancer.last_name}`;
+          const age = calculateAge(dancer.date_of_birth);
 
-        formHook.toggleDancer({
-          dancer_id: dancer.id,
-          dancer_name: fullName,
-          dancer_age: age,
-          date_of_birth: dancer.date_of_birth,
-          classification_id: dancer.classification_id,
-        });
-      }
-    });
-  }, [currentRoutine?.title, dancers.length, eventStartDate]); // Only run when routine or dancers change
+          formHook.toggleDancer({
+            dancer_id: dancer.id,
+            dancer_name: fullName,
+            dancer_age: age,
+            date_of_birth: dancer.date_of_birth,
+            classification_id: dancer.classification_id,
+          });
+        }
+      });
+    }
+  }, [currentRoutine?.title, importSession?.current_index, dancers.length, eventStartDate]); // Trigger on routine change
 
   // Production Auto-Lock: Lock size category and classification when Production dance category selected
   useEffect(() => {
@@ -352,6 +362,20 @@ export function EntryCreateFormV2() {
         remainingSpaces={remainingSpaces}
       />
 
+      {/* Import Progress - Show at top when in import mode */}
+      {importSessionId && importSession && (
+        <ImportActions
+          canSave={formHook.canSave}
+          isLoading={createMutation.isPending}
+          validationErrors={formHook.validationErrors}
+          currentIndex={importSession.current_index}
+          totalRoutines={importSession.total_routines}
+          onSaveAndNext={handleSaveAndNext}
+          onSkip={handleSkipRoutine}
+          onDelete={handleDeleteRoutine}
+        />
+      )}
+
       <RoutineDetailsSection
         form={formHook.form}
         updateField={formHook.updateField}
@@ -421,19 +445,8 @@ export function EntryCreateFormV2() {
         </div>
       )}
 
-      {/* Show different actions based on mode */}
-      {importSessionId && importSession ? (
-        <ImportActions
-          canSave={formHook.canSave}
-          isLoading={createMutation.isPending}
-          validationErrors={formHook.validationErrors}
-          currentIndex={importSession.current_index}
-          totalRoutines={importSession.total_routines}
-          onSaveAndNext={handleSaveAndNext}
-          onSkip={handleSkipRoutine}
-          onDelete={handleDeleteRoutine}
-        />
-      ) : (
+      {/* Show save/cancel actions for normal (non-import) mode */}
+      {!importSessionId && (
         <EntryFormActions
           canSave={formHook.canSave}
           isLoading={createMutation.isPending}
