@@ -7,6 +7,15 @@ import { createBrowserClient } from '@supabase/ssr';
 export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        // Share auth cookies across all subdomains (admin, empwr, glow, etc.)
+        domain: '.compsync.net',
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+      },
+    }
   );
 }
