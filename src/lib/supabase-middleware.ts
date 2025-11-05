@@ -22,13 +22,6 @@ export async function updateSession(request: NextRequest) {
           // No-op in middleware - cookies are set on response below
         },
       },
-      cookieOptions: {
-        // Share auth cookies across all subdomains (admin, empwr, glow, etc.)
-        domain: '.compsync.net',
-        path: '/',
-        sameSite: 'lax',
-        secure: true,
-      },
     }
   );
 
