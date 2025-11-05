@@ -72,7 +72,7 @@ export function EntryCreateFormV2() {
 
   // Pre-fill form from import session
   useEffect(() => {
-    if (!currentRoutine || !dancers.length) return;
+    if (!currentRoutine || !dancers.length || !eventStartDate) return;
 
     // Pre-fill title and choreographer
     formHook.updateField('title', currentRoutine.title || '');
@@ -83,14 +83,32 @@ export function EntryCreateFormV2() {
       formHook.updateField('special_requirements', currentRoutine.props);
     }
 
-    // Pre-select dancers
+    // Helper to calculate age
+    const calculateAge = (dateOfBirth: string | null): number | null => {
+      if (!dateOfBirth || !eventStartDate) return null;
+      const dob = new Date(dateOfBirth);
+      const diffMs = eventStartDate.getTime() - dob.getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      return Math.floor(diffDays / 365.25);
+    };
+
+    // Pre-select dancers with properly formatted objects
     const matchedDancerIds = new Set(currentRoutine.matched_dancers.map((d: any) => d.dancer_id));
     dancers.forEach(dancer => {
       if (matchedDancerIds.has(dancer.id) && !formHook.form.selectedDancers.some(d => d.dancer_id === dancer.id)) {
-        formHook.toggleDancer(dancer);
+        const fullName = `${dancer.first_name} ${dancer.last_name}`;
+        const age = calculateAge(dancer.date_of_birth);
+
+        formHook.toggleDancer({
+          dancer_id: dancer.id,
+          dancer_name: fullName,
+          dancer_age: age,
+          date_of_birth: dancer.date_of_birth,
+          classification_id: dancer.classification_id,
+        });
       }
     });
-  }, [currentRoutine?.title, dancers.length]); // Only run when routine or dancers change
+  }, [currentRoutine?.title, dancers.length, eventStartDate]); // Only run when routine or dancers change
 
   // Production Auto-Lock: When size = Production, lock dance category and classification
   useEffect(() => {

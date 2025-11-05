@@ -1,10 +1,10 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-04 (Post Soft Launch - Routine Creation Prep)
+**Last Updated:** 2025-01-04 (CSV Import Phase 2 Testing)
 
 ---
 
-## Current Status: 🚀 SOFT LAUNCH SUCCESS - Routine Creation Opens in 4 Days
+## Current Status: 🔧 CSV IMPORT BUG FIX - Critical Blocker Found
 
 **Milestone Achievement:**
 - ✅ Soft launch completed - Studios invited, accounts claimed, dancers registered
@@ -28,6 +28,44 @@
 ---
 
 ## Recent Sessions
+
+### Session 31: CSV Import Phase 2 Testing & Bug Fixes (Jan 4, 2025)
+**Status:** 🟡 IN PROGRESS - Critical data loading bug found
+
+**COMPLETED:**
+1. ✅ Fixed date serialization bug (RoutineCSVImport.tsx:248-252)
+2. ✅ Fixed SA role access to CSV import (user.ts:68, RoutineCSVImport.tsx:46-48)
+3. ✅ Created Phase 2 test CSV files (solo, group, production, comprehensive)
+4. ✅ Verified CSV upload and parsing (24/24 dancers matched perfectly)
+5. ✅ Verified import session creation (session ID generated successfully)
+6. ✅ Tested entry form navigation (Skip button works)
+7. ✅ Created comprehensive test report (CSV_IMPORT_TEST_REPORT.md)
+
+**BLOCKERS FOUND:**
+1. ❌ CSV import data not loading into entry form
+   - Session stores data but participants array empty on save
+   - Error: "dancer_id: Required", "dancer_name: Required"
+   - Root cause: Entry form not reading matched_dancers from import session
+2. ❌ Skip button doesn't load next routine data
+   - Clears form instead of populating with routine 2 of 3
+3. ⚠️ Classification validation requires explicit confirmation
+   - Workaround: Click "+1 Bump" to satisfy validation
+
+**FILES MODIFIED:**
+- RoutineCSVImport.tsx (date serialization fix)
+- user.ts (SA studio fetching)
+- Created: CSV_IMPORT_TEST_REPORT.md
+
+**COMMITS:**
+- d751d77: Fix getCurrentUser to fetch studio for SA role
+- 75118a0: Fix date serialization in CSV import
+
+**NEXT STEPS:**
+1. Fix CSV import data loading (CRITICAL)
+2. Fix Skip button to load next routine
+3. Complete step-through workflow testing
+4. Remove debug logging
+5. Test manual entry creation (Phase 2 logic verification)
 
 ### Session 30: CSV Import Redesign (Nov 4, 2025)
 **Status:** ✅ CODE COMPLETE + DEPLOYED - ⚠️ BLOCKER FOUND (Pre-existing Bug)
