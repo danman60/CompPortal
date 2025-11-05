@@ -245,7 +245,11 @@ export default function RoutineCSVImport() {
             dancer_id: match.dancer.id,
             dancer_name: name,
             dancer_age: age,
-            date_of_birth: match.dancer.date_of_birth,
+            date_of_birth: match.dancer.date_of_birth
+              ? (match.dancer.date_of_birth instanceof Date
+                  ? match.dancer.date_of_birth.toISOString().split('T')[0]
+                  : match.dancer.date_of_birth)
+              : null,
             classification_id: match.dancer.classification_id || null,
           });
         } else {
