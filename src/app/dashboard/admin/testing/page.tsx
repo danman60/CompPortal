@@ -248,11 +248,11 @@ export default function TestingToolsPage() {
 
             <button
               onClick={() => {
-                window.location.href = 'https://empwr.compsync.net/dashboard/entries/create?reservation=e0c1eb3f-e9f6-4822-9d8b-0d2de864ae68';
+                window.location.href = 'https://empwr.compsync.net/dashboard/entries';
               }}
               className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-bold text-lg transition-colors"
             >
-              TEST NEW ROUTINE FORM (→ EMPWR tenant)
+              TEST ROUTINES DASHBOARD (→ EMPWR tenant)
             </button>
           </div>
         </div>

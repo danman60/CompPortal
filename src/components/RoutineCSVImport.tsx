@@ -100,6 +100,37 @@ export default function RoutineCSVImport() {
     }
   }, [previewData.length]);
 
+  // Production Auto-Lock: When size category = "Production", lock dance category and classification
+  useEffect(() => {
+    if (!lookupData || previewData.length === 0) return;
+
+    const productionCategory = lookupData.categories?.find(c => c.name === 'Production');
+    const productionClass = lookupData.classifications?.find(c => c.name === 'Production');
+    const productionSize = lookupData.entrySizeCategories?.find(sc => sc.name === 'Production');
+
+    if (!productionCategory || !productionClass || !productionSize) return;
+
+    const updated = previewData.map(routine => {
+      const isProduction = routine.entry_size_id === productionSize.id;
+
+      if (isProduction) {
+        // Lock to Production
+        return {
+          ...routine,
+          category_id: productionCategory.id,
+          classification_id: productionClass.id,
+        };
+      }
+
+      return routine;
+    });
+
+    // Only update if changes were made
+    if (JSON.stringify(updated) !== JSON.stringify(previewData)) {
+      setPreviewData(updated);
+    }
+  }, [previewData, lookupData]);
+
   // Fuzzy match dancer name against existing dancers
   const matchDancerName = (name: string): { id: string; confidence: number } | null => {
     if (!existingDancers?.dancers) return null;
@@ -128,18 +159,20 @@ export default function RoutineCSVImport() {
     return bestMatch;
   };
 
-  // Calculate age at event date (from useEntryFormV2 logic lines 116-135)
+  // Calculate age at event date - Phase 2: Dec 31 cutoff (from useEntryFormV2 lines 111-120)
   const calculateAgeAtEvent = (dateOfBirth: string | null): number | null => {
     if (!dateOfBirth || !eventStartDate) return null;
 
     const birthDate = new Date(dateOfBirth);
-    const ageInMillis = eventStartDate.getTime() - birthDate.getTime();
-    const ageInYears = ageInMillis / (1000 * 60 * 60 * 24 * 365.25);
+    // Use Dec 31 of competition year (not competition date)
+    const cutoffDate = new Date(eventStartDate.getFullYear(), 11, 31);
+    const diffMs = cutoffDate.getTime() - birthDate.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-    return Math.floor(ageInYears);
+    return Math.floor(diffDays / 365);
   };
 
-  // Auto-detect age group based on average dancer age (rounded down)
+  // Auto-detect age group based on numerical age (Phase 2: Maps numerical age → age group for scheduling)
   const autoDetectAgeGroup = (matchedDancerIds: string[]): string | undefined => {
     if (!matchedDancerIds.length || !existingDancers?.dancers || !eventStartDate || !lookupData?.ageGroups) {
       console.log('[Age Detection] Missing prerequisites:', {
@@ -151,13 +184,12 @@ export default function RoutineCSVImport() {
       return undefined;
     }
 
-    // Calculate ages at event
+    // Calculate numerical ages at event (Dec 31 cutoff)
     const agesAtEvent = matchedDancerIds
       .map(id => existingDancers.dancers.find(d => d.id === id))
       .filter(d => d && d.date_of_birth)
       .map((d: any) => {
         const dob = d.date_of_birth;
-        // Handle both Date objects and strings
         const dobString = dob instanceof Date ? dob.toISOString().split('T')[0] : String(dob);
         return calculateAgeAtEvent(dobString);
       })
@@ -168,17 +200,75 @@ export default function RoutineCSVImport() {
       return undefined;
     }
 
-    // Calculate average age (drop decimal)
-    const avgAge = Math.floor(agesAtEvent.reduce((sum, age) => sum + age, 0) / agesAtEvent.length);
-    console.log('[Age Detection] Average age:', avgAge, 'Available age groups:', lookupData.ageGroups.map(ag => `${ag.name} (${ag.min_age}-${ag.max_age})`));
+    // Solo: Exact age. Group: Average age (drop decimal)
+    const calculatedAge = matchedDancerIds.length === 1
+      ? agesAtEvent[0]
+      : Math.floor(agesAtEvent.reduce((sum, age) => sum + age, 0) / agesAtEvent.length);
 
-    // Match to age divisions
+    console.log('[Age Detection] Calculated age:', calculatedAge, 'Dancer count:', matchedDancerIds.length);
+
+    // Map numerical age → age group (for scheduling)
     const match = lookupData.ageGroups.find(
-      (ag) => ag.min_age <= avgAge && avgAge <= ag.max_age
+      (ag) => ag.min_age <= calculatedAge && calculatedAge <= ag.max_age
     );
 
     console.log('[Age Detection] Matched age group:', match?.name || 'No match');
     return match?.id;
+  };
+
+  // Auto-detect classification based on dancers - Phase 2: 60% majority rule
+  const autoDetectClassification = (matchedDancerIds: string[]): string | undefined => {
+    if (!matchedDancerIds.length || !existingDancers?.dancers || !lookupData?.classifications) {
+      return undefined;
+    }
+
+    // Get classifications for matched dancers
+    const dancerClassifications = matchedDancerIds
+      .map(id => existingDancers.dancers.find(d => d.id === id))
+      .filter(d => d && d.classification_id)
+      .map((d: any) => {
+        return lookupData.classifications.find(c => c.id === d.classification_id);
+      })
+      .filter((c): c is any => c !== null && c !== undefined);
+
+    if (dancerClassifications.length === 0) {
+      console.log('[Classification Detection] No dancers with classifications');
+      return undefined;
+    }
+
+    // Solo: Use dancer's exact classification
+    if (matchedDancerIds.length === 1) {
+      return dancerClassifications[0].id;
+    }
+
+    // Non-Solo: 60% majority rule (from AutoCalculatedSection.tsx:91-117)
+    const counts: Record<string, { classification: any; count: number }> = {};
+    dancerClassifications.forEach(cls => {
+      if (!counts[cls.id]) {
+        counts[cls.id] = { classification: cls, count: 0 };
+      }
+      counts[cls.id].count++;
+    });
+
+    const total = dancerClassifications.length;
+
+    // Check for 60%+ majority
+    for (const entry of Object.values(counts)) {
+      if (entry.count / total >= 0.6) {
+        console.log('[Classification Detection] 60% majority:', entry.classification.name);
+        return entry.classification.id;
+      }
+    }
+
+    // No clear majority: return highest skill level
+    const highest = dancerClassifications.reduce((prev, curr) => {
+      const prevLevel = prev.skill_level ?? 0;
+      const currLevel = curr.skill_level ?? 0;
+      return currLevel > prevLevel ? curr : prev;
+    });
+
+    console.log('[Classification Detection] No majority, using highest:', highest.name);
+    return highest.id;
   };
 
   // Auto-detect entry size based on TOTAL dancer count (matched + unmatched)
@@ -347,13 +437,15 @@ export default function RoutineCSVImport() {
       routine.matchedDancers = matched;
       routine.unmatchedDancers = unmatched;
 
-      // Auto-detect age group and entry size
-      // Age group: Only if we have matched dancers (need DOB)
+      // Auto-detect all fields (Phase 2: age, classification, size)
+      // Age group: Maps numerical age → age group (for scheduling)
+      // Classification: 60% majority rule for groups
       // Entry size: Based on TOTAL count (matched + unmatched)
       const totalDancerCount = matched.length + unmatched.length;
 
       if (matched.length > 0) {
         routine.age_group_id = autoDetectAgeGroup(matched);
+        routine.classification_id = autoDetectClassification(matched);
       }
 
       if (totalDancerCount > 0) {
@@ -380,12 +472,24 @@ export default function RoutineCSVImport() {
     return errors;
   };
 
-  // Validate all fields before import
+  // Validate all fields before import - Phase 2: includes Production validation
   const validateBeforeImport = (): { valid: boolean; missingCount: number } => {
     let missingCount = 0;
 
+    const productionSize = lookupData?.entrySizeCategories?.find(sc => sc.name === 'Production');
+
     previewData.forEach((routine) => {
+      // Required fields check
       if (!routine.age_group_id || !routine.classification_id || !routine.category_id || !routine.entry_size_id) {
+        missingCount++;
+        return;
+      }
+
+      // Production validation: minimum 10 dancers
+      const isProduction = routine.entry_size_id === productionSize?.id;
+      const totalDancers = (routine.matchedDancers?.length || 0) + (routine.unmatchedDancers?.length || 0);
+
+      if (isProduction && totalDancers < 10) {
         missingCount++;
       }
     });
@@ -1026,14 +1130,28 @@ export default function RoutineCSVImport() {
                     const routineMatches = dancerMatches.filter(m => m.routineIndex === index);
                     const matched = routineMatches.filter(m => m.matched);
                     const unmatched = routineMatches.filter(m => !m.matched);
+                    const totalDancers = matched.length + unmatched.length;
+
+                    // Check if auto-detected (Phase 2: age, classification, size all auto-detected)
                     const hasAutoAge = parsedData[index]?.age_group_id && routine.age_group_id === parsedData[index].age_group_id;
+                    const hasAutoClassification = parsedData[index]?.classification_id && routine.classification_id === parsedData[index].classification_id;
                     const hasAutoSize = parsedData[index]?.entry_size_id && routine.entry_size_id === parsedData[index].entry_size_id;
+
+                    // Production checks
+                    const productionSize = lookupData?.entrySizeCategories?.find(sc => sc.name === 'Production');
+                    const isProduction = routine.entry_size_id === productionSize?.id;
+                    const productionError = isProduction && totalDancers < 10;
+
+                    // Get detected names for display
+                    const detectedAge = lookupData?.ageGroups?.find(ag => ag.id === parsedData[index]?.age_group_id);
+                    const detectedClassification = lookupData?.classifications?.find(c => c.id === parsedData[index]?.classification_id);
+                    const detectedSize = lookupData?.entrySizeCategories?.find(sc => sc.id === parsedData[index]?.entry_size_id);
 
                     return (
                       <tr
                         key={index}
                         className={`border-b border-white/10 hover:bg-white/5 ${
-                          !routine.age_group_id || !routine.classification_id || !routine.category_id || !routine.entry_size_id
+                          !routine.age_group_id || !routine.classification_id || !routine.category_id || !routine.entry_size_id || productionError
                             ? 'bg-red-500/10'
                             : ''
                         }`}
@@ -1057,7 +1175,7 @@ export default function RoutineCSVImport() {
                         <td className="px-4 py-3 text-gray-400">{index + 1}</td>
                         <td className="px-4 py-3 text-white">{routine.title}</td>
 
-                        {/* Age Group Dropdown */}
+                        {/* Age Group Dropdown - Phase 2: Show "Use detected" */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <select
@@ -1071,7 +1189,9 @@ export default function RoutineCSVImport() {
                                 routine.age_group_id ? 'border-white/20' : 'border-red-400/50'
                               } rounded text-white`}
                             >
-                              <option value="" className="bg-gray-900">Select...</option>
+                              <option value="" className="bg-gray-900">
+                                {detectedAge ? `Use detected (${detectedAge.name})` : 'Select age...'}
+                              </option>
                               {lookupData?.ageGroups?.map(ag => (
                                 <option key={ag.id} value={ag.id} className="bg-gray-900">{ag.name}</option>
                               ))}
@@ -1080,47 +1200,58 @@ export default function RoutineCSVImport() {
                           </div>
                         </td>
 
-                        {/* Classification Dropdown */}
+                        {/* Classification Dropdown - Phase 2: Show "Use detected", disable when Production */}
                         <td className="px-4 py-3">
-                          <select
-                            value={routine.classification_id || ''}
-                            onChange={(e) => {
-                              const updated = [...previewData];
-                              updated[index] = { ...updated[index], classification_id: e.target.value };
-                              setPreviewData(updated);
-                            }}
-                            className={`w-full px-2 py-1 text-xs bg-white/5 border ${
-                              routine.classification_id ? 'border-white/20' : 'border-red-400/50'
-                            } rounded text-white`}
-                          >
-                            <option value="" className="bg-gray-900">Select...</option>
-                            {lookupData?.classifications?.map(c => (
-                              <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>
-                            ))}
-                          </select>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={routine.classification_id || ''}
+                              onChange={(e) => {
+                                const updated = [...previewData];
+                                updated[index] = { ...updated[index], classification_id: e.target.value };
+                                setPreviewData(updated);
+                              }}
+                              disabled={isProduction}
+                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
+                                routine.classification_id ? 'border-white/20' : 'border-red-400/50'
+                              } rounded text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              <option value="" className="bg-gray-900">
+                                {detectedClassification ? `Use detected (${detectedClassification.name})` : 'Select classification...'}
+                              </option>
+                              {lookupData?.classifications?.map(c => (
+                                <option key={c.id} value={c.id} className="bg-gray-900">{c.name}</option>
+                              ))}
+                            </select>
+                            {hasAutoClassification && <span className="text-xs text-purple-400 whitespace-nowrap">AUTO</span>}
+                            {isProduction && <span className="text-xs text-blue-400 whitespace-nowrap">🔒 LOCKED</span>}
+                          </div>
                         </td>
 
-                        {/* Dance Category Dropdown */}
+                        {/* Dance Category Dropdown - Phase 2: Disable when Production */}
                         <td className="px-4 py-3">
-                          <select
-                            value={routine.category_id || ''}
-                            onChange={(e) => {
-                              const updated = [...previewData];
-                              updated[index] = { ...updated[index], category_id: e.target.value };
-                              setPreviewData(updated);
-                            }}
-                            className={`w-full px-2 py-1 text-xs bg-white/5 border ${
-                              routine.category_id ? 'border-white/20' : 'border-red-400/50'
-                            } rounded text-white`}
-                          >
-                            <option value="" className="bg-gray-900">Select...</option>
-                            {lookupData?.categories?.map(cat => (
-                              <option key={cat.id} value={cat.id} className="bg-gray-900">{cat.name}</option>
-                            ))}
-                          </select>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={routine.category_id || ''}
+                              onChange={(e) => {
+                                const updated = [...previewData];
+                                updated[index] = { ...updated[index], category_id: e.target.value };
+                                setPreviewData(updated);
+                              }}
+                              disabled={isProduction}
+                              className={`w-full px-2 py-1 text-xs bg-white/5 border ${
+                                routine.category_id ? 'border-white/20' : 'border-red-400/50'
+                              } rounded text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              <option value="" className="bg-gray-900">Select category...</option>
+                              {lookupData?.categories?.map(cat => (
+                                <option key={cat.id} value={cat.id} className="bg-gray-900">{cat.name}</option>
+                              ))}
+                            </select>
+                            {isProduction && <span className="text-xs text-blue-400 whitespace-nowrap">🔒 LOCKED</span>}
+                          </div>
                         </td>
 
-                        {/* Entry Size Dropdown */}
+                        {/* Entry Size Dropdown - Phase 2: Show "Use detected", triggers Production auto-lock */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <select
@@ -1134,7 +1265,9 @@ export default function RoutineCSVImport() {
                                 routine.entry_size_id ? 'border-white/20' : 'border-red-400/50'
                               } rounded text-white`}
                             >
-                              <option value="" className="bg-gray-900">Select...</option>
+                              <option value="" className="bg-gray-900">
+                                {detectedSize ? `Use detected (${detectedSize.name})` : 'Select size...'}
+                              </option>
                               {lookupData?.entrySizeCategories?.map(sc => (
                                 <option key={sc.id} value={sc.id} className="bg-gray-900">{sc.name}</option>
                               ))}
@@ -1143,7 +1276,7 @@ export default function RoutineCSVImport() {
                           </div>
                         </td>
 
-                        {/* Dancers (Read-only) */}
+                        {/* Dancers (Read-only) - Phase 2: Show Production validation error */}
                         <td className="px-4 py-3">
                           {routineMatches.length > 0 ? (
                             <div className="space-y-1">
@@ -1157,6 +1290,11 @@ export default function RoutineCSVImport() {
                                   ? {m.dancerName}
                                 </div>
                               ))}
+                              {productionError && (
+                                <div className="text-red-400 text-xs font-semibold mt-1">
+                                  ⚠️ Productions require 10+ dancers ({totalDancers} found)
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <span className="text-gray-400">-</span>
