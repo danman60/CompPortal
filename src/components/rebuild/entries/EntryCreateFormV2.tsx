@@ -18,6 +18,7 @@ export function EntryCreateFormV2() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showClassificationModal, setShowClassificationModal] = useState(false);
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const reservationId = searchParams.get('reservation');
   const importSessionId = searchParams.get('importSession');
 
@@ -94,6 +95,7 @@ export function EntryCreateFormV2() {
     // Pre-fill dance category if present in CSV (check all possible field names)
     const categoryValue = currentRoutine.category || currentRoutine['dance category'] ||
                           currentRoutine.genre || currentRoutine.style || currentRoutine.type;
+
     if (categoryValue && lookups) {
       const matchedCategory = lookups.categories.find(cat =>
         cat.name.toLowerCase() === categoryValue.toLowerCase()
@@ -101,6 +103,9 @@ export function EntryCreateFormV2() {
       if (matchedCategory) {
         formHook.updateField('category_id', matchedCategory.id);
       }
+    } else {
+      // Clear category if no value in CSV
+      formHook.updateField('category_id', '');
     }
 
     // Helper to calculate age
@@ -356,6 +361,49 @@ export function EntryCreateFormV2() {
     }
   };
 
+  // Handle classification exception request - save entry first, then show modal
+  const handleRequestClassificationException = async () => {
+    try {
+      // Use auto-calculated classification if "Use detected" is selected (empty string)
+      const effectiveClassificationId = formHook.form.classification_id || formHook.autoCalculatedClassification || '';
+
+      // Save the entry first
+      const result = await createMutation.mutateAsync({
+        reservation_id: actualReservationId!,
+        competition_id: reservation!.competition_id,
+        studio_id: reservation!.studio_id,
+        title: formHook.form.title,
+        choreographer: formHook.form.choreographer || '',
+        category_id: formHook.form.category_id,
+        classification_id: effectiveClassificationId,
+        special_requirements: formHook.form.special_requirements || undefined,
+        age_group_id: formHook.effectiveAgeGroup?.id,
+        entry_size_category_id: formHook.effectiveSizeCategory?.id,
+        is_title_upgrade: formHook.form.is_title_upgrade,
+        extended_time_requested: formHook.form.extended_time_requested,
+        routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
+        routine_length_seconds: formHook.form.extended_time_requested ? formHook.form.routine_length_seconds : undefined,
+        scheduling_notes: formHook.form.scheduling_notes || undefined,
+        status: 'draft',
+        participants: formHook.form.selectedDancers.map((d, idx) => ({
+          dancer_id: d.dancer_id,
+          dancer_name: d.dancer_name,
+          dancer_age: d.dancer_age || undefined,
+          display_order: idx,
+        })),
+      });
+
+      toast.success('Routine saved!');
+
+      // Store the saved entry ID and show exception modal
+      setSavedEntryId(result.id);
+      setShowClassificationModal(true);
+    } catch (error: any) {
+      console.error('Failed to save entry for exception request:', error);
+      toast.error(`Failed to save: ${error?.message || 'Unknown error'}`);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back Button */}
@@ -421,7 +469,7 @@ export function EntryCreateFormV2() {
         classifications={lookups.classifications}
         classificationId={formHook.form.classification_id}
         setClassificationId={(id) => formHook.updateField('classification_id', id)}
-        onRequestClassificationException={() => setShowClassificationModal(true)}
+        onRequestClassificationException={handleRequestClassificationException}
       />
 
       {/* Extended Time Section - Phase 2 spec lines 324-373 */}
@@ -482,9 +530,9 @@ export function EntryCreateFormV2() {
       )}
 
       {/* Classification Exception Modal */}
-      {showClassificationModal && formHook.autoCalculatedClassification && (
+      {showClassificationModal && formHook.autoCalculatedClassification && savedEntryId && (
         <ClassificationRequestExceptionModal
-          entryId="" // Entry not yet created - save entry first
+          entryId={savedEntryId}
           autoCalculatedClassification={
             formHook.autoCalculatedClassification
               ? {
@@ -493,10 +541,15 @@ export function EntryCreateFormV2() {
                 }
               : { id: '', name: '' }
           }
-          onClose={() => setShowClassificationModal(false)}
+          onClose={() => {
+            setShowClassificationModal(false);
+            setSavedEntryId(null);
+          }}
           onSuccess={() => {
             toast.success('Exception request submitted');
             setShowClassificationModal(false);
+            setSavedEntryId(null);
+            router.push('/dashboard/entries');
           }}
         />
       )}
