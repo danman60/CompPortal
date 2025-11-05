@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, ROUTINE_CSV_FIELDS } from '@/lib/csv-utils';
@@ -71,6 +71,13 @@ export default function RoutineCSVImport() {
   // DEBUG: Log reservations query result
   console.log('[RoutineCSVImport] Reservations query enabled:', !!studioId);
   console.log('[RoutineCSVImport] Reservations data:', reservationsData);
+
+  // Pre-select first approved reservation if only one exists
+  useEffect(() => {
+    if (reservationsData?.reservations && reservationsData.reservations.length > 0 && !selectedReservationId) {
+      setSelectedReservationId(reservationsData.reservations[0].id);
+    }
+  }, [reservationsData?.reservations, selectedReservationId]);
 
   // Fetch existing dancers for matching
   const { data: existingDancers, isLoading: dancersLoading } = trpc.dancer.getByStudio.useQuery(
