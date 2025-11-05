@@ -91,6 +91,18 @@ export function EntryCreateFormV2() {
       formHook.updateField('special_requirements', currentRoutine.props);
     }
 
+    // Pre-fill dance category if present in CSV (check all possible field names)
+    const categoryValue = currentRoutine.category || currentRoutine['dance category'] ||
+                          currentRoutine.genre || currentRoutine.style || currentRoutine.type;
+    if (categoryValue && lookups) {
+      const matchedCategory = lookups.categories.find(cat =>
+        cat.name.toLowerCase() === categoryValue.toLowerCase()
+      );
+      if (matchedCategory) {
+        formHook.updateField('category_id', matchedCategory.id);
+      }
+    }
+
     // Helper to calculate age
     const calculateAge = (dateOfBirth: string | null): number | null => {
       if (!dateOfBirth || !eventStartDate) return null;
@@ -452,6 +464,20 @@ export function EntryCreateFormV2() {
           isLoading={createMutation.isPending}
           validationErrors={formHook.validationErrors}
           onSave={handleSave}
+        />
+      )}
+
+      {/* Import Progress - Also show at bottom when in import mode */}
+      {importSessionId && importSession && (
+        <ImportActions
+          canSave={formHook.canSave}
+          isLoading={createMutation.isPending}
+          validationErrors={formHook.validationErrors}
+          currentIndex={importSession.current_index}
+          totalRoutines={importSession.total_routines}
+          onSaveAndNext={handleSaveAndNext}
+          onSkip={handleSkipRoutine}
+          onDelete={handleDeleteRoutine}
         />
       )}
 

@@ -59,9 +59,17 @@ export function DancerSelectionSection({
   });
 
   /**
-   * Sort dancers
+   * Sort dancers - pin selected to top, then alphabetical/age
    */
   const sortedDancers = [...filteredDancers].sort((a, b) => {
+    const aSelected = isSelected(a.id);
+    const bSelected = isSelected(b.id);
+
+    // Pin selected dancers to top
+    if (aSelected && !bSelected) return -1;
+    if (!aSelected && bSelected) return 1;
+
+    // Within selected or unselected groups, sort normally
     if (sortBy === 'name') {
       return `${a.first_name} ${a.last_name}`.localeCompare(
         `${b.first_name} ${b.last_name}`
