@@ -8,6 +8,7 @@ const routineDataSchema = z.object({
   title: z.string(),
   choreographer: z.string().optional(),
   props: z.string().optional(),
+  category: z.string().optional(),  // Dance category from CSV (Jazz, Contemporary, etc.)
   matched_dancers: z.array(z.object({
     dancer_id: z.string().uuid(),
     dancer_name: z.string(),
