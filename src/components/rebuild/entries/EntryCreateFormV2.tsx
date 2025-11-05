@@ -19,6 +19,7 @@ export function EntryCreateFormV2() {
   const router = useRouter();
   const [showClassificationModal, setShowClassificationModal] = useState(false);
   const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
+  const [prefilledRoutineId, setPrefilledRoutineId] = useState<string | null>(null);
   const reservationId = searchParams.get('reservation');
   const importSessionId = searchParams.get('importSession');
 
@@ -73,9 +74,27 @@ export function EntryCreateFormV2() {
 
   // Pre-fill form from import session
   useEffect(() => {
+    console.log('[PREFILL] useEffect triggered:', {
+      hasCurrentRoutine: !!currentRoutine,
+      dancersLength: dancers.length,
+      hasEventStartDate: !!eventStartDate,
+      prefilledRoutineId,
+      importSessionId: importSession?.id,
+      currentIndex: importSession?.current_index
+    });
+
     // Only run this effect if we're in import mode (have currentRoutine)
     if (!currentRoutine) return;
     if (!dancers.length || !eventStartDate) return;
+
+    // Skip if already pre-filled this routine (prevents re-prefilling on every render)
+    const routineId = `${importSession?.id}-${importSession?.current_index}`;
+    console.log('[PREFILL] Checking prefill status:', {
+      routineId,
+      prefilledRoutineId,
+      shouldSkip: prefilledRoutineId === routineId
+    });
+    if (prefilledRoutineId === routineId) return;
 
     // Clear previous selections when switching routines
     if (formHook.form.selectedDancers.length > 0) {
@@ -120,25 +139,45 @@ export function EntryCreateFormV2() {
       return Math.floor(diffDays / 365.25);
     };
 
-    // Pre-select matched dancers
+    // Pre-select matched dancers WITH classification from CSV
     if (currentRoutine.matched_dancers && currentRoutine.matched_dancers.length > 0) {
+      console.log('[PREFILL] Processing matched dancers:', {
+        matchedDancersFromCSV: currentRoutine.matched_dancers,
+        totalDancersInDB: dancers.length
+      });
+
       const matchedDancerIds = new Set(currentRoutine.matched_dancers.map((d: any) => d.dancer_id));
       dancers.forEach(dancer => {
         if (matchedDancerIds.has(dancer.id)) {
           const fullName = `${dancer.first_name} ${dancer.last_name}`;
           const age = calculateAge(dancer.date_of_birth);
 
+          // Use matched dancer's classification from CSV (not DB)
+          const matchedDancer = currentRoutine.matched_dancers.find((md: any) => md.dancer_id === dancer.id);
+
+          console.log('[PREFILL] Adding dancer:', {
+            dancerId: dancer.id,
+            dancerName: fullName,
+            classificationFromCSV: matchedDancer?.classification_id,
+            classificationFromDB: dancer.classification_id,
+            usingClassification: matchedDancer?.classification_id || dancer.classification_id
+          });
+
           formHook.toggleDancer({
             dancer_id: dancer.id,
             dancer_name: fullName,
             dancer_age: age,
             date_of_birth: dancer.date_of_birth,
-            classification_id: dancer.classification_id,
+            classification_id: matchedDancer?.classification_id || dancer.classification_id,
           });
         }
       });
     }
-  }, [currentRoutine?.title, importSession?.current_index, dancers.length, eventStartDate, lookups]); // Trigger on routine change or lookups load
+
+    // Mark as prefilled to prevent re-running
+    console.log('[PREFILL] Marking routine as prefilled:', routineId);
+    setPrefilledRoutineId(routineId);
+  }, [currentRoutine?.title, importSession?.current_index, dancers.length, eventStartDate, lookups, prefilledRoutineId]); // Trigger on routine change or lookups load
 
   // Production Auto-Lock: Lock size category and classification when Production dance category selected
   useEffect(() => {
@@ -302,6 +341,10 @@ export function EntryCreateFormV2() {
 
       toast.success('Routine saved!');
 
+      // Reset prefilled flag for next routine
+      console.log('[NAVIGATION] handleSaveAndNext: Resetting prefilledRoutineId');
+      setPrefilledRoutineId(null);
+
       // Move to next routine or complete
       const nextIndex = (importSession!.current_index ?? 0) + 1;
       if (nextIndex >= importSession!.total_routines) {
@@ -323,6 +366,10 @@ export function EntryCreateFormV2() {
 
   const handleSkipRoutine = async () => {
     try {
+      // Reset prefilled flag for next routine
+      console.log('[NAVIGATION] handleSkipRoutine: Resetting prefilledRoutineId');
+      setPrefilledRoutineId(null);
+
       const nextIndex = (importSession!.current_index ?? 0) + 1;
       if (nextIndex >= importSession!.total_routines) {
         await markCompleteMutation.mutateAsync({ id: importSessionId! });
@@ -346,6 +393,10 @@ export function EntryCreateFormV2() {
       });
 
       toast.success('Routine deleted from import queue');
+
+      // Reset prefilled flag for next routine
+      console.log('[NAVIGATION] handleDeleteRoutine: Resetting prefilledRoutineId');
+      setPrefilledRoutineId(null);
 
       // Check if there are any routines left
       const routines = importSession!.routines as any[];

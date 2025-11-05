@@ -352,12 +352,25 @@ export function useEntryFormV2({
    * Toggle dancer selection
    */
   const toggleDancer = useCallback((dancer: SelectedDancer) => {
+    console.log('[TOGGLE_DANCER] Called with:', {
+      dancer_id: dancer.dancer_id,
+      dancer_name: dancer.dancer_name,
+      classification_id: dancer.classification_id
+    });
+
     setForm((prev) => {
       const isSelected = prev.selectedDancers.some(
         (d) => d.dancer_id === dancer.dancer_id
       );
 
+      console.log('[TOGGLE_DANCER] Current state:', {
+        isSelected,
+        currentlySelectedCount: prev.selectedDancers.length,
+        currentlySelected: prev.selectedDancers.map(d => ({ id: d.dancer_id, name: d.dancer_name }))
+      });
+
       if (isSelected) {
+        console.log('[TOGGLE_DANCER] REMOVING dancer:', dancer.dancer_id);
         return {
           ...prev,
           selectedDancers: prev.selectedDancers.filter(
@@ -366,6 +379,10 @@ export function useEntryFormV2({
         };
       }
 
+      console.log('[TOGGLE_DANCER] ADDING dancer:', {
+        dancer_id: dancer.dancer_id,
+        classification_id: dancer.classification_id
+      });
       return {
         ...prev,
         selectedDancers: [...prev.selectedDancers, dancer],
