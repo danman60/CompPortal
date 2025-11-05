@@ -106,7 +106,7 @@ This matrix shows ALL possible CSV column header variations that will be recogni
 ### Props / Special Requirements
 **Canonical:** `props`
 
-**Aliases (25+):**
+**Aliases (33+):**
 ```
 ✓ Props, props, PROPS
 ✓ Prop, prop, PROP
@@ -123,12 +123,22 @@ This matrix shows ALL possible CSV column header variations that will be recogni
 ✓ Stage Items
 ✓ Materials
 ✓ Accessories
+✓ Notes, notes, NOTES ← NEW (very common!)
+✓ Note, note
+✓ Comments, comments, COMMENTS ← NEW
+✓ Comment, comment
+✓ Remarks, remarks, REMARKS ← NEW
+✓ Remark, remark
+✓ Special Notes, special notes, special_notes
+✓ Routine Notes, routine notes, routine_notes
 ```
 
 **Examples that MATCH:**
 - "Props" → props ✓
 - "Special Requirements" → props ✓
 - "Equipment" → props ✓
+- "Notes" → props ✓ ← VERY COMMON!
+- "Comments" → props ✓
 
 ---
 

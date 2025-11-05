@@ -47,7 +47,7 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
 
   // Routine fields
   title: ['routine_title', 'routinetitle', 'routine_name', 'routinename', 'name', 'routine', 'piece', 'dance_title', 'dancetitle', 'dance_name', 'entry_title', 'entry_name', 'entryname', 'performance_title', 'act', 'number'],
-  props: ['prop', 'properties', 'prop_list', 'proplist', 'prop_description', 'propdescription', 'special_requirements', 'special_req', 'requirements', 'req', 'items', 'equipment', 'stage_props', 'stageprops', 'stage_equipment', 'materials', 'accessories'],
+  props: ['prop', 'properties', 'prop_list', 'proplist', 'prop_description', 'propdescription', 'special_requirements', 'special_req', 'requirements', 'req', 'items', 'equipment', 'stage_props', 'stageprops', 'stage_equipment', 'materials', 'accessories', 'notes', 'note', 'comments', 'comment', 'remarks', 'remark', 'special_notes', 'routine_notes'],
   dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_name', 'dancer_list', 'dancers_list', 'dancerslist', 'dancers_list_first_name_last_name', 'dancer_first_last', 'first_name_last_name', 'full_name', 'fullname', 'cast', 'talent'],
   choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'choreographed by', 'teacher', 'instructor', 'coach', 'director', 'creator', 'choreography_by', 'choreography by', 'choreo_by', 'choreo by', 'choreographed', 'created_by', 'created by', 'taught_by', 'taught by', 'instructor_name', 'teacher_name'],
   duration_seconds: ['length_seconds', 'lengthseconds', 'length', 'duration', 'time_seconds', 'timeseconds', 'time', 'runtime', 'routine_length', 'routine_duration', 'performance_time', 'track_length'],
