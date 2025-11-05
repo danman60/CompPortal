@@ -12,8 +12,13 @@ type ParsedRoutine = {
   props?: string;
   dancers?: string;
   choreographer?: string;
-  category?: string; // Dance Category from CSV
-  'dance category'?: string; // Alternative column name
+  duration_seconds?: number | string;
+  // Dance Category - multiple possible column names
+  category?: string;
+  'dance category'?: string;
+  genre?: string;
+  style?: string;
+  type?: string;
   matched_dancers: Array<{
     dancer_id: string;
     dancer_name: string;
@@ -722,7 +727,7 @@ export default function RoutineCSVImport() {
                           {routine.choreographer || <span className="text-gray-500 italic">—</span>}
                         </td>
                         <td className="px-4 py-3 text-gray-300">
-                          {(routine.category || routine['dance category']) || <span className="text-gray-500 italic">—</span>}
+                          {(routine.category || routine['dance category'] || routine.genre || routine.style || routine.type) || <span className="text-gray-500 italic">—</span>}
                         </td>
                         <td className="px-4 py-3 text-gray-300">
                           {routine.props || <span className="text-gray-500 italic">—</span>}

@@ -50,6 +50,7 @@ export const FIELD_VARIATIONS: Record<string, string[]> = {
   props: ['prop', 'properties', 'prop_list', 'proplist', 'prop_description', 'propdescription', 'special_requirements', 'items', 'equipment', 'stage_props', 'stageprops'],
   dancers: ['dancer', 'participants', 'participant', 'performers', 'performer', 'members', 'member', 'artists', 'artist', 'names', 'dancer_names', 'dancer_list', 'dancers_list', 'dancerslist', 'dancers_list_first_name_last_name'],
   choreographer: ['choreo', 'choreographed_by', 'choreographedby', 'teacher', 'instructor', 'coach', 'director', 'creator', 'choreography_by'],
+  duration_seconds: ['length_seconds', 'lengthseconds', 'length', 'duration', 'time_seconds', 'timeseconds'],
 };
 
 /**
@@ -178,4 +179,8 @@ export const ROUTINE_CSV_FIELDS = [
   'choreographer',
   'dance category',
   'category',
+  'genre',
+  'style',
+  'type',
+  'duration_seconds',
 ];
