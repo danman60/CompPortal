@@ -89,26 +89,34 @@ export const accountRecoveryRouter = router({
 
       let isOrphaned = false;
 
-      // Check if studio has active recovery token (show even if owner_id was just created)
+      // PRIORITY 1: Studio has active recovery token = always show (ready for email)
       if (tokenMap.has(studio.id)) {
-        isOrphaned = true; // Include in list until token is used/expired
-      } else if (!studio.owner_id) {
-        // NULL owner_id = orphaned
-        isOrphaned = true;
-      } else {
-        // Check if auth user exists
-        try {
-          const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(
-            studio.owner_id
-          );
-          if (error || !authUser.user) {
-            // Auth user doesn't exist = orphaned
-            isOrphaned = true;
-          }
-        } catch (err) {
-          // Error checking auth user = assume orphaned
+        orphanedStudios.push({
+          ...studio,
+          dancer_count: studio._count.dancers,
+        });
+        continue; // Skip auth check - token means ready to send email
+      }
+
+      // PRIORITY 2: Check if truly orphaned (has owner_id but auth deleted)
+      // NOTE: NULL owner_id = unclaimed account (needs invitation, not recovery)
+      if (!studio.owner_id) {
+        // Skip - NULL owner_id means unclaimed, not orphaned
+        continue;
+      }
+
+      // Check if auth user exists
+      try {
+        const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(
+          studio.owner_id
+        );
+        if (error || !authUser.user) {
+          // Auth user doesn't exist = orphaned (needs recovery)
           isOrphaned = true;
         }
+      } catch (err) {
+        // Error checking auth = likely deleted user = orphaned
+        isOrphaned = true;
       }
 
       if (isOrphaned) {
