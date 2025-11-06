@@ -1095,6 +1095,9 @@ export const entryRouter = router({
       if (data.routine_length_seconds !== undefined) createData.routine_length_seconds = data.routine_length_seconds;
       if (data.scheduling_notes) createData.scheduling_notes = data.scheduling_notes;
 
+      // Routine age (locks in on entry creation, finalized on summary submission)
+      if (data.routine_age !== undefined) createData.routine_age = data.routine_age;
+
       // Date/time fields
       if (performance_date) createData.performance_date = new Date(performance_date);
       if (performance_time) createData.performance_time = new Date(`1970-01-01T${performance_time}`);
