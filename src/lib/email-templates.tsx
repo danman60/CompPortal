@@ -13,6 +13,7 @@ import PaymentConfirmed from '@/emails/PaymentConfirmed';
 import MissingMusicReminder from '@/emails/MissingMusicReminder';
 import WelcomeEmail from '@/emails/WelcomeEmail';
 import DailyDigest from '@/emails/DailyDigest';
+import AccountRecovery from '@/emails/AccountRecovery';
 
 /**
  * Render email templates to HTML
@@ -162,6 +163,13 @@ export interface StudioProfileSubmittedData {
   tenantBranding?: TenantBranding;
 }
 
+export interface AccountRecoveryData {
+  studioName: string;
+  recoveryUrl: string;
+  tenantName: string;
+  tenantBranding?: TenantBranding;
+}
+
 export interface DailyDigestData {
   userName: string;
   tenantName: string;
@@ -292,6 +300,13 @@ export async function renderStudioProfileSubmitted(data: StudioProfileSubmittedD
  */
 export async function renderDailyDigest(data: DailyDigestData) {
   return render(<DailyDigest {...data} />);
+}
+
+/**
+ * Render account recovery email
+ */
+export async function renderAccountRecovery(data: AccountRecoveryData) {
+  return render(<AccountRecovery {...data} />);
 }
 
 /**

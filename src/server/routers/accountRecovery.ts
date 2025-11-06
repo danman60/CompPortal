@@ -1,11 +1,12 @@
 import { z } from 'zod';
-import { router, protectedProcedure } from '../trpc';
+import { router, protectedProcedure, publicProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import { isSuperAdmin } from '@/lib/auth-utils';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { logActivity } from '@/lib/activity';
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email';
+import { renderAccountRecovery } from '@/lib/email-templates';
 import { randomBytes } from 'crypto';
 
 /**
@@ -281,32 +282,17 @@ export const accountRecoveryRouter = router({
       const baseUrl = `https://${studio.tenants?.subdomain}.compsync.net`;
       const recoveryUrl = `${baseUrl}/account-recovery?token=${recoveryToken.token}`;
 
-      // Send email
-      const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3b82f6;">Account Security Update</h2>
-          <p>Hello ${studio.name},</p>
-          <p>We recently had to update our account security system, and you'll need to recreate your password to continue accessing your CompSync account.</p>
-          <p>Your studio data, including all your dancers and registrations, is safe and ready for you.</p>
-          <div style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0 0 15px 0;"><strong>What you need to do:</strong></p>
-            <ol style="margin: 0; padding-left: 20px;">
-              <li>Click the button below</li>
-              <li>Create a new password (you can use your old password if you want)</li>
-              <li>You'll be logged in and see all your data</li>
-            </ol>
-          </div>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${recoveryUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Set Your Password</a>
-          </div>
-          <p style="color: #6b7280; font-size: 14px;">This link will expire in 7 days. If you have any questions, please contact support.</p>
-          <p>Best regards,<br/>${studio.tenants?.name || 'CompSync'} Team</p>
-        </div>
-      `;
-
       if (!studio.email) {
         throw new Error('Studio has no email address');
       }
+
+      // Render email template
+      const html = await renderAccountRecovery({
+        studioName: studio.name,
+        recoveryUrl,
+        tenantName: studio.tenants?.name || 'CompSync',
+        tenantBranding: undefined, // Use default branding
+      });
 
       const result = await sendEmail({
         to: studio.email,
@@ -339,7 +325,7 @@ export const accountRecoveryRouter = router({
   /**
    * Validate recovery token (public endpoint for recovery page)
    */
-  validateToken: protectedProcedure
+  validateToken: publicProcedure
     .input(
       z.object({
         token: z.string(),
@@ -382,7 +368,7 @@ export const accountRecoveryRouter = router({
   /**
    * Complete recovery by setting password
    */
-  completeRecovery: protectedProcedure
+  completeRecovery: publicProcedure
     .input(
       z.object({
         token: z.string(),
