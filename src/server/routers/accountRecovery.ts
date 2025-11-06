@@ -32,11 +32,10 @@ export const accountRecoveryRouter = router({
     }
 
     // Find studios where owner_id doesn't exist in auth.users
+    // Include studios with NULL owner_id AND studios with deleted auth users
     const studios = await prisma.studios.findMany({
       where: {
-        owner_id: {
-          not: null,
-        },
+        // No filter - check all studios
       },
       select: {
         id: true,
