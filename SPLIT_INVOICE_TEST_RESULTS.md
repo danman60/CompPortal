@@ -1,15 +1,15 @@
 # Split Invoice Testing - Session Results
 
 **Date:** November 6, 2025
-**Session Duration:** ~3 hours
-**Status:** IN PROGRESS (7/18 tests executed)
+**Session Duration:** ~4 hours
+**Status:** IN PROGRESS (9/18 tests executed)
 
 ---
 
 ## Summary
 
-**Tests Executed:** 7 / 18 (39%)
-**Tests Passed:** 7 / 7 (100%)
+**Tests Executed:** 9 / 18 (50%)
+**Tests Passed:** 9 / 9 (100%)
 **Bugs Found:** 2 (both fixed)
 
 ---
@@ -78,10 +78,38 @@
   - Correctly shows 1 of 2 dancers
 - **Evidence:** Browser snapshot captured
 
-### ⏭️ Tests I8-I18: NOT EXECUTED
-- Trio sub-invoice inspection (I8)
-- Verify all 6 sub-invoices (I9-I11)
-- Database verification (I13)
+### ✅ Test I8: View Trio Sub-Invoice - PASS
+- **Action:** Click view on Alexander Martinez's family invoice
+- **Expected:** Individual invoice shows trio routine with split fee (33.33%)
+- **Result:** ✅ All correct:
+  - Routine: "Triple Threat" (Lyrical Duet/Trio)
+  - Dancers: "Alexander Martinez (of 3 dancers)"
+  - Subtotal: $70.00 (33.33% of $210 trio fee)
+  - Tax (13% HST): $9.10
+  - Total Due: $79.10
+  - Correctly shows 1 of 3 dancers
+- **Evidence:** Browser snapshot captured
+
+### ✅ Test I13: Database Verification - PASS
+- **Action:** Query sub_invoices table to verify records match UI
+- **Expected:** 6 sub-invoices in database with correct calculations
+- **Result:** ✅ All verified:
+  - 6 sub-invoices found for parent invoice
+  - All totals match UI display exactly
+  - Alexander Martinez: $79.10 ✓
+  - Amelia Jones: $79.10 ✓
+  - Ava Jones: $79.10 ✓
+  - Charlotte Williams: $79.10 ✓
+  - Emma Johnson: $129.95 ✓
+  - Olivia Williams: $79.10 ✓
+  - Sum: $525.45 (matches parent) ✓
+  - All status: "GENERATED" ✓
+  - All created_at: 2025-11-06 13:42:13.405 ✓
+- **Evidence:** SQL query results
+
+### ⏭️ Tests I9-I12, I14-I18: NOT EXECUTED
+- Verify remaining sub-invoices (I9-I11)
+- Back navigation (I12, I14)
 - Regeneration testing (I15)
 - Multi-tenant and role access testing (I16-I18)
 
