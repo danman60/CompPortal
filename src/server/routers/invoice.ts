@@ -1125,6 +1125,10 @@ export const invoiceRouter = router({
   splitInvoice: protectedProcedure
     .input(z.object({
       invoiceId: z.string().uuid(),
+      margin: z.object({
+        type: z.enum(['percentage_per_routine', 'fixed_per_routine', 'percentage_per_dancer', 'fixed_per_dancer']),
+        value: z.number().min(0), // No negative margin
+      }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       console.log('[SUBINVOICE_SPLIT] Starting invoice split:', {
@@ -1320,14 +1324,88 @@ export const invoiceRouter = router({
         }))
       });
 
-      // 5. Calculate tax for each dancer and apply rounding adjustment
-      const taxRate = Number(invoice.tax_rate || 13);
+      // 5. Apply margin if provided
+      const marginConfig = input.margin;
+      console.log('[SUBINVOICE_MARGIN] Margin configuration:', {
+        has_margin: !!marginConfig,
+        margin_type: marginConfig?.type,
+        margin_value: marginConfig?.value
+      });
+
       const dancers = Array.from(dancerMap.values());
+      dancers.forEach((dancer) => {
+        const originalSubtotal = dancer.subtotal;
+        let marginAmount = 0;
+        let adjustedSubtotal = originalSubtotal;
+
+        if (marginConfig) {
+          if (marginConfig.type === 'percentage_per_routine') {
+            // Apply percentage margin to each routine
+            dancer.lineItems = dancer.lineItems.map(item => {
+              const itemMargin = item.amount * (marginConfig.value / 100);
+              const itemWithMargin = item.amount + itemMargin;
+              marginAmount += itemMargin;
+              return { ...item, amount: Number(itemWithMargin.toFixed(2)) };
+            });
+            // Recalculate subtotal from adjusted line items
+            adjustedSubtotal = dancer.lineItems.reduce((sum: number, item: any) => sum + item.amount, 0);
+          }
+          else if (marginConfig.type === 'fixed_per_routine') {
+            // Add fixed dollar to each routine
+            const routineCount = dancer.lineItems.length;
+            marginAmount = marginConfig.value * routineCount;
+            dancer.lineItems = dancer.lineItems.map(item => ({
+              ...item,
+              amount: Number((item.amount + marginConfig.value).toFixed(2))
+            }));
+            adjustedSubtotal = originalSubtotal + marginAmount;
+          }
+          else if (marginConfig.type === 'percentage_per_dancer') {
+            // Apply percentage to total dancer subtotal, distribute proportionally across routines
+            marginAmount = originalSubtotal * (marginConfig.value / 100);
+            const marginRatio = marginAmount / originalSubtotal;
+            dancer.lineItems = dancer.lineItems.map(item => {
+              const itemMargin = item.amount * marginRatio;
+              return { ...item, amount: Number((item.amount + itemMargin).toFixed(2)) };
+            });
+            adjustedSubtotal = originalSubtotal + marginAmount;
+          }
+          else if (marginConfig.type === 'fixed_per_dancer') {
+            // Add fixed dollar per dancer, distribute proportionally across routines
+            marginAmount = marginConfig.value;
+            const marginRatio = marginAmount / originalSubtotal;
+            dancer.lineItems = dancer.lineItems.map(item => {
+              const itemMargin = item.amount * marginRatio;
+              return { ...item, amount: Number((item.amount + itemMargin).toFixed(2)) };
+            });
+            adjustedSubtotal = originalSubtotal + marginAmount;
+          }
+        }
+
+        // Store margin data for dancer
+        (dancer as any).original_subtotal = originalSubtotal;
+        (dancer as any).margin_amount = marginAmount;
+        (dancer as any).margin_type = marginConfig?.type || null;
+        (dancer as any).margin_value = marginConfig?.value || null;
+        dancer.subtotal = Number(adjustedSubtotal.toFixed(2));
+
+        console.log('[SUBINVOICE_MARGIN] Dancer margin applied:', {
+          dancer_id: dancer.dancer_id,
+          dancer_name: dancer.dancer_name,
+          original_subtotal: originalSubtotal,
+          margin_amount: marginAmount,
+          adjusted_subtotal: dancer.subtotal
+        });
+      });
+
+      // 6. Calculate tax for each dancer
+      const taxRate = Number(invoice.tax_rate || 13);
 
       console.log('[SUBINVOICE_VALIDATE] Calculating tax and totals:', {
         tax_rate: taxRate,
         dancers_count: dancers.length,
-        invoice_total: invoice.total
+        invoice_total: invoice.total,
+        has_margin: !!marginConfig
       });
 
       let calculatedTotal = 0;
@@ -1351,40 +1429,53 @@ export const invoiceRouter = router({
         });
       });
 
-      // 6. Apply penny rounding adjustment to last dancer if needed
+      // 7. Apply penny rounding adjustment to last dancer alphabetically (Decision #6)
       const mainInvoiceTotal = Number(invoice.total);
-      const difference = mainInvoiceTotal - calculatedTotal;
 
-      console.log('[SUBINVOICE_VALIDATE] Checking totals match:', {
-        main_invoice_total: mainInvoiceTotal,
-        calculated_total: calculatedTotal,
-        difference,
-        acceptable: Math.abs(difference) <= 0.01
-      });
+      // When margin is applied, dancer invoices will total MORE than main invoice
+      // Only validate rounding if NO margin, otherwise expect difference
+      if (!marginConfig) {
+        const difference = mainInvoiceTotal - calculatedTotal;
 
-      if (Math.abs(difference) > 0.01) {
-        console.error('[SUBINVOICE_VALIDATE] Split calculation error - difference too large:', {
+        console.log('[SUBINVOICE_VALIDATE] Checking totals match (no margin):', {
           main_invoice_total: mainInvoiceTotal,
           calculated_total: calculatedTotal,
-          difference
+          difference,
+          acceptable: Math.abs(difference) <= 0.01
         });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Split calculation error: difference of $${difference.toFixed(2)}`,
-        });
-      }
 
-      if (difference !== 0) {
-        const lastDancer: any = dancers[dancers.length - 1];
-        const oldTotal = lastDancer.total;
-        lastDancer.total = Number((lastDancer.total + difference).toFixed(2));
+        if (Math.abs(difference) > 0.01) {
+          console.error('[SUBINVOICE_VALIDATE] Split calculation error - difference too large:', {
+            main_invoice_total: mainInvoiceTotal,
+            calculated_total: calculatedTotal,
+            difference
+          });
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Split calculation error: difference of $${difference.toFixed(2)}`,
+          });
+        }
 
-        console.log('[SUBINVOICE_VALIDATE] Applied rounding adjustment to last dancer:', {
-          dancer_id: lastDancer.dancer_id,
-          dancer_name: lastDancer.dancer_name,
-          old_total: oldTotal,
-          adjustment: difference,
-          new_total: lastDancer.total
+        if (difference !== 0) {
+          // Sort dancers alphabetically and apply adjustment to last one
+          const sortedDancers = [...dancers].sort((a, b) => a.dancer_name.localeCompare(b.dancer_name));
+          const lastDancer: any = sortedDancers[sortedDancers.length - 1];
+          const oldTotal = lastDancer.total;
+          lastDancer.total = Number((lastDancer.total + difference).toFixed(2));
+
+          console.log('[SUBINVOICE_VALIDATE] Applied rounding adjustment to last dancer alphabetically:', {
+            dancer_id: lastDancer.dancer_id,
+            dancer_name: lastDancer.dancer_name,
+            old_total: oldTotal,
+            adjustment: difference,
+            new_total: lastDancer.total
+          });
+        }
+      } else {
+        console.log('[SUBINVOICE_VALIDATE] Margin applied - dancer invoices total will exceed main invoice:', {
+          main_invoice_total: mainInvoiceTotal,
+          calculated_dancer_total: calculatedTotal,
+          total_margin: calculatedTotal - mainInvoiceTotal
         });
       }
 
@@ -1423,14 +1514,18 @@ export const invoiceRouter = router({
           return prisma.sub_invoices.create({
             data: {
               parent_invoice_id: input.invoiceId,
-              family_identifier: dancer.dancer_id, // Use dancer_id as identifier
-              family_name: dancer.dancer_name, // Use dancer name
+              dancer_id: dancer.dancer_id,
+              dancer_name: dancer.dancer_name,
               line_items: dancer.lineItems as any,
               subtotal: dancer.subtotal,
               tax_rate: dancer.tax_rate,
               tax_amount: dancer.tax_amount,
               total: dancer.total,
               status: 'GENERATED',
+              margin_type: dancer.margin_type,
+              margin_value: dancer.margin_value,
+              margin_amount: dancer.margin_amount,
+              original_subtotal: dancer.original_subtotal,
               tenant_id: ctx.tenantId!,
               notes: dancer.parent_email ? `Parent email: ${dancer.parent_email}` : null,
             },
@@ -1442,6 +1537,22 @@ export const invoiceRouter = router({
         count: subInvoices.length,
         sub_invoice_ids: subInvoices.map(si => si.id),
         total_sum: subInvoices.reduce((sum, si) => sum + Number(si.total), 0)
+      });
+
+      // 9. Update main invoice with margin tracking
+      const totalMargin = dancers.reduce((sum, d: any) => sum + (d.margin_amount || 0), 0);
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          has_dancer_invoices: true,
+          total_margin_applied: totalMargin > 0 ? totalMargin : null,
+        },
+      });
+
+      console.log('[SUBINVOICE_CREATE] Main invoice updated with margin tracking:', {
+        invoice_id: input.invoiceId,
+        has_dancer_invoices: true,
+        total_margin: totalMargin
       });
 
       // 10. Activity log
@@ -1464,10 +1575,16 @@ export const invoiceRouter = router({
       return {
         success: true,
         sub_invoice_count: subInvoices.length,
+        total_margin: totalMargin,
+        main_invoice_total: mainInvoiceTotal,
+        dancer_invoices_total: calculatedTotal,
         dancers: dancers.map((d: any) => ({
           name: d.dancer_name,
           identifier: d.dancer_id,
-          total: d.total,
+          routines_count: d.lineItems.length,
+          original_total: d.original_subtotal + (d.original_subtotal * taxRate / 100),
+          final_total: d.total,
+          margin: d.margin_amount || 0,
         })),
       };
     }),
@@ -1596,5 +1713,64 @@ export const invoiceRouter = router({
       }
 
       return { success: true, deleted_count: result.count };
+    }),
+
+  /**
+   * Get invoice with entries for split wizard preview
+   */
+  getInvoiceWithEntries: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId, tenant_id: ctx.tenantId! },
+        include: {
+          studios: true,
+          competitions: true,
+        },
+      });
+
+      if (!invoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Guard: Must be studio owner or super admin
+      if (ctx.userRole !== 'super_admin' && invoice.studios.owner_id !== ctx.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      // Get entry IDs from line items
+      const lineItems = invoice.line_items as any[];
+      const entryIds = lineItems.map((item: any) => item.id);
+
+      // Fetch entries with participants
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          id: { in: entryIds },
+          tenant_id: ctx.tenantId!,
+          status: { not: 'cancelled' },
+        },
+        include: {
+          entry_participants: {
+            include: {
+              dancers: {
+                select: {
+                  id: true,
+                  first_name: true,
+                  last_name: true,
+                  parent_email: true,
+                },
+              },
+            },
+          },
+          entry_size_categories: { select: { name: true } },
+        },
+      });
+
+      return {
+        invoice,
+        entries,
+      };
     }),
 });
