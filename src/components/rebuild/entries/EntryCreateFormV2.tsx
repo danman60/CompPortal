@@ -355,7 +355,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
   // Calculate capacity (Phase 1 spec lines 513-521)
   const reservationEntries = entriesData?.entries?.filter(
-    (e: any) => e.reservation_id === reservationId && e.status !== 'withdrawn'
+    (e: any) => e.reservation_id === actualReservationId && e.status !== 'withdrawn'
   ) || [];
   const confirmedSpaces = reservation?.spaces_confirmed || 0;
   const entriesCount = reservationEntries.length;
@@ -699,6 +699,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
           isLoading={createMutation.isPending}
           validationErrors={formHook.validationErrors}
           onSave={handleSave}
+          mode={isEditMode ? 'edit' : 'create'}
         />
       )}
 
