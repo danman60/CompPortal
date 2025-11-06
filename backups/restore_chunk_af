@@ -1,0 +1,1000 @@
+-- Name: TABLE rankings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.rankings IS 'Overall competition rankings and placements';
+
+
+--
+-- Name: reservations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.reservations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    studio_id uuid NOT NULL,
+    competition_id uuid NOT NULL,
+    location_id uuid,
+    spaces_requested integer NOT NULL,
+    spaces_confirmed integer DEFAULT 0,
+    agent_first_name character varying(100),
+    agent_last_name character varying(100),
+    agent_email character varying(255),
+    agent_phone character varying(50),
+    agent_title character varying(100),
+    age_of_consent boolean DEFAULT false,
+    waiver_consent boolean DEFAULT false,
+    media_consent boolean DEFAULT false,
+    deposit_amount numeric(10,2),
+    total_amount numeric(10,2),
+    payment_status character varying(50) DEFAULT 'pending'::character varying,
+    payment_due_date date,
+    status character varying(50) DEFAULT 'pending'::character varying,
+    internal_notes text,
+    public_notes text,
+    requested_at timestamp without time zone DEFAULT now(),
+    approved_at timestamp without time zone,
+    approved_by uuid,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    payment_confirmed_by uuid,
+    payment_confirmed_at timestamp with time zone,
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    deposit_paid_at timestamp without time zone,
+    deposit_confirmed_by uuid,
+    is_closed boolean DEFAULT false,
+    discount_percentage numeric(5,2) DEFAULT 0,
+    credits_applied numeric(10,2) DEFAULT 0,
+    CONSTRAINT reservations_payment_status_check CHECK (((payment_status)::text = ANY ((ARRAY['pending'::character varying, 'partial'::character varying, 'paid'::character varying, 'refunded'::character varying, 'cancelled'::character varying])::text[]))),
+    CONSTRAINT reservations_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying, 'adjusted'::character varying, 'cancelled'::character varying, 'waitlisted'::character varying, 'summarized'::character varying, 'invoiced'::character varying, 'closed'::character varying])::text[])))
+);
+
+
+--
+-- Name: COLUMN reservations.deposit_paid_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.reservations.deposit_paid_at IS 'Timestamp when deposit payment was confirmed';
+
+
+--
+-- Name: COLUMN reservations.deposit_confirmed_by; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.reservations.deposit_confirmed_by IS 'User ID who confirmed the deposit payment';
+
+
+--
+-- Name: COLUMN reservations.is_closed; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.reservations.is_closed IS 'Whether the reservation has been closed (no more routines can be added)';
+
+
+--
+-- Name: COLUMN reservations.discount_percentage; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.reservations.discount_percentage IS 'Discount percentage applied to this reservation (e.g., 10.00 for 10%)';
+
+
+--
+-- Name: COLUMN reservations.credits_applied; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.reservations.credits_applied IS 'Credits/Glow Dollars applied to this reservation';
+
+
+--
+-- Name: routine_import_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.routine_import_sessions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    studio_id uuid NOT NULL,
+    reservation_id uuid NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    completed boolean DEFAULT false,
+    current_index integer DEFAULT 0,
+    total_routines integer NOT NULL,
+    routines jsonb NOT NULL
+);
+
+
+--
+-- Name: scores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.scores (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    entry_id uuid NOT NULL,
+    judge_id uuid NOT NULL,
+    technical_score numeric(5,2),
+    artistic_score numeric(5,2),
+    performance_score numeric(5,2),
+    overall_score numeric(5,2),
+    total_score numeric(6,2) NOT NULL,
+    placement integer,
+    comments text,
+    strengths text,
+    areas_for_improvement text,
+    scored_at timestamp without time zone DEFAULT now(),
+    modified_at timestamp without time zone,
+    is_final boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    CONSTRAINT check_artistic_score_range CHECK (((artistic_score >= (0)::numeric) AND (artistic_score <= (100)::numeric))),
+    CONSTRAINT check_performance_score_range CHECK (((performance_score >= (0)::numeric) AND (performance_score <= (100)::numeric))),
+    CONSTRAINT check_technical_score_range CHECK (((technical_score >= (0)::numeric) AND (technical_score <= (100)::numeric)))
+);
+
+
+--
+-- Name: TABLE scores; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.scores IS 'Judge scoring system - stores individual judge scores for competition entries';
+
+
+--
+-- Name: COLUMN scores.technical_score; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scores.technical_score IS 'Technical execution score (0-100)';
+
+
+--
+-- Name: COLUMN scores.artistic_score; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scores.artistic_score IS 'Artistic expression score (0-100)';
+
+
+--
+-- Name: COLUMN scores.performance_score; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scores.performance_score IS 'Overall performance score (0-100)';
+
+
+--
+-- Name: COLUMN scores.comments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scores.comments IS 'Optional judge comments and feedback';
+
+
+--
+-- Name: COLUMN scores.created_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scores.created_at IS 'Timestamp when score was first created';
+
+
+--
+-- Name: COLUMN scores.updated_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scores.updated_at IS 'Timestamp when score was last updated (auto-updated by trigger)';
+
+
+--
+-- Name: scoring_tiers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.scoring_tiers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    min_score numeric(5,2) NOT NULL,
+    max_score numeric(5,2) NOT NULL,
+    color character varying(7),
+    sort_order integer,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT scoring_tiers_check CHECK (((min_score >= (0)::numeric) AND (max_score <= (300)::numeric))),
+    CONSTRAINT scoring_tiers_check1 CHECK ((min_score < max_score))
+);
+
+
+--
+-- Name: studios; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.studios (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    owner_id uuid,
+    code character varying(5),
+    name character varying(255) NOT NULL,
+    address1 character varying(255),
+    address2 character varying(255),
+    city character varying(100),
+    province character varying(50),
+    postal_code character varying(20),
+    country character varying(50) DEFAULT 'Canada'::character varying,
+    phone character varying(50),
+    fax character varying(50),
+    email character varying(255),
+    website character varying(255),
+    contact_name character varying(255),
+    contact_phone character varying(50),
+    contact_email character varying(255),
+    contact_title character varying(100),
+    business_number character varying(50),
+    tax_number character varying(50),
+    account_name character varying(255),
+    established_year integer,
+    student_count integer,
+    instructor_count integer,
+    comments text,
+    status character varying(50) DEFAULT 'pending'::character varying,
+    verified_at timestamp without time zone,
+    verified_by uuid,
+    logo_url text,
+    social_media jsonb DEFAULT '{}'::jsonb,
+    settings jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    internal_notes text,
+    consent_photo_video timestamp with time zone,
+    consent_legal_info timestamp with time zone,
+    consent_marketing timestamp with time zone,
+    consent_data_processing timestamp with time zone,
+    public_code character varying(5) NOT NULL,
+    invited_at timestamp with time zone,
+    CONSTRAINT studios_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying, 'suspended'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE studios; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.studios IS 'Dance studios that register for competitions';
+
+
+--
+-- Name: COLUMN studios.owner_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.studios.owner_id IS 'User ID of studio owner. NULL for pre-approved studios awaiting account claiming.';
+
+
+--
+-- Name: COLUMN studios.internal_notes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.studios.internal_notes IS 'Internal notes for Competition Directors only. Not visible to Studio Directors.';
+
+
+--
+-- Name: COLUMN studios.consent_photo_video; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.studios.consent_photo_video IS 'Timestamp when studio consented to photo/video usage';
+
+
+--
+-- Name: COLUMN studios.consent_legal_info; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.studios.consent_legal_info IS 'Timestamp when studio consented to sharing legal info with platform';
+
+
+--
+-- Name: COLUMN studios.consent_marketing; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.studios.consent_marketing IS 'Timestamp when studio consented to marketing communications';
+
+
+--
+-- Name: COLUMN studios.consent_data_processing; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.studios.consent_data_processing IS 'Timestamp when studio consented to data processing';
+
+
+--
+-- Name: COLUMN studios.public_code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.studios.public_code IS 'Client-facing 5-character lookup code. Display only - never use in database relations. All FKs must use id (UUID).';
+
+
+--
+-- Name: summaries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.summaries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    reservation_id uuid NOT NULL,
+    entries_used integer NOT NULL,
+    entries_unused integer NOT NULL,
+    submitted_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    tenant_id uuid NOT NULL,
+    CONSTRAINT summaries_entries_unused_check CHECK ((entries_unused >= 0)),
+    CONSTRAINT summaries_entries_used_check CHECK ((entries_used >= 0))
+);
+
+
+--
+-- Name: TABLE summaries; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.summaries IS 'Audit trail for submitted routine summaries per reservation';
+
+
+--
+-- Name: COLUMN summaries.entries_used; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.summaries.entries_used IS 'Number of entries actually submitted';
+
+
+--
+-- Name: COLUMN summaries.entries_unused; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.summaries.entries_unused IS 'Number of approved spaces not used (refunded)';
+
+
+--
+-- Name: summary_entries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.summary_entries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    summary_id uuid NOT NULL,
+    entry_id uuid NOT NULL,
+    snapshot jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE summary_entries; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.summary_entries IS 'Immutable snapshots of entries at summary submission time';
+
+
+--
+-- Name: COLUMN summary_entries.snapshot; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.summary_entries.snapshot IS 'Full entry data as JSON for audit purposes';
+
+
+--
+-- Name: system_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.system_settings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    key character varying(100) NOT NULL,
+    value jsonb NOT NULL,
+    description text,
+    category character varying(50),
+    data_type character varying(20) NOT NULL,
+    validation_rules jsonb,
+    is_public boolean DEFAULT false,
+    requires_admin boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+--
+-- Name: tenants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tenants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    slug character varying(50) NOT NULL,
+    subdomain character varying(50) NOT NULL,
+    name character varying(255) NOT NULL,
+    branding jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    age_division_settings jsonb,
+    classification_settings jsonb,
+    entry_fee_settings jsonb,
+    dance_category_settings jsonb,
+    scoring_system_settings jsonb,
+    entry_size_settings jsonb,
+    award_settings jsonb,
+    email_from text,
+    email_from_name text,
+    mailgun_domain text,
+    email_template_footer text
+);
+
+
+--
+-- Name: COLUMN tenants.age_division_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.age_division_settings IS 'Tenant-wide default age divisions (Micro, Mini, Junior, etc.). Competitions inherit these unless overridden.';
+
+
+--
+-- Name: COLUMN tenants.classification_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.classification_settings IS 'Tenant-wide default classifications (Novice, Part-Time, Competitive). Competitions inherit these unless overridden.';
+
+
+--
+-- Name: COLUMN tenants.entry_fee_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.entry_fee_settings IS 'Tenant-wide default entry fees by category type. Competitions inherit these unless overridden.';
+
+
+--
+-- Name: COLUMN tenants.dance_category_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.dance_category_settings IS 'Tenant-wide default dance styles/categories. Competitions inherit these unless overridden.';
+
+
+--
+-- Name: COLUMN tenants.scoring_system_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.scoring_system_settings IS 'Tenant-wide default scoring tiers (Bronze, Silver, Gold, etc.). Competitions inherit these unless overridden.';
+
+
+--
+-- Name: COLUMN tenants.entry_size_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.entry_size_settings IS 'Tenant-wide default entry size categories (Solo, Duet/Trio, Group, etc.) with pricing. Competitions inherit these unless overridden.';
+
+
+--
+-- Name: COLUMN tenants.email_from; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.email_from IS 'From email address (e.g., empwr@compsync.net)';
+
+
+--
+-- Name: COLUMN tenants.email_from_name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.email_from_name IS 'From display name (e.g., EMPWR Dance Experience)';
+
+
+--
+-- Name: COLUMN tenants.mailgun_domain; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.mailgun_domain IS 'Mailgun sending domain (e.g., compsync.net)';
+
+
+--
+-- Name: COLUMN tenants.email_template_footer; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.tenants.email_template_footer IS 'Optional custom footer HTML for emails';
+
+
+--
+-- Name: title_rounds; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.title_rounds (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    round_type character varying(50) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    session_id uuid,
+    scheduled_date date,
+    scheduled_time time without time zone,
+    duration interval,
+    min_score_required numeric(6,2),
+    max_participants integer,
+    categories jsonb,
+    interview_duration interval,
+    improvisation_style character varying(100),
+    special_requirements text,
+    status character varying(50) DEFAULT 'scheduled'::character varying,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    CONSTRAINT title_rounds_status_check CHECK (((status)::text = ANY ((ARRAY['scheduled'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE title_rounds; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.title_rounds IS 'Elite competition features: Title interviews, Glow-Off championships (from PDF analysis)';
+
+
+--
+-- Name: two_factor_audit_log; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.two_factor_audit_log (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    action character varying(50) NOT NULL,
+    success boolean DEFAULT true,
+    ip_address character varying(45),
+    user_agent text,
+    "timestamp" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- Name: user_profiles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_profiles (
+    id uuid NOT NULL,
+    first_name character varying(100),
+    last_name character varying(100),
+    phone character varying(50),
+    timezone character varying(50) DEFAULT 'America/Toronto'::character varying,
+    notification_preferences jsonb DEFAULT '{"sms": false, "email": true, "competition_updates": true}'::jsonb,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    role public.user_role DEFAULT 'studio_director'::public.user_role,
+    tenant_id uuid,
+    two_factor_enabled boolean DEFAULT false,
+    two_factor_secret text,
+    two_factor_backup_codes jsonb,
+    two_factor_verified_at timestamp(6) without time zone
+);
+
+
+--
+-- Name: COLUMN user_profiles.tenant_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_profiles.tenant_id IS 'Single-tenant for Competition Directors. NULL for Studio Directors (multi-tenant via subdomain) and Super Admins.';
+
+
+--
+-- Name: vip_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vip_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    event_type character varying(100) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    venue_name character varying(255),
+    venue_address text,
+    event_date date,
+    start_time time without time zone,
+    end_time time without time zone,
+    max_participants integer,
+    participant_count integer DEFAULT 0,
+    ticket_price numeric(10,2),
+    dress_code character varying(100),
+    included_amenities text[],
+    special_instructions text,
+    age_restrictions character varying(100),
+    requires_waiver boolean DEFAULT false,
+    requires_advance_booking boolean DEFAULT true,
+    status character varying(50) DEFAULT 'scheduled'::character varying,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    CONSTRAINT vip_events_status_check CHECK (((status)::text = ANY ((ARRAY['planned'::character varying, 'scheduled'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE vip_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.vip_events IS 'Premium experiences: Waterpark events, Awards galas (from PDF analysis)';
+
+
+--
+-- Name: messages; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+)
+PARTITION BY RANGE (inserted_at);
+
+
+--
+-- Name: messages_2025_10_09; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2025_10_09 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2025_10_10; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2025_10_10 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2025_10_11; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2025_10_11 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2025_10_12; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2025_10_12 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2025_10_13; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2025_10_13 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.schema_migrations (
+    version bigint NOT NULL,
+    inserted_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: subscription; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.subscription (
+    id bigint NOT NULL,
+    subscription_id uuid NOT NULL,
+    entity regclass NOT NULL,
+    filters realtime.user_defined_filter[] DEFAULT '{}'::realtime.user_defined_filter[] NOT NULL,
+    claims jsonb NOT NULL,
+    claims_role regrole GENERATED ALWAYS AS (realtime.to_regrole((claims ->> 'role'::text))) STORED NOT NULL,
+    created_at timestamp without time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+
+--
+-- Name: subscription_id_seq; Type: SEQUENCE; Schema: realtime; Owner: -
+--
+
+ALTER TABLE realtime.subscription ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME realtime.subscription_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: buckets; Type: TABLE; Schema: storage; Owner: -
+--
+
+CREATE TABLE storage.buckets (
+    id text NOT NULL,
+    name text NOT NULL,
+    owner uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    public boolean DEFAULT false,
+    avif_autodetection boolean DEFAULT false,
+    file_size_limit bigint,
+    allowed_mime_types text[],
+    owner_id text,
+    type storage.buckettype DEFAULT 'STANDARD'::storage.buckettype NOT NULL
+);
+
+
+--
+-- Name: COLUMN buckets.owner; Type: COMMENT; Schema: storage; Owner: -
+--
+
+COMMENT ON COLUMN storage.buckets.owner IS 'Field is deprecated, use owner_id instead';
+
+
+--
+-- Name: buckets_analytics; Type: TABLE; Schema: storage; Owner: -
+--
+
+CREATE TABLE storage.buckets_analytics (
+    id text NOT NULL,
+    type storage.buckettype DEFAULT 'ANALYTICS'::storage.buckettype NOT NULL,
+    format text DEFAULT 'ICEBERG'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: migrations; Type: TABLE; Schema: storage; Owner: -
+--
+
+CREATE TABLE storage.migrations (
+    id integer NOT NULL,
+    name character varying(100) NOT NULL,
+    hash character varying(40) NOT NULL,
+    executed_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- Name: objects; Type: TABLE; Schema: storage; Owner: -
+--
+
+CREATE TABLE storage.objects (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    bucket_id text,
+    name text,
+    owner uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    last_accessed_at timestamp with time zone DEFAULT now(),
+    metadata jsonb,
+    path_tokens text[] GENERATED ALWAYS AS (string_to_array(name, '/'::text)) STORED,
+    version text,
+    owner_id text,
+    user_metadata jsonb,
+    level integer
+);
+
+
+--
+-- Name: COLUMN objects.owner; Type: COMMENT; Schema: storage; Owner: -
+--
+
+COMMENT ON COLUMN storage.objects.owner IS 'Field is deprecated, use owner_id instead';
+
+
+--
+-- Name: prefixes; Type: TABLE; Schema: storage; Owner: -
+--
+
+CREATE TABLE storage.prefixes (
+    bucket_id text NOT NULL,
+    name text NOT NULL COLLATE pg_catalog."C",
+    level integer GENERATED ALWAYS AS (storage.get_level(name)) STORED NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: s3_multipart_uploads; Type: TABLE; Schema: storage; Owner: -
+--
+
+CREATE TABLE storage.s3_multipart_uploads (
+    id text NOT NULL,
+    in_progress_size bigint DEFAULT 0 NOT NULL,
+    upload_signature text NOT NULL,
+    bucket_id text NOT NULL,
+    key text NOT NULL COLLATE pg_catalog."C",
+    version text NOT NULL,
+    owner_id text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_metadata jsonb
+);
+
+
+--
+-- Name: s3_multipart_uploads_parts; Type: TABLE; Schema: storage; Owner: -
+--
+
+CREATE TABLE storage.s3_multipart_uploads_parts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    upload_id text NOT NULL,
+    size bigint DEFAULT 0 NOT NULL,
+    part_number integer NOT NULL,
+    bucket_id text NOT NULL,
+    key text NOT NULL COLLATE pg_catalog."C",
+    etag text NOT NULL,
+    owner_id text,
+    version text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: supabase_migrations; Owner: -
+--
+
+CREATE TABLE supabase_migrations.schema_migrations (
+    version text NOT NULL,
+    statements text[],
+    name text,
+    created_by text,
+    idempotency_key text
+);
+
+
+--
+-- Name: messages_2025_10_09; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2025_10_09 FOR VALUES FROM ('2025-10-09 00:00:00') TO ('2025-10-10 00:00:00');
+
+
+--
+-- Name: messages_2025_10_10; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2025_10_10 FOR VALUES FROM ('2025-10-10 00:00:00') TO ('2025-10-11 00:00:00');
+
+
+--
+-- Name: messages_2025_10_11; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2025_10_11 FOR VALUES FROM ('2025-10-11 00:00:00') TO ('2025-10-12 00:00:00');
+
+
+--
+-- Name: messages_2025_10_12; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2025_10_12 FOR VALUES FROM ('2025-10-12 00:00:00') TO ('2025-10-13 00:00:00');
+
+
+--
+-- Name: messages_2025_10_13; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2025_10_13 FOR VALUES FROM ('2025-10-13 00:00:00') TO ('2025-10-14 00:00:00');
+
+
+--
+-- Name: refresh_tokens id; Type: DEFAULT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.refresh_tokens ALTER COLUMN id SET DEFAULT nextval('auth.refresh_tokens_id_seq'::regclass);
+
+
+--
+-- Data for Name: audit_log_entries; Type: TABLE DATA; Schema: auth; Owner: -
+--
+
+COPY auth.audit_log_entries (instance_id, id, payload, created_at, ip_address) FROM stdin;
+00000000-0000-0000-0000-000000000000	267bfefc-48a7-494e-81b6-e65f413cfcc8	{"action":"user_confirmation_requested","actor_id":"13e37119-f6b7-46b5-b07e-01d258d93692","actor_username":"danieljohnabrahamson@gmail.com","actor_via_sso":false,"log_type":"user","traits":{"provider":"email"}}	2025-10-03 12:55:45.629033+00	
+00000000-0000-0000-0000-000000000000	8631bc9e-20c8-4f69-8758-f2b84efaaadf	{"action":"user_signedup","actor_id":"13e37119-f6b7-46b5-b07e-01d258d93692","actor_username":"danieljohnabrahamson@gmail.com","actor_via_sso":false,"log_type":"team","traits":{"provider":"email"}}	2025-10-03 12:56:00.587592+00	
+00000000-0000-0000-0000-000000000000	af89d6ff-e121-4df1-a178-afa53af5090f	{"action":"token_refreshed","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-26 03:41:29.771822+00	
+00000000-0000-0000-0000-000000000000	a7a96922-1a2b-4628-8209-152e2542fd33	{"action":"user_confirmation_requested","actor_id":"093c7179-5693-4c99-967a-5c49ef523218","actor_username":"testuser@gmail.com","actor_via_sso":false,"log_type":"user","traits":{"provider":"email"}}	2025-10-03 15:41:33.414784+00	
+00000000-0000-0000-0000-000000000000	f4921c73-cdfe-4732-8156-62ae20f1f131	{"action":"login","actor_id":"093c7179-5693-4c99-967a-5c49ef523218","actor_username":"testuser@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 15:42:11.778319+00	
+00000000-0000-0000-0000-000000000000	9dacc251-e012-45ee-8699-2c1c13539818	{"action":"login","actor_id":"093c7179-5693-4c99-967a-5c49ef523218","actor_username":"testuser@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 15:58:21.453525+00	
+00000000-0000-0000-0000-000000000000	1dd9880d-5dc5-41b0-b0eb-3f115ee50951	{"action":"token_refreshed","actor_id":"093c7179-5693-4c99-967a-5c49ef523218","actor_username":"testuser@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-03 17:28:25.545002+00	
+00000000-0000-0000-0000-000000000000	acd8bf6a-13e0-4daf-ac14-34d891579fdb	{"action":"token_revoked","actor_id":"093c7179-5693-4c99-967a-5c49ef523218","actor_username":"testuser@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-03 17:28:25.557605+00	
+00000000-0000-0000-0000-000000000000	c892b1e9-0323-434e-a953-b069e56abb4e	{"action":"token_refreshed","actor_id":"093c7179-5693-4c99-967a-5c49ef523218","actor_username":"testuser@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-03 17:30:08.376421+00	
+00000000-0000-0000-0000-000000000000	fae24018-70e5-4b80-b136-e27c7cb9db46	{"action":"token_refreshed","actor_id":"093c7179-5693-4c99-967a-5c49ef523218","actor_username":"testuser@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-03 17:59:33.197176+00	
+00000000-0000-0000-0000-000000000000	85bcea33-9534-462f-927f-31aa7988567a	{"action":"token_revoked","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-26 03:41:29.80123+00	
+00000000-0000-0000-0000-000000000000	360edc57-3a1c-4f14-acaa-8f79ab968a55	{"action":"user_confirmation_requested","actor_id":"892b01c5-22a0-4519-9b1f-3adc0211cf71","actor_username":"golden.tester@gmail.com","actor_via_sso":false,"log_type":"user","traits":{"provider":"email"}}	2025-10-03 18:10:31.166099+00	
+00000000-0000-0000-0000-000000000000	fc3a815b-9d20-40b1-a462-b57ed8b12e92	{"action":"login","actor_id":"892b01c5-22a0-4519-9b1f-3adc0211cf71","actor_username":"golden.tester@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 18:11:38.626012+00	
+00000000-0000-0000-0000-000000000000	88a7b026-4419-416e-b8e0-a34f543f343b	{"action":"login","actor_id":"892b01c5-22a0-4519-9b1f-3adc0211cf71","actor_username":"golden.tester@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 18:52:42.126844+00	
+00000000-0000-0000-0000-000000000000	bf510c5c-d2bf-4465-a4cc-a2c6ebda61dd	{"action":"token_refreshed","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-26 11:09:11.801349+00	
+00000000-0000-0000-0000-000000000000	533dd764-0def-40c0-a898-6aec7e87e475	{"action":"token_revoked","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-26 11:09:11.836213+00	
+00000000-0000-0000-0000-000000000000	71f25584-f2e5-4c83-8a4d-2258bedc53c7	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-26 16:33:35.276078+00	
+00000000-0000-0000-0000-000000000000	b70339cd-fdc5-48c0-a280-c2ad215385b9	{"action":"user_confirmation_requested","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"user","traits":{"provider":"email"}}	2025-10-03 19:59:25.614752+00	
+00000000-0000-0000-0000-000000000000	d4d1be3b-0b83-40d5-ad0f-b74c7178e687	{"action":"user_confirmation_requested","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"user","traits":{"provider":"email"}}	2025-10-03 19:59:26.712105+00	
+00000000-0000-0000-0000-000000000000	66335e50-0313-440f-b528-a8fa2d4f1568	{"action":"user_confirmation_requested","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"user","traits":{"provider":"email"}}	2025-10-03 19:59:27.328416+00	
+00000000-0000-0000-0000-000000000000	d92da00f-847f-4648-8688-663bb39e0025	{"action":"token_refreshed","actor_id":"892b01c5-22a0-4519-9b1f-3adc0211cf71","actor_username":"golden.tester@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-03 20:18:57.262937+00	
+00000000-0000-0000-0000-000000000000	43185c7e-4235-411b-92cb-53385a95d714	{"action":"token_revoked","actor_id":"892b01c5-22a0-4519-9b1f-3adc0211cf71","actor_username":"golden.tester@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-03 20:18:57.292866+00	
+00000000-0000-0000-0000-000000000000	416aeac0-b652-4e91-9d58-a012af4eef04	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:19:54.296824+00	
+00000000-0000-0000-0000-000000000000	c4745fd7-62fc-4dcc-99e6-c881a82d81ab	{"action":"logout","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 20:21:33.841247+00	
+00000000-0000-0000-0000-000000000000	05572387-cf8d-4451-a552-2cdd8a50a479	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:26:57.683887+00	
+00000000-0000-0000-0000-000000000000	9eb2ec9e-f9f8-4563-9f91-2119c5bf0ad1	{"action":"logout","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 20:27:27.338472+00	
+00000000-0000-0000-0000-000000000000	a14eef16-54d8-4787-81c1-5cb082a5176e	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:28:08.621465+00	
+00000000-0000-0000-0000-000000000000	ac97c20d-71ad-40f1-b87d-03e531b88a82	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:29:06.440359+00	
+00000000-0000-0000-0000-000000000000	c95feb7d-4df1-49c7-aee3-67fafb2e594b	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:31:53.334542+00	
+00000000-0000-0000-0000-000000000000	690b72a6-9249-455c-9c45-79101c83e816	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:39:12.069421+00	
+00000000-0000-0000-0000-000000000000	568d42af-5876-4238-b55f-fc8f4d1ad883	{"action":"login","actor_id":"b3aebafa-e291-452a-8197-f7012338687c","actor_username":"danieljohnabrahamson@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-26 16:35:09.553265+00	
+00000000-0000-0000-0000-000000000000	d77bc805-4f9d-444e-a112-d89c08515d31	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:41:03.157271+00	
+00000000-0000-0000-0000-000000000000	6447425f-3b68-46dd-9f48-125562774787	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 20:58:55.769064+00	
+00000000-0000-0000-0000-000000000000	67b77da9-57ec-4fc6-ad4a-944b56856467	{"action":"logout","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 21:00:51.317551+00	
+00000000-0000-0000-0000-000000000000	56f3dd7a-d981-472d-8b1d-4c5fb263c50c	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 21:01:34.988042+00	
+00000000-0000-0000-0000-000000000000	9b1edce0-7a6d-43b9-8dc4-8d7a49a3561c	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 21:07:43.743418+00	
+00000000-0000-0000-0000-000000000000	0cfa1a0d-67b8-480e-8714-c2000dc758df	{"action":"logout","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 21:08:00.999742+00	
+00000000-0000-0000-0000-000000000000	4e43edcb-878e-49bf-b43b-6703a15d5154	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 21:18:10.962749+00	
+00000000-0000-0000-0000-000000000000	d5734643-d07c-403b-8b1d-b1fbf1ef9a29	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 21:28:31.410053+00	
+00000000-0000-0000-0000-000000000000	742391e7-dfff-49a6-93d4-9a4b1181651b	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 21:45:24.367942+00	
+00000000-0000-0000-0000-000000000000	ded4f5eb-879d-4bfb-a9a9-b41ee69044ad	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 22:12:17.212665+00	
+00000000-0000-0000-0000-000000000000	c050045f-4924-4b92-8dc3-27d53c466843	{"action":"logout","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 22:15:36.247319+00	
+00000000-0000-0000-0000-000000000000	aee9976d-489b-4005-b781-69bd301e5913	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 22:15:56.30194+00	
+00000000-0000-0000-0000-000000000000	6a9d58cb-8c53-477b-b9fe-1475ce953175	{"action":"logout","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 22:40:02.345364+00	
+00000000-0000-0000-0000-000000000000	dd1f9cd8-161d-4d7c-926b-654603164230	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 22:40:22.66799+00	
+00000000-0000-0000-0000-000000000000	0f8022b3-4f38-4207-8a79-85e226a55d4d	{"action":"logout","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 22:59:51.364894+00	
+00000000-0000-0000-0000-000000000000	ec5805a3-4cee-4a21-9ef7-a3898cbb445d	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 23:00:15.009564+00	
+00000000-0000-0000-0000-000000000000	7efb7b3b-7562-41db-9b12-1c4f4ebab4cf	{"action":"logout","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-03 23:07:24.235273+00	
+00000000-0000-0000-0000-000000000000	979bce80-fa6c-40da-bbd9-d639121a334c	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-03 23:07:49.226269+00	
+00000000-0000-0000-0000-000000000000	0622c581-3884-4e35-8c4d-dae1e2a55fbd	{"action":"token_refreshed","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-04 01:07:57.057698+00	
+00000000-0000-0000-0000-000000000000	e060a5ea-1094-4897-a20c-f672a8b74fed	{"action":"token_revoked","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-04 01:07:57.083921+00	
+00000000-0000-0000-0000-000000000000	ef4c2f9e-213d-4327-9082-6147e1cd5568	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 01:08:05.250743+00	
+00000000-0000-0000-0000-000000000000	11603e11-3aa2-4dab-a535-15649e4d10dc	{"action":"logout","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-04 01:09:35.40581+00	
+00000000-0000-0000-0000-000000000000	fbbdc3d2-658d-44ab-8ec4-940d398129aa	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 01:09:56.05726+00	
+00000000-0000-0000-0000-000000000000	6c78d683-1a44-4c2e-9660-41142328a2cb	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 01:31:26.496504+00	
+00000000-0000-0000-0000-000000000000	69f82171-6577-4914-a6f2-f35b8a1b5047	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 01:43:41.778711+00	
+00000000-0000-0000-0000-000000000000	05d682aa-2fad-43a0-92fe-fe9095568d60	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 01:44:05.328417+00	
+00000000-0000-0000-0000-000000000000	b9f6aae7-0691-4e9b-82ff-3c809364bdea	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 01:44:18.474282+00	
+00000000-0000-0000-0000-000000000000	23d86722-198e-48bb-b476-77a2b373605e	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 02:14:42.573169+00	
+00000000-0000-0000-0000-000000000000	b99efe60-bd72-4bbd-be0b-26d34e3375df	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 02:30:27.691324+00	
+00000000-0000-0000-0000-000000000000	7ade9348-caba-485c-a036-3ba3aa8cbbfd	{"action":"logout","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-04 02:33:22.303396+00	
+00000000-0000-0000-0000-000000000000	c40353bc-589f-4e8e-a50f-70e99ff2fab6	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 02:33:24.325187+00	
+00000000-0000-0000-0000-000000000000	0f498bda-cf56-4dcc-b5cc-f2f5d90eaa50	{"action":"logout","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-04 02:37:32.203757+00	
+00000000-0000-0000-0000-000000000000	b317d392-9e23-4031-90e1-e1581d21f016	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 02:37:34.026936+00	
+00000000-0000-0000-0000-000000000000	2ffed4dd-ec72-4b6f-9c18-c53054aafc14	{"action":"logout","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-04 02:41:06.955662+00	
+00000000-0000-0000-0000-000000000000	e83e84eb-8c4d-4a4d-9359-e241f3f0a869	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 02:41:10.571351+00	
+00000000-0000-0000-0000-000000000000	76e477fc-4911-4a7f-a091-3aa1b2a725cf	{"action":"logout","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account"}	2025-10-04 02:47:08.829775+00	
+00000000-0000-0000-0000-000000000000	3998d09e-41a2-488d-bccb-1e3174c4eb1a	{"action":"login","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 02:47:11.531074+00	
+00000000-0000-0000-0000-000000000000	48ed34e5-8c4d-4de1-8a22-85501e1b41f0	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 02:58:17.772644+00	
+00000000-0000-0000-0000-000000000000	8fe2a17c-182a-4b87-9d73-c7a3a26d6dce	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 11:19:55.722305+00	
+00000000-0000-0000-0000-000000000000	a8c25403-4491-41b8-89e9-510bd6a7ac30	{"action":"login","actor_id":"d2e8f60c-88f4-4598-9c7f-c20fcde14c06","actor_username":"demo.director@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 11:21:08.307798+00	
+00000000-0000-0000-0000-000000000000	a86dff91-a6d8-4856-b986-0974a7aa3d3e	{"action":"token_refreshed","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-04 16:01:57.941122+00	
+00000000-0000-0000-0000-000000000000	86f895a1-3283-4474-ad45-bd05c47621f5	{"action":"token_revoked","actor_id":"32cde289-a8fa-469b-80e0-b7a7799c01f9","actor_username":"demo.admin@gmail.com","actor_via_sso":false,"log_type":"token"}	2025-10-04 16:01:57.961608+00	
+00000000-0000-0000-0000-000000000000	f8e0ce85-b2e0-4af0-be4a-3b2d805cee45	{"action":"login","actor_id":"2159b9eb-bbaf-4278-873b-a9c7d265b324","actor_username":"demo.studio@gmail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}	2025-10-04 19:02:47.41892+00	

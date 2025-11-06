@@ -46,7 +46,7 @@ export default function RoutineSummaries() {
 
   const handleCreateInvoice = (summary: any) => {
     // Navigate to invoice creation in reservation pipeline
-    router.push(`/dashboard/reservation-pipeline-rebuild?reservation=${summary.reservation_id}`);
+    router.push(`/dashboard/reservation-pipeline?reservation=${summary.reservation_id}`);
   };
 
   return (
@@ -199,7 +199,7 @@ export default function RoutineSummaries() {
                           </button>
                         ) : (
                           <Link
-                            href={`/dashboard/reservation-pipeline-rebuild?reservation=${summary.reservation_id}`}
+                            href={`/dashboard/reservation-pipeline?reservation=${summary.reservation_id}`}
                             className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg"
                           >
                             View Details

@@ -1,0 +1,1000 @@
+--
+
+ALTER TABLE ONLY public.awards
+    ADD CONSTRAINT awards_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: awards awards_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.awards
+    ADD CONSTRAINT awards_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.competition_entries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: capacity_ledger capacity_ledger_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.capacity_ledger
+    ADD CONSTRAINT capacity_ledger_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: capacity_ledger capacity_ledger_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.capacity_ledger
+    ADD CONSTRAINT capacity_ledger_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: capacity_ledger capacity_ledger_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.capacity_ledger
+    ADD CONSTRAINT capacity_ledger_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.reservations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: classification_exception_requests classification_exception_requ_auto_calculated_classificati_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requ_auto_calculated_classificati_fkey FOREIGN KEY (auto_calculated_classification_id) REFERENCES public.classifications(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_reque_requested_classification_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_reque_requested_classification_id_fkey FOREIGN KEY (requested_classification_id) REFERENCES public.classifications(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_reques_approved_classification_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_reques_approved_classification_id_fkey FOREIGN KEY (approved_classification_id) REFERENCES public.classifications(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_requests_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requests_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_requests_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requests_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.user_profiles(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_requests_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requests_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.competition_entries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: classification_exception_requests classification_exception_requests_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requests_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.reservations(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_requests_responded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requests_responded_by_fkey FOREIGN KEY (responded_by) REFERENCES public.user_profiles(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_requests_studio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requests_studio_id_fkey FOREIGN KEY (studio_id) REFERENCES public.studios(id);
+
+
+--
+-- Name: classification_exception_requests classification_exception_requests_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classification_exception_requests
+    ADD CONSTRAINT classification_exception_requests_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+--
+-- Name: competition_entries competition_entries_age_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_age_group_id_fkey FOREIGN KEY (age_group_id) REFERENCES public.age_groups(id);
+
+
+--
+-- Name: competition_entries competition_entries_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dance_categories(id);
+
+
+--
+-- Name: competition_entries competition_entries_classification_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_classification_id_fkey FOREIGN KEY (classification_id) REFERENCES public.classifications(id);
+
+
+--
+-- Name: competition_entries competition_entries_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: competition_entries competition_entries_entry_size_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_entry_size_category_id_fkey FOREIGN KEY (entry_size_category_id) REFERENCES public.entry_size_categories(id);
+
+
+--
+-- Name: competition_entries competition_entries_next_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_next_entry_id_fkey FOREIGN KEY (next_entry_id) REFERENCES public.competition_entries(id);
+
+
+--
+-- Name: competition_entries competition_entries_previous_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_previous_entry_id_fkey FOREIGN KEY (previous_entry_id) REFERENCES public.competition_entries(id);
+
+
+--
+-- Name: competition_entries competition_entries_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.reservations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: competition_entries competition_entries_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.competition_sessions(id);
+
+
+--
+-- Name: competition_entries competition_entries_studio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_studio_id_fkey FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE CASCADE;
+
+
+--
+-- Name: competition_entries competition_entries_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_entries
+    ADD CONSTRAINT competition_entries_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: competition_locations competition_locations_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_locations
+    ADD CONSTRAINT competition_locations_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: competition_sessions competition_sessions_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_sessions
+    ADD CONSTRAINT competition_sessions_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: competition_sessions competition_sessions_head_judge_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_sessions
+    ADD CONSTRAINT competition_sessions_head_judge_fkey FOREIGN KEY (head_judge) REFERENCES auth.users(id);
+
+
+--
+-- Name: competition_sessions competition_sessions_location_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_sessions
+    ADD CONSTRAINT competition_sessions_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.competition_locations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: competitions competitions_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competitions
+    ADD CONSTRAINT competitions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: dance_categories dance_categories_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dance_categories
+    ADD CONSTRAINT dance_categories_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: dancers dancers_classification_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dancers
+    ADD CONSTRAINT dancers_classification_id_fkey FOREIGN KEY (classification_id) REFERENCES public.classifications(id);
+
+
+--
+-- Name: dancers dancers_studio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dancers
+    ADD CONSTRAINT dancers_studio_id_fkey FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE CASCADE;
+
+
+--
+-- Name: dancers dancers_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dancers
+    ADD CONSTRAINT dancers_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: documents documents_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT documents_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: documents documents_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT documents_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.competition_entries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: documents documents_studio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT documents_studio_id_fkey FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE CASCADE;
+
+
+--
+-- Name: documents documents_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT documents_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: elite_instructors elite_instructors_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.elite_instructors
+    ADD CONSTRAINT elite_instructors_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: email_preferences email_preferences_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_preferences
+    ADD CONSTRAINT email_preferences_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: email_queue email_queue_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_queue
+    ADD CONSTRAINT email_queue_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: email_queue email_queue_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_queue
+    ADD CONSTRAINT email_queue_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: entry_participants entry_participants_dancer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entry_participants
+    ADD CONSTRAINT entry_participants_dancer_id_fkey FOREIGN KEY (dancer_id) REFERENCES public.dancers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: entry_participants entry_participants_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entry_participants
+    ADD CONSTRAINT entry_participants_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.competition_entries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: entry_size_categories entry_size_categories_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entry_size_categories
+    ADD CONSTRAINT entry_size_categories_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: activity_logs fk_activity_logs_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.activity_logs
+    ADD CONSTRAINT fk_activity_logs_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: award_types fk_award_types_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.award_types
+    ADD CONSTRAINT fk_award_types_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: awards fk_awards_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.awards
+    ADD CONSTRAINT fk_awards_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: capacity_ledger fk_capacity_ledger_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.capacity_ledger
+    ADD CONSTRAINT fk_capacity_ledger_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: classifications fk_classifications_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifications
+    ADD CONSTRAINT fk_classifications_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: competition_locations fk_competition_locations_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_locations
+    ADD CONSTRAINT fk_competition_locations_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: competition_sessions fk_competition_sessions_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.competition_sessions
+    ADD CONSTRAINT fk_competition_sessions_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: documents fk_documents_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT fk_documents_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: email_logs fk_email_logs_competition; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_logs
+    ADD CONSTRAINT fk_email_logs_competition FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: email_logs fk_email_logs_studio; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_logs
+    ADD CONSTRAINT fk_email_logs_studio FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE SET NULL;
+
+
+--
+-- Name: email_logs fk_email_logs_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_logs
+    ADD CONSTRAINT fk_email_logs_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: email_preferences fk_email_preferences_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_preferences
+    ADD CONSTRAINT fk_email_preferences_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: email_templates fk_email_templates_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_templates
+    ADD CONSTRAINT fk_email_templates_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: entry_participants fk_entry_participants_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entry_participants
+    ADD CONSTRAINT fk_entry_participants_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: judges fk_judges_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.judges
+    ADD CONSTRAINT fk_judges_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: rankings fk_rankings_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rankings
+    ADD CONSTRAINT fk_rankings_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: routine_import_sessions fk_reservation; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.routine_import_sessions
+    ADD CONSTRAINT fk_reservation FOREIGN KEY (reservation_id) REFERENCES public.reservations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: scores fk_scores_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scores
+    ADD CONSTRAINT fk_scores_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: routine_import_sessions fk_studio; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.routine_import_sessions
+    ADD CONSTRAINT fk_studio FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE CASCADE;
+
+
+--
+-- Name: summaries fk_summaries_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.summaries
+    ADD CONSTRAINT fk_summaries_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: summary_entries fk_summary_entries_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.summary_entries
+    ADD CONSTRAINT fk_summary_entries_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: title_rounds fk_title_rounds_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.title_rounds
+    ADD CONSTRAINT fk_title_rounds_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: vip_events fk_vip_events_tenant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vip_events
+    ADD CONSTRAINT fk_vip_events_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: invoices invoices_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: invoices invoices_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.reservations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: invoices invoices_studio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_studio_id_fkey FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE CASCADE;
+
+
+--
+-- Name: invoices invoices_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: judges judges_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.judges
+    ADD CONSTRAINT judges_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: judges judges_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.judges
+    ADD CONSTRAINT judges_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: rankings rankings_age_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rankings
+    ADD CONSTRAINT rankings_age_group_id_fkey FOREIGN KEY (age_group_id) REFERENCES public.age_groups(id);
+
+
+--
+-- Name: rankings rankings_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rankings
+    ADD CONSTRAINT rankings_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.dance_categories(id);
+
+
+--
+-- Name: rankings rankings_classification_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rankings
+    ADD CONSTRAINT rankings_classification_id_fkey FOREIGN KEY (classification_id) REFERENCES public.classifications(id);
+
+
+--
+-- Name: rankings rankings_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rankings
+    ADD CONSTRAINT rankings_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: rankings rankings_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rankings
+    ADD CONSTRAINT rankings_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.competition_entries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: reservations reservations_approved_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: reservations reservations_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: reservations reservations_location_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.competition_locations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: reservations reservations_payment_confirmed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_payment_confirmed_by_fkey FOREIGN KEY (payment_confirmed_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: reservations reservations_studio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_studio_id_fkey FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE CASCADE;
+
+
+--
+-- Name: reservations reservations_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: scores scores_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scores
+    ADD CONSTRAINT scores_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.competition_entries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: scores scores_judge_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scores
+    ADD CONSTRAINT scores_judge_id_fkey FOREIGN KEY (judge_id) REFERENCES public.judges(id) ON DELETE CASCADE;
+
+
+--
+-- Name: scoring_tiers scoring_tiers_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scoring_tiers
+    ADD CONSTRAINT scoring_tiers_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: studios studios_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studios
+    ADD CONSTRAINT studios_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: studios studios_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studios
+    ADD CONSTRAINT studios_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: studios studios_verified_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studios
+    ADD CONSTRAINT studios_verified_by_fkey FOREIGN KEY (verified_by) REFERENCES auth.users(id);
+
+
+--
+-- Name: summaries summaries_reservation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.summaries
+    ADD CONSTRAINT summaries_reservation_id_fkey FOREIGN KEY (reservation_id) REFERENCES public.reservations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: summary_entries summary_entries_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.summary_entries
+    ADD CONSTRAINT summary_entries_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.competition_entries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: summary_entries summary_entries_summary_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.summary_entries
+    ADD CONSTRAINT summary_entries_summary_id_fkey FOREIGN KEY (summary_id) REFERENCES public.summaries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: title_rounds title_rounds_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.title_rounds
+    ADD CONSTRAINT title_rounds_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: title_rounds title_rounds_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.title_rounds
+    ADD CONSTRAINT title_rounds_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.competition_sessions(id);
+
+
+--
+-- Name: two_factor_audit_log two_factor_audit_log_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.two_factor_audit_log
+    ADD CONSTRAINT two_factor_audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_profiles user_profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT user_profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_profiles user_profiles_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT user_profiles_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: vip_events vip_events_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vip_events
+    ADD CONSTRAINT vip_events_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: objects objects_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.objects
+    ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+
+--
+-- Name: prefixes prefixes_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.prefixes
+    ADD CONSTRAINT "prefixes_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+
+--
+-- Name: s3_multipart_uploads s3_multipart_uploads_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.s3_multipart_uploads
+    ADD CONSTRAINT s3_multipart_uploads_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+
+--
+-- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+    ADD CONSTRAINT s3_multipart_uploads_parts_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+
+--
+-- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_upload_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+    ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
+
+
+--
+-- Name: audit_log_entries; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.audit_log_entries ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: flow_state; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.flow_state ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: identities; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.identities ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: instances; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.instances ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: mfa_amr_claims; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.mfa_amr_claims ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: mfa_challenges; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.mfa_challenges ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: mfa_factors; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.mfa_factors ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: one_time_tokens; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.one_time_tokens ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: refresh_tokens; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.refresh_tokens ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: saml_providers; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.saml_providers ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: saml_relay_states; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.saml_relay_states ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: schema_migrations; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.schema_migrations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: sessions; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.sessions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: sso_domains; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.sso_domains ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: sso_providers; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.sso_providers ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: users; Type: ROW SECURITY; Schema: auth; Owner: -
+--
+
+ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: invoices Admins can create invoices; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can create invoices" ON public.invoices FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = ANY (ARRAY['competition_director'::public.user_role, 'super_admin'::public.user_role]))))));
+
+
+--
+-- Name: invoices Admins can delete invoices; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can delete invoices" ON public.invoices FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = ANY (ARRAY['competition_director'::public.user_role, 'super_admin'::public.user_role]))))));
+
+
+--
+-- Name: age_groups Admins can manage age groups; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage age groups" ON public.age_groups USING ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = 'super_admin'::public.user_role))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = 'super_admin'::public.user_role)))));
+
+
+--
+-- Name: award_types Admins can manage award types; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage award types" ON public.award_types USING ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = 'super_admin'::public.user_role))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = 'super_admin'::public.user_role)))));
+
+
+--
+-- Name: dance_categories Admins can manage categories; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage categories" ON public.dance_categories USING ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = 'super_admin'::public.user_role))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = 'super_admin'::public.user_role)))));
+
+
+--
+-- Name: classifications Admins can manage classifications; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage classifications" ON public.classifications USING ((EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = 'super_admin'::public.user_role))))) WITH CHECK ((EXISTS ( SELECT 1

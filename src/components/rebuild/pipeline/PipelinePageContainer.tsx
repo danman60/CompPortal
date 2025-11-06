@@ -199,6 +199,18 @@ export function PipelinePageContainer() {
     await markAsPaid({ invoiceId, studioId, competitionId });
   };
 
+  // Send invoice mutation
+  const sendInvoiceMutation = trpc.invoice.sendInvoice.useMutation({
+    onSuccess: async () => {
+      await refetch();
+      await refetchCompetitions();
+    },
+  });
+
+  const handleSendInvoice = async (invoiceId: string) => {
+    await sendInvoiceMutation.mutateAsync({ invoiceId });
+  };
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6 flex items-center justify-center">
@@ -242,6 +254,7 @@ export function PipelinePageContainer() {
           onApprove={openApprovalModal}
           onReject={handleReject}
           onCreateInvoice={handleCreateInvoice}
+          onSendInvoice={handleSendInvoice}
           onMarkAsPaid={handleMarkAsPaid}
         />
 

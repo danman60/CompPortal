@@ -2,10 +2,12 @@ name: Database Backup
 
 on:
   schedule:
-    # Run 3x daily: 11 AM, 7 PM, 2 AM EST (EDT = UTC-4)
+    # Run 5x daily: 2 AM, 8 AM, 12 PM, 4 PM, 8 PM EST (EDT = UTC-4)
     - cron: '0 6 * * *'   # 2 AM EST
-    - cron: '0 15 * * *'  # 11 AM EST
-    - cron: '0 23 * * *'  # 7 PM EST
+    - cron: '0 12 * * *'  # 8 AM EST
+    - cron: '0 16 * * *'  # 12 PM EST
+    - cron: '0 20 * * *'  # 4 PM EST
+    - cron: '0 0 * * *'   # 8 PM EST
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -115,13 +117,13 @@ jobs:
             echo "WARNING: Expected at least 20 tables, found $TABLE_COUNT"
           fi
 
-      - name: Cleanup old backups (keep last 30 days)
+      - name: Cleanup old backups (keep last 50)
         run: |
-          # Keep only the 30 most recent backups
+          # Keep only the 50 most recent backups
           cd backups
-          ls -t backup_*.sql.gz | tail -n +31 | xargs -r rm
-          ls -t backup_*.sql | tail -n +31 | xargs -r rm
-          ls -t backup_*.sql.meta | tail -n +31 | xargs -r rm
+          ls -t backup_*.sql.gz | tail -n +51 | xargs -r rm
+          ls -t backup_*.sql | tail -n +51 | xargs -r rm
+          ls -t backup_*.sql.meta | tail -n +51 | xargs -r rm
 
           # List remaining backups
           echo "=== Remaining backups ==="

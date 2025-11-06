@@ -51,6 +51,7 @@ interface ReservationTableProps {
   onApprove: (reservation: Reservation) => void;
   onReject: (reservationId: string, studioName: string) => void;
   onCreateInvoice: (reservationId: string) => Promise<void>;
+  onSendInvoice: (invoiceId: string) => Promise<void>;
   onMarkAsPaid: (invoiceId: string, studioId: string, competitionId: string) => Promise<void>;
 }
 
@@ -63,6 +64,7 @@ export function ReservationTable({
   onApprove,
   onReject,
   onCreateInvoice,
+  onSendInvoice,
   onMarkAsPaid,
 }: ReservationTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -117,6 +119,7 @@ export function ReservationTable({
               const isPending = reservation.status === 'pending';
               const isSummarized = reservation.status === 'summarized';
               const isInvoiced = reservation.status === 'invoiced';
+              const hasDraftInvoice = reservation.invoiceId && reservation.invoiceStatus === 'DRAFT';
               const needsInvoice = isSummarized && !reservation.invoiceId;
               const canMarkPaid = isInvoiced && reservation.invoiceId && !reservation.invoicePaid;
               const isPaid = reservation.invoicePaid === true;
@@ -182,6 +185,15 @@ export function ReservationTable({
                           className="text-sm px-3 py-1"
                         >
                           Create Invoice
+                        </Button>
+                      )}
+                      {hasDraftInvoice && (
+                        <Button
+                          onClick={() => onSendInvoice(reservation.invoiceId!)}
+                          variant="primary"
+                          className="text-sm px-3 py-1"
+                        >
+                          Send Invoice
                         </Button>
                       )}
                       {canMarkPaid && (

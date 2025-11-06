@@ -1,0 +1,1000 @@
+
+--
+-- Name: buckets_analytics buckets_analytics_pkey; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.buckets_analytics
+    ADD CONSTRAINT buckets_analytics_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: buckets buckets_pkey; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.buckets
+    ADD CONSTRAINT buckets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: migrations migrations_name_key; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.migrations
+    ADD CONSTRAINT migrations_name_key UNIQUE (name);
+
+
+--
+-- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.migrations
+    ADD CONSTRAINT migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: objects objects_pkey; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.objects
+    ADD CONSTRAINT objects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: prefixes prefixes_pkey; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.prefixes
+    ADD CONSTRAINT prefixes_pkey PRIMARY KEY (bucket_id, level, name);
+
+
+--
+-- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_pkey; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+    ADD CONSTRAINT s3_multipart_uploads_parts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: s3_multipart_uploads s3_multipart_uploads_pkey; Type: CONSTRAINT; Schema: storage; Owner: -
+--
+
+ALTER TABLE ONLY storage.s3_multipart_uploads
+    ADD CONSTRAINT s3_multipart_uploads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: schema_migrations schema_migrations_idempotency_key_key; Type: CONSTRAINT; Schema: supabase_migrations; Owner: -
+--
+
+ALTER TABLE ONLY supabase_migrations.schema_migrations
+    ADD CONSTRAINT schema_migrations_idempotency_key_key UNIQUE (idempotency_key);
+
+
+--
+-- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: supabase_migrations; Owner: -
+--
+
+ALTER TABLE ONLY supabase_migrations.schema_migrations
+    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: audit_logs_instance_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX audit_logs_instance_id_idx ON auth.audit_log_entries USING btree (instance_id);
+
+
+--
+-- Name: confirmation_token_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX confirmation_token_idx ON auth.users USING btree (confirmation_token) WHERE ((confirmation_token)::text !~ '^[0-9 ]*$'::text);
+
+
+--
+-- Name: email_change_token_current_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX email_change_token_current_idx ON auth.users USING btree (email_change_token_current) WHERE ((email_change_token_current)::text !~ '^[0-9 ]*$'::text);
+
+
+--
+-- Name: email_change_token_new_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX email_change_token_new_idx ON auth.users USING btree (email_change_token_new) WHERE ((email_change_token_new)::text !~ '^[0-9 ]*$'::text);
+
+
+--
+-- Name: factor_id_created_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX factor_id_created_at_idx ON auth.mfa_factors USING btree (user_id, created_at);
+
+
+--
+-- Name: flow_state_created_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX flow_state_created_at_idx ON auth.flow_state USING btree (created_at DESC);
+
+
+--
+-- Name: identities_email_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX identities_email_idx ON auth.identities USING btree (email text_pattern_ops);
+
+
+--
+-- Name: INDEX identities_email_idx; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON INDEX auth.identities_email_idx IS 'Auth: Ensures indexed queries on the email column';
+
+
+--
+-- Name: identities_user_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX identities_user_id_idx ON auth.identities USING btree (user_id);
+
+
+--
+-- Name: idx_auth_code; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX idx_auth_code ON auth.flow_state USING btree (auth_code);
+
+
+--
+-- Name: idx_user_id_auth_method; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX idx_user_id_auth_method ON auth.flow_state USING btree (user_id, authentication_method);
+
+
+--
+-- Name: mfa_challenge_created_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX mfa_challenge_created_at_idx ON auth.mfa_challenges USING btree (created_at DESC);
+
+
+--
+-- Name: mfa_factors_user_friendly_name_unique; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX mfa_factors_user_friendly_name_unique ON auth.mfa_factors USING btree (friendly_name, user_id) WHERE (TRIM(BOTH FROM friendly_name) <> ''::text);
+
+
+--
+-- Name: mfa_factors_user_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX mfa_factors_user_id_idx ON auth.mfa_factors USING btree (user_id);
+
+
+--
+-- Name: oauth_auth_pending_exp_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX oauth_auth_pending_exp_idx ON auth.oauth_authorizations USING btree (expires_at) WHERE (status = 'pending'::auth.oauth_authorization_status);
+
+
+--
+-- Name: oauth_clients_deleted_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX oauth_clients_deleted_at_idx ON auth.oauth_clients USING btree (deleted_at);
+
+
+--
+-- Name: oauth_consents_active_client_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX oauth_consents_active_client_idx ON auth.oauth_consents USING btree (client_id) WHERE (revoked_at IS NULL);
+
+
+--
+-- Name: oauth_consents_active_user_client_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX oauth_consents_active_user_client_idx ON auth.oauth_consents USING btree (user_id, client_id) WHERE (revoked_at IS NULL);
+
+
+--
+-- Name: oauth_consents_user_order_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX oauth_consents_user_order_idx ON auth.oauth_consents USING btree (user_id, granted_at DESC);
+
+
+--
+-- Name: one_time_tokens_relates_to_hash_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX one_time_tokens_relates_to_hash_idx ON auth.one_time_tokens USING hash (relates_to);
+
+
+--
+-- Name: one_time_tokens_token_hash_hash_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX one_time_tokens_token_hash_hash_idx ON auth.one_time_tokens USING hash (token_hash);
+
+
+--
+-- Name: one_time_tokens_user_id_token_type_key; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX one_time_tokens_user_id_token_type_key ON auth.one_time_tokens USING btree (user_id, token_type);
+
+
+--
+-- Name: reauthentication_token_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX reauthentication_token_idx ON auth.users USING btree (reauthentication_token) WHERE ((reauthentication_token)::text !~ '^[0-9 ]*$'::text);
+
+
+--
+-- Name: recovery_token_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX recovery_token_idx ON auth.users USING btree (recovery_token) WHERE ((recovery_token)::text !~ '^[0-9 ]*$'::text);
+
+
+--
+-- Name: refresh_tokens_instance_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX refresh_tokens_instance_id_idx ON auth.refresh_tokens USING btree (instance_id);
+
+
+--
+-- Name: refresh_tokens_instance_id_user_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX refresh_tokens_instance_id_user_id_idx ON auth.refresh_tokens USING btree (instance_id, user_id);
+
+
+--
+-- Name: refresh_tokens_parent_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX refresh_tokens_parent_idx ON auth.refresh_tokens USING btree (parent);
+
+
+--
+-- Name: refresh_tokens_session_id_revoked_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX refresh_tokens_session_id_revoked_idx ON auth.refresh_tokens USING btree (session_id, revoked);
+
+
+--
+-- Name: refresh_tokens_updated_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX refresh_tokens_updated_at_idx ON auth.refresh_tokens USING btree (updated_at DESC);
+
+
+--
+-- Name: saml_providers_sso_provider_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX saml_providers_sso_provider_id_idx ON auth.saml_providers USING btree (sso_provider_id);
+
+
+--
+-- Name: saml_relay_states_created_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX saml_relay_states_created_at_idx ON auth.saml_relay_states USING btree (created_at DESC);
+
+
+--
+-- Name: saml_relay_states_for_email_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX saml_relay_states_for_email_idx ON auth.saml_relay_states USING btree (for_email);
+
+
+--
+-- Name: saml_relay_states_sso_provider_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX saml_relay_states_sso_provider_id_idx ON auth.saml_relay_states USING btree (sso_provider_id);
+
+
+--
+-- Name: sessions_not_after_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX sessions_not_after_idx ON auth.sessions USING btree (not_after DESC);
+
+
+--
+-- Name: sessions_oauth_client_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX sessions_oauth_client_id_idx ON auth.sessions USING btree (oauth_client_id);
+
+
+--
+-- Name: sessions_user_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX sessions_user_id_idx ON auth.sessions USING btree (user_id);
+
+
+--
+-- Name: sso_domains_domain_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX sso_domains_domain_idx ON auth.sso_domains USING btree (lower(domain));
+
+
+--
+-- Name: sso_domains_sso_provider_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX sso_domains_sso_provider_id_idx ON auth.sso_domains USING btree (sso_provider_id);
+
+
+--
+-- Name: sso_providers_resource_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX sso_providers_resource_id_idx ON auth.sso_providers USING btree (lower(resource_id));
+
+
+--
+-- Name: sso_providers_resource_id_pattern_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX sso_providers_resource_id_pattern_idx ON auth.sso_providers USING btree (resource_id text_pattern_ops);
+
+
+--
+-- Name: unique_phone_factor_per_user; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_phone_factor_per_user ON auth.mfa_factors USING btree (user_id, phone);
+
+
+--
+-- Name: user_id_created_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX user_id_created_at_idx ON auth.sessions USING btree (user_id, created_at);
+
+
+--
+-- Name: users_email_partial_key; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX users_email_partial_key ON auth.users USING btree (email) WHERE (is_sso_user = false);
+
+
+--
+-- Name: INDEX users_email_partial_key; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON INDEX auth.users_email_partial_key IS 'Auth: A partial unique index that applies only when is_sso_user is false';
+
+
+--
+-- Name: users_instance_id_email_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX users_instance_id_email_idx ON auth.users USING btree (instance_id, lower((email)::text));
+
+
+--
+-- Name: users_instance_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX users_instance_id_idx ON auth.users USING btree (instance_id);
+
+
+--
+-- Name: users_is_anonymous_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX users_is_anonymous_idx ON auth.users USING btree (is_anonymous);
+
+
+--
+-- Name: idx_2fa_audit_action; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_2fa_audit_action ON public.two_factor_audit_log USING btree (action);
+
+
+--
+-- Name: idx_2fa_audit_timestamp; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_2fa_audit_timestamp ON public.two_factor_audit_log USING btree ("timestamp" DESC);
+
+
+--
+-- Name: idx_2fa_audit_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_2fa_audit_user ON public.two_factor_audit_log USING btree (user_id);
+
+
+--
+-- Name: idx_activity_logs_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_logs_created_at ON public.activity_logs USING btree (created_at DESC);
+
+
+--
+-- Name: idx_activity_logs_entity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_logs_entity ON public.activity_logs USING btree (entity_type, entity_id);
+
+
+--
+-- Name: idx_activity_logs_studio_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_logs_studio_id ON public.activity_logs USING btree (studio_id);
+
+
+--
+-- Name: idx_activity_logs_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_logs_tenant ON public.activity_logs USING btree (tenant_id);
+
+
+--
+-- Name: idx_activity_logs_tenant_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_logs_tenant_user ON public.activity_logs USING btree (tenant_id, user_id);
+
+
+--
+-- Name: idx_activity_logs_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_activity_logs_user_id ON public.activity_logs USING btree (user_id);
+
+
+--
+-- Name: idx_age_groups_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_age_groups_tenant ON public.age_groups USING btree (tenant_id);
+
+
+--
+-- Name: idx_award_types_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_award_types_tenant ON public.award_types USING btree (tenant_id);
+
+
+--
+-- Name: idx_awards_award_type_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_awards_award_type_id ON public.awards USING btree (award_type_id);
+
+
+--
+-- Name: idx_awards_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_awards_competition_id ON public.awards USING btree (competition_id);
+
+
+--
+-- Name: idx_awards_entry_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_awards_entry_id ON public.awards USING btree (entry_id);
+
+
+--
+-- Name: idx_awards_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_awards_tenant ON public.awards USING btree (tenant_id);
+
+
+--
+-- Name: idx_awards_tenant_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_awards_tenant_entry ON public.awards USING btree (tenant_id, entry_id);
+
+
+--
+-- Name: idx_capacity_ledger_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_capacity_ledger_competition ON public.capacity_ledger USING btree (competition_id, created_at DESC);
+
+
+--
+-- Name: idx_capacity_ledger_reservation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_capacity_ledger_reservation ON public.capacity_ledger USING btree (reservation_id);
+
+
+--
+-- Name: idx_capacity_ledger_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_capacity_ledger_tenant ON public.capacity_ledger USING btree (tenant_id);
+
+
+--
+-- Name: idx_capacity_ledger_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_capacity_ledger_tenant_competition ON public.capacity_ledger USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: idx_classification_requests_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classification_requests_competition ON public.classification_exception_requests USING btree (competition_id);
+
+
+--
+-- Name: idx_classification_requests_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classification_requests_created_at ON public.classification_exception_requests USING btree (created_at);
+
+
+--
+-- Name: idx_classification_requests_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classification_requests_entry ON public.classification_exception_requests USING btree (entry_id);
+
+
+--
+-- Name: idx_classification_requests_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classification_requests_status ON public.classification_exception_requests USING btree (status);
+
+
+--
+-- Name: idx_classification_requests_studio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classification_requests_studio ON public.classification_exception_requests USING btree (studio_id);
+
+
+--
+-- Name: idx_classification_requests_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classification_requests_tenant ON public.classification_exception_requests USING btree (tenant_id);
+
+
+--
+-- Name: idx_classifications_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classifications_tenant ON public.classifications USING btree (tenant_id);
+
+
+--
+-- Name: idx_competition_entries_age_group_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_entries_age_group_id ON public.competition_entries USING btree (age_group_id);
+
+
+--
+-- Name: idx_competition_entries_category_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_entries_category_id ON public.competition_entries USING btree (category_id);
+
+
+--
+-- Name: idx_competition_entries_classification_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_entries_classification_id ON public.competition_entries USING btree (classification_id);
+
+
+--
+-- Name: idx_competition_entries_entry_size_category_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_entries_entry_size_category_id ON public.competition_entries USING btree (entry_size_category_id);
+
+
+--
+-- Name: idx_competition_entries_next_entry_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_entries_next_entry_id ON public.competition_entries USING btree (next_entry_id);
+
+
+--
+-- Name: idx_competition_entries_previous_entry_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_entries_previous_entry_id ON public.competition_entries USING btree (previous_entry_id);
+
+
+--
+-- Name: idx_competition_locations_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_locations_competition_id ON public.competition_locations USING btree (competition_id);
+
+
+--
+-- Name: idx_competition_locations_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_locations_tenant ON public.competition_locations USING btree (tenant_id);
+
+
+--
+-- Name: idx_competition_locations_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_locations_tenant_competition ON public.competition_locations USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: idx_competition_sessions_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_sessions_competition_id ON public.competition_sessions USING btree (competition_id);
+
+
+--
+-- Name: idx_competition_sessions_head_judge; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_sessions_head_judge ON public.competition_sessions USING btree (head_judge);
+
+
+--
+-- Name: idx_competition_sessions_location_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_sessions_location_id ON public.competition_sessions USING btree (location_id);
+
+
+--
+-- Name: idx_competition_sessions_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_sessions_tenant ON public.competition_sessions USING btree (tenant_id);
+
+
+--
+-- Name: idx_competition_sessions_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_sessions_tenant_competition ON public.competition_sessions USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: idx_competition_settings_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_settings_active ON public.competition_settings USING btree (is_active);
+
+
+--
+-- Name: idx_competition_settings_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_settings_category ON public.competition_settings USING btree (setting_category);
+
+
+--
+-- Name: idx_competition_settings_display_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competition_settings_display_order ON public.competition_settings USING btree (display_order);
+
+
+--
+-- Name: idx_competitions_age_settings; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competitions_age_settings ON public.competitions USING gin (age_division_settings);
+
+
+--
+-- Name: idx_competitions_dates; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competitions_dates ON public.competitions USING btree (competition_start_date, competition_end_date);
+
+
+--
+-- Name: idx_competitions_schedule_lock; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competitions_schedule_lock ON public.competitions USING btree (schedule_locked);
+
+
+--
+-- Name: idx_competitions_scoring_settings; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competitions_scoring_settings ON public.competitions USING gin (scoring_system_settings);
+
+
+--
+-- Name: idx_competitions_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competitions_status ON public.competitions USING btree (status);
+
+
+--
+-- Name: idx_competitions_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competitions_tenant ON public.competitions USING btree (tenant_id);
+
+
+--
+-- Name: idx_competitions_year; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_competitions_year ON public.competitions USING btree (year);
+
+
+--
+-- Name: idx_dance_categories_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dance_categories_tenant ON public.dance_categories USING btree (tenant_id);
+
+
+--
+-- Name: idx_dancers_age; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dancers_age ON public.dancers USING btree (date_of_birth);
+
+
+--
+-- Name: idx_dancers_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dancers_name ON public.dancers USING btree (first_name, last_name);
+
+
+--
+-- Name: idx_dancers_studio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dancers_studio ON public.dancers USING btree (studio_id);
+
+
+--
+-- Name: idx_dancers_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dancers_tenant ON public.dancers USING btree (tenant_id);
+
+
+--
+-- Name: idx_documents_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_competition ON public.documents USING btree (competition_id);
+
+
+--
+-- Name: idx_documents_entry_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_entry_id ON public.documents USING btree (entry_id);
+
+
+--
+-- Name: idx_documents_studio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_studio ON public.documents USING btree (studio_id);
+
+
+--
+-- Name: idx_documents_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_tenant ON public.documents USING btree (tenant_id);
+
+
+--
+-- Name: idx_documents_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_tenant_competition ON public.documents USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: idx_documents_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_type ON public.documents USING btree (document_type);
+
+
+--
+-- Name: idx_documents_uploaded_by; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_uploaded_by ON public.documents USING btree (uploaded_by);
+
+
+--
+-- Name: idx_elite_instructors_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_elite_instructors_competition_id ON public.elite_instructors USING btree (competition_id);
+
+
+--
+-- Name: idx_email_logs_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_logs_competition_id ON public.email_logs USING btree (competition_id);
+
+
+--
+-- Name: idx_email_logs_sent_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_logs_sent_at ON public.email_logs USING btree (sent_at);
+
+
+--
+-- Name: idx_email_logs_studio_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_logs_studio_id ON public.email_logs USING btree (studio_id);
+
+
+--
+-- Name: idx_email_logs_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_logs_tenant ON public.email_logs USING btree (tenant_id);
+
+
+--
+-- Name: idx_email_logs_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_logs_tenant_competition ON public.email_logs USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: idx_email_preferences_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_preferences_tenant ON public.email_preferences USING btree (tenant_id);
+
+
+--
+-- Name: idx_email_preferences_tenant_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_preferences_tenant_user ON public.email_preferences USING btree (tenant_id, user_id);
+
+
+--
+-- Name: idx_email_preferences_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_preferences_user_id ON public.email_preferences USING btree (user_id);
+
+
+--
+-- Name: idx_email_queue_status_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_queue_status_created ON public.email_queue USING btree (status, created_at) WHERE (status = 'pending'::text);
+
+
+--
+-- Name: idx_email_queue_tenant_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_queue_tenant_id ON public.email_queue USING btree (tenant_id);
+
+
+--
+-- Name: idx_email_queue_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_queue_user_id ON public.email_queue USING btree (user_id);
+
+
+--
+-- Name: idx_email_templates_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_templates_tenant ON public.email_templates USING btree (tenant_id);
+
+
+--
+-- Name: idx_email_templates_tenant_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_templates_tenant_key ON public.email_templates USING btree (tenant_id, template_key);
+
+
+--
+-- Name: idx_entries_award_level; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_award_level ON public.competition_entries USING btree (award_level);
+
+
+--
+-- Name: idx_entries_calculated_score; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_calculated_score ON public.competition_entries USING btree (calculated_score DESC);
+
+
+--
+-- Name: idx_entries_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_competition ON public.competition_entries USING btree (competition_id);
+
+
+--
+-- Name: idx_entries_performance_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_performance_time ON public.competition_entries USING btree (performance_date, performance_time);
+
+
+--
+-- Name: idx_entries_placement; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_placement ON public.competition_entries USING btree (category_placement);
+
+
+--
+-- Name: idx_entries_reservation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_reservation ON public.competition_entries USING btree (reservation_id) WHERE (reservation_id IS NOT NULL);
+
+
+--
+-- Name: INDEX idx_entries_reservation; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON INDEX public.idx_entries_reservation IS 'Optimizes space limit validation queries';
+
+
+--
+-- Name: idx_entries_reservation_status; Type: INDEX; Schema: public; Owner: -

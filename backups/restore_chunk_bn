@@ -1,0 +1,563 @@
+
+CREATE POLICY entry_participants_service_role ON public.entry_participants TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: entry_participants entry_participants_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY entry_participants_tenant_isolation ON public.entry_participants TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: entry_size_categories; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.entry_size_categories ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: invoices; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: invoices invoices_cd_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY invoices_cd_all ON public.invoices TO authenticated USING (((tenant_id = public.get_user_tenant_id()) AND (( SELECT user_profiles.role
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid())) = 'competition_director'::public.user_role)));
+
+
+--
+-- Name: invoices invoices_sd_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY invoices_sd_select ON public.invoices FOR SELECT TO authenticated USING (((tenant_id = public.get_user_tenant_id()) AND (studio_id IN ( SELECT studios.id
+   FROM public.studios
+  WHERE (studios.owner_id = auth.uid())))));
+
+
+--
+-- Name: invoices invoices_super_admin_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY invoices_super_admin_all ON public.invoices TO authenticated USING (public.is_super_admin());
+
+
+--
+-- Name: judges; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.judges ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: scores judges_and_directors_can_view_scores; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY judges_and_directors_can_view_scores ON public.scores FOR SELECT USING (((judge_id IN ( SELECT judges.id
+   FROM public.judges
+  WHERE (judges.user_id = ( SELECT auth.uid() AS uid)))) OR (EXISTS ( SELECT 1
+   FROM public.user_profiles
+  WHERE ((user_profiles.id = ( SELECT auth.uid() AS uid)) AND (user_profiles.role = ANY (ARRAY['competition_director'::public.user_role, 'super_admin'::public.user_role])))))));
+
+
+--
+-- Name: scores judges_can_insert_own_scores; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY judges_can_insert_own_scores ON public.scores FOR INSERT WITH CHECK ((judge_id IN ( SELECT judges.id
+   FROM public.judges
+  WHERE (judges.user_id = ( SELECT auth.uid() AS uid)))));
+
+
+--
+-- Name: scores judges_can_update_own_scores; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY judges_can_update_own_scores ON public.scores FOR UPDATE USING ((judge_id IN ( SELECT judges.id
+   FROM public.judges
+  WHERE (judges.user_id = ( SELECT auth.uid() AS uid)))));
+
+
+--
+-- Name: judges judges_service_role; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY judges_service_role ON public.judges TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: judges judges_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY judges_tenant_isolation ON public.judges TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: rankings; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.rankings ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: rankings rankings_service_role; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY rankings_service_role ON public.rankings TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: rankings rankings_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY rankings_tenant_isolation ON public.rankings TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: reservations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.reservations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: reservations reservations_cd_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY reservations_cd_all ON public.reservations TO authenticated USING (((tenant_id = public.get_user_tenant_id()) AND (( SELECT user_profiles.role
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid())) = 'competition_director'::public.user_role)));
+
+
+--
+-- Name: reservations reservations_sd_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY reservations_sd_all ON public.reservations TO authenticated USING (((tenant_id = public.get_user_tenant_id()) AND (studio_id IN ( SELECT studios.id
+   FROM public.studios
+  WHERE (studios.owner_id = auth.uid())))));
+
+
+--
+-- Name: reservations reservations_super_admin_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY reservations_super_admin_all ON public.reservations TO authenticated USING (public.is_super_admin());
+
+
+--
+-- Name: routine_import_sessions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.routine_import_sessions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: routine_import_sessions routine_import_sessions_super_admin; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY routine_import_sessions_super_admin ON public.routine_import_sessions TO authenticated USING ((EXISTS ( SELECT 1
+   FROM auth.users
+  WHERE ((users.id = auth.uid()) AND ((users.raw_user_meta_data ->> 'role'::text) = 'super_admin'::text)))));
+
+
+--
+-- Name: routine_import_sessions routine_import_sessions_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY routine_import_sessions_tenant_isolation ON public.routine_import_sessions USING ((studio_id IN ( SELECT studios.id
+   FROM public.studios
+  WHERE (studios.tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid))));
+
+
+--
+-- Name: scores; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.scores ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: scores scores_service_role; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY scores_service_role ON public.scores TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: scores scores_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY scores_tenant_isolation ON public.scores TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: scoring_tiers; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.scoring_tiers ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: studios; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.studios ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: studios studios_sd_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY studios_sd_insert ON public.studios FOR INSERT TO authenticated WITH CHECK (((tenant_id = public.get_user_tenant_id()) AND (owner_id = auth.uid())));
+
+
+--
+-- Name: studios studios_sd_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY studios_sd_update ON public.studios FOR UPDATE TO authenticated USING (((tenant_id = public.get_user_tenant_id()) AND (owner_id = auth.uid())));
+
+
+--
+-- Name: studios studios_super_admin_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY studios_super_admin_all ON public.studios TO authenticated USING (public.is_super_admin());
+
+
+--
+-- Name: studios studios_user_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY studios_user_select ON public.studios FOR SELECT TO authenticated USING ((tenant_id = public.get_user_tenant_id()));
+
+
+--
+-- Name: summaries; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.summaries ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: summaries summaries_service_role; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY summaries_service_role ON public.summaries TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: summaries summaries_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY summaries_tenant_isolation ON public.summaries TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: summary_entries; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.summary_entries ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: summary_entries summary_entries_service_role; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY summary_entries_service_role ON public.summary_entries TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: summary_entries summary_entries_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY summary_entries_tenant_isolation ON public.summary_entries TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: system_settings; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: tenants; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: tenants tenants_public_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenants_public_select ON public.tenants FOR SELECT TO anon USING (true);
+
+
+--
+-- Name: tenants tenants_super_admin_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenants_super_admin_all ON public.tenants TO authenticated USING (public.is_super_admin());
+
+
+--
+-- Name: tenants tenants_user_own; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenants_user_own ON public.tenants FOR SELECT TO authenticated USING ((id = public.get_user_tenant_id()));
+
+
+--
+-- Name: title_rounds; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.title_rounds ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: title_rounds title_rounds_service_role; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY title_rounds_service_role ON public.title_rounds TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: title_rounds title_rounds_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY title_rounds_tenant_isolation ON public.title_rounds TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: two_factor_audit_log; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.two_factor_audit_log ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_profiles; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_profiles user_profiles_super_admin_all; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY user_profiles_super_admin_all ON public.user_profiles TO authenticated USING (public.is_super_admin());
+
+
+--
+-- Name: user_profiles user_profiles_user_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY user_profiles_user_insert ON public.user_profiles FOR INSERT TO authenticated WITH CHECK ((id = auth.uid()));
+
+
+--
+-- Name: user_profiles user_profiles_user_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY user_profiles_user_select ON public.user_profiles FOR SELECT TO authenticated USING (((tenant_id = public.get_user_tenant_id()) OR (id = auth.uid())));
+
+
+--
+-- Name: user_profiles user_profiles_user_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY user_profiles_user_update ON public.user_profiles FOR UPDATE TO authenticated USING ((id = auth.uid()));
+
+
+--
+-- Name: vip_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.vip_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: vip_events vip_events_service_role; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY vip_events_service_role ON public.vip_events TO service_role USING (true) WITH CHECK (true);
+
+
+--
+-- Name: vip_events vip_events_tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY vip_events_tenant_isolation ON public.vip_events TO authenticated USING ((tenant_id = ( SELECT user_profiles.tenant_id
+   FROM public.user_profiles
+  WHERE (user_profiles.id = auth.uid()))));
+
+
+--
+-- Name: messages; Type: ROW SECURITY; Schema: realtime; Owner: -
+--
+
+ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: buckets; Type: ROW SECURITY; Schema: storage; Owner: -
+--
+
+ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: buckets_analytics; Type: ROW SECURITY; Schema: storage; Owner: -
+--
+
+ALTER TABLE storage.buckets_analytics ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: migrations; Type: ROW SECURITY; Schema: storage; Owner: -
+--
+
+ALTER TABLE storage.migrations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: objects; Type: ROW SECURITY; Schema: storage; Owner: -
+--
+
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: prefixes; Type: ROW SECURITY; Schema: storage; Owner: -
+--
+
+ALTER TABLE storage.prefixes ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: s3_multipart_uploads; Type: ROW SECURITY; Schema: storage; Owner: -
+--
+
+ALTER TABLE storage.s3_multipart_uploads ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: s3_multipart_uploads_parts; Type: ROW SECURITY; Schema: storage; Owner: -
+--
+
+ALTER TABLE storage.s3_multipart_uploads_parts ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: supabase_realtime; Type: PUBLICATION; Schema: -; Owner: -
+--
+
+CREATE PUBLICATION supabase_realtime WITH (publish = 'insert, update, delete, truncate');
+
+
+--
+-- Name: supabase_realtime_messages_publication; Type: PUBLICATION; Schema: -; Owner: -
+--
+
+CREATE PUBLICATION supabase_realtime_messages_publication WITH (publish = 'insert, update, delete, truncate');
+
+
+--
+-- Name: supabase_realtime competition_entries; Type: PUBLICATION TABLE; Schema: public; Owner: -
+--
+
+ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.competition_entries;
+
+
+--
+-- Name: supabase_realtime competitions; Type: PUBLICATION TABLE; Schema: public; Owner: -
+--
+
+ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.competitions;
+
+
+--
+-- Name: supabase_realtime rankings; Type: PUBLICATION TABLE; Schema: public; Owner: -
+--
+
+ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.rankings;
+
+
+--
+-- Name: supabase_realtime reservations; Type: PUBLICATION TABLE; Schema: public; Owner: -
+--
+
+ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.reservations;
+
+
+--
+-- Name: supabase_realtime scores; Type: PUBLICATION TABLE; Schema: public; Owner: -
+--
+
+ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.scores;
+
+
+--
+-- Name: supabase_realtime_messages_publication messages; Type: PUBLICATION TABLE; Schema: realtime; Owner: -
+--
+
+ALTER PUBLICATION supabase_realtime_messages_publication ADD TABLE ONLY realtime.messages;
+
+
+--
+-- Name: issue_graphql_placeholder; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER issue_graphql_placeholder ON sql_drop
+         WHEN TAG IN ('DROP EXTENSION')
+   EXECUTE FUNCTION extensions.set_graphql_placeholder();
+
+
+--
+-- Name: issue_pg_cron_access; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER issue_pg_cron_access ON ddl_command_end
+         WHEN TAG IN ('CREATE EXTENSION')
+   EXECUTE FUNCTION extensions.grant_pg_cron_access();
+
+
+--
+-- Name: issue_pg_graphql_access; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER issue_pg_graphql_access ON ddl_command_end
+         WHEN TAG IN ('CREATE FUNCTION')
+   EXECUTE FUNCTION extensions.grant_pg_graphql_access();
+
+
+--
+-- Name: issue_pg_net_access; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER issue_pg_net_access ON ddl_command_end
+         WHEN TAG IN ('CREATE EXTENSION')
+   EXECUTE FUNCTION extensions.grant_pg_net_access();
+
+
+--
+-- Name: pgrst_ddl_watch; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER pgrst_ddl_watch ON ddl_command_end
+   EXECUTE FUNCTION extensions.pgrst_ddl_watch();
+
+
+--
+-- Name: pgrst_drop_watch; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
+   EXECUTE FUNCTION extensions.pgrst_drop_watch();
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict UOJ7Oqm0Q33ddcSOKSS9A2K6yrPwABq0h8LcM1uLJG1WH4K46RefHeraxIWMv1C
+

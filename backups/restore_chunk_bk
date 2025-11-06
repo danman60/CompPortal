@@ -1,0 +1,1000 @@
+--
+
+CREATE INDEX idx_entries_reservation_status ON public.competition_entries USING btree (reservation_id, status) WHERE (reservation_id IS NOT NULL);
+
+
+--
+-- Name: INDEX idx_entries_reservation_status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON INDEX public.idx_entries_reservation_status IS 'Optimizes reservation capacity checks excluding cancelled entries';
+
+
+--
+-- Name: idx_entries_sequence; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_sequence ON public.competition_entries USING btree (sequence_number);
+
+
+--
+-- Name: idx_entries_session; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_session ON public.competition_entries USING btree (session_id);
+
+
+--
+-- Name: idx_entries_studio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_studio ON public.competition_entries USING btree (studio_id);
+
+
+--
+-- Name: idx_entries_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entries_tenant ON public.competition_entries USING btree (tenant_id);
+
+
+--
+-- Name: idx_entry_number_per_comp; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_entry_number_per_comp ON public.competition_entries USING btree (competition_id, entry_number, COALESCE(entry_suffix, ''::character varying)) WHERE (entry_number IS NOT NULL);
+
+
+--
+-- Name: idx_entry_participants_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entry_participants_tenant ON public.entry_participants USING btree (tenant_id);
+
+
+--
+-- Name: idx_entry_participants_tenant_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entry_participants_tenant_entry ON public.entry_participants USING btree (tenant_id, entry_id);
+
+
+--
+-- Name: idx_entry_size_categories_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_entry_size_categories_tenant ON public.entry_size_categories USING btree (tenant_id);
+
+
+--
+-- Name: idx_import_sessions_completed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_import_sessions_completed ON public.routine_import_sessions USING btree (completed);
+
+
+--
+-- Name: idx_import_sessions_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_import_sessions_created_at ON public.routine_import_sessions USING btree (created_at);
+
+
+--
+-- Name: idx_import_sessions_studio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_import_sessions_studio ON public.routine_import_sessions USING btree (studio_id);
+
+
+--
+-- Name: idx_invoices_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_competition ON public.invoices USING btree (competition_id);
+
+
+--
+-- Name: idx_invoices_paid_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_paid_at ON public.invoices USING btree (paid_at);
+
+
+--
+-- Name: idx_invoices_reservation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_reservation ON public.invoices USING btree (reservation_id);
+
+
+--
+-- Name: idx_invoices_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_status ON public.invoices USING btree (status);
+
+
+--
+-- Name: idx_invoices_stripe_customer; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_stripe_customer ON public.invoices USING btree (stripe_customer_id);
+
+
+--
+-- Name: idx_invoices_stripe_payment_intent; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_stripe_payment_intent ON public.invoices USING btree (stripe_payment_intent_id);
+
+
+--
+-- Name: idx_invoices_studio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_studio ON public.invoices USING btree (studio_id);
+
+
+--
+-- Name: idx_invoices_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_invoices_tenant ON public.invoices USING btree (tenant_id);
+
+
+--
+-- Name: idx_judges_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_judges_competition_id ON public.judges USING btree (competition_id);
+
+
+--
+-- Name: idx_judges_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_judges_tenant ON public.judges USING btree (tenant_id);
+
+
+--
+-- Name: idx_judges_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_judges_tenant_competition ON public.judges USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: idx_judges_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_judges_user_id ON public.judges USING btree (user_id);
+
+
+--
+-- Name: idx_participants_dancer; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_participants_dancer ON public.entry_participants USING btree (dancer_id);
+
+
+--
+-- Name: idx_participants_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_participants_entry ON public.entry_participants USING btree (entry_id);
+
+
+--
+-- Name: idx_rankings_age_group_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rankings_age_group_id ON public.rankings USING btree (age_group_id);
+
+
+--
+-- Name: idx_rankings_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rankings_category ON public.rankings USING btree (category_id, age_group_id, classification_id);
+
+
+--
+-- Name: idx_rankings_classification_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rankings_classification_id ON public.rankings USING btree (classification_id);
+
+
+--
+-- Name: idx_rankings_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rankings_competition ON public.rankings USING btree (competition_id);
+
+
+--
+-- Name: idx_rankings_entry_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rankings_entry_id ON public.rankings USING btree (entry_id);
+
+
+--
+-- Name: idx_rankings_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rankings_tenant ON public.rankings USING btree (tenant_id);
+
+
+--
+-- Name: idx_rankings_tenant_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_rankings_tenant_entry ON public.rankings USING btree (tenant_id, entry_id);
+
+
+--
+-- Name: idx_reservations_approved_by; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reservations_approved_by ON public.reservations USING btree (approved_by);
+
+
+--
+-- Name: idx_reservations_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reservations_competition ON public.reservations USING btree (competition_id);
+
+
+--
+-- Name: idx_reservations_location_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reservations_location_id ON public.reservations USING btree (location_id);
+
+
+--
+-- Name: idx_reservations_payment_confirmed_by; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reservations_payment_confirmed_by ON public.reservations USING btree (payment_confirmed_by);
+
+
+--
+-- Name: idx_reservations_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reservations_status ON public.reservations USING btree (status);
+
+
+--
+-- Name: idx_reservations_studio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reservations_studio ON public.reservations USING btree (studio_id);
+
+
+--
+-- Name: idx_reservations_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reservations_tenant ON public.reservations USING btree (tenant_id);
+
+
+--
+-- Name: idx_scores_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scores_created ON public.scores USING btree (created_at);
+
+
+--
+-- Name: idx_scores_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scores_entry ON public.scores USING btree (entry_id);
+
+
+--
+-- Name: idx_scores_judge; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scores_judge ON public.scores USING btree (judge_id);
+
+
+--
+-- Name: idx_scores_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scores_tenant ON public.scores USING btree (tenant_id);
+
+
+--
+-- Name: idx_scores_tenant_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scores_tenant_entry ON public.scores USING btree (tenant_id, entry_id);
+
+
+--
+-- Name: idx_studios_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_studios_code ON public.studios USING btree (code);
+
+
+--
+-- Name: idx_studios_internal_notes; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_studios_internal_notes ON public.studios USING gin (to_tsvector('english'::regconfig, internal_notes));
+
+
+--
+-- Name: idx_studios_owner; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_studios_owner ON public.studios USING btree (owner_id);
+
+
+--
+-- Name: idx_studios_public_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_studios_public_code ON public.studios USING btree (public_code);
+
+
+--
+-- Name: idx_studios_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_studios_status ON public.studios USING btree (status);
+
+
+--
+-- Name: idx_studios_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_studios_tenant ON public.studios USING btree (tenant_id);
+
+
+--
+-- Name: idx_studios_verified_by; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_studios_verified_by ON public.studios USING btree (verified_by);
+
+
+--
+-- Name: idx_summaries_reservation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summaries_reservation ON public.summaries USING btree (reservation_id);
+
+
+--
+-- Name: idx_summaries_submitted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summaries_submitted_at ON public.summaries USING btree (submitted_at);
+
+
+--
+-- Name: idx_summaries_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summaries_tenant ON public.summaries USING btree (tenant_id);
+
+
+--
+-- Name: idx_summaries_tenant_reservation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summaries_tenant_reservation ON public.summaries USING btree (tenant_id, reservation_id);
+
+
+--
+-- Name: idx_summary_entries_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summary_entries_entry ON public.summary_entries USING btree (entry_id);
+
+
+--
+-- Name: idx_summary_entries_summary; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summary_entries_summary ON public.summary_entries USING btree (summary_id);
+
+
+--
+-- Name: idx_summary_entries_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summary_entries_tenant ON public.summary_entries USING btree (tenant_id);
+
+
+--
+-- Name: idx_summary_entries_tenant_entry; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_summary_entries_tenant_entry ON public.summary_entries USING btree (tenant_id, entry_id);
+
+
+--
+-- Name: idx_tenants_age_settings; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tenants_age_settings ON public.tenants USING gin (age_division_settings);
+
+
+--
+-- Name: idx_tenants_entry_size_settings; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tenants_entry_size_settings ON public.tenants USING gin (entry_size_settings);
+
+
+--
+-- Name: idx_title_rounds_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_title_rounds_competition_id ON public.title_rounds USING btree (competition_id);
+
+
+--
+-- Name: idx_title_rounds_session_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_title_rounds_session_id ON public.title_rounds USING btree (session_id);
+
+
+--
+-- Name: idx_title_rounds_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_title_rounds_tenant ON public.title_rounds USING btree (tenant_id);
+
+
+--
+-- Name: idx_title_rounds_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_title_rounds_tenant_competition ON public.title_rounds USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: idx_user_profiles_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_profiles_tenant ON public.user_profiles USING btree (tenant_id);
+
+
+--
+-- Name: idx_vip_events_competition_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_vip_events_competition_id ON public.vip_events USING btree (competition_id);
+
+
+--
+-- Name: idx_vip_events_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_vip_events_tenant ON public.vip_events USING btree (tenant_id);
+
+
+--
+-- Name: idx_vip_events_tenant_competition; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_vip_events_tenant_competition ON public.vip_events USING btree (tenant_id, competition_id);
+
+
+--
+-- Name: tenants_slug_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX tenants_slug_key ON public.tenants USING btree (slug);
+
+
+--
+-- Name: tenants_subdomain_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX tenants_subdomain_key ON public.tenants USING btree (subdomain);
+
+
+--
+-- Name: ix_realtime_subscription_entity; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX ix_realtime_subscription_entity ON realtime.subscription USING btree (entity);
+
+
+--
+-- Name: messages_inserted_at_topic_index; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2025_10_09_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2025_10_09_inserted_at_topic_idx ON realtime.messages_2025_10_09 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2025_10_10_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2025_10_10_inserted_at_topic_idx ON realtime.messages_2025_10_10 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2025_10_11_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2025_10_11_inserted_at_topic_idx ON realtime.messages_2025_10_11 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2025_10_12_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2025_10_12_inserted_at_topic_idx ON realtime.messages_2025_10_12 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2025_10_13_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2025_10_13_inserted_at_topic_idx ON realtime.messages_2025_10_13 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: subscription_subscription_id_entity_filters_key; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE UNIQUE INDEX subscription_subscription_id_entity_filters_key ON realtime.subscription USING btree (subscription_id, entity, filters);
+
+
+--
+-- Name: bname; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE UNIQUE INDEX bname ON storage.buckets USING btree (name);
+
+
+--
+-- Name: bucketid_objname; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE UNIQUE INDEX bucketid_objname ON storage.objects USING btree (bucket_id, name);
+
+
+--
+-- Name: idx_multipart_uploads_list; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE INDEX idx_multipart_uploads_list ON storage.s3_multipart_uploads USING btree (bucket_id, key, created_at);
+
+
+--
+-- Name: idx_name_bucket_level_unique; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_name_bucket_level_unique ON storage.objects USING btree (name COLLATE "C", bucket_id, level);
+
+
+--
+-- Name: idx_objects_bucket_id_name; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE INDEX idx_objects_bucket_id_name ON storage.objects USING btree (bucket_id, name COLLATE "C");
+
+
+--
+-- Name: idx_objects_lower_name; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE INDEX idx_objects_lower_name ON storage.objects USING btree ((path_tokens[level]), lower(name) text_pattern_ops, bucket_id, level);
+
+
+--
+-- Name: idx_prefixes_lower_name; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE INDEX idx_prefixes_lower_name ON storage.prefixes USING btree (bucket_id, level, ((string_to_array(name, '/'::text))[level]), lower(name) text_pattern_ops);
+
+
+--
+-- Name: name_prefix_search; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE INDEX name_prefix_search ON storage.objects USING btree (name text_pattern_ops);
+
+
+--
+-- Name: objects_bucket_id_level_idx; Type: INDEX; Schema: storage; Owner: -
+--
+
+CREATE UNIQUE INDEX objects_bucket_id_level_idx ON storage.objects USING btree (bucket_id, level, name COLLATE "C");
+
+
+--
+-- Name: messages_2025_10_09_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2025_10_09_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2025_10_09_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2025_10_09_pkey;
+
+
+--
+-- Name: messages_2025_10_10_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2025_10_10_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2025_10_10_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2025_10_10_pkey;
+
+
+--
+-- Name: messages_2025_10_11_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2025_10_11_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2025_10_11_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2025_10_11_pkey;
+
+
+--
+-- Name: messages_2025_10_12_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2025_10_12_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2025_10_12_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2025_10_12_pkey;
+
+
+--
+-- Name: messages_2025_10_13_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2025_10_13_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2025_10_13_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2025_10_13_pkey;
+
+
+--
+-- Name: users on_auth_user_created; Type: TRIGGER; Schema: auth; Owner: -
+--
+
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+--
+-- Name: users trigger_queue_email_change; Type: TRIGGER; Schema: auth; Owner: -
+--
+
+CREATE TRIGGER trigger_queue_email_change AFTER UPDATE ON auth.users FOR EACH ROW EXECUTE FUNCTION public.queue_email_change_confirmation();
+
+
+--
+-- Name: users trigger_queue_password_recovery; Type: TRIGGER; Schema: auth; Owner: -
+--
+
+CREATE TRIGGER trigger_queue_password_recovery AFTER UPDATE ON auth.users FOR EACH ROW EXECUTE FUNCTION public.queue_password_recovery_email();
+
+
+--
+-- Name: users trigger_queue_signup_confirmation; Type: TRIGGER; Schema: auth; Owner: -
+--
+
+CREATE TRIGGER trigger_queue_signup_confirmation AFTER INSERT ON auth.users FOR EACH ROW WHEN ((new.confirmation_token IS NOT NULL)) EXECUTE FUNCTION public.queue_signup_confirmation_email();
+
+
+--
+-- Name: scores trigger_scores_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_scores_updated_at BEFORE UPDATE ON public.scores FOR EACH ROW EXECUTE FUNCTION public.update_scores_updated_at();
+
+
+--
+-- Name: competition_entries update_competition_entries_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_competition_entries_updated_at BEFORE UPDATE ON public.competition_entries FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: competition_settings update_competition_settings_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_competition_settings_updated_at BEFORE UPDATE ON public.competition_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: dancers update_dancers_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_dancers_updated_at BEFORE UPDATE ON public.dancers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: documents update_documents_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_documents_updated_at BEFORE UPDATE ON public.documents FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: reservations update_reservations_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_reservations_updated_at BEFORE UPDATE ON public.reservations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: studios update_studios_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_studios_updated_at BEFORE UPDATE ON public.studios FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: user_profiles update_user_profiles_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON public.user_profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: subscription tr_check_filters; Type: TRIGGER; Schema: realtime; Owner: -
+--
+
+CREATE TRIGGER tr_check_filters BEFORE INSERT OR UPDATE ON realtime.subscription FOR EACH ROW EXECUTE FUNCTION realtime.subscription_check_filters();
+
+
+--
+-- Name: buckets enforce_bucket_name_length_trigger; Type: TRIGGER; Schema: storage; Owner: -
+--
+
+CREATE TRIGGER enforce_bucket_name_length_trigger BEFORE INSERT OR UPDATE OF name ON storage.buckets FOR EACH ROW EXECUTE FUNCTION storage.enforce_bucket_name_length();
+
+
+--
+-- Name: objects objects_delete_delete_prefix; Type: TRIGGER; Schema: storage; Owner: -
+--
+
+CREATE TRIGGER objects_delete_delete_prefix AFTER DELETE ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.delete_prefix_hierarchy_trigger();
+
+
+--
+-- Name: objects objects_insert_create_prefix; Type: TRIGGER; Schema: storage; Owner: -
+--
+
+CREATE TRIGGER objects_insert_create_prefix BEFORE INSERT ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.objects_insert_prefix_trigger();
+
+
+--
+-- Name: objects objects_update_create_prefix; Type: TRIGGER; Schema: storage; Owner: -
+--
+
+CREATE TRIGGER objects_update_create_prefix BEFORE UPDATE ON storage.objects FOR EACH ROW WHEN (((new.name <> old.name) OR (new.bucket_id <> old.bucket_id))) EXECUTE FUNCTION storage.objects_update_prefix_trigger();
+
+
+--
+-- Name: prefixes prefixes_create_hierarchy; Type: TRIGGER; Schema: storage; Owner: -
+--
+
+CREATE TRIGGER prefixes_create_hierarchy BEFORE INSERT ON storage.prefixes FOR EACH ROW WHEN ((pg_trigger_depth() < 1)) EXECUTE FUNCTION storage.prefixes_insert_trigger();
+
+
+--
+-- Name: prefixes prefixes_delete_hierarchy; Type: TRIGGER; Schema: storage; Owner: -
+--
+
+CREATE TRIGGER prefixes_delete_hierarchy AFTER DELETE ON storage.prefixes FOR EACH ROW EXECUTE FUNCTION storage.delete_prefix_hierarchy_trigger();
+
+
+--
+-- Name: objects update_objects_updated_at; Type: TRIGGER; Schema: storage; Owner: -
+--
+
+CREATE TRIGGER update_objects_updated_at BEFORE UPDATE ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column();
+
+
+--
+-- Name: identities identities_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.identities
+    ADD CONSTRAINT identities_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: mfa_amr_claims mfa_amr_claims_session_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.mfa_amr_claims
+    ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: mfa_challenges mfa_challenges_auth_factor_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.mfa_challenges
+    ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
+
+
+--
+-- Name: mfa_factors mfa_factors_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.mfa_factors
+    ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_authorizations oauth_authorizations_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.oauth_authorizations
+    ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_authorizations oauth_authorizations_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.oauth_authorizations
+    ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_consents oauth_consents_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.oauth_consents
+    ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_consents oauth_consents_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.oauth_consents
+    ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: one_time_tokens one_time_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.one_time_tokens
+    ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: refresh_tokens refresh_tokens_session_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.refresh_tokens
+    ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: saml_providers saml_providers_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.saml_providers
+    ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: saml_relay_states saml_relay_states_flow_state_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.saml_relay_states
+    ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
+
+
+--
+-- Name: saml_relay_states saml_relay_states_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.saml_relay_states
+    ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: sessions sessions_oauth_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.sessions
+    ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+
+
+--
+-- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.sessions
+    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: sso_domains sso_domains_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.sso_domains
+    ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: activity_logs activity_logs_studio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.activity_logs
+    ADD CONSTRAINT activity_logs_studio_id_fkey FOREIGN KEY (studio_id) REFERENCES public.studios(id) ON DELETE SET NULL;
+
+
+--
+-- Name: activity_logs activity_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.activity_logs
+    ADD CONSTRAINT activity_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: age_groups age_groups_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.age_groups
+    ADD CONSTRAINT age_groups_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: awards awards_award_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.awards
+    ADD CONSTRAINT awards_award_type_id_fkey FOREIGN KEY (award_type_id) REFERENCES public.award_types(id);
+
+
+--
+-- Name: awards awards_competition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -

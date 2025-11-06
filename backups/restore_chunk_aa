@@ -1,0 +1,1000 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict UOJ7Oqm0Q33ddcSOKSS9A2K6yrPwABq0h8LcM1uLJG1WH4K46RefHeraxIWMv1C
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 17.6 (Ubuntu 17.6-2.pgdg24.04+1)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+DROP EVENT TRIGGER IF EXISTS pgrst_drop_watch;
+DROP EVENT TRIGGER IF EXISTS pgrst_ddl_watch;
+DROP EVENT TRIGGER IF EXISTS issue_pg_net_access;
+DROP EVENT TRIGGER IF EXISTS issue_pg_graphql_access;
+DROP EVENT TRIGGER IF EXISTS issue_pg_cron_access;
+DROP EVENT TRIGGER IF EXISTS issue_graphql_placeholder;
+DROP PUBLICATION IF EXISTS supabase_realtime_messages_publication;
+DROP PUBLICATION IF EXISTS supabase_realtime;
+DROP POLICY IF EXISTS vip_events_tenant_isolation ON public.vip_events;
+DROP POLICY IF EXISTS vip_events_service_role ON public.vip_events;
+DROP POLICY IF EXISTS user_profiles_user_update ON public.user_profiles;
+DROP POLICY IF EXISTS user_profiles_user_select ON public.user_profiles;
+DROP POLICY IF EXISTS user_profiles_user_insert ON public.user_profiles;
+DROP POLICY IF EXISTS user_profiles_super_admin_all ON public.user_profiles;
+DROP POLICY IF EXISTS title_rounds_tenant_isolation ON public.title_rounds;
+DROP POLICY IF EXISTS title_rounds_service_role ON public.title_rounds;
+DROP POLICY IF EXISTS tenants_user_own ON public.tenants;
+DROP POLICY IF EXISTS tenants_super_admin_all ON public.tenants;
+DROP POLICY IF EXISTS tenants_public_select ON public.tenants;
+DROP POLICY IF EXISTS summary_entries_tenant_isolation ON public.summary_entries;
+DROP POLICY IF EXISTS summary_entries_service_role ON public.summary_entries;
+DROP POLICY IF EXISTS summaries_tenant_isolation ON public.summaries;
+DROP POLICY IF EXISTS summaries_service_role ON public.summaries;
+DROP POLICY IF EXISTS studios_user_select ON public.studios;
+DROP POLICY IF EXISTS studios_super_admin_all ON public.studios;
+DROP POLICY IF EXISTS studios_sd_update ON public.studios;
+DROP POLICY IF EXISTS studios_sd_insert ON public.studios;
+DROP POLICY IF EXISTS scores_tenant_isolation ON public.scores;
+DROP POLICY IF EXISTS scores_service_role ON public.scores;
+DROP POLICY IF EXISTS routine_import_sessions_tenant_isolation ON public.routine_import_sessions;
+DROP POLICY IF EXISTS routine_import_sessions_super_admin ON public.routine_import_sessions;
+DROP POLICY IF EXISTS reservations_super_admin_all ON public.reservations;
+DROP POLICY IF EXISTS reservations_sd_all ON public.reservations;
+DROP POLICY IF EXISTS reservations_cd_all ON public.reservations;
+DROP POLICY IF EXISTS rankings_tenant_isolation ON public.rankings;
+DROP POLICY IF EXISTS rankings_service_role ON public.rankings;
+DROP POLICY IF EXISTS judges_tenant_isolation ON public.judges;
+DROP POLICY IF EXISTS judges_service_role ON public.judges;
+DROP POLICY IF EXISTS judges_can_update_own_scores ON public.scores;
+DROP POLICY IF EXISTS judges_can_insert_own_scores ON public.scores;
+DROP POLICY IF EXISTS judges_and_directors_can_view_scores ON public.scores;
+DROP POLICY IF EXISTS invoices_super_admin_all ON public.invoices;
+DROP POLICY IF EXISTS invoices_sd_select ON public.invoices;
+DROP POLICY IF EXISTS invoices_cd_all ON public.invoices;
+DROP POLICY IF EXISTS entry_participants_tenant_isolation ON public.entry_participants;
+DROP POLICY IF EXISTS entry_participants_service_role ON public.entry_participants;
+DROP POLICY IF EXISTS entries_super_admin_all ON public.competition_entries;
+DROP POLICY IF EXISTS entries_sd_all ON public.competition_entries;
+DROP POLICY IF EXISTS entries_cd_select ON public.competition_entries;
+DROP POLICY IF EXISTS email_templates_tenant_isolation ON public.email_templates;
+DROP POLICY IF EXISTS email_templates_service_role ON public.email_templates;
+DROP POLICY IF EXISTS email_preferences_tenant_isolation ON public.email_preferences;
+DROP POLICY IF EXISTS email_preferences_service_role ON public.email_preferences;
+DROP POLICY IF EXISTS email_logs_tenant_isolation ON public.email_logs;
+DROP POLICY IF EXISTS email_logs_service_role ON public.email_logs;
+DROP POLICY IF EXISTS documents_tenant_isolation ON public.documents;
+DROP POLICY IF EXISTS documents_service_role ON public.documents;
+DROP POLICY IF EXISTS dancers_super_admin_all ON public.dancers;
+DROP POLICY IF EXISTS dancers_sd_all ON public.dancers;
+DROP POLICY IF EXISTS dancers_cd_select ON public.dancers;
+DROP POLICY IF EXISTS competitions_user_select ON public.competitions;
+DROP POLICY IF EXISTS competitions_super_admin_all ON public.competitions;
+DROP POLICY IF EXISTS competitions_cd_update ON public.competitions;
+DROP POLICY IF EXISTS competitions_cd_insert ON public.competitions;
+DROP POLICY IF EXISTS competition_sessions_tenant_isolation ON public.competition_sessions;
+DROP POLICY IF EXISTS competition_sessions_service_role ON public.competition_sessions;
+DROP POLICY IF EXISTS competition_locations_tenant_isolation ON public.competition_locations;
+DROP POLICY IF EXISTS competition_locations_service_role ON public.competition_locations;
+DROP POLICY IF EXISTS classifications_tenant_isolation ON public.classifications;
+DROP POLICY IF EXISTS classifications_service_role ON public.classifications;
+DROP POLICY IF EXISTS capacity_ledger_tenant_isolation ON public.capacity_ledger;
+DROP POLICY IF EXISTS capacity_ledger_service_role ON public.capacity_ledger;
+DROP POLICY IF EXISTS awards_tenant_isolation ON public.awards;
+DROP POLICY IF EXISTS awards_service_role ON public.awards;
+DROP POLICY IF EXISTS award_types_tenant_isolation ON public.award_types;
+DROP POLICY IF EXISTS award_types_service_role ON public.award_types;
+DROP POLICY IF EXISTS activity_logs_tenant_isolation ON public.activity_logs;
+DROP POLICY IF EXISTS activity_logs_service_role ON public.activity_logs;
+DROP POLICY IF EXISTS "View invoices" ON public.invoices;
+DROP POLICY IF EXISTS "View email logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Users can view scoring tiers for their tenant" ON public.scoring_tiers;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can view own emails" ON public.email_queue;
+DROP POLICY IF EXISTS "Users can view own email preferences" ON public.email_preferences;
+DROP POLICY IF EXISTS "Users can view own activities" ON public.activity_logs;
+DROP POLICY IF EXISTS "Users can update own studio" ON public.studios;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can update own email preferences" ON public.email_preferences;
+DROP POLICY IF EXISTS "Users can delete own studio" ON public.studios;
+DROP POLICY IF EXISTS "Users can create own studio" ON public.studios;
+DROP POLICY IF EXISTS "Studios can view studio activities" ON public.activity_logs;
+DROP POLICY IF EXISTS "Studios can view own rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Studios can view own awards" ON public.awards;
+DROP POLICY IF EXISTS "Studio owners can view own studios" ON public.studios;
+DROP POLICY IF EXISTS "Studio access to reservations" ON public.reservations;
+DROP POLICY IF EXISTS "Studio access to entries" ON public.competition_entries;
+DROP POLICY IF EXISTS "Studio access to dancers" ON public.dancers;
+DROP POLICY IF EXISTS "Studio Directors can view their classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Studio Directors can delete pending requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Studio Directors can create classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Service role full access to email_queue" ON public.email_queue;
+DROP POLICY IF EXISTS "Service can insert email logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Judges can view competition rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Judges can view competition awards" ON public.awards;
+DROP POLICY IF EXISTS "Entry participant access" ON public.entry_participants;
+DROP POLICY IF EXISTS "Document access control" ON public.documents;
+DROP POLICY IF EXISTS "Directors and admins can view all rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can view all awards" ON public.awards;
+DROP POLICY IF EXISTS "Directors and admins can update rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can update competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Directors and admins can update awards" ON public.awards;
+DROP POLICY IF EXISTS "Directors and admins can manage vip events" ON public.vip_events;
+DROP POLICY IF EXISTS "Directors and admins can manage title rounds" ON public.title_rounds;
+DROP POLICY IF EXISTS "Directors and admins can manage sessions" ON public.competition_sessions;
+DROP POLICY IF EXISTS "Directors and admins can manage locations" ON public.competition_locations;
+DROP POLICY IF EXISTS "Directors and admins can manage judges" ON public.judges;
+DROP POLICY IF EXISTS "Directors and admins can manage email templates" ON public.email_templates;
+DROP POLICY IF EXISTS "Directors and admins can manage elite instructors" ON public.elite_instructors;
+DROP POLICY IF EXISTS "Directors and admins can manage competitions" ON public.competitions;
+DROP POLICY IF EXISTS "Directors and admins can insert rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can insert competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Directors and admins can insert awards" ON public.awards;
+DROP POLICY IF EXISTS "Directors and admins can delete rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can delete competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Directors and admins can delete awards" ON public.awards;
+DROP POLICY IF EXISTS "Competition directors can manage scoring tiers" ON public.scoring_tiers;
+DROP POLICY IF EXISTS "Competition Directors can view classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Competition Directors can update classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Authenticated users can view vip events" ON public.vip_events;
+DROP POLICY IF EXISTS "Authenticated users can view title rounds" ON public.title_rounds;
+DROP POLICY IF EXISTS "Authenticated users can view system settings" ON public.system_settings;
+DROP POLICY IF EXISTS "Authenticated users can view size categories" ON public.entry_size_categories;
+DROP POLICY IF EXISTS "Authenticated users can view sessions" ON public.competition_sessions;
+DROP POLICY IF EXISTS "Authenticated users can view locations" ON public.competition_locations;
+DROP POLICY IF EXISTS "Authenticated users can view judges" ON public.judges;
+DROP POLICY IF EXISTS "Authenticated users can view email templates" ON public.email_templates;
+DROP POLICY IF EXISTS "Authenticated users can view elite instructors" ON public.elite_instructors;
+DROP POLICY IF EXISTS "Authenticated users can view competitions" ON public.competitions;
+DROP POLICY IF EXISTS "Authenticated users can view competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Authenticated users can view classifications" ON public.classifications;
+DROP POLICY IF EXISTS "Authenticated users can view categories" ON public.dance_categories;
+DROP POLICY IF EXISTS "Authenticated users can view award types" ON public.award_types;
+DROP POLICY IF EXISTS "Authenticated users can view age groups" ON public.age_groups;
+DROP POLICY IF EXISTS "Authenticated users can create activity logs" ON public.activity_logs;
+DROP POLICY IF EXISTS "Admins can update invoices" ON public.invoices;
+DROP POLICY IF EXISTS "Admins can manage system settings" ON public.system_settings;
+DROP POLICY IF EXISTS "Admins can manage size categories" ON public.entry_size_categories;
+DROP POLICY IF EXISTS "Admins can manage classifications" ON public.classifications;
+DROP POLICY IF EXISTS "Admins can manage categories" ON public.dance_categories;
+DROP POLICY IF EXISTS "Admins can manage award types" ON public.award_types;
+DROP POLICY IF EXISTS "Admins can manage age groups" ON public.age_groups;
+DROP POLICY IF EXISTS "Admins can delete invoices" ON public.invoices;
+DROP POLICY IF EXISTS "Admins can create invoices" ON public.invoices;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads_parts DROP CONSTRAINT IF EXISTS s3_multipart_uploads_parts_upload_id_fkey;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads_parts DROP CONSTRAINT IF EXISTS s3_multipart_uploads_parts_bucket_id_fkey;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads DROP CONSTRAINT IF EXISTS s3_multipart_uploads_bucket_id_fkey;
+ALTER TABLE IF EXISTS ONLY storage.prefixes DROP CONSTRAINT IF EXISTS "prefixes_bucketId_fkey";
+ALTER TABLE IF EXISTS ONLY storage.objects DROP CONSTRAINT IF EXISTS "objects_bucketId_fkey";
+ALTER TABLE IF EXISTS ONLY public.vip_events DROP CONSTRAINT IF EXISTS vip_events_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.two_factor_audit_log DROP CONSTRAINT IF EXISTS two_factor_audit_log_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS title_rounds_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS title_rounds_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_summary_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS summaries_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_verified_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_owner_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.scoring_tiers DROP CONSTRAINT IF EXISTS scoring_tiers_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_judge_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_payment_confirmed_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_location_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_approved_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_category_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_age_group_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS judges_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS judges_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.vip_events DROP CONSTRAINT IF EXISTS fk_vip_events_tenant;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS fk_title_rounds_tenant;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS fk_summary_entries_tenant;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS fk_summaries_tenant;
+ALTER TABLE IF EXISTS ONLY public.routine_import_sessions DROP CONSTRAINT IF EXISTS fk_studio;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS fk_scores_tenant;
+ALTER TABLE IF EXISTS ONLY public.routine_import_sessions DROP CONSTRAINT IF EXISTS fk_reservation;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS fk_rankings_tenant;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS fk_judges_tenant;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS fk_entry_participants_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_templates DROP CONSTRAINT IF EXISTS fk_email_templates_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS fk_email_preferences_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS fk_email_logs_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS fk_email_logs_studio;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS fk_email_logs_competition;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS fk_documents_tenant;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS fk_competition_sessions_tenant;
+ALTER TABLE IF EXISTS ONLY public.competition_locations DROP CONSTRAINT IF EXISTS fk_competition_locations_tenant;
+ALTER TABLE IF EXISTS ONLY public.classifications DROP CONSTRAINT IF EXISTS fk_classifications_tenant;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS fk_capacity_ledger_tenant;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS fk_awards_tenant;
+ALTER TABLE IF EXISTS ONLY public.award_types DROP CONSTRAINT IF EXISTS fk_award_types_tenant;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS fk_activity_logs_tenant;
+ALTER TABLE IF EXISTS ONLY public.entry_size_categories DROP CONSTRAINT IF EXISTS entry_size_categories_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_dancer_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.email_queue DROP CONSTRAINT IF EXISTS email_queue_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.email_queue DROP CONSTRAINT IF EXISTS email_queue_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS email_preferences_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.elite_instructors DROP CONSTRAINT IF EXISTS elite_instructors_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_uploaded_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dance_categories DROP CONSTRAINT IF EXISTS dance_categories_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competitions DROP CONSTRAINT IF EXISTS competitions_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_location_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_head_judge_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_locations DROP CONSTRAINT IF EXISTS competition_locations_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_previous_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_next_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_entry_size_category_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_category_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_age_group_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_responded_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_created_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_reques_approved_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_reque_requested_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requ_auto_calculated_classificati_fkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_created_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_award_type_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.age_groups DROP CONSTRAINT IF EXISTS age_groups_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS activity_logs_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS activity_logs_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.sso_domains DROP CONSTRAINT IF EXISTS sso_domains_sso_provider_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.sessions DROP CONSTRAINT IF EXISTS sessions_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.sessions DROP CONSTRAINT IF EXISTS sessions_oauth_client_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_relay_states DROP CONSTRAINT IF EXISTS saml_relay_states_sso_provider_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_relay_states DROP CONSTRAINT IF EXISTS saml_relay_states_flow_state_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_providers DROP CONSTRAINT IF EXISTS saml_providers_sso_provider_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.refresh_tokens DROP CONSTRAINT IF EXISTS refresh_tokens_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.one_time_tokens DROP CONSTRAINT IF EXISTS one_time_tokens_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_client_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_client_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_factors DROP CONSTRAINT IF EXISTS mfa_factors_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_challenges DROP CONSTRAINT IF EXISTS mfa_challenges_auth_factor_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_amr_claims DROP CONSTRAINT IF EXISTS mfa_amr_claims_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.identities DROP CONSTRAINT IF EXISTS identities_user_id_fkey;
+DROP TRIGGER IF EXISTS update_objects_updated_at ON storage.objects;
+DROP TRIGGER IF EXISTS prefixes_delete_hierarchy ON storage.prefixes;
+DROP TRIGGER IF EXISTS prefixes_create_hierarchy ON storage.prefixes;
+DROP TRIGGER IF EXISTS objects_update_create_prefix ON storage.objects;
+DROP TRIGGER IF EXISTS objects_insert_create_prefix ON storage.objects;
+DROP TRIGGER IF EXISTS objects_delete_delete_prefix ON storage.objects;
+DROP TRIGGER IF EXISTS enforce_bucket_name_length_trigger ON storage.buckets;
+DROP TRIGGER IF EXISTS tr_check_filters ON realtime.subscription;
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON public.user_profiles;
+DROP TRIGGER IF EXISTS update_studios_updated_at ON public.studios;
+DROP TRIGGER IF EXISTS update_reservations_updated_at ON public.reservations;
+DROP TRIGGER IF EXISTS update_documents_updated_at ON public.documents;
+DROP TRIGGER IF EXISTS update_dancers_updated_at ON public.dancers;
+DROP TRIGGER IF EXISTS update_competition_settings_updated_at ON public.competition_settings;
+DROP TRIGGER IF EXISTS update_competition_entries_updated_at ON public.competition_entries;
+DROP TRIGGER IF EXISTS trigger_scores_updated_at ON public.scores;
+DROP TRIGGER IF EXISTS trigger_queue_signup_confirmation ON auth.users;
+DROP TRIGGER IF EXISTS trigger_queue_password_recovery ON auth.users;
+DROP TRIGGER IF EXISTS trigger_queue_email_change ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP INDEX IF EXISTS storage.objects_bucket_id_level_idx;
+DROP INDEX IF EXISTS storage.name_prefix_search;
+DROP INDEX IF EXISTS storage.idx_prefixes_lower_name;
+DROP INDEX IF EXISTS storage.idx_objects_lower_name;
+DROP INDEX IF EXISTS storage.idx_objects_bucket_id_name;
+DROP INDEX IF EXISTS storage.idx_name_bucket_level_unique;
+DROP INDEX IF EXISTS storage.idx_multipart_uploads_list;
+DROP INDEX IF EXISTS storage.bucketid_objname;
+DROP INDEX IF EXISTS storage.bname;
+DROP INDEX IF EXISTS realtime.subscription_subscription_id_entity_filters_key;
+DROP INDEX IF EXISTS realtime.messages_inserted_at_topic_index;
+DROP INDEX IF EXISTS realtime.ix_realtime_subscription_entity;
+DROP INDEX IF EXISTS public.tenants_subdomain_key;
+DROP INDEX IF EXISTS public.tenants_slug_key;
+DROP INDEX IF EXISTS public.idx_vip_events_tenant_competition;
+DROP INDEX IF EXISTS public.idx_vip_events_tenant;
+DROP INDEX IF EXISTS public.idx_vip_events_competition_id;
+DROP INDEX IF EXISTS public.idx_user_profiles_tenant;
+DROP INDEX IF EXISTS public.idx_title_rounds_tenant_competition;
+DROP INDEX IF EXISTS public.idx_title_rounds_tenant;
+DROP INDEX IF EXISTS public.idx_title_rounds_session_id;
+DROP INDEX IF EXISTS public.idx_title_rounds_competition_id;
+DROP INDEX IF EXISTS public.idx_tenants_entry_size_settings;
+DROP INDEX IF EXISTS public.idx_tenants_age_settings;
+DROP INDEX IF EXISTS public.idx_summary_entries_tenant_entry;
+DROP INDEX IF EXISTS public.idx_summary_entries_tenant;
+DROP INDEX IF EXISTS public.idx_summary_entries_summary;
+DROP INDEX IF EXISTS public.idx_summary_entries_entry;
+DROP INDEX IF EXISTS public.idx_summaries_tenant_reservation;
+DROP INDEX IF EXISTS public.idx_summaries_tenant;
+DROP INDEX IF EXISTS public.idx_summaries_submitted_at;
+DROP INDEX IF EXISTS public.idx_summaries_reservation;
+DROP INDEX IF EXISTS public.idx_studios_verified_by;
+DROP INDEX IF EXISTS public.idx_studios_tenant;
+DROP INDEX IF EXISTS public.idx_studios_status;
+DROP INDEX IF EXISTS public.idx_studios_public_code;
+DROP INDEX IF EXISTS public.idx_studios_owner;
+DROP INDEX IF EXISTS public.idx_studios_internal_notes;
+DROP INDEX IF EXISTS public.idx_studios_code;
+DROP INDEX IF EXISTS public.idx_scores_tenant_entry;
+DROP INDEX IF EXISTS public.idx_scores_tenant;
+DROP INDEX IF EXISTS public.idx_scores_judge;
+DROP INDEX IF EXISTS public.idx_scores_entry;
+DROP INDEX IF EXISTS public.idx_scores_created;
+DROP INDEX IF EXISTS public.idx_reservations_tenant;
+DROP INDEX IF EXISTS public.idx_reservations_studio;
+DROP INDEX IF EXISTS public.idx_reservations_status;
+DROP INDEX IF EXISTS public.idx_reservations_payment_confirmed_by;
+DROP INDEX IF EXISTS public.idx_reservations_location_id;
+DROP INDEX IF EXISTS public.idx_reservations_competition;
+DROP INDEX IF EXISTS public.idx_reservations_approved_by;
+DROP INDEX IF EXISTS public.idx_rankings_tenant_entry;
+DROP INDEX IF EXISTS public.idx_rankings_tenant;
+DROP INDEX IF EXISTS public.idx_rankings_entry_id;
+DROP INDEX IF EXISTS public.idx_rankings_competition;
+DROP INDEX IF EXISTS public.idx_rankings_classification_id;
+DROP INDEX IF EXISTS public.idx_rankings_category;
+DROP INDEX IF EXISTS public.idx_rankings_age_group_id;
+DROP INDEX IF EXISTS public.idx_participants_entry;
+DROP INDEX IF EXISTS public.idx_participants_dancer;
+DROP INDEX IF EXISTS public.idx_judges_user_id;
+DROP INDEX IF EXISTS public.idx_judges_tenant_competition;
+DROP INDEX IF EXISTS public.idx_judges_tenant;
+DROP INDEX IF EXISTS public.idx_judges_competition_id;
+DROP INDEX IF EXISTS public.idx_invoices_tenant;
+DROP INDEX IF EXISTS public.idx_invoices_studio;
+DROP INDEX IF EXISTS public.idx_invoices_stripe_payment_intent;
+DROP INDEX IF EXISTS public.idx_invoices_stripe_customer;
+DROP INDEX IF EXISTS public.idx_invoices_status;
+DROP INDEX IF EXISTS public.idx_invoices_reservation;
+DROP INDEX IF EXISTS public.idx_invoices_paid_at;
+DROP INDEX IF EXISTS public.idx_invoices_competition;
+DROP INDEX IF EXISTS public.idx_import_sessions_studio;
+DROP INDEX IF EXISTS public.idx_import_sessions_created_at;
+DROP INDEX IF EXISTS public.idx_import_sessions_completed;
+DROP INDEX IF EXISTS public.idx_entry_size_categories_tenant;
+DROP INDEX IF EXISTS public.idx_entry_participants_tenant_entry;
+DROP INDEX IF EXISTS public.idx_entry_participants_tenant;
+DROP INDEX IF EXISTS public.idx_entry_number_per_comp;
+DROP INDEX IF EXISTS public.idx_entries_tenant;
+DROP INDEX IF EXISTS public.idx_entries_studio;
+DROP INDEX IF EXISTS public.idx_entries_session;
+DROP INDEX IF EXISTS public.idx_entries_sequence;
+DROP INDEX IF EXISTS public.idx_entries_reservation_status;
+DROP INDEX IF EXISTS public.idx_entries_reservation;
+DROP INDEX IF EXISTS public.idx_entries_placement;
+DROP INDEX IF EXISTS public.idx_entries_performance_time;
+DROP INDEX IF EXISTS public.idx_entries_competition;
+DROP INDEX IF EXISTS public.idx_entries_calculated_score;
+DROP INDEX IF EXISTS public.idx_entries_award_level;
+DROP INDEX IF EXISTS public.idx_email_templates_tenant_key;
+DROP INDEX IF EXISTS public.idx_email_templates_tenant;
+DROP INDEX IF EXISTS public.idx_email_queue_user_id;
+DROP INDEX IF EXISTS public.idx_email_queue_tenant_id;
+DROP INDEX IF EXISTS public.idx_email_queue_status_created;
+DROP INDEX IF EXISTS public.idx_email_preferences_user_id;
+DROP INDEX IF EXISTS public.idx_email_preferences_tenant_user;
+DROP INDEX IF EXISTS public.idx_email_preferences_tenant;
+DROP INDEX IF EXISTS public.idx_email_logs_tenant_competition;
+DROP INDEX IF EXISTS public.idx_email_logs_tenant;
+DROP INDEX IF EXISTS public.idx_email_logs_studio_id;
+DROP INDEX IF EXISTS public.idx_email_logs_sent_at;
+DROP INDEX IF EXISTS public.idx_email_logs_competition_id;
+DROP INDEX IF EXISTS public.idx_elite_instructors_competition_id;
+DROP INDEX IF EXISTS public.idx_documents_uploaded_by;
+DROP INDEX IF EXISTS public.idx_documents_type;
+DROP INDEX IF EXISTS public.idx_documents_tenant_competition;
+DROP INDEX IF EXISTS public.idx_documents_tenant;
+DROP INDEX IF EXISTS public.idx_documents_studio;
+DROP INDEX IF EXISTS public.idx_documents_entry_id;
+DROP INDEX IF EXISTS public.idx_documents_competition;
+DROP INDEX IF EXISTS public.idx_dancers_tenant;
+DROP INDEX IF EXISTS public.idx_dancers_studio;
+DROP INDEX IF EXISTS public.idx_dancers_name;
+DROP INDEX IF EXISTS public.idx_dancers_age;
+DROP INDEX IF EXISTS public.idx_dance_categories_tenant;
+DROP INDEX IF EXISTS public.idx_competitions_year;
+DROP INDEX IF EXISTS public.idx_competitions_tenant;
+DROP INDEX IF EXISTS public.idx_competitions_status;
+DROP INDEX IF EXISTS public.idx_competitions_scoring_settings;
+DROP INDEX IF EXISTS public.idx_competitions_schedule_lock;
+DROP INDEX IF EXISTS public.idx_competitions_dates;
+DROP INDEX IF EXISTS public.idx_competitions_age_settings;
+DROP INDEX IF EXISTS public.idx_competition_settings_display_order;
+DROP INDEX IF EXISTS public.idx_competition_settings_category;
+DROP INDEX IF EXISTS public.idx_competition_settings_active;
+DROP INDEX IF EXISTS public.idx_competition_sessions_tenant_competition;
+DROP INDEX IF EXISTS public.idx_competition_sessions_tenant;
+DROP INDEX IF EXISTS public.idx_competition_sessions_location_id;
+DROP INDEX IF EXISTS public.idx_competition_sessions_head_judge;
+DROP INDEX IF EXISTS public.idx_competition_sessions_competition_id;
+DROP INDEX IF EXISTS public.idx_competition_locations_tenant_competition;
+DROP INDEX IF EXISTS public.idx_competition_locations_tenant;
+DROP INDEX IF EXISTS public.idx_competition_locations_competition_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_previous_entry_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_next_entry_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_entry_size_category_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_classification_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_category_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_age_group_id;
+DROP INDEX IF EXISTS public.idx_classifications_tenant;
+DROP INDEX IF EXISTS public.idx_classification_requests_tenant;
+DROP INDEX IF EXISTS public.idx_classification_requests_studio;
+DROP INDEX IF EXISTS public.idx_classification_requests_status;
+DROP INDEX IF EXISTS public.idx_classification_requests_entry;
+DROP INDEX IF EXISTS public.idx_classification_requests_created_at;
+DROP INDEX IF EXISTS public.idx_classification_requests_competition;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_tenant_competition;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_tenant;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_reservation;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_competition;
+DROP INDEX IF EXISTS public.idx_awards_tenant_entry;
+DROP INDEX IF EXISTS public.idx_awards_tenant;
+DROP INDEX IF EXISTS public.idx_awards_entry_id;
+DROP INDEX IF EXISTS public.idx_awards_competition_id;
+DROP INDEX IF EXISTS public.idx_awards_award_type_id;
+DROP INDEX IF EXISTS public.idx_award_types_tenant;
+DROP INDEX IF EXISTS public.idx_age_groups_tenant;
+DROP INDEX IF EXISTS public.idx_activity_logs_user_id;
+DROP INDEX IF EXISTS public.idx_activity_logs_tenant_user;
+DROP INDEX IF EXISTS public.idx_activity_logs_tenant;
+DROP INDEX IF EXISTS public.idx_activity_logs_studio_id;
+DROP INDEX IF EXISTS public.idx_activity_logs_entity;
+DROP INDEX IF EXISTS public.idx_activity_logs_created_at;
+DROP INDEX IF EXISTS public.idx_2fa_audit_user;
+DROP INDEX IF EXISTS public.idx_2fa_audit_timestamp;
+DROP INDEX IF EXISTS public.idx_2fa_audit_action;
+DROP INDEX IF EXISTS auth.users_is_anonymous_idx;
+DROP INDEX IF EXISTS auth.users_instance_id_idx;
+DROP INDEX IF EXISTS auth.users_instance_id_email_idx;
+DROP INDEX IF EXISTS auth.users_email_partial_key;
+DROP INDEX IF EXISTS auth.user_id_created_at_idx;
+DROP INDEX IF EXISTS auth.unique_phone_factor_per_user;
+DROP INDEX IF EXISTS auth.sso_providers_resource_id_pattern_idx;
+DROP INDEX IF EXISTS auth.sso_providers_resource_id_idx;
+DROP INDEX IF EXISTS auth.sso_domains_sso_provider_id_idx;
+DROP INDEX IF EXISTS auth.sso_domains_domain_idx;
+DROP INDEX IF EXISTS auth.sessions_user_id_idx;
+DROP INDEX IF EXISTS auth.sessions_oauth_client_id_idx;
+DROP INDEX IF EXISTS auth.sessions_not_after_idx;
+DROP INDEX IF EXISTS auth.saml_relay_states_sso_provider_id_idx;
+DROP INDEX IF EXISTS auth.saml_relay_states_for_email_idx;
+DROP INDEX IF EXISTS auth.saml_relay_states_created_at_idx;
+DROP INDEX IF EXISTS auth.saml_providers_sso_provider_id_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_updated_at_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_session_id_revoked_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_parent_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_instance_id_user_id_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_instance_id_idx;
+DROP INDEX IF EXISTS auth.recovery_token_idx;
+DROP INDEX IF EXISTS auth.reauthentication_token_idx;
+DROP INDEX IF EXISTS auth.one_time_tokens_user_id_token_type_key;
+DROP INDEX IF EXISTS auth.one_time_tokens_token_hash_hash_idx;
+DROP INDEX IF EXISTS auth.one_time_tokens_relates_to_hash_idx;
+DROP INDEX IF EXISTS auth.oauth_consents_user_order_idx;
+DROP INDEX IF EXISTS auth.oauth_consents_active_user_client_idx;
+DROP INDEX IF EXISTS auth.oauth_consents_active_client_idx;
+DROP INDEX IF EXISTS auth.oauth_clients_deleted_at_idx;
+DROP INDEX IF EXISTS auth.oauth_auth_pending_exp_idx;
+DROP INDEX IF EXISTS auth.mfa_factors_user_id_idx;
+DROP INDEX IF EXISTS auth.mfa_factors_user_friendly_name_unique;
+DROP INDEX IF EXISTS auth.mfa_challenge_created_at_idx;
+DROP INDEX IF EXISTS auth.idx_user_id_auth_method;
+DROP INDEX IF EXISTS auth.idx_auth_code;
+DROP INDEX IF EXISTS auth.identities_user_id_idx;
+DROP INDEX IF EXISTS auth.identities_email_idx;
+DROP INDEX IF EXISTS auth.flow_state_created_at_idx;
+DROP INDEX IF EXISTS auth.factor_id_created_at_idx;
+DROP INDEX IF EXISTS auth.email_change_token_new_idx;
+DROP INDEX IF EXISTS auth.email_change_token_current_idx;
+DROP INDEX IF EXISTS auth.confirmation_token_idx;
+DROP INDEX IF EXISTS auth.audit_logs_instance_id_idx;
+ALTER TABLE IF EXISTS ONLY supabase_migrations.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY supabase_migrations.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_idempotency_key_key;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads DROP CONSTRAINT IF EXISTS s3_multipart_uploads_pkey;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads_parts DROP CONSTRAINT IF EXISTS s3_multipart_uploads_parts_pkey;
+ALTER TABLE IF EXISTS ONLY storage.prefixes DROP CONSTRAINT IF EXISTS prefixes_pkey;
+ALTER TABLE IF EXISTS ONLY storage.objects DROP CONSTRAINT IF EXISTS objects_pkey;
+ALTER TABLE IF EXISTS ONLY storage.migrations DROP CONSTRAINT IF EXISTS migrations_pkey;
+ALTER TABLE IF EXISTS ONLY storage.migrations DROP CONSTRAINT IF EXISTS migrations_name_key;
+ALTER TABLE IF EXISTS ONLY storage.buckets DROP CONSTRAINT IF EXISTS buckets_pkey;
+ALTER TABLE IF EXISTS ONLY storage.buckets_analytics DROP CONSTRAINT IF EXISTS buckets_analytics_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.subscription DROP CONSTRAINT IF EXISTS pk_subscription;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_13 DROP CONSTRAINT IF EXISTS messages_2025_10_13_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_12 DROP CONSTRAINT IF EXISTS messages_2025_10_12_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_11 DROP CONSTRAINT IF EXISTS messages_2025_10_11_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_10 DROP CONSTRAINT IF EXISTS messages_2025_10_10_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_09 DROP CONSTRAINT IF EXISTS messages_2025_10_09_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages DROP CONSTRAINT IF EXISTS messages_pkey;
+ALTER TABLE IF EXISTS ONLY public.vip_events DROP CONSTRAINT IF EXISTS vip_events_pkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_pkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS unique_entry_request;
+ALTER TABLE IF EXISTS ONLY public.two_factor_audit_log DROP CONSTRAINT IF EXISTS two_factor_audit_log_pkey;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS title_rounds_pkey;
+ALTER TABLE IF EXISTS ONLY public.tenants DROP CONSTRAINT IF EXISTS tenants_pkey;
+ALTER TABLE IF EXISTS ONLY public.system_settings DROP CONSTRAINT IF EXISTS system_settings_pkey;
+ALTER TABLE IF EXISTS ONLY public.system_settings DROP CONSTRAINT IF EXISTS system_settings_key_key;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_unique;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_pkey;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS summaries_reservation_unique;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS summaries_pkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_public_code_key;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_pkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_code_key;
+ALTER TABLE IF EXISTS ONLY public.scoring_tiers DROP CONSTRAINT IF EXISTS scoring_tiers_tenant_id_name_key;
+ALTER TABLE IF EXISTS ONLY public.scoring_tiers DROP CONSTRAINT IF EXISTS scoring_tiers_pkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_pkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_entry_id_judge_id_key;
+ALTER TABLE IF EXISTS ONLY public.routine_import_sessions DROP CONSTRAINT IF EXISTS routine_import_sessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_pkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_pkey;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS judges_pkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_pkey;
+ALTER TABLE IF EXISTS ONLY public.entry_size_categories DROP CONSTRAINT IF EXISTS entry_size_categories_pkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_pkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_entry_id_dancer_id_key;
+ALTER TABLE IF EXISTS ONLY public.email_templates DROP CONSTRAINT IF EXISTS email_templates_template_key_key;
+ALTER TABLE IF EXISTS ONLY public.email_templates DROP CONSTRAINT IF EXISTS email_templates_pkey;
+ALTER TABLE IF EXISTS ONLY public.email_queue DROP CONSTRAINT IF EXISTS email_queue_pkey;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS email_preferences_user_email_type_unique;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS email_preferences_pkey;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS email_logs_pkey;
+ALTER TABLE IF EXISTS ONLY public.elite_instructors DROP CONSTRAINT IF EXISTS elite_instructors_pkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_pkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_registration_number_key;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_pkey;
+ALTER TABLE IF EXISTS ONLY public.dance_categories DROP CONSTRAINT IF EXISTS dance_categories_pkey;
+ALTER TABLE IF EXISTS ONLY public.dance_categories DROP CONSTRAINT IF EXISTS dance_categories_name_tenant_key;
+ALTER TABLE IF EXISTS ONLY public.competitions DROP CONSTRAINT IF EXISTS competitions_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_settings DROP CONSTRAINT IF EXISTS competition_settings_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_settings DROP CONSTRAINT IF EXISTS competition_settings_category_key_unique;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_locations DROP CONSTRAINT IF EXISTS competition_locations_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_pkey;
+ALTER TABLE IF EXISTS ONLY public.classifications DROP CONSTRAINT IF EXISTS classifications_tenant_name_key;
+ALTER TABLE IF EXISTS ONLY public.classifications DROP CONSTRAINT IF EXISTS classifications_pkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_pkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_reservation_reason_unique;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_pkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_pkey;
+ALTER TABLE IF EXISTS ONLY public.award_types DROP CONSTRAINT IF EXISTS award_types_tenant_name_unique;
+ALTER TABLE IF EXISTS ONLY public.award_types DROP CONSTRAINT IF EXISTS award_types_pkey;
+ALTER TABLE IF EXISTS ONLY public.age_groups DROP CONSTRAINT IF EXISTS age_groups_pkey;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS activity_logs_pkey;
+ALTER TABLE IF EXISTS ONLY auth.users DROP CONSTRAINT IF EXISTS users_pkey;
+ALTER TABLE IF EXISTS ONLY auth.users DROP CONSTRAINT IF EXISTS users_phone_key;
+ALTER TABLE IF EXISTS ONLY auth.sso_providers DROP CONSTRAINT IF EXISTS sso_providers_pkey;
+ALTER TABLE IF EXISTS ONLY auth.sso_domains DROP CONSTRAINT IF EXISTS sso_domains_pkey;
+ALTER TABLE IF EXISTS ONLY auth.sessions DROP CONSTRAINT IF EXISTS sessions_pkey;
+ALTER TABLE IF EXISTS ONLY auth.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_relay_states DROP CONSTRAINT IF EXISTS saml_relay_states_pkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_providers DROP CONSTRAINT IF EXISTS saml_providers_pkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_providers DROP CONSTRAINT IF EXISTS saml_providers_entity_id_key;
+ALTER TABLE IF EXISTS ONLY auth.refresh_tokens DROP CONSTRAINT IF EXISTS refresh_tokens_token_unique;
+ALTER TABLE IF EXISTS ONLY auth.refresh_tokens DROP CONSTRAINT IF EXISTS refresh_tokens_pkey;
+ALTER TABLE IF EXISTS ONLY auth.one_time_tokens DROP CONSTRAINT IF EXISTS one_time_tokens_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_user_client_unique;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_clients DROP CONSTRAINT IF EXISTS oauth_clients_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_authorization_id_key;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_authorization_code_key;
+ALTER TABLE IF EXISTS ONLY auth.mfa_factors DROP CONSTRAINT IF EXISTS mfa_factors_pkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_factors DROP CONSTRAINT IF EXISTS mfa_factors_last_challenged_at_key;
+ALTER TABLE IF EXISTS ONLY auth.mfa_challenges DROP CONSTRAINT IF EXISTS mfa_challenges_pkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_amr_claims DROP CONSTRAINT IF EXISTS mfa_amr_claims_session_id_authentication_method_pkey;
+ALTER TABLE IF EXISTS ONLY auth.instances DROP CONSTRAINT IF EXISTS instances_pkey;
+ALTER TABLE IF EXISTS ONLY auth.identities DROP CONSTRAINT IF EXISTS identities_provider_id_provider_unique;
+ALTER TABLE IF EXISTS ONLY auth.identities DROP CONSTRAINT IF EXISTS identities_pkey;
+ALTER TABLE IF EXISTS ONLY auth.flow_state DROP CONSTRAINT IF EXISTS flow_state_pkey;
+ALTER TABLE IF EXISTS ONLY auth.audit_log_entries DROP CONSTRAINT IF EXISTS audit_log_entries_pkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_amr_claims DROP CONSTRAINT IF EXISTS amr_id_pk;
+ALTER TABLE IF EXISTS auth.refresh_tokens ALTER COLUMN id DROP DEFAULT;
+DROP TABLE IF EXISTS supabase_migrations.schema_migrations;
+DROP TABLE IF EXISTS storage.s3_multipart_uploads_parts;
+DROP TABLE IF EXISTS storage.s3_multipart_uploads;
+DROP TABLE IF EXISTS storage.prefixes;
+DROP TABLE IF EXISTS storage.objects;
+DROP TABLE IF EXISTS storage.migrations;
+DROP TABLE IF EXISTS storage.buckets_analytics;
+DROP TABLE IF EXISTS storage.buckets;
+DROP TABLE IF EXISTS realtime.subscription;
+DROP TABLE IF EXISTS realtime.schema_migrations;
+DROP TABLE IF EXISTS realtime.messages_2025_10_13;
+DROP TABLE IF EXISTS realtime.messages_2025_10_12;
+DROP TABLE IF EXISTS realtime.messages_2025_10_11;
+DROP TABLE IF EXISTS realtime.messages_2025_10_10;
+DROP TABLE IF EXISTS realtime.messages_2025_10_09;
+DROP TABLE IF EXISTS realtime.messages;
+DROP TABLE IF EXISTS public.vip_events;
+DROP TABLE IF EXISTS public.user_profiles;
+DROP TABLE IF EXISTS public.two_factor_audit_log;
+DROP TABLE IF EXISTS public.title_rounds;
+DROP TABLE IF EXISTS public.tenants;
+DROP TABLE IF EXISTS public.system_settings;
+DROP TABLE IF EXISTS public.summary_entries;
+DROP TABLE IF EXISTS public.summaries;
+DROP TABLE IF EXISTS public.studios;
+DROP TABLE IF EXISTS public.scoring_tiers;
+DROP TABLE IF EXISTS public.scores;
+DROP TABLE IF EXISTS public.routine_import_sessions;
+DROP TABLE IF EXISTS public.reservations;
+DROP TABLE IF EXISTS public.rankings;
+DROP TABLE IF EXISTS public.judges;
+DROP TABLE IF EXISTS public.invoices;
+DROP TABLE IF EXISTS public.entry_size_categories;
+DROP TABLE IF EXISTS public.entry_participants;
+DROP TABLE IF EXISTS public.email_templates;
+DROP TABLE IF EXISTS public.email_queue;
+DROP TABLE IF EXISTS public.email_preferences;
+DROP TABLE IF EXISTS public.email_logs;
+DROP TABLE IF EXISTS public.elite_instructors;
+DROP TABLE IF EXISTS public.documents;
+DROP TABLE IF EXISTS public.dancers;
+DROP TABLE IF EXISTS public.dance_categories;
+DROP TABLE IF EXISTS public.competitions;
+DROP TABLE IF EXISTS public.competition_settings;
+DROP TABLE IF EXISTS public.competition_sessions;
+DROP TABLE IF EXISTS public.competition_locations;
+DROP TABLE IF EXISTS public.competition_entries;
+DROP TABLE IF EXISTS public.classifications;
+DROP TABLE IF EXISTS public.classification_exception_requests;
+DROP TABLE IF EXISTS public.capacity_ledger;
+DROP TABLE IF EXISTS public.awards;
+DROP TABLE IF EXISTS public.award_types;
+DROP TABLE IF EXISTS public.age_groups;
+DROP TABLE IF EXISTS public.activity_logs;
+DROP TABLE IF EXISTS auth.users;
+DROP TABLE IF EXISTS auth.sso_providers;
+DROP TABLE IF EXISTS auth.sso_domains;
+DROP TABLE IF EXISTS auth.sessions;
+DROP TABLE IF EXISTS auth.schema_migrations;
+DROP TABLE IF EXISTS auth.saml_relay_states;
+DROP TABLE IF EXISTS auth.saml_providers;
+DROP SEQUENCE IF EXISTS auth.refresh_tokens_id_seq;
+DROP TABLE IF EXISTS auth.refresh_tokens;
+DROP TABLE IF EXISTS auth.one_time_tokens;
+DROP TABLE IF EXISTS auth.oauth_consents;
+DROP TABLE IF EXISTS auth.oauth_clients;
+DROP TABLE IF EXISTS auth.oauth_authorizations;
+DROP TABLE IF EXISTS auth.mfa_factors;
+DROP TABLE IF EXISTS auth.mfa_challenges;
+DROP TABLE IF EXISTS auth.mfa_amr_claims;
+DROP TABLE IF EXISTS auth.instances;
+DROP TABLE IF EXISTS auth.identities;
+DROP TABLE IF EXISTS auth.flow_state;
+DROP TABLE IF EXISTS auth.audit_log_entries;
+DROP FUNCTION IF EXISTS storage.update_updated_at_column();
+DROP FUNCTION IF EXISTS storage.search_v2(prefix text, bucket_name text, limits integer, levels integer, start_after text, sort_order text, sort_column text, sort_column_after text);
+DROP FUNCTION IF EXISTS storage.search_v1_optimised(prefix text, bucketname text, limits integer, levels integer, offsets integer, search text, sortcolumn text, sortorder text);
+DROP FUNCTION IF EXISTS storage.search_legacy_v1(prefix text, bucketname text, limits integer, levels integer, offsets integer, search text, sortcolumn text, sortorder text);
+DROP FUNCTION IF EXISTS storage.search(prefix text, bucketname text, limits integer, levels integer, offsets integer, search text, sortcolumn text, sortorder text);
+DROP FUNCTION IF EXISTS storage.prefixes_insert_trigger();
+DROP FUNCTION IF EXISTS storage.prefixes_delete_cleanup();
+DROP FUNCTION IF EXISTS storage.operation();
+DROP FUNCTION IF EXISTS storage.objects_update_prefix_trigger();
+DROP FUNCTION IF EXISTS storage.objects_update_level_trigger();
+DROP FUNCTION IF EXISTS storage.objects_update_cleanup();
+DROP FUNCTION IF EXISTS storage.objects_insert_prefix_trigger();
+DROP FUNCTION IF EXISTS storage.objects_delete_cleanup();
+DROP FUNCTION IF EXISTS storage.lock_top_prefixes(bucket_ids text[], names text[]);
+DROP FUNCTION IF EXISTS storage.list_objects_with_delimiter(bucket_id text, prefix_param text, delimiter_param text, max_keys integer, start_after text, next_token text);
+DROP FUNCTION IF EXISTS storage.list_multipart_uploads_with_delimiter(bucket_id text, prefix_param text, delimiter_param text, max_keys integer, next_key_token text, next_upload_token text);
+DROP FUNCTION IF EXISTS storage.get_size_by_bucket();
+DROP FUNCTION IF EXISTS storage.get_prefixes(name text);
+DROP FUNCTION IF EXISTS storage.get_prefix(name text);
+DROP FUNCTION IF EXISTS storage.get_level(name text);
+DROP FUNCTION IF EXISTS storage.foldername(name text);
+DROP FUNCTION IF EXISTS storage.filename(name text);
+DROP FUNCTION IF EXISTS storage.extension(name text);
+DROP FUNCTION IF EXISTS storage.enforce_bucket_name_length();
+DROP FUNCTION IF EXISTS storage.delete_prefix_hierarchy_trigger();
+DROP FUNCTION IF EXISTS storage.delete_prefix(_bucket_id text, _name text);
+DROP FUNCTION IF EXISTS storage.delete_leaf_prefixes(bucket_ids text[], names text[]);
+DROP FUNCTION IF EXISTS storage.can_insert_object(bucketid text, name text, owner uuid, metadata jsonb);
+DROP FUNCTION IF EXISTS storage.add_prefixes(_bucket_id text, _name text);
+DROP FUNCTION IF EXISTS realtime.topic();
+DROP FUNCTION IF EXISTS realtime.to_regrole(role_name text);
+DROP FUNCTION IF EXISTS realtime.subscription_check_filters();
+DROP FUNCTION IF EXISTS realtime.send(payload jsonb, event text, topic text, private boolean);
+DROP FUNCTION IF EXISTS realtime.quote_wal2json(entity regclass);
+DROP FUNCTION IF EXISTS realtime.list_changes(publication name, slot_name name, max_changes integer, max_record_bytes integer);
+DROP FUNCTION IF EXISTS realtime.is_visible_through_filters(columns realtime.wal_column[], filters realtime.user_defined_filter[]);
+DROP FUNCTION IF EXISTS realtime.check_equality_op(op realtime.equality_op, type_ regtype, val_1 text, val_2 text);
+DROP FUNCTION IF EXISTS realtime."cast"(val text, type_ regtype);
+DROP FUNCTION IF EXISTS realtime.build_prepared_statement_sql(prepared_statement_name text, entity regclass, columns realtime.wal_column[]);
+DROP FUNCTION IF EXISTS realtime.broadcast_changes(topic_name text, event_name text, operation text, table_name text, table_schema text, new record, old record, level text);
+DROP FUNCTION IF EXISTS realtime.apply_rls(wal jsonb, max_record_bytes integer);
+DROP FUNCTION IF EXISTS public.update_updated_at_column();
+DROP FUNCTION IF EXISTS public.update_scores_updated_at();
+DROP FUNCTION IF EXISTS public.queue_signup_confirmation_email();
+DROP FUNCTION IF EXISTS public.queue_password_recovery_email();
+DROP FUNCTION IF EXISTS public.queue_email_change_confirmation();
+DROP FUNCTION IF EXISTS public.is_super_admin();
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP FUNCTION IF EXISTS public.get_user_tenant_id();
+DROP FUNCTION IF EXISTS public.get_next_entry_number(comp_id uuid);
+DROP FUNCTION IF EXISTS public.cleanup_old_emails();
+DROP FUNCTION IF EXISTS public.calculate_dancer_age(birth_date date, competition_date date);
+DROP FUNCTION IF EXISTS pgbouncer.get_auth(p_usename text);
+DROP FUNCTION IF EXISTS extensions.set_graphql_placeholder();
+DROP FUNCTION IF EXISTS extensions.pgrst_drop_watch();
+DROP FUNCTION IF EXISTS extensions.pgrst_ddl_watch();
+DROP FUNCTION IF EXISTS extensions.grant_pg_net_access();
+DROP FUNCTION IF EXISTS extensions.grant_pg_graphql_access();
+DROP FUNCTION IF EXISTS extensions.grant_pg_cron_access();
+DROP FUNCTION IF EXISTS auth.uid();
+DROP FUNCTION IF EXISTS auth.role();
+DROP FUNCTION IF EXISTS auth.jwt();
+DROP FUNCTION IF EXISTS auth.email();
+DROP TYPE IF EXISTS storage.buckettype;
+DROP TYPE IF EXISTS realtime.wal_rls;
+DROP TYPE IF EXISTS realtime.wal_column;
+DROP TYPE IF EXISTS realtime.user_defined_filter;
+DROP TYPE IF EXISTS realtime.equality_op;
+DROP TYPE IF EXISTS realtime.action;
+DROP TYPE IF EXISTS public.user_role;
+DROP TYPE IF EXISTS public.email_type;
+DROP TYPE IF EXISTS auth.one_time_token_type;
+DROP TYPE IF EXISTS auth.oauth_response_type;
+DROP TYPE IF EXISTS auth.oauth_registration_type;
+DROP TYPE IF EXISTS auth.oauth_client_type;
+DROP TYPE IF EXISTS auth.oauth_authorization_status;
+DROP TYPE IF EXISTS auth.factor_type;
+DROP TYPE IF EXISTS auth.factor_status;
+DROP TYPE IF EXISTS auth.code_challenge_method;
+DROP TYPE IF EXISTS auth.aal_level;
+DROP EXTENSION IF EXISTS "uuid-ossp";
+DROP EXTENSION IF EXISTS supabase_vault;
+DROP EXTENSION IF EXISTS pgcrypto;
+DROP EXTENSION IF EXISTS pg_stat_statements;
+DROP EXTENSION IF EXISTS pg_graphql;
+DROP SCHEMA IF EXISTS vault;
+DROP SCHEMA IF EXISTS supabase_migrations;
+DROP SCHEMA IF EXISTS storage;
+DROP SCHEMA IF EXISTS realtime;
+DROP SCHEMA IF EXISTS pgbouncer;
+DROP EXTENSION IF EXISTS pg_net;
+DROP SCHEMA IF EXISTS graphql_public;
+DROP SCHEMA IF EXISTS graphql;
+DROP SCHEMA IF EXISTS extensions;
+DROP EXTENSION IF EXISTS pg_cron;
+DROP SCHEMA IF EXISTS auth;
+--
+-- Name: auth; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA auth;
+
+
+--
+-- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
+
+
+--
+-- Name: extensions; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA extensions;
+
+
+--
+-- Name: graphql; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA graphql;
+
+
+--
+-- Name: graphql_public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA graphql_public;
+
+
+--
+-- Name: pg_net; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION pg_net; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_net IS 'Async HTTP';
+
+
+--
+-- Name: pgbouncer; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA pgbouncer;
+
+
+--
+-- Name: realtime; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA realtime;
+
+
+--
+-- Name: storage; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA storage;
+
+
+--
+-- Name: supabase_migrations; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA supabase_migrations;
+
+
+--
+-- Name: vault; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA vault;
+
+
+--
+-- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_graphql WITH SCHEMA graphql;
+
+
+--
+-- Name: EXTENSION pg_graphql; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_graphql IS 'pg_graphql: GraphQL support';
+
+
+--
+-- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION pg_stat_statements; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics of all SQL statements executed';
+
+
+--
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault;
+
+
+--
+-- Name: EXTENSION supabase_vault; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION supabase_vault IS 'Supabase Vault Extension';
+
+
+--
+-- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+
+
+--
+-- Name: aal_level; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.aal_level AS ENUM (
+    'aal1',
+    'aal2',
+    'aal3'
+);
+
+
+--
+-- Name: code_challenge_method; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.code_challenge_method AS ENUM (
+    's256',
+    'plain'
+);
+
+
+--
+-- Name: factor_status; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.factor_status AS ENUM (
+    'unverified',
+    'verified'
+);
+
+
+--
+-- Name: factor_type; Type: TYPE; Schema: auth; Owner: -
+--
+

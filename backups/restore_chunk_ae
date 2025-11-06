@@ -1,0 +1,1000 @@
+-- Name: COLUMN users.is_sso_user; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.users.is_sso_user IS 'Auth: Set this column to true when the account comes from SSO. These accounts can have duplicate emails.';
+
+
+--
+-- Name: activity_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.activity_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    studio_id uuid,
+    action text NOT NULL,
+    entity_type text NOT NULL,
+    entity_id uuid,
+    entity_name text,
+    details jsonb,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: age_groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.age_groups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    short_name character varying(20),
+    min_age integer NOT NULL,
+    max_age integer NOT NULL,
+    competitive_group character varying(100),
+    dynamic_group character varying(100),
+    form_grouping character varying(100),
+    sort_order integer,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE age_groups; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.age_groups IS 'Age-based competition divisions with multiple grouping systems (from export analysis)';
+
+
+--
+-- Name: award_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.award_types (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    category character varying(50),
+    color character varying(7),
+    icon_name character varying(50),
+    certificate_template character varying(100),
+    min_score numeric(6,2),
+    requires_minimum_entries integer,
+    sort_order integer,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    award_basis character varying(50),
+    top_n integer,
+    entry_size_filter character varying(255)[],
+    age_division_filter character varying(255)[],
+    classification_filter character varying(255)[]
+);
+
+
+--
+-- Name: awards; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.awards (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    entry_id uuid NOT NULL,
+    award_type_id uuid NOT NULL,
+    placement integer,
+    score numeric(6,2),
+    award_category character varying(100),
+    certificate_url text,
+    trophy_type character varying(100),
+    special_recognition text,
+    presented_at timestamp without time zone,
+    presented_by character varying(255),
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: capacity_ledger; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.capacity_ledger (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    reservation_id uuid,
+    change_amount integer NOT NULL,
+    reason character varying(50) NOT NULL,
+    notes text,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    created_by uuid,
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE capacity_ledger; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.capacity_ledger IS 'Audit trail for all competition capacity changes';
+
+
+--
+-- Name: COLUMN capacity_ledger.change_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.capacity_ledger.change_amount IS 'Negative values = capacity deducted, Positive values = capacity refunded';
+
+
+--
+-- Name: COLUMN capacity_ledger.reason; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.capacity_ledger.reason IS 'One of: reservation_approval, summary_refund, reservation_cancellation, manual_adjustment';
+
+
+--
+-- Name: classification_exception_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.classification_exception_requests (
+    id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
+    entry_id uuid NOT NULL,
+    reservation_id uuid NOT NULL,
+    competition_id uuid NOT NULL,
+    studio_id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    auto_calculated_classification_id uuid NOT NULL,
+    requested_classification_id uuid NOT NULL,
+    approved_classification_id uuid,
+    sd_justification text NOT NULL,
+    cd_comments text,
+    status character varying(50) DEFAULT 'pending'::character varying NOT NULL,
+    cd_decision_type character varying(50),
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    responded_at timestamp without time zone,
+    reminder_sent_at timestamp without time zone,
+    created_by uuid NOT NULL,
+    responded_by uuid
+);
+
+
+--
+-- Name: TABLE classification_exception_requests; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.classification_exception_requests IS 'Tracks requests from Studio Directors for classification exceptions. CD must approve before entry can be included in summary submission.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.entry_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.entry_id IS 'The entry requesting exception. CASCADE deletes request if entry deleted.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.auto_calculated_classification_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.auto_calculated_classification_id IS 'The classification auto-calculated by the system based on dancer classifications.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.requested_classification_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.requested_classification_id IS 'The classification the SD is requesting (may differ from auto-calculated).';
+
+
+--
+-- Name: COLUMN classification_exception_requests.approved_classification_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.approved_classification_id IS 'The final classification set by CD. May match requested OR be different (CD denial).';
+
+
+--
+-- Name: COLUMN classification_exception_requests.sd_justification; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.sd_justification IS 'Required justification from SD explaining why exception is needed.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.cd_comments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.cd_comments IS 'Optional comments from CD when making decision.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.status IS 'pending = awaiting CD response, approved = CD approved as requested, resolved = CD set different classification (denial)';
+
+
+--
+-- Name: COLUMN classification_exception_requests.cd_decision_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.cd_decision_type IS 'approved_as_requested = CD approved SD request, approved_different = CD set different classification (denial)';
+
+
+--
+-- Name: COLUMN classification_exception_requests.reminder_sent_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.reminder_sent_at IS 'Timestamp when 5-day reminder email was sent to CD. Only one reminder sent.';
+
+
+--
+-- Name: classifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.classifications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    skill_level integer,
+    color_code character varying(7),
+    min_years_experience integer,
+    requires_audition boolean DEFAULT false,
+    entry_requirements text,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE classifications; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.classifications IS 'Skill level divisions: Recreational, Competitive, Crystal, Titanium (from export analysis)';
+
+
+--
+-- Name: competition_entries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_entries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    reservation_id uuid,
+    studio_id uuid NOT NULL,
+    entry_number integer,
+    sequence_number integer,
+    title character varying(255) NOT NULL,
+    category_id uuid NOT NULL,
+    classification_id uuid NOT NULL,
+    age_group_id uuid NOT NULL,
+    entry_size_category_id uuid NOT NULL,
+    session_id uuid,
+    performance_date date,
+    performance_time time without time zone,
+    duration interval,
+    warm_up_time time without time zone,
+    heat character varying(50),
+    running_order integer,
+    is_title_upgrade boolean DEFAULT false,
+    is_title_interview boolean DEFAULT false,
+    is_improvisation boolean DEFAULT false,
+    is_glow_off_round boolean DEFAULT false,
+    is_overall_competition boolean DEFAULT false,
+    previous_entry_id uuid,
+    next_entry_id uuid,
+    music_title character varying(255),
+    music_artist character varying(255),
+    music_duration interval,
+    music_file_url text,
+    special_requirements text,
+    entry_fee numeric(10,2),
+    late_fee numeric(10,2) DEFAULT 0,
+    total_fee numeric(10,2),
+    status character varying(50) DEFAULT 'registered'::character varying,
+    choreographer character varying(255),
+    costume_description text,
+    props_required text,
+    accessibility_needs text,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    entry_suffix character varying(5),
+    is_late_entry boolean DEFAULT false,
+    calculated_score numeric(5,2),
+    award_level character varying(50),
+    category_placement integer,
+    tenant_id uuid NOT NULL,
+    routine_number integer,
+    extended_time_requested boolean DEFAULT false,
+    routine_length_minutes integer,
+    routine_length_seconds integer,
+    scheduling_notes text,
+    CONSTRAINT competition_entries_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('registered'::character varying)::text, ('confirmed'::character varying)::text, ('performed'::character varying)::text, ('scored'::character varying)::text, ('awarded'::character varying)::text, ('disqualified'::character varying)::text, ('withdrawn'::character varying)::text, ('submitted'::character varying)::text])))
+);
+
+
+--
+-- Name: TABLE competition_entries; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.competition_entries IS 'Individual performance entries in competitions';
+
+
+--
+-- Name: COLUMN competition_entries.entry_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.entry_number IS 'Sequential entry number (1, 2, 3...) for competition organization';
+
+
+--
+-- Name: COLUMN competition_entries.sequence_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.sequence_number IS 'Running order number for performance scheduling';
+
+
+--
+-- Name: COLUMN competition_entries.calculated_score; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.calculated_score IS 'Average score across all judges';
+
+
+--
+-- Name: COLUMN competition_entries.award_level; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.award_level IS 'Award tier (Platinum, Gold, Silver, etc.)';
+
+
+--
+-- Name: COLUMN competition_entries.category_placement; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.category_placement IS 'Placement within category (1st, 2nd, 3rd)';
+
+
+--
+-- Name: COLUMN competition_entries.tenant_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.tenant_id IS 'Tenant ID set by application via Prisma relation. No DB default.';
+
+
+--
+-- Name: COLUMN competition_entries.routine_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.routine_number IS 'Assigned during schedule building, used for running order';
+
+
+--
+-- Name: competition_locations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_locations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    address text,
+    capacity integer,
+    date_start date,
+    date_end date,
+    setup_time time without time zone,
+    doors_open time without time zone,
+    competition_start time without time zone,
+    competition_end time without time zone,
+    dressing_rooms integer,
+    warm_up_areas integer,
+    parking_spaces integer,
+    accessibility_features text[],
+    stage_dimensions character varying(100),
+    audio_system text,
+    lighting_system text,
+    video_recording boolean DEFAULT false,
+    live_streaming boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: competition_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_sessions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    location_id uuid,
+    session_number integer NOT NULL,
+    session_name character varying(255),
+    session_date date NOT NULL,
+    start_time time without time zone NOT NULL,
+    end_time time without time zone,
+    max_entries integer,
+    entry_count integer DEFAULT 0,
+    warm_up_time interval DEFAULT '00:15:00'::interval,
+    head_judge uuid,
+    judges jsonb DEFAULT '[]'::jsonb,
+    status character varying(50) DEFAULT 'scheduled'::character varying,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    CONSTRAINT competition_sessions_status_check CHECK (((status)::text = ANY ((ARRAY['scheduled'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+--
+-- Name: competition_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_settings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    setting_category text NOT NULL,
+    setting_key text NOT NULL,
+    setting_value jsonb NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deprecated boolean DEFAULT false,
+    CONSTRAINT competition_settings_setting_category_check CHECK ((setting_category = ANY (ARRAY['routine_types'::text, 'age_divisions'::text, 'classification_levels'::text, 'dance_styles'::text, 'time_limits'::text, 'scoring_rubric'::text, 'awards'::text])))
+);
+
+
+--
+-- Name: TABLE competition_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.competition_settings IS 'DEPRECATED 2025-10-29: Scoring data migrated to scoring_tiers table. Age/dance/size data managed via tenant-scoped lookup tables. Monitor for 2 weeks, then delete if unused.';
+
+
+--
+-- Name: COLUMN competition_settings.setting_category; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.setting_category IS 'Category of the setting (routine_types, age_divisions, classification_levels, dance_styles, time_limits, scoring_rubric, awards)';
+
+
+--
+-- Name: COLUMN competition_settings.setting_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.setting_key IS 'Unique identifier for the setting within its category';
+
+
+--
+-- Name: COLUMN competition_settings.setting_value; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.setting_value IS 'JSONB storage for flexible configuration data specific to each setting type';
+
+
+--
+-- Name: COLUMN competition_settings.display_order; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.display_order IS 'Order in which settings should be displayed in the UI';
+
+
+--
+-- Name: COLUMN competition_settings.is_active; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.is_active IS 'Whether this setting is currently active and available for use';
+
+
+--
+-- Name: competitions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competitions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(255) NOT NULL,
+    year integer NOT NULL,
+    description text,
+    registration_opens timestamp without time zone,
+    registration_closes timestamp without time zone,
+    competition_start_date date,
+    competition_end_date date,
+    primary_location character varying(255),
+    venue_address text,
+    venue_capacity integer,
+    session_count integer DEFAULT 1,
+    number_of_judges integer DEFAULT 3,
+    entry_fee numeric(10,2),
+    late_fee numeric(10,2),
+    allow_age_overrides boolean DEFAULT true,
+    allow_multiple_entries boolean DEFAULT true,
+    require_video_submissions boolean DEFAULT false,
+    status character varying(50) DEFAULT 'upcoming'::character varying,
+    is_public boolean DEFAULT true,
+    logo_url text,
+    website character varying(255),
+    contact_email character varying(255),
+    contact_phone character varying(50),
+    rules_document_url text,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    total_reservation_tokens integer DEFAULT 600,
+    available_reservation_tokens integer DEFAULT 600,
+    tokens_override_enabled boolean DEFAULT false,
+    schedule_published_at timestamp with time zone,
+    schedule_locked boolean DEFAULT false,
+    scoring_ranges jsonb DEFAULT '{"gold": [85, 89.9], "bronze": [70, 79.9], "silver": [80, 84.9], "platinum": [95, 100], "high_gold": [90, 94.9]}'::jsonb,
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    age_division_settings jsonb,
+    classification_settings jsonb,
+    entry_fee_settings jsonb,
+    dance_category_settings jsonb,
+    scoring_system_settings jsonb,
+    entry_size_settings jsonb,
+    title_division_settings jsonb,
+    special_programs_settings jsonb,
+    tax_rate numeric(5,4) DEFAULT 0.0000,
+    CONSTRAINT competitions_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'upcoming'::character varying, 'registration_open'::character varying, 'registration_closed'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE competitions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.competitions IS 'Main competition events with dates, locations, and settings';
+
+
+--
+-- Name: COLUMN competitions.total_reservation_tokens; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.total_reservation_tokens IS 'Total reservation tokens allocated to this competition (default: 600 per weekend)';
+
+
+--
+-- Name: COLUMN competitions.available_reservation_tokens; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.available_reservation_tokens IS 'Currently available reservation tokens (decremented when reservations are approved)';
+
+
+--
+-- Name: COLUMN competitions.tokens_override_enabled; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.tokens_override_enabled IS 'Whether admin has overridden token limits for this competition';
+
+
+--
+-- Name: COLUMN competitions.schedule_published_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.schedule_published_at IS 'Timestamp when schedule was published and entry numbers locked';
+
+
+--
+-- Name: COLUMN competitions.schedule_locked; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.schedule_locked IS 'Prevents changes to entry numbers once schedule is published';
+
+
+--
+-- Name: COLUMN competitions.scoring_ranges; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.scoring_ranges IS 'Award level score ranges in JSONB format';
+
+
+--
+-- Name: COLUMN competitions.age_division_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.age_division_settings IS 'JSON configuration for age divisions (Micro, Mini, Junior, etc.)';
+
+
+--
+-- Name: COLUMN competitions.classification_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.classification_settings IS 'JSON configuration for classifications (Novice, Part-Time, Competitive)';
+
+
+--
+-- Name: COLUMN competitions.entry_fee_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.entry_fee_settings IS 'JSON configuration for entry fees by category type';
+
+
+--
+-- Name: COLUMN competitions.dance_category_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.dance_category_settings IS 'JSON configuration for dance styles/categories';
+
+
+--
+-- Name: COLUMN competitions.scoring_system_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.scoring_system_settings IS 'JSON configuration for scoring tiers (Bronze, Silver, Gold, etc.)';
+
+
+--
+-- Name: COLUMN competitions.entry_size_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.entry_size_settings IS 'JSON configuration for entry size categories (Solo, Duet/Trio, Group, etc.)';
+
+
+--
+-- Name: COLUMN competitions.title_division_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.title_division_settings IS 'JSON configuration for title division rounds';
+
+
+--
+-- Name: COLUMN competitions.special_programs_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.special_programs_settings IS 'JSON configuration for special programs (Dance Off, Ambassadorship, etc.)';
+
+
+--
+-- Name: COLUMN competitions.tax_rate; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.tax_rate IS 'Tax rate as decimal (e.g., 0.0700 for 7% tax). Applied to invoices for this competition.';
+
+
+--
+-- Name: dance_categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dance_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    category_award_grouping character varying(255),
+    competitive_award_grouping character varying(100),
+    other_award_grouping character varying(100),
+    music_time_limit interval,
+    requires_specific_attire boolean DEFAULT false,
+    attire_requirements text,
+    color_code character varying(7),
+    icon_name character varying(50),
+    sort_order integer,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: dancers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dancers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    studio_id uuid NOT NULL,
+    first_name character varying(100) NOT NULL,
+    last_name character varying(100) NOT NULL,
+    date_of_birth date,
+    age_override integer,
+    gender character varying(20),
+    email character varying(255),
+    phone character varying(50),
+    parent_name character varying(255),
+    parent_email character varying(255),
+    parent_phone character varying(50),
+    emergency_contact_name character varying(255),
+    emergency_contact_phone character varying(50),
+    medical_conditions text,
+    allergies text,
+    medications text,
+    years_dancing integer,
+    primary_style character varying(100),
+    skill_level character varying(50),
+    previous_competitions integer DEFAULT 0,
+    registration_number character varying(50),
+    photo_url text,
+    waiver_signed boolean DEFAULT false,
+    waiver_signed_date date,
+    status character varying(50) DEFAULT 'active'::character varying,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    classification_id uuid,
+    CONSTRAINT dancers_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'inactive'::character varying, 'suspended'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE dancers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.dancers IS 'Individual dancers registered under studios';
+
+
+--
+-- Name: documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    filename character varying(255) NOT NULL,
+    original_filename character varying(255) NOT NULL,
+    file_size integer,
+    mime_type character varying(100),
+    storage_path text NOT NULL,
+    document_type character varying(50) NOT NULL,
+    title character varying(255),
+    description text,
+    competition_id uuid,
+    studio_id uuid,
+    entry_id uuid,
+    uploaded_by uuid,
+    visibility character varying(20) DEFAULT 'private'::character varying,
+    password_protected boolean DEFAULT false,
+    processing_status character varying(20) DEFAULT 'ready'::character varying,
+    processing_error text,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    CONSTRAINT documents_processing_status_check CHECK (((processing_status)::text = ANY ((ARRAY['uploading'::character varying, 'processing'::character varying, 'ready'::character varying, 'error'::character varying])::text[]))),
+    CONSTRAINT documents_visibility_check CHECK (((visibility)::text = ANY ((ARRAY['public'::character varying, 'competition'::character varying, 'studio'::character varying, 'private'::character varying])::text[])))
+);
+
+
+--
+-- Name: elite_instructors; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.elite_instructors (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    credentials text,
+    specialization character varying(100),
+    bio text,
+    email character varying(255),
+    phone character varying(50),
+    website character varying(255),
+    assigned_teams text[],
+    session_assignments jsonb,
+    hourly_rate numeric(10,2),
+    travel_required boolean DEFAULT false,
+    equipment_needs text,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+--
+-- Name: email_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    template_type character varying(50) NOT NULL,
+    recipient_email character varying(255) NOT NULL,
+    subject character varying(500) NOT NULL,
+    studio_id uuid,
+    competition_id uuid,
+    success boolean DEFAULT true,
+    error_message text,
+    sent_at timestamp(6) without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: email_preferences; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_preferences (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    email_type public.email_type NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp(6) with time zone DEFAULT now() NOT NULL,
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: email_queue; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_queue (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    user_id uuid,
+    email_type text NOT NULL,
+    recipient_email text NOT NULL,
+    template_data jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    sent_at timestamp with time zone,
+    error text,
+    retry_count integer DEFAULT 0 NOT NULL,
+    CONSTRAINT email_queue_email_type_check CHECK ((email_type = ANY (ARRAY['signup_confirmation'::text, 'password_recovery'::text, 'email_change'::text, 'magic_link'::text]))),
+    CONSTRAINT email_queue_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'sent'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: email_templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_templates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    template_key character varying(100) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    subject character varying(255) NOT NULL,
+    html_body text NOT NULL,
+    text_body text,
+    available_variables jsonb,
+    is_active boolean DEFAULT true,
+    version integer DEFAULT 1,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: entry_participants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.entry_participants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    entry_id uuid NOT NULL,
+    dancer_id uuid NOT NULL,
+    dancer_name character varying(255) NOT NULL,
+    dancer_age integer,
+    role character varying(100),
+    display_order integer,
+    costume_size character varying(20),
+    special_needs text,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE entry_participants; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.entry_participants IS 'Dancers participating in each competition entry';
+
+
+--
+-- Name: entry_size_categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.entry_size_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(50) NOT NULL,
+    min_participants integer NOT NULL,
+    max_participants integer NOT NULL,
+    base_fee numeric(10,2),
+    per_participant_fee numeric(10,2),
+    sort_order integer,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    max_time_minutes integer,
+    max_time_seconds integer DEFAULT 0
+);
+
+
+--
+-- Name: invoices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invoices (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    studio_id uuid NOT NULL,
+    competition_id uuid NOT NULL,
+    reservation_id uuid,
+    line_items jsonb DEFAULT '[]'::jsonb NOT NULL,
+    subtotal numeric(10,2) DEFAULT 0 NOT NULL,
+    total numeric(10,2) DEFAULT 0 NOT NULL,
+    status character varying(50) DEFAULT 'UNPAID'::character varying NOT NULL,
+    created_at timestamp(6) without time zone DEFAULT now(),
+    updated_at timestamp(6) without time zone DEFAULT now(),
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    stripe_payment_intent_id character varying(255),
+    stripe_customer_id character varying(255),
+    paid_at timestamp(6) without time zone,
+    payment_method character varying(50),
+    credit_amount numeric(10,2) DEFAULT 0,
+    credit_reason text,
+    tax_rate numeric(5,2) DEFAULT 13.00,
+    is_locked boolean DEFAULT false
+);
+
+
+--
+-- Name: COLUMN invoices.credit_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.credit_amount IS 'Credit amount applied to invoice';
+
+
+--
+-- Name: COLUMN invoices.credit_reason; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.credit_reason IS 'Reason for credit application';
+
+
+--
+-- Name: COLUMN invoices.tax_rate; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.tax_rate IS 'Tax rate percentage (default 13% HST)';
+
+
+--
+-- Name: COLUMN invoices.is_locked; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.is_locked IS 'Prevents editing after invoice is sent or paid. Set automatically by system on status change.';
+
+
+--
+-- Name: judges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.judges (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    competition_id uuid,
+    name character varying(255) NOT NULL,
+    credentials text,
+    specialization character varying(100),
+    years_judging integer,
+    certification_level character varying(50),
+    judge_number integer,
+    panel_assignment character varying(100),
+    sessions jsonb DEFAULT '[]'::jsonb,
+    email character varying(255),
+    phone character varying(50),
+    confirmed boolean DEFAULT false,
+    checked_in boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: rankings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.rankings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    entry_id uuid NOT NULL,
+    category_id uuid NOT NULL,
+    age_group_id uuid NOT NULL,
+    classification_id uuid NOT NULL,
+    total_score numeric(8,2) NOT NULL,
+    average_score numeric(6,2),
+    placement integer NOT NULL,
+    category_award_placement integer,
+    competitive_award_placement integer,
+    overall_award_placement integer,
+    is_title_winner boolean DEFAULT false,
+    is_glow_off_winner boolean DEFAULT false,
+    special_awards text[],
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--

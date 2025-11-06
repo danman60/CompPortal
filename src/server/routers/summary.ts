@@ -78,6 +78,7 @@ export const summaryRouter = router({
             submitted_at: summary.submitted_at,
             entry_count: entries.length,
             total_amount: totalAmount,
+            status: summary.reservations?.status || 'unknown', // Include reservation status for UI filtering
             entries: entries,
           };
         })

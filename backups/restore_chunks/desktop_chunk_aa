@@ -1,0 +1,5000 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict UOJ7Oqm0Q33ddcSOKSS9A2K6yrPwABq0h8LcM1uLJG1WH4K46RefHeraxIWMv1C
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 17.6 (Ubuntu 17.6-2.pgdg24.04+1)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+DROP EVENT TRIGGER IF EXISTS pgrst_drop_watch;
+DROP EVENT TRIGGER IF EXISTS pgrst_ddl_watch;
+DROP EVENT TRIGGER IF EXISTS issue_pg_net_access;
+DROP EVENT TRIGGER IF EXISTS issue_pg_graphql_access;
+DROP EVENT TRIGGER IF EXISTS issue_pg_cron_access;
+DROP EVENT TRIGGER IF EXISTS issue_graphql_placeholder;
+DROP PUBLICATION IF EXISTS supabase_realtime_messages_publication;
+DROP PUBLICATION IF EXISTS supabase_realtime;
+DROP POLICY IF EXISTS vip_events_tenant_isolation ON public.vip_events;
+DROP POLICY IF EXISTS vip_events_service_role ON public.vip_events;
+DROP POLICY IF EXISTS user_profiles_user_update ON public.user_profiles;
+DROP POLICY IF EXISTS user_profiles_user_select ON public.user_profiles;
+DROP POLICY IF EXISTS user_profiles_user_insert ON public.user_profiles;
+DROP POLICY IF EXISTS user_profiles_super_admin_all ON public.user_profiles;
+DROP POLICY IF EXISTS title_rounds_tenant_isolation ON public.title_rounds;
+DROP POLICY IF EXISTS title_rounds_service_role ON public.title_rounds;
+DROP POLICY IF EXISTS tenants_user_own ON public.tenants;
+DROP POLICY IF EXISTS tenants_super_admin_all ON public.tenants;
+DROP POLICY IF EXISTS tenants_public_select ON public.tenants;
+DROP POLICY IF EXISTS summary_entries_tenant_isolation ON public.summary_entries;
+DROP POLICY IF EXISTS summary_entries_service_role ON public.summary_entries;
+DROP POLICY IF EXISTS summaries_tenant_isolation ON public.summaries;
+DROP POLICY IF EXISTS summaries_service_role ON public.summaries;
+DROP POLICY IF EXISTS studios_user_select ON public.studios;
+DROP POLICY IF EXISTS studios_super_admin_all ON public.studios;
+DROP POLICY IF EXISTS studios_sd_update ON public.studios;
+DROP POLICY IF EXISTS studios_sd_insert ON public.studios;
+DROP POLICY IF EXISTS scores_tenant_isolation ON public.scores;
+DROP POLICY IF EXISTS scores_service_role ON public.scores;
+DROP POLICY IF EXISTS routine_import_sessions_tenant_isolation ON public.routine_import_sessions;
+DROP POLICY IF EXISTS routine_import_sessions_super_admin ON public.routine_import_sessions;
+DROP POLICY IF EXISTS reservations_super_admin_all ON public.reservations;
+DROP POLICY IF EXISTS reservations_sd_all ON public.reservations;
+DROP POLICY IF EXISTS reservations_cd_all ON public.reservations;
+DROP POLICY IF EXISTS rankings_tenant_isolation ON public.rankings;
+DROP POLICY IF EXISTS rankings_service_role ON public.rankings;
+DROP POLICY IF EXISTS judges_tenant_isolation ON public.judges;
+DROP POLICY IF EXISTS judges_service_role ON public.judges;
+DROP POLICY IF EXISTS judges_can_update_own_scores ON public.scores;
+DROP POLICY IF EXISTS judges_can_insert_own_scores ON public.scores;
+DROP POLICY IF EXISTS judges_and_directors_can_view_scores ON public.scores;
+DROP POLICY IF EXISTS invoices_super_admin_all ON public.invoices;
+DROP POLICY IF EXISTS invoices_sd_select ON public.invoices;
+DROP POLICY IF EXISTS invoices_cd_all ON public.invoices;
+DROP POLICY IF EXISTS entry_participants_tenant_isolation ON public.entry_participants;
+DROP POLICY IF EXISTS entry_participants_service_role ON public.entry_participants;
+DROP POLICY IF EXISTS entries_super_admin_all ON public.competition_entries;
+DROP POLICY IF EXISTS entries_sd_all ON public.competition_entries;
+DROP POLICY IF EXISTS entries_cd_select ON public.competition_entries;
+DROP POLICY IF EXISTS email_templates_tenant_isolation ON public.email_templates;
+DROP POLICY IF EXISTS email_templates_service_role ON public.email_templates;
+DROP POLICY IF EXISTS email_preferences_tenant_isolation ON public.email_preferences;
+DROP POLICY IF EXISTS email_preferences_service_role ON public.email_preferences;
+DROP POLICY IF EXISTS email_logs_tenant_isolation ON public.email_logs;
+DROP POLICY IF EXISTS email_logs_service_role ON public.email_logs;
+DROP POLICY IF EXISTS documents_tenant_isolation ON public.documents;
+DROP POLICY IF EXISTS documents_service_role ON public.documents;
+DROP POLICY IF EXISTS dancers_super_admin_all ON public.dancers;
+DROP POLICY IF EXISTS dancers_sd_all ON public.dancers;
+DROP POLICY IF EXISTS dancers_cd_select ON public.dancers;
+DROP POLICY IF EXISTS competitions_user_select ON public.competitions;
+DROP POLICY IF EXISTS competitions_super_admin_all ON public.competitions;
+DROP POLICY IF EXISTS competitions_cd_update ON public.competitions;
+DROP POLICY IF EXISTS competitions_cd_insert ON public.competitions;
+DROP POLICY IF EXISTS competition_sessions_tenant_isolation ON public.competition_sessions;
+DROP POLICY IF EXISTS competition_sessions_service_role ON public.competition_sessions;
+DROP POLICY IF EXISTS competition_locations_tenant_isolation ON public.competition_locations;
+DROP POLICY IF EXISTS competition_locations_service_role ON public.competition_locations;
+DROP POLICY IF EXISTS classifications_tenant_isolation ON public.classifications;
+DROP POLICY IF EXISTS classifications_service_role ON public.classifications;
+DROP POLICY IF EXISTS capacity_ledger_tenant_isolation ON public.capacity_ledger;
+DROP POLICY IF EXISTS capacity_ledger_service_role ON public.capacity_ledger;
+DROP POLICY IF EXISTS awards_tenant_isolation ON public.awards;
+DROP POLICY IF EXISTS awards_service_role ON public.awards;
+DROP POLICY IF EXISTS award_types_tenant_isolation ON public.award_types;
+DROP POLICY IF EXISTS award_types_service_role ON public.award_types;
+DROP POLICY IF EXISTS activity_logs_tenant_isolation ON public.activity_logs;
+DROP POLICY IF EXISTS activity_logs_service_role ON public.activity_logs;
+DROP POLICY IF EXISTS "View invoices" ON public.invoices;
+DROP POLICY IF EXISTS "View email logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Users can view scoring tiers for their tenant" ON public.scoring_tiers;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can view own emails" ON public.email_queue;
+DROP POLICY IF EXISTS "Users can view own email preferences" ON public.email_preferences;
+DROP POLICY IF EXISTS "Users can view own activities" ON public.activity_logs;
+DROP POLICY IF EXISTS "Users can update own studio" ON public.studios;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can update own email preferences" ON public.email_preferences;
+DROP POLICY IF EXISTS "Users can delete own studio" ON public.studios;
+DROP POLICY IF EXISTS "Users can create own studio" ON public.studios;
+DROP POLICY IF EXISTS "Studios can view studio activities" ON public.activity_logs;
+DROP POLICY IF EXISTS "Studios can view own rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Studios can view own awards" ON public.awards;
+DROP POLICY IF EXISTS "Studio owners can view own studios" ON public.studios;
+DROP POLICY IF EXISTS "Studio access to reservations" ON public.reservations;
+DROP POLICY IF EXISTS "Studio access to entries" ON public.competition_entries;
+DROP POLICY IF EXISTS "Studio access to dancers" ON public.dancers;
+DROP POLICY IF EXISTS "Studio Directors can view their classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Studio Directors can delete pending requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Studio Directors can create classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Service role full access to email_queue" ON public.email_queue;
+DROP POLICY IF EXISTS "Service can insert email logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Judges can view competition rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Judges can view competition awards" ON public.awards;
+DROP POLICY IF EXISTS "Entry participant access" ON public.entry_participants;
+DROP POLICY IF EXISTS "Document access control" ON public.documents;
+DROP POLICY IF EXISTS "Directors and admins can view all rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can view all awards" ON public.awards;
+DROP POLICY IF EXISTS "Directors and admins can update rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can update competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Directors and admins can update awards" ON public.awards;
+DROP POLICY IF EXISTS "Directors and admins can manage vip events" ON public.vip_events;
+DROP POLICY IF EXISTS "Directors and admins can manage title rounds" ON public.title_rounds;
+DROP POLICY IF EXISTS "Directors and admins can manage sessions" ON public.competition_sessions;
+DROP POLICY IF EXISTS "Directors and admins can manage locations" ON public.competition_locations;
+DROP POLICY IF EXISTS "Directors and admins can manage judges" ON public.judges;
+DROP POLICY IF EXISTS "Directors and admins can manage email templates" ON public.email_templates;
+DROP POLICY IF EXISTS "Directors and admins can manage elite instructors" ON public.elite_instructors;
+DROP POLICY IF EXISTS "Directors and admins can manage competitions" ON public.competitions;
+DROP POLICY IF EXISTS "Directors and admins can insert rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can insert competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Directors and admins can insert awards" ON public.awards;
+DROP POLICY IF EXISTS "Directors and admins can delete rankings" ON public.rankings;
+DROP POLICY IF EXISTS "Directors and admins can delete competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Directors and admins can delete awards" ON public.awards;
+DROP POLICY IF EXISTS "Competition directors can manage scoring tiers" ON public.scoring_tiers;
+DROP POLICY IF EXISTS "Competition Directors can view classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Competition Directors can update classification requests" ON public.classification_exception_requests;
+DROP POLICY IF EXISTS "Authenticated users can view vip events" ON public.vip_events;
+DROP POLICY IF EXISTS "Authenticated users can view title rounds" ON public.title_rounds;
+DROP POLICY IF EXISTS "Authenticated users can view system settings" ON public.system_settings;
+DROP POLICY IF EXISTS "Authenticated users can view size categories" ON public.entry_size_categories;
+DROP POLICY IF EXISTS "Authenticated users can view sessions" ON public.competition_sessions;
+DROP POLICY IF EXISTS "Authenticated users can view locations" ON public.competition_locations;
+DROP POLICY IF EXISTS "Authenticated users can view judges" ON public.judges;
+DROP POLICY IF EXISTS "Authenticated users can view email templates" ON public.email_templates;
+DROP POLICY IF EXISTS "Authenticated users can view elite instructors" ON public.elite_instructors;
+DROP POLICY IF EXISTS "Authenticated users can view competitions" ON public.competitions;
+DROP POLICY IF EXISTS "Authenticated users can view competition settings" ON public.competition_settings;
+DROP POLICY IF EXISTS "Authenticated users can view classifications" ON public.classifications;
+DROP POLICY IF EXISTS "Authenticated users can view categories" ON public.dance_categories;
+DROP POLICY IF EXISTS "Authenticated users can view award types" ON public.award_types;
+DROP POLICY IF EXISTS "Authenticated users can view age groups" ON public.age_groups;
+DROP POLICY IF EXISTS "Authenticated users can create activity logs" ON public.activity_logs;
+DROP POLICY IF EXISTS "Admins can update invoices" ON public.invoices;
+DROP POLICY IF EXISTS "Admins can manage system settings" ON public.system_settings;
+DROP POLICY IF EXISTS "Admins can manage size categories" ON public.entry_size_categories;
+DROP POLICY IF EXISTS "Admins can manage classifications" ON public.classifications;
+DROP POLICY IF EXISTS "Admins can manage categories" ON public.dance_categories;
+DROP POLICY IF EXISTS "Admins can manage award types" ON public.award_types;
+DROP POLICY IF EXISTS "Admins can manage age groups" ON public.age_groups;
+DROP POLICY IF EXISTS "Admins can delete invoices" ON public.invoices;
+DROP POLICY IF EXISTS "Admins can create invoices" ON public.invoices;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads_parts DROP CONSTRAINT IF EXISTS s3_multipart_uploads_parts_upload_id_fkey;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads_parts DROP CONSTRAINT IF EXISTS s3_multipart_uploads_parts_bucket_id_fkey;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads DROP CONSTRAINT IF EXISTS s3_multipart_uploads_bucket_id_fkey;
+ALTER TABLE IF EXISTS ONLY storage.prefixes DROP CONSTRAINT IF EXISTS "prefixes_bucketId_fkey";
+ALTER TABLE IF EXISTS ONLY storage.objects DROP CONSTRAINT IF EXISTS "objects_bucketId_fkey";
+ALTER TABLE IF EXISTS ONLY public.vip_events DROP CONSTRAINT IF EXISTS vip_events_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.two_factor_audit_log DROP CONSTRAINT IF EXISTS two_factor_audit_log_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS title_rounds_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS title_rounds_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_summary_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS summaries_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_verified_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_owner_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.scoring_tiers DROP CONSTRAINT IF EXISTS scoring_tiers_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_judge_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_payment_confirmed_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_location_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_approved_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_category_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_age_group_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS judges_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS judges_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.vip_events DROP CONSTRAINT IF EXISTS fk_vip_events_tenant;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS fk_title_rounds_tenant;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS fk_summary_entries_tenant;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS fk_summaries_tenant;
+ALTER TABLE IF EXISTS ONLY public.routine_import_sessions DROP CONSTRAINT IF EXISTS fk_studio;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS fk_scores_tenant;
+ALTER TABLE IF EXISTS ONLY public.routine_import_sessions DROP CONSTRAINT IF EXISTS fk_reservation;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS fk_rankings_tenant;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS fk_judges_tenant;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS fk_entry_participants_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_templates DROP CONSTRAINT IF EXISTS fk_email_templates_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS fk_email_preferences_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS fk_email_logs_tenant;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS fk_email_logs_studio;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS fk_email_logs_competition;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS fk_documents_tenant;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS fk_competition_sessions_tenant;
+ALTER TABLE IF EXISTS ONLY public.competition_locations DROP CONSTRAINT IF EXISTS fk_competition_locations_tenant;
+ALTER TABLE IF EXISTS ONLY public.classifications DROP CONSTRAINT IF EXISTS fk_classifications_tenant;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS fk_capacity_ledger_tenant;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS fk_awards_tenant;
+ALTER TABLE IF EXISTS ONLY public.award_types DROP CONSTRAINT IF EXISTS fk_award_types_tenant;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS fk_activity_logs_tenant;
+ALTER TABLE IF EXISTS ONLY public.entry_size_categories DROP CONSTRAINT IF EXISTS entry_size_categories_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_dancer_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.email_queue DROP CONSTRAINT IF EXISTS email_queue_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.email_queue DROP CONSTRAINT IF EXISTS email_queue_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS email_preferences_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.elite_instructors DROP CONSTRAINT IF EXISTS elite_instructors_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_uploaded_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.dance_categories DROP CONSTRAINT IF EXISTS dance_categories_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competitions DROP CONSTRAINT IF EXISTS competitions_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_location_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_head_judge_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_locations DROP CONSTRAINT IF EXISTS competition_locations_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_previous_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_next_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_entry_size_category_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_category_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_age_group_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_responded_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_created_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_reques_approved_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_reque_requested_classification_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requ_auto_calculated_classificati_fkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_reservation_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_created_by_fkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_entry_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_competition_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_award_type_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.age_groups DROP CONSTRAINT IF EXISTS age_groups_tenant_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS activity_logs_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS activity_logs_studio_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.sso_domains DROP CONSTRAINT IF EXISTS sso_domains_sso_provider_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.sessions DROP CONSTRAINT IF EXISTS sessions_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.sessions DROP CONSTRAINT IF EXISTS sessions_oauth_client_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_relay_states DROP CONSTRAINT IF EXISTS saml_relay_states_sso_provider_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_relay_states DROP CONSTRAINT IF EXISTS saml_relay_states_flow_state_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_providers DROP CONSTRAINT IF EXISTS saml_providers_sso_provider_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.refresh_tokens DROP CONSTRAINT IF EXISTS refresh_tokens_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.one_time_tokens DROP CONSTRAINT IF EXISTS one_time_tokens_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_client_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_client_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_factors DROP CONSTRAINT IF EXISTS mfa_factors_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_challenges DROP CONSTRAINT IF EXISTS mfa_challenges_auth_factor_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_amr_claims DROP CONSTRAINT IF EXISTS mfa_amr_claims_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.identities DROP CONSTRAINT IF EXISTS identities_user_id_fkey;
+DROP TRIGGER IF EXISTS update_objects_updated_at ON storage.objects;
+DROP TRIGGER IF EXISTS prefixes_delete_hierarchy ON storage.prefixes;
+DROP TRIGGER IF EXISTS prefixes_create_hierarchy ON storage.prefixes;
+DROP TRIGGER IF EXISTS objects_update_create_prefix ON storage.objects;
+DROP TRIGGER IF EXISTS objects_insert_create_prefix ON storage.objects;
+DROP TRIGGER IF EXISTS objects_delete_delete_prefix ON storage.objects;
+DROP TRIGGER IF EXISTS enforce_bucket_name_length_trigger ON storage.buckets;
+DROP TRIGGER IF EXISTS tr_check_filters ON realtime.subscription;
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON public.user_profiles;
+DROP TRIGGER IF EXISTS update_studios_updated_at ON public.studios;
+DROP TRIGGER IF EXISTS update_reservations_updated_at ON public.reservations;
+DROP TRIGGER IF EXISTS update_documents_updated_at ON public.documents;
+DROP TRIGGER IF EXISTS update_dancers_updated_at ON public.dancers;
+DROP TRIGGER IF EXISTS update_competition_settings_updated_at ON public.competition_settings;
+DROP TRIGGER IF EXISTS update_competition_entries_updated_at ON public.competition_entries;
+DROP TRIGGER IF EXISTS trigger_scores_updated_at ON public.scores;
+DROP TRIGGER IF EXISTS trigger_queue_signup_confirmation ON auth.users;
+DROP TRIGGER IF EXISTS trigger_queue_password_recovery ON auth.users;
+DROP TRIGGER IF EXISTS trigger_queue_email_change ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP INDEX IF EXISTS storage.objects_bucket_id_level_idx;
+DROP INDEX IF EXISTS storage.name_prefix_search;
+DROP INDEX IF EXISTS storage.idx_prefixes_lower_name;
+DROP INDEX IF EXISTS storage.idx_objects_lower_name;
+DROP INDEX IF EXISTS storage.idx_objects_bucket_id_name;
+DROP INDEX IF EXISTS storage.idx_name_bucket_level_unique;
+DROP INDEX IF EXISTS storage.idx_multipart_uploads_list;
+DROP INDEX IF EXISTS storage.bucketid_objname;
+DROP INDEX IF EXISTS storage.bname;
+DROP INDEX IF EXISTS realtime.subscription_subscription_id_entity_filters_key;
+DROP INDEX IF EXISTS realtime.messages_inserted_at_topic_index;
+DROP INDEX IF EXISTS realtime.ix_realtime_subscription_entity;
+DROP INDEX IF EXISTS public.tenants_subdomain_key;
+DROP INDEX IF EXISTS public.tenants_slug_key;
+DROP INDEX IF EXISTS public.idx_vip_events_tenant_competition;
+DROP INDEX IF EXISTS public.idx_vip_events_tenant;
+DROP INDEX IF EXISTS public.idx_vip_events_competition_id;
+DROP INDEX IF EXISTS public.idx_user_profiles_tenant;
+DROP INDEX IF EXISTS public.idx_title_rounds_tenant_competition;
+DROP INDEX IF EXISTS public.idx_title_rounds_tenant;
+DROP INDEX IF EXISTS public.idx_title_rounds_session_id;
+DROP INDEX IF EXISTS public.idx_title_rounds_competition_id;
+DROP INDEX IF EXISTS public.idx_tenants_entry_size_settings;
+DROP INDEX IF EXISTS public.idx_tenants_age_settings;
+DROP INDEX IF EXISTS public.idx_summary_entries_tenant_entry;
+DROP INDEX IF EXISTS public.idx_summary_entries_tenant;
+DROP INDEX IF EXISTS public.idx_summary_entries_summary;
+DROP INDEX IF EXISTS public.idx_summary_entries_entry;
+DROP INDEX IF EXISTS public.idx_summaries_tenant_reservation;
+DROP INDEX IF EXISTS public.idx_summaries_tenant;
+DROP INDEX IF EXISTS public.idx_summaries_submitted_at;
+DROP INDEX IF EXISTS public.idx_summaries_reservation;
+DROP INDEX IF EXISTS public.idx_studios_verified_by;
+DROP INDEX IF EXISTS public.idx_studios_tenant;
+DROP INDEX IF EXISTS public.idx_studios_status;
+DROP INDEX IF EXISTS public.idx_studios_public_code;
+DROP INDEX IF EXISTS public.idx_studios_owner;
+DROP INDEX IF EXISTS public.idx_studios_internal_notes;
+DROP INDEX IF EXISTS public.idx_studios_code;
+DROP INDEX IF EXISTS public.idx_scores_tenant_entry;
+DROP INDEX IF EXISTS public.idx_scores_tenant;
+DROP INDEX IF EXISTS public.idx_scores_judge;
+DROP INDEX IF EXISTS public.idx_scores_entry;
+DROP INDEX IF EXISTS public.idx_scores_created;
+DROP INDEX IF EXISTS public.idx_reservations_tenant;
+DROP INDEX IF EXISTS public.idx_reservations_studio;
+DROP INDEX IF EXISTS public.idx_reservations_status;
+DROP INDEX IF EXISTS public.idx_reservations_payment_confirmed_by;
+DROP INDEX IF EXISTS public.idx_reservations_location_id;
+DROP INDEX IF EXISTS public.idx_reservations_competition;
+DROP INDEX IF EXISTS public.idx_reservations_approved_by;
+DROP INDEX IF EXISTS public.idx_rankings_tenant_entry;
+DROP INDEX IF EXISTS public.idx_rankings_tenant;
+DROP INDEX IF EXISTS public.idx_rankings_entry_id;
+DROP INDEX IF EXISTS public.idx_rankings_competition;
+DROP INDEX IF EXISTS public.idx_rankings_classification_id;
+DROP INDEX IF EXISTS public.idx_rankings_category;
+DROP INDEX IF EXISTS public.idx_rankings_age_group_id;
+DROP INDEX IF EXISTS public.idx_participants_entry;
+DROP INDEX IF EXISTS public.idx_participants_dancer;
+DROP INDEX IF EXISTS public.idx_judges_user_id;
+DROP INDEX IF EXISTS public.idx_judges_tenant_competition;
+DROP INDEX IF EXISTS public.idx_judges_tenant;
+DROP INDEX IF EXISTS public.idx_judges_competition_id;
+DROP INDEX IF EXISTS public.idx_invoices_tenant;
+DROP INDEX IF EXISTS public.idx_invoices_studio;
+DROP INDEX IF EXISTS public.idx_invoices_stripe_payment_intent;
+DROP INDEX IF EXISTS public.idx_invoices_stripe_customer;
+DROP INDEX IF EXISTS public.idx_invoices_status;
+DROP INDEX IF EXISTS public.idx_invoices_reservation;
+DROP INDEX IF EXISTS public.idx_invoices_paid_at;
+DROP INDEX IF EXISTS public.idx_invoices_competition;
+DROP INDEX IF EXISTS public.idx_import_sessions_studio;
+DROP INDEX IF EXISTS public.idx_import_sessions_created_at;
+DROP INDEX IF EXISTS public.idx_import_sessions_completed;
+DROP INDEX IF EXISTS public.idx_entry_size_categories_tenant;
+DROP INDEX IF EXISTS public.idx_entry_participants_tenant_entry;
+DROP INDEX IF EXISTS public.idx_entry_participants_tenant;
+DROP INDEX IF EXISTS public.idx_entry_number_per_comp;
+DROP INDEX IF EXISTS public.idx_entries_tenant;
+DROP INDEX IF EXISTS public.idx_entries_studio;
+DROP INDEX IF EXISTS public.idx_entries_session;
+DROP INDEX IF EXISTS public.idx_entries_sequence;
+DROP INDEX IF EXISTS public.idx_entries_reservation_status;
+DROP INDEX IF EXISTS public.idx_entries_reservation;
+DROP INDEX IF EXISTS public.idx_entries_placement;
+DROP INDEX IF EXISTS public.idx_entries_performance_time;
+DROP INDEX IF EXISTS public.idx_entries_competition;
+DROP INDEX IF EXISTS public.idx_entries_calculated_score;
+DROP INDEX IF EXISTS public.idx_entries_award_level;
+DROP INDEX IF EXISTS public.idx_email_templates_tenant_key;
+DROP INDEX IF EXISTS public.idx_email_templates_tenant;
+DROP INDEX IF EXISTS public.idx_email_queue_user_id;
+DROP INDEX IF EXISTS public.idx_email_queue_tenant_id;
+DROP INDEX IF EXISTS public.idx_email_queue_status_created;
+DROP INDEX IF EXISTS public.idx_email_preferences_user_id;
+DROP INDEX IF EXISTS public.idx_email_preferences_tenant_user;
+DROP INDEX IF EXISTS public.idx_email_preferences_tenant;
+DROP INDEX IF EXISTS public.idx_email_logs_tenant_competition;
+DROP INDEX IF EXISTS public.idx_email_logs_tenant;
+DROP INDEX IF EXISTS public.idx_email_logs_studio_id;
+DROP INDEX IF EXISTS public.idx_email_logs_sent_at;
+DROP INDEX IF EXISTS public.idx_email_logs_competition_id;
+DROP INDEX IF EXISTS public.idx_elite_instructors_competition_id;
+DROP INDEX IF EXISTS public.idx_documents_uploaded_by;
+DROP INDEX IF EXISTS public.idx_documents_type;
+DROP INDEX IF EXISTS public.idx_documents_tenant_competition;
+DROP INDEX IF EXISTS public.idx_documents_tenant;
+DROP INDEX IF EXISTS public.idx_documents_studio;
+DROP INDEX IF EXISTS public.idx_documents_entry_id;
+DROP INDEX IF EXISTS public.idx_documents_competition;
+DROP INDEX IF EXISTS public.idx_dancers_tenant;
+DROP INDEX IF EXISTS public.idx_dancers_studio;
+DROP INDEX IF EXISTS public.idx_dancers_name;
+DROP INDEX IF EXISTS public.idx_dancers_age;
+DROP INDEX IF EXISTS public.idx_dance_categories_tenant;
+DROP INDEX IF EXISTS public.idx_competitions_year;
+DROP INDEX IF EXISTS public.idx_competitions_tenant;
+DROP INDEX IF EXISTS public.idx_competitions_status;
+DROP INDEX IF EXISTS public.idx_competitions_scoring_settings;
+DROP INDEX IF EXISTS public.idx_competitions_schedule_lock;
+DROP INDEX IF EXISTS public.idx_competitions_dates;
+DROP INDEX IF EXISTS public.idx_competitions_age_settings;
+DROP INDEX IF EXISTS public.idx_competition_settings_display_order;
+DROP INDEX IF EXISTS public.idx_competition_settings_category;
+DROP INDEX IF EXISTS public.idx_competition_settings_active;
+DROP INDEX IF EXISTS public.idx_competition_sessions_tenant_competition;
+DROP INDEX IF EXISTS public.idx_competition_sessions_tenant;
+DROP INDEX IF EXISTS public.idx_competition_sessions_location_id;
+DROP INDEX IF EXISTS public.idx_competition_sessions_head_judge;
+DROP INDEX IF EXISTS public.idx_competition_sessions_competition_id;
+DROP INDEX IF EXISTS public.idx_competition_locations_tenant_competition;
+DROP INDEX IF EXISTS public.idx_competition_locations_tenant;
+DROP INDEX IF EXISTS public.idx_competition_locations_competition_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_previous_entry_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_next_entry_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_entry_size_category_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_classification_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_category_id;
+DROP INDEX IF EXISTS public.idx_competition_entries_age_group_id;
+DROP INDEX IF EXISTS public.idx_classifications_tenant;
+DROP INDEX IF EXISTS public.idx_classification_requests_tenant;
+DROP INDEX IF EXISTS public.idx_classification_requests_studio;
+DROP INDEX IF EXISTS public.idx_classification_requests_status;
+DROP INDEX IF EXISTS public.idx_classification_requests_entry;
+DROP INDEX IF EXISTS public.idx_classification_requests_created_at;
+DROP INDEX IF EXISTS public.idx_classification_requests_competition;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_tenant_competition;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_tenant;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_reservation;
+DROP INDEX IF EXISTS public.idx_capacity_ledger_competition;
+DROP INDEX IF EXISTS public.idx_awards_tenant_entry;
+DROP INDEX IF EXISTS public.idx_awards_tenant;
+DROP INDEX IF EXISTS public.idx_awards_entry_id;
+DROP INDEX IF EXISTS public.idx_awards_competition_id;
+DROP INDEX IF EXISTS public.idx_awards_award_type_id;
+DROP INDEX IF EXISTS public.idx_award_types_tenant;
+DROP INDEX IF EXISTS public.idx_age_groups_tenant;
+DROP INDEX IF EXISTS public.idx_activity_logs_user_id;
+DROP INDEX IF EXISTS public.idx_activity_logs_tenant_user;
+DROP INDEX IF EXISTS public.idx_activity_logs_tenant;
+DROP INDEX IF EXISTS public.idx_activity_logs_studio_id;
+DROP INDEX IF EXISTS public.idx_activity_logs_entity;
+DROP INDEX IF EXISTS public.idx_activity_logs_created_at;
+DROP INDEX IF EXISTS public.idx_2fa_audit_user;
+DROP INDEX IF EXISTS public.idx_2fa_audit_timestamp;
+DROP INDEX IF EXISTS public.idx_2fa_audit_action;
+DROP INDEX IF EXISTS auth.users_is_anonymous_idx;
+DROP INDEX IF EXISTS auth.users_instance_id_idx;
+DROP INDEX IF EXISTS auth.users_instance_id_email_idx;
+DROP INDEX IF EXISTS auth.users_email_partial_key;
+DROP INDEX IF EXISTS auth.user_id_created_at_idx;
+DROP INDEX IF EXISTS auth.unique_phone_factor_per_user;
+DROP INDEX IF EXISTS auth.sso_providers_resource_id_pattern_idx;
+DROP INDEX IF EXISTS auth.sso_providers_resource_id_idx;
+DROP INDEX IF EXISTS auth.sso_domains_sso_provider_id_idx;
+DROP INDEX IF EXISTS auth.sso_domains_domain_idx;
+DROP INDEX IF EXISTS auth.sessions_user_id_idx;
+DROP INDEX IF EXISTS auth.sessions_oauth_client_id_idx;
+DROP INDEX IF EXISTS auth.sessions_not_after_idx;
+DROP INDEX IF EXISTS auth.saml_relay_states_sso_provider_id_idx;
+DROP INDEX IF EXISTS auth.saml_relay_states_for_email_idx;
+DROP INDEX IF EXISTS auth.saml_relay_states_created_at_idx;
+DROP INDEX IF EXISTS auth.saml_providers_sso_provider_id_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_updated_at_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_session_id_revoked_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_parent_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_instance_id_user_id_idx;
+DROP INDEX IF EXISTS auth.refresh_tokens_instance_id_idx;
+DROP INDEX IF EXISTS auth.recovery_token_idx;
+DROP INDEX IF EXISTS auth.reauthentication_token_idx;
+DROP INDEX IF EXISTS auth.one_time_tokens_user_id_token_type_key;
+DROP INDEX IF EXISTS auth.one_time_tokens_token_hash_hash_idx;
+DROP INDEX IF EXISTS auth.one_time_tokens_relates_to_hash_idx;
+DROP INDEX IF EXISTS auth.oauth_consents_user_order_idx;
+DROP INDEX IF EXISTS auth.oauth_consents_active_user_client_idx;
+DROP INDEX IF EXISTS auth.oauth_consents_active_client_idx;
+DROP INDEX IF EXISTS auth.oauth_clients_deleted_at_idx;
+DROP INDEX IF EXISTS auth.oauth_auth_pending_exp_idx;
+DROP INDEX IF EXISTS auth.mfa_factors_user_id_idx;
+DROP INDEX IF EXISTS auth.mfa_factors_user_friendly_name_unique;
+DROP INDEX IF EXISTS auth.mfa_challenge_created_at_idx;
+DROP INDEX IF EXISTS auth.idx_user_id_auth_method;
+DROP INDEX IF EXISTS auth.idx_auth_code;
+DROP INDEX IF EXISTS auth.identities_user_id_idx;
+DROP INDEX IF EXISTS auth.identities_email_idx;
+DROP INDEX IF EXISTS auth.flow_state_created_at_idx;
+DROP INDEX IF EXISTS auth.factor_id_created_at_idx;
+DROP INDEX IF EXISTS auth.email_change_token_new_idx;
+DROP INDEX IF EXISTS auth.email_change_token_current_idx;
+DROP INDEX IF EXISTS auth.confirmation_token_idx;
+DROP INDEX IF EXISTS auth.audit_logs_instance_id_idx;
+ALTER TABLE IF EXISTS ONLY supabase_migrations.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY supabase_migrations.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_idempotency_key_key;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads DROP CONSTRAINT IF EXISTS s3_multipart_uploads_pkey;
+ALTER TABLE IF EXISTS ONLY storage.s3_multipart_uploads_parts DROP CONSTRAINT IF EXISTS s3_multipart_uploads_parts_pkey;
+ALTER TABLE IF EXISTS ONLY storage.prefixes DROP CONSTRAINT IF EXISTS prefixes_pkey;
+ALTER TABLE IF EXISTS ONLY storage.objects DROP CONSTRAINT IF EXISTS objects_pkey;
+ALTER TABLE IF EXISTS ONLY storage.migrations DROP CONSTRAINT IF EXISTS migrations_pkey;
+ALTER TABLE IF EXISTS ONLY storage.migrations DROP CONSTRAINT IF EXISTS migrations_name_key;
+ALTER TABLE IF EXISTS ONLY storage.buckets DROP CONSTRAINT IF EXISTS buckets_pkey;
+ALTER TABLE IF EXISTS ONLY storage.buckets_analytics DROP CONSTRAINT IF EXISTS buckets_analytics_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.subscription DROP CONSTRAINT IF EXISTS pk_subscription;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_13 DROP CONSTRAINT IF EXISTS messages_2025_10_13_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_12 DROP CONSTRAINT IF EXISTS messages_2025_10_12_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_11 DROP CONSTRAINT IF EXISTS messages_2025_10_11_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_10 DROP CONSTRAINT IF EXISTS messages_2025_10_10_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages_2025_10_09 DROP CONSTRAINT IF EXISTS messages_2025_10_09_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages DROP CONSTRAINT IF EXISTS messages_pkey;
+ALTER TABLE IF EXISTS ONLY public.vip_events DROP CONSTRAINT IF EXISTS vip_events_pkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_pkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS unique_entry_request;
+ALTER TABLE IF EXISTS ONLY public.two_factor_audit_log DROP CONSTRAINT IF EXISTS two_factor_audit_log_pkey;
+ALTER TABLE IF EXISTS ONLY public.title_rounds DROP CONSTRAINT IF EXISTS title_rounds_pkey;
+ALTER TABLE IF EXISTS ONLY public.tenants DROP CONSTRAINT IF EXISTS tenants_pkey;
+ALTER TABLE IF EXISTS ONLY public.system_settings DROP CONSTRAINT IF EXISTS system_settings_pkey;
+ALTER TABLE IF EXISTS ONLY public.system_settings DROP CONSTRAINT IF EXISTS system_settings_key_key;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_unique;
+ALTER TABLE IF EXISTS ONLY public.summary_entries DROP CONSTRAINT IF EXISTS summary_entries_pkey;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS summaries_reservation_unique;
+ALTER TABLE IF EXISTS ONLY public.summaries DROP CONSTRAINT IF EXISTS summaries_pkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_public_code_key;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_pkey;
+ALTER TABLE IF EXISTS ONLY public.studios DROP CONSTRAINT IF EXISTS studios_code_key;
+ALTER TABLE IF EXISTS ONLY public.scoring_tiers DROP CONSTRAINT IF EXISTS scoring_tiers_tenant_id_name_key;
+ALTER TABLE IF EXISTS ONLY public.scoring_tiers DROP CONSTRAINT IF EXISTS scoring_tiers_pkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_pkey;
+ALTER TABLE IF EXISTS ONLY public.scores DROP CONSTRAINT IF EXISTS scores_entry_id_judge_id_key;
+ALTER TABLE IF EXISTS ONLY public.routine_import_sessions DROP CONSTRAINT IF EXISTS routine_import_sessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.reservations DROP CONSTRAINT IF EXISTS reservations_pkey;
+ALTER TABLE IF EXISTS ONLY public.rankings DROP CONSTRAINT IF EXISTS rankings_pkey;
+ALTER TABLE IF EXISTS ONLY public.judges DROP CONSTRAINT IF EXISTS judges_pkey;
+ALTER TABLE IF EXISTS ONLY public.invoices DROP CONSTRAINT IF EXISTS invoices_pkey;
+ALTER TABLE IF EXISTS ONLY public.entry_size_categories DROP CONSTRAINT IF EXISTS entry_size_categories_pkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_pkey;
+ALTER TABLE IF EXISTS ONLY public.entry_participants DROP CONSTRAINT IF EXISTS entry_participants_entry_id_dancer_id_key;
+ALTER TABLE IF EXISTS ONLY public.email_templates DROP CONSTRAINT IF EXISTS email_templates_template_key_key;
+ALTER TABLE IF EXISTS ONLY public.email_templates DROP CONSTRAINT IF EXISTS email_templates_pkey;
+ALTER TABLE IF EXISTS ONLY public.email_queue DROP CONSTRAINT IF EXISTS email_queue_pkey;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS email_preferences_user_email_type_unique;
+ALTER TABLE IF EXISTS ONLY public.email_preferences DROP CONSTRAINT IF EXISTS email_preferences_pkey;
+ALTER TABLE IF EXISTS ONLY public.email_logs DROP CONSTRAINT IF EXISTS email_logs_pkey;
+ALTER TABLE IF EXISTS ONLY public.elite_instructors DROP CONSTRAINT IF EXISTS elite_instructors_pkey;
+ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_pkey;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_registration_number_key;
+ALTER TABLE IF EXISTS ONLY public.dancers DROP CONSTRAINT IF EXISTS dancers_pkey;
+ALTER TABLE IF EXISTS ONLY public.dance_categories DROP CONSTRAINT IF EXISTS dance_categories_pkey;
+ALTER TABLE IF EXISTS ONLY public.dance_categories DROP CONSTRAINT IF EXISTS dance_categories_name_tenant_key;
+ALTER TABLE IF EXISTS ONLY public.competitions DROP CONSTRAINT IF EXISTS competitions_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_settings DROP CONSTRAINT IF EXISTS competition_settings_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_settings DROP CONSTRAINT IF EXISTS competition_settings_category_key_unique;
+ALTER TABLE IF EXISTS ONLY public.competition_sessions DROP CONSTRAINT IF EXISTS competition_sessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_locations DROP CONSTRAINT IF EXISTS competition_locations_pkey;
+ALTER TABLE IF EXISTS ONLY public.competition_entries DROP CONSTRAINT IF EXISTS competition_entries_pkey;
+ALTER TABLE IF EXISTS ONLY public.classifications DROP CONSTRAINT IF EXISTS classifications_tenant_name_key;
+ALTER TABLE IF EXISTS ONLY public.classifications DROP CONSTRAINT IF EXISTS classifications_pkey;
+ALTER TABLE IF EXISTS ONLY public.classification_exception_requests DROP CONSTRAINT IF EXISTS classification_exception_requests_pkey;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_reservation_reason_unique;
+ALTER TABLE IF EXISTS ONLY public.capacity_ledger DROP CONSTRAINT IF EXISTS capacity_ledger_pkey;
+ALTER TABLE IF EXISTS ONLY public.awards DROP CONSTRAINT IF EXISTS awards_pkey;
+ALTER TABLE IF EXISTS ONLY public.award_types DROP CONSTRAINT IF EXISTS award_types_tenant_name_unique;
+ALTER TABLE IF EXISTS ONLY public.award_types DROP CONSTRAINT IF EXISTS award_types_pkey;
+ALTER TABLE IF EXISTS ONLY public.age_groups DROP CONSTRAINT IF EXISTS age_groups_pkey;
+ALTER TABLE IF EXISTS ONLY public.activity_logs DROP CONSTRAINT IF EXISTS activity_logs_pkey;
+ALTER TABLE IF EXISTS ONLY auth.users DROP CONSTRAINT IF EXISTS users_pkey;
+ALTER TABLE IF EXISTS ONLY auth.users DROP CONSTRAINT IF EXISTS users_phone_key;
+ALTER TABLE IF EXISTS ONLY auth.sso_providers DROP CONSTRAINT IF EXISTS sso_providers_pkey;
+ALTER TABLE IF EXISTS ONLY auth.sso_domains DROP CONSTRAINT IF EXISTS sso_domains_pkey;
+ALTER TABLE IF EXISTS ONLY auth.sessions DROP CONSTRAINT IF EXISTS sessions_pkey;
+ALTER TABLE IF EXISTS ONLY auth.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_relay_states DROP CONSTRAINT IF EXISTS saml_relay_states_pkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_providers DROP CONSTRAINT IF EXISTS saml_providers_pkey;
+ALTER TABLE IF EXISTS ONLY auth.saml_providers DROP CONSTRAINT IF EXISTS saml_providers_entity_id_key;
+ALTER TABLE IF EXISTS ONLY auth.refresh_tokens DROP CONSTRAINT IF EXISTS refresh_tokens_token_unique;
+ALTER TABLE IF EXISTS ONLY auth.refresh_tokens DROP CONSTRAINT IF EXISTS refresh_tokens_pkey;
+ALTER TABLE IF EXISTS ONLY auth.one_time_tokens DROP CONSTRAINT IF EXISTS one_time_tokens_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_user_client_unique;
+ALTER TABLE IF EXISTS ONLY auth.oauth_consents DROP CONSTRAINT IF EXISTS oauth_consents_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_clients DROP CONSTRAINT IF EXISTS oauth_clients_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_pkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_authorization_id_key;
+ALTER TABLE IF EXISTS ONLY auth.oauth_authorizations DROP CONSTRAINT IF EXISTS oauth_authorizations_authorization_code_key;
+ALTER TABLE IF EXISTS ONLY auth.mfa_factors DROP CONSTRAINT IF EXISTS mfa_factors_pkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_factors DROP CONSTRAINT IF EXISTS mfa_factors_last_challenged_at_key;
+ALTER TABLE IF EXISTS ONLY auth.mfa_challenges DROP CONSTRAINT IF EXISTS mfa_challenges_pkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_amr_claims DROP CONSTRAINT IF EXISTS mfa_amr_claims_session_id_authentication_method_pkey;
+ALTER TABLE IF EXISTS ONLY auth.instances DROP CONSTRAINT IF EXISTS instances_pkey;
+ALTER TABLE IF EXISTS ONLY auth.identities DROP CONSTRAINT IF EXISTS identities_provider_id_provider_unique;
+ALTER TABLE IF EXISTS ONLY auth.identities DROP CONSTRAINT IF EXISTS identities_pkey;
+ALTER TABLE IF EXISTS ONLY auth.flow_state DROP CONSTRAINT IF EXISTS flow_state_pkey;
+ALTER TABLE IF EXISTS ONLY auth.audit_log_entries DROP CONSTRAINT IF EXISTS audit_log_entries_pkey;
+ALTER TABLE IF EXISTS ONLY auth.mfa_amr_claims DROP CONSTRAINT IF EXISTS amr_id_pk;
+ALTER TABLE IF EXISTS auth.refresh_tokens ALTER COLUMN id DROP DEFAULT;
+DROP TABLE IF EXISTS supabase_migrations.schema_migrations;
+DROP TABLE IF EXISTS storage.s3_multipart_uploads_parts;
+DROP TABLE IF EXISTS storage.s3_multipart_uploads;
+DROP TABLE IF EXISTS storage.prefixes;
+DROP TABLE IF EXISTS storage.objects;
+DROP TABLE IF EXISTS storage.migrations;
+DROP TABLE IF EXISTS storage.buckets_analytics;
+DROP TABLE IF EXISTS storage.buckets;
+DROP TABLE IF EXISTS realtime.subscription;
+DROP TABLE IF EXISTS realtime.schema_migrations;
+DROP TABLE IF EXISTS realtime.messages_2025_10_13;
+DROP TABLE IF EXISTS realtime.messages_2025_10_12;
+DROP TABLE IF EXISTS realtime.messages_2025_10_11;
+DROP TABLE IF EXISTS realtime.messages_2025_10_10;
+DROP TABLE IF EXISTS realtime.messages_2025_10_09;
+DROP TABLE IF EXISTS realtime.messages;
+DROP TABLE IF EXISTS public.vip_events;
+DROP TABLE IF EXISTS public.user_profiles;
+DROP TABLE IF EXISTS public.two_factor_audit_log;
+DROP TABLE IF EXISTS public.title_rounds;
+DROP TABLE IF EXISTS public.tenants;
+DROP TABLE IF EXISTS public.system_settings;
+DROP TABLE IF EXISTS public.summary_entries;
+DROP TABLE IF EXISTS public.summaries;
+DROP TABLE IF EXISTS public.studios;
+DROP TABLE IF EXISTS public.scoring_tiers;
+DROP TABLE IF EXISTS public.scores;
+DROP TABLE IF EXISTS public.routine_import_sessions;
+DROP TABLE IF EXISTS public.reservations;
+DROP TABLE IF EXISTS public.rankings;
+DROP TABLE IF EXISTS public.judges;
+DROP TABLE IF EXISTS public.invoices;
+DROP TABLE IF EXISTS public.entry_size_categories;
+DROP TABLE IF EXISTS public.entry_participants;
+DROP TABLE IF EXISTS public.email_templates;
+DROP TABLE IF EXISTS public.email_queue;
+DROP TABLE IF EXISTS public.email_preferences;
+DROP TABLE IF EXISTS public.email_logs;
+DROP TABLE IF EXISTS public.elite_instructors;
+DROP TABLE IF EXISTS public.documents;
+DROP TABLE IF EXISTS public.dancers;
+DROP TABLE IF EXISTS public.dance_categories;
+DROP TABLE IF EXISTS public.competitions;
+DROP TABLE IF EXISTS public.competition_settings;
+DROP TABLE IF EXISTS public.competition_sessions;
+DROP TABLE IF EXISTS public.competition_locations;
+DROP TABLE IF EXISTS public.competition_entries;
+DROP TABLE IF EXISTS public.classifications;
+DROP TABLE IF EXISTS public.classification_exception_requests;
+DROP TABLE IF EXISTS public.capacity_ledger;
+DROP TABLE IF EXISTS public.awards;
+DROP TABLE IF EXISTS public.award_types;
+DROP TABLE IF EXISTS public.age_groups;
+DROP TABLE IF EXISTS public.activity_logs;
+DROP TABLE IF EXISTS auth.users;
+DROP TABLE IF EXISTS auth.sso_providers;
+DROP TABLE IF EXISTS auth.sso_domains;
+DROP TABLE IF EXISTS auth.sessions;
+DROP TABLE IF EXISTS auth.schema_migrations;
+DROP TABLE IF EXISTS auth.saml_relay_states;
+DROP TABLE IF EXISTS auth.saml_providers;
+DROP SEQUENCE IF EXISTS auth.refresh_tokens_id_seq;
+DROP TABLE IF EXISTS auth.refresh_tokens;
+DROP TABLE IF EXISTS auth.one_time_tokens;
+DROP TABLE IF EXISTS auth.oauth_consents;
+DROP TABLE IF EXISTS auth.oauth_clients;
+DROP TABLE IF EXISTS auth.oauth_authorizations;
+DROP TABLE IF EXISTS auth.mfa_factors;
+DROP TABLE IF EXISTS auth.mfa_challenges;
+DROP TABLE IF EXISTS auth.mfa_amr_claims;
+DROP TABLE IF EXISTS auth.instances;
+DROP TABLE IF EXISTS auth.identities;
+DROP TABLE IF EXISTS auth.flow_state;
+DROP TABLE IF EXISTS auth.audit_log_entries;
+DROP FUNCTION IF EXISTS storage.update_updated_at_column();
+DROP FUNCTION IF EXISTS storage.search_v2(prefix text, bucket_name text, limits integer, levels integer, start_after text, sort_order text, sort_column text, sort_column_after text);
+DROP FUNCTION IF EXISTS storage.search_v1_optimised(prefix text, bucketname text, limits integer, levels integer, offsets integer, search text, sortcolumn text, sortorder text);
+DROP FUNCTION IF EXISTS storage.search_legacy_v1(prefix text, bucketname text, limits integer, levels integer, offsets integer, search text, sortcolumn text, sortorder text);
+DROP FUNCTION IF EXISTS storage.search(prefix text, bucketname text, limits integer, levels integer, offsets integer, search text, sortcolumn text, sortorder text);
+DROP FUNCTION IF EXISTS storage.prefixes_insert_trigger();
+DROP FUNCTION IF EXISTS storage.prefixes_delete_cleanup();
+DROP FUNCTION IF EXISTS storage.operation();
+DROP FUNCTION IF EXISTS storage.objects_update_prefix_trigger();
+DROP FUNCTION IF EXISTS storage.objects_update_level_trigger();
+DROP FUNCTION IF EXISTS storage.objects_update_cleanup();
+DROP FUNCTION IF EXISTS storage.objects_insert_prefix_trigger();
+DROP FUNCTION IF EXISTS storage.objects_delete_cleanup();
+DROP FUNCTION IF EXISTS storage.lock_top_prefixes(bucket_ids text[], names text[]);
+DROP FUNCTION IF EXISTS storage.list_objects_with_delimiter(bucket_id text, prefix_param text, delimiter_param text, max_keys integer, start_after text, next_token text);
+DROP FUNCTION IF EXISTS storage.list_multipart_uploads_with_delimiter(bucket_id text, prefix_param text, delimiter_param text, max_keys integer, next_key_token text, next_upload_token text);
+DROP FUNCTION IF EXISTS storage.get_size_by_bucket();
+DROP FUNCTION IF EXISTS storage.get_prefixes(name text);
+DROP FUNCTION IF EXISTS storage.get_prefix(name text);
+DROP FUNCTION IF EXISTS storage.get_level(name text);
+DROP FUNCTION IF EXISTS storage.foldername(name text);
+DROP FUNCTION IF EXISTS storage.filename(name text);
+DROP FUNCTION IF EXISTS storage.extension(name text);
+DROP FUNCTION IF EXISTS storage.enforce_bucket_name_length();
+DROP FUNCTION IF EXISTS storage.delete_prefix_hierarchy_trigger();
+DROP FUNCTION IF EXISTS storage.delete_prefix(_bucket_id text, _name text);
+DROP FUNCTION IF EXISTS storage.delete_leaf_prefixes(bucket_ids text[], names text[]);
+DROP FUNCTION IF EXISTS storage.can_insert_object(bucketid text, name text, owner uuid, metadata jsonb);
+DROP FUNCTION IF EXISTS storage.add_prefixes(_bucket_id text, _name text);
+DROP FUNCTION IF EXISTS realtime.topic();
+DROP FUNCTION IF EXISTS realtime.to_regrole(role_name text);
+DROP FUNCTION IF EXISTS realtime.subscription_check_filters();
+DROP FUNCTION IF EXISTS realtime.send(payload jsonb, event text, topic text, private boolean);
+DROP FUNCTION IF EXISTS realtime.quote_wal2json(entity regclass);
+DROP FUNCTION IF EXISTS realtime.list_changes(publication name, slot_name name, max_changes integer, max_record_bytes integer);
+DROP FUNCTION IF EXISTS realtime.is_visible_through_filters(columns realtime.wal_column[], filters realtime.user_defined_filter[]);
+DROP FUNCTION IF EXISTS realtime.check_equality_op(op realtime.equality_op, type_ regtype, val_1 text, val_2 text);
+DROP FUNCTION IF EXISTS realtime."cast"(val text, type_ regtype);
+DROP FUNCTION IF EXISTS realtime.build_prepared_statement_sql(prepared_statement_name text, entity regclass, columns realtime.wal_column[]);
+DROP FUNCTION IF EXISTS realtime.broadcast_changes(topic_name text, event_name text, operation text, table_name text, table_schema text, new record, old record, level text);
+DROP FUNCTION IF EXISTS realtime.apply_rls(wal jsonb, max_record_bytes integer);
+DROP FUNCTION IF EXISTS public.update_updated_at_column();
+DROP FUNCTION IF EXISTS public.update_scores_updated_at();
+DROP FUNCTION IF EXISTS public.queue_signup_confirmation_email();
+DROP FUNCTION IF EXISTS public.queue_password_recovery_email();
+DROP FUNCTION IF EXISTS public.queue_email_change_confirmation();
+DROP FUNCTION IF EXISTS public.is_super_admin();
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP FUNCTION IF EXISTS public.get_user_tenant_id();
+DROP FUNCTION IF EXISTS public.get_next_entry_number(comp_id uuid);
+DROP FUNCTION IF EXISTS public.cleanup_old_emails();
+DROP FUNCTION IF EXISTS public.calculate_dancer_age(birth_date date, competition_date date);
+DROP FUNCTION IF EXISTS pgbouncer.get_auth(p_usename text);
+DROP FUNCTION IF EXISTS extensions.set_graphql_placeholder();
+DROP FUNCTION IF EXISTS extensions.pgrst_drop_watch();
+DROP FUNCTION IF EXISTS extensions.pgrst_ddl_watch();
+DROP FUNCTION IF EXISTS extensions.grant_pg_net_access();
+DROP FUNCTION IF EXISTS extensions.grant_pg_graphql_access();
+DROP FUNCTION IF EXISTS extensions.grant_pg_cron_access();
+DROP FUNCTION IF EXISTS auth.uid();
+DROP FUNCTION IF EXISTS auth.role();
+DROP FUNCTION IF EXISTS auth.jwt();
+DROP FUNCTION IF EXISTS auth.email();
+DROP TYPE IF EXISTS storage.buckettype;
+DROP TYPE IF EXISTS realtime.wal_rls;
+DROP TYPE IF EXISTS realtime.wal_column;
+DROP TYPE IF EXISTS realtime.user_defined_filter;
+DROP TYPE IF EXISTS realtime.equality_op;
+DROP TYPE IF EXISTS realtime.action;
+DROP TYPE IF EXISTS public.user_role;
+DROP TYPE IF EXISTS public.email_type;
+DROP TYPE IF EXISTS auth.one_time_token_type;
+DROP TYPE IF EXISTS auth.oauth_response_type;
+DROP TYPE IF EXISTS auth.oauth_registration_type;
+DROP TYPE IF EXISTS auth.oauth_client_type;
+DROP TYPE IF EXISTS auth.oauth_authorization_status;
+DROP TYPE IF EXISTS auth.factor_type;
+DROP TYPE IF EXISTS auth.factor_status;
+DROP TYPE IF EXISTS auth.code_challenge_method;
+DROP TYPE IF EXISTS auth.aal_level;
+DROP EXTENSION IF EXISTS "uuid-ossp";
+DROP EXTENSION IF EXISTS supabase_vault;
+DROP EXTENSION IF EXISTS pgcrypto;
+DROP EXTENSION IF EXISTS pg_stat_statements;
+DROP EXTENSION IF EXISTS pg_graphql;
+DROP SCHEMA IF EXISTS vault;
+DROP SCHEMA IF EXISTS supabase_migrations;
+DROP SCHEMA IF EXISTS storage;
+DROP SCHEMA IF EXISTS realtime;
+DROP SCHEMA IF EXISTS pgbouncer;
+DROP EXTENSION IF EXISTS pg_net;
+DROP SCHEMA IF EXISTS graphql_public;
+DROP SCHEMA IF EXISTS graphql;
+DROP SCHEMA IF EXISTS extensions;
+DROP EXTENSION IF EXISTS pg_cron;
+DROP SCHEMA IF EXISTS auth;
+--
+-- Name: auth; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA auth;
+
+
+--
+-- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
+
+
+--
+-- Name: extensions; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA extensions;
+
+
+--
+-- Name: graphql; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA graphql;
+
+
+--
+-- Name: graphql_public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA graphql_public;
+
+
+--
+-- Name: pg_net; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION pg_net; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_net IS 'Async HTTP';
+
+
+--
+-- Name: pgbouncer; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA pgbouncer;
+
+
+--
+-- Name: realtime; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA realtime;
+
+
+--
+-- Name: storage; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA storage;
+
+
+--
+-- Name: supabase_migrations; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA supabase_migrations;
+
+
+--
+-- Name: vault; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA vault;
+
+
+--
+-- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_graphql WITH SCHEMA graphql;
+
+
+--
+-- Name: EXTENSION pg_graphql; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_graphql IS 'pg_graphql: GraphQL support';
+
+
+--
+-- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION pg_stat_statements; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statistics of all SQL statements executed';
+
+
+--
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault;
+
+
+--
+-- Name: EXTENSION supabase_vault; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION supabase_vault IS 'Supabase Vault Extension';
+
+
+--
+-- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+
+
+--
+-- Name: aal_level; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.aal_level AS ENUM (
+    'aal1',
+    'aal2',
+    'aal3'
+);
+
+
+--
+-- Name: code_challenge_method; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.code_challenge_method AS ENUM (
+    's256',
+    'plain'
+);
+
+
+--
+-- Name: factor_status; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.factor_status AS ENUM (
+    'unverified',
+    'verified'
+);
+
+
+--
+-- Name: factor_type; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.factor_type AS ENUM (
+    'totp',
+    'webauthn',
+    'phone'
+);
+
+
+--
+-- Name: oauth_authorization_status; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.oauth_authorization_status AS ENUM (
+    'pending',
+    'approved',
+    'denied',
+    'expired'
+);
+
+
+--
+-- Name: oauth_client_type; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.oauth_client_type AS ENUM (
+    'public',
+    'confidential'
+);
+
+
+--
+-- Name: oauth_registration_type; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.oauth_registration_type AS ENUM (
+    'dynamic',
+    'manual'
+);
+
+
+--
+-- Name: oauth_response_type; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.oauth_response_type AS ENUM (
+    'code'
+);
+
+
+--
+-- Name: one_time_token_type; Type: TYPE; Schema: auth; Owner: -
+--
+
+CREATE TYPE auth.one_time_token_type AS ENUM (
+    'confirmation_token',
+    'reauthentication_token',
+    'recovery_token',
+    'email_change_token_new',
+    'email_change_token_current',
+    'phone_change_token'
+);
+
+
+--
+-- Name: email_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.email_type AS ENUM (
+    'reservation_submitted',
+    'reservation_approved',
+    'reservation_rejected',
+    'routine_summary_submitted',
+    'invoice_received',
+    'entry_submitted',
+    'payment_confirmed',
+    'studio_profile_submitted',
+    'missing_music'
+);
+
+
+--
+-- Name: user_role; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.user_role AS ENUM (
+    'studio_director',
+    'competition_director',
+    'super_admin'
+);
+
+
+--
+-- Name: action; Type: TYPE; Schema: realtime; Owner: -
+--
+
+CREATE TYPE realtime.action AS ENUM (
+    'INSERT',
+    'UPDATE',
+    'DELETE',
+    'TRUNCATE',
+    'ERROR'
+);
+
+
+--
+-- Name: equality_op; Type: TYPE; Schema: realtime; Owner: -
+--
+
+CREATE TYPE realtime.equality_op AS ENUM (
+    'eq',
+    'neq',
+    'lt',
+    'lte',
+    'gt',
+    'gte',
+    'in'
+);
+
+
+--
+-- Name: user_defined_filter; Type: TYPE; Schema: realtime; Owner: -
+--
+
+CREATE TYPE realtime.user_defined_filter AS (
+	column_name text,
+	op realtime.equality_op,
+	value text
+);
+
+
+--
+-- Name: wal_column; Type: TYPE; Schema: realtime; Owner: -
+--
+
+CREATE TYPE realtime.wal_column AS (
+	name text,
+	type_name text,
+	type_oid oid,
+	value jsonb,
+	is_pkey boolean,
+	is_selectable boolean
+);
+
+
+--
+-- Name: wal_rls; Type: TYPE; Schema: realtime; Owner: -
+--
+
+CREATE TYPE realtime.wal_rls AS (
+	wal jsonb,
+	is_rls_enabled boolean,
+	subscription_ids uuid[],
+	errors text[]
+);
+
+
+--
+-- Name: buckettype; Type: TYPE; Schema: storage; Owner: -
+--
+
+CREATE TYPE storage.buckettype AS ENUM (
+    'STANDARD',
+    'ANALYTICS'
+);
+
+
+--
+-- Name: email(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.email() RETURNS text
+    LANGUAGE sql STABLE
+    AS $$
+  select 
+  coalesce(
+    nullif(current_setting('request.jwt.claim.email', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'email')
+  )::text
+$$;
+
+
+--
+-- Name: FUNCTION email(); Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON FUNCTION auth.email() IS 'Deprecated. Use auth.jwt() -> ''email'' instead.';
+
+
+--
+-- Name: jwt(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.jwt() RETURNS jsonb
+    LANGUAGE sql STABLE
+    AS $$
+  select 
+    coalesce(
+        nullif(current_setting('request.jwt.claim', true), ''),
+        nullif(current_setting('request.jwt.claims', true), '')
+    )::jsonb
+$$;
+
+
+--
+-- Name: role(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.role() RETURNS text
+    LANGUAGE sql STABLE
+    AS $$
+  select 
+  coalesce(
+    nullif(current_setting('request.jwt.claim.role', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role')
+  )::text
+$$;
+
+
+--
+-- Name: FUNCTION role(); Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON FUNCTION auth.role() IS 'Deprecated. Use auth.jwt() -> ''role'' instead.';
+
+
+--
+-- Name: uid(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.uid() RETURNS uuid
+    LANGUAGE sql STABLE
+    AS $$
+  select 
+  coalesce(
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
+  )::uuid
+$$;
+
+
+--
+-- Name: FUNCTION uid(); Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON FUNCTION auth.uid() IS 'Deprecated. Use auth.jwt() -> ''sub'' instead.';
+
+
+--
+-- Name: grant_pg_cron_access(); Type: FUNCTION; Schema: extensions; Owner: -
+--
+
+CREATE FUNCTION extensions.grant_pg_cron_access() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF EXISTS (
+    SELECT
+    FROM pg_event_trigger_ddl_commands() AS ev
+    JOIN pg_extension AS ext
+    ON ev.objid = ext.oid
+    WHERE ext.extname = 'pg_cron'
+  )
+  THEN
+    grant usage on schema cron to postgres with grant option;
+
+    alter default privileges in schema cron grant all on tables to postgres with grant option;
+    alter default privileges in schema cron grant all on functions to postgres with grant option;
+    alter default privileges in schema cron grant all on sequences to postgres with grant option;
+
+    alter default privileges for user supabase_admin in schema cron grant all
+        on sequences to postgres with grant option;
+    alter default privileges for user supabase_admin in schema cron grant all
+        on tables to postgres with grant option;
+    alter default privileges for user supabase_admin in schema cron grant all
+        on functions to postgres with grant option;
+
+    grant all privileges on all tables in schema cron to postgres with grant option;
+    revoke all on table cron.job from postgres;
+    grant select on table cron.job to postgres with grant option;
+  END IF;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION grant_pg_cron_access(); Type: COMMENT; Schema: extensions; Owner: -
+--
+
+COMMENT ON FUNCTION extensions.grant_pg_cron_access() IS 'Grants access to pg_cron';
+
+
+--
+-- Name: grant_pg_graphql_access(); Type: FUNCTION; Schema: extensions; Owner: -
+--
+
+CREATE FUNCTION extensions.grant_pg_graphql_access() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $_$
+DECLARE
+    func_is_graphql_resolve bool;
+BEGIN
+    func_is_graphql_resolve = (
+        SELECT n.proname = 'resolve'
+        FROM pg_event_trigger_ddl_commands() AS ev
+        LEFT JOIN pg_catalog.pg_proc AS n
+        ON ev.objid = n.oid
+    );
+
+    IF func_is_graphql_resolve
+    THEN
+        -- Update public wrapper to pass all arguments through to the pg_graphql resolve func
+        DROP FUNCTION IF EXISTS graphql_public.graphql;
+        create or replace function graphql_public.graphql(
+            "operationName" text default null,
+            query text default null,
+            variables jsonb default null,
+            extensions jsonb default null
+        )
+            returns jsonb
+            language sql
+        as $$
+            select graphql.resolve(
+                query := query,
+                variables := coalesce(variables, '{}'),
+                "operationName" := "operationName",
+                extensions := extensions
+            );
+        $$;
+
+        -- This hook executes when `graphql.resolve` is created. That is not necessarily the last
+        -- function in the extension so we need to grant permissions on existing entities AND
+        -- update default permissions to any others that are created after `graphql.resolve`
+        grant usage on schema graphql to postgres, anon, authenticated, service_role;
+        grant select on all tables in schema graphql to postgres, anon, authenticated, service_role;
+        grant execute on all functions in schema graphql to postgres, anon, authenticated, service_role;
+        grant all on all sequences in schema graphql to postgres, anon, authenticated, service_role;
+        alter default privileges in schema graphql grant all on tables to postgres, anon, authenticated, service_role;
+        alter default privileges in schema graphql grant all on functions to postgres, anon, authenticated, service_role;
+        alter default privileges in schema graphql grant all on sequences to postgres, anon, authenticated, service_role;
+
+        -- Allow postgres role to allow granting usage on graphql and graphql_public schemas to custom roles
+        grant usage on schema graphql_public to postgres with grant option;
+        grant usage on schema graphql to postgres with grant option;
+    END IF;
+
+END;
+$_$;
+
+
+--
+-- Name: FUNCTION grant_pg_graphql_access(); Type: COMMENT; Schema: extensions; Owner: -
+--
+
+COMMENT ON FUNCTION extensions.grant_pg_graphql_access() IS 'Grants access to pg_graphql';
+
+
+--
+-- Name: grant_pg_net_access(); Type: FUNCTION; Schema: extensions; Owner: -
+--
+
+CREATE FUNCTION extensions.grant_pg_net_access() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_event_trigger_ddl_commands() AS ev
+    JOIN pg_extension AS ext
+    ON ev.objid = ext.oid
+    WHERE ext.extname = 'pg_net'
+  )
+  THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_roles
+      WHERE rolname = 'supabase_functions_admin'
+    )
+    THEN
+      CREATE USER supabase_functions_admin NOINHERIT CREATEROLE LOGIN NOREPLICATION;
+    END IF;
+
+    GRANT USAGE ON SCHEMA net TO supabase_functions_admin, postgres, anon, authenticated, service_role;
+
+    IF EXISTS (
+      SELECT FROM pg_extension
+      WHERE extname = 'pg_net'
+      -- all versions in use on existing projects as of 2025-02-20
+      -- version 0.12.0 onwards don't need these applied
+      AND extversion IN ('0.2', '0.6', '0.7', '0.7.1', '0.8', '0.10.0', '0.11.0')
+    ) THEN
+      ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
+      ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
+
+      ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
+      ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
+
+      REVOKE ALL ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
+      REVOKE ALL ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
+
+      GRANT EXECUTE ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
+      GRANT EXECUTE ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
+    END IF;
+  END IF;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION grant_pg_net_access(); Type: COMMENT; Schema: extensions; Owner: -
+--
+
+COMMENT ON FUNCTION extensions.grant_pg_net_access() IS 'Grants access to pg_net';
+
+
+--
+-- Name: pgrst_ddl_watch(); Type: FUNCTION; Schema: extensions; Owner: -
+--
+
+CREATE FUNCTION extensions.pgrst_ddl_watch() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  cmd record;
+BEGIN
+  FOR cmd IN SELECT * FROM pg_event_trigger_ddl_commands()
+  LOOP
+    IF cmd.command_tag IN (
+      'CREATE SCHEMA', 'ALTER SCHEMA'
+    , 'CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO', 'ALTER TABLE'
+    , 'CREATE FOREIGN TABLE', 'ALTER FOREIGN TABLE'
+    , 'CREATE VIEW', 'ALTER VIEW'
+    , 'CREATE MATERIALIZED VIEW', 'ALTER MATERIALIZED VIEW'
+    , 'CREATE FUNCTION', 'ALTER FUNCTION'
+    , 'CREATE TRIGGER'
+    , 'CREATE TYPE', 'ALTER TYPE'
+    , 'CREATE RULE'
+    , 'COMMENT'
+    )
+    -- don't notify in case of CREATE TEMP table or other objects created on pg_temp
+    AND cmd.schema_name is distinct from 'pg_temp'
+    THEN
+      NOTIFY pgrst, 'reload schema';
+    END IF;
+  END LOOP;
+END; $$;
+
+
+--
+-- Name: pgrst_drop_watch(); Type: FUNCTION; Schema: extensions; Owner: -
+--
+
+CREATE FUNCTION extensions.pgrst_drop_watch() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  obj record;
+BEGIN
+  FOR obj IN SELECT * FROM pg_event_trigger_dropped_objects()
+  LOOP
+    IF obj.object_type IN (
+      'schema'
+    , 'table'
+    , 'foreign table'
+    , 'view'
+    , 'materialized view'
+    , 'function'
+    , 'trigger'
+    , 'type'
+    , 'rule'
+    )
+    AND obj.is_temporary IS false -- no pg_temp objects
+    THEN
+      NOTIFY pgrst, 'reload schema';
+    END IF;
+  END LOOP;
+END; $$;
+
+
+--
+-- Name: set_graphql_placeholder(); Type: FUNCTION; Schema: extensions; Owner: -
+--
+
+CREATE FUNCTION extensions.set_graphql_placeholder() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $_$
+    DECLARE
+    graphql_is_dropped bool;
+    BEGIN
+    graphql_is_dropped = (
+        SELECT ev.schema_name = 'graphql_public'
+        FROM pg_event_trigger_dropped_objects() AS ev
+        WHERE ev.schema_name = 'graphql_public'
+    );
+
+    IF graphql_is_dropped
+    THEN
+        create or replace function graphql_public.graphql(
+            "operationName" text default null,
+            query text default null,
+            variables jsonb default null,
+            extensions jsonb default null
+        )
+            returns jsonb
+            language plpgsql
+        as $$
+            DECLARE
+                server_version float;
+            BEGIN
+                server_version = (SELECT (SPLIT_PART((select version()), ' ', 2))::float);
+
+                IF server_version >= 14 THEN
+                    RETURN jsonb_build_object(
+                        'errors', jsonb_build_array(
+                            jsonb_build_object(
+                                'message', 'pg_graphql extension is not enabled.'
+                            )
+                        )
+                    );
+                ELSE
+                    RETURN jsonb_build_object(
+                        'errors', jsonb_build_array(
+                            jsonb_build_object(
+                                'message', 'pg_graphql is only available on projects running Postgres 14 onwards.'
+                            )
+                        )
+                    );
+                END IF;
+            END;
+        $$;
+    END IF;
+
+    END;
+$_$;
+
+
+--
+-- Name: FUNCTION set_graphql_placeholder(); Type: COMMENT; Schema: extensions; Owner: -
+--
+
+COMMENT ON FUNCTION extensions.set_graphql_placeholder() IS 'Reintroduces placeholder function for graphql_public.graphql';
+
+
+--
+-- Name: get_auth(text); Type: FUNCTION; Schema: pgbouncer; Owner: -
+--
+
+CREATE FUNCTION pgbouncer.get_auth(p_usename text) RETURNS TABLE(username text, password text)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $_$
+begin
+    raise debug 'PgBouncer auth request: %', p_usename;
+
+    return query
+    select 
+        rolname::text, 
+        case when rolvaliduntil < now() 
+            then null 
+            else rolpassword::text 
+        end 
+    from pg_authid 
+    where rolname=$1 and rolcanlogin;
+end;
+$_$;
+
+
+--
+-- Name: calculate_dancer_age(date, date); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.calculate_dancer_age(birth_date date, competition_date date) RETURNS integer
+    LANGUAGE plpgsql IMMUTABLE
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    RETURN EXTRACT(YEAR FROM AGE(competition_date, birth_date));
+END;
+$$;
+
+
+--
+-- Name: cleanup_old_emails(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.cleanup_old_emails() RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  deleted_count INTEGER;
+BEGIN
+  DELETE FROM email_queue
+  WHERE status IN ('sent', 'failed')
+    AND created_at < NOW() - INTERVAL '30 days';
+  
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
+  
+  RAISE LOG 'Cleaned up % old emails from email_queue', deleted_count;
+  RETURN deleted_count;
+END;
+$$;
+
+
+--
+-- Name: get_next_entry_number(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_next_entry_number(comp_id uuid) RETURNS integer
+    LANGUAGE plpgsql
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    next_num INTEGER;
+BEGIN
+    SELECT COALESCE(MAX(entry_number), 0) + 1
+    INTO next_num
+    FROM competition_entries
+    WHERE competition_id = comp_id;
+
+    RETURN next_num;
+END;
+$$;
+
+
+--
+-- Name: get_user_tenant_id(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_user_tenant_id() RETURNS uuid
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_tenant_id uuid;
+BEGIN
+  -- SECURITY DEFINER makes this run as definer (superuser), bypassing RLS
+  -- This breaks the recursion: RLS policy calls this function, but this function
+  -- doesn't trigger RLS when querying user_profiles
+  SELECT tenant_id INTO v_tenant_id
+  FROM public.user_profiles
+  WHERE id = auth.uid()
+  LIMIT 1;
+  
+  RETURN v_tenant_id;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION get_user_tenant_id(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.get_user_tenant_id() IS 'Returns tenant_id for current user. SECURITY DEFINER + plpgsql bypasses RLS to prevent infinite recursion.';
+
+
+--
+-- Name: handle_new_user(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.handle_new_user() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  user_role text;
+  user_tenant_id uuid;
+BEGIN
+  -- Extract role from metadata (defaults to studio_director)
+  user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'studio_director');
+  
+  -- Only set tenant_id for competition_director role
+  IF user_role = 'competition_director' THEN
+    user_tenant_id := (NEW.raw_user_meta_data->>'tenant_id')::uuid;
+  ELSE
+    user_tenant_id := NULL;  -- Multi-tenant for studio directors and super admins
+  END IF;
+
+  INSERT INTO public.user_profiles (id, role, first_name, last_name, tenant_id)
+  VALUES (
+    NEW.id,
+    user_role::public.user_role,  -- FIXED: Explicitly reference public.user_role
+    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    user_tenant_id
+  );
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: is_super_admin(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.is_super_admin() RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    AS $$
+  SELECT role = 'super_admin' FROM public.user_profiles WHERE id = auth.uid();
+$$;
+
+
+--
+-- Name: queue_email_change_confirmation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.queue_email_change_confirmation() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := (NEW.raw_user_meta_data->>'tenant_id')::UUID;
+  
+  IF v_tenant_id IS NOT NULL 
+     AND NEW.email_change_token_new IS NOT NULL 
+     AND (OLD.email_change_token_new IS NULL OR OLD.email_change_token_new != NEW.email_change_token_new) THEN
+    
+    INSERT INTO email_queue (
+      tenant_id,
+      user_id,
+      email_type,
+      recipient_email,
+      template_data
+    )
+    VALUES (
+      v_tenant_id,
+      NEW.id,
+      'email_change',
+      NEW.email_change,
+      jsonb_build_object(
+        'email_change_token', NEW.email_change_token_new,
+        'new_email', NEW.email_change,
+        'old_email', NEW.email,
+        'user_id', NEW.id
+      )
+    );
+    
+    RAISE LOG 'Queued email change confirmation for user % (tenant %)', NEW.email, v_tenant_id;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: queue_password_recovery_email(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.queue_password_recovery_email() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := (NEW.raw_user_meta_data->>'tenant_id')::UUID;
+  
+  IF v_tenant_id IS NOT NULL 
+     AND NEW.recovery_token IS NOT NULL 
+     AND (OLD.recovery_token IS NULL OR OLD.recovery_token != NEW.recovery_token) THEN
+    
+    INSERT INTO email_queue (
+      tenant_id,
+      user_id,
+      email_type,
+      recipient_email,
+      template_data
+    )
+    VALUES (
+      v_tenant_id,
+      NEW.id,
+      'password_recovery',
+      NEW.email,
+      jsonb_build_object(
+        'recovery_token', NEW.recovery_token,
+        'email', NEW.email,
+        'user_id', NEW.id
+      )
+    );
+    
+    RAISE LOG 'Queued password recovery email for user % (tenant %)', NEW.email, v_tenant_id;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: queue_signup_confirmation_email(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.queue_signup_confirmation_email() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  v_tenant_id UUID;
+BEGIN
+  v_tenant_id := (NEW.raw_user_meta_data->>'tenant_id')::UUID;
+  
+  IF v_tenant_id IS NOT NULL AND NEW.confirmation_token IS NOT NULL THEN
+    INSERT INTO public.email_queue (  -- Explicitly reference public schema
+      tenant_id,
+      user_id,
+      email_type,
+      recipient_email,
+      template_data
+    )
+    VALUES (
+      v_tenant_id,
+      NEW.id,
+      'signup_confirmation',
+      NEW.email,
+      jsonb_build_object(
+        'confirmation_token', NEW.confirmation_token,
+        'email', NEW.email,
+        'user_id', NEW.id
+      )
+    );
+    
+    RAISE LOG 'Queued signup confirmation email for user % (tenant %)', NEW.email, v_tenant_id;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: update_scores_updated_at(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.update_scores_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: apply_rls(jsonb, integer); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.apply_rls(wal jsonb, max_record_bytes integer DEFAULT (1024 * 1024)) RETURNS SETOF realtime.wal_rls
+    LANGUAGE plpgsql
+    AS $$
+declare
+-- Regclass of the table e.g. public.notes
+entity_ regclass = (quote_ident(wal ->> 'schema') || '.' || quote_ident(wal ->> 'table'))::regclass;
+
+-- I, U, D, T: insert, update ...
+action realtime.action = (
+    case wal ->> 'action'
+        when 'I' then 'INSERT'
+        when 'U' then 'UPDATE'
+        when 'D' then 'DELETE'
+        else 'ERROR'
+    end
+);
+
+-- Is row level security enabled for the table
+is_rls_enabled bool = relrowsecurity from pg_class where oid = entity_;
+
+subscriptions realtime.subscription[] = array_agg(subs)
+    from
+        realtime.subscription subs
+    where
+        subs.entity = entity_;
+
+-- Subscription vars
+roles regrole[] = array_agg(distinct us.claims_role::text)
+    from
+        unnest(subscriptions) us;
+
+working_role regrole;
+claimed_role regrole;
+claims jsonb;
+
+subscription_id uuid;
+subscription_has_access bool;
+visible_to_subscription_ids uuid[] = '{}';
+
+-- structured info for wal's columns
+columns realtime.wal_column[];
+-- previous identity values for update/delete
+old_columns realtime.wal_column[];
+
+error_record_exceeds_max_size boolean = octet_length(wal::text) > max_record_bytes;
+
+-- Primary jsonb output for record
+output jsonb;
+
+begin
+perform set_config('role', null, true);
+
+columns =
+    array_agg(
+        (
+            x->>'name',
+            x->>'type',
+            x->>'typeoid',
+            realtime.cast(
+                (x->'value') #>> '{}',
+                coalesce(
+                    (x->>'typeoid')::regtype, -- null when wal2json version <= 2.4
+                    (x->>'type')::regtype
+                )
+            ),
+            (pks ->> 'name') is not null,
+            true
+        )::realtime.wal_column
+    )
+    from
+        jsonb_array_elements(wal -> 'columns') x
+        left join jsonb_array_elements(wal -> 'pk') pks
+            on (x ->> 'name') = (pks ->> 'name');
+
+old_columns =
+    array_agg(
+        (
+            x->>'name',
+            x->>'type',
+            x->>'typeoid',
+            realtime.cast(
+                (x->'value') #>> '{}',
+                coalesce(
+                    (x->>'typeoid')::regtype, -- null when wal2json version <= 2.4
+                    (x->>'type')::regtype
+                )
+            ),
+            (pks ->> 'name') is not null,
+            true
+        )::realtime.wal_column
+    )
+    from
+        jsonb_array_elements(wal -> 'identity') x
+        left join jsonb_array_elements(wal -> 'pk') pks
+            on (x ->> 'name') = (pks ->> 'name');
+
+for working_role in select * from unnest(roles) loop
+
+    -- Update `is_selectable` for columns and old_columns
+    columns =
+        array_agg(
+            (
+                c.name,
+                c.type_name,
+                c.type_oid,
+                c.value,
+                c.is_pkey,
+                pg_catalog.has_column_privilege(working_role, entity_, c.name, 'SELECT')
+            )::realtime.wal_column
+        )
+        from
+            unnest(columns) c;
+
+    old_columns =
+            array_agg(
+                (
+                    c.name,
+                    c.type_name,
+                    c.type_oid,
+                    c.value,
+                    c.is_pkey,
+                    pg_catalog.has_column_privilege(working_role, entity_, c.name, 'SELECT')
+                )::realtime.wal_column
+            )
+            from
+                unnest(old_columns) c;
+
+    if action <> 'DELETE' and count(1) = 0 from unnest(columns) c where c.is_pkey then
+        return next (
+            jsonb_build_object(
+                'schema', wal ->> 'schema',
+                'table', wal ->> 'table',
+                'type', action
+            ),
+            is_rls_enabled,
+            -- subscriptions is already filtered by entity
+            (select array_agg(s.subscription_id) from unnest(subscriptions) as s where claims_role = working_role),
+            array['Error 400: Bad Request, no primary key']
+        )::realtime.wal_rls;
+
+    -- The claims role does not have SELECT permission to the primary key of entity
+    elsif action <> 'DELETE' and sum(c.is_selectable::int) <> count(1) from unnest(columns) c where c.is_pkey then
+        return next (
+            jsonb_build_object(
+                'schema', wal ->> 'schema',
+                'table', wal ->> 'table',
+                'type', action
+            ),
+            is_rls_enabled,
+            (select array_agg(s.subscription_id) from unnest(subscriptions) as s where claims_role = working_role),
+            array['Error 401: Unauthorized']
+        )::realtime.wal_rls;
+
+    else
+        output = jsonb_build_object(
+            'schema', wal ->> 'schema',
+            'table', wal ->> 'table',
+            'type', action,
+            'commit_timestamp', to_char(
+                ((wal ->> 'timestamp')::timestamptz at time zone 'utc'),
+                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+            ),
+            'columns', (
+                select
+                    jsonb_agg(
+                        jsonb_build_object(
+                            'name', pa.attname,
+                            'type', pt.typname
+                        )
+                        order by pa.attnum asc
+                    )
+                from
+                    pg_attribute pa
+                    join pg_type pt
+                        on pa.atttypid = pt.oid
+                where
+                    attrelid = entity_
+                    and attnum > 0
+                    and pg_catalog.has_column_privilege(working_role, entity_, pa.attname, 'SELECT')
+            )
+        )
+        -- Add "record" key for insert and update
+        || case
+            when action in ('INSERT', 'UPDATE') then
+                jsonb_build_object(
+                    'record',
+                    (
+                        select
+                            jsonb_object_agg(
+                                -- if unchanged toast, get column name and value from old record
+                                coalesce((c).name, (oc).name),
+                                case
+                                    when (c).name is null then (oc).value
+                                    else (c).value
+                                end
+                            )
+                        from
+                            unnest(columns) c
+                            full outer join unnest(old_columns) oc
+                                on (c).name = (oc).name
+                        where
+                            coalesce((c).is_selectable, (oc).is_selectable)
+                            and ( not error_record_exceeds_max_size or (octet_length((c).value::text) <= 64))
+                    )
+                )
+            else '{}'::jsonb
+        end
+        -- Add "old_record" key for update and delete
+        || case
+            when action = 'UPDATE' then
+                jsonb_build_object(
+                        'old_record',
+                        (
+                            select jsonb_object_agg((c).name, (c).value)
+                            from unnest(old_columns) c
+                            where
+                                (c).is_selectable
+                                and ( not error_record_exceeds_max_size or (octet_length((c).value::text) <= 64))
+                        )
+                    )
+            when action = 'DELETE' then
+                jsonb_build_object(
+                    'old_record',
+                    (
+                        select jsonb_object_agg((c).name, (c).value)
+                        from unnest(old_columns) c
+                        where
+                            (c).is_selectable
+                            and ( not error_record_exceeds_max_size or (octet_length((c).value::text) <= 64))
+                            and ( not is_rls_enabled or (c).is_pkey ) -- if RLS enabled, we can't secure deletes so filter to pkey
+                    )
+                )
+            else '{}'::jsonb
+        end;
+
+        -- Create the prepared statement
+        if is_rls_enabled and action <> 'DELETE' then
+            if (select 1 from pg_prepared_statements where name = 'walrus_rls_stmt' limit 1) > 0 then
+                deallocate walrus_rls_stmt;
+            end if;
+            execute realtime.build_prepared_statement_sql('walrus_rls_stmt', entity_, columns);
+        end if;
+
+        visible_to_subscription_ids = '{}';
+
+        for subscription_id, claims in (
+                select
+                    subs.subscription_id,
+                    subs.claims
+                from
+                    unnest(subscriptions) subs
+                where
+                    subs.entity = entity_
+                    and subs.claims_role = working_role
+                    and (
+                        realtime.is_visible_through_filters(columns, subs.filters)
+                        or (
+                          action = 'DELETE'
+                          and realtime.is_visible_through_filters(old_columns, subs.filters)
+                        )
+                    )
+        ) loop
+
+            if not is_rls_enabled or action = 'DELETE' then
+                visible_to_subscription_ids = visible_to_subscription_ids || subscription_id;
+            else
+                -- Check if RLS allows the role to see the record
+                perform
+                    -- Trim leading and trailing quotes from working_role because set_config
+                    -- doesn't recognize the role as valid if they are included
+                    set_config('role', trim(both '"' from working_role::text), true),
+                    set_config('request.jwt.claims', claims::text, true);
+
+                execute 'execute walrus_rls_stmt' into subscription_has_access;
+
+                if subscription_has_access then
+                    visible_to_subscription_ids = visible_to_subscription_ids || subscription_id;
+                end if;
+            end if;
+        end loop;
+
+        perform set_config('role', null, true);
+
+        return next (
+            output,
+            is_rls_enabled,
+            visible_to_subscription_ids,
+            case
+                when error_record_exceeds_max_size then array['Error 413: Payload Too Large']
+                else '{}'
+            end
+        )::realtime.wal_rls;
+
+    end if;
+end loop;
+
+perform set_config('role', null, true);
+end;
+$$;
+
+
+--
+-- Name: broadcast_changes(text, text, text, text, text, record, record, text); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.broadcast_changes(topic_name text, event_name text, operation text, table_name text, table_schema text, new record, old record, level text DEFAULT 'ROW'::text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    -- Declare a variable to hold the JSONB representation of the row
+    row_data jsonb := '{}'::jsonb;
+BEGIN
+    IF level = 'STATEMENT' THEN
+        RAISE EXCEPTION 'function can only be triggered for each row, not for each statement';
+    END IF;
+    -- Check the operation type and handle accordingly
+    IF operation = 'INSERT' OR operation = 'UPDATE' OR operation = 'DELETE' THEN
+        row_data := jsonb_build_object('old_record', OLD, 'record', NEW, 'operation', operation, 'table', table_name, 'schema', table_schema);
+        PERFORM realtime.send (row_data, event_name, topic_name);
+    ELSE
+        RAISE EXCEPTION 'Unexpected operation type: %', operation;
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'Failed to process the row: %', SQLERRM;
+END;
+
+$$;
+
+
+--
+-- Name: build_prepared_statement_sql(text, regclass, realtime.wal_column[]); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.build_prepared_statement_sql(prepared_statement_name text, entity regclass, columns realtime.wal_column[]) RETURNS text
+    LANGUAGE sql
+    AS $$
+      /*
+      Builds a sql string that, if executed, creates a prepared statement to
+      tests retrive a row from *entity* by its primary key columns.
+      Example
+          select realtime.build_prepared_statement_sql('public.notes', '{"id"}'::text[], '{"bigint"}'::text[])
+      */
+          select
+      'prepare ' || prepared_statement_name || ' as
+          select
+              exists(
+                  select
+                      1
+                  from
+                      ' || entity || '
+                  where
+                      ' || string_agg(quote_ident(pkc.name) || '=' || quote_nullable(pkc.value #>> '{}') , ' and ') || '
+              )'
+          from
+              unnest(columns) pkc
+          where
+              pkc.is_pkey
+          group by
+              entity
+      $$;
+
+
+--
+-- Name: cast(text, regtype); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime."cast"(val text, type_ regtype) RETURNS jsonb
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+    declare
+      res jsonb;
+    begin
+      execute format('select to_jsonb(%L::'|| type_::text || ')', val)  into res;
+      return res;
+    end
+    $$;
+
+
+--
+-- Name: check_equality_op(realtime.equality_op, regtype, text, text); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.check_equality_op(op realtime.equality_op, type_ regtype, val_1 text, val_2 text) RETURNS boolean
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+      /*
+      Casts *val_1* and *val_2* as type *type_* and check the *op* condition for truthiness
+      */
+      declare
+          op_symbol text = (
+              case
+                  when op = 'eq' then '='
+                  when op = 'neq' then '!='
+                  when op = 'lt' then '<'
+                  when op = 'lte' then '<='
+                  when op = 'gt' then '>'
+                  when op = 'gte' then '>='
+                  when op = 'in' then '= any'
+                  else 'UNKNOWN OP'
+              end
+          );
+          res boolean;
+      begin
+          execute format(
+              'select %L::'|| type_::text || ' ' || op_symbol
+              || ' ( %L::'
+              || (
+                  case
+                      when op = 'in' then type_::text || '[]'
+                      else type_::text end
+              )
+              || ')', val_1, val_2) into res;
+          return res;
+      end;
+      $$;
+
+
+--
+-- Name: is_visible_through_filters(realtime.wal_column[], realtime.user_defined_filter[]); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.is_visible_through_filters(columns realtime.wal_column[], filters realtime.user_defined_filter[]) RETURNS boolean
+    LANGUAGE sql IMMUTABLE
+    AS $_$
+    /*
+    Should the record be visible (true) or filtered out (false) after *filters* are applied
+    */
+        select
+            -- Default to allowed when no filters present
+            $2 is null -- no filters. this should not happen because subscriptions has a default
+            or array_length($2, 1) is null -- array length of an empty array is null
+            or bool_and(
+                coalesce(
+                    realtime.check_equality_op(
+                        op:=f.op,
+                        type_:=coalesce(
+                            col.type_oid::regtype, -- null when wal2json version <= 2.4
+                            col.type_name::regtype
+                        ),
+                        -- cast jsonb to text
+                        val_1:=col.value #>> '{}',
+                        val_2:=f.value
+                    ),
+                    false -- if null, filter does not match
+                )
+            )
+        from
+            unnest(filters) f
+            join unnest(columns) col
+                on f.column_name = col.name;
+    $_$;
+
+
+--
+-- Name: list_changes(name, name, integer, integer); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.list_changes(publication name, slot_name name, max_changes integer, max_record_bytes integer) RETURNS SETOF realtime.wal_rls
+    LANGUAGE sql
+    SET log_min_messages TO 'fatal'
+    AS $$
+      with pub as (
+        select
+          concat_ws(
+            ',',
+            case when bool_or(pubinsert) then 'insert' else null end,
+            case when bool_or(pubupdate) then 'update' else null end,
+            case when bool_or(pubdelete) then 'delete' else null end
+          ) as w2j_actions,
+          coalesce(
+            string_agg(
+              realtime.quote_wal2json(format('%I.%I', schemaname, tablename)::regclass),
+              ','
+            ) filter (where ppt.tablename is not null and ppt.tablename not like '% %'),
+            ''
+          ) w2j_add_tables
+        from
+          pg_publication pp
+          left join pg_publication_tables ppt
+            on pp.pubname = ppt.pubname
+        where
+          pp.pubname = publication
+        group by
+          pp.pubname
+        limit 1
+      ),
+      w2j as (
+        select
+          x.*, pub.w2j_add_tables
+        from
+          pub,
+          pg_logical_slot_get_changes(
+            slot_name, null, max_changes,
+            'include-pk', 'true',
+            'include-transaction', 'false',
+            'include-timestamp', 'true',
+            'include-type-oids', 'true',
+            'format-version', '2',
+            'actions', pub.w2j_actions,
+            'add-tables', pub.w2j_add_tables
+          ) x
+      )
+      select
+        xyz.wal,
+        xyz.is_rls_enabled,
+        xyz.subscription_ids,
+        xyz.errors
+      from
+        w2j,
+        realtime.apply_rls(
+          wal := w2j.data::jsonb,
+          max_record_bytes := max_record_bytes
+        ) xyz(wal, is_rls_enabled, subscription_ids, errors)
+      where
+        w2j.w2j_add_tables <> ''
+        and xyz.subscription_ids[1] is not null
+    $$;
+
+
+--
+-- Name: quote_wal2json(regclass); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.quote_wal2json(entity regclass) RETURNS text
+    LANGUAGE sql IMMUTABLE STRICT
+    AS $$
+      select
+        (
+          select string_agg('' || ch,'')
+          from unnest(string_to_array(nsp.nspname::text, null)) with ordinality x(ch, idx)
+          where
+            not (x.idx = 1 and x.ch = '"')
+            and not (
+              x.idx = array_length(string_to_array(nsp.nspname::text, null), 1)
+              and x.ch = '"'
+            )
+        )
+        || '.'
+        || (
+          select string_agg('' || ch,'')
+          from unnest(string_to_array(pc.relname::text, null)) with ordinality x(ch, idx)
+          where
+            not (x.idx = 1 and x.ch = '"')
+            and not (
+              x.idx = array_length(string_to_array(nsp.nspname::text, null), 1)
+              and x.ch = '"'
+            )
+          )
+      from
+        pg_class pc
+        join pg_namespace nsp
+          on pc.relnamespace = nsp.oid
+      where
+        pc.oid = entity
+    $$;
+
+
+--
+-- Name: send(jsonb, text, text, boolean); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.send(payload jsonb, event text, topic text, private boolean DEFAULT true) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  BEGIN
+    -- Set the topic configuration
+    EXECUTE format('SET LOCAL realtime.topic TO %L', topic);
+
+    -- Attempt to insert the message
+    INSERT INTO realtime.messages (payload, event, topic, private, extension)
+    VALUES (payload, event, topic, private, 'broadcast');
+  EXCEPTION
+    WHEN OTHERS THEN
+      -- Capture and notify the error
+      RAISE WARNING 'ErrorSendingBroadcastMessage: %', SQLERRM;
+  END;
+END;
+$$;
+
+
+--
+-- Name: subscription_check_filters(); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.subscription_check_filters() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    /*
+    Validates that the user defined filters for a subscription:
+    - refer to valid columns that the claimed role may access
+    - values are coercable to the correct column type
+    */
+    declare
+        col_names text[] = coalesce(
+                array_agg(c.column_name order by c.ordinal_position),
+                '{}'::text[]
+            )
+            from
+                information_schema.columns c
+            where
+                format('%I.%I', c.table_schema, c.table_name)::regclass = new.entity
+                and pg_catalog.has_column_privilege(
+                    (new.claims ->> 'role'),
+                    format('%I.%I', c.table_schema, c.table_name)::regclass,
+                    c.column_name,
+                    'SELECT'
+                );
+        filter realtime.user_defined_filter;
+        col_type regtype;
+
+        in_val jsonb;
+    begin
+        for filter in select * from unnest(new.filters) loop
+            -- Filtered column is valid
+            if not filter.column_name = any(col_names) then
+                raise exception 'invalid column for filter %', filter.column_name;
+            end if;
+
+            -- Type is sanitized and safe for string interpolation
+            col_type = (
+                select atttypid::regtype
+                from pg_catalog.pg_attribute
+                where attrelid = new.entity
+                      and attname = filter.column_name
+            );
+            if col_type is null then
+                raise exception 'failed to lookup type for column %', filter.column_name;
+            end if;
+
+            -- Set maximum number of entries for in filter
+            if filter.op = 'in'::realtime.equality_op then
+                in_val = realtime.cast(filter.value, (col_type::text || '[]')::regtype);
+                if coalesce(jsonb_array_length(in_val), 0) > 100 then
+                    raise exception 'too many values for `in` filter. Maximum 100';
+                end if;
+            else
+                -- raises an exception if value is not coercable to type
+                perform realtime.cast(filter.value, col_type);
+            end if;
+
+        end loop;
+
+        -- Apply consistent order to filters so the unique constraint on
+        -- (subscription_id, entity, filters) can't be tricked by a different filter order
+        new.filters = coalesce(
+            array_agg(f order by f.column_name, f.op, f.value),
+            '{}'
+        ) from unnest(new.filters) f;
+
+        return new;
+    end;
+    $$;
+
+
+--
+-- Name: to_regrole(text); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.to_regrole(role_name text) RETURNS regrole
+    LANGUAGE sql IMMUTABLE
+    AS $$ select role_name::regrole $$;
+
+
+--
+-- Name: topic(); Type: FUNCTION; Schema: realtime; Owner: -
+--
+
+CREATE FUNCTION realtime.topic() RETURNS text
+    LANGUAGE sql STABLE
+    AS $$
+select nullif(current_setting('realtime.topic', true), '')::text;
+$$;
+
+
+--
+-- Name: add_prefixes(text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.add_prefixes(_bucket_id text, _name text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    prefixes text[];
+BEGIN
+    prefixes := "storage"."get_prefixes"("_name");
+
+    IF array_length(prefixes, 1) > 0 THEN
+        INSERT INTO storage.prefixes (name, bucket_id)
+        SELECT UNNEST(prefixes) as name, "_bucket_id" ON CONFLICT DO NOTHING;
+    END IF;
+END;
+$$;
+
+
+--
+-- Name: can_insert_object(text, text, uuid, jsonb); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.can_insert_object(bucketid text, name text, owner uuid, metadata jsonb) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO "storage"."objects" ("bucket_id", "name", "owner", "metadata") VALUES (bucketid, name, owner, metadata);
+  -- hack to rollback the successful insert
+  RAISE sqlstate 'PT200' using
+  message = 'ROLLBACK',
+  detail = 'rollback successful insert';
+END
+$$;
+
+
+--
+-- Name: delete_leaf_prefixes(text[], text[]); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.delete_leaf_prefixes(bucket_ids text[], names text[]) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_rows_deleted integer;
+BEGIN
+    LOOP
+        WITH candidates AS (
+            SELECT DISTINCT
+                t.bucket_id,
+                unnest(storage.get_prefixes(t.name)) AS name
+            FROM unnest(bucket_ids, names) AS t(bucket_id, name)
+        ),
+        uniq AS (
+             SELECT
+                 bucket_id,
+                 name,
+                 storage.get_level(name) AS level
+             FROM candidates
+             WHERE name <> ''
+             GROUP BY bucket_id, name
+        ),
+        leaf AS (
+             SELECT
+                 p.bucket_id,
+                 p.name,
+                 p.level
+             FROM storage.prefixes AS p
+                  JOIN uniq AS u
+                       ON u.bucket_id = p.bucket_id
+                           AND u.name = p.name
+                           AND u.level = p.level
+             WHERE NOT EXISTS (
+                 SELECT 1
+                 FROM storage.objects AS o
+                 WHERE o.bucket_id = p.bucket_id
+                   AND o.level = p.level + 1
+                   AND o.name COLLATE "C" LIKE p.name || '/%'
+             )
+             AND NOT EXISTS (
+                 SELECT 1
+                 FROM storage.prefixes AS c
+                 WHERE c.bucket_id = p.bucket_id
+                   AND c.level = p.level + 1
+                   AND c.name COLLATE "C" LIKE p.name || '/%'
+             )
+        )
+        DELETE
+        FROM storage.prefixes AS p
+            USING leaf AS l
+        WHERE p.bucket_id = l.bucket_id
+          AND p.name = l.name
+          AND p.level = l.level;
+
+        GET DIAGNOSTICS v_rows_deleted = ROW_COUNT;
+        EXIT WHEN v_rows_deleted = 0;
+    END LOOP;
+END;
+$$;
+
+
+--
+-- Name: delete_prefix(text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.delete_prefix(_bucket_id text, _name text) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+    -- Check if we can delete the prefix
+    IF EXISTS(
+        SELECT FROM "storage"."prefixes"
+        WHERE "prefixes"."bucket_id" = "_bucket_id"
+          AND level = "storage"."get_level"("_name") + 1
+          AND "prefixes"."name" COLLATE "C" LIKE "_name" || '/%'
+        LIMIT 1
+    )
+    OR EXISTS(
+        SELECT FROM "storage"."objects"
+        WHERE "objects"."bucket_id" = "_bucket_id"
+          AND "storage"."get_level"("objects"."name") = "storage"."get_level"("_name") + 1
+          AND "objects"."name" COLLATE "C" LIKE "_name" || '/%'
+        LIMIT 1
+    ) THEN
+    -- There are sub-objects, skip deletion
+    RETURN false;
+    ELSE
+        DELETE FROM "storage"."prefixes"
+        WHERE "prefixes"."bucket_id" = "_bucket_id"
+          AND level = "storage"."get_level"("_name")
+          AND "prefixes"."name" = "_name";
+        RETURN true;
+    END IF;
+END;
+$$;
+
+
+--
+-- Name: delete_prefix_hierarchy_trigger(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.delete_prefix_hierarchy_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    prefix text;
+BEGIN
+    prefix := "storage"."get_prefix"(OLD."name");
+
+    IF coalesce(prefix, '') != '' THEN
+        PERFORM "storage"."delete_prefix"(OLD."bucket_id", prefix);
+    END IF;
+
+    RETURN OLD;
+END;
+$$;
+
+
+--
+-- Name: enforce_bucket_name_length(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.enforce_bucket_name_length() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+    if length(new.name) > 100 then
+        raise exception 'bucket name "%" is too long (% characters). Max is 100.', new.name, length(new.name);
+    end if;
+    return new;
+end;
+$$;
+
+
+--
+-- Name: extension(text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.extension(name text) RETURNS text
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+DECLARE
+    _parts text[];
+    _filename text;
+BEGIN
+    SELECT string_to_array(name, '/') INTO _parts;
+    SELECT _parts[array_length(_parts,1)] INTO _filename;
+    RETURN reverse(split_part(reverse(_filename), '.', 1));
+END
+$$;
+
+
+--
+-- Name: filename(text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.filename(name text) RETURNS text
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+_parts text[];
+BEGIN
+	select string_to_array(name, '/') into _parts;
+	return _parts[array_length(_parts,1)];
+END
+$$;
+
+
+--
+-- Name: foldername(text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.foldername(name text) RETURNS text[]
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+DECLARE
+    _parts text[];
+BEGIN
+    -- Split on "/" to get path segments
+    SELECT string_to_array(name, '/') INTO _parts;
+    -- Return everything except the last segment
+    RETURN _parts[1 : array_length(_parts,1) - 1];
+END
+$$;
+
+
+--
+-- Name: get_level(text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.get_level(name text) RETURNS integer
+    LANGUAGE sql IMMUTABLE STRICT
+    AS $$
+SELECT array_length(string_to_array("name", '/'), 1);
+$$;
+
+
+--
+-- Name: get_prefix(text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.get_prefix(name text) RETURNS text
+    LANGUAGE sql IMMUTABLE STRICT
+    AS $_$
+SELECT
+    CASE WHEN strpos("name", '/') > 0 THEN
+             regexp_replace("name", '[\/]{1}[^\/]+\/?$', '')
+         ELSE
+             ''
+        END;
+$_$;
+
+
+--
+-- Name: get_prefixes(text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.get_prefixes(name text) RETURNS text[]
+    LANGUAGE plpgsql IMMUTABLE STRICT
+    AS $$
+DECLARE
+    parts text[];
+    prefixes text[];
+    prefix text;
+BEGIN
+    -- Split the name into parts by '/'
+    parts := string_to_array("name", '/');
+    prefixes := '{}';
+
+    -- Construct the prefixes, stopping one level below the last part
+    FOR i IN 1..array_length(parts, 1) - 1 LOOP
+            prefix := array_to_string(parts[1:i], '/');
+            prefixes := array_append(prefixes, prefix);
+    END LOOP;
+
+    RETURN prefixes;
+END;
+$$;
+
+
+--
+-- Name: get_size_by_bucket(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.get_size_by_bucket() RETURNS TABLE(size bigint, bucket_id text)
+    LANGUAGE plpgsql STABLE
+    AS $$
+BEGIN
+    return query
+        select sum((metadata->>'size')::bigint) as size, obj.bucket_id
+        from "storage".objects as obj
+        group by obj.bucket_id;
+END
+$$;
+
+
+--
+-- Name: list_multipart_uploads_with_delimiter(text, text, text, integer, text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.list_multipart_uploads_with_delimiter(bucket_id text, prefix_param text, delimiter_param text, max_keys integer DEFAULT 100, next_key_token text DEFAULT ''::text, next_upload_token text DEFAULT ''::text) RETURNS TABLE(key text, id text, created_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $_$
+BEGIN
+    RETURN QUERY EXECUTE
+        'SELECT DISTINCT ON(key COLLATE "C") * from (
+            SELECT
+                CASE
+                    WHEN position($2 IN substring(key from length($1) + 1)) > 0 THEN
+                        substring(key from 1 for length($1) + position($2 IN substring(key from length($1) + 1)))
+                    ELSE
+                        key
+                END AS key, id, created_at
+            FROM
+                storage.s3_multipart_uploads
+            WHERE
+                bucket_id = $5 AND
+                key ILIKE $1 || ''%'' AND
+                CASE
+                    WHEN $4 != '''' AND $6 = '''' THEN
+                        CASE
+                            WHEN position($2 IN substring(key from length($1) + 1)) > 0 THEN
+                                substring(key from 1 for length($1) + position($2 IN substring(key from length($1) + 1))) COLLATE "C" > $4
+                            ELSE
+                                key COLLATE "C" > $4
+                            END
+                    ELSE
+                        true
+                END AND
+                CASE
+                    WHEN $6 != '''' THEN
+                        id COLLATE "C" > $6
+                    ELSE
+                        true
+                    END
+            ORDER BY
+                key COLLATE "C" ASC, created_at ASC) as e order by key COLLATE "C" LIMIT $3'
+        USING prefix_param, delimiter_param, max_keys, next_key_token, bucket_id, next_upload_token;
+END;
+$_$;
+
+
+--
+-- Name: list_objects_with_delimiter(text, text, text, integer, text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.list_objects_with_delimiter(bucket_id text, prefix_param text, delimiter_param text, max_keys integer DEFAULT 100, start_after text DEFAULT ''::text, next_token text DEFAULT ''::text) RETURNS TABLE(name text, id uuid, metadata jsonb, updated_at timestamp with time zone)
+    LANGUAGE plpgsql
+    AS $_$
+BEGIN
+    RETURN QUERY EXECUTE
+        'SELECT DISTINCT ON(name COLLATE "C") * from (
+            SELECT
+                CASE
+                    WHEN position($2 IN substring(name from length($1) + 1)) > 0 THEN
+                        substring(name from 1 for length($1) + position($2 IN substring(name from length($1) + 1)))
+                    ELSE
+                        name
+                END AS name, id, metadata, updated_at
+            FROM
+                storage.objects
+            WHERE
+                bucket_id = $5 AND
+                name ILIKE $1 || ''%'' AND
+                CASE
+                    WHEN $6 != '''' THEN
+                    name COLLATE "C" > $6
+                ELSE true END
+                AND CASE
+                    WHEN $4 != '''' THEN
+                        CASE
+                            WHEN position($2 IN substring(name from length($1) + 1)) > 0 THEN
+                                substring(name from 1 for length($1) + position($2 IN substring(name from length($1) + 1))) COLLATE "C" > $4
+                            ELSE
+                                name COLLATE "C" > $4
+                            END
+                    ELSE
+                        true
+                END
+            ORDER BY
+                name COLLATE "C" ASC) as e order by name COLLATE "C" LIMIT $3'
+        USING prefix_param, delimiter_param, max_keys, next_token, bucket_id, start_after;
+END;
+$_$;
+
+
+--
+-- Name: lock_top_prefixes(text[], text[]); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.lock_top_prefixes(bucket_ids text[], names text[]) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_bucket text;
+    v_top text;
+BEGIN
+    FOR v_bucket, v_top IN
+        SELECT DISTINCT t.bucket_id,
+            split_part(t.name, '/', 1) AS top
+        FROM unnest(bucket_ids, names) AS t(bucket_id, name)
+        WHERE t.name <> ''
+        ORDER BY 1, 2
+        LOOP
+            PERFORM pg_advisory_xact_lock(hashtextextended(v_bucket || '/' || v_top, 0));
+        END LOOP;
+END;
+$$;
+
+
+--
+-- Name: objects_delete_cleanup(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.objects_delete_cleanup() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_bucket_ids text[];
+    v_names      text[];
+BEGIN
+    IF current_setting('storage.gc.prefixes', true) = '1' THEN
+        RETURN NULL;
+    END IF;
+
+    PERFORM set_config('storage.gc.prefixes', '1', true);
+
+    SELECT COALESCE(array_agg(d.bucket_id), '{}'),
+           COALESCE(array_agg(d.name), '{}')
+    INTO v_bucket_ids, v_names
+    FROM deleted AS d
+    WHERE d.name <> '';
+
+    PERFORM storage.lock_top_prefixes(v_bucket_ids, v_names);
+    PERFORM storage.delete_leaf_prefixes(v_bucket_ids, v_names);
+
+    RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: objects_insert_prefix_trigger(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.objects_insert_prefix_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    PERFORM "storage"."add_prefixes"(NEW."bucket_id", NEW."name");
+    NEW.level := "storage"."get_level"(NEW."name");
+
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: objects_update_cleanup(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.objects_update_cleanup() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    -- NEW - OLD (destinations to create prefixes for)
+    v_add_bucket_ids text[];
+    v_add_names      text[];
+
+    -- OLD - NEW (sources to prune)
+    v_src_bucket_ids text[];
+    v_src_names      text[];
+BEGIN
+    IF TG_OP <> 'UPDATE' THEN
+        RETURN NULL;
+    END IF;
+
+    -- 1) Compute NEW−OLD (added paths) and OLD−NEW (moved-away paths)
+    WITH added AS (
+        SELECT n.bucket_id, n.name
+        FROM new_rows n
+        WHERE n.name <> '' AND position('/' in n.name) > 0
+        EXCEPT
+        SELECT o.bucket_id, o.name FROM old_rows o WHERE o.name <> ''
+    ),
+    moved AS (
+         SELECT o.bucket_id, o.name
+         FROM old_rows o
+         WHERE o.name <> ''
+         EXCEPT
+         SELECT n.bucket_id, n.name FROM new_rows n WHERE n.name <> ''
+    )
+    SELECT
+        -- arrays for ADDED (dest) in stable order
+        COALESCE( (SELECT array_agg(a.bucket_id ORDER BY a.bucket_id, a.name) FROM added a), '{}' ),
+        COALESCE( (SELECT array_agg(a.name      ORDER BY a.bucket_id, a.name) FROM added a), '{}' ),
+        -- arrays for MOVED (src) in stable order
+        COALESCE( (SELECT array_agg(m.bucket_id ORDER BY m.bucket_id, m.name) FROM moved m), '{}' ),
+        COALESCE( (SELECT array_agg(m.name      ORDER BY m.bucket_id, m.name) FROM moved m), '{}' )
+    INTO v_add_bucket_ids, v_add_names, v_src_bucket_ids, v_src_names;
+
+    -- Nothing to do?
+    IF (array_length(v_add_bucket_ids, 1) IS NULL) AND (array_length(v_src_bucket_ids, 1) IS NULL) THEN
+        RETURN NULL;
+    END IF;
+
+    -- 2) Take per-(bucket, top) locks: ALL prefixes in consistent global order to prevent deadlocks
+    DECLARE
+        v_all_bucket_ids text[];
+        v_all_names text[];
+    BEGIN
+        -- Combine source and destination arrays for consistent lock ordering
+        v_all_bucket_ids := COALESCE(v_src_bucket_ids, '{}') || COALESCE(v_add_bucket_ids, '{}');
+        v_all_names := COALESCE(v_src_names, '{}') || COALESCE(v_add_names, '{}');
+
+        -- Single lock call ensures consistent global ordering across all transactions
+        IF array_length(v_all_bucket_ids, 1) IS NOT NULL THEN
+            PERFORM storage.lock_top_prefixes(v_all_bucket_ids, v_all_names);
+        END IF;
+    END;
+
+    -- 3) Create destination prefixes (NEW−OLD) BEFORE pruning sources
+    IF array_length(v_add_bucket_ids, 1) IS NOT NULL THEN
+        WITH candidates AS (
+            SELECT DISTINCT t.bucket_id, unnest(storage.get_prefixes(t.name)) AS name
+            FROM unnest(v_add_bucket_ids, v_add_names) AS t(bucket_id, name)
+            WHERE name <> ''
+        )
+        INSERT INTO storage.prefixes (bucket_id, name)
+        SELECT c.bucket_id, c.name
+        FROM candidates c
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    -- 4) Prune source prefixes bottom-up for OLD−NEW
+    IF array_length(v_src_bucket_ids, 1) IS NOT NULL THEN
+        -- re-entrancy guard so DELETE on prefixes won't recurse
+        IF current_setting('storage.gc.prefixes', true) <> '1' THEN
+            PERFORM set_config('storage.gc.prefixes', '1', true);
+        END IF;
+
+        PERFORM storage.delete_leaf_prefixes(v_src_bucket_ids, v_src_names);
+    END IF;
+
+    RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: objects_update_level_trigger(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.objects_update_level_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Ensure this is an update operation and the name has changed
+    IF TG_OP = 'UPDATE' AND (NEW."name" <> OLD."name" OR NEW."bucket_id" <> OLD."bucket_id") THEN
+        -- Set the new level
+        NEW."level" := "storage"."get_level"(NEW."name");
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: objects_update_prefix_trigger(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.objects_update_prefix_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    old_prefixes TEXT[];
+BEGIN
+    -- Ensure this is an update operation and the name has changed
+    IF TG_OP = 'UPDATE' AND (NEW."name" <> OLD."name" OR NEW."bucket_id" <> OLD."bucket_id") THEN
+        -- Retrieve old prefixes
+        old_prefixes := "storage"."get_prefixes"(OLD."name");
+
+        -- Remove old prefixes that are only used by this object
+        WITH all_prefixes as (
+            SELECT unnest(old_prefixes) as prefix
+        ),
+        can_delete_prefixes as (
+             SELECT prefix
+             FROM all_prefixes
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM "storage"."objects"
+                 WHERE "bucket_id" = OLD."bucket_id"
+                   AND "name" <> OLD."name"
+                   AND "name" LIKE (prefix || '%')
+             )
+         )
+        DELETE FROM "storage"."prefixes" WHERE name IN (SELECT prefix FROM can_delete_prefixes);
+
+        -- Add new prefixes
+        PERFORM "storage"."add_prefixes"(NEW."bucket_id", NEW."name");
+    END IF;
+    -- Set the new level
+    NEW."level" := "storage"."get_level"(NEW."name");
+
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: operation(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.operation() RETURNS text
+    LANGUAGE plpgsql STABLE
+    AS $$
+BEGIN
+    RETURN current_setting('storage.operation', true);
+END;
+$$;
+
+
+--
+-- Name: prefixes_delete_cleanup(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.prefixes_delete_cleanup() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_bucket_ids text[];
+    v_names      text[];
+BEGIN
+    IF current_setting('storage.gc.prefixes', true) = '1' THEN
+        RETURN NULL;
+    END IF;
+
+    PERFORM set_config('storage.gc.prefixes', '1', true);
+
+    SELECT COALESCE(array_agg(d.bucket_id), '{}'),
+           COALESCE(array_agg(d.name), '{}')
+    INTO v_bucket_ids, v_names
+    FROM deleted AS d
+    WHERE d.name <> '';
+
+    PERFORM storage.lock_top_prefixes(v_bucket_ids, v_names);
+    PERFORM storage.delete_leaf_prefixes(v_bucket_ids, v_names);
+
+    RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: prefixes_insert_trigger(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.prefixes_insert_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    PERFORM "storage"."add_prefixes"(NEW."bucket_id", NEW."name");
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: search(text, text, integer, integer, integer, text, text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.search(prefix text, bucketname text, limits integer DEFAULT 100, levels integer DEFAULT 1, offsets integer DEFAULT 0, search text DEFAULT ''::text, sortcolumn text DEFAULT 'name'::text, sortorder text DEFAULT 'asc'::text) RETURNS TABLE(name text, id uuid, updated_at timestamp with time zone, created_at timestamp with time zone, last_accessed_at timestamp with time zone, metadata jsonb)
+    LANGUAGE plpgsql
+    AS $$
+declare
+    can_bypass_rls BOOLEAN;
+begin
+    SELECT rolbypassrls
+    INTO can_bypass_rls
+    FROM pg_roles
+    WHERE rolname = coalesce(nullif(current_setting('role', true), 'none'), current_user);
+
+    IF can_bypass_rls THEN
+        RETURN QUERY SELECT * FROM storage.search_v1_optimised(prefix, bucketname, limits, levels, offsets, search, sortcolumn, sortorder);
+    ELSE
+        RETURN QUERY SELECT * FROM storage.search_legacy_v1(prefix, bucketname, limits, levels, offsets, search, sortcolumn, sortorder);
+    END IF;
+end;
+$$;
+
+
+--
+-- Name: search_legacy_v1(text, text, integer, integer, integer, text, text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.search_legacy_v1(prefix text, bucketname text, limits integer DEFAULT 100, levels integer DEFAULT 1, offsets integer DEFAULT 0, search text DEFAULT ''::text, sortcolumn text DEFAULT 'name'::text, sortorder text DEFAULT 'asc'::text) RETURNS TABLE(name text, id uuid, updated_at timestamp with time zone, created_at timestamp with time zone, last_accessed_at timestamp with time zone, metadata jsonb)
+    LANGUAGE plpgsql STABLE
+    AS $_$
+declare
+    v_order_by text;
+    v_sort_order text;
+begin
+    case
+        when sortcolumn = 'name' then
+            v_order_by = 'name';
+        when sortcolumn = 'updated_at' then
+            v_order_by = 'updated_at';
+        when sortcolumn = 'created_at' then
+            v_order_by = 'created_at';
+        when sortcolumn = 'last_accessed_at' then
+            v_order_by = 'last_accessed_at';
+        else
+            v_order_by = 'name';
+        end case;
+
+    case
+        when sortorder = 'asc' then
+            v_sort_order = 'asc';
+        when sortorder = 'desc' then
+            v_sort_order = 'desc';
+        else
+            v_sort_order = 'asc';
+        end case;
+
+    v_order_by = v_order_by || ' ' || v_sort_order;
+
+    return query execute
+        'with folders as (
+           select path_tokens[$1] as folder
+           from storage.objects
+             where objects.name ilike $2 || $3 || ''%''
+               and bucket_id = $4
+               and array_length(objects.path_tokens, 1) <> $1
+           group by folder
+           order by folder ' || v_sort_order || '
+     )
+     (select folder as "name",
+            null as id,
+            null as updated_at,
+            null as created_at,
+            null as last_accessed_at,
+            null as metadata from folders)
+     union all
+     (select path_tokens[$1] as "name",
+            id,
+            updated_at,
+            created_at,
+            last_accessed_at,
+            metadata
+     from storage.objects
+     where objects.name ilike $2 || $3 || ''%''
+       and bucket_id = $4
+       and array_length(objects.path_tokens, 1) = $1
+     order by ' || v_order_by || ')
+     limit $5
+     offset $6' using levels, prefix, search, bucketname, limits, offsets;
+end;
+$_$;
+
+
+--
+-- Name: search_v1_optimised(text, text, integer, integer, integer, text, text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.search_v1_optimised(prefix text, bucketname text, limits integer DEFAULT 100, levels integer DEFAULT 1, offsets integer DEFAULT 0, search text DEFAULT ''::text, sortcolumn text DEFAULT 'name'::text, sortorder text DEFAULT 'asc'::text) RETURNS TABLE(name text, id uuid, updated_at timestamp with time zone, created_at timestamp with time zone, last_accessed_at timestamp with time zone, metadata jsonb)
+    LANGUAGE plpgsql STABLE
+    AS $_$
+declare
+    v_order_by text;
+    v_sort_order text;
+begin
+    case
+        when sortcolumn = 'name' then
+            v_order_by = 'name';
+        when sortcolumn = 'updated_at' then
+            v_order_by = 'updated_at';
+        when sortcolumn = 'created_at' then
+            v_order_by = 'created_at';
+        when sortcolumn = 'last_accessed_at' then
+            v_order_by = 'last_accessed_at';
+        else
+            v_order_by = 'name';
+        end case;
+
+    case
+        when sortorder = 'asc' then
+            v_sort_order = 'asc';
+        when sortorder = 'desc' then
+            v_sort_order = 'desc';
+        else
+            v_sort_order = 'asc';
+        end case;
+
+    v_order_by = v_order_by || ' ' || v_sort_order;
+
+    return query execute
+        'with folders as (
+           select (string_to_array(name, ''/''))[level] as name
+           from storage.prefixes
+             where lower(prefixes.name) like lower($2 || $3) || ''%''
+               and bucket_id = $4
+               and level = $1
+           order by name ' || v_sort_order || '
+     )
+     (select name,
+            null as id,
+            null as updated_at,
+            null as created_at,
+            null as last_accessed_at,
+            null as metadata from folders)
+     union all
+     (select path_tokens[level] as "name",
+            id,
+            updated_at,
+            created_at,
+            last_accessed_at,
+            metadata
+     from storage.objects
+     where lower(objects.name) like lower($2 || $3) || ''%''
+       and bucket_id = $4
+       and level = $1
+     order by ' || v_order_by || ')
+     limit $5
+     offset $6' using levels, prefix, search, bucketname, limits, offsets;
+end;
+$_$;
+
+
+--
+-- Name: search_v2(text, text, integer, integer, text, text, text, text); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.search_v2(prefix text, bucket_name text, limits integer DEFAULT 100, levels integer DEFAULT 1, start_after text DEFAULT ''::text, sort_order text DEFAULT 'asc'::text, sort_column text DEFAULT 'name'::text, sort_column_after text DEFAULT ''::text) RETURNS TABLE(key text, name text, id uuid, updated_at timestamp with time zone, created_at timestamp with time zone, last_accessed_at timestamp with time zone, metadata jsonb)
+    LANGUAGE plpgsql STABLE
+    AS $_$
+DECLARE
+    sort_col text;
+    sort_ord text;
+    cursor_op text;
+    cursor_expr text;
+    sort_expr text;
+BEGIN
+    -- Validate sort_order
+    sort_ord := lower(sort_order);
+    IF sort_ord NOT IN ('asc', 'desc') THEN
+        sort_ord := 'asc';
+    END IF;
+
+    -- Determine cursor comparison operator
+    IF sort_ord = 'asc' THEN
+        cursor_op := '>';
+    ELSE
+        cursor_op := '<';
+    END IF;
+    
+    sort_col := lower(sort_column);
+    -- Validate sort column  
+    IF sort_col IN ('updated_at', 'created_at') THEN
+        cursor_expr := format(
+            '($5 = '''' OR ROW(date_trunc(''milliseconds'', %I), name COLLATE "C") %s ROW(COALESCE(NULLIF($6, '''')::timestamptz, ''epoch''::timestamptz), $5))',
+            sort_col, cursor_op
+        );
+        sort_expr := format(
+            'COALESCE(date_trunc(''milliseconds'', %I), ''epoch''::timestamptz) %s, name COLLATE "C" %s',
+            sort_col, sort_ord, sort_ord
+        );
+    ELSE
+        cursor_expr := format('($5 = '''' OR name COLLATE "C" %s $5)', cursor_op);
+        sort_expr := format('name COLLATE "C" %s', sort_ord);
+    END IF;
+
+    RETURN QUERY EXECUTE format(
+        $sql$
+        SELECT * FROM (
+            (
+                SELECT
+                    split_part(name, '/', $4) AS key,
+                    name,
+                    NULL::uuid AS id,
+                    updated_at,
+                    created_at,
+                    NULL::timestamptz AS last_accessed_at,
+                    NULL::jsonb AS metadata
+                FROM storage.prefixes
+                WHERE name COLLATE "C" LIKE $1 || '%%'
+                    AND bucket_id = $2
+                    AND level = $4
+                    AND %s
+                ORDER BY %s
+                LIMIT $3
+            )
+            UNION ALL
+            (
+                SELECT
+                    split_part(name, '/', $4) AS key,
+                    name,
+                    id,
+                    updated_at,
+                    created_at,
+                    last_accessed_at,
+                    metadata
+                FROM storage.objects
+                WHERE name COLLATE "C" LIKE $1 || '%%'
+                    AND bucket_id = $2
+                    AND level = $4
+                    AND %s
+                ORDER BY %s
+                LIMIT $3
+            )
+        ) obj
+        ORDER BY %s
+        LIMIT $3
+        $sql$,
+        cursor_expr,    -- prefixes WHERE
+        sort_expr,      -- prefixes ORDER BY
+        cursor_expr,    -- objects WHERE
+        sort_expr,      -- objects ORDER BY
+        sort_expr       -- final ORDER BY
+    )
+    USING prefix, bucket_name, limits, levels, start_after, sort_column_after;
+END;
+$_$;
+
+
+--
+-- Name: update_updated_at_column(); Type: FUNCTION; Schema: storage; Owner: -
+--
+
+CREATE FUNCTION storage.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW; 
+END;
+$$;
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: audit_log_entries; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.audit_log_entries (
+    instance_id uuid,
+    id uuid NOT NULL,
+    payload json,
+    created_at timestamp with time zone,
+    ip_address character varying(64) DEFAULT ''::character varying NOT NULL
+);
+
+
+--
+-- Name: TABLE audit_log_entries; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.audit_log_entries IS 'Auth: Audit trail for user actions.';
+
+
+--
+-- Name: flow_state; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.flow_state (
+    id uuid NOT NULL,
+    user_id uuid,
+    auth_code text NOT NULL,
+    code_challenge_method auth.code_challenge_method NOT NULL,
+    code_challenge text NOT NULL,
+    provider_type text NOT NULL,
+    provider_access_token text,
+    provider_refresh_token text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    authentication_method text NOT NULL,
+    auth_code_issued_at timestamp with time zone
+);
+
+
+--
+-- Name: TABLE flow_state; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.flow_state IS 'stores metadata for pkce logins';
+
+
+--
+-- Name: identities; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.identities (
+    provider_id text NOT NULL,
+    user_id uuid NOT NULL,
+    identity_data jsonb NOT NULL,
+    provider text NOT NULL,
+    last_sign_in_at timestamp with time zone,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    email text GENERATED ALWAYS AS (lower((identity_data ->> 'email'::text))) STORED,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: TABLE identities; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.identities IS 'Auth: Stores identities associated to a user.';
+
+
+--
+-- Name: COLUMN identities.email; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.identities.email IS 'Auth: Email is a generated column that references the optional email property in the identity_data';
+
+
+--
+-- Name: instances; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.instances (
+    id uuid NOT NULL,
+    uuid uuid,
+    raw_base_config text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
+);
+
+
+--
+-- Name: TABLE instances; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.instances IS 'Auth: Manages users across multiple sites.';
+
+
+--
+-- Name: mfa_amr_claims; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.mfa_amr_claims (
+    session_id uuid NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    authentication_method text NOT NULL,
+    id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE mfa_amr_claims; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.mfa_amr_claims IS 'auth: stores authenticator method reference claims for multi factor authentication';
+
+
+--
+-- Name: mfa_challenges; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.mfa_challenges (
+    id uuid NOT NULL,
+    factor_id uuid NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    verified_at timestamp with time zone,
+    ip_address inet NOT NULL,
+    otp_code text,
+    web_authn_session_data jsonb
+);
+
+
+--
+-- Name: TABLE mfa_challenges; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.mfa_challenges IS 'auth: stores metadata about challenge requests made';
+
+
+--
+-- Name: mfa_factors; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.mfa_factors (
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    friendly_name text,
+    factor_type auth.factor_type NOT NULL,
+    status auth.factor_status NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    secret text,
+    phone text,
+    last_challenged_at timestamp with time zone,
+    web_authn_credential jsonb,
+    web_authn_aaguid uuid,
+    last_webauthn_challenge_data jsonb
+);
+
+
+--
+-- Name: TABLE mfa_factors; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.mfa_factors IS 'auth: stores metadata about factors';
+
+
+--
+-- Name: COLUMN mfa_factors.last_webauthn_challenge_data; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.mfa_factors.last_webauthn_challenge_data IS 'Stores the latest WebAuthn challenge data including attestation/assertion for customer verification';
+
+
+--
+-- Name: oauth_authorizations; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.oauth_authorizations (
+    id uuid NOT NULL,
+    authorization_id text NOT NULL,
+    client_id uuid NOT NULL,
+    user_id uuid,
+    redirect_uri text NOT NULL,
+    scope text NOT NULL,
+    state text,
+    resource text,
+    code_challenge text,
+    code_challenge_method auth.code_challenge_method,
+    response_type auth.oauth_response_type DEFAULT 'code'::auth.oauth_response_type NOT NULL,
+    status auth.oauth_authorization_status DEFAULT 'pending'::auth.oauth_authorization_status NOT NULL,
+    authorization_code text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone DEFAULT (now() + '00:03:00'::interval) NOT NULL,
+    approved_at timestamp with time zone,
+    CONSTRAINT oauth_authorizations_authorization_code_length CHECK ((char_length(authorization_code) <= 255)),
+    CONSTRAINT oauth_authorizations_code_challenge_length CHECK ((char_length(code_challenge) <= 128)),
+    CONSTRAINT oauth_authorizations_expires_at_future CHECK ((expires_at > created_at)),
+    CONSTRAINT oauth_authorizations_redirect_uri_length CHECK ((char_length(redirect_uri) <= 2048)),
+    CONSTRAINT oauth_authorizations_resource_length CHECK ((char_length(resource) <= 2048)),
+    CONSTRAINT oauth_authorizations_scope_length CHECK ((char_length(scope) <= 4096)),
+    CONSTRAINT oauth_authorizations_state_length CHECK ((char_length(state) <= 4096))
+);
+
+
+--
+-- Name: oauth_clients; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.oauth_clients (
+    id uuid NOT NULL,
+    client_secret_hash text,
+    registration_type auth.oauth_registration_type NOT NULL,
+    redirect_uris text NOT NULL,
+    grant_types text NOT NULL,
+    client_name text,
+    client_uri text,
+    logo_uri text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone,
+    client_type auth.oauth_client_type DEFAULT 'confidential'::auth.oauth_client_type NOT NULL,
+    CONSTRAINT oauth_clients_client_name_length CHECK ((char_length(client_name) <= 1024)),
+    CONSTRAINT oauth_clients_client_uri_length CHECK ((char_length(client_uri) <= 2048)),
+    CONSTRAINT oauth_clients_logo_uri_length CHECK ((char_length(logo_uri) <= 2048))
+);
+
+
+--
+-- Name: oauth_consents; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.oauth_consents (
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    client_id uuid NOT NULL,
+    scopes text NOT NULL,
+    granted_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    CONSTRAINT oauth_consents_revoked_after_granted CHECK (((revoked_at IS NULL) OR (revoked_at >= granted_at))),
+    CONSTRAINT oauth_consents_scopes_length CHECK ((char_length(scopes) <= 2048)),
+    CONSTRAINT oauth_consents_scopes_not_empty CHECK ((char_length(TRIM(BOTH FROM scopes)) > 0))
+);
+
+
+--
+-- Name: one_time_tokens; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.one_time_tokens (
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    token_type auth.one_time_token_type NOT NULL,
+    token_hash text NOT NULL,
+    relates_to text NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    CONSTRAINT one_time_tokens_token_hash_check CHECK ((char_length(token_hash) > 0))
+);
+
+
+--
+-- Name: refresh_tokens; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.refresh_tokens (
+    instance_id uuid,
+    id bigint NOT NULL,
+    token character varying(255),
+    user_id character varying(255),
+    revoked boolean,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    parent character varying(255),
+    session_id uuid
+);
+
+
+--
+-- Name: TABLE refresh_tokens; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.refresh_tokens IS 'Auth: Store of tokens used to refresh JWT tokens once they expire.';
+
+
+--
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE; Schema: auth; Owner: -
+--
+
+CREATE SEQUENCE auth.refresh_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: auth; Owner: -
+--
+
+ALTER SEQUENCE auth.refresh_tokens_id_seq OWNED BY auth.refresh_tokens.id;
+
+
+--
+-- Name: saml_providers; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.saml_providers (
+    id uuid NOT NULL,
+    sso_provider_id uuid NOT NULL,
+    entity_id text NOT NULL,
+    metadata_xml text NOT NULL,
+    metadata_url text,
+    attribute_mapping jsonb,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    name_id_format text,
+    CONSTRAINT "entity_id not empty" CHECK ((char_length(entity_id) > 0)),
+    CONSTRAINT "metadata_url not empty" CHECK (((metadata_url = NULL::text) OR (char_length(metadata_url) > 0))),
+    CONSTRAINT "metadata_xml not empty" CHECK ((char_length(metadata_xml) > 0))
+);
+
+
+--
+-- Name: TABLE saml_providers; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.saml_providers IS 'Auth: Manages SAML Identity Provider connections.';
+
+
+--
+-- Name: saml_relay_states; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.saml_relay_states (
+    id uuid NOT NULL,
+    sso_provider_id uuid NOT NULL,
+    request_id text NOT NULL,
+    for_email text,
+    redirect_to text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    flow_state_id uuid,
+    CONSTRAINT "request_id not empty" CHECK ((char_length(request_id) > 0))
+);
+
+
+--
+-- Name: TABLE saml_relay_states; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.saml_relay_states IS 'Auth: Contains SAML Relay State information for each Service Provider initiated login.';
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.schema_migrations (
+    version character varying(255) NOT NULL
+);
+
+
+--
+-- Name: TABLE schema_migrations; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.schema_migrations IS 'Auth: Manages updates to the auth system.';
+
+
+--
+-- Name: sessions; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.sessions (
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    factor_id uuid,
+    aal auth.aal_level,
+    not_after timestamp with time zone,
+    refreshed_at timestamp without time zone,
+    user_agent text,
+    ip inet,
+    tag text,
+    oauth_client_id uuid,
+    refresh_token_hmac_key text,
+    refresh_token_counter bigint
+);
+
+
+--
+-- Name: TABLE sessions; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.sessions IS 'Auth: Stores session data associated to a user.';
+
+
+--
+-- Name: COLUMN sessions.not_after; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.sessions.not_after IS 'Auth: Not after is a nullable column that contains a timestamp after which the session should be regarded as expired.';
+
+
+--
+-- Name: COLUMN sessions.refresh_token_hmac_key; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.sessions.refresh_token_hmac_key IS 'Holds a HMAC-SHA256 key used to sign refresh tokens for this session.';
+
+
+--
+-- Name: COLUMN sessions.refresh_token_counter; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.sessions.refresh_token_counter IS 'Holds the ID (counter) of the last issued refresh token.';
+
+
+--
+-- Name: sso_domains; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.sso_domains (
+    id uuid NOT NULL,
+    sso_provider_id uuid NOT NULL,
+    domain text NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    CONSTRAINT "domain not empty" CHECK ((char_length(domain) > 0))
+);
+
+
+--
+-- Name: TABLE sso_domains; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.sso_domains IS 'Auth: Manages SSO email address domain mapping to an SSO Identity Provider.';
+
+
+--
+-- Name: sso_providers; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.sso_providers (
+    id uuid NOT NULL,
+    resource_id text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    disabled boolean,
+    CONSTRAINT "resource_id not empty" CHECK (((resource_id = NULL::text) OR (char_length(resource_id) > 0)))
+);
+
+
+--
+-- Name: TABLE sso_providers; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.sso_providers IS 'Auth: Manages SSO identity provider information; see saml_providers for SAML.';
+
+
+--
+-- Name: COLUMN sso_providers.resource_id; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.sso_providers.resource_id IS 'Auth: Uniquely identifies a SSO provider according to a user-chosen resource ID (case insensitive), useful in infrastructure as code.';
+
+
+--
+-- Name: users; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.users (
+    instance_id uuid,
+    id uuid NOT NULL,
+    aud character varying(255),
+    role character varying(255),
+    email character varying(255),
+    encrypted_password character varying(255),
+    email_confirmed_at timestamp with time zone,
+    invited_at timestamp with time zone,
+    confirmation_token character varying(255),
+    confirmation_sent_at timestamp with time zone,
+    recovery_token character varying(255),
+    recovery_sent_at timestamp with time zone,
+    email_change_token_new character varying(255),
+    email_change character varying(255),
+    email_change_sent_at timestamp with time zone,
+    last_sign_in_at timestamp with time zone,
+    raw_app_meta_data jsonb,
+    raw_user_meta_data jsonb,
+    is_super_admin boolean,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    phone text DEFAULT NULL::character varying,
+    phone_confirmed_at timestamp with time zone,
+    phone_change text DEFAULT ''::character varying,
+    phone_change_token character varying(255) DEFAULT ''::character varying,
+    phone_change_sent_at timestamp with time zone,
+    confirmed_at timestamp with time zone GENERATED ALWAYS AS (LEAST(email_confirmed_at, phone_confirmed_at)) STORED,
+    email_change_token_current character varying(255) DEFAULT ''::character varying,
+    email_change_confirm_status smallint DEFAULT 0,
+    banned_until timestamp with time zone,
+    reauthentication_token character varying(255) DEFAULT ''::character varying,
+    reauthentication_sent_at timestamp with time zone,
+    is_sso_user boolean DEFAULT false NOT NULL,
+    deleted_at timestamp with time zone,
+    is_anonymous boolean DEFAULT false NOT NULL,
+    CONSTRAINT users_email_change_confirm_status_check CHECK (((email_change_confirm_status >= 0) AND (email_change_confirm_status <= 2)))
+);
+
+
+--
+-- Name: TABLE users; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.users IS 'Auth: Stores user login data within a secure schema.';
+
+
+--
+-- Name: COLUMN users.is_sso_user; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON COLUMN auth.users.is_sso_user IS 'Auth: Set this column to true when the account comes from SSO. These accounts can have duplicate emails.';
+
+
+--
+-- Name: activity_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.activity_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    studio_id uuid,
+    action text NOT NULL,
+    entity_type text NOT NULL,
+    entity_id uuid,
+    entity_name text,
+    details jsonb,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: age_groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.age_groups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    short_name character varying(20),
+    min_age integer NOT NULL,
+    max_age integer NOT NULL,
+    competitive_group character varying(100),
+    dynamic_group character varying(100),
+    form_grouping character varying(100),
+    sort_order integer,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE age_groups; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.age_groups IS 'Age-based competition divisions with multiple grouping systems (from export analysis)';
+
+
+--
+-- Name: award_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.award_types (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    category character varying(50),
+    color character varying(7),
+    icon_name character varying(50),
+    certificate_template character varying(100),
+    min_score numeric(6,2),
+    requires_minimum_entries integer,
+    sort_order integer,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    award_basis character varying(50),
+    top_n integer,
+    entry_size_filter character varying(255)[],
+    age_division_filter character varying(255)[],
+    classification_filter character varying(255)[]
+);
+
+
+--
+-- Name: awards; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.awards (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    entry_id uuid NOT NULL,
+    award_type_id uuid NOT NULL,
+    placement integer,
+    score numeric(6,2),
+    award_category character varying(100),
+    certificate_url text,
+    trophy_type character varying(100),
+    special_recognition text,
+    presented_at timestamp without time zone,
+    presented_by character varying(255),
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: capacity_ledger; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.capacity_ledger (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    reservation_id uuid,
+    change_amount integer NOT NULL,
+    reason character varying(50) NOT NULL,
+    notes text,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    created_by uuid,
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE capacity_ledger; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.capacity_ledger IS 'Audit trail for all competition capacity changes';
+
+
+--
+-- Name: COLUMN capacity_ledger.change_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.capacity_ledger.change_amount IS 'Negative values = capacity deducted, Positive values = capacity refunded';
+
+
+--
+-- Name: COLUMN capacity_ledger.reason; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.capacity_ledger.reason IS 'One of: reservation_approval, summary_refund, reservation_cancellation, manual_adjustment';
+
+
+--
+-- Name: classification_exception_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.classification_exception_requests (
+    id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
+    entry_id uuid NOT NULL,
+    reservation_id uuid NOT NULL,
+    competition_id uuid NOT NULL,
+    studio_id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    auto_calculated_classification_id uuid NOT NULL,
+    requested_classification_id uuid NOT NULL,
+    approved_classification_id uuid,
+    sd_justification text NOT NULL,
+    cd_comments text,
+    status character varying(50) DEFAULT 'pending'::character varying NOT NULL,
+    cd_decision_type character varying(50),
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    responded_at timestamp without time zone,
+    reminder_sent_at timestamp without time zone,
+    created_by uuid NOT NULL,
+    responded_by uuid
+);
+
+
+--
+-- Name: TABLE classification_exception_requests; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.classification_exception_requests IS 'Tracks requests from Studio Directors for classification exceptions. CD must approve before entry can be included in summary submission.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.entry_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.entry_id IS 'The entry requesting exception. CASCADE deletes request if entry deleted.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.auto_calculated_classification_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.auto_calculated_classification_id IS 'The classification auto-calculated by the system based on dancer classifications.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.requested_classification_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.requested_classification_id IS 'The classification the SD is requesting (may differ from auto-calculated).';
+
+
+--
+-- Name: COLUMN classification_exception_requests.approved_classification_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.approved_classification_id IS 'The final classification set by CD. May match requested OR be different (CD denial).';
+
+
+--
+-- Name: COLUMN classification_exception_requests.sd_justification; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.sd_justification IS 'Required justification from SD explaining why exception is needed.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.cd_comments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.cd_comments IS 'Optional comments from CD when making decision.';
+
+
+--
+-- Name: COLUMN classification_exception_requests.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.status IS 'pending = awaiting CD response, approved = CD approved as requested, resolved = CD set different classification (denial)';
+
+
+--
+-- Name: COLUMN classification_exception_requests.cd_decision_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.cd_decision_type IS 'approved_as_requested = CD approved SD request, approved_different = CD set different classification (denial)';
+
+
+--
+-- Name: COLUMN classification_exception_requests.reminder_sent_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.classification_exception_requests.reminder_sent_at IS 'Timestamp when 5-day reminder email was sent to CD. Only one reminder sent.';
+
+
+--
+-- Name: classifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.classifications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    skill_level integer,
+    color_code character varying(7),
+    min_years_experience integer,
+    requires_audition boolean DEFAULT false,
+    entry_requirements text,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE classifications; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.classifications IS 'Skill level divisions: Recreational, Competitive, Crystal, Titanium (from export analysis)';
+
+
+--
+-- Name: competition_entries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_entries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    reservation_id uuid,
+    studio_id uuid NOT NULL,
+    entry_number integer,
+    sequence_number integer,
+    title character varying(255) NOT NULL,
+    category_id uuid NOT NULL,
+    classification_id uuid NOT NULL,
+    age_group_id uuid NOT NULL,
+    entry_size_category_id uuid NOT NULL,
+    session_id uuid,
+    performance_date date,
+    performance_time time without time zone,
+    duration interval,
+    warm_up_time time without time zone,
+    heat character varying(50),
+    running_order integer,
+    is_title_upgrade boolean DEFAULT false,
+    is_title_interview boolean DEFAULT false,
+    is_improvisation boolean DEFAULT false,
+    is_glow_off_round boolean DEFAULT false,
+    is_overall_competition boolean DEFAULT false,
+    previous_entry_id uuid,
+    next_entry_id uuid,
+    music_title character varying(255),
+    music_artist character varying(255),
+    music_duration interval,
+    music_file_url text,
+    special_requirements text,
+    entry_fee numeric(10,2),
+    late_fee numeric(10,2) DEFAULT 0,
+    total_fee numeric(10,2),
+    status character varying(50) DEFAULT 'registered'::character varying,
+    choreographer character varying(255),
+    costume_description text,
+    props_required text,
+    accessibility_needs text,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    entry_suffix character varying(5),
+    is_late_entry boolean DEFAULT false,
+    calculated_score numeric(5,2),
+    award_level character varying(50),
+    category_placement integer,
+    tenant_id uuid NOT NULL,
+    routine_number integer,
+    extended_time_requested boolean DEFAULT false,
+    routine_length_minutes integer,
+    routine_length_seconds integer,
+    scheduling_notes text,
+    CONSTRAINT competition_entries_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('registered'::character varying)::text, ('confirmed'::character varying)::text, ('performed'::character varying)::text, ('scored'::character varying)::text, ('awarded'::character varying)::text, ('disqualified'::character varying)::text, ('withdrawn'::character varying)::text, ('submitted'::character varying)::text])))
+);
+
+
+--
+-- Name: TABLE competition_entries; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.competition_entries IS 'Individual performance entries in competitions';
+
+
+--
+-- Name: COLUMN competition_entries.entry_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.entry_number IS 'Sequential entry number (1, 2, 3...) for competition organization';
+
+
+--
+-- Name: COLUMN competition_entries.sequence_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.sequence_number IS 'Running order number for performance scheduling';
+
+
+--
+-- Name: COLUMN competition_entries.calculated_score; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.calculated_score IS 'Average score across all judges';
+
+
+--
+-- Name: COLUMN competition_entries.award_level; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.award_level IS 'Award tier (Platinum, Gold, Silver, etc.)';
+
+
+--
+-- Name: COLUMN competition_entries.category_placement; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.category_placement IS 'Placement within category (1st, 2nd, 3rd)';
+
+
+--
+-- Name: COLUMN competition_entries.tenant_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.tenant_id IS 'Tenant ID set by application via Prisma relation. No DB default.';
+
+
+--
+-- Name: COLUMN competition_entries.routine_number; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_entries.routine_number IS 'Assigned during schedule building, used for running order';
+
+
+--
+-- Name: competition_locations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_locations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    address text,
+    capacity integer,
+    date_start date,
+    date_end date,
+    setup_time time without time zone,
+    doors_open time without time zone,
+    competition_start time without time zone,
+    competition_end time without time zone,
+    dressing_rooms integer,
+    warm_up_areas integer,
+    parking_spaces integer,
+    accessibility_features text[],
+    stage_dimensions character varying(100),
+    audio_system text,
+    lighting_system text,
+    video_recording boolean DEFAULT false,
+    live_streaming boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: competition_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_sessions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    location_id uuid,
+    session_number integer NOT NULL,
+    session_name character varying(255),
+    session_date date NOT NULL,
+    start_time time without time zone NOT NULL,
+    end_time time without time zone,
+    max_entries integer,
+    entry_count integer DEFAULT 0,
+    warm_up_time interval DEFAULT '00:15:00'::interval,
+    head_judge uuid,
+    judges jsonb DEFAULT '[]'::jsonb,
+    status character varying(50) DEFAULT 'scheduled'::character varying,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    CONSTRAINT competition_sessions_status_check CHECK (((status)::text = ANY ((ARRAY['scheduled'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+--
+-- Name: competition_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competition_settings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    setting_category text NOT NULL,
+    setting_key text NOT NULL,
+    setting_value jsonb NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deprecated boolean DEFAULT false,
+    CONSTRAINT competition_settings_setting_category_check CHECK ((setting_category = ANY (ARRAY['routine_types'::text, 'age_divisions'::text, 'classification_levels'::text, 'dance_styles'::text, 'time_limits'::text, 'scoring_rubric'::text, 'awards'::text])))
+);
+
+
+--
+-- Name: TABLE competition_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.competition_settings IS 'DEPRECATED 2025-10-29: Scoring data migrated to scoring_tiers table. Age/dance/size data managed via tenant-scoped lookup tables. Monitor for 2 weeks, then delete if unused.';
+
+
+--
+-- Name: COLUMN competition_settings.setting_category; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.setting_category IS 'Category of the setting (routine_types, age_divisions, classification_levels, dance_styles, time_limits, scoring_rubric, awards)';
+
+
+--
+-- Name: COLUMN competition_settings.setting_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.setting_key IS 'Unique identifier for the setting within its category';
+
+
+--
+-- Name: COLUMN competition_settings.setting_value; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.setting_value IS 'JSONB storage for flexible configuration data specific to each setting type';
+
+
+--
+-- Name: COLUMN competition_settings.display_order; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.display_order IS 'Order in which settings should be displayed in the UI';
+
+
+--
+-- Name: COLUMN competition_settings.is_active; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competition_settings.is_active IS 'Whether this setting is currently active and available for use';
+
+
+--
+-- Name: competitions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.competitions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(255) NOT NULL,
+    year integer NOT NULL,
+    description text,
+    registration_opens timestamp without time zone,
+    registration_closes timestamp without time zone,
+    competition_start_date date,
+    competition_end_date date,
+    primary_location character varying(255),
+    venue_address text,
+    venue_capacity integer,
+    session_count integer DEFAULT 1,
+    number_of_judges integer DEFAULT 3,
+    entry_fee numeric(10,2),
+    late_fee numeric(10,2),
+    allow_age_overrides boolean DEFAULT true,
+    allow_multiple_entries boolean DEFAULT true,
+    require_video_submissions boolean DEFAULT false,
+    status character varying(50) DEFAULT 'upcoming'::character varying,
+    is_public boolean DEFAULT true,
+    logo_url text,
+    website character varying(255),
+    contact_email character varying(255),
+    contact_phone character varying(50),
+    rules_document_url text,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    total_reservation_tokens integer DEFAULT 600,
+    available_reservation_tokens integer DEFAULT 600,
+    tokens_override_enabled boolean DEFAULT false,
+    schedule_published_at timestamp with time zone,
+    schedule_locked boolean DEFAULT false,
+    scoring_ranges jsonb DEFAULT '{"gold": [85, 89.9], "bronze": [70, 79.9], "silver": [80, 84.9], "platinum": [95, 100], "high_gold": [90, 94.9]}'::jsonb,
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    age_division_settings jsonb,
+    classification_settings jsonb,
+    entry_fee_settings jsonb,
+    dance_category_settings jsonb,
+    scoring_system_settings jsonb,
+    entry_size_settings jsonb,
+    title_division_settings jsonb,
+    special_programs_settings jsonb,
+    tax_rate numeric(5,4) DEFAULT 0.0000,
+    CONSTRAINT competitions_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'upcoming'::character varying, 'registration_open'::character varying, 'registration_closed'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE competitions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.competitions IS 'Main competition events with dates, locations, and settings';
+
+
+--
+-- Name: COLUMN competitions.total_reservation_tokens; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.total_reservation_tokens IS 'Total reservation tokens allocated to this competition (default: 600 per weekend)';
+
+
+--
+-- Name: COLUMN competitions.available_reservation_tokens; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.available_reservation_tokens IS 'Currently available reservation tokens (decremented when reservations are approved)';
+
+
+--
+-- Name: COLUMN competitions.tokens_override_enabled; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.tokens_override_enabled IS 'Whether admin has overridden token limits for this competition';
+
+
+--
+-- Name: COLUMN competitions.schedule_published_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.schedule_published_at IS 'Timestamp when schedule was published and entry numbers locked';
+
+
+--
+-- Name: COLUMN competitions.schedule_locked; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.schedule_locked IS 'Prevents changes to entry numbers once schedule is published';
+
+
+--
+-- Name: COLUMN competitions.scoring_ranges; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.scoring_ranges IS 'Award level score ranges in JSONB format';
+
+
+--
+-- Name: COLUMN competitions.age_division_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.age_division_settings IS 'JSON configuration for age divisions (Micro, Mini, Junior, etc.)';
+
+
+--
+-- Name: COLUMN competitions.classification_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.classification_settings IS 'JSON configuration for classifications (Novice, Part-Time, Competitive)';
+
+
+--
+-- Name: COLUMN competitions.entry_fee_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.entry_fee_settings IS 'JSON configuration for entry fees by category type';
+
+
+--
+-- Name: COLUMN competitions.dance_category_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.dance_category_settings IS 'JSON configuration for dance styles/categories';
+
+
+--
+-- Name: COLUMN competitions.scoring_system_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.scoring_system_settings IS 'JSON configuration for scoring tiers (Bronze, Silver, Gold, etc.)';
+
+
+--
+-- Name: COLUMN competitions.entry_size_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.entry_size_settings IS 'JSON configuration for entry size categories (Solo, Duet/Trio, Group, etc.)';
+
+
+--
+-- Name: COLUMN competitions.title_division_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.title_division_settings IS 'JSON configuration for title division rounds';
+
+
+--
+-- Name: COLUMN competitions.special_programs_settings; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.special_programs_settings IS 'JSON configuration for special programs (Dance Off, Ambassadorship, etc.)';
+
+
+--
+-- Name: COLUMN competitions.tax_rate; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.competitions.tax_rate IS 'Tax rate as decimal (e.g., 0.0700 for 7% tax). Applied to invoices for this competition.';
+
+
+--
+-- Name: dance_categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dance_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    category_award_grouping character varying(255),
+    competitive_award_grouping character varying(100),
+    other_award_grouping character varying(100),
+    music_time_limit interval,
+    requires_specific_attire boolean DEFAULT false,
+    attire_requirements text,
+    color_code character varying(7),
+    icon_name character varying(50),
+    sort_order integer,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: dancers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dancers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    studio_id uuid NOT NULL,
+    first_name character varying(100) NOT NULL,
+    last_name character varying(100) NOT NULL,
+    date_of_birth date,
+    age_override integer,
+    gender character varying(20),
+    email character varying(255),
+    phone character varying(50),
+    parent_name character varying(255),
+    parent_email character varying(255),
+    parent_phone character varying(50),
+    emergency_contact_name character varying(255),
+    emergency_contact_phone character varying(50),
+    medical_conditions text,
+    allergies text,
+    medications text,
+    years_dancing integer,
+    primary_style character varying(100),
+    skill_level character varying(50),
+    previous_competitions integer DEFAULT 0,
+    registration_number character varying(50),
+    photo_url text,
+    waiver_signed boolean DEFAULT false,
+    waiver_signed_date date,
+    status character varying(50) DEFAULT 'active'::character varying,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    classification_id uuid,
+    CONSTRAINT dancers_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'inactive'::character varying, 'suspended'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE dancers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.dancers IS 'Individual dancers registered under studios';
+
+
+--
+-- Name: documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    filename character varying(255) NOT NULL,
+    original_filename character varying(255) NOT NULL,
+    file_size integer,
+    mime_type character varying(100),
+    storage_path text NOT NULL,
+    document_type character varying(50) NOT NULL,
+    title character varying(255),
+    description text,
+    competition_id uuid,
+    studio_id uuid,
+    entry_id uuid,
+    uploaded_by uuid,
+    visibility character varying(20) DEFAULT 'private'::character varying,
+    password_protected boolean DEFAULT false,
+    processing_status character varying(20) DEFAULT 'ready'::character varying,
+    processing_error text,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    CONSTRAINT documents_processing_status_check CHECK (((processing_status)::text = ANY ((ARRAY['uploading'::character varying, 'processing'::character varying, 'ready'::character varying, 'error'::character varying])::text[]))),
+    CONSTRAINT documents_visibility_check CHECK (((visibility)::text = ANY ((ARRAY['public'::character varying, 'competition'::character varying, 'studio'::character varying, 'private'::character varying])::text[])))
+);
+
+
+--
+-- Name: elite_instructors; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.elite_instructors (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    credentials text,
+    specialization character varying(100),
+    bio text,
+    email character varying(255),
+    phone character varying(50),
+    website character varying(255),
+    assigned_teams text[],
+    session_assignments jsonb,
+    hourly_rate numeric(10,2),
+    travel_required boolean DEFAULT false,
+    equipment_needs text,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+--
+-- Name: email_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    template_type character varying(50) NOT NULL,
+    recipient_email character varying(255) NOT NULL,
+    subject character varying(500) NOT NULL,
+    studio_id uuid,
+    competition_id uuid,
+    success boolean DEFAULT true,
+    error_message text,
+    sent_at timestamp(6) without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: email_preferences; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_preferences (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    email_type public.email_type NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp(6) with time zone DEFAULT now() NOT NULL,
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: email_queue; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_queue (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    user_id uuid,
+    email_type text NOT NULL,
+    recipient_email text NOT NULL,
+    template_data jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    sent_at timestamp with time zone,
+    error text,
+    retry_count integer DEFAULT 0 NOT NULL,
+    CONSTRAINT email_queue_email_type_check CHECK ((email_type = ANY (ARRAY['signup_confirmation'::text, 'password_recovery'::text, 'email_change'::text, 'magic_link'::text]))),
+    CONSTRAINT email_queue_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'sent'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: email_templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_templates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    template_key character varying(100) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    subject character varying(255) NOT NULL,
+    html_body text NOT NULL,
+    text_body text,
+    available_variables jsonb,
+    is_active boolean DEFAULT true,
+    version integer DEFAULT 1,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: entry_participants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.entry_participants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    entry_id uuid NOT NULL,
+    dancer_id uuid NOT NULL,
+    dancer_name character varying(255) NOT NULL,
+    dancer_age integer,
+    role character varying(100),
+    display_order integer,
+    costume_size character varying(20),
+    special_needs text,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: TABLE entry_participants; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.entry_participants IS 'Dancers participating in each competition entry';
+
+
+--
+-- Name: entry_size_categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.entry_size_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(50) NOT NULL,
+    min_participants integer NOT NULL,
+    max_participants integer NOT NULL,
+    base_fee numeric(10,2),
+    per_participant_fee numeric(10,2),
+    sort_order integer,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL,
+    max_time_minutes integer,
+    max_time_seconds integer DEFAULT 0
+);
+
+
+--
+-- Name: invoices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invoices (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    studio_id uuid NOT NULL,
+    competition_id uuid NOT NULL,
+    reservation_id uuid,
+    line_items jsonb DEFAULT '[]'::jsonb NOT NULL,
+    subtotal numeric(10,2) DEFAULT 0 NOT NULL,
+    total numeric(10,2) DEFAULT 0 NOT NULL,
+    status character varying(50) DEFAULT 'UNPAID'::character varying NOT NULL,
+    created_at timestamp(6) without time zone DEFAULT now(),
+    updated_at timestamp(6) without time zone DEFAULT now(),
+    tenant_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    stripe_payment_intent_id character varying(255),
+    stripe_customer_id character varying(255),
+    paid_at timestamp(6) without time zone,
+    payment_method character varying(50),
+    credit_amount numeric(10,2) DEFAULT 0,
+    credit_reason text,
+    tax_rate numeric(5,2) DEFAULT 13.00,
+    is_locked boolean DEFAULT false
+);
+
+
+--
+-- Name: COLUMN invoices.credit_amount; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.credit_amount IS 'Credit amount applied to invoice';
+
+
+--
+-- Name: COLUMN invoices.credit_reason; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.credit_reason IS 'Reason for credit application';
+
+
+--
+-- Name: COLUMN invoices.tax_rate; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.tax_rate IS 'Tax rate percentage (default 13% HST)';
+
+
+--
+-- Name: COLUMN invoices.is_locked; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.invoices.is_locked IS 'Prevents editing after invoice is sent or paid. Set automatically by system on status change.';
+
+
+--
+-- Name: judges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.judges (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    competition_id uuid,
+    name character varying(255) NOT NULL,
+    credentials text,
+    specialization character varying(100),
+    years_judging integer,
+    certification_level character varying(50),
+    judge_number integer,
+    panel_assignment character varying(100),
+    sessions jsonb DEFAULT '[]'::jsonb,
+    email character varying(255),
+    phone character varying(50),
+    confirmed boolean DEFAULT false,
+    checked_in boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
+-- Name: rankings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.rankings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    competition_id uuid NOT NULL,
+    entry_id uuid NOT NULL,
+    category_id uuid NOT NULL,
+    age_group_id uuid NOT NULL,
+    classification_id uuid NOT NULL,
+    total_score numeric(8,2) NOT NULL,
+    average_score numeric(6,2),
+    placement integer NOT NULL,
+    category_award_placement integer,
+    competitive_award_placement integer,
+    overall_award_placement integer,
+    is_title_winner boolean DEFAULT false,
+    is_glow_off_winner boolean DEFAULT false,
+    special_awards text[],
+    created_at timestamp without time zone DEFAULT now(),
+    tenant_id uuid NOT NULL
+);
+
+
+--
