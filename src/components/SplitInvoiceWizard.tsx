@@ -11,10 +11,12 @@ type SplitInvoiceWizardProps = {
   onSuccess: () => void;
 };
 
-type MarginConfig = {
+type MarginConfigValue = {
   type: 'percentage_per_routine' | 'fixed_per_routine' | 'percentage_per_dancer' | 'fixed_per_dancer';
   value: number;
-} | null;
+};
+
+type MarginConfig = MarginConfigValue | null;
 
 export default function SplitInvoiceWizard({
   invoiceId,
@@ -142,7 +144,7 @@ function Step1MarginCalculator({
       return;
     }
 
-    const type = `${marginMode}_${marginType}` as MarginConfig['type'];
+    const type = `${marginMode}_${marginType}` as MarginConfigValue['type'];
     setMarginConfig({ type, value });
   }, [marginType, marginMode, marginValue, setMarginConfig]);
 
