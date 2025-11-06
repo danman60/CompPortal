@@ -1,10 +1,10 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-05 (Database Tasks + Testing Environment Fixed)
+**Last Updated:** 2025-11-06 (Invoice Workflow + CSV Import Fixes)
 
 ---
 
-## Current Status: ✅ TESTING READY - SA Environment Operational
+## Current Status: ✅ INVOICE WORKFLOW OPERATIONAL - CSV Import Fixed
 
 **Milestone Achievement:**
 - ✅ Soft launch completed - Studios invited, accounts claimed, dancers registered
@@ -29,7 +29,61 @@
 
 ## Recent Sessions
 
-### Session 34: Database Tasks + SA Testing Environment (Jan 5, 2025)
+### Session 35: Invoice Workflow + CSV Import Fixes (Nov 6, 2025)
+**Status:** ✅ COMPLETE - All workflow blockers resolved
+
+**COMPLETED:**
+1. ✅ **Fixed database login error** - Cleared corrupted refresh tokens for SA account
+   - Issue: duplicate key constraint on refresh_tokens_pkey
+   - Solution: Deleted all refresh tokens for danieljohnabrahamson@gmail.com
+   - Result: Account ready for fresh login
+
+2. ✅ **Fixed routine summaries visibility** - Added missing status field
+   - Issue: Summaries page showing "No routine submissions found"
+   - Root cause: Backend not returning `status` field needed for frontend filtering
+   - Fix: Added `status: summary.reservations?.status` to summary.getAll (summary.ts:81)
+   - Result: Summaries now visible in UI
+
+3. ✅ **Fixed 404 errors on View Details** - Corrected pipeline URLs
+   - Issue: Links pointing to `/dashboard/reservation-pipeline-rebuild` (doesn't exist)
+   - Fix: Updated to `/dashboard/reservation-pipeline` (RoutineSummaries.tsx:49,202)
+   - Result: All links working correctly
+
+4. ✅ **Implemented complete invoice button workflow**
+   - Issue: No UI buttons for invoice creation/sending
+   - Fixes:
+     - "Create Invoice" button when: summarized + no invoice (ReservationTable.tsx:179-187)
+     - "Send Invoice" button when: DRAFT invoice exists (ReservationTable.tsx:188-198)
+     - Wired up sendInvoice mutation (PipelinePageContainer.tsx:203-212)
+   - Result: Complete UI workflow now available
+
+5. ✅ **Fixed CSV import 400 error** - Corrected limit validation
+   - Issue: entry.getAll limit 10000 exceeds backend max of 100
+   - Fix: Changed limit 10000 → 100 (RoutineCSVImport.tsx:95)
+   - Result: CSV import reservation dropdown now populates correctly
+
+**TEST PROTOCOLS CREATED:**
+- INVOICE_WORKFLOW_USER_TEST.md - 5-phase user workflow test
+- INVOICE_WORKFLOW_COMPLETE_TEST.md - 6-phase test with CSV import (15 routines)
+- test_routines_15.csv - Test data with realistic dancer info
+
+**COMMITS:**
+- 6465d9a: Fix routine summaries visibility + invoice workflow
+- cf00044: Add fix summary to test report
+- 300a609: Complete invoice workflow test protocol
+- c2c2858: Add CSV test data
+- c5253dd: Fix CSV import 400 error
+
+**DATABASE CHANGES:**
+- Cleared refresh tokens for SA account
+- Verified test reservation 088e86aa-6280-4bd1-bb19-c34d93de4bc7 ready (0 entries)
+
+**READY FOR TESTING:**
+- All blockers from INVOICE_WORKFLOW_TEST_REPORT.md resolved
+- INVOICE_WORKFLOW_COMPLETE_TEST.md ready to run
+- Test reservation clean and available
+
+### Session 34: Database Tasks + SA Testing Environment (Nov 5, 2025)
 **Status:** ✅ COMPLETE - Testing environment operational
 
 **COMPLETED:**
