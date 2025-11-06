@@ -993,7 +993,7 @@ export const invoiceRouter = router({
               studioName: studio.name,
               competitionName: competition.name,
               competitionYear: competition.year || new Date().getFullYear(),
-              amount: 0, // See full details in invoice
+              amount: Number(invoice.total) || 0,
               paymentStatus: 'paid',
               invoiceNumber: invoice.id.substring(0, 8),
               paymentDate: new Date().toISOString(),

@@ -60,21 +60,21 @@ export default function InvoiceDelivery({
           </Text>
 
           <Section style={{...emailTheme.infoBox, borderLeft: `4px solid ${primaryColor}`}}>
-            <Text style={emailTheme.label}>Invoice Number</Text>
-            <Text style={emailTheme.value}>{invoiceNumber}</Text>
+            <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Invoice Number</Text>
+            <Text style={{...emailTheme.value, margin: '0 0 16px 0'}}>{invoiceNumber}</Text>
 
-            <Hr style={emailTheme.hr} />
+            <Hr style={{...emailTheme.hr, margin: '16px 0'}} />
 
             <table style={{width: '100%', borderCollapse: 'collapse' as const}}>
               <tbody>
                 <tr>
-                  <td style={{width: '50%', verticalAlign: 'top'}}>
-                    <Text style={emailTheme.label}>Routines</Text>
-                    <Text style={emailTheme.value}>{routineCount}</Text>
+                  <td style={{width: '50%', verticalAlign: 'top', padding: '0'}}>
+                    <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Routines</Text>
+                    <Text style={{...emailTheme.value, margin: '0'}}>{routineCount}</Text>
                   </td>
-                  <td style={{width: '50%', verticalAlign: 'top'}}>
-                    <Text style={emailTheme.label}>Total Amount</Text>
-                    <Text style={{...emailTheme.value, color: '#22c55e', fontSize: '28px'}}>
+                  <td style={{width: '50%', verticalAlign: 'top', padding: '0', textAlign: 'right' as const}}>
+                    <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Total Amount</Text>
+                    <Text style={{...emailTheme.value, color: '#22c55e', fontSize: '28px', margin: '0'}}>
                       ${totalAmount.toFixed(2)}
                     </Text>
                   </td>
@@ -84,9 +84,9 @@ export default function InvoiceDelivery({
 
             {dueDate && (
               <>
-                <Hr style={emailTheme.hr} />
-                <Text style={emailTheme.label}>Payment Due Date</Text>
-                <Text style={emailTheme.value}>{dueDate}</Text>
+                <Hr style={{...emailTheme.hr, margin: '16px 0'}} />
+                <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Payment Due Date</Text>
+                <Text style={{...emailTheme.value, margin: '0'}}>{dueDate}</Text>
               </>
             )}
           </Section>
