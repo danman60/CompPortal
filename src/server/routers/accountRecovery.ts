@@ -65,17 +65,31 @@ export const accountRecoveryRouter = router({
     // Check which owner_ids don't exist in auth.users
     const orphanedStudios = [];
     for (const studio of studios) {
+      // Skip studios without email (can't recover them anyway)
+      if (!studio.email) continue;
+
       // Studio is orphaned if owner_id is NULL OR points to non-existent auth user
       if (!studio.owner_id) {
+        // NULL owner_id = orphaned
         orphanedStudios.push({
           ...studio,
           dancer_count: studio._count.dancers,
         });
       } else {
-        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(
-          studio.owner_id
-        );
-        if (!authUser.user) {
+        // Check if auth user exists
+        try {
+          const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(
+            studio.owner_id
+          );
+          if (error || !authUser.user) {
+            // Auth user doesn't exist = orphaned
+            orphanedStudios.push({
+              ...studio,
+              dancer_count: studio._count.dancers,
+            });
+          }
+        } catch (err) {
+          // Error checking auth user = assume orphaned
           orphanedStudios.push({
             ...studio,
             dancer_count: studio._count.dancers,
