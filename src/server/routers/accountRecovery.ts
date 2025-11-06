@@ -62,48 +62,9 @@ export const accountRecoveryRouter = router({
       orderBy: { created_at: 'desc' },
     });
 
-    // Check which owner_ids don't exist in auth.users
-    const orphanedStudios = [];
-    for (const studio of studios) {
-      // Skip studios without email (can't recover them anyway)
-      if (!studio.email) continue;
-
-      // Studio is orphaned if owner_id is NULL OR points to non-existent auth user
-      if (!studio.owner_id) {
-        // NULL owner_id = orphaned
-        orphanedStudios.push({
-          ...studio,
-          dancer_count: studio._count.dancers,
-        });
-      } else {
-        // Check if auth user exists
-        try {
-          const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(
-            studio.owner_id
-          );
-          if (error || !authUser.user) {
-            // Auth user doesn't exist = orphaned
-            orphanedStudios.push({
-              ...studio,
-              dancer_count: studio._count.dancers,
-            });
-          }
-        } catch (err) {
-          // Error checking auth user = assume orphaned
-          orphanedStudios.push({
-            ...studio,
-            dancer_count: studio._count.dancers,
-          });
-        }
-      }
-    }
-
-    // Check if recovery token already exists
-    const studiosWithTokens = await prisma.account_recovery_tokens.findMany({
+    // First, get all studios with active recovery tokens
+    const studiosWithActiveTokens = await prisma.account_recovery_tokens.findMany({
       where: {
-        studio_id: {
-          in: orphanedStudios.map((s) => s.id),
-        },
         used_at: null,
         expires_at: {
           gte: new Date(),
@@ -117,8 +78,46 @@ export const accountRecoveryRouter = router({
     });
 
     const tokenMap = new Map(
-      studiosWithTokens.map((t) => [t.studio_id, t])
+      studiosWithActiveTokens.map((t) => [t.studio_id, t])
     );
+
+    // Check which studios are orphaned (no valid auth) OR have active tokens
+    const orphanedStudios = [];
+    for (const studio of studios) {
+      // Skip studios without email (can't recover them anyway)
+      if (!studio.email) continue;
+
+      let isOrphaned = false;
+
+      // Check if studio has active recovery token (show even if owner_id was just created)
+      if (tokenMap.has(studio.id)) {
+        isOrphaned = true; // Include in list until token is used/expired
+      } else if (!studio.owner_id) {
+        // NULL owner_id = orphaned
+        isOrphaned = true;
+      } else {
+        // Check if auth user exists
+        try {
+          const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(
+            studio.owner_id
+          );
+          if (error || !authUser.user) {
+            // Auth user doesn't exist = orphaned
+            isOrphaned = true;
+          }
+        } catch (err) {
+          // Error checking auth user = assume orphaned
+          isOrphaned = true;
+        }
+      }
+
+      if (isOrphaned) {
+        orphanedStudios.push({
+          ...studio,
+          dancer_count: studio._count.dancers,
+        });
+      }
+    }
 
     return orphanedStudios.map((studio) => ({
       ...studio,
