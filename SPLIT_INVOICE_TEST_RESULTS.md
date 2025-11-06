@@ -1,15 +1,15 @@
 # Split Invoice Testing - Session Results
 
 **Date:** November 6, 2025
-**Session Duration:** ~2 hours
-**Status:** PARTIALLY COMPLETE (5/18 tests executed)
+**Session Duration:** ~3 hours
+**Status:** IN PROGRESS (7/18 tests executed)
 
 ---
 
 ## Summary
 
-**Tests Executed:** 5 / 18 (28%)
-**Tests Passed:** 5 / 5 (100%)
+**Tests Executed:** 7 / 18 (39%)
+**Tests Passed:** 7 / 7 (100%)
 **Bugs Found:** 2 (both fixed)
 
 ---
@@ -54,11 +54,36 @@
   - Footer totals: $465.00 + $60.45 = $525.45
 - **Evidence:** Browser snapshot captured
 
-### ⏭️ Tests I6-I18: NOT EXECUTED
-- Remaining tests require individual sub-invoice inspection
-- Database verification
-- Regeneration testing
-- Multi-tenant and role access testing
+### ✅ Test I6: View Solo Sub-Invoice - PASS
+- **Action:** Click view on Emma Johnson's family invoice
+- **Expected:** Individual invoice shows solo routine with correct calculations
+- **Result:** ✅ All correct:
+  - Routine: "Fly Away" (Contemporary Solo)
+  - Dancers: "Emma Johnson (of 1 dancers)"
+  - Subtotal: $115.00
+  - Tax (13% HST): $14.95
+  - Total Due: $129.95
+  - Payment instructions displayed
+- **Evidence:** `evidence/sub-invoice-emma-solo-20251106.png`
+
+### ✅ Test I7: View Duo Sub-Invoice - PASS
+- **Action:** Click view on Olivia Williams' family invoice
+- **Expected:** Individual invoice shows duo routine with split fee (50%)
+- **Result:** ✅ All correct:
+  - Routine: "Together We Rise" (Jazz Duet/Trio)
+  - Dancers: "Olivia Williams (of 2 dancers)"
+  - Subtotal: $70.00 (50% of $140 duo fee)
+  - Tax (13% HST): $9.10
+  - Total Due: $79.10
+  - Correctly shows 1 of 2 dancers
+- **Evidence:** Browser snapshot captured
+
+### ⏭️ Tests I8-I18: NOT EXECUTED
+- Trio sub-invoice inspection (I8)
+- Verify all 6 sub-invoices (I9-I11)
+- Database verification (I13)
+- Regeneration testing (I15)
+- Multi-tenant and role access testing (I16-I18)
 
 ---
 
