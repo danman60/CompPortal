@@ -24,9 +24,14 @@ export default function RoutinesSummaryElement({ studioId, competitionId, onSumm
     downloadPDF.mutate({ studioId, competitionId });
   };
 
+  const utils = trpc.useUtils();
+
   const submitSummary = trpc.entry.submitSummary.useMutation({
     onSuccess: () => {
       toast.success('Summary sent to Competition Director', { position: 'top-right' });
+      // Invalidate reservation queries to update dropdown status immediately
+      utils.reservation.getAll.invalidate();
+      utils.reservation.getById.invalidate();
       onSummarySubmitted?.();
     },
     onError: (err) => toast.error(err.message, { position: 'top-right' }),

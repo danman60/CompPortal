@@ -640,6 +640,7 @@ model competition_entries {
   routine_length_minutes                                                               Int?
   routine_length_seconds                                                               Int?
   scheduling_notes                                                                     String?
+  routine_age                                                                          Int?
   awards                                                                               awards[]
   classification_exception_requests                                                    classification_exception_requests?
   age_groups                                                                           age_groups                         @relation(fields: [age_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

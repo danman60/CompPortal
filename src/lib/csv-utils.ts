@@ -35,9 +35,46 @@ export function normalizeHeader(header: string): string {
  */
 export const FIELD_VARIATIONS: Record<string, string[]> = {
   // Dancer fields - MAXIMUM FUZZINESS for name variations
-  first_name: ['firstname', 'fname', 'given_name', 'givenname', 'given name', 'first', 'name', 'dancer_first_name', 'dancer first name', 'dancer_first', 'dancer first', 'f_name', 'f name', 'first_name'],
-  last_name: ['lastname', 'lname', 'surname', 'family_name', 'familyname', 'family name', 'last', 'dancer_last_name', 'dancer last name', 'dancer_last', 'dancer last', 'l_name', 'l name', 'last_name'],
-  date_of_birth: ['dob', 'birthdate', 'birth_date', 'dateofbirth', 'birthday', 'birth', 'bday', 'bd', 'born', 'age', 'dancer_dob', 'dancer_birth_date'],
+  first_name: [
+    // Standard variations
+    'firstname', 'fname', 'given_name', 'givenname', 'given name', 'first', 'name',
+    // With dancer prefix
+    'dancer_first_name', 'dancer first name', 'dancer_first', 'dancer first',
+    // Abbreviated
+    'f_name', 'f name', 'f.name', 'first_name',
+    // Misspellings
+    'frist_name', 'frist name', 'fisrt_name', 'firt_name',
+    // Other
+    'forename', 'christian_name', 'christian name',
+  ],
+  last_name: [
+    // Standard variations
+    'lastname', 'lname', 'surname', 'family_name', 'familyname', 'family name', 'last',
+    // With dancer prefix
+    'dancer_last_name', 'dancer last name', 'dancer_last', 'dancer last',
+    // Abbreviated
+    'l_name', 'l name', 'l.name', 'last_name',
+    // Misspellings
+    'lst_name', 'las_name', 'laast_name',
+    // Other
+    'sur_name',
+  ],
+  date_of_birth: [
+    // Common abbreviations
+    'dob', 'birthdate', 'birth_date', 'dateofbirth', 'birthday', 'birth', 'bday', 'bd', 'born', 'age',
+    // With dancer prefix
+    'dancer_dob', 'dancer_birth_date', 'dancer_birthdate', 'dancer_birthday',
+    // With spaces
+    'date of birth', 'birth date', 'birth day',
+    // Misspellings and variations
+    'dat_of_birth', 'date_birth', 'datebirth', 'birhdate', 'birtdate',
+    // Single letter variations
+    'd_o_b', 'd.o.b', 'd/o/b', 'date_o_birth', 'date o birth',
+    // Age-related (might contain dates)
+    'age_dob', 'age/dob', 'age_date',
+    // International variations
+    'fecha_nacimiento', 'fecha nacimiento', 'data_nascimento', 'date_naissance',
+  ],
   gender: ['sex', 'male_female', 'm_f', 'mf', 'gender_identity', 'dancer_gender', 'gender_female_male', 'female_male'],
   email: ['email_address', 'e_mail', 'emailaddress', 'mail'],
   phone: ['phone_number', 'phonenumber', 'tel', 'telephone', 'mobile', 'cell'],

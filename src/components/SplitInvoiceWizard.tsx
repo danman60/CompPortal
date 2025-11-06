@@ -39,22 +39,22 @@ export default function SplitInvoiceWizard({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl shadow-2xl border border-white/20">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b border-white/20">
           <div className="flex items-center gap-3">
-            <Users className="w-6 h-6 text-purple-600" />
+            <Users className="w-6 h-6 text-purple-300" />
             <div>
-              <h2 className="text-xl font-semibold">Split Invoice by Family</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-xl font-semibold text-white">Split Invoice by Dancer</h2>
+              <p className="text-sm text-gray-400">
                 Step {step} of 3
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-gray-400 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -113,37 +113,36 @@ function Step1Review({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">How Family Splitting Works</h3>
-        <div className="space-y-3 text-sm text-muted-foreground">
+        <h3 className="text-lg font-semibold mb-2 text-white">How Dancer Splitting Works</h3>
+        <div className="space-y-3 text-sm text-gray-300">
           <p>
-            <strong className="text-foreground">1. Grouping:</strong> Dancers are grouped by parent email
+            <strong className="text-white">1. Grouping:</strong> Each dancer gets their own sub-invoice
           </p>
           <p>
-            <strong className="text-foreground">2. Fee Calculation:</strong> Entry fees are split equally among dancers
+            <strong className="text-white">2. Fee Calculation:</strong> Entry fees are split equally among dancers in each routine
           </p>
           <ul className="list-disc list-inside ml-4 space-y-1">
-            <li>Solo: 100% to that family</li>
-            <li>Duet with 2 siblings: Parents pay 100% (2/2 share)</li>
-            <li>Trio with 2 siblings + 1 other: Siblings parents pay 2/3, other family pays 1/3</li>
+            <li>Solo: 100% to that dancer</li>
+            <li>Duet: Each dancer pays 50%</li>
+            <li>Trio: Each dancer pays 33.33%</li>
           </ul>
           <p>
-            <strong className="text-foreground">3. Display:</strong> Sub-invoices show routine titles and totals only (no itemized fees)
+            <strong className="text-white">3. Display:</strong> Sub-invoices show routine titles and totals only (no itemized fees)
           </p>
           <p>
-            <strong className="text-foreground">4. Tax:</strong> 13% HST applied to each family's subtotal
+            <strong className="text-white">4. Tax:</strong> 13% HST applied to each dancer's subtotal
           </p>
           <p>
-            <strong className="text-foreground">5. Validation:</strong> All sub-invoices add up to main invoice exactly
+            <strong className="text-white">5. Validation:</strong> All sub-invoices add up to main invoice exactly
           </p>
         </div>
       </div>
 
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-        <p className="text-sm text-purple-900 font-medium mb-2">
+      <div className="bg-purple-500/20 border border-purple-400/50 rounded-lg p-4">
+        <p className="text-sm text-purple-200 font-medium mb-2">
           ⚠️ Requirements
         </p>
-        <ul className="text-sm text-purple-800 space-y-1 list-disc list-inside">
-          <li>All dancers must have a parent email</li>
+        <ul className="text-sm text-purple-100 space-y-1 list-disc list-inside">
           <li>Invoice must have at least one entry</li>
           <li>Entries must not be cancelled</li>
         </ul>
@@ -151,14 +150,14 @@ function Step1Review({
 
       <div className="flex gap-3 justify-end pt-4">
         <Button
-          variant="ghost"
+          variant="secondary"
           onClick={onCancel}
         >
           Cancel
         </Button>
         <Button
           onClick={onNext}
-          className="bg-purple-600 hover:bg-purple-700"
+          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-lg"
         >
           Continue to Review
         </Button>
@@ -180,19 +179,19 @@ function Step2Confirm({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Ready to Split Invoice</h3>
-        <p className="text-sm text-muted-foreground">
-          This will create family-specific sub-invoices based on dancer participation in routines.
+        <h3 className="text-lg font-semibold mb-2 text-white">Ready to Split Invoice</h3>
+        <p className="text-sm text-gray-300">
+          This will create dancer-specific sub-invoices based on participation in routines.
         </p>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-900 font-medium mb-2">
+      <div className="bg-blue-500/20 border border-blue-400/50 rounded-lg p-4">
+        <p className="text-sm text-blue-200 font-medium mb-2">
           ℹ️ What happens next
         </p>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Family-specific sub-invoices will be generated</li>
-          <li>Each family will see their dancers' routines</li>
+        <ul className="text-sm text-blue-100 space-y-1 list-disc list-inside">
+          <li>Dancer-specific sub-invoices will be generated</li>
+          <li>Each dancer will see their routines and share of fees</li>
           <li>All sub-invoices will sum to your main invoice total</li>
           <li>You can regenerate splits if entries change</li>
         </ul>
@@ -200,7 +199,7 @@ function Step2Confirm({
 
       <div className="flex gap-3 justify-end pt-4">
         <Button
-          variant="ghost"
+          variant="secondary"
           onClick={onBack}
           disabled={isLoading}
         >
@@ -209,7 +208,7 @@ function Step2Confirm({
         <Button
           onClick={onSplit}
           disabled={isLoading}
-          className="bg-purple-600 hover:bg-purple-700"
+          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-lg"
         >
           {isLoading ? (
             <>
@@ -243,35 +242,35 @@ function Step3Success({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-          <CheckCircle className="w-10 h-10 text-green-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 border-2 border-green-400/50 rounded-full mb-4">
+          <CheckCircle className="w-10 h-10 text-green-300" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">
+        <h3 className="text-lg font-semibold mb-2 text-white">
           Successfully Split Invoice!
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-300">
           Created {result.sub_invoice_count} dancer invoice{result.sub_invoice_count !== 1 ? 's' : ''}
         </p>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border border-white/20 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-muted">
+          <thead className="bg-white/10">
             <tr>
-              <th className="text-left px-4 py-2 font-medium">Dancer</th>
-              <th className="text-right px-4 py-2 font-medium">Total</th>
+              <th className="text-left px-4 py-2 font-medium text-white">Dancer</th>
+              <th className="text-right px-4 py-2 font-medium text-white">Total</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-white/10">
             {result.dancers.map((dancer, i) => (
-              <tr key={i} className="hover:bg-muted/50">
+              <tr key={i} className="hover:bg-white/5">
                 <td className="px-4 py-2">
                   <div>
-                    <p className="font-medium">{dancer.name}</p>
-                    <p className="text-xs text-muted-foreground">{dancer.identifier}</p>
+                    <p className="font-medium text-white">{dancer.name}</p>
+                    <p className="text-xs text-gray-400">{dancer.identifier}</p>
                   </div>
                 </td>
-                <td className="px-4 py-2 text-right font-medium">
+                <td className="px-4 py-2 text-right font-medium text-white">
                   ${dancer.total.toFixed(2)}
                 </td>
               </tr>
@@ -280,8 +279,8 @@ function Step3Success({
         </table>
       </div>
 
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <p className="text-sm text-green-900">
+      <div className="bg-green-500/20 border border-green-400/50 rounded-lg p-4">
+        <p className="text-sm text-green-100">
           ✅ All dancer invoices have been generated and validated.
           You can now view, download, or send these invoices to dancers.
         </p>
@@ -290,7 +289,7 @@ function Step3Success({
       <div className="flex justify-end pt-4">
         <Button
           onClick={onFinish}
-          className="bg-purple-600 hover:bg-purple-700"
+          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-lg"
         >
           View Dancer Invoices
         </Button>

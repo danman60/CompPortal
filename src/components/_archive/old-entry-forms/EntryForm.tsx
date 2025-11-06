@@ -226,8 +226,8 @@ export default function EntryForm({ entryId }: EntryFormProps) {
   // Copy dancers from another routine
   const handleCopyDancers = (entryId: string) => {
     const sourceEntry = existingEntries?.entries.find(e => e.id === entryId);
-    if (sourceEntry?.entry_participants) {
-      const copiedParticipants = sourceEntry.entry_participants.map((p) => ({
+    if ((sourceEntry as any)?.entry_participants) {
+      const copiedParticipants = (sourceEntry as any).entry_participants.map((p: any) => ({
         dancer_id: p.dancer_id,
         dancer_name: p.dancer_name,
         role: p.role || undefined,
@@ -568,7 +568,7 @@ export default function EntryForm({ entryId }: EntryFormProps) {
                   defaultValue=""
                 >
                   <option value="" className="bg-gray-900 text-white">-- Select a routine to copy dancers --</option>
-                  {existingEntries.entries.map((entry) => (
+                  {existingEntries.entries.map((entry: any) => (
                     <option key={entry.id} value={entry.id} className="bg-gray-900 text-white">
                       {entry.title} ({entry.entry_participants?.length || 0} dancers)
                     </option>

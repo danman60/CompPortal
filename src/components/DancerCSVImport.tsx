@@ -125,13 +125,13 @@ export default function DancerCSVImport() {
     const worksheet = workbook.Sheets[sheetName];
     if (!worksheet) return [];
 
-    // Convert sheet to array of arrays (includes header row)
-    const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+    // Convert sheet to array of arrays with RAW values to preserve dates
+    const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
 
     if (data.length < 2) return []; // Need header + at least 1 row
 
     const headers = data[0].map((h: any) => String(h || '').trim()).filter((h: string) => h !== '');
-    const { mapping } = mapCSVHeaders(headers, DANCER_CSV_FIELDS, 0.7);
+    const { mapping } = mapCSVHeaders(headers, DANCER_CSV_FIELDS, 0.5); // Lower threshold for max fuzziness
 
     const parsed: ParsedDancer[] = [];
 
@@ -146,14 +146,31 @@ export default function DancerCSVImport() {
         const cellValue = row[colIndex];
 
         if (canonicalField && cellValue !== undefined && cellValue !== null) {
-          const value = String(cellValue).trim();
-          if (value !== '') {
-            if (canonicalField === 'date_of_birth') {
-              const parsedDate = parseFlexibleDate(value);
-              if (parsedDate) {
-                dancerRow[canonicalField] = parsedDate;
+          if (canonicalField === 'date_of_birth') {
+            // Handle Excel date serial numbers
+            if (typeof cellValue === 'number') {
+              // Excel date serial number - convert to JS Date then to YYYY-MM-DD
+              const excelDate = XLSX.SSF.parse_date_code(cellValue);
+              if (excelDate) {
+                const year = excelDate.y;
+                const month = String(excelDate.m).padStart(2, '0');
+                const day = String(excelDate.d).padStart(2, '0');
+                dancerRow[canonicalField] = `${year}-${month}-${day}`;
               }
             } else {
+              // String value - use flexible date parser
+              const value = String(cellValue).trim();
+              if (value !== '') {
+                const parsedDate = parseFlexibleDate(value);
+                if (parsedDate) {
+                  dancerRow[canonicalField] = parsedDate;
+                }
+              }
+            }
+          } else {
+            // Non-date fields
+            const value = String(cellValue).trim();
+            if (value !== '') {
               dancerRow[canonicalField] = value;
             }
           }
@@ -208,7 +225,7 @@ export default function DancerCSVImport() {
     const csvHeaders = parseCSVLine(lines[0]);
 
     // Map CSV headers to canonical field names using flexible matching
-    const { mapping, unmatched, suggestions } = mapCSVHeaders(csvHeaders, DANCER_CSV_FIELDS, 0.7);
+    const { mapping, unmatched, suggestions } = mapCSVHeaders(csvHeaders, DANCER_CSV_FIELDS, 0.5); // Lower threshold for max fuzziness
 
     // Store suggestions for display to user
     setHeaderSuggestions(suggestions);

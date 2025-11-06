@@ -113,6 +113,7 @@ const entryInputSchema = z.object({
   routine_length_minutes: z.number().int().min(0).max(15).optional(),
   routine_length_seconds: z.number().int().min(0).max(59).optional(),
   scheduling_notes: z.string().optional(),
+  routine_age: z.number().int().min(5).max(99).optional(), // Final selected age for routine
   participants: z.array(entryParticipantSchema).optional(),
 });
 
@@ -683,6 +684,11 @@ export const entryRouter = router({
             music_artist: true,
             created_at: true,
             total_fee: true,
+            routine_age: true,
+            is_title_upgrade: true,
+            extended_time_requested: true,
+            routine_length_minutes: true,
+            routine_length_seconds: true,
             studios: {
               select: {
                 id: true,
@@ -709,15 +715,30 @@ export const entryRouter = router({
                 name: true,
               },
             },
+            entry_size_categories: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             entry_participants: {
               select: {
                 id: true,
                 dancer_id: true,
                 dancer_name: true,
+                dancer_age: true,
                 role: true,
               },
               orderBy: { display_order: 'asc' },
               take: 4, // Only fetch first 4 participants for list view
+            },
+            classification_exception_requests: {
+              select: {
+                id: true,
+                status: true,
+                cd_decision_type: true,
+              },
+              take: 1, // Get the latest request
             },
           },
           orderBy: [

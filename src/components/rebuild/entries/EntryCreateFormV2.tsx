@@ -14,7 +14,11 @@ import { ImportActions } from './ImportActions';
 import { ClassificationRequestExceptionModal } from '@/components/ClassificationRequestExceptionModal';
 import toast from 'react-hot-toast';
 
-export function EntryCreateFormV2() {
+interface EntryCreateFormV2Props {
+  entryId?: string; // If provided, component is in edit mode
+}
+
+export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showClassificationModal, setShowClassificationModal] = useState(false);
@@ -22,6 +26,14 @@ export function EntryCreateFormV2() {
   const [prefilledRoutineId, setPrefilledRoutineId] = useState<string | null>(null);
   const reservationId = searchParams.get('reservation');
   const importSessionId = searchParams.get('importSession');
+
+  const isEditMode = !!entryId;
+
+  // Load existing entry if in edit mode
+  const { data: existingEntry, isLoading: entryLoading } = trpc.entry.getById.useQuery(
+    { id: entryId! },
+    { enabled: isEditMode }
+  );
 
   // Load import session if present
   const { data: importSession, isLoading: importSessionLoading, refetch: refetchImportSession } = trpc.importSession.getById.useQuery(
@@ -34,9 +46,11 @@ export function EntryCreateFormV2() {
     ? (importSession.routines as any[])[importSession.current_index ?? 0]
     : null;
 
-  // Use session's reservation if in import mode, otherwise use query param
+  // Use session's reservation if in import mode, entry's reservation if edit mode, otherwise query param
   const actualReservationId = importSessionId && importSession
     ? importSession.reservation_id
+    : isEditMode && existingEntry
+    ? existingEntry.reservation_id
     : reservationId;
 
   const { data: reservation, isLoading: reservationLoading } = trpc.reservation.getById.useQuery(
@@ -229,7 +243,69 @@ export function EntryCreateFormV2() {
     lookups
   ]);
 
+  // Pre-fill form from existing entry if in edit mode
+  useEffect(() => {
+    if (!isEditMode || !existingEntry || !dancers.length || !eventStartDate) return;
+
+    // Only run once when entry loads
+    if (prefilledRoutineId === `edit-${entryId}`) return;
+
+    console.log('[EDIT MODE] Pre-filling form with existing entry:', existingEntry);
+
+    // Set basic fields
+    formHook.updateField('title', existingEntry.title || '');
+    formHook.updateField('choreographer', existingEntry.choreographer || '');
+    formHook.updateField('category_id', existingEntry.category_id || '');
+    formHook.updateField('classification_id', existingEntry.classification_id || '');
+    formHook.updateField('special_requirements', existingEntry.special_requirements || '');
+    formHook.updateField('is_title_upgrade', existingEntry.is_title_upgrade || false);
+    formHook.updateField('extended_time_requested', existingEntry.extended_time_requested || false);
+    if (existingEntry.routine_length_minutes) {
+      formHook.updateField('routine_length_minutes', existingEntry.routine_length_minutes);
+    }
+    if (existingEntry.routine_length_seconds) {
+      formHook.updateField('routine_length_seconds', existingEntry.routine_length_seconds);
+    }
+    if (existingEntry.scheduling_notes) {
+      formHook.updateField('scheduling_notes', existingEntry.scheduling_notes);
+    }
+
+    // Set selected dancers from participants
+    if (existingEntry.entry_participants && existingEntry.entry_participants.length > 0) {
+      existingEntry.entry_participants.forEach((p: any) => {
+        const dancer = dancers.find(d => d.id === p.dancer_id);
+        if (dancer) {
+          formHook.toggleDancer({
+            dancer_id: p.dancer_id,
+            dancer_name: p.dancer_name,
+            dancer_age: p.dancer_age,
+            date_of_birth: dancer.date_of_birth,
+            classification_id: dancer.classification_id,
+          });
+        }
+      });
+    }
+
+    setPrefilledRoutineId(`edit-${entryId}`);
+  }, [isEditMode, existingEntry?.id, dancers.length, eventStartDate, prefilledRoutineId]);
+
+  const utils = trpc.useUtils();
+
   const createMutation = trpc.entry.create.useMutation({
+    onSuccess: () => {
+      // Invalidate entries cache to refresh bottom bar counts
+      utils.entry.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed: ${error.message}`);
+    },
+  });
+
+  const updateMutation = trpc.entry.update.useMutation({
+    onSuccess: () => {
+      // Invalidate entries cache to refresh bottom bar counts
+      utils.entry.getAll.invalidate();
+    },
     onError: (error) => {
       toast.error(`Failed: ${error.message}`);
     },
@@ -239,7 +315,7 @@ export function EntryCreateFormV2() {
   const deleteRoutineMutation = trpc.importSession.deleteRoutine.useMutation();
   const markCompleteMutation = trpc.importSession.markComplete.useMutation();
 
-  if (!actualReservationId && !importSessionId) {
+  if (!actualReservationId && !importSessionId && !isEditMode) {
     return (
       <div className="max-w-4xl mx-auto mt-20 bg-red-500/20 border border-red-500/50 rounded-xl p-8 text-center">
         <h2 className="text-2xl font-bold text-red-300 mb-4">Missing Reservation</h2>
@@ -250,7 +326,7 @@ export function EntryCreateFormV2() {
     );
   }
 
-  if (reservationLoading || competitionLoading || lookupsLoading || dancersLoading || importSessionLoading) {
+  if (reservationLoading || competitionLoading || lookupsLoading || dancersLoading || importSessionLoading || (isEditMode && entryLoading)) {
     return (
       <div className="max-w-4xl mx-auto mt-20 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 text-center text-white">
         Loading form...
@@ -287,7 +363,7 @@ export function EntryCreateFormV2() {
       // Use auto-calculated classification if "Use detected" is selected (empty string)
       const effectiveClassificationId = formHook.form.classification_id || formHook.autoCalculatedClassification || '';
 
-      await createMutation.mutateAsync({
+      const entryData = {
         reservation_id: actualReservationId!,
         competition_id: reservation.competition_id,
         studio_id: reservation.studio_id,
@@ -298,6 +374,7 @@ export function EntryCreateFormV2() {
         special_requirements: formHook.form.special_requirements || undefined,
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
+        routine_age: formHook.effectiveAge, // Final selected age (calculated or +1)
         is_title_upgrade: formHook.form.is_title_upgrade,
         // Phase 2 spec lines 324-373: Extended time fields
         extended_time_requested: formHook.form.extended_time_requested,
@@ -311,10 +388,20 @@ export function EntryCreateFormV2() {
           dancer_age: d.dancer_age || undefined,
           display_order: idx,
         })),
-      });
+      };
 
-      // Show success toast
-      toast.success('Routine saved successfully!');
+      if (isEditMode) {
+        // Update existing entry
+        await updateMutation.mutateAsync({
+          id: entryId!,
+          data: entryData as any,
+        });
+        toast.success('Routine updated successfully!');
+      } else {
+        // Create new entry
+        await createMutation.mutateAsync(entryData as any);
+        toast.success('Routine saved successfully!');
+      }
 
       if (action === 'save') {
         router.push('/dashboard/entries');
@@ -324,8 +411,8 @@ export function EntryCreateFormV2() {
         formHook.resetDetailsOnly();
       }
     } catch (error) {
-      console.error('Failed to create entry:', error);
-      toast.error('Failed to save routine. Please try again.');
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} entry:`, error);
+      toast.error(`Failed to ${isEditMode ? 'update' : 'save'} routine. Please try again.`);
     }
   };
 
@@ -539,6 +626,7 @@ export function EntryCreateFormV2() {
         selectedDancers={formHook.form.selectedDancers}
         toggleDancer={formHook.toggleDancer}
         eventStartDate={eventStartDate}
+        pinSelectedToTop={isEditMode}
       />
 
       <AutoCalculatedSection

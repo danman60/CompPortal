@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { ClassificationRequestDetailModal } from './ClassificationRequestDetailModal';
 import toast from 'react-hot-toast';
 
 export function ClassificationRequestsPage() {
+  const router = useRouter();
   const [view, setView] = useState<'card' | 'table'>('card');
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'resolved' | 'all'>('pending');
@@ -37,8 +39,14 @@ export function ClassificationRequestsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-8">
-      {/* Header */}
+      {/* Header with Back Button */}
       <div className="mb-8">
+        <button
+          onClick={() => router.back()}
+          className="mb-4 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+        >
+          ← Back
+        </button>
         <h1 className="text-4xl font-bold text-white mb-2">Classification Exception Requests</h1>
         <p className="text-gray-300">Review and respond to classification exception requests from studios</p>
       </div>

@@ -10,12 +10,18 @@ interface Entry {
   status?: string;
   total_fee?: number;
   is_title_upgrade?: boolean;
+  routine_age?: number | null;
   studios?: { name: string };
   dance_categories?: { name: string };
   entry_size_categories?: { name: string };
   age_groups?: { name: string };
-  entry_participants?: Array<{ dancer_name: string }>;
+  entry_participants?: Array<{ dancer_name: string; dancer_age?: number | null }>;
   music_file_url?: string;
+  classification_exception_requests?: Array<{
+    id: string;
+    status: string;
+    cd_decision_type?: string | null;
+  }>;
   [key: string]: any;
 }
 
@@ -37,6 +43,11 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
 
   const needsDancers = !entry.entry_participants || entry.entry_participants.length === 0;
 
+  // Check if there's a resolved classification exception request
+  const hasDecision = entry.classification_exception_requests &&
+    entry.classification_exception_requests.length > 0 &&
+    ['approved', 'resolved'].includes(entry.classification_exception_requests[0].status);
+
   return (
     <Card className={needsDancers ? 'border-2 border-orange-400/50' : ''}>
       <div className="flex items-start justify-between mb-4">
@@ -53,6 +64,11 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
           {needsDancers && (
             <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 border border-orange-400/50 rounded-full text-orange-300 text-xs font-semibold">
               ⚠️ Needs Dancers
+            </span>
+          )}
+          {hasDecision && (
+            <span className="inline-flex items-center px-3 py-1 bg-green-500/20 border border-green-400/50 rounded-full text-green-300 text-xs font-semibold">
+              ✓ Decision Made
             </span>
           )}
         </div>
@@ -77,10 +93,10 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
             <span>{entry.entry_size_categories.name}</span>
           </div>
         )}
-        {entry.age_groups?.name && (
+        {entry.routine_age !== null && entry.routine_age !== undefined && (
           <div className="flex items-center gap-2">
             <span>📅</span>
-            <span>{entry.age_groups.name}</span>
+            <span>Age {entry.routine_age}</span>
           </div>
         )}
         {entry.is_title_upgrade && (

@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface BadgeProps {
-  status?: 'draft' | 'submitted' | 'confirmed' | 'approved' | 'rejected' | 'pending' | 'summarized' | 'invoiced' | 'closed';
+  status?: 'draft' | 'submitted' | 'confirmed' | 'approved' | 'rejected' | 'pending' | 'summarized' | 'invoiced' | 'closed' | 'pending_classification_approval';
   variant?: 'success' | 'warning' | 'error' | 'info';
   children?: React.ReactNode;
 }
@@ -16,6 +16,7 @@ export function Badge({ status, variant, children }: BadgeProps) {
     if (status === 'draft') return 'bg-gray-500/20 text-gray-300 border-gray-500/50';
     if (status === 'submitted') return 'bg-blue-500/20 text-blue-300 border-blue-500/50';
     if (status === 'confirmed') return 'bg-green-500/20 text-green-300 border-green-500/50';
+    if (status === 'pending_classification_approval') return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50';
 
     // Reservation statuses
     if (status === 'pending') return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50';
@@ -34,7 +35,12 @@ export function Badge({ status, variant, children }: BadgeProps) {
     return 'bg-gray-500/20 text-gray-300 border-gray-500/50';
   };
 
-  const displayText = children || status || variant;
+  const getDisplayText = () => {
+    if (status === 'pending_classification_approval') return 'Pending Exception Request';
+    return children || status || variant;
+  };
+
+  const displayText = getDisplayText();
 
   return (
     <span className={`

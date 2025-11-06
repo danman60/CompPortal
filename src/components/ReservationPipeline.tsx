@@ -487,7 +487,7 @@ export default function ReservationPipeline() {
                                 reservation.status === 'approved' ? 'text-green-400' : 'text-yellow-400'
                               }`}>
                                 {reservation.status === 'approved'
-                                  ? `${reservation.spacesConfirmed} approved`
+                                  ? `Submitted: ${reservation.entryCount}/${reservation.spacesConfirmed}`
                                   : `${reservation.spacesRequested} spaces`}
                               </span>
                               <div className="w-full max-w-[150px] h-1.5 bg-white/10 rounded-full overflow-hidden relative">

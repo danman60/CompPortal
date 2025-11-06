@@ -21,18 +21,21 @@ interface Props {
   selectedDancers: SelectedDancer[];
   toggleDancer: (dancer: SelectedDancer) => void;
   eventStartDate: Date | null;
+  pinSelectedToTop?: boolean; // Only pin in edit mode on initial load
 }
 
 /**
  * Dancer Selection Section V2
  * Phase 1 Spec lines 528-544: Dancer attachment to entries
  * Built from scratch without legacy code contamination
+ * Updated: Pinning only active when explicitly enabled (edit mode)
  */
 export function DancerSelectionSection({
   dancers,
   selectedDancers,
   toggleDancer,
   eventStartDate,
+  pinSelectedToTop = false,
 }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'age'>('name');
@@ -66,17 +69,20 @@ export function DancerSelectionSection({
   });
 
   /**
-   * Sort dancers - pin selected to top, then alphabetical/age
+   * Sort dancers - only pin selected to top if explicitly enabled
    */
   const sortedDancers = [...filteredDancers].sort((a, b) => {
-    const aSelected = isSelected(a.id);
-    const bSelected = isSelected(b.id);
+    // Only pin if explicitly enabled (edit mode initial load)
+    if (pinSelectedToTop) {
+      const aSelected = isSelected(a.id);
+      const bSelected = isSelected(b.id);
 
-    // Pin selected dancers to top
-    if (aSelected && !bSelected) return -1;
-    if (!aSelected && bSelected) return 1;
+      // Pin selected dancers to top
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+    }
 
-    // Within selected or unselected groups, sort normally
+    // Sort by name or age
     if (sortBy === 'name') {
       return `${a.first_name} ${a.last_name}`.localeCompare(
         `${b.first_name} ${b.last_name}`

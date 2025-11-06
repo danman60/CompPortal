@@ -148,14 +148,28 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
                     <h3 className="text-xl font-bold text-white mb-1">
                       {invoice.competitionName} ({invoice.competitionYear})
                     </h3>
-                    {invoice.startDate && (
-                      <p className="text-sm text-gray-400">
-                        {new Date(invoice.startDate).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
+                    {isDirectorView ? (
+                      // CD view: Show event date
+                      invoice.startDate && (
+                        <p className="text-sm text-gray-400">
+                          Event: {new Date(invoice.startDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      )
+                    ) : (
+                      // SD view: Show invoice created date
+                      invoice.invoiceCreatedAt && (
+                        <p className="text-sm text-gray-400">
+                          Invoice Created: {new Date(invoice.invoiceCreatedAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      )
                     )}
                   </div>
                   <div className="text-right">
@@ -171,8 +185,12 @@ export default function InvoicesList({ studioId }: InvoicesListProps) {
                     ) : (
                       <>
                         <div className="text-sm text-gray-400 mb-1">Payment Status</div>
-                        <div className="inline-flex items-center px-2 py-1 rounded bg-white/10 border border-white/20 text-white">
-                          pending
+                        <div className={`inline-flex items-center px-2 py-1 rounded border ${
+                          invoice.invoiceStatus === 'PAID'
+                            ? 'bg-green-500/20 border-green-400/50 text-green-300'
+                            : 'bg-white/10 border-white/20 text-white'
+                        }`}>
+                          {invoice.invoiceStatus === 'PAID' ? '✓ Paid' : 'Pending'}
                         </div>
                       </>
                     )}

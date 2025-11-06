@@ -27,17 +27,17 @@ export default function MusicTrackingPage() {
 
   // Get unique competitions
   const competitions = Array.from(
-    new Set(allEntries.map((e) => e.competitions?.name).filter(Boolean))
+    new Set(allEntries.map((e) => (e as any).competitions?.name).filter(Boolean))
   ).map((name) => ({
     name: name as string,
-    id: allEntries.find((e) => e.competitions?.name === name)?.competition_id || '',
+    id: allEntries.find((e) => (e as any).competitions?.name === name)?.competition_id || '',
   }));
 
   // Filter entries by competition
   const filteredEntries =
     selectedCompetition === 'all'
       ? allEntries
-      : allEntries.filter((e) => e.competition_id === selectedCompetition);
+      : allEntries.filter((e: any) => e.competition_id === selectedCompetition);
 
   // Calculate stats
   const totalEntries = filteredEntries.length;
@@ -177,8 +177,8 @@ export default function MusicTrackingPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <span>🎭 {entry.competitions?.name || 'Unknown'}</span>
-                        <span>🎪 {entry.dance_categories?.name || 'Unknown'}</span>
+                        <span>🎭 {(entry as any).competitions?.name || 'Unknown'}</span>
+                        <span>🎪 {(entry as any).dance_categories?.name || 'Unknown'}</span>
                         {entry.music_title && (
                           <span>🎵 {entry.music_title}</span>
                         )}

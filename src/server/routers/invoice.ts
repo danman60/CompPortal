@@ -111,12 +111,12 @@ export const invoiceRouter = router({
 
       return {
         id: invoice.id,
-        invoiceNumber: `INV-${invoice.competitions?.year}-${invoice.studios?.code || 'UNKNOWN'}-${invoice.id.substring(0, 8)}`,
+        invoiceNumber: `INV-${invoice.competitions?.year}-${invoice.studios?.code || invoice.studios?.id.substring(0, 8) || 'UNKNOWN'}-${invoice.id.substring(0, 8)}`,
         invoiceDate: invoice.created_at || new Date(),
         studio: {
           id: invoice.studios?.id || '',
           name: invoice.studios?.name || 'Unknown',
-          code: invoice.studios?.code || 'N/A',
+          code: invoice.studios?.code || invoice.studios?.id.substring(0, 8) || 'N/A',
           address1: invoice.studios?.address1,
           address2: invoice.studios?.address2,
           city: invoice.studios?.city,
@@ -277,7 +277,7 @@ export const invoiceRouter = router({
       });
 
       return {
-        invoiceNumber: `INV-${competition.year}-${studio.code || 'UNKNOWN'}-${Date.now()}`,
+        invoiceNumber: `INV-${competition.year}-${studio.code || studio.id.substring(0, 8)}-${Date.now()}`,
         invoiceDate: new Date(),
         studio: {
           id: studio.id,
@@ -365,6 +365,8 @@ export const invoiceRouter = router({
           totalAmount: parseFloat(inv.total?.toString() || '0'),
           status: inv.status,
           paidAt: inv.paid_at,
+          invoiceStatus: inv.status,
+          invoiceCreatedAt: inv.created_at,
         };
       });
 
@@ -458,6 +460,7 @@ export const invoiceRouter = router({
             studio_id: true,
             competition_id: true,
             status: true,
+            created_at: true,
           },
         }),
       ]);
@@ -514,6 +517,7 @@ export const invoiceRouter = router({
             hasInvoice: !!existingInvoice,
             invoiceId: existingInvoice?.id || null,
             invoiceStatus: existingInvoice?.status || null,
+            invoiceCreatedAt: existingInvoice?.created_at || null,
             reservation: reservation ? {
               id: reservation.id,
               spacesRequested: reservation.spaces_requested,
@@ -662,7 +666,11 @@ export const invoiceRouter = router({
           reservation_id: reservationId,
           status: { not: 'cancelled' }, // Exclude only cancelled entries
         },
-        include: { dance_categories: true, entry_size_categories: true },
+        include: {
+          dance_categories: true,
+          entry_size_categories: true,
+          entry_participants: true,
+        },
         orderBy: { entry_number: 'asc' },
       });
 
@@ -685,6 +693,7 @@ export const invoiceRouter = router({
         title: entry.title,
         category: entry.dance_categories?.name || 'Unknown',
         sizeCategory: entry.entry_size_categories?.name || 'Unknown',
+        participantCount: entry.entry_participants?.length || 0,
         entryFee: Number(entry.entry_fee || 0),
         lateFee: Number(entry.late_fee || 0),
         total: Number(entry.entry_fee || 0) + Number(entry.late_fee || 0),

@@ -65,8 +65,8 @@ export function ClassificationRequestDetailModal({ requestId, onClose }: Classif
   const isPending = request.status === 'pending';
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl border border-white/20 p-8 max-w-4xl w-full my-8">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl border border-white/20 p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
@@ -119,10 +119,10 @@ export function ClassificationRequestDetailModal({ requestId, onClose }: Classif
         <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-6 mb-6">
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <div className="text-orange-300 font-semibold mb-1">Auto-Calculated:</div>
-              <div className="text-2xl font-bold text-white">{autoCalc?.name || 'N/A'}</div>
+              <div className="text-orange-300 font-semibold mb-1">Original Auto-Calculated:</div>
+              <div className="text-2xl font-bold text-white">{autoCalc?.name || (entry as any)?.classifications?.name || 'N/A'}</div>
               <div className="text-xs text-gray-400 mt-1">
-                (Based on dancer classifications)
+                (Based on dancer classifications when entry created)
               </div>
             </div>
             <div>
@@ -173,11 +173,11 @@ export function ClassificationRequestDetailModal({ requestId, onClose }: Classif
                     value={selectedClassification}
                     onChange={(e) => setSelectedClassification(e.target.value)}
                     disabled={decisionType !== 'approved_different'}
-                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 text-white disabled:opacity-50"
+                    className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white disabled:opacity-50"
                   >
-                    <option value="">Select classification...</option>
+                    <option value="" className="bg-gray-800 text-white">Select classification...</option>
                     {classifications?.classifications.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id} className="bg-gray-800 text-white">{c.name}</option>
                     ))}
                   </select>
                 </div>
