@@ -221,6 +221,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
     const productionCategory = lookups.categories.find(c => c.name === 'Production');
     const productionSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Production');
+    const productionClass = lookups.classifications.find(c => c.name === 'Production');
     const isProductionCategory = productionCategory && formHook.form.category_id === productionCategory.id;
 
     // If Production dance category selected → lock size category AND classification to Production
@@ -231,9 +232,16 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
       }
 
       // Lock classification to Production
-      const productionClass = lookups.classifications.find(c => c.name === 'Production');
       if (productionClass && formHook.form.classification_id !== productionClass.id) {
         formHook.updateField('classification_id', productionClass.id);
+      }
+    } else {
+      // If switching AWAY from Production → clear Production overrides
+      if (productionSizeCategory && formHook.form.size_category_override === productionSizeCategory.id) {
+        formHook.updateField('size_category_override', null);
+      }
+      if (productionClass && formHook.form.classification_id === productionClass.id) {
+        formHook.updateField('classification_id', null);
       }
     }
   }, [

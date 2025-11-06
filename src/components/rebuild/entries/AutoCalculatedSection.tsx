@@ -128,6 +128,9 @@ export function AutoCalculatedSection({
     const selected = classifications.find(c => c.id === classificationId);
     if (!selected) return false;
 
+    // Production classification NEVER requires an exception
+    if (selected.name === 'Production') return false;
+
     const autoLevel = autoCalculatedClassification.skill_level ?? 0;
     const selectedLevel = selected.skill_level ?? 0;
     const levelDiff = selectedLevel - autoLevel;
