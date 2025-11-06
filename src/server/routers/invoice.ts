@@ -703,10 +703,17 @@ export const invoiceRouter = router({
 
       const subtotal = lineItems.reduce((sum, i) => sum + i.total, 0);
 
+      // Calculate tax (13% HST)
+      const taxRate = 13.00;
+      const taxAmount = Number((subtotal * (taxRate / 100)).toFixed(2));
+      const total = Number((subtotal + taxAmount).toFixed(2));
+
       console.log('[INVOICE_CALC] Invoice totals calculated:', {
         line_items_count: lineItems.length,
         subtotal,
-        total: subtotal
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        total
       });
 
       // 🔐 TRANSACTION: Wrap invoice creation + reservation update for atomicity
@@ -720,7 +727,8 @@ export const invoiceRouter = router({
           competition_id: reservation.competition_id,
           reservation_id: reservationId,
           subtotal,
-          total: subtotal,
+          tax_rate: taxRate,
+          total,
           status: 'DRAFT'
         });
 
@@ -732,7 +740,8 @@ export const invoiceRouter = router({
             reservation_id: reservationId,
             line_items: lineItems as any,
             subtotal,
-            total: subtotal,
+            tax_rate: taxRate,
+            total,
             status: 'DRAFT',
           },
         });
