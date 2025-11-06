@@ -1,16 +1,16 @@
-Title,Choreographer,Dancers,Props,Dance Category
-Shine Bright,Jane Smith,"Emma Smith (Age 15)",Chair,Jazz
-Fire Within,Michael Chen,"Alexander Martinez (Age 18)",None,Contemporary
-Dreamer,Sarah Williams,"Olivia Williams (Age 15), Sophia Miller (Age 15)",Umbrella,Lyrical
-Triple Threat,David Brown,"Mia Smith (Age 12), Charlotte Williams (Age 12), Ava Jones (Age 12)",Hat,Tap
-Rising Stars,Emma Davis,"Benjamin Brown (Age 15), Henry Davis (Age 15), Lucas Garcia (Age 15), Noah Brown (Age 15)",None,Hip-Hop
-Unity,"Lisa Thompson","Amelia Jones (Age 18), Isabella Rodriguez (Age 18), Harper Miller (Age 18), Evelyn Rodriguez (Age 18), Emma Smith (Age 18)",Cane,Musical Theatre
-Power Moves,Carlos Martinez,"James Johnson (Age 18), Liam Johnson (Age 18), William Martinez (Age 18), Ethan Garcia (Age 18), Mason Davis (Age 18), Alexander Martinez (Age 18)",None,Hip-Hop
-Grace,"Jennifer Lee","Sophia Williams (Age 13), Olivia Brown (Age 14), Isabella Miller (Age 12), Emma Johnson (Age 15)",Ribbon,Contemporary
-Breakthrough,Michael Roberts,"Ava Davis (Age 16), Sophia Miller (Age 18), Olivia Williams (Age 18), Mia Smith (Age 18), Charlotte Williams (Age 18), Harper Miller (Age 18), Evelyn Rodriguez (Age 18)",None,Jazz
-Little Stars,Amanda White,"Emma Smith (Age 6), Mia Smith (Age 6), Olivia Williams (Age 6), Charlotte Williams (Age 6)",Teddy Bear,Acro
-Together We Dance,Rachel Green,"Benjamin Brown (Age 9), Noah Brown (Age 9), James Johnson (Age 9), Liam Johnson (Age 9), Alexander Martinez (Age 9), William Martinez (Age 9), Ethan Garcia (Age 9), Lucas Garcia (Age 9)",Hoop,Open
-Unmatched Test,Sarah Johnson,"Fake Dancer One (Age 10), Real Olivia Williams (Age 12), Nonexistent Person (Age 15)",None,Jazz
-Senior Showcase,Patricia Davis,"Harper Miller (Age 18), Isabella Rodriguez (Age 18), Amelia Jones (Age 18), Sophia Miller (Age 18), Emma Smith (Age 18), Mia Smith (Age 18), Charlotte Williams (Age 18), Olivia Williams (Age 18), Evelyn Rodriguez (Age 18), Henry Davis (Age 18)",Flag,Production
-Junior Duet,Mark Wilson,"Henry Davis (Age 12), Mason Davis (Age 12)",None,Contemporary
-Energy Burst,Linda Martinez,"Ava Jones (Age 15), Amelia Jones (Age 15), Isabella Rodriguez (Age 15), Sophia Miller (Age 15), Emma Johnson (Age 15), Benjamin Brown (Age 15), Henry Davis (Age 15), Lucas Garcia (Age 15), Noah Brown (Age 15), Alexander Martinez (Age 15), William Martinez (Age 15), Mason Davis (Age 15)",None,Jazz
+Routine Name,Category,Age Division,Dancer 1 First,Dancer 1 Last,Dancer 1 DOB,Dancer 2 First,Dancer 2 Last,Dancer 2 DOB,Dancer 3 First,Dancer 3 Last,Dancer 3 DOB,Dancer 4 First,Dancer 4 Last,Dancer 4 DOB,Dancer 5 First,Dancer 5 Last,Dancer 5 DOB
+Starlight Dreams,Solo,Junior,Emma,Johnson,2012-03-15,,,,,,,,,,,
+Dancing Queen,Solo,Teen,Sophia,Martinez,2009-07-22,,,,,,,,,,,
+Thunder Strike,Solo,Senior,Olivia,Brown,2006-11-08,,,,,,,,,,,
+Best Friends,Duo,Junior,Ava,Davis,2011-05-19,Isabella,Wilson,2011-08-30,,,,,,,
+Electric Duo,Duo,Teen,Mia,Anderson,2008-09-12,Charlotte,Thomas,2009-01-25,,,,,,,
+Fire & Ice,Duo,Senior,Amelia,Taylor,2005-12-03,Harper,Moore,2006-04-17,,,,,,,
+Triple Threat,Trio,Junior,Evelyn,Jackson,2012-02-28,Abigail,White,2011-10-14,Emily,Harris,2012-06-05,,,
+Dance Machine,Trio,Teen,Elizabeth,Martin,2008-11-20,Sofia,Thompson,2009-03-08,Avery,Garcia,2008-07-16,,,
+Power Trio,Trio,Senior,Ella,Martinez,2006-01-30,Scarlett,Robinson,2005-09-23,Victoria,Clark,2006-08-11,,,
+Group Energy,Small Group,Junior,Madison,Rodriguez,2011-12-07,Luna,Lewis,2012-04-22,Grace,Lee,2011-07-18,Chloe,Walker,2012-01-09,Zoey,Hall,2011-09-14
+Teen Squad,Small Group,Teen,Lily,Allen,2009-05-29,Hannah,Young,2008-12-16,Layla,Hernandez,2009-02-03,Zoe,King,2008-10-27,Nora,Wright,2009-06-12
+Elite Formation,Small Group,Senior,Hazel,Lopez,2005-11-25,Violet,Hill,2006-03-14,Aurora,Scott,2005-08-06,Savannah,Green,2006-07-01,Brooklyn,Adams,2005-10-19
+Ensemble Magic,Large Group,Junior,Bella,Baker,2012-05-11,Stella,Gonzalez,2011-11-28,Lucy,Nelson,2012-03-20,Paisley,Carter,2011-08-02,,
+Unity Dance,Large Group,Teen,Nova,Mitchell,2009-04-15,Elena,Perez,2008-09-30,Maya,Roberts,2009-01-07,Willow,Turner,2008-06-23,,
+Final Countdown,Large Group,Senior,Naomi,Phillips,2006-02-18,Ellie,Campbell,2005-12-05,Aaliyah,Parker,2006-09-27,Caroline,Evans,2005-07-14,,
