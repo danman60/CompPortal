@@ -95,12 +95,12 @@ export default function AccountRecoveryPanel() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Recovery</h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 font-medium">
             Manage studios with orphaned auth accounts (auth.users deleted but studio data remains)
           </p>
         </div>

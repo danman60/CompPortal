@@ -203,6 +203,13 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       description: 'Send & track invitations',
     },
     {
+      id: 'account-recovery',
+      href: '/dashboard/admin/account-recovery',
+      icon: '🔐',
+      title: 'Account Recovery',
+      description: 'Restore orphaned studio accounts',
+    },
+    {
       id: 'email-monitor',
       href: '/dashboard/admin/emails',
       icon: '📮',
