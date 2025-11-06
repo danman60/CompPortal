@@ -80,10 +80,10 @@ export default function AccountRecoveryPage() {
 
   if (validating) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Validating recovery token...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="mt-4 text-gray-300">Validating recovery token...</p>
         </div>
       </div>
     );
@@ -102,15 +102,15 @@ export default function AccountRecoveryPage() {
     };
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-md p-8 border border-gray-700">
           <div className="text-center">
-            <div className="text-red-500 text-5xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Recovery Link</h1>
-            <p className="text-gray-600 mb-6">{getMessage()}</p>
+            <div className="text-red-400 text-5xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-gray-100 mb-2">Invalid Recovery Link</h1>
+            <p className="text-gray-300 mb-6">{getMessage()}</p>
             <button
               onClick={() => router.push('/login')}
-              className="text-purple-600 hover:text-purple-700 font-medium"
+              className="text-purple-400 hover:text-purple-300 font-medium"
             >
               Return to Login
             </button>
@@ -121,22 +121,22 @@ export default function AccountRecoveryPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-md p-8 border border-gray-700">
         <div className="text-center mb-8">
-          <div className="text-blue-500 text-5xl mb-4">🔐</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back!</h1>
-          <p className="text-gray-600">
-            Hi <span className="font-semibold text-purple-600">{validation.studio?.name}</span>
+          <div className="text-blue-400 text-5xl mb-4">🔐</div>
+          <h1 className="text-2xl font-bold text-gray-100 mb-2">Welcome Back!</h1>
+          <p className="text-gray-300">
+            Hi <span className="font-semibold text-purple-400">{validation.studio?.name}</span>
           </p>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-gray-400 text-sm mt-2">
             Create your password to access your account and all your data.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
               New Password
             </label>
             <input
@@ -144,19 +144,19 @@ export default function AccountRecoveryPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-400"
               placeholder="Enter your password"
               required
               minLength={6}
               disabled={loading}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               You can use your old password if you remember it
             </p>
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200 mb-2">
               Confirm Password
             </label>
             <input
@@ -164,7 +164,7 @@ export default function AccountRecoveryPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-400"
               placeholder="Confirm your password"
               required
               minLength={6}
@@ -173,7 +173,7 @@ export default function AccountRecoveryPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            <div className="bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded-md text-sm">
               {error}
             </div>
           )}
@@ -194,7 +194,7 @@ export default function AccountRecoveryPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-sm text-gray-400">
           <p>Need help? Contact support</p>
         </div>
       </div>

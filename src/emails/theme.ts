@@ -13,7 +13,6 @@ export const emailTheme = {
     backgroundColor: '#1e293b', // slate-800
     margin: '0 auto',
     padding: '20px 0 48px',
-    marginBottom: '64px',
     maxWidth: '600px',
     borderRadius: '12px',
     border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -137,7 +136,7 @@ export const emailTheme = {
 
   // Tables
   table: {
-    width: '100%',
+    width: 'calc(100% - 80px)',
     borderCollapse: 'collapse' as const,
     margin: '20px 40px',
   },

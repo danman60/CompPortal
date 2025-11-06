@@ -13,6 +13,7 @@ import {
 } from '@react-email/components';
 import * as React from 'react';
 import { TenantBranding } from '@/lib/email-templates';
+import { emailTheme, defaultBranding } from './theme';
 
 interface DailyDigestProps {
   userName: string;
@@ -70,8 +71,8 @@ export default function DailyDigest({
     <Html>
       <Head />
       <Preview>{previewText}</Preview>
-      <Body style={main}>
-        <Container style={container}>
+      <Body style={emailTheme.main}>
+        <Container style={emailTheme.container}>
           {/* Header */}
           <Section style={header}>
             {tenantBranding?.logo ? (
@@ -255,24 +256,13 @@ function formatTimeAgo(date: Date): string {
   return date.toLocaleDateString();
 }
 
-// Styles
-const main = {
-  backgroundColor: '#f6f9fc',
-  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-};
-
-const container = {
-  backgroundColor: '#ffffff',
-  margin: '0 auto',
-  padding: '20px 0 48px',
-  marginBottom: '64px',
-  maxWidth: '600px',
-};
+// Styles (now using dark theme from emailTheme)
+// main and container styles now use emailTheme.main and emailTheme.container
 
 const header = {
-  padding: '32px 20px',
+  padding: '32px 40px',
   textAlign: 'center' as const,
-  borderBottom: '1px solid #e6ebf1',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
 };
 
 const logo = {
@@ -283,30 +273,30 @@ const logo = {
 const heading = {
   fontSize: '32px',
   fontWeight: 'bold',
-  color: '#7C3AED',
+  color: '#c4b5fd', // purple-300
   margin: '0',
 };
 
 const headerSubtitle = {
   fontSize: '14px',
-  color: '#8898aa',
+  color: '#94a3b8', // slate-400
   margin: '8px 0 0',
 };
 
 const section = {
-  padding: '24px 20px',
-  borderBottom: '1px solid #e6ebf1',
+  padding: '24px 40px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
 };
 
 const greetingText = {
   fontSize: '16px',
-  color: '#32325d',
+  color: '#e2e8f0', // slate-200
   margin: '0 0 12px',
 };
 
 const introText = {
   fontSize: '14px',
-  color: '#525f7f',
+  color: '#cbd5e1', // slate-300
   lineHeight: '24px',
   margin: '0',
 };
@@ -314,20 +304,20 @@ const introText = {
 const sectionHeading = {
   fontSize: '20px',
   fontWeight: '600',
-  color: '#32325d',
+  color: '#f1f5f9', // slate-100
   margin: '0 0 16px',
 };
 
 const subsectionHeading = {
   fontSize: '16px',
   fontWeight: '600',
-  color: '#525f7f',
+  color: '#cbd5e1', // slate-300
   margin: '20px 0 12px',
 };
 
 const itemCard = {
-  backgroundColor: '#f8f9fa',
-  border: '1px solid #e6ebf1',
+  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
   borderRadius: '8px',
   padding: '16px',
   marginBottom: '12px',
@@ -336,24 +326,24 @@ const itemCard = {
 const itemTitle = {
   fontSize: '15px',
   fontWeight: '600',
-  color: '#32325d',
+  color: '#f1f5f9', // slate-100
   margin: '0 0 8px',
 };
 
 const itemDetail = {
   fontSize: '14px',
-  color: '#525f7f',
+  color: '#cbd5e1', // slate-300
   margin: '4px 0',
 };
 
 const itemTimestamp = {
   fontSize: '12px',
-  color: '#8898aa',
+  color: '#94a3b8', // slate-400
   margin: '8px 0 0',
 };
 
 const button = {
-  backgroundColor: '#7C3AED',
+  backgroundColor: '#8b5cf6', // purple-500
   borderRadius: '6px',
   color: '#ffffff',
   fontSize: '14px',
@@ -367,52 +357,52 @@ const button = {
 
 const activityItem = {
   padding: '12px 0',
-  borderBottom: '1px solid #f0f0f0',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
 };
 
 const activityDescription = {
   fontSize: '14px',
-  color: '#32325d',
+  color: '#e2e8f0', // slate-200
   margin: '0 0 4px',
 };
 
 const activityTimestamp = {
   fontSize: '12px',
-  color: '#8898aa',
+  color: '#94a3b8', // slate-400
   margin: '0',
 };
 
 const link = {
-  color: '#7C3AED',
+  color: '#c4b5fd', // purple-300
   fontSize: '14px',
   textDecoration: 'underline',
 };
 
 const emptyText = {
   fontSize: '14px',
-  color: '#8898aa',
+  color: '#94a3b8', // slate-400
   textAlign: 'center' as const,
   padding: '32px 0',
 };
 
 const hr = {
-  borderColor: '#e6ebf1',
+  borderColor: 'rgba(255, 255, 255, 0.1)',
   margin: '20px 0',
 };
 
 const footer = {
   textAlign: 'center' as const,
-  padding: '0 20px',
+  padding: '0 40px',
 };
 
 const footerText = {
   fontSize: '12px',
-  color: '#8898aa',
+  color: '#94a3b8', // slate-400
   margin: '8px 0',
 };
 
 const footerLink = {
-  color: '#7C3AED',
+  color: '#c4b5fd', // purple-300
   fontSize: '12px',
   textDecoration: 'underline',
   display: 'block',

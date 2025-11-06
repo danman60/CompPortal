@@ -10,6 +10,7 @@ import {
   Hr,
   Button,
 } from '@react-email/components';
+import { emailTheme, gradientButton, defaultBranding } from './theme';
 
 interface StudioApprovedProps {
   studioName: string;
@@ -27,61 +28,51 @@ export default function StudioApproved({
   portalUrl,
   tenantBranding,
 }: StudioApprovedProps) {
-  const primaryColor = tenantBranding?.primaryColor || '#8b5cf6';
-  const secondaryColor = tenantBranding?.secondaryColor || '#ec4899';
+  const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
+  const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
   return (
     <Html>
       <Head />
       <Preview>Studio registration approved - Welcome to the platform!</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={h1}>✅ Studio Approved!</Heading>
+      <Body style={emailTheme.main}>
+        <Container style={emailTheme.container}>
+          <Heading style={emailTheme.h1}>✅ Studio Approved!</Heading>
 
-          <Text style={text}>
+          <Text style={emailTheme.text}>
             {ownerName ? `Dear ${ownerName}` : 'Hello'},
           </Text>
 
-          <Text style={text}>
+          <Text style={emailTheme.text}>
             We're excited to inform you that <strong>{studioName}</strong> has been approved and is now active on our platform!
           </Text>
 
-          <Section style={infoBox}>
-            <Text style={infoLabel}>Studio Status</Text>
-            <Text style={infoValue}>✅ Approved & Active</Text>
+          <Section style={{...emailTheme.infoBox, borderLeft: `4px solid ${primaryColor}`}}>
+            <Text style={{...emailTheme.label, padding: '0', margin: '0 0 8px 0'}}>Studio Status</Text>
+            <Text style={{...emailTheme.value, padding: '0', margin: '0'}}>✅ Approved & Active</Text>
           </Section>
 
-          <Text style={text}>
+          <Text style={emailTheme.text}>
             You now have full access to all platform features:
           </Text>
 
-          <Section style={{...stepsBox, border: `1px solid ${primaryColor}33`}}>
-            <div style={stepItem}>
-              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>1</div>
-              <Text style={stepText}>Register dancers for your studio</Text>
-            </div>
-            <div style={stepItem}>
-              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>2</div>
-              <Text style={stepText}>Request reservations for competitions</Text>
-            </div>
-            <div style={stepItem}>
-              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>3</div>
-              <Text style={stepText}>Submit competition routines</Text>
-            </div>
-            <div style={stepItem}>
-              <div style={{...stepNumber, backgroundColor: `${primaryColor}33`, border: `2px solid ${primaryColor}66`, color: primaryColor}}>4</div>
-              <Text style={stepText}>Manage your studio profile and settings</Text>
-            </div>
+          <Section style={{...emailTheme.infoBox, borderLeft: `4px solid ${primaryColor}`}}>
+            <Text style={{...emailTheme.text, padding: '0', margin: '0 0 8px 0'}}>
+              1. Register dancers for your studio<br/>
+              2. Request reservations for competitions<br/>
+              3. Submit competition routines<br/>
+              4. Manage your studio profile and settings
+            </Text>
           </Section>
 
           <Section style={{ textAlign: 'center', padding: '20px 40px' }}>
-            <Button href={portalUrl} style={{...button, background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`}}>
+            <Button href={portalUrl} style={gradientButton(primaryColor, secondaryColor)}>
               Go to Dashboard
             </Button>
           </Section>
 
-          <Hr style={hr} />
+          <Hr style={emailTheme.hr} />
 
-          <Text style={footer}>
+          <Text style={emailTheme.footer}>
             Welcome to the community! If you have any questions or need assistance getting started,
             please don't hesitate to reach out to our support team.
           </Text>
@@ -91,116 +82,4 @@ export default function StudioApproved({
   );
 }
 
-const main = {
-  backgroundColor: '#0f172a',
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-};
-
-const container = {
-  margin: '0 auto',
-  padding: '20px 0 48px',
-  maxWidth: '600px',
-  backgroundColor: '#1e293b',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
-};
-
-const h1 = {
-  color: '#ffffff',
-  fontSize: '32px',
-  fontWeight: '700',
-  textAlign: 'center' as const,
-  padding: '30px 40px 10px',
-  margin: '0',
-};
-
-const text = {
-  color: '#e2e8f0',
-  fontSize: '16px',
-  lineHeight: '26px',
-  padding: '0 40px',
-};
-
-const infoBox = {
-  backgroundColor: 'rgba(34, 197, 94, 0.1)',
-  border: '1px solid rgba(34, 197, 94, 0.3)',
-  borderRadius: '8px',
-  padding: '20px',
-  margin: '20px 40px',
-};
-
-const infoLabel = {
-  color: '#94a3b8',
-  fontSize: '12px',
-  fontWeight: '600',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.5px',
-  margin: '0 0 8px 0',
-};
-
-const infoValue = {
-  color: '#22c55e',
-  fontSize: '18px',
-  fontWeight: '700',
-  margin: '0',
-};
-
-const stepsBox = {
-  backgroundColor: 'rgba(139, 92, 246, 0.05)',
-  borderRadius: '8px',
-  padding: '20px',
-  margin: '20px 40px',
-};
-
-const stepItem = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  marginBottom: '16px',
-};
-
-const stepNumber = {
-  width: '32px',
-  height: '32px',
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontWeight: '700',
-  fontSize: '14px',
-  flexShrink: 0,
-  marginRight: '12px',
-};
-
-const stepText = {
-  color: '#e2e8f0',
-  fontSize: '14px',
-  lineHeight: '20px',
-  margin: '0',
-  paddingTop: '6px',
-};
-
-const button = {
-  borderRadius: '8px',
-  color: '#ffffff',
-  fontSize: '16px',
-  fontWeight: '600',
-  textDecoration: 'none',
-  textAlign: 'center' as const,
-  display: 'inline-block',
-  padding: '12px 32px',
-  margin: '0',
-};
-
-const hr = {
-  borderColor: 'rgba(255, 255, 255, 0.1)',
-  margin: '26px 40px',
-};
-
-const footer = {
-  color: '#94a3b8',
-  fontSize: '14px',
-  lineHeight: '24px',
-  padding: '0 40px',
-  textAlign: 'center' as const,
-};
+// Styles now use emailTheme from theme.ts (lines 37-79)
