@@ -12,7 +12,7 @@ const handler = async (req: Request) => {
   const createContext = async (): Promise<Context> => {
     try {
       // Extract tenant context from headers (injected by middleware)
-      const tenantId = req.headers.get('x-tenant-id');
+      let tenantId = req.headers.get('x-tenant-id');
       const tenantDataStr = req.headers.get('x-tenant-data');
       let tenantData: TenantData | null = null;
 
@@ -21,6 +21,31 @@ const handler = async (req: Request) => {
           tenantData = JSON.parse(tenantDataStr) as TenantData;
         } catch (error) {
           logger.warn('Failed to parse tenant data from headers', { error: error instanceof Error ? error : new Error(String(error)) });
+        }
+      }
+
+      // If no tenant from headers, extract from URL subdomain
+      if (!tenantId) {
+        const url = new URL(req.url);
+        const subdomain = url.hostname.split('.')[0];
+
+        // Look up tenant by subdomain
+        if (subdomain && subdomain !== 'localhost') {
+          const tenant = await prisma.tenants.findFirst({
+            where: { subdomain },
+            select: { id: true, slug: true, subdomain: true, name: true, branding: true },
+          });
+
+          if (tenant) {
+            tenantId = tenant.id;
+            tenantData = {
+              id: tenant.id,
+              slug: tenant.slug || '',
+              subdomain: tenant.subdomain || '',
+              name: tenant.name || 'Competition Portal',
+              branding: (tenant.branding && typeof tenant.branding === 'object' ? tenant.branding : {}) as any,
+            };
+          }
         }
       }
 
