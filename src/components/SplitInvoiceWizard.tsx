@@ -473,8 +473,8 @@ function Step2Confirm({
             💰 Margin Applied
           </p>
           <p className="text-sm text-green-100">
-            {marginConfig.mode === 'percentage' ? `${marginConfig.value}%` : `$${marginConfig.value}`}
-            {' '}per {marginConfig.type === 'per_routine' ? 'routine' : 'dancer'}
+            {marginConfig.type.startsWith('percentage_') ? `${marginConfig.value}%` : `$${marginConfig.value}`}
+            {' '}per {marginConfig.type.includes('_per_routine') ? 'routine' : 'dancer'}
           </p>
         </div>
       )}
