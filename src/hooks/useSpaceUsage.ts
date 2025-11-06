@@ -12,8 +12,8 @@ export function useSpaceUsage(
   const confirmedSpaces = selectedReservation?.spaces_confirmed || 0;
 
   const usedSpaces = hasSelectedReservation
-    ? entries.filter(e => e.reservation_id === selectedReservation.id && e.status !== 'cancelled').length
-    : entries.filter(e => e.status !== 'cancelled').length;
+    ? entries.filter(e => e.reservation_id === selectedReservation.id && e.status !== 'withdrawn').length
+    : entries.filter(e => e.status !== 'withdrawn').length;
 
   const isAtLimit = hasSelectedReservation && usedSpaces >= confirmedSpaces;
   const isIncomplete = hasSelectedReservation && usedSpaces < confirmedSpaces;

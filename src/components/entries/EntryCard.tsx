@@ -32,7 +32,7 @@ export function EntryCard({ entry }: EntryCardProps) {
           ? 'border-green-400/40'
           : entry.status === 'registered'
           ? 'border-yellow-400/40'
-          : entry.status === 'cancelled'
+          : entry.status === 'withdrawn'
           ? 'border-red-400/40'
           : 'border-gray-400/40'
       }`}

@@ -779,7 +779,7 @@ export default function EntriesList() {
                             ? 'bg-green-500/20 text-green-400'
                             : entry.status === 'registered'
                             ? 'bg-yellow-500/20 text-yellow-400'
-                            : entry.status === 'cancelled'
+                            : entry.status === 'withdrawn'
                             ? 'bg-red-500/20 text-red-400'
                             : 'bg-gray-500/20 text-gray-400'
                         }`}>

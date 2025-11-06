@@ -17,6 +17,9 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 
+// FEATURE FLAG: Set to true to enable destructive testing tools
+const ENABLE_DESTRUCTIVE_TOOLS = false;
+
 export default function TestingToolsPage() {
   const [isCleanSlateModalOpen, setIsCleanSlateModalOpen] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
@@ -380,7 +383,7 @@ export default function TestingToolsPage() {
         {/* Two Main Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* CLEAN SLATE Section */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-red-500 p-6">
+          <div className={`bg-white/10 backdrop-blur-md rounded-xl border-2 p-6 ${ENABLE_DESTRUCTIVE_TOOLS ? 'border-red-500' : 'border-gray-500 opacity-50'}`}>
             <div className="flex items-center space-x-3 mb-4">
               <span className="text-4xl">🗑️</span>
               <div>
@@ -413,9 +416,16 @@ export default function TestingToolsPage() {
               </ul>
             </div>
 
+            {!ENABLE_DESTRUCTIVE_TOOLS && (
+              <div className="bg-yellow-500/10 rounded-lg p-3 mb-4">
+                <p className="text-yellow-200 text-sm font-semibold">🔒 Disabled for Production Safety</p>
+                <p className="text-yellow-200/70 text-xs">Set ENABLE_DESTRUCTIVE_TOOLS = true in code to enable</p>
+              </div>
+            )}
+
             <button
               onClick={() => setIsCleanSlateModalOpen(true)}
-              disabled={isProcessing}
+              disabled={isProcessing || !ENABLE_DESTRUCTIVE_TOOLS}
               className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {cleanSlateMutation.isPending ? 'Cleaning...' : 'CLEAN SLATE'}
@@ -423,7 +433,7 @@ export default function TestingToolsPage() {
           </div>
 
           {/* POPULATE TEST DATA Section */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border-2 border-blue-500 p-6">
+          <div className={`bg-white/10 backdrop-blur-md rounded-xl border-2 p-6 ${ENABLE_DESTRUCTIVE_TOOLS ? 'border-blue-500' : 'border-gray-500 opacity-50'}`}>
             <div className="flex items-center space-x-3 mb-4">
               <span className="text-4xl">🎭</span>
               <div>
@@ -455,9 +465,16 @@ export default function TestingToolsPage() {
               </ul>
             </div>
 
+            {!ENABLE_DESTRUCTIVE_TOOLS && (
+              <div className="bg-yellow-500/10 rounded-lg p-3 mb-4">
+                <p className="text-yellow-200 text-sm font-semibold">🔒 Disabled for Production Safety</p>
+                <p className="text-yellow-200/70 text-xs">Set ENABLE_DESTRUCTIVE_TOOLS = true in code to enable</p>
+              </div>
+            )}
+
             <button
               onClick={handlePopulateTestData}
-              disabled={isProcessing}
+              disabled={isProcessing || !ENABLE_DESTRUCTIVE_TOOLS}
               className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {populateTestDataMutation.isPending ? 'Populating...' : 'POPULATE TEST DATA'}

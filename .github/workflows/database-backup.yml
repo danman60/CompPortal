@@ -74,7 +74,10 @@ jobs:
           echo "Using transaction pooler (stripped query params for pg_dump compatibility)"
 
           # Run pg_dump using PostgreSQL 17 (full path to avoid version 16)
+          # IMPORTANT: Include auth schema to backup auth.users (prevents orphaned studios)
           /usr/lib/postgresql/17/bin/pg_dump "$CLEAN_URL" \
+            --schema=public \
+            --schema=auth \
             --clean \
             --if-exists \
             --no-owner \

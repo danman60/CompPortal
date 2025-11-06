@@ -917,11 +917,11 @@ export const entryRouter = router({
           throw new Error('Invalid reservation for this studio and competition.');
         }
 
-        // Count only non-cancelled entries for this reservation
+        // Count only non-withdrawn entries for this reservation
         const currentEntries = await prisma.competition_entries.count({
           where: {
             reservation_id: input.reservation_id,
-            status: { not: 'cancelled' },
+            status: { not: 'withdrawn' },
           },
         });
 

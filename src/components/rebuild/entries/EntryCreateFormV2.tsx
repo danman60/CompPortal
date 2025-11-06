@@ -271,7 +271,7 @@ export function EntryCreateFormV2() {
 
   // Calculate capacity (Phase 1 spec lines 513-521)
   const reservationEntries = entriesData?.entries?.filter(
-    (e: any) => e.reservation_id === reservationId && e.status !== 'cancelled'
+    (e: any) => e.reservation_id === reservationId && e.status !== 'withdrawn'
   ) || [];
   const confirmedSpaces = reservation?.spaces_confirmed || 0;
   const entriesCount = reservationEntries.length;
