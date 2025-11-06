@@ -38,6 +38,7 @@ import { siteControlRouter } from './site-control';
 import { studioInvitationsRouter } from './studio-invitations';
 import { classificationRequestRouter } from './classificationRequest';
 import { importSessionRouter } from './importSession';
+import { accountRecoveryRouter } from './accountRecovery';
 
 /**
  * Main tRPC router
@@ -83,6 +84,7 @@ export const appRouter = router({
   studioInvitations: studioInvitationsRouter,
   classificationRequest: classificationRequestRouter,
   importSession: importSessionRouter,
+  accountRecovery: accountRecoveryRouter,
 });
 
 // Export type definition of API

@@ -144,4 +144,5 @@ export type EmailTemplate =
   | 'reservation-approved'
   | 'reservation-declined'
   | 'entry-submitted'
-  | 'studio-claimed';
+  | 'studio-claimed'
+  | 'account-recovery';
