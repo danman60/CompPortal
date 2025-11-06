@@ -738,7 +738,6 @@ export const entryRouter = router({
                 status: true,
                 cd_decision_type: true,
               },
-              take: 1, // Get the latest request
             },
           },
           orderBy: [
