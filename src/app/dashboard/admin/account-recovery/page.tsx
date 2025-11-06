@@ -117,7 +117,7 @@ export default function AccountRecoveryPanel() {
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
               placeholder="studio@example.com"
-              className="flex-1 px-4 py-2 border border-yellow-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              className="flex-1 px-4 py-2 bg-white text-gray-900 border border-yellow-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent disabled:bg-gray-100"
               disabled={testingManual}
             />
             <button

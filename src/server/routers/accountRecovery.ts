@@ -66,7 +66,13 @@ export const accountRecoveryRouter = router({
     // Check which owner_ids don't exist in auth.users
     const orphanedStudios = [];
     for (const studio of studios) {
-      if (studio.owner_id) {
+      // Studio is orphaned if owner_id is NULL OR points to non-existent auth user
+      if (!studio.owner_id) {
+        orphanedStudios.push({
+          ...studio,
+          dancer_count: studio._count.dancers,
+        });
+      } else {
         const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(
           studio.owner_id
         );
