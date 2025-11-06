@@ -56,9 +56,9 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
 export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioCode, studioPublicCode, studioStatus }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
   const [greeting, setGreeting] = useState('Hello');
-  const { data: myDancers } = trpc.dancer.getAll.useQuery();
-  const { data: myEntries } = trpc.entry.getAll.useQuery();
-  const { data: myReservations } = trpc.reservation.getAll.useQuery();
+  const { data: myDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
+  const { data: myEntries, isLoading: entriesLoading } = trpc.entry.getAll.useQuery({ limit: 1000 });
+  const { data: myReservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
 
   // Set greeting on client mount to prevent hydration mismatch
   useEffect(() => {
@@ -196,12 +196,16 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
     return null; // Tutorial complete or waiting for routine creation
   };
 
+  // Check if critical data is ready (all queries completed)
+  const dataReady = !dancersLoading && !entriesLoading && !reservationsLoading;
+
   return (
     <>
       {showLoading && (
         <BalletLoadingAnimation
           onAnimationComplete={() => setShowLoading(false)}
           minDuration={1500}
+          dataReady={dataReady}
         />
       )}
 

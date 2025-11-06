@@ -130,10 +130,10 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
   const [greeting, setGreeting] = useState('Hello');
   const [showBadge, setShowBadge] = useState(false);
   const isAdmin = role === 'super_admin';
-  const { data: studios } = trpc.studio.getAll.useQuery();
-  const { data: reservations } = trpc.reservation.getAll.useQuery();
-  const { data: invoicesData } = trpc.invoice.getAllInvoices.useQuery({});
-  const { data: classificationRequestsData } = trpc.classificationRequest.getCount.useQuery();
+  const { data: studios, isLoading: studiosLoading } = trpc.studio.getAll.useQuery();
+  const { data: reservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
+  const { data: invoicesData, isLoading: invoicesLoading } = trpc.invoice.getAllInvoices.useQuery({});
+  const { data: classificationRequestsData, isLoading: classificationRequestsLoading } = trpc.classificationRequest.getCount.useQuery();
 
   // Set greeting on client mount to prevent hydration mismatch
   useEffect(() => {
@@ -276,12 +276,16 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
 
   const dashboardCards = isAdmin ? SA_DASHBOARD_CARDS : CD_DASHBOARD_CARDS;
 
+  // Check if critical data is ready (all queries completed)
+  const dataReady = !studiosLoading && !reservationsLoading && !invoicesLoading && !classificationRequestsLoading;
+
   return (
     <>
       {showLoading && (
         <BalletLoadingAnimation
           onAnimationComplete={() => setShowLoading(false)}
           minDuration={1500}
+          dataReady={dataReady}
         />
       )}
 

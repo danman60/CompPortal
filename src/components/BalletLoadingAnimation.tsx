@@ -5,23 +5,33 @@ import { useEffect, useState } from 'react';
 interface BalletLoadingAnimationProps {
   onAnimationComplete?: () => void;
   minDuration?: number; // Minimum time to show animation (ms)
+  dataReady?: boolean; // Wait for data to load before completing
 }
 
 export default function BalletLoadingAnimation({
   onAnimationComplete,
-  minDuration = 1500
+  minDuration = 1500,
+  dataReady = true
 }: BalletLoadingAnimationProps) {
   const [isComplete, setIsComplete] = useState(false);
+  const [minDurationMet, setMinDurationMet] = useState(false);
 
   useEffect(() => {
-    // Wait for minimum duration and animation peak
+    // Wait for minimum duration
     const timer = setTimeout(() => {
-      setIsComplete(true);
-      onAnimationComplete?.();
+      setMinDurationMet(true);
     }, minDuration);
 
     return () => clearTimeout(timer);
-  }, [minDuration, onAnimationComplete]);
+  }, [minDuration]);
+
+  useEffect(() => {
+    // Complete when BOTH min duration met AND data ready
+    if (minDurationMet && dataReady && !isComplete) {
+      setIsComplete(true);
+      onAnimationComplete?.();
+    }
+  }, [minDurationMet, dataReady, isComplete, onAnimationComplete]);
 
   if (isComplete) return null;
 
