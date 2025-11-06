@@ -36,9 +36,9 @@ const handler = async (req: Request) => {
         select: { role: true, tenant_id: true },
       });
 
-      // If user is a studio director, fetch their studio on CURRENT tenant
+      // If user is a studio director OR super admin, fetch their studio on CURRENT tenant
       let studioId: string | null = null;
-      if (userProfile?.role === 'studio_director' && tenantId) {
+      if ((userProfile?.role === 'studio_director' || userProfile?.role === 'super_admin') && tenantId) {
         const studio = await prisma.studios.findFirst({
           where: {
             tenant_id: tenantId,  // Current tenant from subdomain
@@ -49,8 +49,12 @@ const handler = async (req: Request) => {
         studioId = studio?.id || null;
       }
 
-      // Tenant from subdomain (preferred) or fallback to user profile for client-side requests
-      const effectiveTenantId = tenantId || userProfile?.tenant_id || null;
+      // Tenant resolution:
+      // - Super Admin: ALWAYS use current subdomain tenant (cross-tenant access for testing/support)
+      // - Other users: Use subdomain (preferred) or fallback to user profile tenant
+      const effectiveTenantId = userProfile?.role === 'super_admin'
+        ? tenantId  // SA uses subdomain tenant (cross-tenant access)
+        : (tenantId || userProfile?.tenant_id || null);  // Others use subdomain or their profile tenant
 
       // Debug logging
       console.log('[tRPC Context]', {
