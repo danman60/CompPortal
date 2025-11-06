@@ -23,7 +23,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
   // Get current user role
   const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
-  const isStudioDirector = userProfile?.role === 'studio_director';
+  const isStudioDirector = ['studio_director', 'super_admin'].includes(userProfile?.role || '');
   const isCompetitionDirector = ['competition_director', 'super_admin'].includes(userProfile?.role || '');
 
   // Check if there's an existing invoice in the database (primary source of truth)
