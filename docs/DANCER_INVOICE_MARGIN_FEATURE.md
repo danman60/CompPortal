@@ -8,7 +8,7 @@
 
 ## Overview
 
-Allow Studio Directors (SD) to add private margin to dancer invoices when splitting a main invoice. Margin is blended into the subtotal and never shown separately to parents, allowing SDs to calculate and retain profit while maintaining transparency with families.
+Allow Studio Directors (SD) to add private margin to dancer invoices when splitting a main invoice. Margin is blended into the subtotal and never shown separately on dancer invoices, allowing SDs to calculate and retain profit.
 
 ---
 
@@ -19,7 +19,7 @@ Allow Studio Directors (SD) to add private margin to dancer invoices when splitt
 1. **When:** SD can add margin during dancer invoice generation, after main invoice is marked PAID by CD
 2. **Who:** Studio Directors and Super Admins (SA for testing)
 3. **What:** Add percentage or fixed dollar margin per routine or per dancer
-4. **Result:** Dancer invoices show higher totals with margin blended into subtotal (invisible to parents)
+4. **Result:** Dancer invoices show higher totals with margin blended into subtotal (invisible on invoices)
 
 ### Key Constraints
 
@@ -79,7 +79,7 @@ Allow Studio Directors (SD) to add private margin to dancer invoices when splitt
 ┌─────────────────────────────────────────────────────┐
 │  💰 Add Margin (Optional)                           │
 │  ⚠️ Margin will NOT appear on dancer invoices       │
-│  Parents see only blended subtotal + tax            │
+│  Invoices show only blended subtotal + tax          │
 ├─────────────────────────────────────────────────────┤
 │  Margin Type:                                       │
 │  ○ Per Routine    ○ Per Dancer                     │
@@ -226,7 +226,7 @@ const total = subtotal + tax; // $310.75
 **Key Points:**
 - Routine fee shows $126.50 (not $115.00 + $11.50 margin)
 - No line item for "margin" or "studio fee"
-- Parent sees higher routine fee, doesn't know margin was added
+- Invoice recipient sees higher routine fee, doesn't know margin was added
 - SD privately knows their $11.50 profit
 
 ---
