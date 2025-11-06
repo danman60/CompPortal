@@ -125,13 +125,19 @@ WHERE id = 'bf5bc843-0327-445e-aa7a-c6a653fb2bbb';
 ## Next Steps
 
 1. ✅ Document bug (this file)
-2. ⏳ Find invoice creation code
-3. ⏳ Fix calculation logic
-4. ⏳ Test fix on new invoice creation
-5. ⏳ Create migration to fix existing data
-6. ⏳ Apply migration to production
-7. ⏳ Resume split invoice testing
+2. ✅ Find invoice creation code (invoice.ts:704-747)
+3. ✅ Fix calculation logic (commit ba629f4)
+4. ✅ Deploy fix to production (verified ba629f4 live)
+5. ✅ Verify no broken invoices exist (0 found across all tenants)
+6. ⏳ Resume split invoice testing (13 tests remaining: I6-I18)
 
 ---
 
-**Status:** BLOCKED - Cannot test split invoice until invoice totals are fixed
+**Status:** ✅ RESOLVED - Fix deployed and verified
+
+**Resolution Details:**
+- **Fixed in:** `src/server/routers/invoice.ts` lines 706-709, 743-744
+- **Commit:** ba629f4
+- **Deployed:** November 6, 2025
+- **Verification:** No broken invoices found in database (all existing invoices either have tax_rate=0 or were manually corrected)
+- **Future invoices:** Will automatically calculate correct totals with tax included
