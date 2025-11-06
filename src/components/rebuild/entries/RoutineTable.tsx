@@ -10,6 +10,7 @@ interface Entry {
   status?: string;
   total_fee?: number;
   is_title_upgrade?: boolean;
+  routine_age?: number | null;
   dance_categories?: { name: string };
   entry_size_categories?: { name: string };
   age_groups?: { name: string };
@@ -70,7 +71,9 @@ export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
               <span className="text-white/80">{entry.entry_size_categories?.name || '—'}</span>
             </TableCell>
             <TableCell>
-              <span className="text-white/80">{entry.age_groups?.name || '—'}</span>
+              <span className="text-white/80">
+                {entry.routine_age !== null && entry.routine_age !== undefined ? `Age ${entry.routine_age}` : '—'}
+              </span>
             </TableCell>
             <TableCell>
               {!entry.entry_participants || entry.entry_participants.length === 0 ? (

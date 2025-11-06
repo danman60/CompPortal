@@ -15,6 +15,8 @@ interface SubmitSummaryModalProps {
   confirmedSpaces: number;
   isIncomplete: boolean;
   reservation: Reservation;
+  estimatedTotal: number;
+  depositAmount: number;
   onConfirm: (payload: { studioId: string; competitionId: string }) => Promise<void>;
   onCancel: () => void;
 }
@@ -22,15 +24,21 @@ interface SubmitSummaryModalProps {
 /**
  * Modal for submitting summary
  * Shows warning if incomplete (created < confirmed)
+ * Displays estimated invoice amount (total - deposit)
  */
 export function SubmitSummaryModal({
   created,
   confirmedSpaces,
   isIncomplete,
   reservation,
+  estimatedTotal,
+  depositAmount,
   onConfirm,
   onCancel,
 }: SubmitSummaryModalProps) {
+  // Calculate net invoice amount (total - deposit already paid)
+  const netInvoice = estimatedTotal - depositAmount;
+
   console.log('[SUMMARY_MODAL] Modal opened:', {
     reservation_id: reservation.id,
     studio_id: reservation.studio_id,
@@ -39,7 +47,10 @@ export function SubmitSummaryModal({
     routines_created: created,
     spaces_confirmed: confirmedSpaces,
     is_incomplete: isIncomplete,
-    spaces_to_refund: isIncomplete ? confirmedSpaces - created : 0
+    spaces_to_refund: isIncomplete ? confirmedSpaces - created : 0,
+    estimated_total: estimatedTotal,
+    deposit_amount: depositAmount,
+    net_invoice: netInvoice
   });
 
   const handleConfirm = async () => {
@@ -119,6 +130,27 @@ export function SubmitSummaryModal({
               <span className="text-yellow-300 font-medium">{confirmedSpaces - created}</span>
             </div>
           )}
+        </div>
+
+        {/* Estimated Invoice Section */}
+        <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-lg p-4">
+          <div className="text-green-300 font-semibold mb-3 text-lg">Estimated Invoice</div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-white/80">
+              <span>Total Routine Fees:</span>
+              <span className="font-mono">${estimatedTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-white/80">
+              <span>Deposit Already Paid:</span>
+              <span className="font-mono">-${depositAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between border-t border-green-500/30 pt-2 mt-2">
+              <span className="text-green-200 font-bold text-lg">Net Amount Due:</span>
+              <span className="text-green-200 font-bold font-mono text-xl">
+                ${netInvoice.toFixed(2)}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="text-white/60 text-sm">

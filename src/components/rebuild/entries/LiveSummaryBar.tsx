@@ -91,11 +91,6 @@ export function LiveSummaryBar({
               </div>
 
               <div className="text-white">
-                <div className="text-sm text-white/60">Estimated Total</div>
-                <div className="text-2xl font-bold">💰 ${estimatedTotal.toFixed(2)}</div>
-              </div>
-
-              <div className="text-white">
                 <div className="text-sm text-white/60">Deposit</div>
                 <div className="text-2xl font-bold text-blue-300">
                   ${(reservation.deposit_amount
@@ -143,6 +138,14 @@ export function LiveSummaryBar({
           confirmedSpaces={confirmedSpaces}
           isIncomplete={isIncomplete}
           reservation={reservation}
+          estimatedTotal={estimatedTotal}
+          depositAmount={
+            reservation.deposit_amount
+              ? (typeof reservation.deposit_amount === 'number'
+                ? reservation.deposit_amount
+                : Number(reservation.deposit_amount))
+              : 0
+          }
           onConfirm={onSubmitSummary}
           onCancel={() => setShowModal(false)}
         />

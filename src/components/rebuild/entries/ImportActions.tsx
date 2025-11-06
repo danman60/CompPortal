@@ -24,6 +24,26 @@ export function ImportActions({
   onDelete,
 }: ImportActionsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
+
+  const handleSaveAndNext = async () => {
+    setIsSaving(true);
+    try {
+      await onSaveAndNext();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    setIsSkipping(true);
+    try {
+      await onSkip();
+    } finally {
+      setIsSkipping(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this routine from the import queue?')) {
@@ -66,28 +86,28 @@ export function ImportActions({
       {/* Action Buttons */}
       <div className="flex gap-3 flex-wrap">
         <button
-          onClick={onSaveAndNext}
-          disabled={!canSave || isLoading || isDeleting}
+          onClick={handleSaveAndNext}
+          disabled={!canSave || isLoading || isSaving || isSkipping || isDeleting}
           className="flex-1 min-w-[200px] bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg
                    hover:shadow-lg transition-all duration-200 transform hover:scale-105
                    disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
                    font-semibold text-center"
         >
-          {isLoading ? 'Saving...' : currentIndex + 1 === totalRoutines ? 'Save & Complete Import' : 'Save & Next Routine'}
+          {(isLoading || isSaving) ? 'Saving...' : currentIndex + 1 === totalRoutines ? 'Save & Complete Import' : 'Save & Next Routine'}
         </button>
 
         <button
-          onClick={onSkip}
-          disabled={isLoading || isDeleting}
+          onClick={handleSkip}
+          disabled={isLoading || isSaving || isSkipping || isDeleting}
           className="bg-white/10 text-white px-6 py-3 rounded-lg hover:bg-white/20 transition-all
                    disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Skip This Routine
+          {isSkipping ? 'Skipping...' : 'Skip This Routine'}
         </button>
 
         <button
           onClick={handleDelete}
-          disabled={isLoading || isDeleting}
+          disabled={isLoading || isSaving || isSkipping || isDeleting}
           className="bg-red-500/20 text-red-300 border border-red-400/30 px-6 py-3 rounded-lg
                    hover:bg-red-500/30 transition-all
                    disabled:opacity-50 disabled:cursor-not-allowed"

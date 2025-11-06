@@ -238,10 +238,10 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
     } else {
       // If switching AWAY from Production → clear Production overrides
       if (productionSizeCategory && formHook.form.size_category_override === productionSizeCategory.id) {
-        formHook.updateField('size_category_override', null);
+        formHook.updateField('size_category_override', '');
       }
       if (productionClass && formHook.form.classification_id === productionClass.id) {
-        formHook.updateField('classification_id', null);
+        formHook.updateField('classification_id', '');
       }
     }
   }, [
@@ -634,7 +634,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         selectedDancers={formHook.form.selectedDancers}
         toggleDancer={formHook.toggleDancer}
         eventStartDate={eventStartDate}
-        pinSelectedToTop={isEditMode}
+        pinSelectedToTop={isEditMode || !!importSessionId}
       />
 
       <AutoCalculatedSection
