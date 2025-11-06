@@ -90,9 +90,9 @@ export default function RoutineCSVImport() {
   console.log('[RoutineCSVImport] Dancers loading:', dancersLoading);
   console.log('[RoutineCSVImport] Dancers count:', existingDancers?.dancers?.length);
 
-  // Fetch existing entries for export
+  // Fetch existing entries for export (max limit is 100 per backend validation)
   const { data: existingEntries } = trpc.entry.getAll.useQuery(
-    { limit: 10000 },
+    { limit: 100 },
     { enabled: !!studioId }
   );
 
