@@ -1616,7 +1616,7 @@ export const invoiceRouter = router({
           parent_invoice_id: input.parentInvoiceId,
           tenant_id: ctx.tenantId!,
         },
-        orderBy: { family_name: 'asc' },
+        orderBy: { dancer_name: 'asc' },
       });
 
       // Calculate summary

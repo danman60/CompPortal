@@ -72,11 +72,11 @@ export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps
           </Button>
           <Button
             onClick={() => {
-              alert(`Send to ${subInvoice.family_identifier} - Coming soon!`);
+              alert(`Send to ${subInvoice.dancer_id} - Coming soon!`);
             }}
           >
             <Mail className="w-4 h-4 mr-2" />
-            Email to Family
+            Email to Dancer
           </Button>
         </div>
       </div>
@@ -113,8 +113,8 @@ export default function SubInvoiceDetail({ subInvoiceId }: SubInvoiceDetailProps
             <div>
               <h3 className="font-semibold mb-2">Bill To:</h3>
               <div className="text-sm space-y-1">
-                <p className="font-medium">{subInvoice.family_name}</p>
-                <p className="text-muted-foreground">{subInvoice.family_identifier}</p>
+                <p className="font-medium">{subInvoice.dancer_name}</p>
+                <p className="text-muted-foreground">{subInvoice.dancer_id}</p>
               </div>
             </div>
             <div>

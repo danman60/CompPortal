@@ -150,10 +150,10 @@ export default function SubInvoiceList({
                 return (
                   <tr key={subInvoice.id} className="hover:bg-muted/50">
                     <td className="px-4 py-3">
-                      <p className="font-medium">{subInvoice.family_name}</p>
+                      <p className="font-medium">{subInvoice.dancer_name}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm text-muted-foreground">{subInvoice.family_identifier}</p>
+                      <p className="text-sm text-muted-foreground">{subInvoice.dancer_id}</p>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="text-sm">{routineCount}</span>
@@ -179,7 +179,7 @@ export default function SubInvoiceList({
                         <Button
                           variant="ghost"
                           onClick={() => {
-                            alert(`Download PDF for ${subInvoice.family_name} - Coming soon!`);
+                            alert(`Download PDF for ${subInvoice.dancer_name} - Coming soon!`);
                           }}
                         >
                           <Download className="w-4 h-4" />
@@ -187,7 +187,7 @@ export default function SubInvoiceList({
                         <Button
                           variant="ghost"
                           onClick={() => {
-                            alert(`Send email to ${subInvoice.family_identifier} - Coming soon!`);
+                            alert(`Send email to ${subInvoice.dancer_id} - Coming soon!`);
                           }}
                         >
                           <Mail className="w-4 h-4" />
