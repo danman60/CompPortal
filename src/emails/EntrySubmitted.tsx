@@ -112,13 +112,7 @@ export default function EntrySubmitted({
             </table>
           </Section>
 
-          <Section style={{
-            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-            borderRadius: '12px',
-            padding: '24px 30px',
-            margin: '24px 40px',
-            borderLeft: `4px solid ${secondaryColor}`,
-          }}>
+          <Section style={{...emailTheme.infoBox, borderLeft: `4px solid ${secondaryColor}`}}>
             <Text style={{...emailTheme.h2, fontSize: '16px', color: secondaryColor, margin: '0 0 12px 0'}}>Important Reminders</Text>
             <ul style={{...emailTheme.text, margin: '0', paddingLeft: '20px'}}>
               <li>Upload your music file through the portal</li>

@@ -65,77 +65,17 @@ export default function ReservationRejected({
             We understand this may be disappointing. Here are your next steps:
           </Text>
 
-          <Section style={{...emailTheme.infoBox, padding: '0 40px'}}>
-            <table style={{width: '100%', borderCollapse: 'collapse' as const}}>
-              <tbody>
-                <tr>
-                  <td style={{width: '40px', verticalAlign: 'top', paddingTop: '8px'}}>
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: `${primaryColor}33`,
-                      border: `2px solid ${primaryColor}66`,
-                      color: primaryColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: '16px',
-                    }}>1</div>
-                  </td>
-                  <td style={{verticalAlign: 'top', paddingTop: '8px'}}>
-                    <Text style={{...emailTheme.text, padding: '0', margin: '0 0 16px 0'}}>
-                      Review the reason for rejection above
-                    </Text>
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{width: '40px', verticalAlign: 'top', paddingTop: '8px'}}>
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: `${primaryColor}33`,
-                      border: `2px solid ${primaryColor}66`,
-                      color: primaryColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: '16px',
-                    }}>2</div>
-                  </td>
-                  <td style={{verticalAlign: 'top', paddingTop: '8px'}}>
-                    <Text style={{...emailTheme.text, padding: '0', margin: '0 0 16px 0'}}>
-                      Contact us if you have questions or need clarification
-                    </Text>
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{width: '40px', verticalAlign: 'top', paddingTop: '8px'}}>
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: `${primaryColor}33`,
-                      border: `2px solid ${primaryColor}66`,
-                      color: primaryColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: '16px',
-                    }}>3</div>
-                  </td>
-                  <td style={{verticalAlign: 'top', paddingTop: '8px'}}>
-                    <Text style={{...emailTheme.text, padding: '0', margin: '0'}}>
-                      Consider submitting a new reservation if circumstances change
-                    </Text>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <Section style={emailTheme.infoBox}>
+            <Text style={{...emailTheme.label, marginBottom: '16px'}}>Next Steps:</Text>
+            <Text style={{...emailTheme.text, paddingLeft: '0', marginLeft: '0'}}>
+              1. Review the reason for rejection above
+            </Text>
+            <Text style={{...emailTheme.text, paddingLeft: '0', marginLeft: '0', marginTop: '12px'}}>
+              2. Contact us if you have questions or need clarification
+            </Text>
+            <Text style={{...emailTheme.text, paddingLeft: '0', marginLeft: '0', marginTop: '12px'}}>
+              3. Consider submitting a new reservation if circumstances change
+            </Text>
           </Section>
 
           <Section style={{ textAlign: 'center', padding: '20px 40px' }}>
