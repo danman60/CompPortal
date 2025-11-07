@@ -299,9 +299,6 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       )}
 
       <div className="space-y-8">
-      {/* Super Admin Activity Feed */}
-      {isAdmin && <SuperAdminActivityBar />}
-
       {/* Header */}
       <div className="flex-1">
         <div className="flex items-center gap-4 mb-2">
@@ -333,6 +330,9 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
           </span>
         </p>
         <MotivationalQuote />
+
+        {/* Super Admin Activity Feed */}
+        {isAdmin && <SuperAdminActivityBar />}
 
         {/* Studio Pipeline Button - CD only */}
         {!isAdmin && (
