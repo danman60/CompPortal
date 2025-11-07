@@ -23,13 +23,15 @@ export function SAReservationsPageContainer() {
   const { data: studiosData, isLoading: studiosLoading } = trpc.studio.getAll.useQuery({});
 
   // Fetch reservations with cumulative filters
-  const { data: reservationsData, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery({
-    competitionId: selectedCompetitionId || undefined,
-    studioId: selectedStudioId || undefined,
-    status: selectedStatus === 'all' ? undefined : selectedStatus,
-    paymentStatus: selectedPaymentStatus === 'all' ? undefined : selectedPaymentStatus,
-    limit: 1000, // SA needs to see all
-  });
+  const { data: reservationsData, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery(
+    {
+      ...(selectedCompetitionId && { competitionId: selectedCompetitionId }),
+      ...(selectedStudioId && { studioId: selectedStudioId }),
+      ...(selectedStatus !== 'all' && { status: selectedStatus }),
+      ...(selectedPaymentStatus !== 'all' && { paymentStatus: selectedPaymentStatus }),
+      limit: 100, // Max allowed by backend
+    }
+  );
 
   const tenants = tenantsData?.tenants || [];
   const competitions = competitionsData?.competitions || [];
@@ -88,24 +90,26 @@ export function SAReservationsPageContainer() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
-          <div className="text-white/60 text-sm">Total Requested</div>
-          <div className="text-white text-2xl font-bold">{totals.spacesRequested}</div>
+      {!isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+            <div className="text-white/60 text-sm">Total Requested</div>
+            <div className="text-white text-2xl font-bold">{totals.spacesRequested}</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+            <div className="text-white/60 text-sm">Total Confirmed</div>
+            <div className="text-white text-2xl font-bold">{totals.spacesConfirmed}</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+            <div className="text-white/60 text-sm">Total Amount</div>
+            <div className="text-white text-2xl font-bold">${totals.totalAmount.toFixed(2)}</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+            <div className="text-white/60 text-sm">Total Deposits</div>
+            <div className="text-white text-2xl font-bold">${totals.depositAmount.toFixed(2)}</div>
+          </div>
         </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
-          <div className="text-white/60 text-sm">Total Confirmed</div>
-          <div className="text-white text-2xl font-bold">{totals.spacesConfirmed}</div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
-          <div className="text-white/60 text-sm">Total Amount</div>
-          <div className="text-white text-2xl font-bold">${totals.totalAmount.toFixed(2)}</div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
-          <div className="text-white/60 text-sm">Total Deposits</div>
-          <div className="text-white text-2xl font-bold">${totals.depositAmount.toFixed(2)}</div>
-        </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
