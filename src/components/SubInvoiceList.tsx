@@ -74,21 +74,61 @@ export default function SubInvoiceList({
 
   const { sub_invoices, summary } = data;
 
+  // Initialize email data when sub_invoices load
+  const initializeEmailData = () => {
+    if (!emailData.length && sub_invoices.length > 0) {
+      setEmailData(
+        sub_invoices.map((si) => ({
+          id: si.id,
+          dancer_name: si.dancer_name || 'Unknown Dancer',
+          email: '',
+          sendEmail: true,
+        }))
+      );
+    }
+  };
+
+  const handleDownloadAllPDFs = async () => {
+    // Trigger individual PDF downloads for each dancer
+    for (const subInvoice of sub_invoices) {
+      await handleDownloadPDF(subInvoice);
+      // Add small delay between downloads to avoid browser blocking
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
+  const handleDownloadPDF = async (subInvoice: any) => {
+    // TODO: Need to fetch full invoice data with competition/studio info
+    // For now, alert that this needs backend support
+    alert(`Downloading PDF for ${subInvoice.dancer_name} - Need to implement backend getSubInvoiceDetails endpoint`);
+  };
+
+  const handleOpenEmailModal = () => {
+    initializeEmailData();
+    setShowEmailModal(true);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold mb-1 text-white">Dancer Invoices</h2>
-          <p className="text-sm text-gray-400">
-            {summary.count} dancer{summary.count === 1 ? '' : 's'} · Total: ${summary.total.toFixed(2)}
-          </p>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl shadow-2xl border border-white/20">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/20 sticky top-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 z-10">
+          <div>
+            <h2 className="text-2xl font-bold mb-1 text-white">Dancer Invoices</h2>
+            <p className="text-sm text-gray-300">
+              {summary.count} dancer{summary.count === 1 ? '' : 's'} · Total: ${summary.total.toFixed(2)}
+            </p>
+          </div>
+          <button
+            onClick={onBack}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Main Invoice
-        </Button>
-      </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
 
       {/* Validation Summary */}
       <div className={`p-4 rounded-lg shadow border ${summary.matches_parent ? 'bg-green-500/20 border-green-400/50' : 'bg-red-500/20 border-red-400/50'}`}>
@@ -117,117 +157,285 @@ export default function SubInvoiceList({
         </div>
       </div>
 
-      {/* Bulk Actions */}
-      <div className="flex gap-3">
-        <Button
-          variant="secondary"
-          onClick={() => {
-            alert('Download All PDFs - Coming soon!');
-          }}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Download All PDFs
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            alert('Send All Emails - Coming soon!');
-          }}
-        >
-          <Mail className="w-4 h-4 mr-2" />
-          Send All Emails
-        </Button>
+          {/* Bulk Actions */}
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={handleDownloadAllPDFs}
+              className="bg-white/10 hover:bg-white/20 border-white/20"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download All PDFs
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleOpenEmailModal}
+              className="bg-white/10 hover:bg-white/20 border-white/20"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Send All Emails
+            </Button>
+          </div>
+
+          {/* Sub-Invoice List */}
+          <div className="bg-white/5 rounded-lg shadow border border-white/20 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-white/10 border-b border-white/20">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium text-sm text-white">Dancer Name</th>
+                    <th className="text-left px-4 py-3 font-medium text-sm text-white">Contact</th>
+                    <th className="text-right px-4 py-3 font-medium text-sm text-white">Routines</th>
+                    <th className="text-right px-4 py-3 font-medium text-sm text-white">Subtotal</th>
+                    <th className="text-right px-4 py-3 font-medium text-sm text-white">Tax</th>
+                    <th className="text-right px-4 py-3 font-medium text-sm text-white">Total</th>
+                    <th className="text-right px-4 py-3 font-medium text-sm text-white">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {sub_invoices.map((subInvoice) => {
+                    const lineItems = subInvoice.line_items as any[];
+                    const routineCount = lineItems.length;
+
+                    return (
+                      <tr key={subInvoice.id} className="hover:bg-white/10 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-white">{subInvoice.dancer_name}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-sm text-gray-300 font-mono">{subInvoice.dancer_id}</p>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-sm text-gray-200">{routineCount}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-mono text-gray-200">${Number(subInvoice.subtotal).toFixed(2)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-mono text-sm text-gray-300">
+                            ${Number(subInvoice.tax_amount).toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-mono font-semibold text-white">${Number(subInvoice.total).toFixed(2)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Link href={`/dashboard/invoices/dancer/${subInvoice.id}`}>
+                              <Button
+                                variant="ghost"
+                                className="text-gray-300 hover:text-white hover:bg-white/10"
+                                title="View Details"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              className="text-gray-300 hover:text-white hover:bg-white/10"
+                              onClick={() => handleDownloadPDF(subInvoice)}
+                              title="Download PDF"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="text-gray-300 hover:text-white hover:bg-white/10"
+                              onClick={() => {
+                                initializeEmailData();
+                                const dancerData = emailData.find(d => d.id === subInvoice.id);
+                                if (dancerData) {
+                                  // TODO: Open single-dancer email modal
+                                  alert(`Send email to ${subInvoice.dancer_name} - Feature coming soon`);
+                                }
+                              }}
+                              title="Send Email"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-white/10 border-t border-white/20">
+                  <tr className="font-semibold">
+                    <td colSpan={3} className="px-4 py-3 text-white">
+                      Total ({summary.count} dancers)
+                    </td>
+                    <td className="px-4 py-3 text-right text-white">
+                      ${sub_invoices.reduce((sum, si) => sum + Number(si.subtotal), 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-white">
+                      ${sub_invoices.reduce((sum, si) => sum + Number(si.tax_amount), 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-white">
+                      ${summary.total.toFixed(2)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Sub-Invoice List */}
-      <div className="bg-gray-900 rounded-lg shadow border border-white/10">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/5 border-b border-white/10">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-sm text-gray-300">Dancer Name</th>
-                <th className="text-left px-4 py-3 font-medium text-sm text-gray-300">Contact</th>
-                <th className="text-right px-4 py-3 font-medium text-sm text-gray-300">Routines</th>
-                <th className="text-right px-4 py-3 font-medium text-sm text-gray-300">Subtotal</th>
-                <th className="text-right px-4 py-3 font-medium text-sm text-gray-300">Tax</th>
-                <th className="text-right px-4 py-3 font-medium text-sm text-gray-300">Total</th>
-                <th className="text-right px-4 py-3 font-medium text-sm text-gray-300">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {sub_invoices.map((subInvoice) => {
-                const lineItems = subInvoice.line_items as any[];
-                const routineCount = lineItems.length;
+      {/* Email Modal */}
+      {showEmailModal && (
+        <EmailAllModal
+          dancers={emailData}
+          onUpdateDancer={(id, updates) => {
+            setEmailData(emailData.map(d => d.id === id ? { ...d, ...updates } : d));
+          }}
+          onClose={() => setShowEmailModal(false)}
+          onSend={() => {
+            // TODO: Implement actual email sending
+            alert('Email sending not yet implemented - need backend endpoint');
+            setShowEmailModal(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
-                return (
-                  <tr key={subInvoice.id} className="hover:bg-white/5">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-white">{subInvoice.dancer_name}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-sm text-gray-400">{subInvoice.dancer_id}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-sm text-gray-300">{routineCount}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-mono text-gray-200">${Number(subInvoice.subtotal).toFixed(2)}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-mono text-sm text-gray-400">
-                        ${Number(subInvoice.tax_amount).toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-mono font-semibold text-white">${Number(subInvoice.total).toFixed(2)}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Link href={`/dashboard/invoices/dancer/${subInvoice.id}`}>
-                          <Button variant="ghost">
-                            <FileText className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            alert(`Download PDF for ${subInvoice.dancer_name} - Coming soon!`);
-                          }}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            alert(`Send email to ${subInvoice.dancer_id} - Coming soon!`);
-                          }}
-                        >
-                          <Mail className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
+// Email All Modal Component
+function EmailAllModal({
+  dancers,
+  onUpdateDancer,
+  onClose,
+  onSend,
+}: {
+  dancers: DancerEmailData[];
+  onUpdateDancer: (id: string, updates: Partial<DancerEmailData>) => void;
+  onClose: () => void;
+  onSend: () => void;
+}) {
+  const [emailSubject, setEmailSubject] = useState('Your Dancer Invoice');
+  const [emailBody, setEmailBody] = useState(
+    `Hi [Dancer Name],\n\nAttached is your invoice for the upcoming competition.\n\nPlease review and let us know if you have any questions.\n\nThank you!`
+  );
+
+  const selectedCount = dancers.filter(d => d.sendEmail).length;
+  const allValid = dancers.every(d => !d.sendEmail || d.email.trim().includes('@'));
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl shadow-2xl border border-white/20">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/20 sticky top-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 z-10">
+          <div>
+            <h3 className="text-xl font-semibold text-white">Send Dancer Invoices via Email</h3>
+            <p className="text-sm text-gray-300 mt-1">
+              {selectedCount} of {dancers.length} dancers selected
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Dancer Table */}
+          <div className="bg-white/5 rounded-lg border border-white/20 overflow-hidden">
+            <div className="overflow-x-auto max-h-64">
+              <table className="w-full">
+                <thead className="bg-white/10 border-b border-white/20 sticky top-0">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium text-sm text-white w-12">Send</th>
+                    <th className="text-left px-4 py-3 font-medium text-sm text-white">Dancer Name</th>
+                    <th className="text-left px-4 py-3 font-medium text-sm text-white">Email Address</th>
                   </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="bg-white/5 border-t border-white/10">
-              <tr className="font-semibold">
-                <td colSpan={3} className="px-4 py-3 text-white">
-                  Total ({summary.count} dancers)
-                </td>
-                <td className="px-4 py-3 text-right text-white">
-                  ${sub_invoices.reduce((sum, si) => sum + Number(si.subtotal), 0).toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right text-white">
-                  ${sub_invoices.reduce((sum, si) => sum + Number(si.tax_amount), 0).toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right text-white">
-                  ${summary.total.toFixed(2)}
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {dancers.map((dancer) => (
+                    <tr key={dancer.id} className="hover:bg-white/5">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={dancer.sendEmail}
+                          onChange={(e) => onUpdateDancer(dancer.id, { sendEmail: e.target.checked })}
+                          className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-white font-medium">{dancer.dancer_name}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="email"
+                          value={dancer.email}
+                          onChange={(e) => onUpdateDancer(dancer.id, { email: e.target.value })}
+                          placeholder="dancer@example.com"
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          disabled={!dancer.sendEmail}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Email Preview */}
+          <div className="space-y-4">
+            <h4 className="text-white font-semibold">Email Message</h4>
+
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Subject</label>
+              <input
+                type="text"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Message</label>
+              <textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              />
+              <p className="text-xs text-gray-400 mt-2">
+                Tip: Use [Dancer Name] as a placeholder - it will be replaced with each dancer's name.
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-4 border-t border-white/20">
+            <p className="text-sm text-gray-300">
+              {!allValid && (
+                <span className="text-yellow-400">⚠️ Some email addresses appear invalid</span>
+              )}
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                className="text-gray-300 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={onSend}
+                disabled={selectedCount === 0 || !allValid}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Send {selectedCount} Email{selectedCount !== 1 ? 's' : ''}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
