@@ -22,22 +22,35 @@ export type DigestContent = {
       entriesRequested: number;
       submittedAt: Date;
     }>;
+    summarizedReservations: Array<{
+      id: string;
+      studioName: string;
+      competitionName: string;
+      entriesConfirmed: number;
+      submittedAt: Date;
+    }>;
+    draftInvoices: Array<{
+      id: string;
+      studioName: string;
+      competitionName: string;
+      total: number;
+      createdAt: Date;
+    }>;
   };
   upcomingEvents: Array<{
     id: string;
     name: string;
-    startDate: Date;
-    daysUntil: number;
+    date: Date;
+    type: string;
   }>;
   recentActivity: Array<{
+    id: string;
     action: string;
     description: string;
     timestamp: Date;
   }>;
   summary: {
     totalPendingActions: number;
-    totalUpcomingEvents: number;
-    totalRecentActivity: number;
   };
 };
 
@@ -89,13 +102,13 @@ export async function generateDigestForUser(
       pendingActions: {
         classificationRequests: [],
         reservationReviews: [],
+        summarizedReservations: [],
+        draftInvoices: [],
       },
       upcomingEvents: [],
       recentActivity: [],
       summary: {
         totalPendingActions: 0,
-        totalUpcomingEvents: 0,
-        totalRecentActivity: 0,
       },
     };
 
@@ -174,73 +187,71 @@ export async function generateDigestForUser(
       }));
     }
 
-    // 3. Upcoming Events (next 30 days)
-    if (preferences.includeUpcomingEvents) {
-      const now = new Date();
-      const thirtyDaysFromNow = new Date(now);
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-
-      const upcomingCompetitions = await prisma.competitions.findMany({
+    // 3. Summarized Reservations (needs invoices created)
+    if (preferences.includePendingActions) {
+      const summarizedReservations = await prisma.reservations.findMany({
         where: {
           tenant_id: tenantId,
-          competition_start_date: {
-            gte: now,
-            lte: thirtyDaysFromNow,
+          status: 'summarized',
+        },
+        include: {
+          studios: {
+            select: {
+              name: true,
+            },
           },
-          status: { not: 'cancelled' },
+          competitions: {
+            select: {
+              name: true,
+            },
+          },
         },
         orderBy: {
-          competition_start_date: 'asc',
+          updated_at: 'asc',
         },
-        take: 10,
+        take: 20,
       });
 
-      content.upcomingEvents = upcomingCompetitions.map((comp) => {
-        const startDate = new Date(comp.competition_start_date!);
-        const daysUntil = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-        return {
-          id: comp.id,
-          name: comp.name,
-          startDate,
-          daysUntil,
-        };
-      });
+      content.pendingActions.summarizedReservations = summarizedReservations.map((res) => ({
+        id: res.id,
+        studioName: res.studios.name,
+        competitionName: res.competitions.name,
+        entriesConfirmed: res.spaces_confirmed || 0,
+        submittedAt: res.updated_at!,
+      }));
     }
 
-    // 4. Recent Activity (last 7 days)
-    if (preferences.includeActivities) {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      const recentLogs = await prisma.activity_logs.findMany({
+    // 4. Draft Invoices (needs to be sent)
+    if (preferences.includePendingActions) {
+      const draftInvoices = await prisma.invoices.findMany({
         where: {
           tenant_id: tenantId,
-          created_at: {
-            gte: sevenDaysAgo,
+          status: 'DRAFT',
+        },
+        include: {
+          studios: {
+            select: {
+              name: true,
+            },
           },
-          action: {
-            in: [
-              'reservation.submit',
-              'reservation.approve',
-              'reservation.adjust',
-              'classification.request',
-              'classification.approve',
-              'invoice.send',
-              'invoice.markAsPaid',
-            ],
+          competitions: {
+            select: {
+              name: true,
+            },
           },
         },
         orderBy: {
-          created_at: 'desc',
+          created_at: 'asc',
         },
-        take: 15,
+        take: 20,
       });
 
-      content.recentActivity = recentLogs.map((log) => ({
-        action: log.action,
-        description: formatActivityDescription(log.action, log.details as any),
-        timestamp: log.created_at!,
+      content.pendingActions.draftInvoices = draftInvoices.map((inv) => ({
+        id: inv.id,
+        studioName: inv.studios.name,
+        competitionName: inv.competitions.name,
+        total: Number(inv.total),
+        createdAt: inv.created_at!,
       }));
     }
 
@@ -248,16 +259,13 @@ export async function generateDigestForUser(
     content.summary = {
       totalPendingActions:
         content.pendingActions.classificationRequests.length +
-        content.pendingActions.reservationReviews.length,
-      totalUpcomingEvents: content.upcomingEvents.length,
-      totalRecentActivity: content.recentActivity.length,
+        content.pendingActions.reservationReviews.length +
+        content.pendingActions.summarizedReservations.length +
+        content.pendingActions.draftInvoices.length,
     };
 
     // Check minimum activity threshold
-    const totalItems =
-      content.summary.totalPendingActions +
-      content.summary.totalUpcomingEvents +
-      content.summary.totalRecentActivity;
+    const totalItems = content.summary.totalPendingActions;
 
     if (totalItems < preferences.minimumActivityCount) {
       logger.info('Digest generation skipped: below minimum activity threshold', {

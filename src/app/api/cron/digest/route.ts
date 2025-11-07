@@ -81,8 +81,6 @@ export async function GET(request: Request) {
           tenantName: digestContent.tenantName,
           portalUrl: `https://${tenant?.name.toLowerCase().replace(/\s+/g, '')}.compsync.net`,
           pendingActions: digestContent.pendingActions,
-          upcomingEvents: digestContent.upcomingEvents,
-          recentActivity: digestContent.recentActivity,
           tenantBranding: {
             primaryColor: branding.primary_color || undefined,
             logo: branding.logo_url || undefined,

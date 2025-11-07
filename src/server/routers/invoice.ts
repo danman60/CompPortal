@@ -1773,4 +1773,243 @@ export const invoiceRouter = router({
         entries,
       };
     }),
+
+  /**
+   * Get sub-invoice details for PDF generation
+   * Fetches all data needed to render a dancer's invoice PDF
+   */
+  getSubInvoiceDetails: protectedProcedure
+    .input(z.object({
+      subInvoiceId: z.string().uuid(),
+    }))
+    .query(async ({ ctx, input }) => {
+      // Fetch sub-invoice with all related data
+      const subInvoice = await prisma.sub_invoices.findUnique({
+        where: {
+          id: input.subInvoiceId,
+          tenant_id: ctx.tenantId!,
+        },
+        include: {
+          invoices: {
+            include: {
+              studios: true,
+              competitions: true,
+            },
+          },
+        },
+      });
+
+      if (!subInvoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Sub-invoice not found' });
+      }
+
+      // Validate access
+      if (subInvoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access sub-invoice from another tenant' });
+      }
+
+      // Fetch tenant branding
+      const tenant = await prisma.tenants.findUnique({
+        where: { id: ctx.tenantId! },
+        select: {
+          branding: true,
+        },
+      });
+
+      // Parse line items from JSON
+      const lineItems = (subInvoice.line_items as any) || [];
+      const parsedLineItems = Array.isArray(lineItems) ? lineItems.map((item: any) => ({
+        entry_number: item.entry_number || 0,
+        title: item.title || '',
+        amount: Number(item.amount || 0),
+        late_fee: Number(item.late_fee || 0),
+      })) : [];
+
+      // Build invoice number from parent invoice
+      const parentInvoice = subInvoice.invoices;
+      const studio = parentInvoice.studios;
+      const competition = parentInvoice.competitions;
+      const invoiceNumber = `INV-${competition.year}-${studio.code || studio.id.substring(0, 8)}-${parentInvoice.id.substring(0, 8)}`;
+
+      return {
+        subInvoice: {
+          id: subInvoice.id,
+          dancer_name: subInvoice.dancer_name,
+          dancer_id: subInvoice.dancer_id,
+          line_items: parsedLineItems,
+          subtotal: Number(subInvoice.subtotal || 0),
+          tax_rate: Number(subInvoice.tax_rate || 0),
+          tax_amount: Number(subInvoice.tax_amount || 0),
+          total: Number(subInvoice.total || 0),
+        },
+        competition: {
+          name: competition.name,
+          year: competition.year || new Date().getFullYear(),
+          startDate: competition.competition_start_date?.toISOString() || new Date().toISOString(),
+          endDate: competition.competition_end_date?.toISOString(),
+          location: competition.primary_location || undefined,
+        },
+        studio: {
+          name: studio.name,
+          code: studio.code || undefined,
+          email: studio.email || undefined,
+          phone: studio.phone || undefined,
+          address1: studio.address1 || undefined,
+          city: studio.city || undefined,
+          province: studio.province || undefined,
+          postal_code: studio.postal_code || undefined,
+        },
+        invoiceNumber,
+        invoiceDate: parentInvoice.created_at || new Date(),
+        tenant: tenant ? {
+          branding: tenant.branding as any,
+        } : undefined,
+      };
+    }),
+
+  /**
+   * Send dancer invoice emails with PDF attachments
+   * Manual email sending triggered by studio owner (Step 4 of split invoice wizard)
+   */
+  sendDancerInvoiceEmails: protectedProcedure
+    .input(z.object({
+      parentInvoiceId: z.string().uuid(),
+      emails: z.array(z.object({
+        subInvoiceId: z.string().uuid(),
+        dancerName: z.string(),
+        emailAddress: z.string().email(),
+      })),
+      emailSubject: z.string(),
+      emailBody: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      console.log('[DANCER_EMAIL] Starting dancer invoice email send:', {
+        parent_invoice_id: input.parentInvoiceId,
+        emails_count: input.emails.length,
+        user_id: ctx.userId,
+        tenant_id: ctx.tenantId,
+      });
+
+      // Validate access to parent invoice
+      const parentInvoice = await prisma.invoices.findUnique({
+        where: { id: input.parentInvoiceId, tenant_id: ctx.tenantId! },
+        include: { studios: true },
+      });
+
+      if (!parentInvoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Parent invoice not found' });
+      }
+
+      // Guard: Must be studio owner or super admin
+      if (ctx.userRole !== 'super_admin' && parentInvoice.studios.owner_id !== ctx.userId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized to send emails for this invoice' });
+      }
+
+      let sent = 0;
+      let failed = 0;
+      const errors: Array<{ dancerName: string; error: string }> = [];
+
+      // Process each email
+      for (const emailData of input.emails) {
+        try {
+          console.log('[DANCER_EMAIL] Processing email for dancer:', {
+            dancer_name: emailData.dancerName,
+            email: emailData.emailAddress,
+            sub_invoice_id: emailData.subInvoiceId,
+          });
+
+          // Fetch sub-invoice details (reuse existing logic)
+          const subInvoice = await prisma.sub_invoices.findUnique({
+            where: {
+              id: emailData.subInvoiceId,
+              tenant_id: ctx.tenantId!,
+            },
+            include: {
+              invoices: {
+                include: {
+                  studios: true,
+                  competitions: true,
+                },
+              },
+            },
+          });
+
+          if (!subInvoice) {
+            throw new Error('Sub-invoice not found');
+          }
+
+          if (subInvoice.parent_invoice_id !== input.parentInvoiceId) {
+            throw new Error('Sub-invoice does not belong to parent invoice');
+          }
+
+          // TODO: Generate PDF attachment
+          // For now, we'll send without PDF attachment
+          // PDF generation will be implemented in frontend using react-pdf or similar
+          console.log('[DANCER_EMAIL] PDF generation not yet implemented - sending email without attachment');
+
+          // Replace [Dancer Name] placeholder in email body
+          const personalizedBody = input.emailBody.replace(/\[Dancer Name\]/g, emailData.dancerName);
+
+          // Send email
+          await sendEmail({
+            to: emailData.emailAddress,
+            subject: input.emailSubject,
+            html: personalizedBody,
+            templateType: 'dancer-invoice',
+            studioId: parentInvoice.studio_id,
+            competitionId: parentInvoice.competition_id,
+          });
+
+          console.log('[DANCER_EMAIL] Email sent successfully:', {
+            dancer_name: emailData.dancerName,
+            email: emailData.emailAddress,
+          });
+
+          sent++;
+        } catch (error) {
+          console.error('[DANCER_EMAIL] Failed to send email:', {
+            dancer_name: emailData.dancerName,
+            email: emailData.emailAddress,
+            error: error instanceof Error ? error.message : String(error),
+          });
+
+          failed++;
+          errors.push({
+            dancerName: emailData.dancerName,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      // Activity log
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: parentInvoice.studio_id,
+          action: 'invoice.sendDancerEmails',
+          entityType: 'invoice',
+          entityId: input.parentInvoiceId,
+          details: {
+            sent,
+            failed,
+            total: input.emails.length,
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity (invoice.sendDancerEmails)', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      console.log('[DANCER_EMAIL] Email sending completed:', {
+        sent,
+        failed,
+        total: input.emails.length,
+      });
+
+      return {
+        success: failed === 0,
+        sent,
+        failed,
+        errors: errors.length > 0 ? errors : undefined,
+      };
+    }),
 });

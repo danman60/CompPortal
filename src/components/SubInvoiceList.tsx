@@ -29,6 +29,7 @@ export default function SubInvoiceList({
   const { data, isLoading, error } = trpc.invoice.getSubInvoices.useQuery({
     parentInvoiceId,
   });
+  const sendEmailsMutation = trpc.invoice.sendDancerInvoiceEmails.useMutation();
 
   if (isLoading) {
     return (
@@ -98,14 +99,78 @@ export default function SubInvoiceList({
   };
 
   const handleDownloadPDF = async (subInvoice: any) => {
-    // TODO: Need to fetch full invoice data with competition/studio info
-    // For now, alert that this needs backend support
-    alert(`Downloading PDF for ${subInvoice.dancer_name} - Need to implement backend getSubInvoiceDetails endpoint`);
+    try {
+      // Call endpoint to get full invoice details
+      const data = await trpc.invoice.getSubInvoiceDetails.query({
+        subInvoiceId: subInvoice.id
+      });
+
+      if (!data) {
+        alert('Failed to fetch invoice details');
+        return;
+      }
+
+      // Generate PDF using existing library
+      const pdfBlob = generateInvoicePDF({
+        invoiceNumber: data.invoiceNumber,
+        invoiceDate: data.invoiceDate,
+        competition: data.competition,
+        studio: data.studio,
+        lineItems: data.subInvoice.line_items,
+        summary: {
+          entryCount: data.subInvoice.line_items.length,
+          subtotal: data.subInvoice.subtotal,
+          taxRate: data.subInvoice.tax_rate / 100,
+          taxAmount: data.subInvoice.tax_amount,
+          totalAmount: data.subInvoice.total,
+        },
+        tenant: data.tenant,
+      });
+
+      // Trigger download
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Invoice-${data.subInvoice.dancer_name}-${data.invoiceNumber}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('Failed to generate PDF');
+    }
   };
 
   const handleOpenEmailModal = () => {
     initializeEmailData();
     setShowEmailModal(true);
+  };
+
+  const handleSendEmails = async (emailSubject: string, emailBody: string) => {
+    const selectedDancers = emailData.filter(d => d.sendEmail && d.email.trim());
+
+    try {
+      const result = await sendEmailsMutation.mutateAsync({
+        parentInvoiceId,
+        emails: selectedDancers.map(d => ({
+          subInvoiceId: d.id,
+          dancerName: d.dancer_name,
+          emailAddress: d.email,
+        })),
+        emailSubject,
+        emailBody,
+      });
+
+      if (result.success) {
+        alert(`✅ Sent ${result.sent} emails successfully!`);
+        setShowEmailModal(false);
+      } else {
+        alert(`⚠️ Sent ${result.sent}, failed ${result.failed}. Check console for details.`);
+        console.error('Email failures:', result.errors);
+      }
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      alert('Failed to send emails');
+    }
   };
 
   return (
@@ -290,11 +355,7 @@ export default function SubInvoiceList({
             setEmailData(emailData.map(d => d.id === id ? { ...d, ...updates } : d));
           }}
           onClose={() => setShowEmailModal(false)}
-          onSend={() => {
-            // TODO: Implement actual email sending
-            alert('Email sending not yet implemented - need backend endpoint');
-            setShowEmailModal(false);
-          }}
+          onSend={handleSendEmails}
         />
       )}
     </div>
@@ -311,7 +372,7 @@ function EmailAllModal({
   dancers: DancerEmailData[];
   onUpdateDancer: (id: string, updates: Partial<DancerEmailData>) => void;
   onClose: () => void;
-  onSend: () => void;
+  onSend: (emailSubject: string, emailBody: string) => void;
 }) {
   const [emailSubject, setEmailSubject] = useState('Your Dancer Invoice');
   const [emailBody, setEmailBody] = useState(
@@ -427,7 +488,7 @@ function EmailAllModal({
                 Cancel
               </Button>
               <Button
-                onClick={onSend}
+                onClick={() => onSend(emailSubject, emailBody)}
                 disabled={selectedCount === 0 || !allValid}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >

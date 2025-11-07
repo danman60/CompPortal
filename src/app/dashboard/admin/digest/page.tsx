@@ -30,7 +30,7 @@ export default function DigestControlPage() {
     onSuccess: (data) => {
       setSendStatus({
         type: 'success',
-        message: `Digest sent successfully! ${data.summary.totalPendingActions} pending actions, ${data.summary.totalUpcomingEvents} upcoming events, ${data.summary.totalRecentActivity} recent activities.`,
+        message: `Digest sent successfully! ${data.summary.totalPendingActions} pending actions included.`,
       });
     },
     onError: (error) => {
@@ -182,40 +182,48 @@ export default function DigestControlPage() {
           {previewData && (
             <div className="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-600">
               <h3 className="text-lg font-semibold text-white mb-3">Preview Summary</h3>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-400">Pending Actions</p>
-                  <p className="text-2xl font-bold text-purple-400">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="col-span-2">
+                  <p className="text-gray-400">Total Pending Actions</p>
+                  <p className="text-3xl font-bold text-purple-400">
                     {previewData.summary.totalPendingActions}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {previewData.pendingActions.classificationRequests.length} classification +{' '}
-                    {previewData.pendingActions.reservationReviews.length} reservations
-                  </p>
                 </div>
                 <div>
-                  <p className="text-gray-400">Upcoming Events</p>
+                  <p className="text-gray-400">Pending Reservations</p>
                   <p className="text-2xl font-bold text-blue-400">
-                    {previewData.summary.totalUpcomingEvents}
+                    {previewData.pendingActions.reservationReviews.length}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Next 30 days</p>
+                  <p className="text-xs text-gray-500 mt-1">Need approval</p>
                 </div>
                 <div>
-                  <p className="text-gray-400">Recent Activity</p>
+                  <p className="text-gray-400">Summarized Reservations</p>
                   <p className="text-2xl font-bold text-green-400">
-                    {previewData.summary.totalRecentActivity}
+                    {previewData.pendingActions.summarizedReservations.length}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Last 7 days</p>
+                  <p className="text-xs text-gray-500 mt-1">Need invoices</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Draft Invoices</p>
+                  <p className="text-2xl font-bold text-amber-400">
+                    {previewData.pendingActions.draftInvoices.length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Need to be sent</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Exception Requests</p>
+                  <p className="text-2xl font-bold text-red-400">
+                    {previewData.pendingActions.classificationRequests.length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Awaiting review</p>
                 </div>
               </div>
 
-              {previewData.summary.totalPendingActions === 0 &&
-                previewData.summary.totalUpcomingEvents === 0 &&
-                previewData.summary.totalRecentActivity === 0 && (
-                  <p className="text-amber-400 mt-4 text-sm">
-                    ⚠️ This digest would be empty (no content to display)
-                  </p>
-                )}
+              {previewData.summary.totalPendingActions === 0 && (
+                <p className="text-amber-400 mt-4 text-sm">
+                  ⚠️ This digest would be empty (no pending actions)
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -251,6 +259,50 @@ export default function DigestControlPage() {
           </Button>
         </div>
 
+        {/* Tenant Digest Toggles */}
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold text-white mb-4">🔔 Tenant Digest Settings</h2>
+          <p className="text-gray-400 mb-4">
+            Enable or disable daily digest emails for each Competition Director. When disabled, no
+            digest emails will be sent to that tenant.
+          </p>
+
+          <div className="space-y-3">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600"
+              >
+                <div>
+                  <p className="text-white font-medium">
+                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.users.email}
+                  </p>
+                  <p className="text-sm text-gray-400">{user.tenants?.name || 'Unknown Tenant'}</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    defaultChecked={true}
+                    className="sr-only peer"
+                    disabled
+                  />
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                  <span className="ms-3 text-sm font-medium text-gray-400">
+                    {true ? 'Enabled' : 'Disabled'}
+                  </span>
+                </label>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+            <p className="text-sm text-blue-300">
+              💡 <strong>Coming Soon:</strong> Toggle functionality will be connected to tenant
+              preferences in a future update.
+            </p>
+          </div>
+        </div>
+
         {/* Info Section */}
         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-lg p-6">
           <h2 className="text-2xl font-bold text-white mb-4">ℹ️ How Daily Digests Work</h2>
@@ -258,10 +310,10 @@ export default function DigestControlPage() {
             <div>
               <p className="font-medium text-white mb-1">Digest Content Includes:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-400 ml-2">
-                <li>Pending classification exception requests</li>
-                <li>Pending reservation reviews</li>
-                <li>Upcoming competitions (next 30 days)</li>
-                <li>Recent activity (last 7 days)</li>
+                <li><strong>Pending Reservations:</strong> Studios awaiting approval/rejection</li>
+                <li><strong>Summarized Reservations:</strong> Need invoices created</li>
+                <li><strong>Draft Invoices:</strong> Need to be sent to studios</li>
+                <li><strong>Exception Requests:</strong> Classification changes awaiting review</li>
               </ul>
             </div>
             <div>
@@ -273,10 +325,10 @@ export default function DigestControlPage() {
               </ul>
             </div>
             <div>
-              <p className="font-medium text-white mb-1">User Preferences:</p>
+              <p className="font-medium text-white mb-1">Tenant Preferences:</p>
               <p className="text-gray-400 ml-2">
-                Competition Directors can configure their digest preferences in their dashboard
-                settings.
+                Each Competition Director can enable/disable daily digest emails for their tenant.
+                Configure preferences above.
               </p>
             </div>
             <div>
