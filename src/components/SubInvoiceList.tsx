@@ -5,7 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/rebuild/ui/Button';
 import { FileText, Download, Mail, CheckCircle, AlertCircle, ArrowLeft, X } from 'lucide-react';
 import Link from 'next/link';
-import { generateInvoicePDF } from '@/lib/pdf-reports';
+import { generateDancerInvoicePDF } from '@/lib/pdf-reports';
 import JSZip from 'jszip';
 
 type SubInvoiceListProps = {
@@ -111,26 +111,16 @@ export default function SubInvoiceList({
         return;
       }
 
-      // Transform line items to match PDF generator format
-      const transformedLineItems = data.subInvoice.line_items.map((item: any) => ({
-        id: `sub-${subInvoice.id}-${item.entry_number}`,
-        entryNumber: item.entry_number,
-        title: item.title,
-        category: 'Dancer Share',
-        sizeCategory: '',
-        participantCount: 1,
-        entryFee: item.amount,
-        lateFee: item.late_fee || 0,
-        total: item.amount + (item.late_fee || 0),
-      }));
-
-      // Generate PDF using existing library
-      const pdfBlob = generateInvoicePDF({
+      // Generate simplified dancer PDF (no studio details, no margin info)
+      const pdfBlob = generateDancerInvoicePDF({
         invoiceNumber: data.invoiceNumber,
         invoiceDate: data.invoiceDate,
-        competition: data.competition,
-        studio: data.studio,
-        lineItems: transformedLineItems,
+        dancerName: data.subInvoice.dancer_name || 'Dancer',
+        competition: {
+          name: data.competition.name,
+          year: data.competition.year,
+        },
+        lineItems: data.subInvoice.line_items,
         summary: {
           entryCount: data.subInvoice.line_items.length,
           subtotal: data.subInvoice.subtotal,

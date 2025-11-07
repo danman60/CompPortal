@@ -862,3 +862,171 @@ export function generateInvoicePDF(invoice: {
 
   return doc.output('blob');
 }
+
+/**
+ * Dancer Invoice PDF - Simplified personal invoice for individual dancers
+ * Shows only their routines without studio/competition details
+ */
+export function generateDancerInvoicePDF(invoice: {
+  invoiceNumber: string;
+  invoiceDate: Date | string;
+  dancerName: string;
+  competition: {
+    name: string;
+    year: number;
+  };
+  tenant?: {
+    branding?: {
+      primaryColor?: string;
+      tagline?: string;
+    } | null;
+  } | null;
+  lineItems: {
+    entry_number: number;
+    title: string;
+    amount: number;
+    late_fee?: number;
+  }[];
+  summary: {
+    entryCount: number;
+    subtotal: number;
+    taxRate: number;
+    taxAmount: number;
+    totalAmount: number;
+  };
+}): Blob {
+  const brandColor = invoice.tenant?.branding?.primaryColor || COLORS.primary;
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'letter',
+  });
+
+  let yPos = 20;
+
+  // Simple header - Competition name
+  doc.setFontSize(20);
+  doc.setTextColor(brandColor);
+  doc.text(invoice.competition.name, 15, yPos);
+  yPos += 8;
+
+  // Dancer Invoice subtitle
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.text);
+  doc.text('Dancer Invoice', 15, yPos);
+  yPos += 12;
+
+  // Dancer name (personalized)
+  doc.setFontSize(16);
+  doc.setTextColor(brandColor);
+  doc.text(`For: ${invoice.dancerName}`, 15, yPos);
+  yPos += 10;
+
+  // Invoice details (simple)
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(`Invoice #: ${invoice.invoiceNumber}`, 15, yPos);
+  yPos += 5;
+
+  const invoiceDate = new Date(invoice.invoiceDate);
+  doc.text(`Date: ${invoiceDate.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })}`, 15, yPos);
+  yPos += 15;
+
+  // Total in top right
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.textLight);
+  doc.text('Total Amount', 200, 35, { align: 'right' });
+  doc.setFontSize(18);
+  doc.setTextColor(COLORS.success);
+  doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, 200, 43, { align: 'right' });
+
+  // Simplified routines table (no category/size columns)
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.text);
+  doc.text('Your Routines', 15, yPos);
+  yPos += 6;
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['#', 'Routine Title', 'Fee', 'Late Fee', 'Total']],
+    body: invoice.lineItems.map((item) => [
+      item.entry_number?.toString() || '-',
+      item.title,
+      `$${item.amount.toFixed(2)}`,
+      item.late_fee && item.late_fee > 0 ? `$${item.late_fee.toFixed(2)}` : '-',
+      `$${((item.amount || 0) + (item.late_fee || 0)).toFixed(2)}`,
+    ]),
+    theme: 'grid',
+    headStyles: {
+      fillColor: brandColor,
+      textColor: '#ffffff',
+      fontSize: 9,
+      fontStyle: 'bold',
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    columnStyles: {
+      0: { cellWidth: 15, halign: 'center' },
+      1: { cellWidth: 90 },
+      2: { cellWidth: 25, halign: 'right' },
+      3: { cellWidth: 25, halign: 'right' },
+      4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
+    },
+  });
+
+  // Totals section (simplified, right-aligned)
+  yPos = (doc as any).lastAutoTable.finalY + 12;
+
+  const totalsX = 140;
+  const totalsWidth = 60;
+
+  // Subtotal
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(`Subtotal (${invoice.summary.entryCount} ${invoice.summary.entryCount === 1 ? 'routine' : 'routines'})`, totalsX, yPos);
+  doc.setTextColor(COLORS.text);
+  doc.text(`$${invoice.summary.subtotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+  yPos += 6;
+
+  // Tax
+  if (invoice.summary.taxAmount > 0) {
+    doc.setTextColor(COLORS.textLight);
+    doc.text(`Tax (${(invoice.summary.taxRate * 100).toFixed(1)}%)`, totalsX, yPos);
+    doc.setTextColor(COLORS.text);
+    doc.text(`$${invoice.summary.taxAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+  }
+
+  // Total line
+  doc.setDrawColor(COLORS.success);
+  doc.setLineWidth(0.5);
+  doc.line(totalsX, yPos, totalsX + totalsWidth, yPos);
+  yPos += 7;
+
+  doc.setFontSize(12);
+  doc.setTextColor(COLORS.text);
+  doc.text('TOTAL', totalsX, yPos);
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.success);
+  doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+
+  // Simple footer
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(
+    'Thank you for participating! Questions? Contact your studio director.',
+    doc.internal.pageSize.width / 2,
+    pageHeight - 15,
+    { align: 'center', maxWidth: 170 }
+  );
+
+  return doc.output('blob');
+}
