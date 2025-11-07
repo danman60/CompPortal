@@ -71,8 +71,25 @@ export default async function DashboardPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Header with Studio Profile and Sign Out */}
-        <div className="flex justify-end gap-3 mb-4">
+        {/* Header with Logo and Navigation */}
+        <div className="flex justify-between items-center gap-3 mb-4">
+          {/* Competition Logo - CD only */}
+          {role === 'competition_director' && logoUrl && (
+            <img
+              src={logoUrl}
+              alt="Competition Logo"
+              className="max-w-[180px] h-auto"
+              style={{
+                filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.15))'
+              }}
+            />
+          )}
+
+          {/* Spacer for SD to push buttons right */}
+          {role === 'studio_director' && <div />}
+
+          {/* Right side navigation */}
+          <div className="flex gap-3">
           {role === 'studio_director' && (
             <a
               href="/dashboard/settings/profile"
@@ -100,8 +117,9 @@ export default async function DashboardPage() {
             </button>
           </form>
         </div>
+      </div>
 
-        {/* Role-Based Dashboard */}
+      {/* Role-Based Dashboard */}
         {role === 'studio_director' ? (
           <StudioDirectorDashboard
             userEmail={user.email || ''}

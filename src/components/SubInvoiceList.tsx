@@ -1,19 +1,31 @@
 'use client';
 
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/rebuild/ui/Button';
-import { FileText, Download, Mail, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { FileText, Download, Mail, CheckCircle, AlertCircle, ArrowLeft, X } from 'lucide-react';
 import Link from 'next/link';
+import { generateInvoicePDF } from '@/lib/pdf-reports';
+import JSZip from 'jszip';
 
 type SubInvoiceListProps = {
   parentInvoiceId: string;
   onBack: () => void;
 };
 
+type DancerEmailData = {
+  id: string;
+  dancer_name: string;
+  email: string;
+  sendEmail: boolean;
+};
+
 export default function SubInvoiceList({
   parentInvoiceId,
   onBack,
 }: SubInvoiceListProps) {
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailData, setEmailData] = useState<DancerEmailData[]>([]);
   const { data, isLoading, error } = trpc.invoice.getSubInvoices.useQuery({
     parentInvoiceId,
   });
