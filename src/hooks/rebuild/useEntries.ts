@@ -11,7 +11,9 @@ import { toast } from 'react-hot-toast';
  * - Submit summary mutation
  */
 export function useEntries() {
-  const { data, isLoading, refetch } = trpc.entry.getAll.useQuery();
+  const { data, isLoading, refetch } = trpc.entry.getAll.useQuery({
+    limit: 1000, // Fetch all entries (backend max)
+  });
 
   const deleteMutation = trpc.entry.delete.useMutation({
     onSuccess: () => {
