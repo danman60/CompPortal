@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Table, TableHeader, TableBody, TableRow, TableHeaderCell, TableCell } from '@/components/rebuild/ui/Table';
 import { Badge } from '@/components/rebuild/ui/Badge';
 import { Button } from '@/components/rebuild/ui/Button';
+import { useTableSort } from '@/hooks/useTableSort';
+import SortableHeader from '@/components/SortableHeader';
 
 interface Entry {
   id: string;
@@ -24,10 +26,12 @@ interface RoutineTableProps {
 }
 
 /**
- * Table view for routines
- * Sortable columns with compact display
+ * Table view for routines with sortable columns
+ * All data columns are sortable for better UX
  */
 export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
+  const { sortedData, sortConfig, requestSort } = useTableSort<Entry>(entries, 'entry_number');
+
   const handleDelete = async (id: string, title: string) => {
     if (confirm(`Delete routine "${title}"?`)) {
       await onDelete(id);
@@ -38,20 +42,74 @@ export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHeaderCell>#</TableHeaderCell>
-          <TableHeaderCell>Title</TableHeaderCell>
-          <TableHeaderCell>Category</TableHeaderCell>
-          <TableHeaderCell>Size</TableHeaderCell>
-          <TableHeaderCell>Age</TableHeaderCell>
-          <TableHeaderCell>Dancers</TableHeaderCell>
-          <TableHeaderCell>Title Status</TableHeaderCell>
-          <TableHeaderCell align="right">Fee</TableHeaderCell>
-          <TableHeaderCell>Status</TableHeaderCell>
+          <SortableHeader
+            label="#"
+            sortKey="entry_number"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Title"
+            sortKey="title"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Category"
+            sortKey="dance_categories.name"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Size"
+            sortKey="entry_size_categories.name"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Age"
+            sortKey="routine_age"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Dancers"
+            sortKey="entry_participants"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Title Status"
+            sortKey="is_title_upgrade"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Fee"
+            sortKey="total_fee"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
+          <SortableHeader
+            label="Status"
+            sortKey="status"
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            className="bg-white/5"
+          />
           <TableHeaderCell align="right">Actions</TableHeaderCell>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {entries.map((entry) => (
+        {sortedData.map((entry) => (
           <TableRow key={entry.id}>
             <TableCell>
               <span className="text-white/60">{entry.entry_number || '—'}</span>
