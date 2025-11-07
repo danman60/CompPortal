@@ -82,6 +82,22 @@ export const accountRecoveryRouter = router({
       studiosWithActiveTokens.map((t) => [t.studio_id, t])
     );
 
+    // Get last recovery email sent date for each studio
+    const lastEmailSent = await prisma.email_logs.groupBy({
+      by: ['studio_id'],
+      where: {
+        template_type: 'account-recovery',
+        success: true,
+      },
+      _max: {
+        sent_at: true,
+      },
+    });
+
+    const emailMap = new Map(
+      lastEmailSent.map((e) => [e.studio_id!, e._max.sent_at])
+    );
+
     // Check which studios are orphaned (no valid auth) OR have active tokens
     const orphanedStudios = [];
     for (const studio of studios) {
@@ -133,6 +149,7 @@ export const accountRecoveryRouter = router({
       has_recovery_token: tokenMap.has(studio.id),
       recovery_token_created: tokenMap.get(studio.id)?.created_at,
       recovery_token_expires: tokenMap.get(studio.id)?.expires_at,
+      last_email_sent_at: emailMap.get(studio.id) || null,
     }));
   }),
 
