@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD Dashboard Mockup - With Hero Logo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #000000 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated gradient overlay */
+        .gradient-overlay {
+            position: fixed;
+            inset: 0;
+            opacity: 0.15;
+            pointer-events: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--primary));
+            background-size: 200% 200%;
+            animation: gradientShift 8s ease infinite;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Top Right Logo */
+        .top-right-logo {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            z-index: 10;
+        }
+
+        .top-right-logo img {
+            max-width: 200px;
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.15));
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .header-left h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-left .subtitle {
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+
+        .studio-name {
+            color: #a78bfa;
+        }
+
+        .studio-code {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #d8b4fe;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.85rem;
+            font-family: 'Courier New', monospace;
+            margin-left: 0.75rem;
+        }
+
+        .quote {
+            color: #a78bfa;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Main Action Cards */
+        .main-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .main-action-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .main-action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.3);
+        }
+
+        .main-action-card.pulse {
+            animation: pulse 2s ease-in-out infinite;
+            border-color: rgba(168, 85, 247, 0.6);
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.6); }
+        }
+
+        .main-action-card .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .main-action-card .title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .main-action-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .main-action-card .subtitle {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .quick-action-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quick-action-card .icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .quick-action-card .title {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .quick-action-card .description {
+            color: #9ca3af;
+            font-size: 0.75rem;
+        }
+
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .stat-card .icon {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .label {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        /* GLOW Theme */
+        body.glow {
+            --primary: #06b6d4;
+            --secondary: #3b82f6;
+        }
+
+        /* EMPWR Theme */
+        body.empwr {
+            --primary: #FF1493;
+            --secondary: #EC4899;
+        }
+    </style>
+</head>
+<body class="glow">
+    <div class="gradient-overlay"></div>
+
+    <!-- Top Right Logo -->
+    <div class="top-right-logo">
+        <img id="logo" src="" alt="Competition Logo">
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>Good afternoon, Sarah! 👋</h1>
+                <p class="subtitle">
+                    <span class="studio-name">Elite Dance Academy</span>
+                    <span class="studio-code">Code: EDA123</span>
+                </p>
+                <p class="quote">"Dance first. Think later. It's the natural order."</p>
+            </div>
+            <div class="header-buttons">
+                <button class="btn">⚙️ Studio Profile</button>
+                <button class="btn">Sign Out</button>
+            </div>
+        </div>
+
+        <!-- Main Action Cards -->
+        <div class="main-actions">
+            <div class="main-action-card">
+                <div class="icon">💃</div>
+                <div class="title">Dancers</div>
+                <div class="value">24</div>
+                <div class="subtitle">Active dancers</div>
+            </div>
+            <div class="main-action-card pulse">
+                <div class="icon">📋</div>
+                <div class="title">Reservations</div>
+                <div class="value">3</div>
+                <div class="subtitle">Active reservations</div>
+            </div>
+            <div class="main-action-card">
+                <div class="icon">🎭</div>
+                <div class="title">Routines</div>
+                <div class="value">47</div>
+                <div class="subtitle">Created routines</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <div class="quick-action-card">
+                <div class="icon">📅</div>
+                <div class="title">Scheduling</div>
+                <div class="description">View your competition schedule</div>
+            </div>
+            <div class="quick-action-card">
+                <div class="icon">📊</div>
+                <div class="title">Marks</div>
+                <div class="description">View scores and adjudications</div>
+            </div>
+            <div class="quick-action-card">
+                <div class="icon">📹</div>
+                <div class="title">Media & Livestream</div>
+                <div class="description">Access photos, videos, and live coverage</div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-card">
+                <div class="icon">💰</div>
+                <div class="value">2</div>
+                <div class="label">Unpaid Invoices</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">🎟️</div>
+                <div class="value">5</div>
+                <div class="label">Routines Left</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">✅</div>
+                <div class="value" style="font-size: 1.25rem;">Create Routines</div>
+                <div class="label">Next Action for You</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle between GLOW and EMPWR themes
+        const urlParams = new URLSearchParams(window.location.search);
+        const theme = urlParams.get('theme') || 'glow';
+
+        document.body.className = theme;
+
+        // Set logo based on theme
+        const logo = document.getElementById('logo');
+        if (theme === 'glow') {
+            logo.src = 'file:///C:/Users/Danie/OneDrive/Desktop/GLOW.png';
+        } else {
+            logo.src = 'file:///C:/Users/Danie/OneDrive/Desktop/EMPWR.png'; // You'll need to provide this
+        }
+    </script>
+</body>
+</html>

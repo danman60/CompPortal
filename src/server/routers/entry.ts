@@ -613,7 +613,7 @@ export const entryRouter = router({
           reservationId: z.string().uuid().optional(),
           status: z.string().optional(),
           tenantId: z.string().uuid().optional(), // Super admin can filter by specific tenant
-          limit: z.number().int().min(1).max(100).default(50),
+          limit: z.number().int().min(1).max(1000).default(50),
           offset: z.number().int().min(0).default(0),
         })
         .nullish()
@@ -755,6 +755,108 @@ export const entryRouter = router({
         limit,
         offset,
         hasMore: offset + entries.length < total,
+      };
+    }),
+
+  // Get entry counts only (optimized for dashboard - no full record fetching)
+  getCounts: protectedProcedure
+    .input(
+      z
+        .object({
+          studioId: z.string().uuid().optional(),
+          competitionId: z.string().uuid().optional(),
+          reservationId: z.string().uuid().optional(),
+          tenantId: z.string().uuid().optional(),
+        })
+        .nullish()
+    )
+    .query(async ({ input, ctx }) => {
+      const { studioId, competitionId, reservationId, tenantId } = input ?? {};
+
+      const where: any = {};
+
+      // Role-based filtering: studio directors can only see their own entries
+      if (ctx.userRole === 'studio_director') {
+        if (!ctx.studioId) {
+          return { total: 0, byReservation: {}, byStatus: {}, byCompetition: {} };
+        }
+        where.studio_id = ctx.studioId;
+      } else if (studioId) {
+        where.studio_id = studioId;
+      }
+
+      // Tenant filtering
+      if (!isSuperAdmin(ctx.userRole)) {
+        if (!where.studio_id) {
+          if (!ctx.tenantId) {
+            return { total: 0, byReservation: {}, byStatus: {}, byCompetition: {} };
+          }
+          where.studios = {
+            tenant_id: ctx.tenantId,
+          };
+        }
+      } else if (tenantId) {
+        where.studios = {
+          tenant_id: tenantId,
+        };
+      }
+
+      if (competitionId) {
+        where.competition_id = competitionId;
+      }
+
+      if (reservationId) {
+        where.reservation_id = reservationId;
+      }
+
+      // Get total count
+      const total = await prisma.competition_entries.count({ where });
+
+      // Get counts grouped by reservation_id
+      const byReservationRaw = await prisma.competition_entries.groupBy({
+        by: ['reservation_id'],
+        where,
+        _count: true,
+      });
+
+      const byReservation: Record<string, number> = {};
+      byReservationRaw.forEach((item) => {
+        if (item.reservation_id) {
+          byReservation[item.reservation_id] = item._count;
+        }
+      });
+
+      // Get counts grouped by status
+      const byStatusRaw = await prisma.competition_entries.groupBy({
+        by: ['status'],
+        where,
+        _count: true,
+      });
+
+      const byStatus: Record<string, number> = {};
+      byStatusRaw.forEach((item) => {
+        if (item.status) {
+          byStatus[item.status] = item._count;
+        }
+      });
+
+      // Get counts grouped by competition_id
+      const byCompetitionRaw = await prisma.competition_entries.groupBy({
+        by: ['competition_id'],
+        where,
+        _count: true,
+      });
+
+      const byCompetition: Record<string, number> = {};
+      byCompetitionRaw.forEach((item) => {
+        byCompetition[item.competition_id] = item._count;
+      });
+
+      return {
+        total,
+        byReservation,
+        byStatus,
+        byCompetition,
       };
     }),
 

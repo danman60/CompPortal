@@ -24,6 +24,7 @@ interface CompetitionDirectorDashboardProps {
   userEmail: string;
   firstName: string;
   role: 'competition_director' | 'super_admin';
+  logoUrl?: string | null;
 }
 
 const CD_DASHBOARD_CARDS: DashboardCard[] = [
@@ -124,7 +125,7 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
   },
 ];
 
-export default function CompetitionDirectorDashboard({ userEmail, firstName, role }: CompetitionDirectorDashboardProps) {
+export default function CompetitionDirectorDashboard({ userEmail, firstName, role, logoUrl }: CompetitionDirectorDashboardProps) {
   const router = useRouter();
   const [showLoading, setShowLoading] = useState(true);
   const [greeting, setGreeting] = useState('Hello');
@@ -324,6 +325,20 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
           </span>
         </p>
         <MotivationalQuote />
+
+        {/* Centered Competition Logo - CD only */}
+        {!isAdmin && logoUrl && (
+          <div className="text-center my-8">
+            <img
+              src={logoUrl}
+              alt="Competition Logo"
+              className="mx-auto max-w-[300px] w-full h-auto"
+              style={{
+                filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.15))'
+              }}
+            />
+          </div>
+        )}
 
         {/* Studio Pipeline Button - CD only */}
         {!isAdmin && (

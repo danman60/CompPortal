@@ -55,6 +55,7 @@ export default async function DashboardPage() {
   const branding = tenant?.branding as any;
   const primaryColor = branding?.primaryColor || '#FF1493';
   const secondaryColor = branding?.secondaryColor || '#EC4899';
+  const logoUrl = branding?.logoUrl || null;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black relative overflow-hidden">
@@ -109,12 +110,14 @@ export default async function DashboardPage() {
             studioCode={studioCode}
             studioPublicCode={studioPublicCode}
             studioStatus={studioStatus}
+            logoUrl={logoUrl}
           />
         ) : (
           <CompetitionDirectorDashboard
             userEmail={user.email || ''}
             firstName={userProfile?.first_name || ''}
             role={role as 'competition_director' | 'super_admin'}
+            logoUrl={logoUrl}
           />
         )}
 

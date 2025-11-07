@@ -23,6 +23,7 @@ interface StudioDirectorDashboardProps {
   studioCode?: string | null;
   studioPublicCode?: string | null;
   studioStatus?: string | null;
+  logoUrl?: string | null;
 }
 
 // Quick action cards for SD
@@ -53,11 +54,11 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   },
 ];
 
-export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioCode, studioPublicCode, studioStatus }: StudioDirectorDashboardProps) {
+export default function StudioDirectorDashboard({ userEmail, firstName, studioName, studioCode, studioPublicCode, studioStatus, logoUrl }: StudioDirectorDashboardProps) {
   const [showLoading, setShowLoading] = useState(true);
   const [greeting, setGreeting] = useState('Hello');
   const { data: myDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
-  const { data: myEntries, isLoading: entriesLoading } = trpc.entry.getAll.useQuery({ limit: 1000 });
+  const { data: entryCounts, isLoading: entriesLoading } = trpc.entry.getCounts.useQuery();
   const { data: myReservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
 
   // Set greeting on client mount to prevent hydration mismatch
@@ -84,9 +85,8 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
     ?.filter(r => r.status === 'approved' || r.status === 'adjusted')
     ?.map(r => r.id) || [];
 
-  const createdRoutinesForApprovedReservations = myEntries?.entries
-    ?.filter(e => e.reservation_id && approvedReservationIds.includes(e.reservation_id))
-    ?.length || 0;
+  const createdRoutinesForApprovedReservations = approvedReservationIds
+    .reduce((total, resId) => total + (entryCounts?.byReservation[resId] || 0), 0);
 
   const routinesLeftToCreate = Math.max(0, approvedReservationSpaces - createdRoutinesForApprovedReservations);
 
@@ -94,6 +94,7 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
   // getByStudio returns both SENT and PAID invoices (invoice.ts:336-338)
   const unpaidInvoices = myInvoices?.invoices?.filter(i => i.status === 'SENT').length || 0;
   const totalInvoices = myInvoices?.invoices?.length || 0;
+  const hasPaidInvoice = myInvoices?.invoices?.some(i => i.status === 'PAID') || false;
 
   // Calculate total deposit amount from all reservations
   const totalDeposit = myReservations?.reservations
@@ -104,6 +105,17 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
     const totalDancers = myDancers?.dancers?.length || 0;
     const approvedReservations = myReservations?.reservations?.filter(r => r.status === 'approved').length || 0;
     const pendingReservations = myReservations?.reservations?.filter(r => r.status === 'pending').length || 0;
+
+    // Show "All Done!" if they have at least one paid invoice
+    if (hasPaidInvoice) {
+      return {
+        icon: '✅',
+        label: 'Next Action for You',
+        value: "All Done!",
+        color: 'text-green-300',
+        tooltip: 'All caught up!'
+      };
+    }
 
     if (totalDancers === 0) {
       return {
@@ -234,7 +246,21 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       )}
 
       {/* Header */}
-      <div className="flex-1">
+      <div className="flex-1 relative">
+        {/* Top Right Logo */}
+        {logoUrl && (
+          <div className="absolute top-0 right-0 z-10">
+            <img
+              src={logoUrl}
+              alt="Competition Logo"
+              className="max-w-[200px] w-full h-auto"
+              style={{
+                filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.15))'
+              }}
+            />
+          </div>
+        )}
+
         <h1 className="text-4xl font-bold text-white mb-2">
           {greeting}, {firstName}! 👋
         </h1>

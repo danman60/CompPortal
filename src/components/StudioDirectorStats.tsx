@@ -10,7 +10,7 @@ interface StudioDirectorStatsProps {
 
 export default function StudioDirectorStats({ nextActionCard }: StudioDirectorStatsProps = {}) {
   const { data: myDancers, isLoading: dancersLoading } = trpc.dancer.getAll.useQuery();
-  const { data: myEntries, isLoading: entriesLoading } = trpc.entry.getAll.useQuery({ limit: 1000 });
+  const { data: entryCounts, isLoading: entriesLoading } = trpc.entry.getCounts.useQuery();
   const { data: myReservations, isLoading: reservationsLoading } = trpc.reservation.getAll.useQuery();
   const { data: currentUser, isLoading: userLoading } = trpc.user.getCurrentUser.useQuery();
 
@@ -34,15 +34,17 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
   // My Routines: Join with reservations to determine status (Phase1 spec:236-241)
   // "Drafts" = entries in approved/adjusted reservations (editable)
   // "Submitted" = entries in summarized/invoiced/closed reservations (limited editing)
-  const totalEntries = myEntries?.entries?.length || 0;
-  const draftEntries = myEntries?.entries?.filter(e => {
-    const reservation = myReservations?.reservations?.find(r => r.id === e.reservation_id);
-    return reservation?.status === 'approved' || reservation?.status === 'adjusted';
-  }).length || 0;
-  const submittedEntries = myEntries?.entries?.filter(e => {
-    const reservation = myReservations?.reservations?.find(r => r.id === e.reservation_id);
-    return ['summarized', 'invoiced', 'closed'].includes(reservation?.status || '');
-  }).length || 0;
+  const totalEntries = entryCounts?.total || 0;
+
+  // Calculate draft entries by summing counts for approved/adjusted reservations
+  const draftEntries = myReservations?.reservations
+    ?.filter(r => r.status === 'approved' || r.status === 'adjusted')
+    .reduce((sum, r) => sum + (entryCounts?.byReservation[r.id] || 0), 0) || 0;
+
+  // Calculate submitted entries by summing counts for summarized/invoiced/closed reservations
+  const submittedEntries = myReservations?.reservations
+    ?.filter(r => ['summarized', 'invoiced', 'closed'].includes(r.status || ''))
+    .reduce((sum, r) => sum + (entryCounts?.byReservation[r.id] || 0), 0) || 0;
 
   // My Reservations: Count by status (Phase1 spec:61)
   const totalReservations = myReservations?.reservations?.length || 0;
@@ -63,9 +65,8 @@ export default function StudioDirectorStats({ nextActionCard }: StudioDirectorSt
     ?.filter(r => r.status === 'approved' || r.status === 'adjusted')
     ?.map(r => r.id) || [];
 
-  const createdRoutinesForApproved = myEntries?.entries
-    ?.filter(e => e.reservation_id && approvedReservationIds.includes(e.reservation_id))
-    ?.length || 0;
+  const createdRoutinesForApproved = approvedReservationIds
+    .reduce((sum, resId) => sum + (entryCounts?.byReservation[resId] || 0), 0);
 
   const spacesRemaining = Math.max(0, approvedSpaces - createdRoutinesForApproved);
 

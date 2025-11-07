@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { Info } from 'lucide-react';
 import { AgeGroup, SizeCategory, EntryFormV2State } from '@/hooks/rebuild/useEntryFormV2';
 
 interface Classification {
@@ -159,6 +160,12 @@ export function AutoCalculatedSection({
     const autoLevel = autoCalculatedClassification.skill_level ?? 0;
     return classifications.find(c => (c.skill_level ?? 0) === autoLevel + 1) || null;
   }, [autoCalculatedClassification, classifications]);
+
+  // Tooltip state
+  const [showAgeTooltip, setShowAgeTooltip] = React.useState(false);
+  const [showSizeTooltip, setShowSizeTooltip] = React.useState(false);
+  const [showClassificationTooltip, setShowClassificationTooltip] = React.useState(false);
+
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
       <h2 className="text-xl font-bold text-white mb-4">Auto-Calculated</h2>
@@ -166,9 +173,33 @@ export function AutoCalculatedSection({
       <div className="space-y-4">
         {/* Age (Numerical) */}
         <div>
-          <label className="block text-sm font-semibold text-white/90 mb-2">
-            Age
-          </label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="block text-sm font-semibold text-white/90">
+              Age
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onMouseEnter={() => setShowAgeTooltip(true)}
+                onMouseLeave={() => setShowAgeTooltip(false)}
+                onClick={() => setShowAgeTooltip(!showAgeTooltip)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+              {showAgeTooltip && (
+                <div className="absolute left-6 top-0 z-50 w-80 p-3 bg-gray-900 border border-white/20 rounded-lg shadow-xl text-sm text-gray-300">
+                  <p className="font-semibold text-white mb-2">Auto-Calculated Age</p>
+                  <p className="mb-2">We automatically calculate the age for this routine:</p>
+                  <ul className="list-disc list-inside space-y-1 mb-2">
+                    <li><strong className="text-white">Solo:</strong> Uses the dancer's age on competition day</li>
+                    <li><strong className="text-white">Group:</strong> Uses the average age of all dancers (rounded down)</li>
+                  </ul>
+                  <p>You can age up by 1 year using the +1 button. Aging down requires director approval.</p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Calculated Age Display */}
           <div className="mb-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
@@ -217,9 +248,37 @@ export function AutoCalculatedSection({
 
         {/* Size Category - Read Only Display */}
         <div>
-          <label className="block text-sm font-semibold text-white/90 mb-2">
-            Size Category
-          </label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="block text-sm font-semibold text-white/90">
+              Size Category
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onMouseEnter={() => setShowSizeTooltip(true)}
+                onMouseLeave={() => setShowSizeTooltip(false)}
+                onClick={() => setShowSizeTooltip(!showSizeTooltip)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+              {showSizeTooltip && (
+                <div className="absolute left-6 top-0 z-50 w-80 p-3 bg-gray-900 border border-white/20 rounded-lg shadow-xl text-sm text-gray-300">
+                  <p className="font-semibold text-white mb-2">Auto-Calculated Size Category</p>
+                  <p className="mb-2">We automatically determine the size based on how many dancers are performing:</p>
+                  <ul className="list-disc list-inside space-y-1 mb-2">
+                    <li><strong className="text-white">Solo:</strong> 1 dancer</li>
+                    <li><strong className="text-white">Duet/Trio:</strong> 2-3 dancers</li>
+                    <li><strong className="text-white">Small Group:</strong> 4-9 dancers</li>
+                    <li><strong className="text-white">Large Group:</strong> 10-19 dancers</li>
+                    <li><strong className="text-white">Line:</strong> 20-39 dancers</li>
+                    <li><strong className="text-white">Production:</strong> 40+ dancers</li>
+                  </ul>
+                  <p>This cannot be changed.</p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Auto-Detected Display (Read-Only) */}
           <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
@@ -240,9 +299,33 @@ export function AutoCalculatedSection({
 
         {/* Classification - Always visible */}
         <div>
-          <label className="block text-sm font-semibold text-white/90 mb-2">
-            Classification
-          </label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="block text-sm font-semibold text-white/90">
+              Classification
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onMouseEnter={() => setShowClassificationTooltip(true)}
+                onMouseLeave={() => setShowClassificationTooltip(false)}
+                onClick={() => setShowClassificationTooltip(!showClassificationTooltip)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+              {showClassificationTooltip && (
+                <div className="absolute left-6 top-0 z-50 w-80 p-3 bg-gray-900 border border-white/20 rounded-lg shadow-xl text-sm text-gray-300">
+                  <p className="font-semibold text-white mb-2">Auto-Calculated Classification</p>
+                  <p className="mb-2">We automatically determine the skill level classification:</p>
+                  <ul className="list-disc list-inside space-y-1 mb-2">
+                    <li><strong className="text-white">Solo:</strong> Uses the dancer's classification</li>
+                    <li><strong className="text-white">Group:</strong> Uses the average classification of all dancers</li>
+                  </ul>
+                  <p>You can select a different classification from the dropdown. Changes of 2+ levels up or any level down require director approval.</p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Auto-Detected Display */}
           {selectedDancerCount > 0 && autoCalculatedClassification && (

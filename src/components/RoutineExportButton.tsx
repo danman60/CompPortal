@@ -3,7 +3,7 @@
 import { trpc } from '@/lib/trpc';
 
 export default function RoutineExportButton() {
-  const { data: entriesData } = trpc.entry.getAll.useQuery({ limit: 10000 });
+  const { data: entriesData } = trpc.entry.getAll.useQuery({ limit: 1000 });
 
   const exportRoutines = () => {
     if (!entriesData?.entries || entriesData.entries.length === 0) {
