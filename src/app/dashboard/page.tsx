@@ -122,20 +122,18 @@ export default async function DashboardPage() {
           />
         )}
 
-        {/* Support Footer */}
-        <div className="mt-12 pt-8 border-t border-white/10 text-center">
-          <p className="text-gray-400 text-sm">
-            Need help? Email{' '}
-            <a
-              href="mailto:techsupport@compsync.net"
-              className="underline hover:opacity-80 transition-opacity"
-              style={{ color: primaryColor }}
-            >
-              techsupport@compsync.net
-            </a>
-          </p>
-        </div>
-
+      {/* Support Footer */}
+      <div className="mt-12 pt-8 border-t border-white/10 text-center">
+        <p className="text-gray-400 text-sm">
+          Need help? Email{' '}
+          <a
+            href="mailto:techsupport@compsync.net"
+            className="underline hover:opacity-80 transition-opacity"
+            style={{ color: primaryColor }}
+          >
+            techsupport@compsync.net
+          </a>
+        </p>
       </div>
     </main>
   );

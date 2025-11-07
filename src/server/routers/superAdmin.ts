@@ -1646,7 +1646,12 @@ const digestRouter = router({
           tenantName: digestContent.tenantName,
           portalUrl: `https://${tenant?.name.toLowerCase().replace(/\s+/g, '')}.compsync.net`,
           pendingActions: digestContent.pendingActions,
-          upcomingEvents: digestContent.upcomingEvents,
+          upcomingEvents: digestContent.upcomingEvents.map(event => ({
+            id: event.id,
+            name: event.name,
+            startDate: event.date,
+            daysUntil: Math.ceil((event.date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+          })),
           recentActivity: digestContent.recentActivity,
           tenantBranding: {
             primaryColor: branding.primary_color || undefined,
