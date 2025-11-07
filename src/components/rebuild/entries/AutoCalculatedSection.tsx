@@ -37,6 +37,7 @@ interface Props {
   classificationId: string;
   setClassificationId: (id: string) => void;
   onRequestClassificationException?: () => void;
+  userRole?: string;
 }
 
 /**
@@ -69,6 +70,7 @@ export function AutoCalculatedSection({
   classificationId,
   setClassificationId,
   onRequestClassificationException,
+  userRole,
 }: Props) {
   // Auto-calculate classification based on dancers
   const autoCalculatedClassification = React.useMemo(() => {
@@ -392,8 +394,8 @@ export function AutoCalculatedSection({
                   </button>
                 )}
 
-                {/* Exception Required Button */}
-                {needsException && onRequestClassificationException && (
+                {/* Exception Required Button - Only for Studio Directors */}
+                {needsException && onRequestClassificationException && userRole === 'studio_director' && (
                   <button
                     type="button"
                     onClick={onRequestClassificationException}

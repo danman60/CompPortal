@@ -198,6 +198,13 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       description: 'Clean slate & test data',
     },
     {
+      id: 'feedback',
+      href: '/dashboard/admin/feedback',
+      icon: '💡',
+      title: 'User Feedback',
+      description: 'Review feedback & send digest',
+    },
+    {
       id: 'studio-invitations',
       href: '/dashboard/admin/studio-invitations',
       icon: '📧',

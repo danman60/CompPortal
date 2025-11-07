@@ -35,6 +35,9 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
     { enabled: isEditMode }
   );
 
+  // Get current user role
+  const { data: currentUser } = trpc.user.getCurrentUser.useQuery();
+
   // Load import session if present
   const { data: importSession, isLoading: importSessionLoading, refetch: refetchImportSession } = trpc.importSession.getById.useQuery(
     { id: importSessionId! },
@@ -657,6 +660,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         classificationId={formHook.form.classification_id}
         setClassificationId={(id) => formHook.updateField('classification_id', id)}
         onRequestClassificationException={handleRequestClassificationException}
+        userRole={currentUser?.role || undefined}
       />
 
       {/* Extended Time Section - Phase 2 spec lines 324-373 */}

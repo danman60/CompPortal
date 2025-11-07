@@ -61,12 +61,12 @@ interface FeatureConfig {
  */
 const FEATURE_CONFIG: Record<FeatureKey, FeatureConfig> = {
   // NEW ROUTINE CREATION PAGE
-  // Status: Testing with SA + CD + test SD account
+  // Status: Released for all users
   [FEATURES.NEW_ROUTINE_PAGE]: {
-    roles: ['super_admin', 'competition_director'],
-    allowedUserIds: [], // Removed test account - use /dashboard/entries-beta URL for testing
+    roles: ['super_admin', 'competition_director', 'studio_director'],
+    allowedUserIds: [],
     description: 'New routine creation page with improved UX and validation',
-    status: 'testing',
+    status: 'released',
   },
 
   // ROUTINE VIDEO UPLOAD
