@@ -296,6 +296,20 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
 
       {/* Header */}
       <div className="flex-1">
+        {/* Top-left logo for CD only */}
+        {!isAdmin && logoUrl && (
+          <div className="mb-4">
+            <img
+              src={logoUrl}
+              alt="Competition Logo"
+              className="max-w-[180px] h-auto"
+              style={{
+                filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.15))'
+              }}
+            />
+          </div>
+        )}
+
         <div className="flex items-center gap-4 mb-2">
           <h1 className="text-4xl font-bold text-white">
             {greeting}, {firstName}!
@@ -325,20 +339,6 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
           </span>
         </p>
         <MotivationalQuote />
-
-        {/* Centered Competition Logo - CD only */}
-        {!isAdmin && logoUrl && (
-          <div className="text-center my-8">
-            <img
-              src={logoUrl}
-              alt="Competition Logo"
-              className="mx-auto max-w-[300px] w-full h-auto"
-              style={{
-                filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.15))'
-              }}
-            />
-          </div>
-        )}
 
         {/* Studio Pipeline Button - CD only */}
         {!isAdmin && (
