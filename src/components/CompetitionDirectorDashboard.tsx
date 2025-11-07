@@ -296,6 +296,20 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
 
       {/* Header */}
       <div className="flex-1">
+        {/* Logo - CD only */}
+        {!isAdmin && logoUrl && (
+          <div className="mb-4">
+            <img
+              src={logoUrl}
+              alt="Competition Logo"
+              className="max-w-[180px] h-auto"
+              style={{
+                filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.15))'
+              }}
+            />
+          </div>
+        )}
+
         <div className="flex items-center gap-4 mb-2">
           <h1 className="text-4xl font-bold text-white">
             {greeting}, {firstName}!

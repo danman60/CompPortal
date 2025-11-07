@@ -26,6 +26,7 @@ export default function SubInvoiceList({
 }: SubInvoiceListProps) {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailData, setEmailData] = useState<DancerEmailData[]>([]);
+  const utils = trpc.useUtils();
   const { data, isLoading, error } = trpc.invoice.getSubInvoices.useQuery({
     parentInvoiceId,
   });
@@ -101,7 +102,7 @@ export default function SubInvoiceList({
   const handleDownloadPDF = async (subInvoice: any) => {
     try {
       // Call endpoint to get full invoice details
-      const data = await trpc.invoice.getSubInvoiceDetails.query({
+      const data = await utils.invoice.getSubInvoiceDetails.fetch({
         subInvoiceId: subInvoice.id
       });
 
@@ -110,13 +111,26 @@ export default function SubInvoiceList({
         return;
       }
 
+      // Transform line items to match PDF generator format
+      const transformedLineItems = data.subInvoice.line_items.map((item: any) => ({
+        id: `sub-${subInvoice.id}-${item.entry_number}`,
+        entryNumber: item.entry_number,
+        title: item.title,
+        category: 'Dancer Share',
+        sizeCategory: '',
+        participantCount: 1,
+        entryFee: item.amount,
+        lateFee: item.late_fee || 0,
+        total: item.amount + (item.late_fee || 0),
+      }));
+
       // Generate PDF using existing library
       const pdfBlob = generateInvoicePDF({
         invoiceNumber: data.invoiceNumber,
         invoiceDate: data.invoiceDate,
         competition: data.competition,
         studio: data.studio,
-        lineItems: data.subInvoice.line_items,
+        lineItems: transformedLineItems,
         summary: {
           entryCount: data.subInvoice.line_items.length,
           subtotal: data.subInvoice.subtotal,

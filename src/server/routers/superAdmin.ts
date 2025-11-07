@@ -1541,13 +1541,24 @@ const digestRouter = router({
       // Extract branding from JSON field
       const branding = tenant?.branding as any || {};
 
+      // Transform upcoming events to match interface
+      const upcomingEvents = digestContent.upcomingEvents.map((event: any) => {
+        const daysUntil = Math.ceil((event.date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        return {
+          id: event.id,
+          name: event.name,
+          startDate: event.date,
+          daysUntil,
+        };
+      });
+
       // Render email
       const emailHtml = await renderDailyDigest({
         userName: digestContent.userName,
         tenantName: digestContent.tenantName,
         portalUrl: `https://${tenant?.name.toLowerCase().replace(/\s+/g, '')}.compsync.net`,
         pendingActions: digestContent.pendingActions,
-        upcomingEvents: digestContent.upcomingEvents,
+        upcomingEvents,
         recentActivity: digestContent.recentActivity,
         tenantBranding: {
           primaryColor: branding.primary_color || undefined,
