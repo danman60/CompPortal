@@ -19,7 +19,7 @@ function getLastAction(reservation: Reservation): string {
       return 'Summary Sent';
     case 'approved':
     case 'adjusted':
-      return 'Reservation Approved';
+      return 'Submitted';
     case 'pending':
       return 'Reservation Sent';
     case 'rejected':
