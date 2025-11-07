@@ -247,6 +247,13 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       description: 'Multi-tenant routines view',
     },
     {
+      id: 'reservations',
+      href: '/dashboard/admin/reservations',
+      icon: '📋',
+      title: 'Reservations',
+      description: 'Multi-tenant capacity view',
+    },
+    {
       id: 'studios',
       href: '/dashboard/studios',
       icon: '🏢',
