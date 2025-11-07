@@ -1,46 +1,27 @@
-# Current Work - Entry Form Ready for Testing
+# Current Work - Phase 2 Planning
 
-**Session:** January 5, 2025 (Session 33 - Entry Form Bug Fixes)
-**Status:** ✅ COMPLETE - All bugs fixed, ready for testing
-**Build:** 25fce96
-**Previous Session:** January 5, 2025 (Session 32 - CSV Import Critical Fix)
-
----
-
-## 🎯 Current Status: Entry Form Production Ready
-
-### All Bugs Fixed
-- ✅ 7 original bugs from NEXT_SESSION_BUGS.md
-- ✅ 2 UX improvements (back button, rename button)
-- ✅ 3 testing feedback issues (classification display, dance category lock, UUID error)
-- **Total: 12 fixes in one session**
-
-### Latest Commits
-1. **ba89da3** - Entry form bug fixes (classification, size category, exception modal)
-2. **51299a0** - Instructions for Supabase MCP agent
-3. **1f82e1a** - Session summary documentation
-4. **25fce96** - Testing feedback fixes (classification box, dance lock, UUID)
+**Session:** November 7, 2025 (Session 38 - Scheduler Discovery)
+**Status:** ✅ COMPLETE - Existing scheduler found, planning docs created
+**Build:** b53f109
+**Previous Session:** November 7, 2025 (Session 37 - Post-sprint cleanup)
 
 ---
 
-## 🐛 Bugs Fixed This Session
+## 🎯 Current Status: Post-Sprint Cleanup Complete
 
-### Critical Fixes
-1. **Classification Validation** - Accept auto-detected as valid
-2. **UUID Error** - "Use detected" classification now saves correctly
-3. **Dance Category Lock** - Remains changeable (only size+classification lock for Production)
+### Documentation Organized
+- ✅ Archived 30+ completed markdown files
+- ✅ Created organized archive structure with subdirectories
+- ✅ Root directory cleaned - only active trackers remain
+- ✅ PROJECT_STATUS.md updated with latest state
+- ✅ Archive plan documented for future reference
 
-### High Priority Fixes
-4. **Size Category Dropdown** - Removed, now read-only
-5. **Classification Box** - Shows on page load with "Pending" state
-6. **Exception Modal Styling** - White text on white fixed
-
-### Medium Priority Fixes
-7. **Exception Modal Race Condition** - Validates entry exists before submit
-8. **Exception Modal Classification** - Shows correct auto-calculated value
-9. **Extended Time Display** - Shows max time in label
-10. **Back Button** - Added to entry form
-11. **Button Rename** - "Import CSV" → "Import Routines"
+### Recent Features Deployed (Nov 7)
+- ✅ Sortable columns on entries table (b53f109)
+- ✅ User feedback system with SA admin panel (5b861d6)
+- ✅ Feedback widget positioning fixed (d7d556e)
+- ✅ Account recovery page with dark mode (e06b68a)
+- ✅ Dancer invoice PDF generator (f286629)
 
 ---
 
@@ -48,67 +29,123 @@
 
 ### EMPWR Tenant: ✅ OPERATIONAL
 - **URL:** https://empwr.compsync.net
-- **Build:** 25fce96 (deployed)
-- **Status:** All entry form bugs fixed
+- **Build:** b53f109 (deployed)
+- **Status:** Stable, routine creation active
 
 ### Glow Tenant: ✅ OPERATIONAL
 - **URL:** https://glow.compsync.net
-- **Build:** 25fce96 (deployed)
-- **Status:** All entry form bugs fixed
+- **Build:** b53f109 (deployed)
+- **Status:** Stable, routine creation active
 
 ---
 
-## 🔧 Remaining Tasks
+## 📁 Archive Structure Created
 
-### ✅ COMPLETE - Database Tasks Done
+```
+CompPortal/docs/archive/
+├── test-reports-nov2025/      # All Nov 2025 test reports (11 files)
+├── sessions-nov2025/          # Session summaries (4 files)
+├── blockers/                  # Resolved blockers (5 files)
+├── implementations/           # Implementation docs (4 files)
+├── test-protocols/            # Test suite definitions (3 files)
+├── onboarding/               # Setup guides (2 files)
+├── planning/                 # Pre-release planning (1 file)
+├── investigations/           # Investigation reports (2 files)
+└── design/                   # Design proposals (3 files)
+```
 
-**1. ✅ Populate Time Limits**
-- Executed `update_time_limits.sql`
-- 14 rows updated successfully (7 EMPWR + 7 Glow)
-- All size categories now have max_time_minutes and max_time_seconds
-
-**2. ✅ Fix SA Testing Environment**
-- Studio issue resolved
-- SA account has access to test studio with 100 dancers
-- Testing environment operational
-
----
-
-## 📁 Files Created This Session
-
-**Documentation:**
-- `NEXT_SESSION_BUGS.md` - Original bug report
-- `SESSION_COMPLETE_BUG_FIXES.md` - Complete session summary
-- `INSTRUCTIONS_FOR_AGENT_WITH_SUPABASE_MCP.md` - Database tasks guide
-- `MANUAL_TASKS_NEEDED.md` - Quick reference
-- `TIME_LIMITS_SOURCE.md` - Industry standards documentation
-
-**Database:**
-- `update_time_limits.sql` - Ready to execute (awaiting Supabase MCP)
+**Total Archived:** 35+ files
+**Root Directory:** Clean - only active protocols and trackers
 
 ---
 
-## 🧪 Testing Status
+## 🔑 Active Files in Root
 
-**Code Deployed:** ✅ Yes (commit 25fce96)
-**Build Status:** ✅ Passing (78/78 pages)
-**Production Testing:** ⏳ Awaiting next tester
+**Development Protocols:**
+- `CLAUDE.md` - Development instructions
+- `ANTI_PATTERNS.md` - Anti-pattern guidelines
+- `DEBUGGING.md` - Debug protocols
+- `DEVTEAM_PROTOCOL.md` - Batch fix workflow
 
-**All fixes ready for verification on production.**
-
----
-
-## 🎯 Success Metrics
-
-**Bugs Fixed:** 12/12 (100%)
-**Build Status:** ✅ Passing
-**Commits:** 4 total (ba89da3, 51299a0, 1f82e1a, 25fce96)
-**Files Changed:** 11 files modified, 6 files created
-**Session Time:** ~90 minutes
+**Trackers:**
+- `PROJECT_STATUS.md` - Current project state
+- `CURRENT_WORK.md` - This file
 
 ---
 
-## 🔑 Test Credentials
+## 🔑 Active Files in CompPortal
+
+**Configuration:**
+- `PROJECT.md` - Project config
+- `README.md` - Project readme
+- `QUICKSTART.md` - Getting started
+
+**Active Trackers:**
+- `PROJECT_STATUS.md` - Current state
+- `CURRENT_WORK.md` - Session tracker
+- `KNOWN_ISSUES.md` - Issue tracker
+- `ROUTINE_CREATION_LAUNCH.md` - Launch checklist
+- `PROCESS_IMPROVEMENTS.md` - Improvement tracking
+- `BASELINE_METRICS_NOV4.md` - Current metrics
+- `NEXT_SESSION_PRIORITIES.md` - Priority queue
+
+**Development Tools:**
+- `GOTCHAS.md` - Common issues reference
+- `DEBUGGING.md` - Debug workflow
+
+---
+
+## 🎯 System Health
+
+**Build Status:** ✅ Passing (76/76 pages)
+**Production:** ✅ Both tenants stable
+**Recent Work:** ✅ All features deployed and working
+
+**All P0 Bugs:** ✅ Resolved
+**Documentation:** ✅ Organized and current
+**Codebase:** ✅ Clean and maintainable
+
+---
+
+## 📈 Next Steps
+
+### Current Phase
+- System in post-sprint pause
+- Ready for next feature work
+- Production monitoring ongoing
+
+### Staging Environment Setup (Planned)
+- ✅ Test tenant created in database (tenant_id: `00000000-0000-0000-0000-000000000003`)
+- ⏳ Middleware enhancement for `ALLOWED_TENANTS` environment variable
+- ⏳ Git branch setup (staging branch)
+- ⏳ Vercel configuration (env vars + custom domain)
+- ⏳ DNS configuration for testtenant.compsync.net
+- **See:** `TestingDomainSetup.md` for complete plan
+
+### Phase 2 Scheduler Discovery (Session Nov 7, 2025)
+- ✅ Discovered existing scheduler implementation (~60% complete!)
+- ✅ Backend complete: scheduling.ts router (1,104 lines) + scheduling.ts lib (319 lines)
+- ✅ Frontend components exist: SchedulingManager, SessionCard, UnscheduledEntries, ConflictPanel
+- ✅ Database schema ready: competition_sessions, entry numbering, schedule locking
+- ⏳ Missing: Drag-and-drop UI, advanced rules, feedback system, session management UI
+- ⏳ Optional: AI-powered draft generation with DeepSeek ($0.45/year)
+- **Revised timeline:** 3-4 weeks to production (not 5-7 weeks from scratch)
+- **See:** `SchedulerFeaturePlan.md` for complete analysis
+- **See:** `PHASE2_LLM_EXPLORATION.md` for AI scheduling benefits
+
+### Phase 2 Spec Questions (11 Outstanding)
+- Documented in MASTER_BUSINESS_LOGIC.md (lines 84-153)
+- Critical needs: Routine numbering scheme, session creation workflow, feedback mechanics
+- **Action:** Schedule 2-3 hour Phase 2 spec session when ready
+
+### Potential Next Work
+- Monitor feedback system submissions
+- Address any user-reported issues
+- Performance optimizations if needed
+
+---
+
+## 🧪 Test Credentials
 
 **Super Admin:**
 - Email: `danieljohnabrahamson@gmail.com`
@@ -124,6 +161,6 @@
 
 ---
 
-**Last Updated:** January 5, 2025
-**Status:** ✅ COMPLETE - All bugs fixed, database tasks done, ready for testing
-**Next Action:** Production testing of all 12 fixes
+**Last Updated:** November 7, 2025
+**Status:** ✅ COMPLETE - Post-sprint cleanup finished, ready for next work
+**Next Action:** Await user direction for next feature/fix priorities
