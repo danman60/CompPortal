@@ -240,6 +240,13 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       description: 'View as another user (audited)',
     },
     {
+      id: 'routines',
+      href: '/dashboard/admin/routines',
+      icon: '🩰',
+      title: 'Routines',
+      description: 'Multi-tenant routines view',
+    },
+    {
       id: 'studios',
       href: '/dashboard/studios',
       icon: '🏢',

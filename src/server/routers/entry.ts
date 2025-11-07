@@ -1713,6 +1713,14 @@ export const entryRouter = router({
               select: {
                 id: true,
                 name: true,
+                tenant_id: true,
+                tenants: {
+                  select: {
+                    id: true,
+                    name: true,
+                    subdomain: true,
+                  },
+                },
               },
             },
             dance_categories: {
@@ -1743,6 +1751,11 @@ export const entryRouter = router({
               select: {
                 id: true,
                 status: true,
+              },
+            },
+            _count: {
+              select: {
+                entry_participants: true,
               },
             },
           },
