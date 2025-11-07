@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 export default function MusicTrackingPage() {
-  const { data: entries, isLoading } = trpc.entry.getAll.useQuery();
+  const { data: entries, isLoading } = trpc.entry.getAll.useQuery({ limit: 250 });
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
 
   if (isLoading) {

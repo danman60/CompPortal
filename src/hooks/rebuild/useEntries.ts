@@ -12,7 +12,7 @@ import { toast } from 'react-hot-toast';
  */
 export function useEntries() {
   const { data, isLoading, refetch } = trpc.entry.getAll.useQuery({
-    limit: 1000, // Fetch all entries (backend max)
+    limit: 250, // Increased limit to prevent display bugs
   });
 
   const deleteMutation = trpc.entry.delete.useMutation({

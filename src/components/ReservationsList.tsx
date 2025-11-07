@@ -19,9 +19,9 @@ interface ReservationsListProps {
 export default function ReservationsList({ isStudioDirector = false }: ReservationsListProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const { data, isLoading, dataUpdatedAt, refetch } = trpc.reservation.getAll.useQuery();
+  const { data, isLoading, dataUpdatedAt, refetch } = trpc.reservation.getAll.useQuery({ limit: 250 });
   const { data: studiosData } = trpc.studio.getAll.useQuery();
-  const { data: entriesData } = trpc.entry.getAll.useQuery();
+  const { data: entriesData } = trpc.entry.getAll.useQuery({ limit: 250 });
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);

@@ -6,7 +6,7 @@ import { useState } from 'react';
  * Extracted from EntriesList.tsx (lines 24-94)
  */
 export function useEntries() {
-  const [limit] = useState(100);
+  const [limit] = useState(250); // Increased from 100 to 250 to prevent display limit bugs
 
   const { data, isLoading, refetch, dataUpdatedAt } = trpc.entry.getAll.useQuery({
     limit,

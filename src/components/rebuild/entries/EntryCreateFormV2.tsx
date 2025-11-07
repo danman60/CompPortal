@@ -74,7 +74,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   );
 
   // Calculate capacity (must be before early returns - Rules of Hooks)
-  const { data: entriesData } = trpc.entry.getAll.useQuery();
+  const { data: entriesData } = trpc.entry.getAll.useQuery({ limit: 250 });
 
   const dancers = (dancersData?.dancers || []) as any[];
 
