@@ -1299,7 +1299,7 @@ export const entryRouter = router({
         try {
           await logActivity({
             userId: ctx.userId,
-            tenantId: ctx.tenantId,
+            tenantId: ctx.tenantId ?? undefined,
             studioId: ctx.studioId || input.studio_id,
             action: 'entry.create',
             entityType: 'entry',

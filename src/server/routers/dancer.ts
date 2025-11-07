@@ -302,10 +302,12 @@ export const dancerRouter = router({
       try {
         await logActivity({
           userId: ctx.userId,
+          tenantId: ctx.tenantId ?? undefined,
           studioId: ctx.studioId || input.studio_id,
           action: 'dancer.create',
           entityType: 'dancer',
           entityId: dancer.id,
+          entityName: `${dancer.first_name} ${dancer.last_name}`,
           details: {
             first_name: dancer.first_name,
             last_name: dancer.last_name,
@@ -680,10 +682,12 @@ export const dancerRouter = router({
       try {
         await logActivity({
           userId: ctx.userId,
+          tenantId: ctx.tenantId ?? undefined,
           studioId: ctx.studioId || input.studio_id,
           action: 'dancer.batchCreate',
           entityType: 'dancer',
           entityId: 'batch',
+          entityName: `Batch (${createdDancers.length} dancers)`,
           details: {
             count: createdDancers.length,
             studio_id: input.studio_id,
