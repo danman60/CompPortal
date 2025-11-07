@@ -85,7 +85,9 @@ export const appRouter = router({
   classificationRequest: classificationRequestRouter,
   importSession: importSessionRouter,
   accountRecovery: accountRecoveryRouter,
+  feedback: feedbackRouter,
 });
 
 // Export type definition of API
 export type AppRouter = typeof appRouter;
+import { feedbackRouter } from './feedback';

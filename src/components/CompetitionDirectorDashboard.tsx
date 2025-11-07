@@ -12,6 +12,7 @@ import { SuperAdminActivityBar } from './SuperAdminActivityBar';
 import { trpc } from '@/lib/trpc';
 import { Sparkles, Target, Settings as SettingsIcon } from '@/lib/icons';
 import { useRouter } from 'next/navigation';
+import { FeedbackWidget } from './FeedbackWidget';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -446,6 +447,9 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
         </div>
       </div>
     </div>
+
+    {/* Feedback Widget */}
+    <FeedbackWidget userRole={role === 'super_admin' ? 'super_admin' : 'competition_director'} />
     </>
   );
 }

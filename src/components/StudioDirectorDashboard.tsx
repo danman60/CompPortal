@@ -8,6 +8,7 @@ import { trpc } from '@/lib/trpc';
 import SortableDashboardCards, { DashboardCard } from './SortableDashboardCards';
 import MotivationalQuote from './MotivationalQuote';
 import BalletLoadingAnimation from './BalletLoadingAnimation';
+import { FeedbackWidget } from './FeedbackWidget';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -311,6 +312,9 @@ export default function StudioDirectorDashboard({ userEmail, firstName, studioNa
       />
     </div>
     )}
+
+    {/* Feedback Widget */}
+    <FeedbackWidget userRole="studio_director" />
     </>
   );
 }

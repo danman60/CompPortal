@@ -1518,6 +1518,7 @@ model tenants {
   summary_entries                   summary_entries[]
   title_rounds                      title_rounds[]
   user_profiles                     user_profiles[]
+  user_feedback                     user_feedback[]
   vip_events                        vip_events[]
 
   @@index([age_division_settings], map: "idx_tenants_age_settings", type: Gin)
@@ -1592,6 +1593,8 @@ model user_profiles {
   two_factor_secret                                                                               String?
   two_factor_backup_codes                                                                         Json?
   two_factor_verified_at                                                                          DateTime?                           @db.Timestamp(6)
+  login_count                                                                                     Int?                                @default(0)
+  last_feedback_prompt_at                                                                         DateTime?                           @db.Timestamp(6)
   activity_logs                                                                                   activity_logs[]
   classification_exception_requests_classification_exception_requests_created_byTouser_profiles   classification_exception_requests[] @relation("classification_exception_requests_created_byTouser_profiles")
   classification_exception_requests_classification_exception_requests_responded_byTouser_profiles classification_exception_requests[] @relation("classification_exception_requests_responded_byTouser_profiles")
@@ -1601,6 +1604,33 @@ model user_profiles {
   tenants                                                                                         tenants?                            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
   @@index([tenant_id], map: "idx_user_profiles_tenant")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_feedback {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id               String    @db.Uuid
+  user_id                 String    @db.Uuid
+  user_role               String
+  user_email              String
+  user_name               String?
+  feedback_type           String
+  star_rating             Int?
+  comment                 String
+  page_url                String?
+  user_agent              String?
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  status                  String    @default("new")
+  admin_notes             String?
+  reviewed_at             DateTime? @db.Timestamptz(6)
+  reviewed_by             String?   @db.Uuid
+  tenants                 tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id], map: "idx_user_feedback_tenant")
+  @@index([created_at(sort: Desc)], map: "idx_user_feedback_created")
+  @@index([status], map: "idx_user_feedback_status")
+  @@index([feedback_type], map: "idx_user_feedback_type")
   @@schema("public")
 }
 
