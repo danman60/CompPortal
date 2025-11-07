@@ -101,10 +101,10 @@ export function FeedbackWidget({ userRole }: FeedbackWidgetProps) {
 
   return (
     <>
-      {/* Trigger Button - Positioned beside support button */}
+      {/* Trigger Button - Positioned left of support button with safe spacing */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-28 z-40 flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 animate-pulse-glow"
+        className="fixed bottom-6 left-6 z-40 flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 animate-pulse-glow"
         title="Give Feedback"
       >
         <span className="text-xl">💡</span>
@@ -156,7 +156,7 @@ export function FeedbackWidget({ userRole }: FeedbackWidgetProps) {
                     <button
                       key={star}
                       onClick={() => setStarRating(star)}
-                      className="text-4xl transition-transform hover:scale-110"
+                      className="text-4xl transition-transform hover:scale-110 text-gray-400 hover:text-gray-600"
                     >
                       {star <= (starRating || 0) ? '⭐' : '☆'}
                     </button>
@@ -206,7 +206,7 @@ export function FeedbackWidget({ userRole }: FeedbackWidgetProps) {
                       ? currentConfig.prompt
                       : 'Tell us what you think...'
                   }
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 min-h-[150px] resize-y"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 min-h-[150px] resize-y text-gray-900 placeholder:text-gray-400"
                   maxLength={5000}
                 />
                 <div className="text-xs text-gray-500 mt-1 text-right">

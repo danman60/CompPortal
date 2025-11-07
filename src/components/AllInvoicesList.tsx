@@ -309,9 +309,10 @@ export default function AllInvoicesList() {
   const invoices = data?.invoices || [];
   const competitions = competitionsData?.competitions || [];
 
-  // Sort invoices for table view - MUST be before conditional returns
+  // Sort invoices for table view - MUST be before conditional returns (Rules of Hooks)
   const { sortedData: sortedInvoices, sortConfig, requestSort } = useTableSort(invoices);
 
+  // Conditional return AFTER all hooks
   if (isLoading) {
     return <SkeletonTable rows={5} />;
   }
