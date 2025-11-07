@@ -71,7 +71,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Navigation */}
+        {/* Header with Navigation */}
         <div className="flex justify-end items-center gap-3 mb-4">
           {role === 'studio_director' && (
             <a
