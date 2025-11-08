@@ -108,6 +108,7 @@ export function EntriesPageContainer() {
         selectedReservationId={selectedReservation?.id}
         selectedCompetitionId={selectedReservation?.competition_id}
         isRegistrationClosed={isRegistrationClosed}
+        hasApprovedReservation={selectableReservations.length > 0}
         studioId={studioId}
       />
 

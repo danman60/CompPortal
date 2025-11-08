@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/rebuild/ui/Button';
 import { trpc } from '@/lib/trpc';
+import toast from 'react-hot-toast';
 
 interface EntriesHeaderProps {
   selectedReservationId?: string;
   selectedCompetitionId?: string;
   isRegistrationClosed?: boolean;
+  hasApprovedReservation?: boolean;
   studioId?: string;
 }
 
@@ -13,7 +15,7 @@ interface EntriesHeaderProps {
  * Header for Entries rebuild page
  * Shows title and action buttons
  */
-export function EntriesHeader({ selectedReservationId, selectedCompetitionId, isRegistrationClosed = false, studioId }: EntriesHeaderProps) {
+export function EntriesHeader({ selectedReservationId, selectedCompetitionId, isRegistrationClosed = false, hasApprovedReservation = false, studioId }: EntriesHeaderProps) {
   // Check for active import session
   const { data: activeSession } = trpc.importSession.getActiveForStudio.useQuery(
     { studio_id: studioId! },
@@ -28,6 +30,11 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
   const resumeUrl = activeSession
     ? `/dashboard/entries/create?importSession=${activeSession.id}`
     : null;
+
+  // Handler for when no approved reservation exists
+  const handleNoReservation = () => {
+    toast.error('No approved reservation found. Please request a reservation from a Competition Director first.');
+  };
 
   return (
     <div className="mb-6">
@@ -54,17 +61,26 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
           )}
 
           <Button
-            href="/dashboard/entries/import"
+            href={hasApprovedReservation ? "/dashboard/entries/import" : undefined}
             variant="secondary"
-            title="Import routines from CSV/Excel file"
+            disabled={!hasApprovedReservation}
+            onClick={!hasApprovedReservation ? handleNoReservation : undefined}
+            title={!hasApprovedReservation ? 'No approved reservation - request one first' : 'Import routines from CSV/Excel file'}
           >
             Import Routines
           </Button>
           <Button
-            href={createUrl}
+            href={hasApprovedReservation ? createUrl : undefined}
             variant="primary"
-            disabled={isRegistrationClosed}
-            title={isRegistrationClosed ? 'Reservation has been summarized - no more routines can be added' : 'Create a new routine'}
+            disabled={isRegistrationClosed || !hasApprovedReservation}
+            onClick={!hasApprovedReservation ? handleNoReservation : undefined}
+            title={
+              !hasApprovedReservation
+                ? 'No approved reservation - request one first'
+                : isRegistrationClosed
+                  ? 'Reservation has been summarized - no more routines can be added'
+                  : 'Create a new routine'
+            }
           >
             Create Routine
           </Button>
