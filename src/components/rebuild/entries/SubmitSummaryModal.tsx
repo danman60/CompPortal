@@ -153,6 +153,15 @@ export function SubmitSummaryModal({
           </div>
         </div>
 
+        {/* Invoice Timeline Warning */}
+        <div className="bg-blue-500/20 border border-blue-400/50 rounded-lg p-4">
+          <div className="font-bold text-blue-300 mb-2">📋 Invoice Processing</div>
+          <div className="text-white/80 text-sm space-y-1">
+            <p>Invoices are created manually by the Competition Director and may take up to <strong className="text-white">72 hours</strong> to arrive after submission.</p>
+            <p className="mt-2">You will receive an email notification when your invoice is ready.</p>
+          </div>
+        </div>
+
         <div className="text-white/60 text-sm">
           After submitting, you won't be able to create new routines for this reservation.
           You can still edit existing routine details.
