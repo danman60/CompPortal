@@ -44,6 +44,13 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     description: 'Review & create invoices',
   },
   {
+    id: 'reservations',
+    href: '/dashboard/admin/reservations',
+    icon: '📋',
+    title: 'Reservations',
+    description: 'Manage studio reservations',
+  },
+  {
     id: 'events',
     href: '/dashboard/competitions',
     icon: '🎪',

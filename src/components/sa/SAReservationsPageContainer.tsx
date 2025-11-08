@@ -43,6 +43,18 @@ export function SAReservationsPageContainer() {
     comments: string;
   } | null>(null);
 
+  // Edit Spaces modal state
+  const [editSpacesModal, setEditSpacesModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    competitionName: string;
+    currentSpaces: number;
+    entryCount: number;
+    newSpaces: number;
+    reason: string;
+  } | null>(null);
+
   // Fetch data
   const { data: tenantsData, isLoading: tenantsLoading } = trpc.superAdmin.tenants.getAllTenants.useQuery();
   const { data: competitionsData, isLoading: competitionsLoading } = trpc.competition.getAll.useQuery({});
@@ -91,6 +103,19 @@ export function SAReservationsPageContainer() {
     },
     onError: (error) => {
       toast.error(`Failed to create studio: ${error.message}`);
+    },
+  });
+
+  // Adjust Spaces mutation
+  const adjustSpacesMutation = trpc.reservation.adjustReservationSpaces.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setEditSpacesModal(null);
+      // Refetch reservations to update spaces
+      trpc.useUtils().reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to adjust spaces: ${error.message}`);
     },
   });
 
@@ -182,6 +207,28 @@ export function SAReservationsPageContainer() {
       preApprovedSpaces: spaces,
       depositAmount: deposit,
       comments: addStudioModal.comments || undefined,
+    });
+  };
+
+  const handleEditSpaces = (reservation: any) => {
+    setEditSpacesModal({
+      isOpen: true,
+      reservationId: reservation.id,
+      studioName: reservation.studios?.name || '',
+      competitionName: reservation.competitions?.name || '',
+      currentSpaces: reservation.spacesConfirmed || 0,
+      entryCount: reservation.entryCount || 0,
+      newSpaces: reservation.spacesConfirmed || 0,
+      reason: '',
+    });
+  };
+
+  const confirmAdjustSpaces = () => {
+    if (!editSpacesModal) return;
+    adjustSpacesMutation.mutate({
+      reservationId: editSpacesModal.reservationId,
+      newSpacesConfirmed: editSpacesModal.newSpaces,
+      reason: editSpacesModal.reason || undefined,
     });
   };
 
@@ -494,6 +541,15 @@ export function SAReservationsPageContainer() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2 justify-center" onClick={(e) => e.stopPropagation()}>
+                          {/* Edit Spaces button - show for approved+ statuses */}
+                          {reservation.status && ['approved', 'summarized', 'invoiced'].includes(reservation.status) && (
+                            <button
+                              onClick={() => handleEditSpaces(reservation)}
+                              className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg text-xs font-semibold hover:bg-blue-500/30 transition-all whitespace-nowrap"
+                            >
+                              ✏️ Edit Spaces
+                            </button>
+                          )}
                           {/* Record Deposit button - show for approved+ statuses */}
                           {reservation.status && ['approved', 'summarized', 'invoiced'].includes(reservation.status) && (
                             <button
@@ -757,6 +813,134 @@ export function SAReservationsPageContainer() {
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-lg transition-all disabled:opacity-50"
               >
                 {createStudioMutation.isPending ? 'Creating...' : 'Create Studio & Send Invitation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Spaces Modal */}
+      {editSpacesModal?.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setEditSpacesModal(null)}
+        >
+          <div
+            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Edit Reservation Spaces</h2>
+              <p className="text-gray-400 text-sm">
+                Adjust spaces for <strong className="text-white">{editSpacesModal.studioName}</strong> - <strong className="text-white">{editSpacesModal.competitionName}</strong>
+              </p>
+            </div>
+
+            {/* Current Info */}
+            <div className="bg-white/5 rounded-lg p-4 mb-6 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Current Spaces:</span>
+                <span className="text-white font-semibold">{editSpacesModal.currentSpaces}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Entries Created:</span>
+                <span className="text-white font-semibold">{editSpacesModal.entryCount}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Minimum Allowed:</span>
+                <span className="text-yellow-300 font-semibold">{editSpacesModal.entryCount}</span>
+              </div>
+            </div>
+
+            {/* New Spaces Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-300 mb-3">
+                New Spaces Amount
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setEditSpacesModal({
+                    ...editSpacesModal,
+                    newSpaces: Math.max(editSpacesModal.entryCount, editSpacesModal.newSpaces - 1)
+                  })}
+                  className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-300 rounded-lg font-bold hover:bg-red-500/30 transition-all"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  value={editSpacesModal.newSpaces}
+                  onChange={(e) => setEditSpacesModal({
+                    ...editSpacesModal,
+                    newSpaces: Math.max(editSpacesModal.entryCount, parseInt(e.target.value) || 0)
+                  })}
+                  min={editSpacesModal.entryCount}
+                  className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={() => setEditSpacesModal({
+                    ...editSpacesModal,
+                    newSpaces: editSpacesModal.newSpaces + 1
+                  })}
+                  className="px-4 py-2 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg font-bold hover:bg-green-500/30 transition-all"
+                >
+                  +
+                </button>
+              </div>
+              {editSpacesModal.newSpaces < editSpacesModal.entryCount && (
+                <p className="text-red-400 text-xs mt-2">
+                  Cannot reduce below {editSpacesModal.entryCount} (studio has created entries)
+                </p>
+              )}
+            </div>
+
+            {/* Delta Display */}
+            {editSpacesModal.newSpaces !== editSpacesModal.currentSpaces && (
+              <div className={`rounded-lg p-4 mb-6 ${
+                editSpacesModal.newSpaces > editSpacesModal.currentSpaces
+                  ? 'bg-green-500/10 border border-green-500/30'
+                  : 'bg-yellow-500/10 border border-yellow-500/30'
+              }`}>
+                <p className={`text-sm font-semibold ${
+                  editSpacesModal.newSpaces > editSpacesModal.currentSpaces
+                    ? 'text-green-300'
+                    : 'text-yellow-300'
+                }`}>
+                  {editSpacesModal.newSpaces > editSpacesModal.currentSpaces ? '↑' : '↓'}
+                  {' '}
+                  {editSpacesModal.newSpaces > editSpacesModal.currentSpaces ? 'Increasing' : 'Decreasing'} by{' '}
+                  {Math.abs(editSpacesModal.newSpaces - editSpacesModal.currentSpaces)} space(s)
+                </p>
+              </div>
+            )}
+
+            {/* Reason */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Reason (Optional)
+              </label>
+              <input
+                type="text"
+                value={editSpacesModal.reason}
+                onChange={(e) => setEditSpacesModal({ ...editSpacesModal, reason: e.target.value })}
+                placeholder="e.g., Studio requested increase/decrease"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditSpacesModal(null)}
+                className="flex-1 px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/20 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAdjustSpaces}
+                disabled={adjustSpacesMutation.isPending || editSpacesModal.newSpaces === editSpacesModal.currentSpaces}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {adjustSpacesMutation.isPending ? 'Saving...' : '✓ Save Changes'}
               </button>
             </div>
           </div>
