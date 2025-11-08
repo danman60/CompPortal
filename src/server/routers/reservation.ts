@@ -1608,4 +1608,245 @@ export const reservationRouter = router({
           : `Decreased reservation by ${Math.abs(delta)} spaces`,
       };
     }),
+
+  // Record deposit payment for a reservation
+  recordDeposit: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        depositAmount: z.number().min(0),
+        paymentMethod: z.enum(['cash', 'check', 'etransfer', 'credit_card', 'other']).optional(),
+        paymentDate: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Check user role - only competition directors and super admins
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || (userProfile.role !== 'competition_director' && userProfile.role !== 'super_admin')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can record deposits',
+        });
+      }
+
+      // Get reservation with studio and competition info
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: { select: { id: true, name: true } },
+          competitions: { select: { id: true, name: true } },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found',
+        });
+      }
+
+      // Validate reservation status - must be approved or later
+      if (!['approved', 'summarized', 'invoiced', 'paid'].includes(reservation.status || '')) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot record deposit - reservation must be approved first',
+        });
+      }
+
+      // Update reservation with deposit information
+      const updatedReservation = await prisma.reservations.update({
+        where: { id: input.reservationId },
+        data: {
+          deposit_amount: input.depositAmount,
+          deposit_paid_at: input.paymentDate ? new Date(input.paymentDate) : new Date(),
+          deposit_confirmed_by: ctx.userId,
+          updated_at: new Date(),
+        },
+        include: {
+          studios: { select: { id: true, name: true } },
+          competitions: { select: { id: true, name: true } },
+        },
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'deposit_recorded',
+        entityType: 'reservation',
+        entityId: input.reservationId,
+        details: {
+          deposit_amount: input.depositAmount,
+          payment_method: input.paymentMethod || 'not_specified',
+          payment_date: input.paymentDate || new Date().toISOString(),
+          notes: input.notes,
+          studio_name: reservation.studios?.name,
+          competition_name: reservation.competitions?.name,
+        },
+      });
+
+      return {
+        reservation: updatedReservation,
+        message: `Deposit of $${input.depositAmount.toFixed(2)} recorded successfully`,
+      };
+    }),
+
+  /**
+   * Create a new studio with a pre-approved reservation
+   * Allows CDs to quickly onboard studios with confirmed spots and deposits
+   */
+  createStudioWithReservation: protectedProcedure
+    .input(
+      z.object({
+        studioName: z.string().min(1),
+        contactName: z.string().min(1),
+        email: z.string().email(),
+        phone: z.string().optional(),
+        competitionId: z.string().uuid(),
+        preApprovedSpaces: z.number().int().min(1),
+        depositAmount: z.number().min(0).optional(),
+        comments: z.string().optional(), // CD comments to include in invitation email
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Check user role - only competition directors and super admins
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || (userProfile.role !== 'competition_director' && userProfile.role !== 'super_admin')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can create studios with reservations',
+        });
+      }
+
+      // Get competition info for validation
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: {
+          id: true,
+          name: true,
+          year: true,
+          tenant_id: true,
+        },
+      });
+
+      if (!competition) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Competition not found',
+        });
+      }
+
+      // Verify tenant isolation
+      if (competition.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Competition not found',
+        });
+      }
+
+      // Check if studio email already exists for this tenant
+      const existingStudio = await prisma.studios.findFirst({
+        where: {
+          tenant_id: ctx.tenantId,
+          contact_email: input.email,
+        },
+      });
+
+      if (existingStudio) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'A studio with this email already exists',
+        });
+      }
+
+      // Atomic transaction: Create studio, reservation, invitation
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Create studio record (unclaimed status)
+        const studio = await tx.studios.create({
+          data: {
+            tenant_id: ctx.tenantId!,
+            name: input.studioName,
+            contact_name: input.contactName,
+            contact_email: input.email,
+            contact_phone: input.phone || null,
+            status: 'unclaimed', // Will be 'active' after director claims account
+          },
+        });
+
+        // 2. Create reservation with pre-approved status
+        const reservation = await tx.reservations.create({
+          data: {
+            tenant_id: ctx.tenantId!,
+            studio_id: studio.id,
+            competition_id: input.competitionId,
+            spaces_requested: input.preApprovedSpaces,
+            spaces_confirmed: input.preApprovedSpaces,
+            status: 'approved',
+            approved_at: new Date(),
+            approved_by: ctx.userId,
+            deposit_amount: input.depositAmount || 0,
+            deposit_paid_at: input.depositAmount && input.depositAmount > 0 ? new Date() : null,
+            deposit_confirmed_by: input.depositAmount && input.depositAmount > 0 ? ctx.userId : null,
+          },
+        });
+
+        // 3. Reserve capacity via CapacityService (with CD adjustment reason)
+        await capacityService.reserve(
+          input.competitionId,
+          input.preApprovedSpaces,
+          reservation.id,
+          ctx.userId!,
+          'cd_adjustment_increase' // CD-initiated reservation, skip idempotency checks
+        );
+
+        // 4. Create studio invitation record with CD comments
+        const invitation = await tx.studio_invitations.create({
+          data: {
+            tenant_id: ctx.tenantId!,
+            studio_id: studio.id,
+            email: input.email,
+            status: 'pending',
+            comments: input.comments || null, // CD comments for email
+            created_by: ctx.userId,
+          },
+        });
+
+        // 5. Log activity
+        await logActivity({
+          userId: ctx.userId!,
+          tenantId: ctx.tenantId!,
+          action: 'studio_created_with_reservation',
+          entityType: 'studio',
+          entityId: studio.id,
+          details: {
+            studio_name: input.studioName,
+            contact_email: input.email,
+            competition_name: competition.name,
+            pre_approved_spaces: input.preApprovedSpaces,
+            deposit_amount: input.depositAmount || 0,
+            reservation_id: reservation.id,
+            invitation_id: invitation.id,
+            has_comments: !!input.comments,
+          },
+        });
+
+        return { studio, reservation, invitation };
+      });
+
+      return {
+        studio: result.studio,
+        reservation: result.reservation,
+        invitation: result.invitation,
+        message: `Studio "${input.studioName}" created with ${input.preApprovedSpaces} pre-approved spaces. Invitation ready to send.`,
+      };
+    }),
 });

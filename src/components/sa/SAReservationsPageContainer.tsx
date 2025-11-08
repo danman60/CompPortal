@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
+import { toast } from 'react-hot-toast';
 
 /**
  * Super Admin Reservations View
@@ -16,6 +17,31 @@ export function SAReservationsPageContainer() {
   const [selectedStudioId, setSelectedStudioId] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>('all');
+
+  // Record Deposit modal state
+  const [depositModal, setDepositModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    competitionName: string;
+    depositAmount: string;
+    paymentMethod: string;
+    paymentDate: string;
+    notes: string;
+  } | null>(null);
+
+  // Add Studio with Reservation modal state
+  const [addStudioModal, setAddStudioModal] = useState<{
+    isOpen: boolean;
+    studioName: string;
+    contactName: string;
+    email: string;
+    phone: string;
+    competitionId: string;
+    preApprovedSpaces: string;
+    depositAmount: string;
+    comments: string;
+  } | null>(null);
 
   // Fetch data
   const { data: tenantsData, isLoading: tenantsLoading } = trpc.superAdmin.tenants.getAllTenants.useQuery();
@@ -39,6 +65,125 @@ export function SAReservationsPageContainer() {
   const reservations = reservationsData?.reservations || [];
 
   const isLoading = tenantsLoading || competitionsLoading || studiosLoading || reservationsLoading;
+
+  // Record Deposit mutation
+  const recordDepositMutation = trpc.reservation.recordDeposit.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setDepositModal(null);
+      // Refetch reservations to update deposit info
+      trpc.useUtils().reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to record deposit: ${error.message}`);
+    },
+  });
+
+  // Create Studio with Reservation mutation
+  const createStudioMutation = trpc.reservation.createStudioWithReservation.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setAddStudioModal(null);
+      // Refetch both studios and reservations
+      const utils = trpc.useUtils();
+      utils.studio.getAll.invalidate();
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to create studio: ${error.message}`);
+    },
+  });
+
+  // Handlers
+  const handleRecordDeposit = (reservation: any) => {
+    setDepositModal({
+      isOpen: true,
+      reservationId: reservation.id,
+      studioName: reservation.studios?.name || '',
+      competitionName: reservation.competitions?.name || '',
+      depositAmount: '',
+      paymentMethod: 'etransfer',
+      paymentDate: new Date().toISOString().split('T')[0],
+      notes: '',
+    });
+  };
+
+  const confirmRecordDeposit = () => {
+    if (!depositModal) return;
+    const amount = parseFloat(depositModal.depositAmount);
+    if (isNaN(amount) || amount < 0) {
+      toast.error('Please enter a valid deposit amount');
+      return;
+    }
+
+    recordDepositMutation.mutate({
+      reservationId: depositModal.reservationId,
+      depositAmount: amount,
+      paymentMethod: depositModal.paymentMethod as any,
+      paymentDate: depositModal.paymentDate,
+      notes: depositModal.notes || undefined,
+    });
+  };
+
+  const handleAddStudio = () => {
+    setAddStudioModal({
+      isOpen: true,
+      studioName: '',
+      contactName: '',
+      email: '',
+      phone: '',
+      competitionId: '',
+      preApprovedSpaces: '1',
+      depositAmount: '',
+      comments: '',
+    });
+  };
+
+  const confirmAddStudio = () => {
+    if (!addStudioModal) return;
+
+    // Validation
+    if (!addStudioModal.studioName.trim()) {
+      toast.error('Studio name is required');
+      return;
+    }
+    if (!addStudioModal.contactName.trim()) {
+      toast.error('Contact name is required');
+      return;
+    }
+    if (!addStudioModal.email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!addStudioModal.competitionId) {
+      toast.error('Please select a competition');
+      return;
+    }
+    const spaces = parseInt(addStudioModal.preApprovedSpaces);
+    if (isNaN(spaces) || spaces < 1) {
+      toast.error('Pre-approved spaces must be at least 1');
+      return;
+    }
+
+    const deposit = addStudioModal.depositAmount
+      ? parseFloat(addStudioModal.depositAmount)
+      : undefined;
+    if (deposit !== undefined && (isNaN(deposit) || deposit < 0)) {
+      toast.error('Invalid deposit amount');
+      return;
+    }
+
+    createStudioMutation.mutate({
+      studioName: addStudioModal.studioName,
+      contactName: addStudioModal.contactName,
+      email: addStudioModal.email,
+      phone: addStudioModal.phone || undefined,
+      competitionId: addStudioModal.competitionId,
+      preApprovedSpaces: spaces,
+      depositAmount: deposit,
+      comments: addStudioModal.comments || undefined,
+    });
+  };
 
   // Filter by tenant (frontend filter since backend already returns all)
   const filteredReservations = useMemo(() => {
@@ -86,6 +231,15 @@ export function SAReservationsPageContainer() {
               Multi-tenant view • {filteredReservations.length} reservations
             </p>
           </div>
+
+          {/* Add Studio with Reservation button */}
+          <button
+            onClick={handleAddStudio}
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg flex items-center gap-2"
+          >
+            <span>+</span>
+            <span>Add Studio with Reservation</span>
+          </button>
         </div>
       </div>
 
@@ -257,6 +411,9 @@ export function SAReservationsPageContainer() {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-white/80">
                     Requested At
                   </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-white/80">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -335,11 +492,273 @@ export function SAReservationsPageContainer() {
                       <td className="px-6 py-4 text-white/70">
                         {reservation.requested_at ? new Date(reservation.requested_at).toLocaleDateString() : 'N/A'}
                       </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2 justify-center" onClick={(e) => e.stopPropagation()}>
+                          {/* Record Deposit button - show for approved+ statuses */}
+                          {reservation.status && ['approved', 'summarized', 'invoiced'].includes(reservation.status) && (
+                            <button
+                              onClick={() => handleRecordDeposit(reservation)}
+                              className="px-3 py-1.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg text-xs font-semibold hover:bg-green-500/30 transition-all whitespace-nowrap"
+                            >
+                              💰 Record Deposit
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Record Deposit Modal */}
+      {depositModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/20 rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-semibold text-white mb-4">
+              Record Deposit
+            </h3>
+
+            {/* Current Info */}
+            <div className="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
+              <div className="text-sm text-gray-400 mb-1">Studio</div>
+              <div className="text-white font-medium">{depositModal.studioName}</div>
+              <div className="text-sm text-gray-400 mt-2 mb-1">Competition</div>
+              <div className="text-white font-medium">{depositModal.competitionName}</div>
+            </div>
+
+            {/* Deposit Amount */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Deposit Amount *
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={depositModal.depositAmount}
+                onChange={(e) => setDepositModal({ ...depositModal, depositAmount: e.target.value })}
+                placeholder="0.00"
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            {/* Payment Method */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Payment Method
+              </label>
+              <select
+                value={depositModal.paymentMethod}
+                onChange={(e) => setDepositModal({ ...depositModal, paymentMethod: e.target.value })}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="cash" className="bg-gray-900">Cash</option>
+                <option value="check" className="bg-gray-900">Check</option>
+                <option value="etransfer" className="bg-gray-900">E-Transfer</option>
+                <option value="credit_card" className="bg-gray-900">Credit Card</option>
+                <option value="other" className="bg-gray-900">Other</option>
+              </select>
+            </div>
+
+            {/* Payment Date */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Payment Date
+              </label>
+              <input
+                type="date"
+                value={depositModal.paymentDate}
+                onChange={(e) => setDepositModal({ ...depositModal, paymentDate: e.target.value })}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            {/* Notes */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Notes (Optional)
+              </label>
+              <textarea
+                value={depositModal.notes}
+                onChange={(e) => setDepositModal({ ...depositModal, notes: e.target.value })}
+                placeholder="Additional notes..."
+                rows={3}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDepositModal(null)}
+                disabled={recordDepositMutation.isPending}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRecordDeposit}
+                disabled={recordDepositMutation.isPending}
+                className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+              >
+                {recordDepositMutation.isPending ? 'Recording...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Studio with Reservation Modal */}
+      {addStudioModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-white/20 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold text-white mb-4">
+              Add Studio with Pre-Approved Reservation
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Studio Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Studio Name *
+                </label>
+                <input
+                  type="text"
+                  value={addStudioModal.studioName}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, studioName: e.target.value })}
+                  placeholder="Dance Studio Name"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Contact Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Contact Name *
+                </label>
+                <input
+                  type="text"
+                  value={addStudioModal.contactName}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, contactName: e.target.value })}
+                  placeholder="Studio Director Name"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={addStudioModal.email}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, email: e.target.value })}
+                  placeholder="contact@studio.com"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Phone (Optional)
+                </label>
+                <input
+                  type="tel"
+                  value={addStudioModal.phone}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, phone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Competition */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Competition *
+                </label>
+                <select
+                  value={addStudioModal.competitionId}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, competitionId: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="" className="bg-gray-900">Select Competition</option>
+                  {competitions.map((comp: any) => (
+                    <option key={comp.id} value={comp.id} className="bg-gray-900">
+                      {comp.name} {comp.year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Pre-Approved Spaces */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Pre-Approved Spaces *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={addStudioModal.preApprovedSpaces}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, preApprovedSpaces: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Deposit Amount */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Deposit Amount (Optional)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={addStudioModal.depositAmount}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, depositAmount: e.target.value })}
+                  placeholder="0.00"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Comments for Invitation Email */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Comments for Invitation Email (Optional)
+                </label>
+                <textarea
+                  value={addStudioModal.comments}
+                  onChange={(e) => setAddStudioModal({ ...addStudioModal, comments: e.target.value })}
+                  placeholder="These comments will be included in the studio invitation email..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setAddStudioModal(null)}
+                disabled={createStudioMutation.isPending}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAddStudio}
+                disabled={createStudioMutation.isPending}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+              >
+                {createStudioMutation.isPending ? 'Creating...' : 'Create Studio & Send Invitation'}
+              </button>
+            </div>
           </div>
         </div>
       )}
