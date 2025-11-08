@@ -5,7 +5,9 @@ type CapacityChangeReason =
   | 'reservation_approval'
   | 'summary_refund'
   | 'reservation_cancellation'
-  | 'manual_adjustment';
+  | 'manual_adjustment'
+  | 'cd_adjustment_increase'
+  | 'cd_adjustment_decrease';
 
 /**
  * Single source of truth for competition capacity management
@@ -26,7 +28,8 @@ export class CapacityService {
     competitionId: string,
     spaces: number,
     reservationId: string,
-    userId: string
+    userId: string,
+    reason: CapacityChangeReason = 'reservation_approval'
   ): Promise<void> {
     logger.info('🔵 CapacityService.reserve CALLED', {
       competitionId,
@@ -50,43 +53,46 @@ export class CapacityService {
 
       logger.info('🔵 Advisory lock acquired, fetching reservation', { reservationId });
 
-      // Now fetch reservation status after lock is acquired
-      const reservation = await tx.reservations.findUnique({
-        where: { id: reservationId },
-        select: { id: true, status: true },
-      });
+      // Only check status/idempotency for initial approval, not CD adjustments
+      if (reason === 'reservation_approval') {
+        // Now fetch reservation status after lock is acquired
+        const reservation = await tx.reservations.findUnique({
+          where: { id: reservationId },
+          select: { id: true, status: true },
+        });
 
-      if (!reservation) {
-        throw new Error('Reservation not found');
-      }
+        if (!reservation) {
+          throw new Error('Reservation not found');
+        }
 
-      logger.info('🔵 Reservation fetched', {
-        reservationId,
-        status: reservation.status,
-      });
-
-      if (reservation.status !== 'pending') {
-        logger.warn('Reservation already processed - status guard', {
+        logger.info('🔵 Reservation fetched', {
           reservationId,
           status: reservation.status,
         });
-        return; // Already approved/rejected, skip silently
-      }
 
-      // Check idempotency via ledger (backup check)
-      const existingLedger = await tx.capacity_ledger.findFirst({
-        where: {
-          reservation_id: reservationId,
-          reason: 'reservation_approval',
-        },
-      });
+        if (reservation.status !== 'pending') {
+          logger.warn('Reservation already processed - status guard', {
+            reservationId,
+            status: reservation.status,
+          });
+          return; // Already approved/rejected, skip silently
+        }
 
-      if (existingLedger) {
-        logger.warn('Reservation already processed - ledger check', {
-          reservationId,
-          existingChange: existingLedger.change_amount,
+        // Check idempotency via ledger (backup check)
+        const existingLedger = await tx.capacity_ledger.findFirst({
+          where: {
+            reservation_id: reservationId,
+            reason: 'reservation_approval',
+          },
         });
-        return; // Already processed, skip silently
+
+        if (existingLedger) {
+          logger.warn('Reservation already processed - ledger check', {
+            reservationId,
+            existingChange: existingLedger.change_amount,
+          });
+          return; // Already processed, skip silently
+        }
       }
 
       // Lock competition row for update
@@ -122,7 +128,7 @@ export class CapacityService {
           competition_id: competitionId,
           reservation_id: reservationId,
           change_amount: -spaces, // Negative = deduction
-          reason: 'reservation_approval',
+          reason,
           created_by: userId,
         },
       });

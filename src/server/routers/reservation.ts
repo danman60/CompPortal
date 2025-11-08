@@ -1479,4 +1479,133 @@ export const reservationRouter = router({
         impact: wouldImpactRoutines ? `${impactedRoutines} routine(s) now exceed capacity` : 'No routines impacted',
       };
     }),
+
+  // Adjust reservation spaces (increase or decrease) with proper capacity management
+  adjustReservationSpaces: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        newSpacesConfirmed: z.number().int().min(0),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Check user role - only competition directors and super admins
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || (userProfile.role !== 'competition_director' && userProfile.role !== 'super_admin')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can adjust reservation spaces',
+        });
+      }
+
+      // Get reservation with current data
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: { select: { id: true, name: true } },
+          competitions: { select: { id: true, name: true, year: true } },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found',
+        });
+      }
+
+      const currentSpaces = reservation.spaces_confirmed || 0;
+      const delta = input.newSpacesConfirmed - currentSpaces;
+
+      // No change needed
+      if (delta === 0) {
+        return {
+          reservation,
+          message: 'No changes made - spaces already at this amount',
+        };
+      }
+
+      // Count existing entries for this reservation
+      const entryCount = await prisma.competition_entries.count({
+        where: {
+          reservation_id: input.reservationId,
+          status: { not: 'cancelled' },
+        },
+      });
+
+      // Validate: Cannot reduce below entry count
+      if (input.newSpacesConfirmed < entryCount) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot reduce to ${input.newSpacesConfirmed} spaces - studio has ${entryCount} entries created. Minimum allowed: ${entryCount}`,
+        });
+      }
+
+      // Perform capacity adjustment based on delta
+      if (delta > 0) {
+        // Increasing spaces - reserve additional capacity
+        await capacityService.reserve(
+          reservation.competition_id,
+          delta,
+          input.reservationId,
+          ctx.userId!,
+          'cd_adjustment_increase'
+        );
+      } else {
+        // Decreasing spaces - refund capacity
+        await capacityService.refund(
+          reservation.competition_id,
+          Math.abs(delta),
+          input.reservationId,
+          'cd_adjustment_decrease',
+          ctx.userId!
+        );
+      }
+
+      // Update reservation spaces_confirmed
+      const updatedReservation = await prisma.reservations.update({
+        where: { id: input.reservationId },
+        data: {
+          spaces_confirmed: input.newSpacesConfirmed,
+          updated_at: new Date(),
+        },
+        include: {
+          studios: { select: { id: true, name: true } },
+          competitions: { select: { id: true, name: true, year: true } },
+        },
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'reservation_spaces_adjusted',
+        entityType: 'reservation',
+        entityId: input.reservationId,
+        details: {
+          previous_spaces: currentSpaces,
+          new_spaces: input.newSpacesConfirmed,
+          delta,
+          reason: input.reason || 'CD adjustment',
+          studio_name: reservation.studios?.name,
+          competition_name: reservation.competitions?.name,
+        },
+      });
+
+      return {
+        reservation: updatedReservation,
+        previousSpaces: currentSpaces,
+        newSpaces: input.newSpacesConfirmed,
+        delta,
+        entryCount,
+        message: delta > 0
+          ? `Increased reservation by ${delta} spaces`
+          : `Decreased reservation by ${Math.abs(delta)} spaces`,
+      };
+    }),
 });
