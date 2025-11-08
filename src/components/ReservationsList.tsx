@@ -14,9 +14,10 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
+  isCompetitionDirector?: boolean; // If true, show Edit Spaces and Record Deposit buttons
 }
 
-export default function ReservationsList({ isStudioDirector = false }: ReservationsListProps) {
+export default function ReservationsList({ isStudioDirector = false, isCompetitionDirector = false }: ReservationsListProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { data, isLoading, dataUpdatedAt, refetch } = trpc.reservation.getAll.useQuery({ limit: 250 });
@@ -37,6 +38,30 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     warning?: string;
   } | null>(null);
   const [newCapacity, setNewCapacity] = useState<number>(0);
+
+  // Edit Spaces modal state (CD feature)
+  const [editSpacesModal, setEditSpacesModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    competitionName: string;
+    currentSpaces: number;
+    entryCount: number;
+    newSpaces: number;
+    reason: string;
+  } | null>(null);
+
+  // Record Deposit modal state (CD feature)
+  const [depositModal, setDepositModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    competitionName: string;
+    depositAmount: string;
+    paymentMethod: string;
+    paymentDate: string;
+    notes: string;
+  } | null>(null);
 
   // Pull-to-refresh handler with haptic feedback
   const handleRefresh = async () => {
@@ -166,6 +191,30 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
     },
   });
 
+  // Adjust Spaces mutation (CD feature)
+  const adjustSpacesMutation = trpc.reservation.adjustReservationSpaces.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setEditSpacesModal(null);
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
+  // Record Deposit mutation (CD feature)
+  const recordDepositMutation = trpc.reservation.recordDeposit.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setDepositModal(null);
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
   const handleApprove = (reservationId: string, spacesRequested: number) => {
     const spacesConfirmed = prompt(
       `Approve this reservation.\n\nRoutines Requested: ${spacesRequested}\n\nHow many routines to allocate?`,
@@ -245,6 +294,60 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
       id: reduceModalData.id,
       newCapacity,
       confirmed: !!reduceModalData.warning, // Confirm if we've seen the warning
+    });
+  };
+
+  // CD Feature: Edit Spaces handler
+  const handleEditSpaces = (reservation: any) => {
+    setEditSpacesModal({
+      isOpen: true,
+      reservationId: reservation.id,
+      studioName: reservation.studios?.name || '',
+      competitionName: reservation.competitions?.name || '',
+      currentSpaces: reservation.spaces_confirmed || 0,
+      entryCount: reservation._count?.competition_entries || 0,
+      newSpaces: reservation.spaces_confirmed || 0,
+      reason: '',
+    });
+  };
+
+  const confirmAdjustSpaces = () => {
+    if (!editSpacesModal) return;
+    adjustSpacesMutation.mutate({
+      reservationId: editSpacesModal.reservationId,
+      newSpacesConfirmed: editSpacesModal.newSpaces,
+      reason: editSpacesModal.reason || undefined,
+    });
+  };
+
+  // CD Feature: Record Deposit handler
+  const handleRecordDeposit = (reservation: any) => {
+    setDepositModal({
+      isOpen: true,
+      reservationId: reservation.id,
+      studioName: reservation.studios?.name || '',
+      competitionName: reservation.competitions?.name || '',
+      depositAmount: '',
+      paymentMethod: 'etransfer',
+      paymentDate: new Date().toISOString().split('T')[0],
+      notes: '',
+    });
+  };
+
+  const confirmRecordDeposit = () => {
+    if (!depositModal) return;
+    const amount = parseFloat(depositModal.depositAmount);
+    if (isNaN(amount) || amount < 0) {
+      toast.error('Please enter a valid deposit amount');
+      return;
+    }
+
+    recordDepositMutation.mutate({
+      reservationId: depositModal.reservationId,
+      depositAmount: amount,
+      paymentMethod: depositModal.paymentMethod as any,
+      paymentDate: depositModal.paymentDate,
+      notes: depositModal.notes || undefined,
     });
   };
 
@@ -895,12 +998,30 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
                             )
                           }
                           disabled={processingId === reservation.id}
-                          className="w-full bg-orange-500/20 hover:bg-orange-500/30 disabled:bg-orange-500/10 text-orange-400 border border-orange-400/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+                          className="w-full bg-orange-500/20 hover:bg-orange-500/30 disabled:bg-orange-500/10 text-orange-400 border border-orange-400/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed mb-3"
                         >
                           {processingId === reservation.id && reduceCapacityMutation.isPending
                             ? '⚙️ Reducing...'
                             : '🔽 Reduce Capacity'}
                         </button>
+
+                        {/* CD Feature: Edit Spaces & Record Deposit buttons */}
+                        {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
+                          <div className="space-y-3">
+                            <button
+                              onClick={() => handleEditSpaces(reservation)}
+                              className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                            >
+                              ✏️ Edit Spaces
+                            </button>
+                            <button
+                              onClick={() => handleRecordDeposit(reservation)}
+                              className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                            >
+                              💰 Record Deposit
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1053,6 +1174,209 @@ export default function ReservationsList({ isStudioDirector = false }: Reservati
           utils.reservation.getAll.invalidate();
         }}
       />
+
+      {/* Edit Spaces Modal (CD Feature) */}
+      {editSpacesModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">✏️ Edit Reservation Spaces</h3>
+
+            <p className="text-gray-300 mb-4">
+              Modify capacity for <span className="font-semibold text-white">{editSpacesModal.studioName}</span>
+            </p>
+
+            <div className="bg-white/5 rounded-lg p-4 mb-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Competition:</span>
+                <span className="text-white font-semibold">{editSpacesModal.competitionName}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Current Spaces:</span>
+                <span className="text-white font-semibold">{editSpacesModal.currentSpaces}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Entries Created:</span>
+                <span className="text-white font-semibold">{editSpacesModal.entryCount}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Minimum Allowed:</span>
+                <span className="text-yellow-400 font-semibold">{editSpacesModal.entryCount}</span>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                New Spaces <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="number"
+                min={editSpacesModal.entryCount}
+                value={editSpacesModal.newSpaces}
+                onChange={(e) =>
+                  setEditSpacesModal({
+                    ...editSpacesModal,
+                    newSpaces: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {editSpacesModal.newSpaces < editSpacesModal.entryCount && (
+                <p className="text-xs text-red-400 mt-2">
+                  ⚠️ Cannot reduce below {editSpacesModal.entryCount} (number of entries already created)
+                </p>
+              )}
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Reason <span className="text-gray-500">(optional)</span>
+              </label>
+              <textarea
+                value={editSpacesModal.reason}
+                onChange={(e) =>
+                  setEditSpacesModal({
+                    ...editSpacesModal,
+                    reason: e.target.value,
+                  })
+                }
+                placeholder="Explain why spaces were adjusted..."
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditSpacesModal(null)}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAdjustSpaces}
+                disabled={editSpacesModal.newSpaces < editSpacesModal.entryCount || adjustSpacesMutation.isPending}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-blue-500/50 disabled:to-blue-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+              >
+                {adjustSpacesMutation.isPending ? '⚙️ Saving...' : '✅ Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Record Deposit Modal (CD Feature) */}
+      {depositModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">💰 Record Deposit</h3>
+
+            <p className="text-gray-300 mb-4">
+              Recording deposit for <span className="font-semibold text-white">{depositModal.studioName}</span>
+            </p>
+
+            <div className="bg-white/5 rounded-lg p-4 mb-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Competition:</span>
+                <span className="text-white font-semibold">{depositModal.competitionName}</span>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Deposit Amount <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={depositModal.depositAmount}
+                  onChange={(e) =>
+                    setDepositModal({
+                      ...depositModal,
+                      depositAmount: e.target.value,
+                    })
+                  }
+                  placeholder="0.00"
+                  className="w-full pl-8 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Payment Method <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={depositModal.paymentMethod}
+                onChange={(e) =>
+                  setDepositModal({
+                    ...depositModal,
+                    paymentMethod: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="etransfer" className="bg-gray-900 text-white">E-Transfer</option>
+                <option value="cheque" className="bg-gray-900 text-white">Cheque</option>
+                <option value="cash" className="bg-gray-900 text-white">Cash</option>
+                <option value="credit_card" className="bg-gray-900 text-white">Credit Card</option>
+                <option value="other" className="bg-gray-900 text-white">Other</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Payment Date <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="date"
+                value={depositModal.paymentDate}
+                onChange={(e) =>
+                  setDepositModal({
+                    ...depositModal,
+                    paymentDate: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Notes <span className="text-gray-500">(optional)</span>
+              </label>
+              <textarea
+                value={depositModal.notes}
+                onChange={(e) =>
+                  setDepositModal({
+                    ...depositModal,
+                    notes: e.target.value,
+                  })
+                }
+                placeholder="Additional notes about this deposit..."
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[80px]"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDepositModal(null)}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRecordDeposit}
+                disabled={!depositModal.depositAmount || recordDepositMutation.isPending}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-green-500/50 disabled:to-green-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+              >
+                {recordDepositMutation.isPending ? '⚙️ Recording...' : '✅ Record Deposit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -27,6 +27,14 @@ export default async function ReservationsPage() {
     select: { id: true },
   });
 
+  // Check if user is a competition director or super admin
+  const userProfile = await prisma.user_profiles.findUnique({
+    where: { id: user.id },
+    select: { role: true },
+  });
+
+  const isCompetitionDirector = userProfile?.role === 'competition_director' || userProfile?.role === 'super_admin';
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
       <div className="container mx-auto px-4 py-8">
@@ -43,7 +51,10 @@ export default async function ReservationsPage() {
         </div>
 
         {/* Reservations List */}
-        <ReservationsList isStudioDirector={!!isStudioDirector} />
+        <ReservationsList
+          isStudioDirector={!!isStudioDirector}
+          isCompetitionDirector={isCompetitionDirector}
+        />
       </div>
     </main>
   );

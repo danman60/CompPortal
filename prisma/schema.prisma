@@ -1121,6 +1121,8 @@ model invoices {
   line_items               Json           @default("[]")
   subtotal                 Decimal        @default(0) @db.Decimal(10, 2)
   total                    Decimal        @default(0) @db.Decimal(10, 2)
+  deposit_amount           Decimal?       @default(0) @db.Decimal(10, 2)
+  amount_due               Decimal?       @default(0) @db.Decimal(10, 2)
   status                   String         @default("UNPAID") @db.VarChar(50)
   created_at               DateTime?      @default(now()) @db.Timestamp(6)
   updated_at               DateTime?      @default(now()) @db.Timestamp(6)

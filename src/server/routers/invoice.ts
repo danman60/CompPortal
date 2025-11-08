@@ -717,12 +717,18 @@ export const invoiceRouter = router({
       const taxAmount = Number((subtotal * (taxRate / 100)).toFixed(2));
       const total = Number((subtotal + taxAmount).toFixed(2));
 
+      // Calculate deposit deduction and amount due (CD feature)
+      const depositAmount = Number(reservation.deposit_amount || 0);
+      const amountDue = Number((total - depositAmount).toFixed(2));
+
       console.log('[INVOICE_CALC] Invoice totals calculated:', {
         line_items_count: lineItems.length,
         subtotal,
         tax_rate: taxRate,
         tax_amount: taxAmount,
-        total
+        total,
+        deposit_amount: depositAmount,
+        amount_due: amountDue
       });
 
       // 🔐 TRANSACTION: Wrap invoice creation + reservation update for atomicity
@@ -751,6 +757,8 @@ export const invoiceRouter = router({
             subtotal,
             tax_rate: taxRate,
             total,
+            deposit_amount: depositAmount,
+            amount_due: amountDue,
             status: 'DRAFT',
           },
         });
