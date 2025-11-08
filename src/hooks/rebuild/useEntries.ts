@@ -21,7 +21,7 @@ export function useEntries() {
       refetch();
     },
     onError: (error) => {
-      toast.error(`Failed to delete routine: ${error.message}`);
+      toast.error(`We couldn't delete that routine. ${error.message}`);
     },
   });
 
@@ -31,7 +31,7 @@ export function useEntries() {
       refetch();
     },
     onError: (error) => {
-      toast.error(`Failed to submit summary: ${error.message}`);
+      toast.error(`We couldn't submit your summary right now. ${error.message}`);
     },
   });
 

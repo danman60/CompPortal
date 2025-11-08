@@ -242,7 +242,7 @@ export const entryRouter = router({
       if (routineCount === 0) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Cannot submit summary with no routines. Please create at least one routine before submitting.',
+          message: 'You\'ll need to create at least one routine before submitting your summary. Head to "Create Routine" to get started!',
         });
       }
 
@@ -257,7 +257,7 @@ export const entryRouter = router({
       if (!fullReservation) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'No approved reservation found for this studio and competition. Please request a reservation first.',
+          message: 'You don\'t have an approved reservation yet. Please request a reservation from the Competition Director first, or check back soon if you\'ve already requested one.',
         });
       }
 
@@ -292,7 +292,7 @@ export const entryRouter = router({
         if (existingSummary) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Summary already submitted for this reservation',
+            message: 'Your summary has already been submitted. The Competition Director will prepare your invoice within 72 hours. Well done!',
           });
         }
 
@@ -1076,7 +1076,7 @@ export const entryRouter = router({
       if (!studio) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Studio not found or does not belong to your organization'
+          message: 'We couldn\'t find your studio profile. Please contact support if this persists.'
         });
       }
 
@@ -1116,7 +1116,7 @@ export const entryRouter = router({
         if (!sizeCategoryCheck) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Invalid entry size category for your organization',
+            message: 'That entry size isn\'t available for this competition. Please choose from the available options.',
           });
         }
       }
@@ -1449,7 +1449,7 @@ export const entryRouter = router({
       if (!entry) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Entry not found',
+          message: 'We couldn\'t find that routine. It may have been deleted or moved.',
         });
       }
 
