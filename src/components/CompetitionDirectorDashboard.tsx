@@ -45,7 +45,7 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
   },
   {
     id: 'reservations',
-    href: '/dashboard/admin/reservations',
+    href: '/dashboard/reservations',
     icon: '📋',
     title: 'Reservations',
     description: 'Manage studio reservations',
