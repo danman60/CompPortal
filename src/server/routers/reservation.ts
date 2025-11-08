@@ -1768,9 +1768,17 @@ export const reservationRouter = router({
         });
       }
 
+      // Generate unique studio code (5 chars: 3 from name + 2 random)
+      const generateStudioCode = (name: string): string => {
+        const prefix = name.replace(/[^A-Z]/g, '').substring(0, 3).toUpperCase();
+        const random = Math.random().toString(36).substring(2, 4).toUpperCase();
+        return `${prefix}${random}`;
+      };
+
       // Atomic transaction: Create studio, reservation, invitation
       const result = await prisma.$transaction(async (tx) => {
         // 1. Create studio record (unclaimed status)
+        const studioCode = generateStudioCode(input.studioName);
         const studio = await tx.studios.create({
           data: {
             tenant_id: ctx.tenantId!,
@@ -1778,6 +1786,8 @@ export const reservationRouter = router({
             contact_name: input.contactName,
             contact_email: input.email,
             contact_phone: input.phone || null,
+            code: studioCode,
+            public_code: studioCode,
             status: 'unclaimed', // Will be 'active' after director claims account
           },
         });
@@ -1808,19 +1818,7 @@ export const reservationRouter = router({
           'cd_adjustment_increase' // CD-initiated reservation, skip idempotency checks
         );
 
-        // 4. Create studio invitation record with CD comments
-        const invitation = await tx.studio_invitations.create({
-          data: {
-            tenant_id: ctx.tenantId!,
-            studio_id: studio.id,
-            email: input.email,
-            status: 'pending',
-            comments: input.comments || null, // CD comments for email
-            created_by: ctx.userId,
-          },
-        });
-
-        // 5. Log activity
+        // 4. Log activity
         await logActivity({
           userId: ctx.userId!,
           tenantId: ctx.tenantId!,
@@ -1834,19 +1832,18 @@ export const reservationRouter = router({
             pre_approved_spaces: input.preApprovedSpaces,
             deposit_amount: input.depositAmount || 0,
             reservation_id: reservation.id,
-            invitation_id: invitation.id,
             has_comments: !!input.comments,
+            comments: input.comments || null, // Store CD comments for future invitation
           },
         });
 
-        return { studio, reservation, invitation };
+        return { studio, reservation };
       });
 
       return {
         studio: result.studio,
         reservation: result.reservation,
-        invitation: result.invitation,
-        message: `Studio "${input.studioName}" created with ${input.preApprovedSpaces} pre-approved spaces. Invitation ready to send.`,
+        message: `Studio "${input.studioName}" created with ${input.preApprovedSpaces} pre-approved spaces. Studio director can now claim their account.`,
       };
     }),
 });
