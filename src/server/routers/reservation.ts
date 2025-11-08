@@ -1788,7 +1788,9 @@ export const reservationRouter = router({
             contact_phone: input.phone || null,
             code: studioCode,
             public_code: studioCode,
-            status: 'unclaimed', // Will be 'active' after director claims account
+            email: input.email, // Set email for invitation sending
+            internal_notes: input.comments || null, // Store CD comments for invitation
+            status: 'approved', // Pre-approved status (will be 'active' after claiming)
           },
         });
 

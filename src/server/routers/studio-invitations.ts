@@ -264,7 +264,12 @@ export const studioInvitationsRouter = router({
           owner_id: null, // Only unclaimed
           status: 'approved',
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          public_code: true,
+          internal_notes: true, // CD comments for invitation
           tenants: {
             select: {
               name: true,
@@ -350,6 +355,26 @@ export const studioInvitationsRouter = router({
               <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
                 Great news! You've been pre-approved for <strong>${studio.tenants.name}</strong> competitions.
               </p>
+
+              ${
+                studio.internal_notes
+                  ? `
+              <!-- CD Personal Message -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 8px; color: #1e40af; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                      Personal Message from Competition Director
+                    </p>
+                    <p style="margin: 0; color: #1e3a8a; font-size: 16px; line-height: 1.6; white-space: pre-wrap;">
+${studio.internal_notes}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              `
+                  : ''
+              }
 
               <!-- Reservation Details Box -->
               <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
