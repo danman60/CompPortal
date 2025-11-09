@@ -1739,8 +1739,8 @@ export const entryRouter = router({
             entityId: input.id,
             details: {
               title: entry.title,
-              studio_name: entry.studios.name,
-              competition_name: entry.competitions.name,
+              studio_name: entry.studios?.name || 'Unknown',
+              competition_name: entry.competitions?.name || 'Unknown',
               deleted_by_role: 'studio_director',
               previous_status: entry.status,
             },
@@ -1757,8 +1757,8 @@ export const entryRouter = router({
           entry: {
             id: entry.id,
             title: entry.title,
-            studio_name: entry.studios.name,
-            competition_name: entry.competitions.name,
+            studio_name: entry.studios?.name || 'Unknown',
+            competition_name: entry.competitions?.name || 'Unknown',
           },
         };
       }
@@ -1813,8 +1813,8 @@ export const entryRouter = router({
           entityId: input.id,
           details: {
             title: entry.title,
-            studio_name: entry.studios.name,
-            competition_name: entry.competitions.name,
+            studio_name: entry.studios?.name || 'Unknown',
+            competition_name: entry.competitions?.name || 'Unknown',
             previous_status: entry.status,
           },
         });
@@ -1828,8 +1828,8 @@ export const entryRouter = router({
         entry: {
           id: entry.id,
           title: entry.title,
-          studio_name: entry.studios.name,
-          competition_name: entry.competitions.name,
+          studio_name: entry.studios?.name || 'Unknown',
+          competition_name: entry.competitions?.name || 'Unknown',
         },
       };
     }),
