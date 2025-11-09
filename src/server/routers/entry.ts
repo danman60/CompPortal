@@ -1432,18 +1432,25 @@ export const entryRouter = router({
     }),
 
   // Add participant to entry
-  addParticipant: publicProcedure
+  addParticipant: protectedProcedure
     .input(
       z.object({
         entryId: z.string().uuid(),
         participant: entryParticipantSchema,
       })
     )
-    .mutation(async ({ input }) => {
-      // Get tenant_id from the entry
+    .mutation(async ({ input, ctx }) => {
+      // Get entry with studio_id for ownership check
       const entry = await prisma.competition_entries.findUnique({
         where: { id: input.entryId },
-        select: { tenant_id: true },
+        select: {
+          tenant_id: true,
+          studio_id: true,
+          status: true,
+          reservations: {
+            select: { is_closed: true }
+          }
+        },
       });
 
       if (!entry) {
@@ -1451,6 +1458,39 @@ export const entryRouter = router({
           code: 'NOT_FOUND',
           message: 'We couldn\'t find that routine. It may have been deleted or moved.',
         });
+      }
+
+      // SECURITY: Verify SD owns this entry
+      if (ctx.userRole === 'studio_director') {
+        if (entry.studio_id !== ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only modify your own studio\'s routines',
+          });
+        }
+
+        // SECURITY: Block if reservation is closed
+        if (entry.reservations?.is_closed) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This reservation is closed. Contact the Competition Director.',
+          });
+        }
+      }
+
+      // Verify dancer belongs to same studio (for SD)
+      if (ctx.userRole === 'studio_director') {
+        const dancer = await prisma.dancers.findUnique({
+          where: { id: input.participant.dancer_id },
+          select: { studio_id: true },
+        });
+
+        if (!dancer || dancer.studio_id !== ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only add dancers from your own studio',
+          });
+        }
       }
 
       // Check if this dancer is already assigned to this entry
@@ -1488,13 +1528,57 @@ export const entryRouter = router({
     }),
 
   // Remove participant from entry
-  removeParticipant: publicProcedure
+  removeParticipant: protectedProcedure
     .input(
       z.object({
         participantId: z.string().uuid(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Get participant with entry details for ownership check
+      const participant = await prisma.entry_participants.findUnique({
+        where: { id: input.participantId },
+        select: {
+          id: true,
+          entry_id: true,
+          dancer_id: true,
+          competition_entries: {
+            select: {
+              studio_id: true,
+              status: true,
+              reservations: {
+                select: { is_closed: true }
+              }
+            }
+          }
+        },
+      });
+
+      if (!participant) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Participant not found',
+        });
+      }
+
+      // SECURITY: Verify SD owns this entry
+      if (ctx.userRole === 'studio_director') {
+        if (participant.competition_entries.studio_id !== ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only modify your own studio\'s routines',
+          });
+        }
+
+        // SECURITY: Block if reservation is closed
+        if (participant.competition_entries.reservations?.is_closed) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This reservation is closed. Contact the Competition Director.',
+          });
+        }
+      }
+
       await prisma.entry_participants.delete({
         where: { id: input.participantId },
       });
@@ -1503,9 +1587,46 @@ export const entryRouter = router({
     }),
 
   // Cancel an entry
-  cancel: publicProcedure
+  cancel: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Get entry for ownership check
+      const existingEntry = await prisma.competition_entries.findUnique({
+        where: { id: input.id },
+        select: {
+          studio_id: true,
+          status: true,
+          reservations: {
+            select: { is_closed: true }
+          }
+        },
+      });
+
+      if (!existingEntry) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Entry not found',
+        });
+      }
+
+      // SECURITY: Verify SD owns this entry
+      if (ctx.userRole === 'studio_director') {
+        if (existingEntry.studio_id !== ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only cancel your own studio\'s routines',
+          });
+        }
+
+        // SECURITY: Block if reservation is closed
+        if (existingEntry.reservations?.is_closed) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'This reservation is closed. Contact the Competition Director.',
+          });
+        }
+      }
+
       const entry = await prisma.competition_entries.update({
         where: { id: input.id },
         data: {
