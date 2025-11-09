@@ -167,7 +167,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
     : 0;
 
   const draftInvoicesCount = invoicesData?.invoices
-    ? invoicesData.invoices.filter((inv: any) => inv.status === 'DRAFT').length
+    ? invoicesData.invoices.filter((inv: any) => inv.invoiceStatus === 'DRAFT').length
     : 0;
 
   const badgeCount = pendingCount + summarizedCount + draftInvoicesCount;

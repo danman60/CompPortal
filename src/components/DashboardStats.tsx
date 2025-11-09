@@ -26,7 +26,9 @@ export default function DashboardStats({ role = 'studio_director' }: DashboardSt
     );
   }
 
-  const invoices = allInvoices?.invoices || [];
+  const allInvoiceRecords = allInvoices?.invoices || [];
+  // Filter to only include actual invoices (not studio-competition pairs without invoices)
+  const invoices = allInvoiceRecords.filter(inv => inv.hasInvoice || inv.invoiceStatus !== null);
   const unpaidCount = invoices.filter(inv => inv.reservation?.paymentStatus === 'pending' || !inv.reservation?.paymentStatus).length;
   const paidCount = invoices.filter(inv => inv.reservation?.paymentStatus === 'paid').length;
   const sentCount = invoices.filter(inv => inv.reservation?.paymentStatus === 'sent').length;
