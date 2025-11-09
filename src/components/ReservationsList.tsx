@@ -670,10 +670,10 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white mb-1">
-                          {(reservation as any).competitions?.name || 'Unknown Competition'}
+                          {(reservation as any).studios?.name || 'Unknown Studio'}
                         </h3>
                         <p className="text-gray-400 text-sm">
-                          {(reservation as any).studios?.name || 'Unknown Studio'}
+                          {(reservation as any).competitions?.name || 'Unknown Competition'}
                         </p>
                       </div>
                       <StatusBadge status={(reservation.status || 'pending') as any} />
