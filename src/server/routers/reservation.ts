@@ -1972,26 +1972,29 @@ export const reservationRouter = router({
           },
         });
 
-        // 4. Log activity
-        await logActivity({
-          userId: ctx.userId!,
-          tenantId: ctx.tenantId!,
-          action: 'studio_created_with_reservation',
-          entityType: 'studio',
-          entityId: studio.id,
-          details: {
-            studio_name: input.studioName,
-            contact_email: input.email,
-            competition_name: competition.name,
-            pre_approved_spaces: input.preApprovedSpaces,
-            deposit_amount: input.depositAmount || 0,
-            reservation_id: reservation.id,
-            has_comments: !!input.comments,
-            comments: input.comments || null, // Store CD comments for future invitation
-          },
-        });
-
         return { studio, reservation };
+      });
+
+      // 4. Log activity AFTER transaction completes (avoid nested transaction conflict)
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'studio_created_with_reservation',
+        entityType: 'studio',
+        entityId: result.studio.id,
+        details: {
+          studio_name: input.studioName,
+          contact_email: input.email,
+          competition_name: competition.name,
+          pre_approved_spaces: input.preApprovedSpaces,
+          deposit_amount: input.depositAmount || 0,
+          reservation_id: result.reservation.id,
+          has_comments: !!input.comments,
+          comments: input.comments || null,
+        },
+      }).catch((err) => {
+        // Don't fail the entire operation if activity logging fails
+        console.error('Failed to log studio creation activity:', err);
       });
 
       return {
