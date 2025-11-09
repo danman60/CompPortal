@@ -87,10 +87,12 @@ export function EntryCard({ entry }: EntryCardProps) {
           <span>{entry.dance_categories?.name}</span>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-300">
-          <span>👥</span>
-          <span>{entry.entry_participants?.length || 0} Dancer(s)</span>
-        </div>
+        {entry.classifications && (
+          <div className="flex items-center gap-2 text-sm text-gray-300">
+            <span>⭐</span>
+            <span className="font-semibold">{entry.classifications.name}</span>
+          </div>
+        )}
 
         {entry.age_groups && (
           <div className="flex items-center gap-2 text-sm text-gray-300">
@@ -98,26 +100,31 @@ export function EntryCard({ entry }: EntryCardProps) {
             <span>{entry.age_groups.name}</span>
           </div>
         )}
-      </div>
 
-      {/* Participants */}
-      {entry.entry_participants && entry.entry_participants.length > 0 && (
-        <div className="pt-4 border-t border-white/10 mb-4">
-          <div className="text-xs text-gray-400 mb-2">Dancers:</div>
-          <div className="space-y-1">
-            {entry.entry_participants.slice(0, 3).map((participant: any) => (
-              <div key={participant.id} className="text-sm text-white">
-                • {participant.dancer_name}
-              </div>
-            ))}
-            {entry.entry_participants.length > 3 && (
-              <div className="text-sm text-gray-400">
-                +{entry.entry_participants.length - 3} more
-              </div>
-            )}
-          </div>
+        <div className="relative group flex items-center gap-2 text-sm text-gray-300">
+          <span>👥</span>
+          <span className="font-semibold">{entry.entry_participants?.length || 0} dancer{entry.entry_participants?.length !== 1 ? 's' : ''}</span>
+
+          {/* Hover Tooltip with Dancer Names */}
+          {entry.entry_participants && entry.entry_participants.length > 0 && (
+            <div className="absolute left-0 top-6 z-50 hidden group-hover:block bg-gray-900 text-white text-sm p-3 rounded-lg shadow-xl min-w-[200px] border border-white/20">
+              <p className="font-semibold mb-2">Dancers:</p>
+              <ul className="space-y-1">
+                {entry.entry_participants.map((p: any, i: number) => (
+                  <li key={i}>{p.dancer_name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      )}
+
+        {entry.total_fee && (
+          <div className="flex items-center gap-2 text-sm font-bold text-purple-400">
+            <span>💰</span>
+            <span>${(entry.total_fee || 0).toFixed(2)}</span>
+          </div>
+        )}
+      </div>
 
       {/* Music Upload Status */}
       <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border ${

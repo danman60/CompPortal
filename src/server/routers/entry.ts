@@ -715,6 +715,13 @@ export const entryRouter = router({
                 name: true,
               },
             },
+            classifications: {
+              select: {
+                id: true,
+                name: true,
+                skill_level: true,
+              },
+            },
             entry_size_categories: {
               select: {
                 id: true,

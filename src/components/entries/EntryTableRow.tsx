@@ -73,9 +73,12 @@ export function EntryTableRow({
         {entry.dance_categories?.name || 'N/A'}
       </td>
       <td className="px-6 py-4 text-gray-300" style={{ width: '150px' }}>
+        {entry.classifications?.name || 'N/A'}
+      </td>
+      <td className="px-6 py-4 text-gray-300" style={{ width: '150px' }}>
         {entry.age_groups?.name || 'N/A'}
       </td>
-      <td className="px-6 py-4" style={{ width: '200px' }}>
+      <td className="px-6 py-4 text-gray-300" style={{ width: '120px' }}>
         <div className="text-white">
           {entry.entry_participants?.length || 0} dancer{entry.entry_participants?.length !== 1 ? 's' : ''}
         </div>
@@ -91,6 +94,9 @@ export function EntryTableRow({
             )}
           </div>
         )}
+      </td>
+      <td className="px-6 py-4 text-white font-semibold" style={{ width: '100px' }}>
+        ${(entry.total_fee || 0).toFixed(2)}
       </td>
       <td className="px-6 py-4" style={{ width: '120px' }}>
         <span className={`px-2 py-1 rounded text-xs inline-flex items-center gap-1 ${

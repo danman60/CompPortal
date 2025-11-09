@@ -42,8 +42,10 @@ export function EntriesTableView({
               <SortableHeader label="Routine #" sortKey="entry_number" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '120px' }} />
               <SortableHeader label="Title" sortKey="title" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '250px' }} />
               <SortableHeader label="Category" sortKey="dance_categories.name" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '150px' }} />
+              <SortableHeader label="Classification" sortKey="classifications.name" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '150px' }} />
               <SortableHeader label="Age Group" sortKey="age_groups.name" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '150px' }} />
-              <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '200px' }} />
+              <SortableHeader label="Dancers" sortKey="entry_participants" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '120px' }} />
+              <SortableHeader label="Fee" sortKey="total_fee" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '100px' }} />
               <SortableHeader label="Music" sortKey="music_file_url" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '120px' }} />
               <SortableHeader label="Status" sortKey="status" sortConfig={sortConfig} onSort={onRequestSort} className="bg-gray-800" style={{ width: '120px' }} />
               <th className="px-6 py-4 text-left text-sm font-semibold text-white bg-gray-800" style={{ width: '200px' }}>Actions</th>
