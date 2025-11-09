@@ -199,6 +199,9 @@ export const accountRecoveryRouter = router({
           email: studio.email,
           password: randomPassword,
           email_confirm: true, // Auto-confirm since we're recovering
+          user_metadata: {
+            tenant_id: studio.tenant_id, // SECURITY: Set tenant_id to prevent cross-tenant data leak
+          },
         });
 
         if (error || !newUser.user) {

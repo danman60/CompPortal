@@ -15,6 +15,40 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
+  // SECURITY: Block access if user has no tenant_id in metadata
+  const userTenantId = user.user_metadata?.tenant_id;
+  if (!userTenantId) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 p-8 max-w-md text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Account Setup Required</h1>
+          <p className="text-gray-300 mb-6">
+            Your account is missing required tenant information. This typically happens after account recovery.
+          </p>
+          <p className="text-gray-300 mb-6">
+            Please contact our support team to complete your account setup:
+          </p>
+          <a
+            href="mailto:techsupport@compsync.net"
+            className="inline-block bg-pink-600 hover:bg-pink-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+          >
+            Contact techsupport@compsync.net
+          </a>
+          <div className="mt-6">
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="text-gray-400 hover:text-white text-sm underline transition-colors"
+              >
+                Sign Out
+              </button>
+            </form>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   // Get current tenant from subdomain
   const tenant = await getTenantData();
   const tenantId = tenant?.id;

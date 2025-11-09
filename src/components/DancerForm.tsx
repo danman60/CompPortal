@@ -53,7 +53,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
     return existingDancer.entry_participants.filter(
       (ep: any) => {
         const status = ep.competition_entries?.status;
-        return status !== 'draft' && status !== 'cancelled';
+        return status !== 'draft' && status !== 'cancelled' && status !== 'withdrawn';
       }
     ).length;
   }, [existingDancer]);
