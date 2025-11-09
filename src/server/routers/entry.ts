@@ -1723,7 +1723,7 @@ export const entryRouter = router({
         await prisma.competition_entries.update({
           where: { id: input.id },
           data: {
-            status: 'cancelled',
+            status: 'withdrawn',
             updated_at: new Date()
           },
         });
@@ -1793,11 +1793,11 @@ export const entryRouter = router({
           where: { id: input.id },
         });
       } else {
-        // Soft delete: mark as cancelled
+        // Soft delete: mark as withdrawn
         await prisma.competition_entries.update({
           where: { id: input.id },
           data: {
-            status: 'cancelled',
+            status: 'withdrawn',
             updated_at: new Date(),
           },
         });
@@ -1824,7 +1824,7 @@ export const entryRouter = router({
 
       return {
         success: true,
-        message: input.hardDelete ? 'Entry permanently deleted' : 'Entry cancelled',
+        message: input.hardDelete ? 'Entry permanently deleted' : 'Entry withdrawn',
         entry: {
           id: entry.id,
           title: entry.title,
