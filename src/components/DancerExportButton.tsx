@@ -3,7 +3,7 @@
 import { trpc } from '@/lib/trpc';
 
 export default function DancerExportButton() {
-  const { data: existingDancers } = trpc.dancer.getAll.useQuery({ limit: 10000 });
+  const { data: existingDancers } = trpc.dancer.getAll.useQuery({ limit: 1000 });
 
   const exportDancers = () => {
     if (!existingDancers?.dancers || existingDancers.dancers.length === 0) {

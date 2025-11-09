@@ -434,7 +434,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
   // Filter reservations
   const filteredReservations = reservations.filter((reservation) => {
     const matchesStatus = filter === 'all' || reservation.status === filter;
-    const matchesCompetition = selectedCompetition === 'all' || (reservation as any).competitions_id === selectedCompetition;
+    const matchesCompetition = selectedCompetition === 'all' || (reservation as any).competition_id === selectedCompetition;
     return matchesStatus && matchesCompetition;
   });
 
@@ -1008,7 +1008,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                         {/* Create Routines Button (payment status check removed for SDs) */}
                         <Link
                           href={`/dashboard/entries`}
-                          className={`block w-full text-center px-6 py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                          className={`block w-full text-center px-6 py-4 rounded-lg font-semibold text-lg transition-all duration-200 mb-3 ${
                             ((reservation as any)._count?.competition_entries || 0) >= (reservation.spaces_confirmed || 0)
                               ? 'bg-white/10 text-gray-400 cursor-not-allowed border border-white/20'
                               : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:shadow-lg transform hover:scale-105'
@@ -1023,6 +1023,16 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                             ? '✅ All Routines Allocated'
                             : 'Create Routines'}
                         </Link>
+
+                        {/* SD Feature: Request More Spaces button */}
+                        {['approved'].includes(reservation.status || '') && (
+                          <button
+                            onClick={() => handleIncreaseSpaces(reservation)}
+                            className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                          >
+                            ➕ Request More Spaces
+                          </button>
+                        )}
                       </div>
                     ) : (
                       /* Competition Director: Simple Routine Count */
@@ -1058,16 +1068,6 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                             ? '⚙️ Reducing...'
                             : '🔽 Reduce Capacity'}
                         </button>
-
-                        {/* SD Feature: Request More Spaces button */}
-                        {!isCompetitionDirector && ['approved'].includes(reservation.status || '') && (
-                          <button
-                            onClick={() => handleIncreaseSpaces(reservation)}
-                            className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
-                          >
-                            ➕ Request More Spaces
-                          </button>
-                        )}
 
                         {/* CD Feature: Edit Spaces & Record Deposit buttons */}
                         {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
