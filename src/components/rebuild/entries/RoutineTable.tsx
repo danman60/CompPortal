@@ -17,6 +17,7 @@ interface Entry {
   dance_categories?: { name: string };
   entry_size_categories?: { name: string };
   age_groups?: { name: string };
+  classifications?: { name: string };
   entry_participants?: Array<{ dancer_name: string }>;
   [key: string]: any;
 }
@@ -99,8 +100,8 @@ export function RoutineTable({ entries, onDelete, reservationClosed = false }: R
             className="bg-white/5"
           />
           <SortableHeader
-            label="Title Status"
-            sortKey="is_title_upgrade"
+            label="Classification"
+            sortKey="classifications.name"
             sortConfig={sortConfig}
             onSort={requestSort}
             className="bg-white/5"
@@ -157,13 +158,7 @@ export function RoutineTable({ entries, onDelete, reservationClosed = false }: R
               )}
             </TableCell>
             <TableCell>
-              {entry.is_title_upgrade ? (
-                <span className="inline-flex items-center px-2 py-1 bg-yellow-500/20 border border-yellow-400/50 rounded-full text-yellow-200 text-xs font-semibold">
-                  +$30 Upgrade
-                </span>
-              ) : (
-                <span className="text-white/40">—</span>
-              )}
+              <span className="text-white/80">{entry.classifications?.name || '—'}</span>
             </TableCell>
             <TableCell align="right">
               <span className="text-white font-medium">

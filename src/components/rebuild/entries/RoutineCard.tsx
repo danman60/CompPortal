@@ -15,6 +15,7 @@ interface Entry {
   dance_categories?: { name: string };
   entry_size_categories?: { name: string };
   age_groups?: { name: string };
+  classifications?: { name: string };
   entry_participants?: Array<{ dancer_name: string; dancer_age?: number | null }>;
   music_file_url?: string;
   classification_exception_requests?: Array<{
@@ -103,6 +104,12 @@ export function RoutineCard({ entry, onDelete, reservationClosed = false }: Rout
             <span>{entry.dance_categories.name}</span>
           </div>
         )}
+        {entry.classifications?.name && (
+          <div className="flex items-center gap-2">
+            <span>⭐</span>
+            <span className="font-semibold">{entry.classifications.name}</span>
+          </div>
+        )}
         {entry.entry_size_categories?.name && (
           <div className="flex items-center gap-2">
             <span>👥</span>
@@ -113,6 +120,12 @@ export function RoutineCard({ entry, onDelete, reservationClosed = false }: Rout
           <div className="flex items-center gap-2">
             <span>📅</span>
             <span>Age {entry.routine_age}</span>
+          </div>
+        )}
+        {entry.total_fee !== null && entry.total_fee !== undefined && (
+          <div className="flex items-center gap-2">
+            <span>💰</span>
+            <span className="font-bold text-purple-300">${(typeof entry.total_fee === 'number' ? entry.total_fee : Number(entry.total_fee)).toFixed(2)}</span>
           </div>
         )}
         {entry.is_title_upgrade && (
