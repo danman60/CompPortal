@@ -42,6 +42,47 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // Refresh session if expired (do this early for dashboard check)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Block dashboard access from base domain (compsync.net)
+  // Reserve compsync.net for marketing/landing pages only
+  const isBaseDomain = !subdomain && hostname.includes('compsync.net');
+  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
+
+  if (isBaseDomain && isDashboardRoute) {
+    // If user is logged in, redirect to their tenant subdomain
+    if (user) {
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (userProfile?.tenant_id) {
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('subdomain')
+          .eq('id', userProfile.tenant_id)
+          .single();
+
+        if (tenant?.subdomain) {
+          // Redirect to correct tenant subdomain
+          const url = request.nextUrl.clone();
+          url.hostname = `${tenant.subdomain}.compsync.net`;
+          return NextResponse.redirect(url);
+        }
+      }
+    }
+
+    // No user or no tenant → redirect to select-tenant
+    const url = request.nextUrl.clone();
+    url.pathname = '/select-tenant';
+    return NextResponse.redirect(url);
+  }
+
   // Redirect to tenant selection if no tenant detected (except for public routes)
   const publicRoutes = ['/login', '/signup', '/select-tenant', '/api/tenants', '/api/auth'];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
@@ -59,11 +100,6 @@ export async function updateSession(request: NextRequest) {
     requestHeaders.set('x-tenant-id', tenantId);
     requestHeaders.set('x-tenant-data', JSON.stringify(tenantData));
   }
-
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   // Check if site is paused (maintenance mode)
   // Only check for subdomain users (not compsync.net main landing)
