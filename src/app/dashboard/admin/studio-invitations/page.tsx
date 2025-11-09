@@ -23,7 +23,37 @@ export default function StudioInvitationsPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Quick Add Studio modal state (SA needs tenant selector)
+  const [addStudioModal, setAddStudioModal] = useState<{
+    isOpen: boolean;
+    tenantId: string;
+    studioName: string;
+    contactName: string;
+    email: string;
+    phone: string;
+    competitionId: string;
+    preApprovedSpaces: string;
+    depositAmount: string;
+    comments: string;
+  } | null>(null);
+
   const { data, refetch, isLoading} = trpc.studioInvitations.getAllStudios.useQuery();
+
+  // Fetch tenants for SA dropdown
+  const { data: tenantsData } = trpc.user.getAllTenants.useQuery();
+  const tenants = tenantsData?.tenants || [];
+
+  // Fetch competitions for selected tenant
+  const { data: competitionsData } = trpc.competition.getAll.useQuery(
+    {},
+    { enabled: !!addStudioModal?.tenantId }
+  );
+  const allCompetitions = competitionsData?.competitions || [];
+
+  // Filter competitions by selected tenant
+  const competitions = addStudioModal?.tenantId
+    ? allCompetitions.filter(c => c.tenant_id === addStudioModal.tenantId)
+    : [];
   const sendInvitationsMutation = trpc.studioInvitations.sendInvitations.useMutation({
     onSuccess: (result) => {
       toast.success(`Sent ${result.sent} invitation(s)`);
@@ -37,6 +67,18 @@ export default function StudioInvitationsPage() {
     onError: (error) => {
       toast.error(error.message);
       setSendingInvites(false);
+    },
+  });
+
+  // Quick Add Studio mutation
+  const createStudioMutation = trpc.reservation.createStudioWithReservation.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setAddStudioModal(null);
+      refetch(); // Refresh studios list
+    },
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 
@@ -177,6 +219,72 @@ export default function StudioInvitationsPage() {
     });
   };
 
+  // Quick Add Studio handlers
+  const handleAddStudio = () => {
+    setAddStudioModal({
+      isOpen: true,
+      tenantId: tenants[0]?.id || '',
+      studioName: '',
+      contactName: '',
+      email: '',
+      phone: '',
+      competitionId: '',
+      preApprovedSpaces: '1',
+      depositAmount: '',
+      comments: '',
+    });
+  };
+
+  const confirmAddStudio = () => {
+    if (!addStudioModal) return;
+
+    // Validation
+    if (!addStudioModal.tenantId) {
+      toast.error('Please select a tenant');
+      return;
+    }
+    if (!addStudioModal.studioName.trim()) {
+      toast.error('Studio name is required');
+      return;
+    }
+    if (!addStudioModal.contactName.trim()) {
+      toast.error('Contact name is required');
+      return;
+    }
+    if (!addStudioModal.email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!addStudioModal.competitionId) {
+      toast.error('Please select a competition');
+      return;
+    }
+    const spaces = parseInt(addStudioModal.preApprovedSpaces);
+    if (isNaN(spaces) || spaces < 1) {
+      toast.error('Pre-approved spaces must be at least 1');
+      return;
+    }
+
+    const deposit = addStudioModal.depositAmount
+      ? parseFloat(addStudioModal.depositAmount)
+      : undefined;
+    if (deposit !== undefined && (isNaN(deposit) || deposit < 0)) {
+      toast.error('Invalid deposit amount');
+      return;
+    }
+
+    createStudioMutation.mutate({
+      studioName: addStudioModal.studioName,
+      contactName: addStudioModal.contactName,
+      email: addStudioModal.email,
+      phone: addStudioModal.phone || undefined,
+      competitionId: addStudioModal.competitionId,
+      preApprovedSpaces: spaces,
+      depositAmount: deposit,
+      comments: addStudioModal.comments || undefined,
+    });
+  };
+
   const SortButton = ({ field, label }: { field: SortField; label: string }) => (
     <button
       onClick={() => handleSort(field)}
@@ -240,6 +348,27 @@ export default function StudioInvitationsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Quick Add Studio Panel */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Quick Add Studio</h2>
+                <p className="text-white/60">
+                  Create a new studio with pre-approved reservation and send claim invitation
+                </p>
+              </div>
+              <button
+                onClick={handleAddStudio}
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg flex items-center gap-2"
+              >
+                <span>+</span>
+                <span>Add Studio with Invitation</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Controls */}
@@ -465,6 +594,229 @@ export default function StudioInvitationsPage() {
         <div className="mt-6 text-center text-sm text-gray-400">
           Showing {filteredAndSortedStudios.length} of {data?.studios.length || 0} studios
         </div>
+
+        {/* Quick Add Studio Modal */}
+        {addStudioModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <h3 className="text-2xl font-bold text-white mb-2">+ Add Studio with Invitation</h3>
+              <p className="text-gray-400 mb-6">
+                Create a new studio, assign pre-approved spaces, and send an invitation email
+              </p>
+
+              <div className="space-y-6">
+                {/* Tenant Selection (SA Only) */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-lg font-semibold text-white mb-4">Select Tenant</h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Competition Tenant <span className="text-red-400">*</span>
+                    </label>
+                    <select
+                      value={addStudioModal.tenantId}
+                      onChange={(e) => {
+                        setAddStudioModal({
+                          ...addStudioModal,
+                          tenantId: e.target.value,
+                          competitionId: '', // Reset competition when tenant changes
+                        });
+                      }}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      {tenants.map((tenant) => (
+                        <option key={tenant.id} value={tenant.id} className="bg-gray-900 text-white">
+                          {tenant.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Studio Information Section */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-lg font-semibold text-white mb-4">Studio Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Studio Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addStudioModal.studioName}
+                        onChange={(e) =>
+                          setAddStudioModal({
+                            ...addStudioModal,
+                            studioName: e.target.value,
+                          })
+                        }
+                        placeholder="ABC Dance Studio"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Contact Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addStudioModal.contactName}
+                        onChange={(e) =>
+                          setAddStudioModal({
+                            ...addStudioModal,
+                            contactName: e.target.value,
+                          })
+                        }
+                        placeholder="Jane Smith"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Email <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        value={addStudioModal.email}
+                        onChange={(e) =>
+                          setAddStudioModal({
+                            ...addStudioModal,
+                            email: e.target.value,
+                          })
+                        }
+                        placeholder="contact@studio.com"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Phone <span className="text-gray-500">(optional)</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={addStudioModal.phone}
+                        onChange={(e) =>
+                          setAddStudioModal({
+                            ...addStudioModal,
+                            phone: e.target.value,
+                          })
+                        }
+                        placeholder="(555) 123-4567"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reservation Details Section */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-lg font-semibold text-white mb-4">Reservation Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Competition <span className="text-red-400">*</span>
+                      </label>
+                      <select
+                        value={addStudioModal.competitionId}
+                        onChange={(e) =>
+                          setAddStudioModal({
+                            ...addStudioModal,
+                            competitionId: e.target.value,
+                          })
+                        }
+                        disabled={!addStudioModal.tenantId || competitions.length === 0}
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                      >
+                        <option value="" className="bg-gray-900 text-white">
+                          {!addStudioModal.tenantId ? 'Select tenant first' : competitions.length === 0 ? 'No competitions for this tenant' : 'Select a competition'}
+                        </option>
+                        {competitions.map((comp) => (
+                          <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
+                            {comp.name} ({comp.year})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Pre-Approved Spaces <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={addStudioModal.preApprovedSpaces}
+                        onChange={(e) =>
+                          setAddStudioModal({
+                            ...addStudioModal,
+                            preApprovedSpaces: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Deposit Amount <span className="text-gray-500">(optional)</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={addStudioModal.depositAmount}
+                          onChange={(e) =>
+                            setAddStudioModal({
+                              ...addStudioModal,
+                              depositAmount: e.target.value,
+                            })
+                          }
+                          placeholder="0.00"
+                          className="w-full pl-8 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invitation Comments Section */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-lg font-semibold text-white mb-4">Invitation Message</h4>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Comments <span className="text-gray-500">(included in invitation email)</span>
+                  </label>
+                  <textarea
+                    value={addStudioModal.comments}
+                    onChange={(e) =>
+                      setAddStudioModal({
+                        ...addStudioModal,
+                        comments: e.target.value,
+                      })
+                    }
+                    placeholder="Optional message to include in the invitation email..."
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px]"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6 pt-6 border-t border-white/10">
+                <button
+                  onClick={() => setAddStudioModal(null)}
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmAddStudio}
+                  disabled={createStudioMutation.isPending}
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-purple-500/50 disabled:to-pink-500/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+                >
+                  {createStudioMutation.isPending ? '⚙️ Creating...' : '✅ Create Studio & Send Invitation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -145,6 +145,12 @@ export const studioRouter = router({
         },
       });
 
+      // SECURITY: Update auth.users.user_metadata with tenant_id
+      // Required because dashboard/page.tsx checks user.user_metadata.tenant_id
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: { tenant_id: studio.tenant_id }
+      });
+
       // Activity logging
       try {
         await logActivity({
