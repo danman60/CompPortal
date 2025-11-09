@@ -364,10 +364,32 @@ export const competitionRouter = router({
         ...data
       } = input.data;
 
+      // CAPACITY SYNC: If venue_capacity is being updated, sync reservation tokens
+      let capacityUpdate = {};
+      if (data.venue_capacity !== undefined) {
+        const current = await prisma.competitions.findUnique({
+          where: { id: input.id },
+          select: { venue_capacity: true, total_reservation_tokens: true, available_reservation_tokens: true },
+        });
+
+        if (current && current.venue_capacity !== null) {
+          const capacityDiff = data.venue_capacity - current.venue_capacity;
+
+          if (capacityDiff !== 0) {
+            // Update both token fields by the same amount
+            capacityUpdate = {
+              total_reservation_tokens: { increment: capacityDiff },
+              available_reservation_tokens: { increment: capacityDiff },
+            };
+          }
+        }
+      }
+
       const competition = await prisma.competitions.update({
         where: { id: input.id },
         data: {
           ...data,
+          ...capacityUpdate, // Apply token sync if venue_capacity changed
           registration_opens: registration_opens
             ? new Date(registration_opens)
             : undefined,

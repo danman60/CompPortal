@@ -14,7 +14,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
-  isCompetitionDirector?: boolean; // If true, show Edit Spaces and Record Deposit buttons
+  isCompetitionDirector?: boolean; // If true, show Edit Spaces and Add Deposit buttons
 }
 
 export default function ReservationsList({ isStudioDirector = false, isCompetitionDirector = false }: ReservationsListProps) {
@@ -51,7 +51,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     reason: string;
   } | null>(null);
 
-  // Record Deposit modal state (CD feature)
+  // Add Deposit modal state (CD feature)
   const [depositModal, setDepositModal] = useState<{
     isOpen: boolean;
     reservationId: string;
@@ -215,7 +215,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     },
   });
 
-  // Record Deposit mutation (CD feature)
+  // Add Deposit mutation (CD feature)
   const recordDepositMutation = trpc.reservation.recordDeposit.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
@@ -344,7 +344,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     });
   };
 
-  // CD Feature: Record Deposit handler
+  // CD Feature: Add Deposit handler
   const handleRecordDeposit = (reservation: any) => {
     setDepositModal({
       isOpen: true,
@@ -702,52 +702,6 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                     )}
                   </div>
 
-                  {/* Middle: Capacity Tracking (Competition Directors Only) */}
-                  {!isStudioDirector && (
-                    <div className="flex flex-col justify-center">
-                      <div className="text-center mb-4">
-                        <div className="text-sm text-gray-400 mb-2">Capacity</div>
-                        <div className={`text-4xl font-bold ${getCapacityColor(capacityPercentage)}`}>
-                          {capacityPercentage}%
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Routines Requested:</span>
-                          <span className="text-white font-semibold">{reservation.spaces_requested}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Routines Confirmed:</span>
-                          <span className="text-green-400 font-semibold">
-                            {reservation.spaces_confirmed || 0}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Remaining:</span>
-                          <span className="text-yellow-400 font-semibold">
-                            {reservation.spaces_requested - (reservation.spaces_confirmed || 0)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="mt-4">
-                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-500 ${
-                              capacityPercentage === 100
-                                ? 'bg-green-500'
-                                : capacityPercentage >= 50
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                            }`}
-                            style={{ width: `${capacityPercentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Middle: Simple Summary (Studio Directors Only) */}
                   {isStudioDirector && (
@@ -1069,7 +1023,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                             : '🔽 Reduce Capacity'}
                         </button>
 
-                        {/* CD Feature: Edit Spaces & Record Deposit buttons */}
+                        {/* CD Feature: Edit Spaces & Add Deposit buttons */}
                         {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
                           <div className="space-y-3">
                             <button
@@ -1082,7 +1036,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                               onClick={() => handleRecordDeposit(reservation)}
                               className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
                             >
-                              💰 Record Deposit
+                              💰 Add Deposit
                             </button>
                           </div>
                         )}
@@ -1327,14 +1281,14 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
         </div>
       )}
 
-      {/* Record Deposit Modal (CD Feature) */}
+      {/* Add Deposit Modal (CD Feature) */}
       {depositModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">💰 Record Deposit</h3>
+            <h3 className="text-xl font-bold text-white mb-4">💰 Add Deposit</h3>
 
             <p className="text-gray-300 mb-4">
-              Recording deposit for <span className="font-semibold text-white">{depositModal.studioName}</span>
+              Adding deposit for <span className="font-semibold text-white">{depositModal.studioName}</span>
             </p>
 
             <div className="bg-white/5 rounded-lg p-4 mb-4 space-y-2">
@@ -1435,7 +1389,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                 disabled={!depositModal.depositAmount || recordDepositMutation.isPending}
                 className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-green-500/50 disabled:to-green-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
               >
-                {recordDepositMutation.isPending ? '⚙️ Recording...' : '✅ Record Deposit'}
+                {recordDepositMutation.isPending ? '⚙️ Adding...' : '✅ Add Deposit'}
               </button>
             </div>
           </div>
