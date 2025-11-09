@@ -24,6 +24,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   const [showClassificationModal, setShowClassificationModal] = useState(false);
   const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const [prefilledRoutineId, setPrefilledRoutineId] = useState<string | null>(null);
+  const [initialParticipants, setInitialParticipants] = useState<Array<{ id: string; dancer_id: string }>>([]);
   const reservationId = searchParams.get('reservation');
   const importSessionId = searchParams.get('importSession');
 
@@ -283,6 +284,13 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
     // Set selected dancers from participants
     if (existingEntry.entry_participants && existingEntry.entry_participants.length > 0) {
+      // Save initial participants for diffing on save
+      const initialParts = existingEntry.entry_participants.map((p: any) => ({
+        id: p.id,
+        dancer_id: p.dancer_id,
+      }));
+      setInitialParticipants(initialParts);
+
       existingEntry.entry_participants.forEach((p: any) => {
         const dancer = dancers.find(d => d.id === p.dancer_id);
         if (dancer) {
@@ -321,6 +329,9 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
       toast.error(`Failed: ${error.message}`);
     },
   });
+
+  const addParticipantMutation = trpc.entry.addParticipant.useMutation();
+  const removeParticipantMutation = trpc.entry.removeParticipant.useMutation();
 
   const updateIndexMutation = trpc.importSession.updateIndex.useMutation();
   const deleteRoutineMutation = trpc.importSession.deleteRoutine.useMutation();
@@ -402,11 +413,46 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
       };
 
       if (isEditMode) {
-        // Update existing entry
+        // EDIT MODE: Handle participant changes separately from entry update
+
+        // Get current participant dancer IDs
+        const currentDancerIds = new Set(formHook.form.selectedDancers.map(d => d.dancer_id));
+        const initialDancerIds = new Set(initialParticipants.map(p => p.dancer_id));
+
+        // Find removed participants (in initial but not in current)
+        const removedParticipants = initialParticipants.filter(p => !currentDancerIds.has(p.dancer_id));
+
+        // Find added dancers (in current but not in initial)
+        const addedDancers = formHook.form.selectedDancers.filter(d => !initialDancerIds.has(d.dancer_id));
+
+        // Remove participants that were deselected
+        for (const removed of removedParticipants) {
+          await removeParticipantMutation.mutateAsync({
+            participantId: removed.id,
+          });
+        }
+
+        // Add newly selected dancers
+        for (let idx = 0; idx < addedDancers.length; idx++) {
+          const dancer = addedDancers[idx];
+          await addParticipantMutation.mutateAsync({
+            entryId: entryId!,
+            participant: {
+              dancer_id: dancer.dancer_id,
+              dancer_name: dancer.dancer_name,
+              dancer_age: dancer.dancer_age || undefined,
+              display_order: idx,
+            },
+          });
+        }
+
+        // Update entry fields (participants are omitted by the mutation)
+        const { participants, ...entryDataWithoutParticipants } = entryData;
         await updateMutation.mutateAsync({
           id: entryId!,
-          data: entryData as any,
+          data: entryDataWithoutParticipants as any,
         });
+
         toast.success('Routine updated successfully!');
       } else {
         // Create new entry
