@@ -84,6 +84,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   const createDancer = trpc.dancer.create.useMutation({
     onSuccess: () => {
       utils.dancer.getAll.invalidate();
+      utils.dancer.getByStudio.invalidate(); // Invalidate entry form dancer cache
       toast.success('Dancer created successfully');
       router.push('/dashboard/dancers');
     },
@@ -93,6 +94,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   const updateDancer = trpc.dancer.update.useMutation({
     onSuccess: () => {
       utils.dancer.getAll.invalidate();
+      utils.dancer.getByStudio.invalidate(); // Invalidate entry form dancer cache
       utils.dancer.getById.invalidate({ id: dancerId! });
       toast.success('Dancer updated successfully');
       router.push('/dashboard/dancers');
@@ -103,6 +105,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   const deleteMutation = trpc.dancer.delete.useMutation({
     onSuccess: () => {
       utils.dancer.getAll.invalidate();
+      utils.dancer.getByStudio.invalidate(); // Invalidate entry form dancer cache
       toast.success('Dancer deleted successfully');
       router.push('/dashboard/dancers');
     },
@@ -112,6 +115,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   const archiveMutation = trpc.dancer.archive.useMutation({
     onSuccess: () => {
       utils.dancer.getAll.invalidate();
+      utils.dancer.getByStudio.invalidate(); // Invalidate entry form dancer cache
       utils.dancer.getById.invalidate({ id: dancerId! });
       toast.success('Dancer archived successfully');
       router.push('/dashboard/dancers');
