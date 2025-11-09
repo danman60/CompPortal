@@ -353,7 +353,7 @@ export const competitionRouter = router({
         data: competitionInputSchema.partial(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const {
         registration_opens,
         registration_closes,
@@ -367,8 +367,14 @@ export const competitionRouter = router({
       // CAPACITY SYNC: If venue_capacity is being updated, sync reservation tokens
       let capacityUpdate = {};
       if (data.venue_capacity !== undefined) {
+        // SECURITY: Filter by tenant_id to prevent cross-tenant updates
+        const where: any = { id: input.id };
+        if (ctx.tenantId) {
+          where.tenant_id = ctx.tenantId;
+        }
+
         const current = await prisma.competitions.findUnique({
-          where: { id: input.id },
+          where,
           select: { venue_capacity: true, total_reservation_tokens: true, available_reservation_tokens: true },
         });
 
@@ -385,8 +391,14 @@ export const competitionRouter = router({
         }
       }
 
+      // SECURITY: Filter by tenant_id to prevent cross-tenant updates
+      const whereUpdate: any = { id: input.id };
+      if (ctx.tenantId) {
+        whereUpdate.tenant_id = ctx.tenantId;
+      }
+
       const competition = await prisma.competitions.update({
-        where: { id: input.id },
+        where: whereUpdate,
         data: {
           ...data,
           ...capacityUpdate, // Apply token sync if venue_capacity changed

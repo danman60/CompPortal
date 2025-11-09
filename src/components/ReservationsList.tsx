@@ -652,7 +652,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
           ) : null}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredReservations.map((reservation) => {
             const capacityPercentage = getCapacityPercentage(
               reservation.spaces_requested,
@@ -1004,24 +1004,6 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                               : '⏳'}
                           </div>
                         </div>
-
-                        {/* Reduce Capacity Button */}
-                        <button
-                          onClick={() =>
-                            handleReduceCapacity(
-                              reservation.id,
-                              (reservation as any).studios?.name || 'studio',
-                              reservation.spaces_confirmed || 0,
-                              (reservation as any)._count?.competition_entries || 0
-                            )
-                          }
-                          disabled={processingId === reservation.id}
-                          className="w-full bg-orange-500/20 hover:bg-orange-500/30 disabled:bg-orange-500/10 text-orange-400 border border-orange-400/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:cursor-not-allowed mb-3"
-                        >
-                          {processingId === reservation.id && reduceCapacityMutation.isPending
-                            ? '⚙️ Reducing...'
-                            : '🔽 Reduce Capacity'}
-                        </button>
 
                         {/* CD Feature: Edit Spaces & Add Deposit buttons */}
                         {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (

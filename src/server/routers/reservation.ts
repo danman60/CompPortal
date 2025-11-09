@@ -1950,14 +1950,27 @@ export const reservationRouter = router({
           },
         });
 
-        // 3. Reserve capacity via CapacityService (with CD adjustment reason)
-        await capacityService.reserve(
-          input.competitionId,
-          input.preApprovedSpaces,
-          reservation.id,
-          ctx.userId!,
-          'cd_adjustment_increase' // CD-initiated reservation, skip idempotency checks
-        );
+        // 3. Reserve capacity directly (avoid nested transaction with capacityService)
+        await tx.competitions.update({
+          where: { id: input.competitionId },
+          data: {
+            available_reservation_tokens: {
+              decrement: input.preApprovedSpaces,
+            },
+          },
+        });
+
+        // Log capacity change
+        await tx.capacity_ledger.create({
+          data: {
+            tenant_id: ctx.tenantId!,
+            competition_id: input.competitionId,
+            reservation_id: reservation.id,
+            change_amount: -input.preApprovedSpaces, // Negative = capacity reserved/consumed
+            reason: 'cd_adjustment_increase',
+            created_by: ctx.userId!,
+          },
+        });
 
         // 4. Log activity
         await logActivity({
