@@ -144,6 +144,7 @@ export const dancerRouter = router({
                 select: {
                   id: true,
                   title: true,
+                  status: true,
                   competition_id: true,
                   competitions: {
                     select: {
