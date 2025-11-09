@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
@@ -333,28 +334,69 @@ export const dancerRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { date_of_birth, classification_id, ...data } = input.data;
 
-      // Phase 2 spec lines 73-82: Prevent classification change if dancer has entries
+      // Prevent classification change if dancer has SUBMITTED entries (allow for draft-only)
       if (classification_id) {
         const existingDancer = await prisma.dancers.findUnique({
           where: { id: input.id },
           select: {
             classification_id: true,
-            _count: {
+            entry_participants: {
               select: {
-                entry_participants: true
-              }
-            }
+                id: true,
+                competition_entries: {
+                  select: {
+                    id: true,
+                    status: true,
+                    title: true,
+                  },
+                },
+              },
+            },
           },
         });
 
         if (!existingDancer) {
-          throw new Error('Dancer not found');
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Dancer not found',
+          });
         }
 
-        // If dancer has entries and trying to change classification
-        if (existingDancer._count.entry_participants > 0 &&
-            existingDancer.classification_id !== classification_id) {
-          throw new Error('Cannot change classification - dancer has existing entries');
+        // If trying to change classification, check for SUBMITTED entries only
+        if (existingDancer.classification_id !== classification_id) {
+          // Count only submitted/confirmed/scheduled entries (NOT drafts or cancelled)
+          const submittedEntries = existingDancer.entry_participants.filter(
+            (ep) => {
+              const status = ep.competition_entries.status;
+              return status !== 'draft' && status !== 'cancelled';
+            }
+          );
+
+          if (submittedEntries.length > 0) {
+            const entryTitles = submittedEntries
+              .map(ep => ep.competition_entries.title)
+              .slice(0, 3)
+              .join(', ');
+
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Cannot change classification - dancer has ${submittedEntries.length} submitted ${submittedEntries.length === 1 ? 'entry' : 'entries'} (${entryTitles}${submittedEntries.length > 3 ? '...' : ''}). Remove dancer from submitted routines first, or contact the Competition Director.`,
+            });
+          }
+
+          // If dancer has ONLY draft entries, allow the change (log for auditing)
+          const draftCount = existingDancer.entry_participants.filter(
+            (ep) => ep.competition_entries.status === 'draft'
+          ).length;
+
+          if (draftCount > 0) {
+            logger.info('Allowing classification change for dancer with draft entries only', {
+              dancerId: input.id,
+              draftEntriesCount: draftCount,
+              oldClassification: existingDancer.classification_id,
+              newClassification: classification_id,
+            });
+          }
         }
       }
 

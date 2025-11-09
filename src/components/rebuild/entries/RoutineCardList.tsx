@@ -19,13 +19,14 @@ interface Entry {
 interface RoutineCardListProps {
   entries: Entry[];
   onDelete: (id: string) => Promise<void>;
+  reservationClosed?: boolean;
 }
 
 /**
  * Grid layout for routine cards
  * Responsive: 1 col mobile, 2 col tablet, 3 col desktop
  */
-export function RoutineCardList({ entries, onDelete }: RoutineCardListProps) {
+export function RoutineCardList({ entries, onDelete, reservationClosed = false }: RoutineCardListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {entries.map((entry, index) => (
@@ -34,7 +35,7 @@ export function RoutineCardList({ entries, onDelete }: RoutineCardListProps) {
           className="animate-fadeInUp"
           style={{ animationDelay: `${index * 0.05}s` }}
         >
-          <RoutineCard entry={entry} onDelete={onDelete} />
+          <RoutineCard entry={entry} onDelete={onDelete} reservationClosed={reservationClosed} />
         </div>
       ))}
     </div>

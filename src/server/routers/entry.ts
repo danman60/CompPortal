@@ -1677,37 +1677,114 @@ export const entryRouter = router({
       return entry;
     }),
 
-  // Delete an entry (Competition Directors and Super Admins only)
+  // Delete an entry (Studio Directors for drafts, Competition Directors and Super Admins for all)
   delete: protectedProcedure
     .input(z.object({
       id: z.string().uuid(),
       hardDelete: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Only CDs and super admins can delete entries
-      if (!isAdmin(ctx.userRole)) {
-        throw new Error('Only competition directors and super admins can delete entries');
-      }
-
+      // Fetch entry with reservation status
       const entry = await prisma.competition_entries.findUnique({
         where: { id: input.id },
         select: {
           id: true,
           title: true,
+          status: true,
           studio_id: true,
           competition_id: true,
-          status: true,
-          studios: {
-            select: { name: true },
+          reservations: {
+            select: {
+              is_closed: true,
+              status: true,
+            },
           },
-          competitions: {
-            select: { name: true },
-          },
+          studios: { select: { name: true } },
+          competitions: { select: { name: true } },
         },
       });
 
       if (!entry) {
-        throw new Error('Entry not found');
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Entry not found',
+        });
+      }
+
+      // Check if SD owns this entry and it's a draft
+      const isSDBelongsToStudio =
+        ctx.userRole === 'studio_director' &&
+        ctx.studioId === entry.studio_id;
+      const isDraftStatus = entry.status === 'draft';
+      const isReservationOpen = !entry.reservations?.is_closed;
+
+      // Allow SDs to soft-delete their own draft routines if reservation is open
+      if (isSDBelongsToStudio && isDraftStatus && isReservationOpen) {
+        await prisma.competition_entries.update({
+          where: { id: input.id },
+          data: {
+            status: 'cancelled',
+            updated_at: new Date()
+          },
+        });
+
+        // Log activity
+        try {
+          await logActivity({
+            userId: ctx.userId,
+            tenantId: ctx.tenantId!,
+            studioId: entry.studio_id,
+            action: 'entry.soft_delete',
+            entityType: 'entry',
+            entityId: input.id,
+            details: {
+              title: entry.title,
+              studio_name: entry.studios.name,
+              competition_name: entry.competitions.name,
+              deleted_by_role: 'studio_director',
+              previous_status: entry.status,
+            },
+          });
+        } catch (err) {
+          logger.error('Failed to log activity (entry.delete)', {
+            error: err instanceof Error ? err : new Error(String(err))
+          });
+        }
+
+        return {
+          success: true,
+          message: 'Draft routine deleted successfully',
+          entry: {
+            id: entry.id,
+            title: entry.title,
+            studio_name: entry.studios.name,
+            competition_name: entry.competitions.name,
+          },
+        };
+      }
+
+      // Block SD from deleting submitted routines
+      if (isSDBelongsToStudio && !isDraftStatus) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot delete submitted routines. Contact the Competition Director for assistance.',
+        });
+      }
+
+      // Block SD if reservation is closed
+      if (isSDBelongsToStudio && !isReservationOpen) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'This reservation is closed. Contact the Competition Director to make changes.',
+        });
+      }
+
+      // CDs and SAs can delete any entry (existing CD-only logic continues below)
+      if (!isAdmin(ctx.userRole)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can delete entries from other studios.',
+        });
       }
 
       if (input.hardDelete) {

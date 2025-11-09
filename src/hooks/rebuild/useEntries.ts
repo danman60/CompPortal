@@ -16,12 +16,14 @@ export function useEntries() {
   });
 
   const deleteMutation = trpc.entry.delete.useMutation({
-    onSuccess: () => {
-      toast.success('Routine deleted successfully');
+    onSuccess: (data) => {
+      // Backend returns message in response
+      toast.success(data.message || 'Routine deleted successfully');
       refetch();
     },
     onError: (error) => {
-      toast.error(`We couldn't delete that routine. ${error.message}`);
+      // Use backend error message directly (context-aware)
+      toast.error(error.message);
     },
   });
 

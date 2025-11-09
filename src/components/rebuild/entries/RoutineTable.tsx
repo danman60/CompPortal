@@ -4,6 +4,7 @@ import { Badge } from '@/components/rebuild/ui/Badge';
 import { Button } from '@/components/rebuild/ui/Button';
 import { useTableSort } from '@/hooks/useTableSort';
 import SortableHeader from '@/components/SortableHeader';
+import toast from 'react-hot-toast';
 
 interface Entry {
   id: string;
@@ -23,17 +24,30 @@ interface Entry {
 interface RoutineTableProps {
   entries: Entry[];
   onDelete: (id: string) => Promise<void>;
+  reservationClosed?: boolean;
 }
 
 /**
  * Table view for routines with sortable columns
  * All data columns are sortable for better UX
  */
-export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
+export function RoutineTable({ entries, onDelete, reservationClosed = false }: RoutineTableProps) {
   const { sortedData, sortConfig, requestSort } = useTableSort<Entry>(entries, 'entry_number');
 
-  const handleDelete = async (id: string, title: string) => {
-    if (confirm(`Delete routine "${title}"?`)) {
+  const handleDelete = async (id: string, title: string, status: string) => {
+    const isDraft = status === 'draft';
+    const canDelete = isDraft && !reservationClosed;
+
+    if (!canDelete) {
+      if (!isDraft) {
+        toast.error('Cannot delete submitted routines. Contact the Competition Director for assistance.');
+      } else if (reservationClosed) {
+        toast.error('This reservation is closed. Contact the Competition Director to make changes.');
+      }
+      return;
+    }
+
+    if (confirm(`Delete draft routine "${title}"?`)) {
       await onDelete(id);
     }
   };
@@ -169,11 +183,19 @@ export function RoutineTable({ entries, onDelete }: RoutineTableProps) {
                   View
                 </Button>
                 <Button
-                  onClick={() => handleDelete(entry.id, entry.title || 'Untitled')}
+                  onClick={() => handleDelete(entry.id, entry.title || 'Untitled', entry.status || 'draft')}
                   variant="danger"
                   className="text-sm px-3 py-1"
+                  disabled={entry.status !== 'draft' || reservationClosed}
+                  title={
+                    entry.status !== 'draft'
+                      ? "Cannot delete submitted routines"
+                      : reservationClosed
+                      ? "Reservation closed"
+                      : "Delete draft routine"
+                  }
                 >
-                  Delete
+                  {entry.status === 'draft' && !reservationClosed ? 'Delete' : '🔒'}
                 </Button>
               </div>
             </TableCell>

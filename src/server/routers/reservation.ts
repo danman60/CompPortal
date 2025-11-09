@@ -1609,6 +1609,145 @@ export const reservationRouter = router({
       };
     }),
 
+  // SD Request Space Increase (with 90% capacity check)
+  requestSpaceIncrease: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        requestedIncrease: z.number().int().min(1).max(50), // Max 50 space increase at once
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Only Studio Directors can request increases for their own reservations
+      if (ctx.userRole !== 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Studio Directors can request space increases',
+        });
+      }
+
+      // Get reservation with competition data
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: { select: { id: true, name: true, owner_id: true } },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+              year: true,
+              total_reservation_tokens: true,
+              available_reservation_tokens: true,
+            },
+          },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found',
+        });
+      }
+
+      // Verify SD owns this studio
+      if (reservation.studios.owner_id !== ctx.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only modify your own studio\'s reservations',
+        });
+      }
+
+      // Check if reservation is closed
+      if (reservation.is_closed) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'This reservation is closed. Contact the Competition Director to make changes.',
+        });
+      }
+
+      // Calculate competition utilization
+      const totalTokens = reservation.competitions.total_reservation_tokens || 0;
+      const availableTokens = reservation.competitions.available_reservation_tokens || 0;
+      const usedTokens = totalTokens - availableTokens;
+      const utilizationPercent = totalTokens > 0 ? (usedTokens / totalTokens) * 100 : 0;
+
+      // Check 90% threshold
+      if (utilizationPercent >= 90) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `This competition is nearly full (${utilizationPercent.toFixed(1)}% capacity). Contact the Competition Director to request more spaces.`,
+        });
+      }
+
+      // Check if enough capacity is available
+      const maxAllowedIncrease = Math.min(input.requestedIncrease, availableTokens);
+
+      if (maxAllowedIncrease === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No additional spaces available for this competition. Contact the Competition Director.',
+        });
+      }
+
+      const actualIncrease = maxAllowedIncrease;
+      const currentSpaces = reservation.spaces_confirmed || 0;
+      const newSpaces = currentSpaces + actualIncrease;
+
+      // Use capacity service for atomic reservation
+      await capacityService.reserve(
+        reservation.competition_id,
+        actualIncrease,
+        input.reservationId,
+        ctx.userId!,
+        'cd_adjustment_increase' // Reuse existing reason (treated as SD self-adjustment)
+      );
+
+      // Update reservation spaces_confirmed
+      const updatedReservation = await prisma.reservations.update({
+        where: { id: input.reservationId },
+        data: {
+          spaces_confirmed: newSpaces,
+          updated_at: new Date(),
+        },
+        include: {
+          studios: { select: { id: true, name: true } },
+          competitions: { select: { id: true, name: true, year: true } },
+        },
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'reservation_space_increase_requested',
+        entityType: 'reservation',
+        entityId: input.reservationId,
+        details: {
+          previous_spaces: currentSpaces,
+          new_spaces: newSpaces,
+          increase: actualIncrease,
+          requested_increase: input.requestedIncrease,
+          studio_name: reservation.studios.name,
+          competition_name: reservation.competitions.name,
+          requested_by_role: 'studio_director',
+          competition_utilization: `${utilizationPercent.toFixed(1)}%`,
+        },
+      });
+
+      return {
+        reservation: updatedReservation,
+        previousSpaces: currentSpaces,
+        newSpaces,
+        increase: actualIncrease,
+        requestedIncrease: input.requestedIncrease,
+        partialIncrease: actualIncrease < input.requestedIncrease,
+        message: actualIncrease < input.requestedIncrease
+          ? `Increased reservation by ${actualIncrease} spaces (${input.requestedIncrease - actualIncrease} spaces not available)`
+          : `Your reservation was increased to ${newSpaces} spaces!`,
+      };
+    }),
+
   // Record deposit payment for a reservation
   recordDeposit: protectedProcedure
     .input(

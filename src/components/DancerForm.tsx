@@ -1,7 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,7 +37,7 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
     },
   });
 
-  // Fetch existing dancer data for edit mode
+  // Fetch existing dancer data for edit mode (include entry status)
   const { data: existingDancer, isLoading: isLoadingDancer } = trpc.dancer.getById.useQuery(
     { id: dancerId! },
     { enabled: isEditMode }
@@ -45,6 +45,26 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
 
   // Fetch classifications for dropdown
   const { data: lookupData } = trpc.lookup.getAllForEntry.useQuery();
+
+  // Calculate submitted vs draft entry counts
+  const submittedEntriesCount = useMemo(() => {
+    if (!existingDancer?.entry_participants) return 0;
+
+    return existingDancer.entry_participants.filter(
+      (ep: any) => {
+        const status = ep.competition_entries?.status;
+        return status !== 'draft' && status !== 'cancelled';
+      }
+    ).length;
+  }, [existingDancer]);
+
+  const draftEntriesCount = useMemo(() => {
+    if (!existingDancer?.entry_participants) return 0;
+
+    return existingDancer.entry_participants.filter(
+      (ep: any) => ep.competition_entries?.status === 'draft'
+    ).length;
+  }, [existingDancer]);
 
   // Pre-populate form data when editing
   useEffect(() => {
@@ -283,10 +303,10 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             <select
               id="classification_id"
               {...form.register('classification_id')}
-              disabled={isEditMode && entriesCount > 0}
+              disabled={isEditMode && submittedEntriesCount > 0}
               className={`w-full px-4 py-2 bg-white/5 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                 form.formState.errors.classification_id ? 'border-red-500' : 'border-white/20'
-              } ${isEditMode && entriesCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${isEditMode && submittedEntriesCount > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <option value="">Select classification</option>
               {lookupData?.classifications?.filter((c: any) => c.name !== 'Production').map((classification: any) => (
@@ -298,9 +318,14 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
             {form.formState.errors.classification_id && (
               <p className="text-red-400 text-sm mt-1">{form.formState.errors.classification_id.message}</p>
             )}
-            {isEditMode && entriesCount > 0 && (
+            {isEditMode && submittedEntriesCount > 0 && (
+              <p className="text-red-400 text-sm mt-1">
+                Cannot change classification - dancer has {submittedEntriesCount} submitted {submittedEntriesCount === 1 ? 'entry' : 'entries'}
+              </p>
+            )}
+            {isEditMode && draftEntriesCount > 0 && submittedEntriesCount === 0 && (
               <p className="text-yellow-300 text-sm mt-1">
-                Cannot change classification - dancer has existing entries
+                ⚠️ This dancer has {draftEntriesCount} draft {draftEntriesCount === 1 ? 'routine' : 'routines'}. Changing classification may affect routine placement and fees.
               </p>
             )}
           </div>

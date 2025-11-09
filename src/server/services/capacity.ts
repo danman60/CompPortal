@@ -7,7 +7,8 @@ type CapacityChangeReason =
   | 'reservation_cancellation'
   | 'manual_adjustment'
   | 'cd_adjustment_increase'
-  | 'cd_adjustment_decrease';
+  | 'cd_adjustment_decrease'
+  | 'sd_space_increase';
 
 /**
  * Single source of truth for competition capacity management

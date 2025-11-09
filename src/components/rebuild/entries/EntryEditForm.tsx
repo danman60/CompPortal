@@ -44,6 +44,33 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
     sizeCategories: lookups?.entrySizeCategories || [],
   });
 
+  // Add mutations for participant management
+  const removeParticipantMutation = trpc.entry.removeParticipant.useMutation({
+    onError: (error) => {
+      console.error('Failed to remove participant:', error);
+      toast.error('Failed to remove dancer from routine');
+    },
+  });
+
+  const addParticipantMutation = trpc.entry.addParticipant.useMutation({
+    onError: (error) => {
+      console.error('Failed to add participant:', error);
+      toast.error('Failed to add dancer to routine');
+    },
+  });
+
+  // Helper function to calculate age
+  const calculateAge = (birthDate: Date | string): number => {
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   // Pre-fill form with entry data on mount
   useEffect(() => {
     if (entry) {
@@ -131,9 +158,52 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
 
       // Update participants if changed and not summarized
       if (!isSummarized) {
-        // For now, we'll just update the entry fields
-        // Participant updates would require additional mutations
-        // TODO: Implement participant add/remove mutations
+        // Get current participant IDs from entry
+        const currentParticipantIds = new Set(
+          entry.entry_participants?.map((p: any) => p.dancer_id) || []
+        );
+
+        // Get selected participant IDs from form
+        const selectedParticipantIds = new Set(
+          formHook.form.selectedDancers.map((d: any) => d.dancer_id)
+        );
+
+        // Find removed participants
+        const removedIds = [...currentParticipantIds].filter(
+          id => !selectedParticipantIds.has(id)
+        );
+
+        // Find added participants
+        const addedIds = [...selectedParticipantIds].filter(
+          id => !currentParticipantIds.has(id)
+        );
+
+        // Remove participants
+        for (const dancerId of removedIds) {
+          const participant = entry.entry_participants?.find(
+            (p: any) => p.dancer_id === dancerId
+          );
+          if (participant) {
+            await removeParticipantMutation.mutateAsync({
+              participantId: participant.id,
+            });
+          }
+        }
+
+        // Add participants
+        for (const dancerId of addedIds) {
+          const dancer = dancers.find((d: any) => d.id === dancerId);
+          if (dancer) {
+            await addParticipantMutation.mutateAsync({
+              entryId: entry.id,
+              participant: {
+                dancer_id: dancerId,
+                dancer_name: `${dancer.first_name} ${dancer.last_name}`,
+                dancer_age: calculateAge(dancer.date_of_birth),
+              },
+            });
+          }
+        }
       }
 
       toast.success('Routine updated successfully!');

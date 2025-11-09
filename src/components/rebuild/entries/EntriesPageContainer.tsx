@@ -128,9 +128,9 @@ export function EntriesPageContainer() {
             <div className="text-sm mt-2">Create your first routine to get started</div>
           </div>
         ) : viewMode === 'card' ? (
-          <RoutineCardList entries={filteredEntries} onDelete={deleteEntry} />
+          <RoutineCardList entries={filteredEntries} onDelete={deleteEntry} reservationClosed={isRegistrationClosed} />
         ) : (
-          <RoutineTable entries={filteredEntries} onDelete={deleteEntry} />
+          <RoutineTable entries={filteredEntries} onDelete={deleteEntry} reservationClosed={isRegistrationClosed} />
         )}
       </div>
 

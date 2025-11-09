@@ -28,16 +28,32 @@ interface Entry {
 interface RoutineCardProps {
   entry: Entry;
   onDelete: (id: string) => Promise<void>;
+  reservationClosed?: boolean;
 }
 
 /**
  * Card view for single routine
  * Shows all entry details in glassmorphic card
  */
-export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
+export function RoutineCard({ entry, onDelete, reservationClosed = false }: RoutineCardProps) {
+  const isDraft = entry.status === 'draft';
+  const canDelete = isDraft && !reservationClosed;
+
   const handleDelete = async () => {
-    if (confirm(`Delete routine "${entry.title}"?`)) {
-      await onDelete(entry.id);
+    if (!canDelete) return;
+
+    if (confirm(
+      `Delete draft routine "${entry.title}"?\n\n` +
+      `This will:\n` +
+      `• Cancel the routine entry\n` +
+      `• Free up 1 reservation space\n` +
+      `• Remove all participants from this routine`
+    )) {
+      try {
+        await onDelete(entry.id);
+      } catch (error: any) {
+        // Error already shown by mutation toast
+      }
     }
   };
 
@@ -136,8 +152,19 @@ export function RoutineCard({ entry, onDelete }: RoutineCardProps) {
         <Button href={`/dashboard/entries/${entry.id}`} variant="secondary" className="flex-1">
           View Details
         </Button>
-        <Button onClick={handleDelete} variant="danger">
-          Delete
+        <Button
+          onClick={handleDelete}
+          variant="danger"
+          disabled={!canDelete}
+          title={
+            !isDraft
+              ? "Cannot delete submitted routines - contact Competition Director"
+              : reservationClosed
+              ? "Reservation closed - contact Competition Director"
+              : "Delete draft routine"
+          }
+        >
+          {canDelete ? 'Delete' : '🔒 Delete'}
         </Button>
       </div>
     </Card>

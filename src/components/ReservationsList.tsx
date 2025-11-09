@@ -63,6 +63,18 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     notes: string;
   } | null>(null);
 
+  // SD Request Space Increase modal state (SD feature)
+  const [increaseSpacesModal, setIncreaseSpacesModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    competitionName: string;
+    currentSpaces: number;
+    requestedIncrease: number;
+    competitionUtilization: number;
+    availableCapacity: number;
+  } | null>(null);
+
   // Pull-to-refresh handler with haptic feedback
   const handleRefresh = async () => {
     hapticMedium();
@@ -215,6 +227,18 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     },
   });
 
+  // SD Request Space Increase mutation (SD feature)
+  const increaseSpacesMutation = trpc.reservation.requestSpaceIncrease.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setIncreaseSpacesModal(null);
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message); // Backend provides friendly messages
+    },
+  });
+
   const handleApprove = (reservationId: string, spacesRequested: number) => {
     const spacesConfirmed = prompt(
       `Approve this reservation.\n\nRoutines Requested: ${spacesRequested}\n\nHow many routines to allocate?`,
@@ -348,6 +372,36 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
       paymentMethod: depositModal.paymentMethod as any,
       paymentDate: depositModal.paymentDate,
       notes: depositModal.notes || undefined,
+    });
+  };
+
+  // SD Feature: Request Space Increase handler
+  const handleIncreaseSpaces = async (reservation: any) => {
+    // Fetch competition capacity data
+    const competition = reservation.competitions;
+    const totalTokens = competition.total_reservation_tokens || 0;
+    const availableTokens = competition.available_reservation_tokens || 0;
+    const usedTokens = totalTokens - availableTokens;
+    const utilization = totalTokens > 0 ? (usedTokens / totalTokens) * 100 : 0;
+
+    setIncreaseSpacesModal({
+      isOpen: true,
+      reservationId: reservation.id,
+      studioName: reservation.studios?.name || '',
+      competitionName: reservation.competitions?.name || '',
+      currentSpaces: reservation.spaces_confirmed || 0,
+      requestedIncrease: 1,
+      competitionUtilization: utilization,
+      availableCapacity: availableTokens,
+    });
+  };
+
+  const confirmIncreaseSpaces = () => {
+    if (!increaseSpacesModal) return;
+
+    increaseSpacesMutation.mutate({
+      reservationId: increaseSpacesModal.reservationId,
+      requestedIncrease: increaseSpacesModal.requestedIncrease,
     });
   };
 
@@ -1005,6 +1059,16 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                             : '🔽 Reduce Capacity'}
                         </button>
 
+                        {/* SD Feature: Request More Spaces button */}
+                        {!isCompetitionDirector && ['approved'].includes(reservation.status || '') && (
+                          <button
+                            onClick={() => handleIncreaseSpaces(reservation)}
+                            className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                          >
+                            ➕ Request More Spaces
+                          </button>
+                        )}
+
                         {/* CD Feature: Edit Spaces & Record Deposit buttons */}
                         {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
                           <div className="space-y-3">
@@ -1372,6 +1436,108 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                 className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-green-500/50 disabled:to-green-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
               >
                 {recordDepositMutation.isPending ? '⚙️ Recording...' : '✅ Record Deposit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Increase Spaces Modal (SD Feature) */}
+      {increaseSpacesModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">➕ Request More Spaces</h3>
+
+            <div className="space-y-4 mb-6">
+              {/* Studio & Competition Info */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-sm text-gray-400 mb-2">Reservation Details</div>
+                <div className="text-white font-semibold">{increaseSpacesModal.studioName}</div>
+                <div className="text-gray-300 text-sm">{increaseSpacesModal.competitionName}</div>
+              </div>
+
+              {/* Current Spaces */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Current Confirmed Spaces
+                </label>
+                <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white">
+                  {increaseSpacesModal.currentSpaces}
+                </div>
+              </div>
+
+              {/* Competition Capacity Info */}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">ℹ️</div>
+                  <div>
+                    <p className="text-blue-300 font-semibold mb-1">Competition Capacity</p>
+                    <p className="text-blue-200 text-sm">
+                      Utilization: <strong>{increaseSpacesModal.competitionUtilization.toFixed(1)}%</strong>
+                    </p>
+                    <p className="text-blue-200 text-sm">
+                      Available: <strong>{increaseSpacesModal.availableCapacity} spaces</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Requested Increase */}
+              <div>
+                <label htmlFor="requestedIncrease" className="block text-sm font-medium text-gray-300 mb-2">
+                  Spaces to Add
+                </label>
+                <input
+                  id="requestedIncrease"
+                  type="number"
+                  min={1}
+                  max={Math.min(50, increaseSpacesModal.availableCapacity)}
+                  value={increaseSpacesModal.requestedIncrease}
+                  onChange={(e) => setIncreaseSpacesModal({
+                    ...increaseSpacesModal,
+                    requestedIncrease: parseInt(e.target.value) || 1,
+                  })}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-gray-400 text-xs mt-1">
+                  New total: {increaseSpacesModal.currentSpaces + increaseSpacesModal.requestedIncrease} spaces
+                </p>
+              </div>
+
+              {/* Warning if utilization >= 90% */}
+              {increaseSpacesModal.competitionUtilization >= 90 && (
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">⚠️</div>
+                    <div>
+                      <p className="text-orange-300 font-semibold mb-1">Competition Nearly Full</p>
+                      <p className="text-orange-200 text-sm">
+                        This competition is at {increaseSpacesModal.competitionUtilization.toFixed(1)}% capacity.
+                        You may need to contact the Competition Director for more spaces.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIncreaseSpacesModal(null)}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmIncreaseSpaces}
+                disabled={
+                  increaseSpacesMutation.isPending ||
+                  increaseSpacesModal.requestedIncrease < 1 ||
+                  increaseSpacesModal.requestedIncrease > increaseSpacesModal.availableCapacity
+                }
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {increaseSpacesMutation.isPending ? 'Requesting...' : 'Request Increase'}
               </button>
             </div>
           </div>
