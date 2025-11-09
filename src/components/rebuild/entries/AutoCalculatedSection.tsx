@@ -73,6 +73,7 @@ export function AutoCalculatedSection({
   userRole,
 }: Props) {
   // Auto-calculate classification based on dancers
+  // UPDATED: Changed from 60% majority to AVERAGE algorithm (Nov 9 spec)
   const autoCalculatedClassification = React.useMemo(() => {
     if (selectedDancers.length === 0) return null;
 
@@ -86,38 +87,24 @@ export function AutoCalculatedSection({
 
     if (dancerClassifications.length === 0) return null;
 
-    // Solo: Use dancer's exact classification
+    // Solo: Use dancer's exact classification (unchanged)
     if (selectedDancers.length === 1) {
       return dancerClassifications[0];
     }
 
-    // Non-Solo: 60% majority rule
-    // Count dancers per classification
-    const counts: Record<string, { classification: Classification; count: number }> = {};
-    dancerClassifications.forEach(cls => {
-      if (!counts[cls.id]) {
-        counts[cls.id] = { classification: cls, count: 0 };
-      }
-      counts[cls.id].count++;
-    });
+    // Non-Solo: AVERAGE classification (like age calculation)
+    const totalSkillLevel = dancerClassifications.reduce(
+      (sum, cls) => sum + (cls.skill_level ?? 0),
+      0
+    );
+    const avgSkillLevel = Math.floor(totalSkillLevel / dancerClassifications.length);
 
-    const total = dancerClassifications.length;
+    // Find classification closest to average (round down)
+    const avgClassification = classifications
+      .filter(c => (c.skill_level ?? 0) <= avgSkillLevel)
+      .sort((a, b) => (b.skill_level ?? 0) - (a.skill_level ?? 0))[0];
 
-    // Check for 60%+ majority
-    for (const entry of Object.values(counts)) {
-      if (entry.count / total >= 0.6) {
-        return entry.classification;
-      }
-    }
-
-    // No clear majority: return highest
-    const highest = dancerClassifications.reduce((prev, curr) => {
-      const prevLevel = prev.skill_level ?? 0;
-      const currLevel = curr.skill_level ?? 0;
-      return currLevel > prevLevel ? curr : prev;
-    });
-
-    return highest;
+    return avgClassification || dancerClassifications[0];
   }, [selectedDancers, classifications]);
 
   // Determine if solo or non-solo
@@ -321,9 +308,9 @@ export function AutoCalculatedSection({
                   <p className="mb-2">We automatically determine the skill level classification:</p>
                   <ul className="list-disc list-inside space-y-1 mb-2">
                     <li><strong className="text-white">Solo:</strong> Uses the dancer's classification</li>
-                    <li><strong className="text-white">Group:</strong> Uses the average classification of all dancers</li>
+                    <li><strong className="text-white">Group:</strong> Uses the average classification of all dancers (rounded down)</li>
                   </ul>
-                  <p>You can select a different classification from the dropdown. Changes of 2+ levels up or any level down require director approval.</p>
+                  <p>You may bump up one level using the +1 button. Changes of 2+ levels up or any level down require director approval.</p>
                 </div>
               )}
             </div>
@@ -370,8 +357,7 @@ export function AutoCalculatedSection({
                 <select
                   value={classificationId}
                   onChange={(e) => setClassificationId(e.target.value)}
-                  disabled={isSolo}
-                  className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="" className="bg-gray-900">
                     Use detected ({autoCalculatedClassification.name})
@@ -383,8 +369,8 @@ export function AutoCalculatedSection({
                   ))}
                 </select>
 
-                {/* Solo: +1 Bump Button */}
-                {isSolo && plusOneClassification && (
+                {/* +1 Bump Button - Available for BOTH solos and groups (Nov 9 spec) */}
+                {plusOneClassification && (
                   <button
                     type="button"
                     onClick={handlePlusOneBump}
@@ -409,9 +395,7 @@ export function AutoCalculatedSection({
 
             {/* Help Text */}
             <p className="text-xs text-gray-400 mt-1">
-              {isSolo
-                ? 'Solo classification is locked to dancer level. Use +1 Bump to move up one level.'
-                : 'Group classification can be changed. Exception required for +2 levels or going down.'}
+              Based on average of dancer classifications (rounded down). You may bump up one level if needed. Exception required for +2 levels or going down.
             </p>
 
             {/* Exception Warning */}
