@@ -45,7 +45,14 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
   });
 
   // Add mutations for participant management
+  const utils = trpc.useUtils();
+
   const removeParticipantMutation = trpc.entry.removeParticipant.useMutation({
+    onSuccess: () => {
+      // Invalidate entry cache to reflect participant removal
+      utils.entry.getById.invalidate({ id: entry.id });
+      utils.entry.getAll.invalidate();
+    },
     onError: (error) => {
       console.error('Failed to remove participant:', error);
       toast.error('Failed to remove dancer from routine');
@@ -53,6 +60,11 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
   });
 
   const addParticipantMutation = trpc.entry.addParticipant.useMutation({
+    onSuccess: () => {
+      // Invalidate entry cache to reflect participant addition
+      utils.entry.getById.invalidate({ id: entry.id });
+      utils.entry.getAll.invalidate();
+    },
     onError: (error) => {
       console.error('Failed to add participant:', error);
       toast.error('Failed to add dancer to routine');
