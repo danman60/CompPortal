@@ -912,6 +912,16 @@ export const entryRouter = router({
           classifications: true,
           entry_size_categories: true,
           competition_sessions: true,
+          classification_exception_requests: {
+            select: {
+              id: true,
+              status: true,
+              cd_decision_type: true,
+            },
+            where: {
+              status: 'pending', // Only fetch pending requests
+            },
+          },
         },
       });
 

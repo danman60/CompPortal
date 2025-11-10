@@ -71,6 +71,18 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
     },
   });
 
+  const cancelExceptionRequestMutation = trpc.classificationRequest.cancel.useMutation({
+    onSuccess: () => {
+      toast.success('Exception request cancelled');
+      utils.entry.getById.invalidate({ id: entry.id });
+      utils.entry.getAll.invalidate();
+    },
+    onError: (error) => {
+      console.error('Failed to cancel exception request:', error);
+      toast.error('Failed to cancel exception request');
+    },
+  });
+
   // Helper function to calculate age
   const calculateAge = (birthDate: Date | string): number => {
     const birth = new Date(birthDate);
@@ -140,6 +152,14 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
       </div>
     );
   }
+
+  const handleCancelExceptionRequest = async (requestId: string) => {
+    try {
+      await cancelExceptionRequestMutation.mutateAsync({ requestId });
+    } catch (error) {
+      console.error('Failed to cancel exception request:', error);
+    }
+  };
 
   const handleSave = async (action: any) => {
     if (action === 'cancel') {
@@ -281,6 +301,8 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
             classifications={lookups.classifications}
             classificationId={formHook.form.classification_id}
             setClassificationId={(id) => formHook.updateField('classification_id', id)}
+            onCancelExceptionRequest={handleCancelExceptionRequest}
+            pendingExceptionRequest={entry.classification_exception_requests?.[0] || null}
           />
 
           {/* Title Upgrade Option */}

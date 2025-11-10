@@ -17,6 +17,11 @@ interface SelectedDancer {
   classification_id?: string | null;
 }
 
+interface ExceptionRequest {
+  id: string;
+  status: string;
+}
+
 interface Props {
   calculatedAge: number | null;
   allowedAges: number[];
@@ -37,6 +42,8 @@ interface Props {
   classificationId: string;
   setClassificationId: (id: string) => void;
   onRequestClassificationException?: () => void;
+  onCancelExceptionRequest?: (requestId: string) => void;
+  pendingExceptionRequest?: ExceptionRequest | null;
   userRole?: string;
 }
 
@@ -70,6 +77,8 @@ export function AutoCalculatedSection({
   classificationId,
   setClassificationId,
   onRequestClassificationException,
+  onCancelExceptionRequest,
+  pendingExceptionRequest,
   userRole,
 }: Props) {
   // Auto-calculate classification based on dancers
@@ -380,14 +389,25 @@ export function AutoCalculatedSection({
                   </button>
                 )}
 
-                {/* Exception Required Button - Only for Studio Directors */}
-                {needsException && onRequestClassificationException && userRole === 'studio_director' && (
+                {/* Exception Required Button - Only for Studio Directors without pending request */}
+                {needsException && onRequestClassificationException && userRole === 'studio_director' && !pendingExceptionRequest && (
                   <button
                     type="button"
                     onClick={onRequestClassificationException}
                     className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg font-semibold transition-colors whitespace-nowrap"
                   >
                     Exception Required
+                  </button>
+                )}
+
+                {/* Cancel Exception Request Button - Only for Studio Directors with pending request */}
+                {pendingExceptionRequest && onCancelExceptionRequest && userRole === 'studio_director' && pendingExceptionRequest.status === 'pending' && (
+                  <button
+                    type="button"
+                    onClick={() => onCancelExceptionRequest(pendingExceptionRequest.id)}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg font-semibold transition-colors whitespace-nowrap"
+                  >
+                    Cancel Request
                   </button>
                 )}
               </div>
@@ -398,8 +418,15 @@ export function AutoCalculatedSection({
               Based on average of dancer classifications (rounded down). You may bump up one level if needed. Exception required for +2 levels or going down.
             </p>
 
+            {/* Pending Request Info */}
+            {pendingExceptionRequest && pendingExceptionRequest.status === 'pending' && (
+              <p className="text-xs text-blue-400 mt-1">
+                ℹ️ Exception request pending CD approval. You can cancel it if you no longer need it.
+              </p>
+            )}
+
             {/* Exception Warning */}
-            {needsException && (
+            {needsException && !pendingExceptionRequest && (
               <p className="text-xs text-orange-400 mt-1">
                 ⚠️ This selection requires CD approval before summary submission
               </p>
