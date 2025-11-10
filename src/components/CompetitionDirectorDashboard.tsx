@@ -131,6 +131,13 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     description: 'Review exception requests',
     badge: 'classification-requests',
   },
+  {
+    id: 'studio-invitations',
+    href: '/dashboard/director-panel/studio-invitations',
+    icon: '📧',
+    title: 'Studio Invitations',
+    description: 'Send & track invitations',
+  },
 ];
 
 export default function CompetitionDirectorDashboard({ userEmail, firstName, role, logoUrl }: CompetitionDirectorDashboardProps) {

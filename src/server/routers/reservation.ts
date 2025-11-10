@@ -737,6 +737,7 @@ export const reservationRouter = router({
       try {
         await logActivity({
           userId: ctx.userId,
+          tenantId: ctx.tenantId ?? undefined,
           studioId: reservation.studio_id,
           action: 'reservation.approve',
           entityType: 'reservation',
@@ -945,6 +946,7 @@ export const reservationRouter = router({
       try {
         await logActivity({
           userId: ctx.userId,
+          tenantId: ctx.tenantId ?? undefined,
           studioId: reservation.studio_id,
           action: 'reservation.reject',
           entityType: 'reservation',
@@ -1116,6 +1118,7 @@ export const reservationRouter = router({
       try {
         await logActivity({
           userId: ctx.userId,
+          tenantId: ctx.tenantId ?? undefined,
           studioId: reservation.studio_id,
           action: 'invoice.markAsPaid',
           entityType: 'invoice',
