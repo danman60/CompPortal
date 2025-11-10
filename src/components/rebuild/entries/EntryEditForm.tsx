@@ -89,6 +89,7 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
           dancer_name: p.dancer_name,
           dancer_age: p.dancer_age,
           date_of_birth: p.dancers?.date_of_birth || null,
+          classification_id: p.dancers?.classification_id || null,
         }));
 
         // Need to set multiple dancers at once - call toggleDancer for each

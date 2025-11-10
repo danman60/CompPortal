@@ -901,6 +901,7 @@ export const entryRouter = router({
                   date_of_birth: true,
                   email: true,
                   phone: true,
+                  classification_id: true,
                 },
               },
             },
