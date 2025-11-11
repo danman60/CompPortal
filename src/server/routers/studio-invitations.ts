@@ -354,7 +354,8 @@ export const studioInvitationsRouter = router({
 
   /**
    * Send account claiming invitations to selected studios
-   * Super Admin only
+   * Competition Director or Super Admin
+   * CDs can only send to studios in their tenant
    */
   sendInvitations: publicProcedure
     .input(
@@ -363,11 +364,11 @@ export const studioInvitationsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Check if user is super_admin
-      if (ctx.userRole !== 'super_admin') {
+      // Check if user is competition_director or super_admin
+      if (!['competition_director', 'super_admin'].includes(ctx.userRole || '')) {
         throw new TRPCError({
           code: 'FORBIDDEN',
-          message: 'Only Super Admin can send invitations',
+          message: 'Only Competition Directors can send invitations',
         });
       }
 
@@ -378,13 +379,21 @@ export const studioInvitationsRouter = router({
         });
       }
 
+      // Build where clause with tenant filtering for CDs
+      const whereClause: any = {
+        id: { in: input.studioIds },
+        owner_id: null, // Only unclaimed
+        status: 'approved',
+      };
+
+      // CDs can only send to studios in their tenant
+      if (ctx.userRole === 'competition_director' && ctx.tenantId) {
+        whereClause.tenant_id = ctx.tenantId;
+      }
+
       // Fetch studios with details
       const studios = await prisma.studios.findMany({
-        where: {
-          id: { in: input.studioIds },
-          owner_id: null, // Only unclaimed
-          status: 'approved',
-        },
+        where: whereClause,
         select: {
           id: true,
           name: true,
