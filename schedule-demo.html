@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Generated Schedule - Day 1 - CompPortal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #4a2463 0%, #2d1b47 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .schedule-header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            padding: 2rem;
+            color: white;
+        }
+
+        .schedule-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .schedule-header .meta {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Controls */
+        .controls {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls .info {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+        }
+
+        .controls .actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #8b5cf6;
+            border: 2px solid #8b5cf6;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Schedule Content */
+        .schedule-content {
+            padding: 2rem;
+            background: transparent;
+            color: #fff;
+        }
+
+        /* Session Section */
+        .session-section {
+            margin-bottom: 3rem;
+        }
+
+        .session-header {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .session-header .session-stats {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        /* Schedule Table */
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .schedule-table thead {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .schedule-table th {
+            padding: 0.75rem 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .schedule-table tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: move;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .schedule-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .schedule-table td {
+            padding: 0.75rem 0.5rem;
+            vertical-align: middle;
+            color: #fff;
+        }
+
+        /* Row Type Colors */
+        .row-solo {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .row-duet {
+            border-left: 4px solid #10b981;
+        }
+
+        .row-small-group {
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .row-large-group {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .row-production {
+            border-left: 4px solid #ef4444;
+        }
+
+        .row-break {
+            background: rgba(173, 181, 189, 0.15) !important;
+            border-left: 4px solid #adb5bd;
+            font-weight: 600;
+            font-style: italic;
+        }
+
+        .row-awards {
+            background: rgba(255, 193, 7, 0.15) !important;
+            border-left: 4px solid #ffc107;
+            font-weight: 600;
+        }
+
+        /* Dragging States */
+        .dragging {
+            opacity: 0.5;
+            background: #e9ecef;
+        }
+
+        .drag-over {
+            background: #d3f9d8 !important;
+            border-top: 3px solid #10b981;
+        }
+
+        /* Entry Type Badge */
+        .entry-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-solo { background: #dbeafe; color: #1e40af; }
+        .badge-duet { background: #d1fae5; color: #065f46; }
+        .badge-small-group { background: #ede9fe; color: #5b21b6; }
+        .badge-large-group { background: #fed7aa; color: #92400e; }
+        .badge-production { background: #fee2e2; color: #991b1b; }
+
+        /* Time Column */
+        .time-col {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+        }
+
+        /* Category Badge */
+        .category-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        /* Conflict Warning */
+        .conflict-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-left: 4px solid #ffc107;
+            padding: 0.75rem;
+            margin: 1rem 2rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .conflict-warning.show {
+            display: block;
+        }
+
+        .conflict-warning strong {
+            color: #ffc107;
+        }
+
+        #conflictMessage {
+            color: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="schedule-header">
+            <h1>🎭 AI Generated Schedule - Day 1</h1>
+            <div class="meta">
+                <span>📅 Saturday, March 15, 2025</span>
+                <span>📍 Metro Convention Center - Main Stage</span>
+                <span>⏱️ 8:00 AM - 10:00 PM</span>
+                <span>🎯 127 Routines</span>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="info">
+                💡 <strong>Drag & Drop</strong> routines to adjust schedule • Changes auto-recalculate timing
+            </div>
+            <div class="actions">
+                <button class="btn btn-secondary">↻ Regenerate</button>
+                <button class="btn btn-primary">💾 Save & Publish</button>
+            </div>
+        </div>
+
+        <!-- Conflict Warning -->
+        <div class="conflict-warning" id="conflictWarning">
+            <strong>⚠️ Warning:</strong> <span id="conflictMessage"></span>
+        </div>
+
+        <!-- Schedule Content -->
+        <div class="schedule-content">
+            <!-- SESSION 1: Morning -->
+            <div class="session-section">
+                <div class="session-header">
+                    <h2>SESSION 1 - Morning</h2>
+                    <div class="session-stats">8:00 AM - 11:15 AM • 32 Routines • Awards: 11:15 AM</div>
+                </div>
+
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Time</th>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 200px;">Routine Name</th>
+                            <th style="width: 150px;">Studio</th>
+                            <th style="width: 150px;">Dancer(s)</th>
+                            <th style="width: 120px;">Category</th>
+                            <th style="width: 80px;">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="session1">
+                        <!-- Production at start -->
+                        <tr class="row-production" draggable="true" data-id="1" data-duration="7" data-type="production">
+                            <td class="time-col">8:00 AM</td>
+                            <td>001</td>
+                            <td><strong>Broadway Dreams</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Ensemble (15)</td>
+                            <td><span class="category-badge">Production</span></td>
+                            <td><span class="entry-badge badge-production">Production</span></td>
+                        </tr>
+
+                        <!-- Tap Age 7 Category (kept together) -->
+                        <tr class="row-solo" draggable="true" data-id="2" data-duration="3" data-type="solo">
+                            <td class="time-col">8:07 AM</td>
+                            <td>002</td>
+                            <td><strong>Rhythm & Rhyme</strong></td>
+                            <td>Tiny Toes Studio</td>
+                            <td>Emma Johnson</td>
+                            <td><span class="category-badge">Tap Age 7</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="3" data-duration="3" data-type="solo">
+                            <td class="time-col">8:10 AM</td>
+                            <td>003</td>
+                            <td><strong>Tap Your Troubles Away</strong></td>
+                            <td>Dance Dynamics</td>
+                            <td>Sophia Martinez</td>
+                            <td><span class="category-badge">Tap Age 7</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-duet" draggable="true" data-id="4" data-duration="3" data-type="duet">
+                            <td class="time-col">8:13 AM</td>
+                            <td>004</td>
+                            <td><strong>Double Time</strong></td>
+                            <td>Tiny Toes Studio</td>
+                            <td>Olivia & Ava Brown</td>
+                            <td><span class="category-badge">Tap Age 7</span></td>
+                            <td><span class="entry-badge badge-duet">Duet</span></td>
+                        </tr>
+                        <tr class="row-small-group" draggable="true" data-id="5" data-duration="4" data-type="small-group">
+                            <td class="time-col">8:16 AM</td>
+                            <td>005</td>
+                            <td><strong>Tap Trio Trouble</strong></td>
+                            <td>Dance Dynamics</td>
+                            <td>Group (5)</td>
+                            <td><span class="category-badge">Tap Age 7</span></td>
+                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                        </tr>
+
+                        <!-- Jazz Age 8 Category -->
+                        <tr class="row-solo" draggable="true" data-id="6" data-duration="3" data-type="solo">
+                            <td class="time-col">8:20 AM</td>
+                            <td>006</td>
+                            <td><strong>Sparkle & Shine</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Madison Lee</td>
+                            <td><span class="category-badge">Jazz Age 8</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="7" data-duration="3" data-type="solo">
+                            <td class="time-col">8:23 AM</td>
+                            <td>007</td>
+                            <td><strong>Jazz Hands</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Isabella Chen</td>
+                            <td><span class="category-badge">Jazz Age 8</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="8" data-duration="3" data-type="solo">
+                            <td class="time-col">8:26 AM</td>
+                            <td>008</td>
+                            <td><strong>Sassy Jazz</strong></td>
+                            <td>Tiny Toes Studio</td>
+                            <td>Mia Davis</td>
+                            <td><span class="category-badge">Jazz Age 8</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-duet" draggable="true" data-id="9" data-duration="3" data-type="duet">
+                            <td class="time-col">8:29 AM</td>
+                            <td>009</td>
+                            <td><strong>In Sync</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Chloe & Zoe Wilson</td>
+                            <td><span class="category-badge">Jazz Age 8</span></td>
+                            <td><span class="entry-badge badge-duet">Duet</span></td>
+                        </tr>
+                        <tr class="row-small-group" draggable="true" data-id="10" data-duration="4" data-type="small-group">
+                            <td class="time-col">8:32 AM</td>
+                            <td>010</td>
+                            <td><strong>Jazz Squad</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Group (6)</td>
+                            <td><span class="category-badge">Jazz Age 8</span></td>
+                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                        </tr>
+                        <tr class="row-large-group" draggable="true" data-id="11" data-duration="5" data-type="large-group">
+                            <td class="time-col">8:36 AM</td>
+                            <td>011</td>
+                            <td><strong>All That Jazz</strong></td>
+                            <td>Dance Dynamics</td>
+                            <td>Group (12)</td>
+                            <td><span class="category-badge">Jazz Age 8</span></td>
+                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                        </tr>
+
+                        <!-- Break -->
+                        <tr class="row-break">
+                            <td class="time-col">8:41 AM</td>
+                            <td colspan="6">☕ Break (15 minutes)</td>
+                        </tr>
+
+                        <!-- Contemporary Age 9 -->
+                        <tr class="row-solo" draggable="true" data-id="12" data-duration="3" data-type="solo">
+                            <td class="time-col">8:56 AM</td>
+                            <td>012</td>
+                            <td><strong>Flowing Free</strong></td>
+                            <td>Grace Motion Studio</td>
+                            <td>Emily Taylor</td>
+                            <td><span class="category-badge">Contemporary Age 9</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="13" data-duration="3" data-type="solo">
+                            <td class="time-col">8:59 AM</td>
+                            <td>013</td>
+                            <td><strong>Whispers</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Grace Anderson</td>
+                            <td><span class="category-badge">Contemporary Age 9</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="14" data-duration="3" data-type="solo">
+                            <td class="time-col">9:02 AM</td>
+                            <td>014</td>
+                            <td><strong>Gravity</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Lily Martinez</td>
+                            <td><span class="category-badge">Contemporary Age 9</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-duet" draggable="true" data-id="15" data-duration="3" data-type="duet">
+                            <td class="time-col">9:05 AM</td>
+                            <td>015</td>
+                            <td><strong>Mirror Image</strong></td>
+                            <td>Grace Motion Studio</td>
+                            <td>Hannah & Sarah Kim</td>
+                            <td><span class="category-badge">Contemporary Age 9</span></td>
+                            <td><span class="entry-badge badge-duet">Duet</span></td>
+                        </tr>
+                        <tr class="row-small-group" draggable="true" data-id="16" data-duration="4" data-type="small-group">
+                            <td class="time-col">9:08 AM</td>
+                            <td>016</td>
+                            <td><strong>Connected</strong></td>
+                            <td>Dance Dynamics</td>
+                            <td>Group (7)</td>
+                            <td><span class="category-badge">Contemporary Age 9</span></td>
+                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                        </tr>
+                        <tr class="row-large-group" draggable="true" data-id="17" data-duration="5" data-type="large-group">
+                            <td class="time-col">9:12 AM</td>
+                            <td>017</td>
+                            <td><strong>Awakening</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Group (14)</td>
+                            <td><span class="category-badge">Contemporary Age 9</span></td>
+                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                        </tr>
+
+                        <!-- Hip Hop Age 10 -->
+                        <tr class="row-solo" draggable="true" data-id="18" data-duration="3" data-type="solo">
+                            <td class="time-col">9:17 AM</td>
+                            <td>018</td>
+                            <td><strong>Street Beat</strong></td>
+                            <td>Urban Dance Crew</td>
+                            <td>Jayden Smith</td>
+                            <td><span class="category-badge">Hip Hop Age 10</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="19" data-duration="3" data-type="solo">
+                            <td class="time-col">9:20 AM</td>
+                            <td>019</td>
+                            <td><strong>Fresh Moves</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Noah Johnson</td>
+                            <td><span class="category-badge">Hip Hop Age 10</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-duet" draggable="true" data-id="20" data-duration="3" data-type="duet">
+                            <td class="time-col">9:23 AM</td>
+                            <td>020</td>
+                            <td><strong>Dynamic Duo</strong></td>
+                            <td>Urban Dance Crew</td>
+                            <td>Lucas & Mason Brown</td>
+                            <td><span class="category-badge">Hip Hop Age 10</span></td>
+                            <td><span class="entry-badge badge-duet">Duet</span></td>
+                        </tr>
+                        <tr class="row-small-group" draggable="true" data-id="21" data-duration="4" data-type="small-group">
+                            <td class="time-col">9:26 AM</td>
+                            <td>021</td>
+                            <td><strong>Crew</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Group (6)</td>
+                            <td><span class="category-badge">Hip Hop Age 10</span></td>
+                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                        </tr>
+                        <tr class="row-large-group" draggable="true" data-id="22" data-duration="5" data-type="large-group">
+                            <td class="time-col">9:30 AM</td>
+                            <td>022</td>
+                            <td><strong>Urban Legends</strong></td>
+                            <td>Urban Dance Crew</td>
+                            <td>Group (16)</td>
+                            <td><span class="category-badge">Hip Hop Age 10</span></td>
+                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                        </tr>
+
+                        <!-- Ballet Age 11 -->
+                        <tr class="row-solo" draggable="true" data-id="23" data-duration="3" data-type="solo">
+                            <td class="time-col">9:35 AM</td>
+                            <td>023</td>
+                            <td><strong>Swan Song</strong></td>
+                            <td>Grace Motion Studio</td>
+                            <td>Charlotte White</td>
+                            <td><span class="category-badge">Ballet Age 11</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="24" data-duration="3" data-type="solo">
+                            <td class="time-col">9:38 AM</td>
+                            <td>024</td>
+                            <td><strong>Elegant Dreams</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Victoria Garcia</td>
+                            <td><span class="category-badge">Ballet Age 11</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-duet" draggable="true" data-id="25" data-duration="3" data-type="duet">
+                            <td class="time-col">9:41 AM</td>
+                            <td>025</td>
+                            <td><strong>Pas de Deux</strong></td>
+                            <td>Grace Motion Studio</td>
+                            <td>Abigail & Elizabeth Moore</td>
+                            <td><span class="category-badge">Ballet Age 11</span></td>
+                            <td><span class="entry-badge badge-duet">Duet</span></td>
+                        </tr>
+                        <tr class="row-small-group" draggable="true" data-id="26" data-duration="4" data-type="small-group">
+                            <td class="time-col">9:44 AM</td>
+                            <td>026</td>
+                            <td><strong>En Pointe</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Group (5)</td>
+                            <td><span class="category-badge">Ballet Age 11</span></td>
+                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                        </tr>
+                        <tr class="row-large-group" draggable="true" data-id="27" data-duration="5" data-type="large-group">
+                            <td class="time-col">9:48 AM</td>
+                            <td>027</td>
+                            <td><strong>The Nutcracker Suite</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Group (18)</td>
+                            <td><span class="category-badge">Ballet Age 11</span></td>
+                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                        </tr>
+
+                        <!-- Small studio (Tiny Toes - rest of their routines) -->
+                        <tr class="row-solo" draggable="true" data-id="28" data-duration="3" data-type="solo">
+                            <td class="time-col">9:53 AM</td>
+                            <td>028</td>
+                            <td><strong>Little Star</strong></td>
+                            <td>Tiny Toes Studio</td>
+                            <td>Aria Thompson</td>
+                            <td><span class="category-badge">Lyrical Age 8</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="29" data-duration="3" data-type="solo">
+                            <td class="time-col">9:56 AM</td>
+                            <td>029</td>
+                            <td><strong>Dreamer</strong></td>
+                            <td>Tiny Toes Studio</td>
+                            <td>Luna Rodriguez</td>
+                            <td><span class="category-badge">Lyrical Age 8</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-small-group" draggable="true" data-id="30" data-duration="4" data-type="small-group">
+                            <td class="time-col">9:59 AM</td>
+                            <td>030</td>
+                            <td><strong>Together</strong></td>
+                            <td>Tiny Toes Studio</td>
+                            <td>Group (8)</td>
+                            <td><span class="category-badge">Lyrical Age 8</span></td>
+                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                        </tr>
+                        <tr class="row-large-group" draggable="true" data-id="31" data-duration="5" data-type="large-group">
+                            <td class="time-col">10:03 AM</td>
+                            <td>031</td>
+                            <td><strong>Reach for the Sky</strong></td>
+                            <td>Tiny Toes Studio</td>
+                            <td>Group (12)</td>
+                            <td><span class="category-badge">Lyrical Age 8</span></td>
+                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                        </tr>
+
+                        <!-- Production to close -->
+                        <tr class="row-production" draggable="true" data-id="32" data-duration="7" data-type="production">
+                            <td class="time-col">10:08 AM</td>
+                            <td>032</td>
+                            <td><strong>A Night at the Movies</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Ensemble (20)</td>
+                            <td><span class="category-badge">Production</span></td>
+                            <td><span class="entry-badge badge-production">Production</span></td>
+                        </tr>
+
+                        <!-- Awards Ceremony -->
+                        <tr class="row-awards">
+                            <td class="time-col">10:15 AM</td>
+                            <td colspan="6">🏆 Awards Ceremony - SESSION 1 (30 minutes) → Ends 10:45 AM</td>
+                        </tr>
+
+                        <!-- Break before Session 2 -->
+                        <tr class="row-break">
+                            <td class="time-col">10:45 AM</td>
+                            <td colspan="6">☕ Break (30 minutes)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SESSION 2: Midday -->
+            <div class="session-section">
+                <div class="session-header">
+                    <h2>SESSION 2 - Midday</h2>
+                    <div class="session-stats">11:15 AM - 1:30 PM • 28 Routines • Awards: 1:00 PM</div>
+                </div>
+
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Time</th>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 200px;">Routine Name</th>
+                            <th style="width: 150px;">Studio</th>
+                            <th style="width: 150px;">Dancer(s)</th>
+                            <th style="width: 120px;">Category</th>
+                            <th style="width: 80px;">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="session2">
+                        <tr class="row-solo" draggable="true" data-id="33" data-duration="3" data-type="solo">
+                            <td class="time-col">11:15 AM</td>
+                            <td>033</td>
+                            <td><strong>Energize</strong></td>
+                            <td>Dance Dynamics</td>
+                            <td>Addison Clark</td>
+                            <td><span class="category-badge">Musical Theater Age 12</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-solo" draggable="true" data-id="34" data-duration="3" data-type="solo">
+                            <td class="time-col">11:18 AM</td>
+                            <td>034</td>
+                            <td><strong>Broadway Bound</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Brooklyn Lewis</td>
+                            <td><span class="category-badge">Musical Theater Age 12</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+                        <tr class="row-duet" draggable="true" data-id="35" data-duration="3" data-type="duet">
+                            <td class="time-col">11:21 AM</td>
+                            <td>035</td>
+                            <td><strong>Show Stoppers</strong></td>
+                            <td>Dance Dynamics</td>
+                            <td>Peyton & Harper Walker</td>
+                            <td><span class="category-badge">Musical Theater Age 12</span></td>
+                            <td><span class="entry-badge badge-duet">Duet</span></td>
+                        </tr>
+
+                        <!-- Continue with more categories... -->
+                        <tr class="row-small-group" draggable="true" data-id="36" data-duration="4" data-type="small-group">
+                            <td class="time-col">11:24 AM</td>
+                            <td>036</td>
+                            <td><strong>The Greatest Show</strong></td>
+                            <td>Elite Performers</td>
+                            <td>Group (7)</td>
+                            <td><span class="category-badge">Musical Theater Age 12</span></td>
+                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                        </tr>
+                        <tr class="row-large-group" draggable="true" data-id="37" data-duration="5" data-type="large-group">
+                            <td class="time-col">11:28 AM</td>
+                            <td>037</td>
+                            <td><strong>Hamilton Medley</strong></td>
+                            <td>Starlight Dance Academy</td>
+                            <td>Group (15)</td>
+                            <td><span class="category-badge">Musical Theater Age 12</span></td>
+                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                        </tr>
+
+                        <!-- More routines abbreviated for demo... -->
+                        <tr class="row-solo" draggable="true" data-id="38" data-duration="3" data-type="solo">
+                            <td class="time-col">11:33 AM</td>
+                            <td>038</td>
+                            <td><strong>Fierce</strong></td>
+                            <td>Urban Dance Crew</td>
+                            <td>Kennedy Hall</td>
+                            <td><span class="category-badge">Open Age 13</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+
+                        <!-- Break -->
+                        <tr class="row-break">
+                            <td class="time-col">11:36 AM</td>
+                            <td colspan="6">☕ Break (15 minutes)</td>
+                        </tr>
+
+                        <!-- More routines... (abbreviated) -->
+                        <tr class="row-solo" draggable="true" data-id="39" data-duration="3" data-type="solo">
+                            <td class="time-col">11:51 AM</td>
+                            <td>039</td>
+                            <td><strong>Unstoppable</strong></td>
+                            <td>Grace Motion Studio</td>
+                            <td>Madelyn Young</td>
+                            <td><span class="category-badge">Open Age 13</span></td>
+                            <td><span class="entry-badge badge-solo">Solo</span></td>
+                        </tr>
+
+                        <!-- Lunch Break -->
+                        <tr class="row-break">
+                            <td class="time-col">12:00 PM</td>
+                            <td colspan="6">🍽️ Lunch Break (60 minutes)</td>
+                        </tr>
+
+                        <!-- Awards Ceremony -->
+                        <tr class="row-awards">
+                            <td class="time-col">1:00 PM</td>
+                            <td colspan="6">🏆 Awards Ceremony - SESSION 2 (30 minutes) → Ends 1:30 PM</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Additional sessions would continue... -->
+            <div style="text-align: center; padding: 2rem; color: #6c757d; font-style: italic;">
+                ... SESSION 3 (Afternoon) and SESSION 4 (Evening) continue below ...
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3b82f6;"></div>
+                <span>Solo</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #10b981;"></div>
+                <span>Duet/Trio</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #8b5cf6;"></div>
+                <span>Small Group</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f59e0b;"></div>
+                <span>Large Group</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ef4444;"></div>
+                <span>Production</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #adb5bd;"></div>
+                <span>Break</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffc107;"></div>
+                <span>Awards</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Drag and Drop Functionality
+        let draggedElement = null;
+
+        document.querySelectorAll('tr[draggable="true"]').forEach(row => {
+            row.addEventListener('dragstart', handleDragStart);
+            row.addEventListener('dragover', handleDragOver);
+            row.addEventListener('drop', handleDrop);
+            row.addEventListener('dragend', handleDragEnd);
+        });
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+
+            const target = e.target.closest('tr[draggable="true"]');
+            if (target && target !== draggedElement) {
+                target.classList.add('drag-over');
+            }
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== this) {
+                // Get parent tbody
+                const tbody = this.parentNode;
+
+                // Insert dragged element before this element
+                tbody.insertBefore(draggedElement, this);
+
+                // Recalculate times
+                recalculateTimes(tbody);
+
+                // Show conflict warning (demo)
+                showConflictWarning("Emma Johnson now performs within 2 routines of her previous slot");
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+        }
+
+        function recalculateTimes(tbody) {
+            // Get initial time from first row
+            const firstRow = tbody.querySelector('tr .time-col');
+            let currentTime = firstRow ? parseTime(firstRow.textContent) : parseTime("8:00 AM");
+
+            const rows = tbody.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const timeCol = row.querySelector('.time-col');
+                if (!timeCol) return;
+
+                // Update time for routine rows
+                if (row.draggable && row.dataset.duration) {
+                    const duration = parseInt(row.dataset.duration);
+                    timeCol.textContent = formatTime(currentTime);
+                    currentTime += (duration / 60) + (0.5 / 60); // Add routine + 30sec transition
+                }
+                // Handle breaks
+                else if (row.classList.contains('row-break')) {
+                    const breakText = timeCol.nextElementSibling?.textContent || '';
+                    const breakDuration = breakText.includes('60 minutes') ? 60 :
+                                         breakText.includes('30 minutes') ? 30 : 15;
+                    timeCol.textContent = formatTime(currentTime);
+                    currentTime += (breakDuration / 60);
+                }
+                // Handle awards
+                else if (row.classList.contains('row-awards')) {
+                    timeCol.textContent = formatTime(currentTime);
+                    currentTime += (30 / 60); // 30 min awards
+                }
+            });
+        }
+
+        function parseTime(timeStr) {
+            const [time, period] = timeStr.split(' ');
+            const [hours, minutes] = time.split(':').map(Number);
+            let hour24 = hours;
+            if (period === 'PM' && hours !== 12) hour24 += 12;
+            if (period === 'AM' && hours === 12) hour24 = 0;
+            return hour24 + minutes / 60;
+        }
+
+        function formatTime(decimalTime) {
+            const hours = Math.floor(decimalTime);
+            const minutes = Math.round((decimalTime - hours) * 60);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const displayHour = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+            return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+        }
+
+        function showConflictWarning(message) {
+            const warning = document.getElementById('conflictWarning');
+            const messageEl = document.getElementById('conflictMessage');
+            messageEl.textContent = message;
+            warning.classList.add('show');
+
+            setTimeout(() => {
+                warning.classList.remove('show');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

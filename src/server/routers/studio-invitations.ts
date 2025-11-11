@@ -552,6 +552,23 @@ ${studio.internal_notes}
                 </tr>
               </table>
 
+              <!-- Plaintext Fallback -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 8px; color: #92400e; font-size: 13px; font-weight: 600;">
+                      Don't see the button above?
+                    </p>
+                    <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.6;">
+                      Copy and paste this link into your browser:
+                    </p>
+                    <p style="margin: 8px 0 0; word-break: break-all;">
+                      <a href="${claimUrl}" style="color: #2563eb; text-decoration: underline; font-size: 13px;">${claimUrl}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
               <p style="margin: 20px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
                 Once you claim your account, you'll be able to:
               </p>

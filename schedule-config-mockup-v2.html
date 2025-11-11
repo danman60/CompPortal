@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Configuration - CompPortal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+        }
+
+        /* Main Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Card Styling - matches SortableDashboardCards */
+        .config-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .config-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Card Header */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card-icon {
+            font-size: 1.75rem;
+            flex-shrink: 0;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        /* Toggle Items */
+        .toggle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            gap: 1rem;
+        }
+
+        .toggle-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .toggle-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: rgba(147, 51, 234, 0.8);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Number Input */
+        .number-input, .time-input, .text-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .number-input {
+            width: 75px;
+        }
+
+        .time-input {
+            width: 110px;
+        }
+
+        .text-input {
+            width: 140px;
+        }
+
+        .number-input:focus, .time-input:focus, .text-input:focus {
+            outline: none;
+            border-color: rgba(147, 51, 234, 0.8);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Unit Label */
+        .unit {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+        }
+
+        /* Action Buttons Section */
+        .action-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 2rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: rgba(147, 51, 234, 0.9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(147, 51, 234, 0.5);
+            background: rgba(147, 51, 234, 1);
+        }
+
+        .btn-secondary {
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            background: rgba(59, 130, 246, 1);
+        }
+
+        .btn-tertiary {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+
+        .btn-tertiary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+            background: rgba(16, 185, 129, 1);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📅 Schedule Configuration</h1>
+            <p>Configure auto-schedule generation rules and preferences</p>
+        </div>
+
+        <!-- Configuration Cards Grid -->
+        <div class="content-grid">
+
+            <!-- Time-Based Constraints -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">🕐</span>
+                    <span class="card-title">Time Constraints</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Younger Kids Cutoff</div>
+                    <div class="toggle-control">
+                        <input type="time" class="time-input" value="11:00">
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Older Kids Start</div>
+                    <div class="toggle-control">
+                        <input type="time" class="time-input" value="14:00">
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Session Start</div>
+                    <div class="toggle-control">
+                        <input type="time" class="time-input" value="09:00">
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Session End</div>
+                    <div class="toggle-control">
+                        <input type="time" class="time-input" value="18:00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dancer Spacing -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">👯</span>
+                    <span class="card-title">Dancer Spacing</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Min Between Dancer</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="3" min="0" max="10">
+                        <span class="unit">routines</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Max Between Dancer</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="5" min="0" max="20">
+                        <span class="unit">routines</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Warn Back-to-Back</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Management -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">🎭</span>
+                    <span class="card-title">Categories</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Keep Together</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Never Split</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Variety Mode</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Level Progression</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Studio Management -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">🏢</span>
+                    <span class="card-title">Studios</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Same-Day Small Studios</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Small Studio Threshold</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="20" min="1" max="100">
+                        <span class="unit">routines</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Studio Clustering</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Awards & Breaks -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">🏆</span>
+                    <span class="card-title">Awards & Breaks</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Awards Duration</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="30" min="10" max="90">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Break Frequency</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="90" min="30" max="180">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Short Break</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="15" min="5" max="30">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Lunch Break</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="60" min="30" max="120">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Auto Lunch</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Lunch Time</div>
+                    <div class="toggle-control">
+                        <input type="time" class="time-input" value="12:00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Capacity -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">📊</span>
+                    <span class="card-title">Session Capacity</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Max Per Session</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="50" min="10" max="200">
+                        <span class="unit">entries</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Buffer Start</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="10" min="0" max="30">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Buffer End</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="10" min="0" max="30">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Transition Time</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="30" min="15" max="120">
+                        <span class="unit">sec</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Timing -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">⏱️</span>
+                    <span class="card-title">Performance Timing</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Avg Length</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="3" min="1" max="15" step="0.5">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Solo</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="3" min="1" max="10" step="0.5">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Duet/Trio</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="3" min="1" max="10" step="0.5">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Small Group</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="4" min="1" max="10" step="0.5">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Large Group</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="5" min="1" max="10" step="0.5">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Line</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="5" min="1" max="10" step="0.5">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Production</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="7" min="1" max="15" step="0.5">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Props & Production -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">🎪</span>
+                    <span class="card-title">Props & Production</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Productions at Start</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Props Buffer</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="5" min="0" max="15">
+                        <span class="unit">min</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Props to Start</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Draft & Feedback -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">💬</span>
+                    <span class="card-title">Draft & Feedback</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Studio Feedback</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Feedback Window</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="7" min="1" max="30">
+                        <span class="unit">days</span>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Auto-Lock</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Draft Revisions</div>
+                    <div class="toggle-control">
+                        <input type="number" class="number-input" value="2" min="1" max="5">
+                        <span class="unit">drafts</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+            <div class="config-card">
+                <div class="card-header">
+                    <span class="card-icon">⚙️</span>
+                    <span class="card-title">Advanced</span>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Studio Time Requests</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle-item">
+                    <div class="toggle-label">Conflict Warnings</div>
+                    <div class="toggle-control">
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-section">
+            <div class="action-buttons">
+                <button class="btn btn-primary">
+                    <span>🤖</span>
+                    <span>AI Auto-Schedule</span>
+                </button>
+                <button class="btn btn-secondary">
+                    <span>📋</span>
+                    <span>Manual Schedule</span>
+                </button>
+                <button class="btn btn-tertiary">
+                    <span>💾</span>
+                    <span>Save Configuration</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
