@@ -3,6 +3,8 @@
  * Uses dancer DOBs and routine classification to determine age division
  */
 
+import { parseISODateToUTC } from './date-utils';
+
 export type AgeGroup = 'Petite' | 'Mini' | 'Junior' | 'Teen' | 'Senior' | 'Adult';
 
 export interface DancerForAgeCalc {
@@ -15,7 +17,7 @@ export interface DancerForAgeCalc {
  * Calculate age as of competition date (or today if not specified)
  */
 export function calculateAge(dob: string | Date, asOfDate?: Date): number {
-  const birthDate = typeof dob === 'string' ? new Date(dob) : dob;
+  const birthDate = typeof dob === 'string' ? parseISODateToUTC(dob)! : dob;
   const referenceDate = asOfDate || new Date();
 
   let age = referenceDate.getFullYear() - birthDate.getFullYear();

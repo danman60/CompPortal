@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
+import { parseISODateToUTC } from '@/lib/date-utils';
 
 interface DancerFormProps {
   studioId?: string;
@@ -69,12 +70,20 @@ export default function DancerForm({ studioId, dancerId }: DancerFormProps) {
   // Pre-populate form data when editing
   useEffect(() => {
     if (existingDancer && isEditMode) {
+      // Convert Date to YYYY-MM-DD string preserving the original date
+      // Use UTC parsing to prevent timezone shift
+      let dateString = '';
+      if (existingDancer.date_of_birth) {
+        const dob = typeof existingDancer.date_of_birth === 'string'
+          ? parseISODateToUTC(existingDancer.date_of_birth)!
+          : existingDancer.date_of_birth;
+        dateString = dob.toISOString().split('T')[0];
+      }
+
       form.reset({
         first_name: existingDancer.first_name || '',
         last_name: existingDancer.last_name || '',
-        date_of_birth: existingDancer.date_of_birth
-          ? new Date(existingDancer.date_of_birth).toISOString().split('T')[0]
-          : '',
+        date_of_birth: dateString,
         classification_id: existingDancer.classification_id || '',
       });
     }

@@ -10,6 +10,8 @@ import { highlightText } from '@/lib/highlightText';
 import { SkeletonDancerCard } from '@/components/ui';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
+import { parseISODateToUTC } from '@/lib/date-utils';
+import { calculateAge } from '@/lib/ageGroupCalculator';
 
 export default function DancersList() {
   const { data, isLoading, error, refetch, dataUpdatedAt } = trpc.dancer.getAll.useQuery({ limit: 1000 });
@@ -358,12 +360,20 @@ export default function DancersList() {
               )}
 
               {/* Age/Birth Year */}
-              {dancer.date_of_birth && (
-                <div className="flex items-center gap-2 text-gray-400 text-sm mb-3">
-                  <span>🎂</span>
-                  <span>{new Date(dancer.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} ({new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()} years old)</span>
-                </div>
-              )}
+              {dancer.date_of_birth && (() => {
+                // Convert Date object back to ISO string, then parse as UTC
+                const isoString = dancer.date_of_birth instanceof Date
+                  ? dancer.date_of_birth.toISOString().split('T')[0]
+                  : dancer.date_of_birth;
+                const dob = parseISODateToUTC(isoString)!;
+                const age = calculateAge(isoString);
+                return (
+                  <div className="flex items-center gap-2 text-gray-400 text-sm mb-3">
+                    <span>🎂</span>
+                    <span>{dob.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} ({age} years old)</span>
+                  </div>
+                );
+              })()}
 
               {/* Classification */}
               {dancer.classifications && (
@@ -463,14 +473,22 @@ export default function DancersList() {
                       )}
                     </td>
                     <td className="px-6 py-4" style={{ width: '150px' }}>
-                      {dancer.date_of_birth ? (
-                        <div className="text-white">
-                          {new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()} yrs
-                          <div className="text-xs text-gray-400 mt-1">
-                            {new Date(dancer.date_of_birth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {dancer.date_of_birth ? (() => {
+                        // Convert Date object back to ISO string, then parse as UTC
+                        const isoString = dancer.date_of_birth instanceof Date
+                          ? dancer.date_of_birth.toISOString().split('T')[0]
+                          : dancer.date_of_birth;
+                        const dob = parseISODateToUTC(isoString)!;
+                        const age = calculateAge(isoString);
+                        return (
+                          <div className="text-white">
+                            {age} yrs
+                            <div className="text-xs text-gray-400 mt-1">
+                              {dob.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
                           </div>
-                        </div>
-                      ) : (
+                        );
+                      })() : (
                         <span className="text-gray-500">N/A</span>
                       )}
                     </td>
