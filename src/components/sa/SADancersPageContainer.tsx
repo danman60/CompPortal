@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
 import { parseISODateToUTC } from '@/lib/date-utils';
-import { getAgeGroup } from '@/lib/ageGroupCalculator';
+import { calculateAge, getAgeGroup } from '@/lib/ageGroupCalculator';
 
 /**
  * Super Admin Dancers View
@@ -34,7 +34,7 @@ export function SADancersPageContainer() {
 
   const tenants = tenantsData?.tenants || [];
   const studios = studiosData?.studios || [];
-  const classifications = settingsData?.classifications || [];
+  const classifications = settingsData?.danceCategories || []; // danceCategories contains classifications
   const dancers = dancersData?.dancers || [];
 
   const isLoading = tenantsLoading || studiosLoading || settingsLoading || dancersLoading;
@@ -195,7 +195,8 @@ export function SADancersPageContainer() {
               <tbody>
                 {dancers.map((dancer: any) => {
                   const dob = parseISODateToUTC(dancer.date_of_birth);
-                  const ageGroup = getAgeGroup(dob);
+                  const age = dob ? calculateAge(dob) : 0;
+                  const ageGroup = getAgeGroup(age);
                   const routineCount = dancer._count?.entry_participants || 0;
                   const statusColor =
                     dancer.status === 'active' ? 'bg-green-500/20 text-green-300' :
@@ -213,12 +214,12 @@ export function SADancersPageContainer() {
                       <td className="px-6 py-4 text-white/70">{dancer.tenants?.name || 'N/A'}</td>
                       <td className="px-6 py-4 text-white/70">{dancer.studios?.name || 'N/A'}</td>
                       <td className="px-6 py-4 text-white/70">
-                        {dob.toLocaleDateString('en-US', {
+                        {dob ? dob.toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
                           timeZone: 'UTC'
-                        })}
+                        }) : 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-white/70">{ageGroup}</td>
                       <td className="px-6 py-4 text-white/70">{dancer.classifications?.name || 'N/A'}</td>
