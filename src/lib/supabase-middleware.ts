@@ -10,6 +10,15 @@ export async function updateSession(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const subdomain = extractSubdomain(hostname);
 
+  // Enforce ALLOWED_TENANTS if environment variable is set (tester branch only)
+  const allowedTenants = process.env.ALLOWED_TENANTS?.split(',').map(t => t.trim()) || [];
+  if (allowedTenants.length > 0 && subdomain && !allowedTenants.includes(subdomain)) {
+    return NextResponse.json(
+      { error: 'Unauthorized tenant access', subdomain, allowed: allowedTenants },
+      { status: 403 }
+    );
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
