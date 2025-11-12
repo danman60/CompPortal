@@ -272,199 +272,29 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        /* 3-Panel Layout System */
+        /* Main Content Area */
         .main-content {
             display: flex;
             gap: 0;
-            position: relative;
         }
 
-        /* LEFT Panel - Unscheduled Routines Pool */
-        .left-panel {
-            width: 25%;
-            min-width: 320px;
-            background: rgba(59, 130, 246, 0.08);
-            border-right: 2px solid rgba(59, 130, 246, 0.3);
-            padding: 1.5rem;
-            overflow-y: auto;
-            max-height: calc(100vh - 400px);
-            transition: all 0.3s ease;
-        }
-
-        .left-panel.collapsed {
-            width: 50px;
-            min-width: 50px;
-            padding: 1rem 0.25rem;
-        }
-
-        .left-panel.maximized {
-            width: 100%;
-        }
-
-        /* CENTER Panel - Schedule Content */
+        /* Schedule Content */
         .schedule-content {
             flex: 1;
-            width: 50%;
             padding: 2rem;
             background: transparent;
             color: #fff;
             overflow-x: auto;
-            transition: all 0.3s ease;
         }
 
-        .schedule-content.collapsed {
-            width: 50px;
-            flex: none;
-            padding: 1rem 0.25rem;
-            overflow: hidden;
-        }
-
-        .schedule-content.maximized {
-            width: 100%;
-        }
-
-        /* RIGHT Panel - Trophy Helper */
+        /* Trophy Helper Panel */
         .trophy-helper {
-            width: 25%;
-            min-width: 320px;
+            width: 350px;
             background: rgba(255, 193, 7, 0.1);
-            border-left: 2px solid rgba(255, 193, 7, 0.3);
+            border-left: 1px solid rgba(255, 193, 7, 0.3);
             padding: 1.5rem;
             overflow-y: auto;
             max-height: calc(100vh - 400px);
-            transition: all 0.3s ease;
-        }
-
-        .trophy-helper.collapsed {
-            width: 50px;
-            min-width: 50px;
-            padding: 1rem 0.25rem;
-        }
-
-        .trophy-helper.maximized {
-            width: 100%;
-        }
-
-        /* Panel Headers with Collapse Controls */
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .panel-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: white;
-        }
-
-        .panel-controls {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .panel-control-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .panel-control-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: scale(1.1);
-        }
-
-        /* Collapsed Panel State */
-        .collapsed .panel-content,
-        .collapsed .panel-header,
-        .collapsed .routine-pool,
-        .collapsed .schedule-table,
-        .collapsed .trophy-category {
-            display: none !important;
-        }
-
-        .collapsed .collapsed-label {
-            display: block !important;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-align: center;
-            cursor: pointer;
-            color: white;
-            padding: 1rem 0;
-        }
-
-        .collapsed-label {
-            display: none;
-        }
-
-        /* Routine Cards in Left Panel */
-        .routine-pool {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .routine-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            padding: 0.75rem;
-            cursor: move;
-            transition: all 0.2s;
-        }
-
-        .routine-card:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(139, 92, 246, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .routine-card.dragging {
-            opacity: 0.5;
-        }
-
-        .routine-card-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: white;
-        }
-
-        .routine-card-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .routine-card-badge {
-            display: inline-block;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            background: rgba(139, 92, 246, 0.3);
-            color: white;
-            margin-top: 0.25rem;
         }
 
         .trophy-helper h3 {
@@ -987,131 +817,8 @@
 
         <!-- Main Content with Trophy Helper -->
         <div class="main-content">
-            <!-- LEFT PANEL: Unscheduled Routines Pool -->
-            <div class="left-panel" id="leftPanel">
-                <div class="collapsed-label" onclick="togglePanel('left')">📋 UNSCHEDULED POOL</div>
-
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>📋</span>
-                        <span>Unscheduled Routines</span>
-                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">(127 total)</span>
-                    </div>
-                    <div class="panel-controls">
-                        <button class="panel-control-btn" onclick="togglePanel('left')" title="Collapse">◀</button>
-                        <button class="panel-control-btn" onclick="maximizePanel('left')" title="Maximize">⛶</button>
-                    </div>
-                </div>
-
-                <div class="panel-content">
-                    <!-- Filters (moved from top bar) -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <div style="margin-bottom: 1rem;">
-                            <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: rgba(255,255,255,0.8);">📊 Classification:</div>
-                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                <button class="filter-btn" data-filter="classification" data-value="Emerald">Emerald <span class="count">(8)</span></button>
-                                <button class="filter-btn" data-filter="classification" data-value="Sapphire">Sapphire <span class="count">(15)</span></button>
-                                <button class="filter-btn" data-filter="classification" data-value="Ruby">Ruby <span class="count">(22)</span></button>
-                                <button class="filter-btn" data-filter="classification" data-value="Diamond">Diamond <span class="count">(18)</span></button>
-                                <button class="filter-btn" data-filter="classification" data-value="Crystal">Crystal <span class="count">(14)</span></button>
-                            </div>
-                        </div>
-                        <div style="margin-bottom: 1rem;">
-                            <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: rgba(255,255,255,0.8);">🎭 Genre:</div>
-                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                <button class="filter-btn" data-filter="genre" data-value="Tap">Tap</button>
-                                <button class="filter-btn" data-filter="genre" data-value="Jazz">Jazz</button>
-                                <button class="filter-btn" data-filter="genre" data-value="Contemporary">Contemporary</button>
-                                <button class="filter-btn" data-filter="genre" data-value="Hip Hop">Hip Hop</button>
-                            </div>
-                        </div>
-                        <div>
-                            <input type="text" class="search-input" placeholder="🔍 Search..." id="poolSearchInput" style="width: 100%; margin-bottom: 0.5rem;">
-                            <button class="btn btn-secondary" onclick="clearPoolFilters()" style="width: 100%; font-size: 0.8rem; padding: 0.4rem;">✕ Clear Filters</button>
-                        </div>
-                    </div>
-
-                    <!-- Routine Pool -->
-                    <div class="routine-pool">
-                        <!-- Example Routine Cards (UNSCHEDULED status) -->
-                        <div class="routine-card" draggable="true" data-id="201" data-duration="3" data-classification="Emerald" data-genre="Tap">
-                            <div class="routine-card-title">Shuffle Time</div>
-                            <div class="routine-card-meta">
-                                <div>🏢 <strong>Studio F</strong></div>
-                                <div>🎭 Tap Age 7 • Solo</div>
-                                <div>👤 Lucy Adams</div>
-                                <div>⏱️ 3 minutes</div>
-                            </div>
-                            <span class="routine-card-badge">UNSCHEDULED</span>
-                        </div>
-
-                        <div class="routine-card" draggable="true" data-id="202" data-duration="3" data-classification="Sapphire" data-genre="Jazz">
-                            <div class="routine-card-title">Blue Velvet</div>
-                            <div class="routine-card-meta">
-                                <div>🏢 <strong>Studio G</strong></div>
-                                <div>🎭 Jazz Age 8 • Solo</div>
-                                <div>👤 Maria Garcia</div>
-                                <div>⏱️ 3 minutes</div>
-                            </div>
-                            <span class="routine-card-badge">UNSCHEDULED</span>
-                        </div>
-
-                        <div class="routine-card" draggable="true" data-id="203" data-duration="5" data-classification="Ruby" data-genre="Contemporary">
-                            <div class="routine-card-title">Dreamscape</div>
-                            <div class="routine-card-meta">
-                                <div>🏢 <strong>Studio H</strong></div>
-                                <div>🎭 Contemporary Age 9 • Small Group</div>
-                                <div>👥 Group (5)</div>
-                                <div>⏱️ 5 minutes</div>
-                            </div>
-                            <span class="routine-card-badge">UNSCHEDULED</span>
-                        </div>
-
-                        <div class="routine-card" draggable="true" data-id="204" data-duration="7" data-classification="Diamond" data-genre="Hip Hop">
-                            <div class="routine-card-title">Street Kings</div>
-                            <div class="routine-card-meta">
-                                <div>🏢 <strong>Studio I</strong></div>
-                                <div>🎭 Hip Hop Age 10 • Large Group</div>
-                                <div>👥 Group (12)</div>
-                                <div>⏱️ 7 minutes</div>
-                            </div>
-                            <span class="routine-card-badge">UNSCHEDULED</span>
-                        </div>
-
-                        <div class="routine-card" draggable="true" data-id="205" data-duration="3" data-classification="Crystal" data-genre="Jazz">
-                            <div class="routine-card-title">Midnight Jazz</div>
-                            <div class="routine-card-meta">
-                                <div>🏢 <strong>Studio J</strong></div>
-                                <div>🎭 Jazz Age 11 • Duet</div>
-                                <div>👥 Alex & Sam Lee</div>
-                                <div>⏱️ 3 minutes</div>
-                            </div>
-                            <span class="routine-card-badge">UNSCHEDULED</span>
-                        </div>
-
-                        <!-- Note: Real implementation would dynamically generate all 127 routine cards -->
-                        <div style="padding: 1rem; text-align: center; color: rgba(255,255,255,0.5); font-size: 0.8rem;">
-                            ... and 122 more routines<br>
-                            (Demo showing 5 sample cards)
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CENTER PANEL: Schedule Content -->
-            <div class="schedule-content" id="centerPanel">
-                <div class="collapsed-label" onclick="togglePanel('center')">📅 SCHEDULE GRID</div>
-
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>📅</span>
-                        <span>Schedule Grid</span>
-                    </div>
-                    <div class="panel-controls">
-                        <button class="panel-control-btn" onclick="togglePanel('center')" title="Collapse">▼</button>
-                        <button class="panel-control-btn" onclick="maximizePanel('center')" title="Maximize">⛶</button>
-                    </div>
-                </div>
+            <!-- Schedule Content -->
+            <div class="schedule-content">
                 <!-- SESSION 1: Morning -->
                 <div class="session-section">
                     <div class="session-header">
@@ -1376,25 +1083,12 @@
                 </div>
             </div>
 
-            <!-- RIGHT PANEL: Trophy Helper -->
-            <div class="trophy-helper" id="rightPanel">
-                <div class="collapsed-label" onclick="togglePanel('right')">🏆 TROPHY HELPER</div>
-
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>🏆</span>
-                        <span>Trophy Helper</span>
-                    </div>
-                    <div class="panel-controls">
-                        <button class="panel-control-btn" onclick="togglePanel('right')" title="Collapse">▶</button>
-                        <button class="panel-control-btn" onclick="maximizePanel('right')" title="Maximize">⛶</button>
-                    </div>
-                </div>
-
-                <div class="panel-content">
-                    <p style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 1rem;">
-                        Last routines per overall category • Schedule awards 30 min after
-                    </p>
+            <!-- Trophy Helper Panel -->
+            <div class="trophy-helper">
+                <h3>🏆 Trophy Helper</h3>
+                <p style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 1rem;">
+                    Last routines per overall category • Schedule awards 30 min after
+                </p>
 
                 <div class="trophy-category">
                     <div class="trophy-category-title">TAP AGE 7 EMERALD SOLOS</div>
@@ -1438,9 +1132,8 @@
                         All Emerald routines are on Day 1. Consider spreading across multiple days to prevent early checkout.
                     </div>
                 </div>
-                </div> <!-- End panel-content -->
-            </div> <!-- End trophy-helper -->
-        </div> <!-- End main-content -->
+            </div>
+        </div>
 
         <!-- Legend -->
         <div class="legend">
@@ -1897,146 +1590,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeSchedule();
             setupGroupDragHandlers();
-        });
-
-        // ==================== PANEL CONTROL FUNCTIONS (GLOBAL SCOPE) ====================
-
-        function togglePanel(panelName) {
-            const panelMap = {
-                'left': 'leftPanel',
-                'center': 'centerPanel',
-                'right': 'rightPanel'
-            };
-            const panelId = panelMap[panelName];
-            const panel = document.getElementById(panelId);
-
-            if (!panel) return;
-
-            // Toggle collapsed state
-            panel.classList.toggle('collapsed');
-
-            // Remove maximized state if present
-            if (panel.classList.contains('maximized')) {
-                panel.classList.remove('maximized');
-            }
-        }
-
-        function maximizePanel(panelName) {
-            const panelMap = {
-                'left': 'leftPanel',
-                'center': 'centerPanel',
-                'right': 'rightPanel'
-            };
-            const panelId = panelMap[panelName];
-            const targetPanel = document.getElementById(panelId);
-
-            if (!targetPanel) return;
-
-            // Check if already maximized
-            if (targetPanel.classList.contains('maximized')) {
-                // Restore all panels to default
-                document.getElementById('leftPanel').classList.remove('maximized', 'collapsed');
-                document.getElementById('centerPanel').classList.remove('maximized', 'collapsed');
-                document.getElementById('rightPanel').classList.remove('maximized', 'collapsed');
-            } else {
-                // Maximize target, collapse others
-                Object.keys(panelMap).forEach(name => {
-                    const panel = document.getElementById(panelMap[name]);
-                    if (name === panelName) {
-                        panel.classList.add('maximized');
-                        panel.classList.remove('collapsed');
-                    } else {
-                        panel.classList.add('collapsed');
-                        panel.classList.remove('maximized');
-                    }
-                });
-            }
-        }
-
-        // Filter routine cards in left panel
-        function filterRoutineCards() {
-            const cards = document.querySelectorAll('.routine-card');
-            const searchTerm = document.getElementById('poolSearchInput')?.value.toLowerCase() || '';
-
-            // Get active filters
-            const activeClassifications = Array.from(document.querySelectorAll('.left-panel .filter-btn[data-filter="classification"].active'))
-                .map(btn => btn.dataset.value);
-            const activeGenres = Array.from(document.querySelectorAll('.left-panel .filter-btn[data-filter="genre"].active'))
-                .map(btn => btn.dataset.value);
-
-            cards.forEach(card => {
-                let show = true;
-
-                // Classification filter (radio - only one)
-                if (activeClassifications.length > 0) {
-                    const cardClass = card.dataset.classification;
-                    if (!activeClassifications.includes(cardClass)) {
-                        show = false;
-                    }
-                }
-
-                // Genre filter (checkbox - multiple)
-                if (activeGenres.length > 0 && show) {
-                    const cardGenre = card.dataset.genre;
-                    if (!activeGenres.includes(cardGenre)) {
-                        show = false;
-                    }
-                }
-
-                // Search filter
-                if (searchTerm && show) {
-                    const cardText = card.textContent.toLowerCase();
-                    if (!cardText.includes(searchTerm)) {
-                        show = false;
-                    }
-                }
-
-                // Show/hide card
-                card.style.display = show ? 'block' : 'none';
-            });
-        }
-
-        function clearPoolFilters() {
-            // Clear all active filter buttons in left panel
-            document.querySelectorAll('.left-panel .filter-btn.active').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Clear search input
-            const searchInput = document.getElementById('poolSearchInput');
-            if (searchInput) searchInput.value = '';
-
-            // Show all cards
-            filterRoutineCards();
-        }
-
-        // Wire up filter buttons and search on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wire up filter buttons in left panel
-            document.querySelectorAll('.left-panel .filter-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const filterType = this.dataset.filter;
-
-                    if (filterType === 'classification') {
-                        // Radio behavior: deactivate other classifications
-                        document.querySelectorAll('.left-panel .filter-btn[data-filter="classification"]').forEach(b => {
-                            b.classList.remove('active');
-                        });
-                    }
-
-                    // Toggle this button
-                    this.classList.toggle('active');
-
-                    // Apply filters
-                    filterRoutineCards();
-                });
-            });
-
-            // Wire up search input in left panel
-            const poolSearch = document.getElementById('poolSearchInput');
-            if (poolSearch) {
-                poolSearch.addEventListener('input', filterRoutineCards);
-            }
         });
     </script>
 </body>
