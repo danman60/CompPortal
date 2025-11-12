@@ -797,6 +797,8 @@
         }
 
         .conflict-item {
+            display: flex;
+            align-items: center;
             background: rgba(255, 255, 255, 0.05);
             padding: 0.5rem;
             margin-bottom: 0.5rem;
@@ -873,6 +875,138 @@
         .autosave-indicator.show {
             opacity: 1;
         }
+
+        /* Modal System */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            color: white;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .modal-form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-form-group input[type="text"],
+        .modal-form-group select,
+        .modal-form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .modal-form-group input[type="text"]:focus,
+        .modal-form-group select:focus,
+        .modal-form-group textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        .modal-form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .btn {
+            min-width: 100px;
+        }
     </style>
 </head>
 <body>
@@ -932,6 +1066,13 @@
                     <button class="filter-btn" data-filter="age" data-value="Age 10">10</button>
                     <button class="filter-btn" data-filter="age" data-value="Age 11">11</button>
                     <button class="filter-btn" data-filter="age" data-value="Age 12">12</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 13">13</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 14">14</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 15">15</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 16">16</button>
+                    <button class="filter-btn" data-filter="age" data-value="Senior Plus">Senior+ (17-18)</button>
+                    <button class="filter-btn" data-filter="age" data-value="Adult">Adult (19+)</button>
+                    <button class="filter-btn" data-filter="age" data-value="Pro Teacher">Pro Teacher</button>
                 </div>
                 <input type="text" class="search-input" placeholder="🔍 Search routines, dancers, studios..." id="searchInput">
                 <button class="btn btn-secondary" onclick="clearHighlights()">✕ Clear</button>
@@ -944,10 +1085,12 @@
                 ✨ <strong>Manual Mode:</strong> Drag routines to reorder • Auto-renumber in Draft • Zero buffer time • 6-routine minimum spacing
             </div>
             <div class="actions">
+                <button class="btn btn-secondary" onclick="openCreateBlockModal()">➕ Create Block</button>
                 <button class="btn btn-secondary">🔄 Auto-Generate Draft</button>
                 <button class="btn btn-secondary">📋 View Requests (3)</button>
                 <button class="btn btn-primary">🔒 Finalize Schedule</button>
                 <button class="btn btn-primary">💾 Save Draft</button>
+                <button class="btn btn-secondary" onclick="exportPDF()">📄 Export PDF</button>
             </div>
         </div>
 
@@ -955,16 +1098,25 @@
         <div class="conflict-panel">
             <h4>⚠️ Detected Conflicts (2 Critical, 3 Warnings)</h4>
             <div class="conflict-item">
-                <span class="conflict-severity severity-critical">CRITICAL</span>
-                <strong>Sarah Johnson</strong> in Routine #105 (8:20 AM) and Routine #107 (8:26 AM) - Only 1 routine apart (need 6 minimum)
+                <div style="flex: 1;">
+                    <span class="conflict-severity severity-critical">CRITICAL</span>
+                    <strong>Sarah Johnson</strong> in Routine #105 (8:20 AM) and Routine #107 (8:26 AM) - Only 1 routine apart (need 6 minimum)
+                </div>
+                <button class="btn btn-secondary" style="margin-left: 1rem; padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="openOverrideModal('Sarah Johnson', 105, 107)">Override</button>
             </div>
             <div class="conflict-item">
-                <span class="conflict-severity severity-critical">CRITICAL</span>
-                <strong>Emma Chen</strong> in Routine #110 (8:36 AM) and Routine #112 (8:43 AM) - Only 2 routines apart (need 6 minimum)
+                <div style="flex: 1;">
+                    <span class="conflict-severity severity-critical">CRITICAL</span>
+                    <strong>Emma Chen</strong> in Routine #110 (8:36 AM) and Routine #112 (8:43 AM) - Only 2 routines apart (need 6 minimum)
+                </div>
+                <button class="btn btn-secondary" style="margin-left: 1rem; padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="openOverrideModal('Emma Chen', 110, 112)">Override</button>
             </div>
             <div class="conflict-item">
-                <span class="conflict-severity severity-warning">WARNING</span>
-                <strong>Madison Lee</strong> in Routine #115 (8:50 AM) and Routine #120 (9:05 AM) - Only 4 routines apart (recommend 6 minimum)
+                <div style="flex: 1;">
+                    <span class="conflict-severity severity-warning">WARNING</span>
+                    <strong>Madison Lee</strong> in Routine #115 (8:50 AM) and Routine #120 (9:05 AM) - Only 4 routines apart (recommend 6 minimum)
+                </div>
+                <button class="btn btn-secondary" style="margin-left: 1rem; padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="openOverrideModal('Madison Lee', 115, 120)">Override</button>
             </div>
         </div>
 
@@ -2036,6 +2188,251 @@
             const poolSearch = document.getElementById('poolSearchInput');
             if (poolSearch) {
                 poolSearch.addEventListener('input', filterRoutineCards);
+            }
+        });
+    </script>
+
+    <!-- Modal: Create Block (Award/Break) -->
+    <div id="createBlockModal" class="modal-overlay" onclick="if(event.target === this) closeModal('createBlockModal')">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Create Block</h3>
+                <button class="modal-close" onclick="closeModal('createBlockModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form-group">
+                    <label>Block Type</label>
+                    <select id="blockType" onchange="updateBlockDurationOptions()">
+                        <option value="break">☕ Break</option>
+                        <option value="award">🏆 Award Ceremony</option>
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label>Duration</label>
+                    <select id="blockDuration">
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="45">45 minutes</option>
+                        <option value="60">60 minutes</option>
+                        <option value="90">90 minutes</option>
+                        <option value="120">120 minutes</option>
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label>Description</label>
+                    <input type="text" id="blockDescription" placeholder="e.g., Lunch Break, Awards for Tap Age 7">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createBlockModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="createBlock()">Create Block</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Override Conflict -->
+    <div id="overrideModal" class="modal-overlay" onclick="if(event.target === this) closeModal('overrideModal')">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚠️ Override Conflict</h3>
+                <button class="modal-close" onclick="closeModal('overrideModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form-group">
+                    <label>Dancer</label>
+                    <input type="text" id="overrideDancer" readonly style="background: rgba(255,255,255,0.05);">
+                </div>
+                <div class="modal-form-group">
+                    <label>Conflicting Routines</label>
+                    <input type="text" id="overrideRoutines" readonly style="background: rgba(255,255,255,0.05);">
+                </div>
+                <div class="modal-form-group">
+                    <label>Override Reason <span style="color: #ef4444;">*</span></label>
+                    <textarea id="overrideReason" placeholder="Explain why this conflict can be ignored (e.g., costume change time is sufficient, dancer confirmed they can make it)"></textarea>
+                </div>
+                <div style="background: rgba(251, 191, 36, 0.1); border-left: 4px solid #fbbf24; padding: 0.75rem; border-radius: 4px; margin-top: 1rem;">
+                    <p style="color: rgba(255,255,255,0.9); font-size: 0.85rem; margin: 0;">
+                        ⚠️ <strong>Warning:</strong> Overriding conflicts may result in dancers missing routines or inadequate costume change time. Document your reason clearly for audit purposes.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('overrideModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitOverride()">Override Conflict</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add Studio Note -->
+    <div id="studioNoteModal" class="modal-overlay" onclick="if(event.target === this) closeModal('studioNoteModal')">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💬 Add Studio Request</h3>
+                <button class="modal-close" onclick="closeModal('studioNoteModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form-group">
+                    <label>Routine</label>
+                    <select id="noteRoutine">
+                        <option value="">Select a routine...</option>
+                        <option value="101">Routine #101 - Rhythm & Rhyme</option>
+                        <option value="102">Routine #102 - Tap Your Troubles Away</option>
+                        <option value="105">Routine #105 - Sparkle & Shine</option>
+                        <option value="106">Routine #106 - Jazz Hands</option>
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label>Request/Note</label>
+                    <textarea id="noteText" placeholder="Enter your scheduling request or note (e.g., Please schedule after 9 AM, Need 3 routines spacing for costume change)"></textarea>
+                </div>
+                <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; padding: 0.75rem; border-radius: 4px; margin-top: 1rem;">
+                    <p style="color: rgba(255,255,255,0.9); font-size: 0.85rem; margin: 0;">
+                        ℹ️ <strong>Note:</strong> The Competition Director will review your request and accommodate if possible. Requests are not guaranteed.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('studioNoteModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitStudioNote()">Submit Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Functions -->
+    <script>
+        // Global modal state
+        let currentModalData = {};
+
+        // Open modals
+        function openCreateBlockModal() {
+            document.getElementById('createBlockModal').classList.add('show');
+            document.getElementById('blockType').value = 'break';
+            document.getElementById('blockDuration').value = '15';
+            document.getElementById('blockDescription').value = '';
+        }
+
+        function openOverrideModal(dancer, routine1, routine2) {
+            currentModalData = { dancer, routine1, routine2 };
+            document.getElementById('overrideDancer').value = dancer;
+            document.getElementById('overrideRoutines').value = `Routine #${routine1} and #${routine2}`;
+            document.getElementById('overrideReason').value = '';
+            document.getElementById('overrideModal').classList.add('show');
+        }
+
+        function openStudioNoteModal() {
+            document.getElementById('noteRoutine').value = '';
+            document.getElementById('noteText').value = '';
+            document.getElementById('studioNoteModal').classList.add('show');
+        }
+
+        // Close modals
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Block duration options update
+        function updateBlockDurationOptions() {
+            const blockType = document.getElementById('blockType').value;
+            const durationSelect = document.getElementById('blockDuration');
+
+            if (blockType === 'award') {
+                // Awards are typically 15 minutes
+                durationSelect.innerHTML = '<option value="15">15 minutes</option>';
+            } else {
+                // Breaks can be various durations
+                durationSelect.innerHTML = `
+                    <option value="15">15 minutes</option>
+                    <option value="30">30 minutes</option>
+                    <option value="45">45 minutes</option>
+                    <option value="60">60 minutes</option>
+                    <option value="90">90 minutes</option>
+                    <option value="120">120 minutes</option>
+                `;
+            }
+        }
+
+        // Create block
+        function createBlock() {
+            const type = document.getElementById('blockType').value;
+            const duration = document.getElementById('blockDuration').value;
+            const description = document.getElementById('blockDescription').value;
+
+            if (!description.trim()) {
+                alert('Please enter a description for the block');
+                return;
+            }
+
+            // In production: Create block via API
+            console.log('Creating block:', { type, duration, description });
+            alert(`${type === 'break' ? 'Break' : 'Award'} block created: ${description} (${duration} min)`);
+
+            closeModal('createBlockModal');
+        }
+
+        // Submit override
+        function submitOverride() {
+            const reason = document.getElementById('overrideReason').value;
+
+            if (!reason.trim()) {
+                alert('Please provide a reason for overriding this conflict');
+                return;
+            }
+
+            // In production: Save override via API
+            console.log('Override submitted:', { ...currentModalData, reason });
+            alert(`Conflict override recorded for ${currentModalData.dancer}`);
+
+            closeModal('overrideModal');
+        }
+
+        // Submit studio note
+        function submitStudioNote() {
+            const routine = document.getElementById('noteRoutine').value;
+            const note = document.getElementById('noteText').value;
+
+            if (!routine) {
+                alert('Please select a routine');
+                return;
+            }
+
+            if (!note.trim()) {
+                alert('Please enter your request or note');
+                return;
+            }
+
+            // In production: Save note via API
+            console.log('Studio note submitted:', { routine, note });
+            alert(`Request submitted for Routine #${routine}`);
+
+            closeModal('studioNoteModal');
+        }
+
+        // Export PDF
+        function exportPDF() {
+            const currentView = document.querySelector('.view-btn.active').textContent;
+            console.log('Exporting PDF for view:', currentView);
+            alert(`PDF export initiated for ${currentView} view.\n\nIn production, this will generate a PDF of the current schedule filtered for the selected view.`);
+        }
+
+        // Add button to header for studio note entry (for demonstration)
+        document.addEventListener('DOMContentLoaded', function() {
+            const actionsDiv = document.querySelector('.actions');
+            if (actionsDiv) {
+                const noteBtn = document.createElement('button');
+                noteBtn.className = 'btn btn-secondary';
+                noteBtn.onclick = openStudioNoteModal;
+                noteBtn.textContent = '💬 Add Request';
+                noteBtn.title = 'Studio Directors: Submit scheduling request';
+                actionsDiv.insertBefore(noteBtn, actionsDiv.children[2]); // Insert after Create Block
+            }
+        });
+
+        // ESC key closes modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.show').forEach(modal => {
+                    modal.classList.remove('show');
+                });
             }
         });
     </script>
