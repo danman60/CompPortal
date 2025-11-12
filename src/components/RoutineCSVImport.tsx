@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'next/navigation';
 import { mapCSVHeaders, ROUTINE_CSV_FIELDS } from '@/lib/csv-utils';
+import { parseISODateToUTC } from '@/lib/date-utils';
 import * as XLSX from 'xlsx';
 import levenshtein from 'fast-levenshtein';
 
@@ -164,15 +165,26 @@ export default function RoutineCSVImport() {
   };
 
   // Calculate age at event date - Dec 31 cutoff
+  // FIXED: Bug discovered 11:31 AM Nov 12, 2025 - timezone shift caused +1 year error
+  // This bug affected O'Neill Academy's 68 bulk-imported routines
   const calculateAgeAtEvent = (dateOfBirth: string | null, eventYear: number): number | null => {
     if (!dateOfBirth) return null;
 
-    const birthDate = new Date(dateOfBirth);
-    const cutoffDate = new Date(eventYear, 11, 31); // Dec 31
-    const diffMs = cutoffDate.getTime() - birthDate.getTime();
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    const birthDate = parseISODateToUTC(dateOfBirth);
+    if (!birthDate) return null;
 
-    return Math.floor(diffDays / 365);
+    const cutoffDate = new Date(Date.UTC(eventYear, 11, 31)); // Dec 31 UTC
+
+    // Use UTC methods to prevent timezone mismatch
+    let age = cutoffDate.getUTCFullYear() - birthDate.getUTCFullYear();
+    const monthDiff = cutoffDate.getUTCMonth() - birthDate.getUTCMonth();
+
+    // Adjust if birthday hasn't occurred yet this year
+    if (monthDiff < 0 || (monthDiff === 0 && cutoffDate.getUTCDate() < birthDate.getUTCDate())) {
+      age--;
+    }
+
+    return age;
   };
 
   const parseExcel = (workbook: XLSX.WorkBook, sheetName: string): any[] => {
