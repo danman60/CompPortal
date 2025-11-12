@@ -20,11 +20,13 @@ export function calculateAge(dob: string | Date, asOfDate?: Date): number {
   const birthDate = typeof dob === 'string' ? parseISODateToUTC(dob)! : dob;
   const referenceDate = asOfDate || new Date();
 
-  let age = referenceDate.getFullYear() - birthDate.getFullYear();
-  const monthDiff = referenceDate.getMonth() - birthDate.getMonth();
+  // Use UTC methods to avoid timezone mismatch
+  // birthDate is UTC, so we need to compare in UTC
+  let age = referenceDate.getUTCFullYear() - birthDate.getUTCFullYear();
+  const monthDiff = referenceDate.getUTCMonth() - birthDate.getUTCMonth();
 
   // Adjust if birthday hasn't occurred yet this year
-  if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birthDate.getDate())) {
+  if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getUTCDate() < birthDate.getUTCDate())) {
     age--;
   }
 

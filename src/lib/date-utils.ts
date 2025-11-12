@@ -70,14 +70,15 @@ export function calculateAge(
   if (!birthdate) return null;
 
   try {
-    const birthDateObj = typeof birthdate === 'string' ? new Date(birthdate) : birthdate;
+    const birthDateObj = typeof birthdate === 'string' ? parseISODateToUTC(birthdate)! : birthdate;
     const refDateObj = typeof referenceDate === 'string' ? new Date(referenceDate) : referenceDate;
 
-    let age = refDateObj.getFullYear() - birthDateObj.getFullYear();
-    const monthDiff = refDateObj.getMonth() - birthDateObj.getMonth();
+    // Use UTC methods to avoid timezone mismatch
+    let age = refDateObj.getUTCFullYear() - birthDateObj.getUTCFullYear();
+    const monthDiff = refDateObj.getUTCMonth() - birthDateObj.getUTCMonth();
 
     // Adjust if birthday hasn't occurred yet this year
-    if (monthDiff < 0 || (monthDiff === 0 && refDateObj.getDate() < birthDateObj.getDate())) {
+    if (monthDiff < 0 || (monthDiff === 0 && refDateObj.getUTCDate() < birthDateObj.getUTCDate())) {
       age--;
     }
 

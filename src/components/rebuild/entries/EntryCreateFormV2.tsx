@@ -12,6 +12,7 @@ import { ReservationContextBar } from './ReservationContextBar';
 import { EntryFormActions } from './EntryFormActions';
 import { ImportActions } from './ImportActions';
 import { ClassificationRequestExceptionModal } from '@/components/ClassificationRequestExceptionModal';
+import { parseISODateToUTC } from '@/lib/date-utils';
 import toast from 'react-hot-toast';
 
 interface EntryCreateFormV2Props {
@@ -80,8 +81,12 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   const dancers = (dancersData?.dancers || []) as any[];
 
   // Age calculation uses December 31st of competition year (not competition date)
+  // FIXED: Create as UTC to prevent timezone shifts in age calculation
   const eventStartDate = competition?.competition_start_date
-    ? new Date(new Date(competition.competition_start_date).getFullYear(), 11, 31) // Dec 31st
+    ? (() => {
+        const year = new Date(competition.competition_start_date).getUTCFullYear();
+        return new Date(Date.UTC(year, 11, 31)); // Dec 31st UTC midnight
+      })()
     : null;
 
   const formHook = useEntryFormV2({
@@ -171,12 +176,23 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
     // Don't clear category_id if no CSV value - user may have selected manually
 
     // Helper to calculate age
+    // FIXED: Bug discovered 11:31 AM Nov 12, 2025 - was using new Date() causing timezone shift
+    // This caused routine_age to be stored as +1 year older (affects 115 existing entries)
     const calculateAge = (dateOfBirth: string | null): number | null => {
       if (!dateOfBirth || !eventStartDate) return null;
-      const dob = new Date(dateOfBirth);
-      const diffMs = eventStartDate.getTime() - dob.getTime();
-      const diffDays = diffMs / (1000 * 60 * 60 * 24);
-      return Math.floor(diffDays / 365.25);
+      const dob = parseISODateToUTC(dateOfBirth);
+      if (!dob) return null;
+
+      // Use UTC methods to prevent timezone mismatch
+      let age = eventStartDate.getUTCFullYear() - dob.getUTCFullYear();
+      const monthDiff = eventStartDate.getUTCMonth() - dob.getUTCMonth();
+
+      // Adjust if birthday hasn't occurred yet this year
+      if (monthDiff < 0 || (monthDiff === 0 && eventStartDate.getUTCDate() < dob.getUTCDate())) {
+        age--;
+      }
+
+      return age;
     };
 
     // Pre-select matched dancers WITH classification from CSV
