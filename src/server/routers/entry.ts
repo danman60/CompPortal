@@ -387,7 +387,8 @@ export const entryRouter = router({
         });
 
         // Create entry snapshots and update entry statuses (PHASE1_SPEC.md lines 619-626)
-        for (const entry of entries) {
+        // Use batch operations to prevent transaction timeout with large entry counts
+        const summaryEntriesData = entries.map((entry) => {
           // Create immutable snapshot for audit trail
           // Convert dates to ISO strings for clean JSON serialization
           const snapshot = {
@@ -396,21 +397,26 @@ export const entryRouter = router({
             updated_at: entry.updated_at?.toISOString(),
           };
 
-          await tx.summary_entries.create({
-            data: {
-              tenant_id: ctx.tenantId!,
-              summary_id: summary.id,
-              entry_id: entry.id,
-              snapshot: snapshot as any,
-            },
-          });
+          return {
+            tenant_id: ctx.tenantId!,
+            summary_id: summary.id,
+            entry_id: entry.id,
+            snapshot: snapshot as any,
+          };
+        });
 
-          // Update entry status to 'submitted' per spec line 625
-          await tx.competition_entries.update({
-            where: { id: entry.id },
-            data: { status: 'submitted' },
-          });
-        }
+        // Batch create all summary entries (1 operation instead of N)
+        await tx.summary_entries.createMany({
+          data: summaryEntriesData,
+        });
+
+        // Batch update all entry statuses to 'submitted' (1 operation instead of N)
+        await tx.competition_entries.updateMany({
+          where: {
+            id: { in: entries.map(e => e.id) },
+          },
+          data: { status: 'submitted' },
+        });
 
         logger.info('✅ Transaction END - about to commit', {
           reservationId: fullReservation.id,
