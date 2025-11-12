@@ -122,6 +122,109 @@ export const dancerRouter = router({
       };
     }),
 
+  // Get all dancers for Super Admin (multi-tenant view)
+  getAllForSuperAdmin: protectedProcedure
+    .input(
+      z
+        .object({
+          tenantId: z.string().uuid().optional(),
+          studioId: z.string().uuid().optional(),
+          classificationId: z.string().uuid().optional(),
+          status: z.string().optional(),
+          search: z.string().optional(),
+          limit: z.number().int().min(1).max(1000).default(1000),
+          offset: z.number().int().min(0).default(0),
+        })
+        .nullish()
+    )
+    .query(async ({ ctx, input }) => {
+      // Only super admins can access this endpoint
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only super admins can access multi-tenant dancer view',
+        });
+      }
+
+      const { tenantId, studioId, classificationId, status, search, limit = 1000, offset = 0 } = input ?? {};
+
+      const where: any = {};
+
+      // Optional filters (SA can see all tenants)
+      if (tenantId) {
+        where.tenant_id = tenantId;
+      }
+
+      if (studioId) {
+        where.studio_id = studioId;
+      }
+
+      if (classificationId) {
+        where.classification_id = classificationId;
+      }
+
+      if (status) {
+        where.status = status;
+      }
+
+      if (search) {
+        where.OR = [
+          { first_name: { contains: search, mode: 'insensitive' } },
+          { last_name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { registration_number: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      const [dancers, total] = await Promise.all([
+        prisma.dancers.findMany({
+          where,
+          include: {
+            studios: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                city: true,
+                province: true,
+              },
+            },
+            tenants: {
+              select: {
+                id: true,
+                name: true,
+                subdomain: true,
+              },
+            },
+            classifications: {
+              select: {
+                id: true,
+                name: true,
+                skill_level: true,
+              },
+            },
+            _count: {
+              select: {
+                entry_participants: true,
+              },
+            },
+          },
+          orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
+          take: limit,
+          skip: offset,
+        }),
+        prisma.dancers.count({ where }),
+      ]);
+
+      return {
+        dancers,
+        total,
+        limit,
+        offset,
+        hasMore: offset + dancers.length < total,
+      };
+    }),
+
   // Get a single dancer by ID
   getById: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
