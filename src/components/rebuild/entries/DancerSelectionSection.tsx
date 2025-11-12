@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SelectedDancer } from '@/hooks/rebuild/useEntryFormV2';
+import { parseISODateToUTC } from '@/lib/date-utils';
 
 interface Dancer {
   id: string;
@@ -43,14 +44,24 @@ export function DancerSelectionSection({
   /**
    * Calculate age at event for display
    * Phase 1 Spec line 554: age_at_event calculation
+   * FIXED: Bug discovered 11:31 AM Nov 12, 2025 - timezone shift caused +1 year error
    */
   const calculateAgeAtEvent = (dateOfBirth: string | null): number | null => {
     if (!dateOfBirth || !eventStartDate) return null;
 
-    const dob = new Date(dateOfBirth);
-    const diffMs = eventStartDate.getTime() - dob.getTime();
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
-    return Math.floor(diffDays / 365);
+    const dob = parseISODateToUTC(dateOfBirth);
+    if (!dob) return null;
+
+    // Use UTC methods to prevent timezone mismatch
+    let age = eventStartDate.getUTCFullYear() - dob.getUTCFullYear();
+    const monthDiff = eventStartDate.getUTCMonth() - dob.getUTCMonth();
+
+    // Adjust if birthday hasn't occurred yet this year
+    if (monthDiff < 0 || (monthDiff === 0 && eventStartDate.getUTCDate() < dob.getUTCDate())) {
+      age--;
+    }
+
+    return age;
   };
 
   /**
