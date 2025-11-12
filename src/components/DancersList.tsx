@@ -370,7 +370,7 @@ export default function DancersList() {
                 return (
                   <div className="flex items-center gap-2 text-gray-400 text-sm mb-3">
                     <span>🎂</span>
-                    <span>{dob.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} ({age} years old)</span>
+                    <span>{dob.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })} ({age} years old)</span>
                   </div>
                 );
               })()}
@@ -484,7 +484,7 @@ export default function DancersList() {
                           <div className="text-white">
                             {age} yrs
                             <div className="text-xs text-gray-400 mt-1">
-                              {dob.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {dob.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
                             </div>
                           </div>
                         );
