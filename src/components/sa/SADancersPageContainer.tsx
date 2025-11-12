@@ -14,30 +14,26 @@ export function SADancersPageContainer() {
   // Filter state
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [selectedStudioId, setSelectedStudioId] = useState<string>('');
-  const [selectedClassificationId, setSelectedClassificationId] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<'active' | 'inactive' | 'archived' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Fetch data
   const { data: tenantsData, isLoading: tenantsLoading } = trpc.superAdmin.tenants.getAllTenants.useQuery();
   const { data: studiosData, isLoading: studiosLoading } = trpc.studio.getAll.useQuery({});
-  const { data: classificationsData, isLoading: classificationsLoading } = trpc.lookup.getClassifications.useQuery();
 
   // Fetch dancers with filters
   const { data: dancersData, isLoading: dancersLoading } = trpc.dancer.getAllForSuperAdmin.useQuery({
     tenantId: selectedTenantId || undefined,
     studioId: selectedStudioId || undefined,
-    classificationId: selectedClassificationId || undefined,
     status: selectedStatus === 'all' ? undefined : selectedStatus,
     search: searchQuery || undefined,
   });
 
   const tenants = tenantsData?.tenants || [];
   const studios = studiosData?.studios || [];
-  const classifications = classificationsData?.classifications || [];
   const dancers = dancersData?.dancers || [];
 
-  const isLoading = tenantsLoading || studiosLoading || classificationsLoading || dancersLoading;
+  const isLoading = tenantsLoading || studiosLoading || dancersLoading;
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -62,7 +58,7 @@ export function SADancersPageContainer() {
 
       {/* Filters */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mb-4">
           {/* Tenant Filter */}
           <div>
             <label className="block text-sm font-medium text-white/80 mb-2">Tenant</label>
@@ -94,24 +90,6 @@ export function SADancersPageContainer() {
               {studios.map((studio: any) => (
                 <option key={studio.id} value={studio.id} className="bg-gray-900">
                   {studio.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Classification Filter */}
-          <div>
-            <label className="block text-sm font-medium text-white/80 mb-2">Classification</label>
-            <select
-              value={selectedClassificationId}
-              onChange={(e) => setSelectedClassificationId(e.target.value)}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-              disabled={isLoading}
-            >
-              <option value="" className="bg-gray-900">All Classifications</option>
-              {classifications.map((cls: any) => (
-                <option key={cls.id} value={cls.id} className="bg-gray-900">
-                  {cls.name}
                 </option>
               ))}
             </select>
