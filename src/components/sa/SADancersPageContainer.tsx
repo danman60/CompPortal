@@ -21,7 +21,7 @@ export function SADancersPageContainer() {
   // Fetch data
   const { data: tenantsData, isLoading: tenantsLoading } = trpc.superAdmin.tenants.getAllTenants.useQuery();
   const { data: studiosData, isLoading: studiosLoading } = trpc.studio.getAll.useQuery({});
-  const { data: settingsData, isLoading: settingsLoading } = trpc.competition.getTenantSettings.useQuery();
+  const { data: classificationsData, isLoading: classificationsLoading } = trpc.lookup.getClassifications.useQuery();
 
   // Fetch dancers with filters
   const { data: dancersData, isLoading: dancersLoading } = trpc.dancer.getAllForSuperAdmin.useQuery({
@@ -34,10 +34,10 @@ export function SADancersPageContainer() {
 
   const tenants = tenantsData?.tenants || [];
   const studios = studiosData?.studios || [];
-  const classifications = settingsData?.danceCategories || []; // danceCategories contains classifications
+  const classifications = classificationsData?.classifications || [];
   const dancers = dancersData?.dancers || [];
 
-  const isLoading = tenantsLoading || studiosLoading || settingsLoading || dancersLoading;
+  const isLoading = tenantsLoading || studiosLoading || classificationsLoading || dancersLoading;
 
   return (
     <div className="max-w-7xl mx-auto">
