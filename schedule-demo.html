@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Generated Schedule - Day 1 - CompPortal</title>
+    <title>Manual Scheduling System - CompPortal</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1600px;
+            max-width: 1800px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -35,6 +35,7 @@
             background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
             padding: 2rem;
             color: white;
+            position: relative;
         }
 
         .schedule-header h1 {
@@ -54,6 +55,80 @@
             gap: 2rem;
             font-size: 0.9rem;
             opacity: 0.9;
+            flex-wrap: wrap;
+        }
+
+        /* State Machine Badge */
+        .state-badge {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .state-badge.draft {
+            background: rgba(59, 130, 246, 0.9);
+            border: 2px solid #3b82f6;
+        }
+
+        .state-badge.finalized {
+            background: rgba(245, 158, 11, 0.9);
+            border: 2px solid #f59e0b;
+        }
+
+        .state-badge.published {
+            background: rgba(16, 185, 129, 0.9);
+            border: 2px solid #10b981;
+        }
+
+        /* View Selector */
+        .view-selector {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .view-selector-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-right: 1rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .view-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .view-btn.active {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            border-color: #8b5cf6;
+            color: white;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
         }
 
         /* Controls */
@@ -64,23 +139,34 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
         }
 
         .controls .info {
             color: rgba(255, 255, 255, 0.9);
             font-size: 0.9rem;
+            flex: 1;
+            min-width: 200px;
         }
 
         .controls .actions {
             display: flex;
             gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        /* Filter Bar */
+        /* Enhanced Filter Bar */
         .filter-bar {
             background: rgba(255, 255, 255, 0.05);
-            padding: 1rem 2rem;
+            padding: 1.5rem 2rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .filter-row {
             display: flex;
             gap: 2rem;
             flex-wrap: wrap;
@@ -127,6 +213,25 @@
             box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
         }
 
+        .filter-btn .count {
+            margin-left: 0.25rem;
+            opacity: 0.7;
+        }
+
+        .search-input {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.85rem;
+            min-width: 200px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
         /* Highlighted Row */
         .schedule-table tbody tr.highlighted {
             background: rgba(251, 191, 36, 0.25) !important;
@@ -167,11 +272,67 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            gap: 0;
+        }
+
         /* Schedule Content */
         .schedule-content {
+            flex: 1;
             padding: 2rem;
             background: transparent;
             color: #fff;
+            overflow-x: auto;
+        }
+
+        /* Trophy Helper Panel */
+        .trophy-helper {
+            width: 350px;
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 1px solid rgba(255, 193, 7, 0.3);
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 400px);
+        }
+
+        .trophy-helper h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #ffc107;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .trophy-category {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid #ffc107;
+        }
+
+        .trophy-category-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 0.5rem;
+        }
+
+        .trophy-category-info {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.4;
+        }
+
+        .trophy-category-info strong {
+            color: #ffc107;
+        }
+
+        .trophy-category-action {
+            margin-top: 0.5rem;
         }
 
         /* Session Section */
@@ -240,6 +401,58 @@
             padding: 0.75rem 0.5rem;
             vertical-align: middle;
             color: #fff;
+        }
+
+        /* Visual Indicators */
+        .indicator-icon {
+            display: inline-block;
+            margin-left: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        /* Conflict indicator */
+        .has-conflict {
+            background: rgba(239, 68, 68, 0.15) !important;
+            border-left: 4px solid #ef4444 !important;
+        }
+
+        .conflict-icon {
+            color: #ef4444;
+        }
+
+        /* Age change indicator */
+        .has-age-change {
+            background: rgba(251, 191, 36, 0.15) !important;
+            border-left: 4px solid #fbbf24 !important;
+        }
+
+        .age-change-icon {
+            color: #fbbf24;
+        }
+
+        /* Studio request indicator */
+        .has-studio-request::after {
+            content: '●';
+            color: #3b82f6;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        /* CD note indicator */
+        .has-cd-note .routine-name::after {
+            content: '📝';
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        /* Last routine indicator */
+        .last-routine {
+            border: 2px solid #ffc107 !important;
+            box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+        }
+
+        .last-routine .entry-number::before {
+            content: '🏆 ';
         }
 
         /* Row Type Colors */
@@ -398,26 +611,97 @@
             border-radius: 2px;
         }
 
-        /* Conflict Warning */
-        .conflict-warning {
-            background: rgba(255, 193, 7, 0.2);
-            border-left: 4px solid #ffc107;
-            padding: 0.75rem;
+        /* Conflict Panel */
+        .conflict-panel {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            padding: 1rem;
             margin: 1rem 2rem;
             border-radius: 4px;
-            display: none;
         }
 
-        .conflict-warning.show {
-            display: block;
+        .conflict-panel h4 {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
         }
 
-        .conflict-warning strong {
-            color: #ffc107;
-        }
-
-        #conflictMessage {
+        .conflict-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.9);
+        }
+
+        .conflict-severity {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .severity-critical { background: #ef4444; color: white; }
+        .severity-error { background: #f59e0b; color: white; }
+        .severity-warning { background: #fbbf24; color: black; }
+
+        /* Studio Notes Panel */
+        .studio-notes-panel {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            margin: 1rem 2rem;
+            border-radius: 4px;
+        }
+
+        .studio-notes-panel h4 {
+            color: #3b82f6;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .note-status {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .status-pending { background: #fbbf24; color: black; }
+        .status-completed { background: #10b981; color: white; }
+        .status-ignored { background: #6b7280; color: white; }
+
+        /* Autosave Indicator */
+        .autosave-indicator {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            background: rgba(16, 185, 129, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .autosave-indicator.show {
+            opacity: 1;
         }
     </style>
 </head>
@@ -425,8 +709,12 @@
     <div class="container">
         <!-- Header -->
         <div class="schedule-header">
-            <h1>🎭 AI Generated Schedule - Day 1</h1>
-            <div class="subtitle">✨ Smart Grouping: Categories & Age Divisions Together</div>
+            <div class="state-badge draft">
+                <span>📝</span>
+                <span>Draft Mode</span>
+            </div>
+            <h1>🎭 Manual Scheduling System</h1>
+            <div class="subtitle">✨ Manual Drag-and-Drop with Smart Conflict Detection</div>
             <div class="meta">
                 <span>📅 Saturday, March 15, 2025</span>
                 <span>📍 Metro Convention Center - Main Stage</span>
@@ -435,581 +723,415 @@
             </div>
         </div>
 
-        <!-- Filter Bar -->
+        <!-- View Selector -->
+        <div class="view-selector">
+            <span class="view-selector-label">👁️ VIEW MODE:</span>
+            <button class="view-btn active" data-view="cd">Competition Director</button>
+            <button class="view-btn" data-view="studio">Studio Director</button>
+            <button class="view-btn" data-view="judge">Judge/Tablet</button>
+            <button class="view-btn" data-view="public">Public</button>
+        </div>
+
+        <!-- Enhanced Filter Bar -->
         <div class="filter-bar">
-            <div class="filter-section">
-                <span class="filter-section-label">🏢 Studio:</span>
-                <button class="filter-btn" data-filter="studio" data-value="Starlight Dance Academy">Starlight</button>
-                <button class="filter-btn" data-filter="studio" data-value="Elite Performers">Elite</button>
-                <button class="filter-btn" data-filter="studio" data-value="Dance Dynamics">Dance Dynamics</button>
-                <button class="filter-btn" data-filter="studio" data-value="Tiny Toes Studio">Tiny Toes</button>
-                <button class="filter-btn" data-filter="studio" data-value="Grace Motion Studio">Grace Motion</button>
-                <button class="filter-btn" data-filter="studio" data-value="Urban Dance Crew">Urban Dance</button>
+            <div class="filter-row">
+                <div class="filter-section">
+                    <span class="filter-section-label">📊 Classification:</span>
+                    <button class="filter-btn" data-filter="classification" data-value="Emerald">Emerald <span class="count">(8)</span></button>
+                    <button class="filter-btn" data-filter="classification" data-value="Sapphire">Sapphire <span class="count">(15)</span></button>
+                    <button class="filter-btn" data-filter="classification" data-value="Ruby">Ruby <span class="count">(22)</span></button>
+                    <button class="filter-btn" data-filter="classification" data-value="Diamond">Diamond <span class="count">(18)</span></button>
+                    <button class="filter-btn" data-filter="classification" data-value="Crystal">Crystal <span class="count">(14)</span></button>
+                </div>
             </div>
-            <div class="filter-section">
-                <span class="filter-section-label">🎂 Age:</span>
-                <button class="filter-btn" data-filter="age" data-value="Age 7">Age 7</button>
-                <button class="filter-btn" data-filter="age" data-value="Age 8">Age 8</button>
-                <button class="filter-btn" data-filter="age" data-value="Age 9">Age 9</button>
-                <button class="filter-btn" data-filter="age" data-value="Age 10">Age 10</button>
-                <button class="filter-btn" data-filter="age" data-value="Age 11">Age 11</button>
-                <button class="filter-btn" data-filter="age" data-value="Age 12">Age 12</button>
+            <div class="filter-row">
+                <div class="filter-section">
+                    <span class="filter-section-label">🎭 Genre:</span>
+                    <button class="filter-btn" data-filter="genre" data-value="Tap">Tap</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Jazz">Jazz</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Contemporary">Contemporary</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Hip Hop">Hip Hop</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Ballet">Ballet</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Musical Theater">Musical Theater</button>
+                </div>
+                <div class="filter-section">
+                    <span class="filter-section-label">🎂 Age:</span>
+                    <button class="filter-btn" data-filter="age" data-value="Age 7">7</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 8">8</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 9">9</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 10">10</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 11">11</button>
+                    <button class="filter-btn" data-filter="age" data-value="Age 12">12</button>
+                </div>
+                <input type="text" class="search-input" placeholder="🔍 Search routines, dancers, studios..." id="searchInput">
+                <button class="btn btn-secondary" onclick="clearHighlights()">✕ Clear</button>
             </div>
-            <div class="filter-section">
-                <span class="filter-section-label">🎭 Category:</span>
-                <button class="filter-btn" data-filter="category" data-value="Tap">Tap</button>
-                <button class="filter-btn" data-filter="category" data-value="Jazz">Jazz</button>
-                <button class="filter-btn" data-filter="category" data-value="Contemporary">Contemporary</button>
-                <button class="filter-btn" data-filter="category" data-value="Hip Hop">Hip Hop</button>
-                <button class="filter-btn" data-filter="category" data-value="Ballet">Ballet</button>
-                <button class="filter-btn" data-filter="category" data-value="Musical Theater">Musical Theater</button>
-            </div>
-            <button class="btn btn-secondary" style="margin-left: auto;" onclick="clearHighlights()">✕ Clear</button>
         </div>
 
         <!-- Controls -->
         <div class="controls">
             <div class="info">
-                ✨ <strong>Smart Grouping Strategy:</strong> Category + Age kept together → Solo to Large Group progression → Minimizes costume changes & maximizes audience flow
+                ✨ <strong>Manual Mode:</strong> Drag routines to reorder • Auto-renumber in Draft • Zero buffer time • 6-routine minimum spacing
             </div>
             <div class="actions">
-                <button class="btn btn-secondary">↻ Regenerate</button>
-                <button class="btn btn-primary">💾 Save & Publish</button>
+                <button class="btn btn-secondary">🔄 Auto-Generate Draft</button>
+                <button class="btn btn-secondary">📋 View Requests (3)</button>
+                <button class="btn btn-primary">🔒 Finalize Schedule</button>
+                <button class="btn btn-primary">💾 Save Draft</button>
             </div>
         </div>
 
-        <!-- Conflict Warning -->
-        <div class="conflict-warning" id="conflictWarning">
-            <strong>⚠️ Warning:</strong> <span id="conflictMessage"></span>
+        <!-- Conflict Detection Panel -->
+        <div class="conflict-panel">
+            <h4>⚠️ Detected Conflicts (2 Critical, 3 Warnings)</h4>
+            <div class="conflict-item">
+                <span class="conflict-severity severity-critical">CRITICAL</span>
+                <strong>Sarah Johnson</strong> in Routine #105 (8:20 AM) and Routine #107 (8:26 AM) - Only 1 routine apart (need 6 minimum)
+            </div>
+            <div class="conflict-item">
+                <span class="conflict-severity severity-critical">CRITICAL</span>
+                <strong>Emma Chen</strong> in Routine #110 (8:36 AM) and Routine #112 (8:43 AM) - Only 2 routines apart (need 6 minimum)
+            </div>
+            <div class="conflict-item">
+                <span class="conflict-severity severity-warning">WARNING</span>
+                <strong>Madison Lee</strong> in Routine #115 (8:50 AM) and Routine #120 (9:05 AM) - Only 4 routines apart (recommend 6 minimum)
+            </div>
         </div>
 
-        <!-- Schedule Content -->
-        <div class="schedule-content">
-            <!-- SESSION 1: Morning -->
-            <div class="session-section">
-                <div class="session-header">
-                    <h2>SESSION 1 - Morning</h2>
-                    <div class="session-stats">8:00 AM - 11:15 AM • 32 Routines • Awards: 11:15 AM</div>
+        <!-- Studio Notes Panel -->
+        <div class="studio-notes-panel">
+            <h4>💬 Studio Requests & Notes (3 Pending)</h4>
+            <div class="note-item">
+                <strong>Starlight Dance Academy</strong> - Routine #102 "Jazz Hands": "Please schedule after 9 AM if possible"
+                <span class="note-status status-pending">PENDING</span>
+            </div>
+            <div class="note-item">
+                <strong>Elite Performers</strong> - Routine #108 "In Sync": "Two dancers need costume change - need at least 3 routines spacing"
+                <span class="note-status status-completed">COMPLETED</span>
+            </div>
+            <div class="note-item">
+                <strong>Urban Dance Crew</strong> - Routine #118 "Street Beat": "Can this be closer to our other hip hop routines?"
+                <span class="note-status status-pending">PENDING</span>
+            </div>
+        </div>
+
+        <!-- Main Content with Trophy Helper -->
+        <div class="main-content">
+            <!-- Schedule Content -->
+            <div class="schedule-content">
+                <!-- SESSION 1: Morning -->
+                <div class="session-section">
+                    <div class="session-header">
+                        <h2>SESSION 1 - Morning</h2>
+                        <div class="session-stats">8:00 AM - 11:15 AM • 32 Routines • ~3 hours</div>
+                    </div>
+
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">Entry #</th>
+                                <th style="width: 80px;">Time</th>
+                                <th style="width: 200px;">Routine Name</th>
+                                <th style="width: 150px;">Studio</th>
+                                <th style="width: 150px;">Dancer(s)</th>
+                                <th style="width: 120px;">Category</th>
+                                <th style="width: 80px;">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="session1">
+                            <!-- Production at start (FIXED: 15 minutes) -->
+                            <tr class="row-production" draggable="true" data-id="1" data-duration="15" data-type="production">
+                                <td class="entry-number">100</td>
+                                <td class="time-col">8:00 AM</td>
+                                <td class="routine-name"><strong>Broadway Dreams</strong></td>
+                                <td class="studio-name" data-studio-code="A">Studio A</td>
+                                <td>Ensemble (15)</td>
+                                <td><span class="category-badge">Production</span></td>
+                                <td><span class="entry-badge badge-production">Production</span></td>
+                            </tr>
+
+                            <!-- Category Group Header -->
+                            <tr class="category-group-divider" draggable="true" data-group="tap-age-7">
+                                <td colspan="7">
+                                    <span class="collapse-icon">▼</span>
+                                    📋 TAP AGE 7 - EMERALD
+                                    <span class="routine-count">(4 routines)</span>
+                                    <span class="grouping-note">Solo → Duet → Small Group progression</span>
+                                </td>
+                            </tr>
+
+                            <!-- Tap Age 7 Category (kept together) -->
+                            <tr class="row-solo category-routine" draggable="true" data-id="2" data-duration="3" data-type="solo" data-group="tap-age-7">
+                                <td class="entry-number">101</td>
+                                <td class="time-col">8:15 AM</td>
+                                <td class="routine-name has-cd-note"><strong>Rhythm & Rhyme</strong></td>
+                                <td class="studio-name has-studio-request" data-studio-code="B">Studio B</td>
+                                <td>Emma Johnson</td>
+                                <td><span class="category-badge">Tap Age 7</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-solo category-routine" draggable="true" data-id="3" data-duration="3" data-type="solo" data-group="tap-age-7">
+                                <td class="entry-number">102</td>
+                                <td class="time-col">8:18 AM</td>
+                                <td class="routine-name"><strong>Tap Your Troubles Away</strong></td>
+                                <td class="studio-name" data-studio-code="C">Studio C</td>
+                                <td>Sophia Martinez</td>
+                                <td><span class="category-badge">Tap Age 7</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-duet category-routine" draggable="true" data-id="4" data-duration="3" data-type="duet" data-group="tap-age-7">
+                                <td class="entry-number">103</td>
+                                <td class="time-col">8:21 AM</td>
+                                <td class="routine-name"><strong>Double Time</strong></td>
+                                <td class="studio-name" data-studio-code="B">Studio B</td>
+                                <td>Olivia & Ava Brown</td>
+                                <td><span class="category-badge">Tap Age 7</span></td>
+                                <td><span class="entry-badge badge-duet">Duet</span></td>
+                            </tr>
+                            <tr class="row-small-group category-routine last-routine" draggable="true" data-id="5" data-duration="5" data-type="small-group" data-group="tap-age-7">
+                                <td class="entry-number">104</td>
+                                <td class="time-col">8:24 AM</td>
+                                <td class="routine-name"><strong>Tap Trio Trouble</strong></td>
+                                <td class="studio-name" data-studio-code="C">Studio C</td>
+                                <td>Group (5)</td>
+                                <td><span class="category-badge">Tap Age 7</span></td>
+                                <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                            </tr>
+
+                            <!-- Category Group Header -->
+                            <tr class="category-group-divider" draggable="true" data-group="jazz-age-8">
+                                <td colspan="7">
+                                    <span class="collapse-icon">▼</span>
+                                    📋 JAZZ AGE 8 - SAPPHIRE
+                                    <span class="routine-count">(6 routines)</span>
+                                    <span class="grouping-note">Solo → Duet → Small Group → Large Group</span>
+                                </td>
+                            </tr>
+
+                            <!-- Jazz Age 8 Category -->
+                            <tr class="row-solo category-routine has-conflict" draggable="true" data-id="6" data-duration="3" data-type="solo" data-group="jazz-age-8">
+                                <td class="entry-number">105</td>
+                                <td class="time-col">8:29 AM</td>
+                                <td class="routine-name"><strong>Sparkle & Shine</strong> <span class="indicator-icon conflict-icon">⚠️</span></td>
+                                <td class="studio-name" data-studio-code="D">Studio D</td>
+                                <td>Madison Lee</td>
+                                <td><span class="category-badge">Jazz Age 8</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-solo category-routine" draggable="true" data-id="7" data-duration="3" data-type="solo" data-group="jazz-age-8">
+                                <td class="entry-number">106</td>
+                                <td class="time-col">8:32 AM</td>
+                                <td class="routine-name"><strong>Jazz Hands</strong></td>
+                                <td class="studio-name" data-studio-code="A">Studio A</td>
+                                <td>Isabella Chen</td>
+                                <td><span class="category-badge">Jazz Age 8</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-solo category-routine has-conflict" draggable="true" data-id="8" data-duration="3" data-type="solo" data-group="jazz-age-8">
+                                <td class="entry-number">107</td>
+                                <td class="time-col">8:35 AM</td>
+                                <td class="routine-name"><strong>Sassy Jazz</strong> <span class="indicator-icon conflict-icon">⚠️</span></td>
+                                <td class="studio-name" data-studio-code="B">Studio B</td>
+                                <td>Mia Davis</td>
+                                <td><span class="category-badge">Jazz Age 8</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-duet category-routine" draggable="true" data-id="9" data-duration="3" data-type="duet" data-group="jazz-age-8">
+                                <td class="entry-number">108</td>
+                                <td class="time-col">8:38 AM</td>
+                                <td class="routine-name"><strong>In Sync</strong></td>
+                                <td class="studio-name" data-studio-code="D">Studio D</td>
+                                <td>Chloe & Zoe Wilson</td>
+                                <td><span class="category-badge">Jazz Age 8</span></td>
+                                <td><span class="entry-badge badge-duet">Duet</span></td>
+                            </tr>
+                            <tr class="row-small-group category-routine" draggable="true" data-id="10" data-duration="5" data-type="small-group" data-group="jazz-age-8">
+                                <td class="entry-number">109</td>
+                                <td class="time-col">8:41 AM</td>
+                                <td class="routine-name"><strong>Jazz Squad</strong></td>
+                                <td class="studio-name" data-studio-code="A">Studio A</td>
+                                <td>Group (6)</td>
+                                <td><span class="category-badge">Jazz Age 8</span></td>
+                                <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                            </tr>
+                            <tr class="row-large-group category-routine last-routine" draggable="true" data-id="11" data-duration="7" data-type="large-group" data-group="jazz-age-8">
+                                <td class="entry-number">110</td>
+                                <td class="time-col">8:46 AM</td>
+                                <td class="routine-name"><strong>All That Jazz</strong></td>
+                                <td class="studio-name" data-studio-code="C">Studio C</td>
+                                <td>Group (12)</td>
+                                <td><span class="category-badge">Jazz Age 8</span></td>
+                                <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                            </tr>
+
+                            <!-- Break -->
+                            <tr class="row-break">
+                                <td></td>
+                                <td class="time-col">8:53 AM</td>
+                                <td colspan="5">☕ Break (15 minutes)</td>
+                            </tr>
+
+                            <!-- Category Group Header -->
+                            <tr class="category-group-divider" draggable="true" data-group="contemporary-age-9">
+                                <td colspan="7">
+                                    <span class="collapse-icon">▼</span>
+                                    📋 CONTEMPORARY AGE 9 - RUBY
+                                    <span class="routine-count">(6 routines)</span>
+                                    <span class="grouping-note">Grouped for costume consistency & audience flow</span>
+                                </td>
+                            </tr>
+
+                            <!-- Contemporary Age 9 -->
+                            <tr class="row-solo category-routine has-age-change" draggable="true" data-id="12" data-duration="3" data-type="solo" data-group="contemporary-age-9">
+                                <td class="entry-number">111</td>
+                                <td class="time-col">9:08 AM</td>
+                                <td class="routine-name"><strong>Flowing Free</strong> <span class="indicator-icon age-change-icon">⚠️</span></td>
+                                <td class="studio-name" data-studio-code="E">Studio E</td>
+                                <td>Emily Taylor (was Age 8, now Age 9)</td>
+                                <td><span class="category-badge">Contemporary Age 9</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-solo category-routine" draggable="true" data-id="13" data-duration="3" data-type="solo" data-group="contemporary-age-9">
+                                <td class="entry-number">112</td>
+                                <td class="time-col">9:11 AM</td>
+                                <td class="routine-name"><strong>Whispers</strong></td>
+                                <td class="studio-name" data-studio-code="D">Studio D</td>
+                                <td>Grace Anderson</td>
+                                <td><span class="category-badge">Contemporary Age 9</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-solo category-routine" draggable="true" data-id="14" data-duration="3" data-type="solo" data-group="contemporary-age-9">
+                                <td class="entry-number">113</td>
+                                <td class="time-col">9:14 AM</td>
+                                <td class="routine-name"><strong>Gravity</strong></td>
+                                <td class="studio-name" data-studio-code="A">Studio A</td>
+                                <td>Lily Martinez</td>
+                                <td><span class="category-badge">Contemporary Age 9</span></td>
+                                <td><span class="entry-badge badge-solo">Solo</span></td>
+                            </tr>
+                            <tr class="row-duet category-routine" draggable="true" data-id="15" data-duration="3" data-type="duet" data-group="contemporary-age-9">
+                                <td class="entry-number">114</td>
+                                <td class="time-col">9:17 AM</td>
+                                <td class="routine-name"><strong>Mirror Image</strong></td>
+                                <td class="studio-name" data-studio-code="E">Studio E</td>
+                                <td>Hannah & Sarah Kim</td>
+                                <td><span class="category-badge">Contemporary Age 9</span></td>
+                                <td><span class="entry-badge badge-duet">Duet</span></td>
+                            </tr>
+                            <tr class="row-small-group category-routine" draggable="true" data-id="16" data-duration="5" data-type="small-group" data-group="contemporary-age-9">
+                                <td class="entry-number">115</td>
+                                <td class="time-col">9:20 AM</td>
+                                <td class="routine-name"><strong>Connected</strong></td>
+                                <td class="studio-name" data-studio-code="C">Studio C</td>
+                                <td>Group (7)</td>
+                                <td><span class="category-badge">Contemporary Age 9</span></td>
+                                <td><span class="entry-badge badge-small-group">Small Group</span></td>
+                            </tr>
+                            <tr class="row-large-group category-routine last-routine" draggable="true" data-id="17" data-duration="7" data-type="large-group" data-group="contemporary-age-9">
+                                <td class="entry-number">116</td>
+                                <td class="time-col">9:25 AM</td>
+                                <td class="routine-name"><strong>Awakening</strong></td>
+                                <td class="studio-name" data-studio-code="D">Studio D</td>
+                                <td>Group (14)</td>
+                                <td><span class="category-badge">Contemporary Age 9</span></td>
+                                <td><span class="entry-badge badge-large-group">Large Group</span></td>
+                            </tr>
+
+                            <!-- Production to close (FIXED: 15 minutes) -->
+                            <tr class="row-production" draggable="true" data-id="32" data-duration="15" data-type="production">
+                                <td class="entry-number">117</td>
+                                <td class="time-col">9:32 AM</td>
+                                <td class="routine-name"><strong>A Night at the Movies</strong></td>
+                                <td class="studio-name" data-studio-code="D">Studio D</td>
+                                <td>Ensemble (20)</td>
+                                <td><span class="category-badge">Production</span></td>
+                                <td><span class="entry-badge badge-production">Production</span></td>
+                            </tr>
+
+                            <!-- Awards Ceremony -->
+                            <tr class="row-awards">
+                                <td></td>
+                                <td class="time-col">9:47 AM</td>
+                                <td colspan="5">🏆 Awards Ceremony - TAP AGE 7 EMERALD SOLOS (15 minutes)</td>
+                            </tr>
+
+                            <tr class="row-awards">
+                                <td></td>
+                                <td class="time-col">10:02 AM</td>
+                                <td colspan="5">🏆 Awards Ceremony - JAZZ AGE 8 SAPPHIRE LARGE GROUPS (15 minutes)</td>
+                            </tr>
+
+                            <tr class="row-awards">
+                                <td></td>
+                                <td class="time-col">10:17 AM</td>
+                                <td colspan="5">🏆 Awards Ceremony - CONTEMPORARY AGE 9 RUBY LARGE GROUPS (15 minutes)</td>
+                            </tr>
+
+                            <!-- Break before Session 2 -->
+                            <tr class="row-break">
+                                <td></td>
+                                <td class="time-col">10:32 AM</td>
+                                <td colspan="5">☕ Break (30 minutes)</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">Entry #</th>
-                            <th style="width: 80px;">Time</th>
-                            <th style="width: 200px;">Routine Name</th>
-                            <th style="width: 150px;">Studio</th>
-                            <th style="width: 150px;">Dancer(s)</th>
-                            <th style="width: 120px;">Category</th>
-                            <th style="width: 80px;">Type</th>
-                        </tr>
-                    </thead>
-                    <tbody id="session1">
-                        <!-- Production at start -->
-                        <tr class="row-production" draggable="true" data-id="1" data-duration="7" data-type="production">
-                            <td class="entry-number">100</td>
-                            <td class="time-col">8:00 AM</td>
-                            <td><strong>Broadway Dreams</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Ensemble (15)</td>
-                            <td><span class="category-badge">Production</span></td>
-                            <td><span class="entry-badge badge-production">Production</span></td>
-                        </tr>
-
-                        <!-- Category Group Header -->
-                        <tr class="category-group-divider" draggable="true" data-group="tap-age-7">
-                            <td colspan="7">
-                                <span class="collapse-icon">▼</span>
-                                📋 TAP AGE 7
-                                <span class="routine-count">(4 routines)</span>
-                                <span class="grouping-note">Solo → Duet → Small Group progression</span>
-                            </td>
-                        </tr>
-
-                        <!-- Tap Age 7 Category (kept together) -->
-                        <tr class="row-solo category-routine" draggable="true" data-id="2" data-duration="3" data-type="solo" data-group="tap-age-7">
-                            <td class="entry-number">101</td>
-                            <td class="time-col">8:07 AM</td>
-                            <td><strong>Rhythm & Rhyme</strong></td>
-                            <td>Tiny Toes Studio</td>
-                            <td>Emma Johnson</td>
-                            <td><span class="category-badge">Tap Age 7</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo category-routine" draggable="true" data-id="3" data-duration="3" data-type="solo" data-group="tap-age-7">
-                            <td class="entry-number">102</td>
-                            <td class="time-col">8:10 AM</td>
-                            <td><strong>Tap Your Troubles Away</strong></td>
-                            <td>Dance Dynamics</td>
-                            <td>Sophia Martinez</td>
-                            <td><span class="category-badge">Tap Age 7</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-duet category-routine" draggable="true" data-id="4" data-duration="3" data-type="duet" data-group="tap-age-7">
-                            <td class="entry-number">103</td>
-                            <td class="time-col">8:13 AM</td>
-                            <td><strong>Double Time</strong></td>
-                            <td>Tiny Toes Studio</td>
-                            <td>Olivia & Ava Brown</td>
-                            <td><span class="category-badge">Tap Age 7</span></td>
-                            <td><span class="entry-badge badge-duet">Duet</span></td>
-                        </tr>
-                        <tr class="row-small-group category-routine" draggable="true" data-id="5" data-duration="4" data-type="small-group" data-group="tap-age-7">
-                            <td class="entry-number">104</td>
-                            <td class="time-col">8:16 AM</td>
-                            <td><strong>Tap Trio Trouble</strong></td>
-                            <td>Dance Dynamics</td>
-                            <td>Group (5)</td>
-                            <td><span class="category-badge">Tap Age 7</span></td>
-                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
-                        </tr>
-
-                        <!-- Category Group Header -->
-                        <tr class="category-group-divider" draggable="true" data-group="jazz-age-8">
-                            <td colspan="7">
-                                <span class="collapse-icon">▼</span>
-                                📋 JAZZ AGE 8
-                                <span class="routine-count">(6 routines)</span>
-                                <span class="grouping-note">Solo → Duet → Small Group → Large Group</span>
-                            </td>
-                        </tr>
-
-                        <!-- Jazz Age 8 Category -->
-                        <tr class="row-solo category-routine" draggable="true" data-id="6" data-duration="3" data-type="solo" data-group="jazz-age-8">
-                            <td class="entry-number">105</td>
-                            <td class="time-col">8:20 AM</td>
-                            <td><strong>Sparkle & Shine</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Madison Lee</td>
-                            <td><span class="category-badge">Jazz Age 8</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo category-routine" draggable="true" data-id="7" data-duration="3" data-type="solo" data-group="jazz-age-8">
-                            <td class="entry-number">106</td>
-                            <td class="time-col">8:23 AM</td>
-                            <td><strong>Jazz Hands</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Isabella Chen</td>
-                            <td><span class="category-badge">Jazz Age 8</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo category-routine" draggable="true" data-id="8" data-duration="3" data-type="solo" data-group="jazz-age-8">
-                            <td class="entry-number">107</td>
-                            <td class="time-col">8:26 AM</td>
-                            <td><strong>Sassy Jazz</strong></td>
-                            <td>Tiny Toes Studio</td>
-                            <td>Mia Davis</td>
-                            <td><span class="category-badge">Jazz Age 8</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-duet category-routine" draggable="true" data-id="9" data-duration="3" data-type="duet" data-group="jazz-age-8">
-                            <td class="entry-number">108</td>
-                            <td class="time-col">8:29 AM</td>
-                            <td><strong>In Sync</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Chloe & Zoe Wilson</td>
-                            <td><span class="category-badge">Jazz Age 8</span></td>
-                            <td><span class="entry-badge badge-duet">Duet</span></td>
-                        </tr>
-                        <tr class="row-small-group category-routine" draggable="true" data-id="10" data-duration="4" data-type="small-group" data-group="jazz-age-8">
-                            <td class="entry-number">109</td>
-                            <td class="time-col">8:32 AM</td>
-                            <td><strong>Jazz Squad</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Group (6)</td>
-                            <td><span class="category-badge">Jazz Age 8</span></td>
-                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
-                        </tr>
-                        <tr class="row-large-group category-routine" draggable="true" data-id="11" data-duration="5" data-type="large-group" data-group="jazz-age-8">
-                            <td class="entry-number">110</td>
-                            <td class="time-col">8:36 AM</td>
-                            <td><strong>All That Jazz</strong></td>
-                            <td>Dance Dynamics</td>
-                            <td>Group (12)</td>
-                            <td><span class="category-badge">Jazz Age 8</span></td>
-                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
-                        </tr>
-
-                        <!-- Break -->
-                        <tr class="row-break">
-                            <td></td>
-                            <td class="time-col">8:41 AM</td>
-                            <td colspan="5">☕ Break (15 minutes)</td>
-                        </tr>
-
-                        <!-- Category Group Header -->
-                        <tr class="category-group-divider" draggable="true" data-group="contemporary-age-9">
-                            <td colspan="7">
-                                <span class="collapse-icon">▼</span>
-                                📋 CONTEMPORARY AGE 9
-                                <span class="routine-count">(6 routines)</span>
-                                <span class="grouping-note">Grouped for costume consistency & audience flow</span>
-                            </td>
-                        </tr>
-
-                        <!-- Contemporary Age 9 -->
-                        <tr class="row-solo category-routine" draggable="true" data-id="12" data-duration="3" data-type="solo" data-group="contemporary-age-9">
-                            <td class="time-col">8:56 AM</td>
-                            <td>012</td>
-                            <td><strong>Flowing Free</strong></td>
-                            <td>Grace Motion Studio</td>
-                            <td>Emily Taylor</td>
-                            <td><span class="category-badge">Contemporary Age 9</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo" draggable="true" data-id="13" data-duration="3" data-type="solo">
-                            <td class="time-col">8:59 AM</td>
-                            <td>013</td>
-                            <td><strong>Whispers</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Grace Anderson</td>
-                            <td><span class="category-badge">Contemporary Age 9</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo" draggable="true" data-id="14" data-duration="3" data-type="solo">
-                            <td class="time-col">9:02 AM</td>
-                            <td>014</td>
-                            <td><strong>Gravity</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Lily Martinez</td>
-                            <td><span class="category-badge">Contemporary Age 9</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-duet" draggable="true" data-id="15" data-duration="3" data-type="duet">
-                            <td class="time-col">9:05 AM</td>
-                            <td>015</td>
-                            <td><strong>Mirror Image</strong></td>
-                            <td>Grace Motion Studio</td>
-                            <td>Hannah & Sarah Kim</td>
-                            <td><span class="category-badge">Contemporary Age 9</span></td>
-                            <td><span class="entry-badge badge-duet">Duet</span></td>
-                        </tr>
-                        <tr class="row-small-group" draggable="true" data-id="16" data-duration="4" data-type="small-group">
-                            <td class="time-col">9:08 AM</td>
-                            <td>016</td>
-                            <td><strong>Connected</strong></td>
-                            <td>Dance Dynamics</td>
-                            <td>Group (7)</td>
-                            <td><span class="category-badge">Contemporary Age 9</span></td>
-                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
-                        </tr>
-                        <tr class="row-large-group" draggable="true" data-id="17" data-duration="5" data-type="large-group">
-                            <td class="time-col">9:12 AM</td>
-                            <td>017</td>
-                            <td><strong>Awakening</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Group (14)</td>
-                            <td><span class="category-badge">Contemporary Age 9</span></td>
-                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
-                        </tr>
-
-                        <!-- Category Group Header -->
-                        <tr class="category-group-divider" draggable="true" data-group="hiphop-age-10">
-                            <td colspan="7">
-                                <span class="collapse-icon">▼</span>
-                                📋 HIP HOP AGE 10
-                                <span class="routine-count">(5 routines)</span>
-                                <span class="grouping-note">High energy block - builds audience excitement</span>
-                            </td>
-                        </tr>
-
-                        <!-- Hip Hop Age 10 -->
-                        <tr class="row-solo category-routine" draggable="true" data-id="18" data-duration="3" data-type="solo" data-group="hiphop-age-10">
-                            <td class="time-col">9:17 AM</td>
-                            <td>018</td>
-                            <td><strong>Street Beat</strong></td>
-                            <td>Urban Dance Crew</td>
-                            <td>Jayden Smith</td>
-                            <td><span class="category-badge">Hip Hop Age 10</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo" draggable="true" data-id="19" data-duration="3" data-type="solo">
-                            <td class="time-col">9:20 AM</td>
-                            <td>019</td>
-                            <td><strong>Fresh Moves</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Noah Johnson</td>
-                            <td><span class="category-badge">Hip Hop Age 10</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-duet" draggable="true" data-id="20" data-duration="3" data-type="duet">
-                            <td class="time-col">9:23 AM</td>
-                            <td>020</td>
-                            <td><strong>Dynamic Duo</strong></td>
-                            <td>Urban Dance Crew</td>
-                            <td>Lucas & Mason Brown</td>
-                            <td><span class="category-badge">Hip Hop Age 10</span></td>
-                            <td><span class="entry-badge badge-duet">Duet</span></td>
-                        </tr>
-                        <tr class="row-small-group" draggable="true" data-id="21" data-duration="4" data-type="small-group">
-                            <td class="time-col">9:26 AM</td>
-                            <td>021</td>
-                            <td><strong>Crew</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Group (6)</td>
-                            <td><span class="category-badge">Hip Hop Age 10</span></td>
-                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
-                        </tr>
-                        <tr class="row-large-group" draggable="true" data-id="22" data-duration="5" data-type="large-group">
-                            <td class="time-col">9:30 AM</td>
-                            <td>022</td>
-                            <td><strong>Urban Legends</strong></td>
-                            <td>Urban Dance Crew</td>
-                            <td>Group (16)</td>
-                            <td><span class="category-badge">Hip Hop Age 10</span></td>
-                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
-                        </tr>
-
-                        <!-- Category Group Header -->
-                        <tr class="category-group-divider" draggable="true" data-group="ballet-age-11">
-                            <td colspan="7">
-                                <span class="collapse-icon">▼</span>
-                                📋 BALLET AGE 11
-                                <span class="routine-count">(5 routines)</span>
-                                <span class="grouping-note">Slower tempo after high energy - provides contrast</span>
-                            </td>
-                        </tr>
-
-                        <!-- Ballet Age 11 -->
-                        <tr class="row-solo category-routine" draggable="true" data-id="23" data-duration="3" data-type="solo" data-group="ballet-age-11">
-                            <td class="time-col">9:35 AM</td>
-                            <td>023</td>
-                            <td><strong>Swan Song</strong></td>
-                            <td>Grace Motion Studio</td>
-                            <td>Charlotte White</td>
-                            <td><span class="category-badge">Ballet Age 11</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo" draggable="true" data-id="24" data-duration="3" data-type="solo">
-                            <td class="time-col">9:38 AM</td>
-                            <td>024</td>
-                            <td><strong>Elegant Dreams</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Victoria Garcia</td>
-                            <td><span class="category-badge">Ballet Age 11</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-duet" draggable="true" data-id="25" data-duration="3" data-type="duet">
-                            <td class="time-col">9:41 AM</td>
-                            <td>025</td>
-                            <td><strong>Pas de Deux</strong></td>
-                            <td>Grace Motion Studio</td>
-                            <td>Abigail & Elizabeth Moore</td>
-                            <td><span class="category-badge">Ballet Age 11</span></td>
-                            <td><span class="entry-badge badge-duet">Duet</span></td>
-                        </tr>
-                        <tr class="row-small-group" draggable="true" data-id="26" data-duration="4" data-type="small-group">
-                            <td class="time-col">9:44 AM</td>
-                            <td>026</td>
-                            <td><strong>En Pointe</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Group (5)</td>
-                            <td><span class="category-badge">Ballet Age 11</span></td>
-                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
-                        </tr>
-                        <tr class="row-large-group" draggable="true" data-id="27" data-duration="5" data-type="large-group">
-                            <td class="time-col">9:48 AM</td>
-                            <td>027</td>
-                            <td><strong>The Nutcracker Suite</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Group (18)</td>
-                            <td><span class="category-badge">Ballet Age 11</span></td>
-                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
-                        </tr>
-
-                        <!-- Small studio (Tiny Toes - rest of their routines) -->
-                        <tr class="row-solo" draggable="true" data-id="28" data-duration="3" data-type="solo">
-                            <td class="time-col">9:53 AM</td>
-                            <td>028</td>
-                            <td><strong>Little Star</strong></td>
-                            <td>Tiny Toes Studio</td>
-                            <td>Aria Thompson</td>
-                            <td><span class="category-badge">Lyrical Age 8</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo" draggable="true" data-id="29" data-duration="3" data-type="solo">
-                            <td class="time-col">9:56 AM</td>
-                            <td>029</td>
-                            <td><strong>Dreamer</strong></td>
-                            <td>Tiny Toes Studio</td>
-                            <td>Luna Rodriguez</td>
-                            <td><span class="category-badge">Lyrical Age 8</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-small-group" draggable="true" data-id="30" data-duration="4" data-type="small-group">
-                            <td class="time-col">9:59 AM</td>
-                            <td>030</td>
-                            <td><strong>Together</strong></td>
-                            <td>Tiny Toes Studio</td>
-                            <td>Group (8)</td>
-                            <td><span class="category-badge">Lyrical Age 8</span></td>
-                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
-                        </tr>
-                        <tr class="row-large-group" draggable="true" data-id="31" data-duration="5" data-type="large-group">
-                            <td class="time-col">10:03 AM</td>
-                            <td>031</td>
-                            <td><strong>Reach for the Sky</strong></td>
-                            <td>Tiny Toes Studio</td>
-                            <td>Group (12)</td>
-                            <td><span class="category-badge">Lyrical Age 8</span></td>
-                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
-                        </tr>
-
-                        <!-- Production to close -->
-                        <tr class="row-production" draggable="true" data-id="32" data-duration="7" data-type="production">
-                            <td class="time-col">10:08 AM</td>
-                            <td>032</td>
-                            <td><strong>A Night at the Movies</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Ensemble (20)</td>
-                            <td><span class="category-badge">Production</span></td>
-                            <td><span class="entry-badge badge-production">Production</span></td>
-                        </tr>
-
-                        <!-- Awards Ceremony -->
-                        <tr class="row-awards">
-                            <td></td>
-                            <td class="time-col">10:15 AM</td>
-                            <td colspan="5">🏆 Awards Ceremony - SESSION 1 (30 minutes) → Ends 10:45 AM</td>
-                        </tr>
-
-                        <!-- Break before Session 2 -->
-                        <tr class="row-break">
-                            <td></td>
-                            <td class="time-col">10:45 AM</td>
-                            <td colspan="5">☕ Break (30 minutes)</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <!-- Additional sessions would continue... -->
+                <div style="text-align: center; padding: 2rem; color: #adb5bd; font-style: italic;">
+                    ... SESSION 2 (Midday), SESSION 3 (Afternoon), and SESSION 4 (Evening) continue below ...
+                </div>
             </div>
 
-            <!-- SESSION 2: Midday -->
-            <div class="session-section">
-                <div class="session-header">
-                    <h2>SESSION 2 - Midday</h2>
-                    <div class="session-stats">11:15 AM - 1:30 PM • 28 Routines • Awards: 1:00 PM</div>
+            <!-- Trophy Helper Panel -->
+            <div class="trophy-helper">
+                <h3>🏆 Trophy Helper</h3>
+                <p style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 1rem;">
+                    Last routines per overall category • Schedule awards 30 min after
+                </p>
+
+                <div class="trophy-category">
+                    <div class="trophy-category-title">TAP AGE 7 EMERALD SOLOS</div>
+                    <div class="trophy-category-info">
+                        <strong>Last Routine:</strong> #104 at 8:24 AM<br>
+                        <strong>Total Routines:</strong> 4<br>
+                        <strong>Suggested Award Time:</strong> 8:54 AM (after 30 min)
+                    </div>
+                    <div class="trophy-category-action">
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Create Award Block</button>
+                    </div>
                 </div>
 
-                <table class="schedule-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">Entry #</th>
-                            <th style="width: 80px;">Time</th>
-                            <th style="width: 200px;">Routine Name</th>
-                            <th style="width: 150px;">Studio</th>
-                            <th style="width: 150px;">Dancer(s)</th>
-                            <th style="width: 120px;">Category</th>
-                            <th style="width: 80px;">Type</th>
-                        </tr>
-                    </thead>
-                    <tbody id="session2">
-                        <!-- Category Group Header -->
-                        <tr class="category-group-divider" draggable="true" data-group="musical-theater-age-12">
-                            <td colspan="7">
-                                <span class="collapse-icon">▼</span>
-                                📋 MUSICAL THEATER AGE 12
-                                <span class="routine-count">(5 routines)</span>
-                                <span class="grouping-note">Midday energy boost - theatrical performances engage audience</span>
-                            </td>
-                        </tr>
+                <div class="trophy-category">
+                    <div class="trophy-category-title">JAZZ AGE 8 SAPPHIRE LARGE GROUPS</div>
+                    <div class="trophy-category-info">
+                        <strong>Last Routine:</strong> #110 at 8:46 AM<br>
+                        <strong>Total Routines:</strong> 6<br>
+                        <strong>Suggested Award Time:</strong> 9:16 AM (after 30 min)
+                    </div>
+                    <div class="trophy-category-action">
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Create Award Block</button>
+                    </div>
+                </div>
 
-                        <tr class="row-solo category-routine" draggable="true" data-id="33" data-duration="3" data-type="solo" data-group="musical-theater-age-12">
-                            <td class="time-col">11:15 AM</td>
-                            <td>033</td>
-                            <td><strong>Energize</strong></td>
-                            <td>Dance Dynamics</td>
-                            <td>Addison Clark</td>
-                            <td><span class="category-badge">Musical Theater Age 12</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-solo" draggable="true" data-id="34" data-duration="3" data-type="solo">
-                            <td class="time-col">11:18 AM</td>
-                            <td>034</td>
-                            <td><strong>Broadway Bound</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Brooklyn Lewis</td>
-                            <td><span class="category-badge">Musical Theater Age 12</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-                        <tr class="row-duet" draggable="true" data-id="35" data-duration="3" data-type="duet">
-                            <td class="time-col">11:21 AM</td>
-                            <td>035</td>
-                            <td><strong>Show Stoppers</strong></td>
-                            <td>Dance Dynamics</td>
-                            <td>Peyton & Harper Walker</td>
-                            <td><span class="category-badge">Musical Theater Age 12</span></td>
-                            <td><span class="entry-badge badge-duet">Duet</span></td>
-                        </tr>
+                <div class="trophy-category">
+                    <div class="trophy-category-title">CONTEMPORARY AGE 9 RUBY LARGE GROUPS</div>
+                    <div class="trophy-category-info">
+                        <strong>Last Routine:</strong> #116 at 9:25 AM<br>
+                        <strong>Total Routines:</strong> 6<br>
+                        <strong>Suggested Award Time:</strong> 9:55 AM (after 30 min)
+                    </div>
+                    <div class="trophy-category-action">
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Create Award Block</button>
+                    </div>
+                </div>
 
-                        <!-- Continue with more categories... -->
-                        <tr class="row-small-group" draggable="true" data-id="36" data-duration="4" data-type="small-group">
-                            <td class="time-col">11:24 AM</td>
-                            <td>036</td>
-                            <td><strong>The Greatest Show</strong></td>
-                            <td>Elite Performers</td>
-                            <td>Group (7)</td>
-                            <td><span class="category-badge">Musical Theater Age 12</span></td>
-                            <td><span class="entry-badge badge-small-group">Small Group</span></td>
-                        </tr>
-                        <tr class="row-large-group" draggable="true" data-id="37" data-duration="5" data-type="large-group">
-                            <td class="time-col">11:28 AM</td>
-                            <td>037</td>
-                            <td><strong>Hamilton Medley</strong></td>
-                            <td>Starlight Dance Academy</td>
-                            <td>Group (15)</td>
-                            <td><span class="category-badge">Musical Theater Age 12</span></td>
-                            <td><span class="entry-badge badge-large-group">Large Group</span></td>
-                        </tr>
-
-                        <!-- More routines abbreviated for demo... -->
-                        <tr class="row-solo" draggable="true" data-id="38" data-duration="3" data-type="solo">
-                            <td class="time-col">11:33 AM</td>
-                            <td>038</td>
-                            <td><strong>Fierce</strong></td>
-                            <td>Urban Dance Crew</td>
-                            <td>Kennedy Hall</td>
-                            <td><span class="category-badge">Open Age 13</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-
-                        <!-- Break -->
-                        <tr class="row-break">
-                            <td></td>
-                            <td class="time-col">11:36 AM</td>
-                            <td colspan="5">☕ Break (15 minutes)</td>
-                        </tr>
-
-                        <!-- More routines... (abbreviated) -->
-                        <tr class="row-solo" draggable="true" data-id="39" data-duration="3" data-type="solo">
-                            <td class="time-col">11:51 AM</td>
-                            <td>039</td>
-                            <td><strong>Unstoppable</strong></td>
-                            <td>Grace Motion Studio</td>
-                            <td>Madelyn Young</td>
-                            <td><span class="category-badge">Open Age 13</span></td>
-                            <td><span class="entry-badge badge-solo">Solo</span></td>
-                        </tr>
-
-                        <!-- Lunch Break -->
-                        <tr class="row-break">
-                            <td></td>
-                            <td class="time-col">12:00 PM</td>
-                            <td colspan="5">🍽️ Lunch Break (60 minutes)</td>
-                        </tr>
-
-                        <!-- Awards Ceremony -->
-                        <tr class="row-awards">
-                            <td></td>
-                            <td class="time-col">1:00 PM</td>
-                            <td colspan="5">🏆 Awards Ceremony - SESSION 2 (30 minutes) → Ends 1:30 PM</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Additional sessions would continue... -->
-            <div style="text-align: center; padding: 2rem; color: #6c757d; font-style: italic;">
-                ... SESSION 3 (Afternoon) and SESSION 4 (Evening) continue below ...
+                <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(251, 191, 36, 0.1); border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                    <div style="font-size: 0.8rem; color: #fbbf24; font-weight: 600; margin-bottom: 0.5rem;">⚠️ Hotel Attrition Warning</div>
+                    <div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.8);">
+                        All Emerald routines are on Day 1. Consider spreading across multiple days to prevent early checkout.
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1043,10 +1165,80 @@
                 <div class="legend-color" style="background: #ffc107;"></div>
                 <span>Awards</span>
             </div>
+            <div class="legend-item">
+                <span style="color: #ef4444;">⚠️</span>
+                <span>Conflict</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: #fbbf24;">⚠️</span>
+                <span>Age Change</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: #3b82f6;">●</span>
+                <span>Studio Request</span>
+            </div>
+            <div class="legend-item">
+                <span>📝</span>
+                <span>CD Note</span>
+            </div>
+            <div class="legend-item">
+                <span>🏆</span>
+                <span>Last Routine (for awards)</span>
+            </div>
         </div>
     </div>
 
+    <!-- Autosave Indicator -->
+    <div class="autosave-indicator" id="autosaveIndicator">
+        💾 Saved 2 seconds ago
+    </div>
+
     <script>
+        // Current view mode (affects studio name display)
+        let currentView = 'cd'; // cd, studio, judge, public
+
+        // View switcher
+        document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentView = this.dataset.view;
+                updateViewMode();
+            });
+        });
+
+        function updateViewMode() {
+            const studioNameCells = document.querySelectorAll('.studio-name');
+
+            studioNameCells.forEach(cell => {
+                const studioCode = cell.dataset.studioCode;
+                const fullName = {
+                    'A': 'Starlight Dance Academy',
+                    'B': 'Tiny Toes Studio',
+                    'C': 'Dance Dynamics',
+                    'D': 'Elite Performers',
+                    'E': 'Grace Motion Studio'
+                }[studioCode] || 'Unknown Studio';
+
+                if (currentView === 'cd') {
+                    // CD sees both code and name
+                    cell.textContent = `${fullName} (${studioCode})`;
+                } else if (currentView === 'judge') {
+                    // Judges see code only
+                    cell.textContent = `Studio ${studioCode}`;
+                } else if (currentView === 'public') {
+                    // Public sees full name
+                    cell.textContent = fullName;
+                } else if (currentView === 'studio') {
+                    // Studios see their own name, codes for others
+                    cell.textContent = fullName; // In real app, would check if it's their studio
+                }
+            });
+
+            // Show autosave
+            showAutosave();
+        }
+
         // Initialize: Add entry numbers and group classes to all existing routines
         function initializeSchedule() {
             // Add entry-number class to all routine number cells
@@ -1060,6 +1252,7 @@
             });
 
             renumberAllRoutines();
+            updateViewMode();
         }
 
         // Renumber all routines sequentially starting from 100
@@ -1164,6 +1357,7 @@
                         // Recalculate times and renumber
                         recalculateTimes(tbody);
                         renumberAllRoutines();
+                        showAutosave();
 
                         console.log('Group moved successfully');
                     }
@@ -1184,10 +1378,12 @@
                 // Toggle active state
                 const wasActive = this.classList.contains('active');
 
-                // Clear all highlights and active states for this filter type
-                document.querySelectorAll(`.filter-btn[data-filter="${filterType}"]`).forEach(b => {
-                    b.classList.remove('active');
-                });
+                // For classification, only one can be active (radio behavior)
+                if (filterType === 'classification') {
+                    document.querySelectorAll(`.filter-btn[data-filter="classification"]`).forEach(b => {
+                        b.classList.remove('active');
+                    });
+                }
 
                 if (!wasActive) {
                     this.classList.add('active');
@@ -1198,6 +1394,28 @@
             });
         });
 
+        // Search input
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            if (searchTerm.length >= 2) {
+                searchRoutines(searchTerm);
+            } else if (searchTerm.length === 0) {
+                clearHighlights();
+            }
+        });
+
+        function searchRoutines(term) {
+            clearHighlights();
+            const allRows = document.querySelectorAll('.schedule-table tbody tr[draggable="true"]:not(.category-group-divider)');
+
+            allRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    row.classList.add('highlighted');
+                }
+            });
+        }
+
         function highlightRows(filterType, filterValue) {
             clearHighlights();
 
@@ -1207,22 +1425,19 @@
                 const cells = row.querySelectorAll('td');
                 let shouldHighlight = false;
 
-                if (filterType === 'studio') {
-                    // Studio is in column 3 (index 3)
-                    const studioCell = cells[3];
-                    if (studioCell && studioCell.textContent.includes(filterValue)) {
+                // Category badge is in column 5
+                const categoryCell = cells[5];
+
+                if (filterType === 'classification' && categoryCell) {
+                    if (categoryCell.textContent.includes(filterValue)) {
                         shouldHighlight = true;
                     }
-                } else if (filterType === 'age') {
-                    // Age is in the category badge (column 5)
-                    const categoryCell = cells[5];
-                    if (categoryCell && categoryCell.textContent.includes(filterValue)) {
+                } else if (filterType === 'genre' && categoryCell) {
+                    if (categoryCell.textContent.includes(filterValue)) {
                         shouldHighlight = true;
                     }
-                } else if (filterType === 'category') {
-                    // Category is in the category badge (column 5)
-                    const categoryCell = cells[5];
-                    if (categoryCell && categoryCell.textContent.includes(filterValue)) {
+                } else if (filterType === 'age' && categoryCell) {
+                    if (categoryCell.textContent.includes(`Age ${filterValue}`) || categoryCell.textContent.includes(`AGE ${filterValue}`)) {
                         shouldHighlight = true;
                     }
                 }
@@ -1238,8 +1453,12 @@
                 row.classList.remove('highlighted');
             });
             document.querySelectorAll('.filter-btn.active').forEach(btn => {
-                btn.classList.remove('active');
+                // Don't clear active state for classification filters
+                if (btn.dataset.filter !== 'classification') {
+                    btn.classList.remove('active');
+                }
             });
+            document.getElementById('searchInput').value = '';
         }
 
         // Drag and Drop Functionality
@@ -1289,8 +1508,8 @@
                 // Renumber all routines
                 renumberAllRoutines();
 
-                // Show conflict warning (demo)
-                showConflictWarning("Routine order changed - entry numbers and times recalculated");
+                // Show autosave
+                showAutosave();
             }
 
             return false;
@@ -1321,7 +1540,8 @@
                 if (row.draggable && row.dataset.duration && !row.classList.contains('row-break') && !row.classList.contains('row-awards')) {
                     const duration = parseInt(row.dataset.duration);
                     timeCol.textContent = formatTime(currentTime);
-                    currentTime += (duration / 60) + (0.5 / 60); // Add routine + 30sec transition
+                    // ZERO BUFFER TIME - no transition time added
+                    currentTime += (duration / 60);
                 }
                 // Handle breaks
                 else if (row.classList.contains('row-break')) {
@@ -1335,7 +1555,7 @@
                 // Handle awards
                 else if (row.classList.contains('row-awards')) {
                     timeCol.textContent = formatTime(currentTime);
-                    currentTime += (30 / 60); // 30 min awards
+                    currentTime += (15 / 60); // 15 min awards per category
                 }
             });
         }
@@ -1357,15 +1577,13 @@
             return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
         }
 
-        function showConflictWarning(message) {
-            const warning = document.getElementById('conflictWarning');
-            const messageEl = document.getElementById('conflictMessage');
-            messageEl.textContent = message;
-            warning.classList.add('show');
+        function showAutosave() {
+            const indicator = document.getElementById('autosaveIndicator');
+            indicator.classList.add('show');
 
             setTimeout(() => {
-                warning.classList.remove('show');
-            }, 5000);
+                indicator.classList.remove('show');
+            }, 2000);
         }
 
         // Initialize schedule on page load
