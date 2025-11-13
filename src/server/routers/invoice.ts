@@ -557,12 +557,28 @@ export const invoiceRouter = router({
     .mutation(async ({ input }) => {
       const { studioId, competitionId } = input;
 
+      // Find the invoice for this studio/competition
+      const invoice = await prisma.invoices.findFirst({
+        where: {
+          studio_id: studioId,
+          competition_id: competitionId,
+        },
+        orderBy: {
+          created_at: 'desc', // Get most recent invoice
+        },
+      });
+
+      if (!invoice) {
+        throw new Error('Item not found - it may have been deleted');
+      }
+
       // Get studio and competition details
       const studio = await prisma.studios.findUnique({
         where: { id: studioId },
         select: {
+          owner_id: true,
           name: true,
-          contact_email: true,
+          email: true,
         },
       });
 
@@ -574,30 +590,55 @@ export const invoiceRouter = router({
         },
       });
 
-      if (!studio || !competition || !studio.contact_email) {
+      if (!studio || !competition || !studio.email) {
         throw new Error('Studio or competition not found');
       }
 
-      // Get confirmed entries only for total amount
-      const entries = await prisma.competition_entries.findMany({
-        where: {
-          studio_id: studioId,
-          competition_id: competitionId,
-          status: 'confirmed',
-        },
+      // Check if email is enabled for this studio owner
+      const isEnabled = await isEmailEnabled(studio.owner_id!, 'invoice_received');
+
+      if (!isEnabled) {
+        return { success: true, email: studio.email, emailDisabled: true };
+      }
+
+      // Get actual invoice data
+      const lineItems = (invoice.line_items as any) || [];
+      const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
+      const totalAmount = Number(invoice.total || 0);
+
+      const emailData: InvoiceDeliveryData = {
+        studioName: studio.name,
+        competitionName: competition.name,
+        competitionYear: competition.year || new Date().getFullYear(),
+        invoiceNumber: invoice.id.substring(0, 8),
+        totalAmount,
+        routineCount,
+        invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices`,
+      };
+
+      const html = await renderInvoiceDelivery(emailData);
+      const subject = getEmailSubject('invoice', {
+        invoiceNumber: emailData.invoiceNumber,
+        competitionName: emailData.competitionName,
+        competitionYear: emailData.competitionYear,
       });
 
-      const totalAmount = entries.reduce((sum, entry) => sum + Number(entry.total_fee || 0), 0);
+      await sendEmail({
+        to: studio.email,
+        subject,
+        html,
+        templateType: 'invoice-delivery',
+        studioId: invoice.studio_id,
+        competitionId: invoice.competition_id,
+      });
 
-      // Send reminder email (basic notification for now)
-      // In production, this would use email router with proper template
       logger.info('Invoice reminder sent', {
-        email: studio.contact_email,
+        email: studio.email,
         competition: `${competition.name} ${competition.year}`,
         amount: totalAmount.toFixed(2),
       });
 
-    return { success: true, email: studio.contact_email };
+      return { success: true, email: studio.email };
     }),
 
   // Create invoice from a reservation (replaces direct approve flow)
