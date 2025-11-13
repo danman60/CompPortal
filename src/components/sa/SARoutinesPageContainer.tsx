@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
+import { RoutineVerificationModal } from './RoutineVerificationModal';
 
 /**
  * Super Admin Routines View
@@ -18,6 +19,9 @@ export function SARoutinesPageContainer() {
   const [selectedCategoryTypeId, setSelectedCategoryTypeId] = useState<string>('');
   const [selectedDanceCategoryId, setSelectedDanceCategoryId] = useState<string>('');
   const [selectedAgeDivisionId, setSelectedAgeDivisionId] = useState<string>('');
+
+  // Verification modal state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   // Fetch data
   const { data: tenantsData, isLoading: tenantsLoading } = trpc.superAdmin.tenants.getAllTenants.useQuery();
@@ -75,6 +79,14 @@ export function SARoutinesPageContainer() {
               Multi-tenant view • {filteredEntries.length} routines • Click to edit
             </p>
           </div>
+
+          {/* Verify Routines Button */}
+          <button
+            onClick={() => setShowVerificationModal(true)}
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+          >
+            🔍 Verify All Routines
+          </button>
         </div>
       </div>
 
@@ -296,6 +308,13 @@ export function SARoutinesPageContainer() {
           </div>
         </div>
       )}
+
+      {/* Verification Modal */}
+      <RoutineVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        filteredRoutineIds={filteredEntries.map((e: any) => e.id)}
+      />
     </div>
   );
 }

@@ -1743,6 +1743,222 @@ const digestRouter = router({
 });
 
 // ============================================================================
+// ROUTINE VERIFICATION
+// ============================================================================
+
+const routineVerificationRouter = router({
+  // Verify routines for age/data quality issues
+  verifyRoutines: protectedProcedure
+    .input(
+      z.object({
+        routineIds: z.array(z.string().uuid()).optional(),
+      }).nullish()
+    )
+    .query(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can verify routines');
+      }
+
+      const routineIds = input?.routineIds;
+
+      // Build WHERE clause for optional routine IDs filter
+      const whereClause = routineIds && routineIds.length > 0
+        ? `AND ce.id = ANY($1::uuid[])`
+        : '';
+      const params = routineIds && routineIds.length > 0 ? [routineIds] : [];
+
+      // Get all routines with their dancers
+      const routines = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT
+          ce.id as routine_id,
+          ce.title as routine_title,
+          ce.routine_age as stored_age,
+          ce.age_group_id,
+          ce.status,
+          ce.created_at,
+          ag.name as age_group_name,
+          ag.min_age,
+          ag.max_age,
+          t.id as tenant_id,
+          t.name as tenant_name,
+          s.name as studio_name,
+          jsonb_agg(
+            jsonb_build_object(
+              'dob', d.date_of_birth,
+              'name', d.first_name || ' ' || d.last_name
+            )
+          ) as dancers
+        FROM competition_entries ce
+        LEFT JOIN age_groups ag ON ce.age_group_id = ag.id
+        LEFT JOIN tenants t ON ce.tenant_id = t.id
+        LEFT JOIN reservations r ON ce.reservation_id = r.id
+        LEFT JOIN studios s ON r.studio_id = s.id
+        LEFT JOIN entry_participants ep ON ep.entry_id = ce.id
+        LEFT JOIN dancers d ON ep.dancer_id = d.id
+        WHERE ce.routine_age IS NOT NULL
+          ${whereClause}
+        GROUP BY ce.id, ce.title, ce.routine_age, ce.age_group_id, ce.status, ce.created_at, ag.name, ag.min_age, ag.max_age, t.id, t.name, s.name
+        ORDER BY ce.created_at DESC
+      `, ...params);
+
+      // Process each routine to calculate correct age
+      const results = routines.map((routine) => {
+        const { routine_id, routine_title, stored_age, age_group_id, age_group_name, min_age, max_age, status, created_at, tenant_id, tenant_name, studio_name, dancers } = routine;
+
+        // Calculate correct age from dancers
+        let correctAge: number;
+        const dancerList = dancers as Array<{ dob: string; name: string }>;
+
+        if (dancerList.length === 1) {
+          // Solo - calculate age at competition date (Dec 31, 2025)
+          const dob = new Date(dancerList[0].dob);
+          const compDate = new Date('2025-12-31');
+          correctAge = compDate.getFullYear() - dob.getFullYear();
+        } else {
+          // Group - average ages (floored)
+          const ages = dancerList.map((dancer) => {
+            const dob = new Date(dancer.dob);
+            const compDate = new Date('2025-12-31');
+            return compDate.getFullYear() - dob.getFullYear();
+          });
+          correctAge = Math.floor(ages.reduce((sum, age) => sum + age, 0) / ages.length);
+        }
+
+        const discrepancy = stored_age - correctAge;
+        const createdBeforeNov12 = new Date(created_at) < new Date('2025-11-12');
+
+        // Classify severity
+        let severity: 'PASS' | 'WARNING' | 'ERROR';
+        if (discrepancy === 0) {
+          severity = 'PASS';
+        } else if (discrepancy === 1) {
+          severity = 'WARNING'; // Could be intentional +1 override
+        } else {
+          severity = 'ERROR'; // Significant discrepancy
+        }
+
+        // Proposed age (correct calculated age, or +1 if WARNING created after Nov 12)
+        const proposedAge = severity === 'WARNING' && !createdBeforeNov12
+          ? correctAge + 1  // Preserve potential intentional override
+          : correctAge;
+
+        return {
+          routineId: routine_id,
+          routineTitle: routine_title,
+          studioName: studio_name,
+          tenantId: tenant_id,
+          tenantName: tenant_name,
+          status,
+          severity,
+          currentAge: stored_age,
+          proposedAge,
+          discrepancy,
+          createdBeforeNov12,
+          currentAgeGroup: age_group_name || 'N/A',
+          proposedAgeGroup: age_group_name || 'N/A', // TODO: Calculate correct age group
+          currentAgeGroupId: age_group_id,
+          proposedAgeGroupId: age_group_id, // TODO: Calculate correct age group
+        };
+      });
+
+      // Calculate summary
+      const summary = {
+        total: results.length,
+        passed: results.filter(r => r.severity === 'PASS').length,
+        warnings: results.filter(r => r.severity === 'WARNING').length,
+        errors: results.filter(r => r.severity === 'ERROR').length,
+      };
+
+      return {
+        results,
+        summary,
+      };
+    }),
+
+  // Apply routine corrections
+  applyRoutineCorrections: protectedProcedure
+    .input(
+      z.object({
+        corrections: z.array(
+          z.object({
+            routineId: z.string().uuid(),
+            newAge: z.number().int().min(5).max(99),
+            newAgeGroupId: z.string().uuid().nullable(),
+          })
+        ),
+        notifyStudios: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can apply routine corrections');
+      }
+
+      if (input.corrections.length === 0) {
+        throw new Error('No corrections to apply');
+      }
+
+      // Create backup table
+      const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const backupTableName = `routine_age_correction_backup_${timestamp}`;
+
+      const routineIds = input.corrections.map(c => c.routineId);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS ${backupTableName} AS
+        SELECT
+          id,
+          routine_age,
+          age_group_id,
+          updated_at as original_updated_at,
+          NOW() as backup_timestamp
+        FROM competition_entries
+        WHERE id IN (${routineIds.map((_, i) => `$${i + 1}::uuid`).join(', ')})
+      `, ...routineIds);
+
+      // Apply corrections in transaction
+      await prisma.$transaction(async (tx) => {
+        for (const correction of input.corrections) {
+          await tx.competition_entries.update({
+            where: { id: correction.routineId },
+            data: {
+              routine_age: correction.newAge,
+              age_group_id: correction.newAgeGroupId ?? undefined,
+              updated_at: new Date(),
+            },
+          });
+        }
+      });
+
+      // Log activity
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          action: 'routine.bulk_age_correction',
+          entityType: 'competition_entry',
+          entityId: ctx.userId,
+          details: {
+            corrections_count: input.corrections.length,
+            backup_table: backupTableName,
+            notify_studios: input.notifyStudios,
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log routine correction activity', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
+      // TODO: Studio notification email logic if notifyStudios is true
+
+      return {
+        success: true,
+        message: `${input.corrections.length} routines corrected successfully`,
+        correctionCount: input.corrections.length,
+        backupTable: backupTableName,
+      };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -1756,4 +1972,6 @@ export const superAdminRouter = router({
   backup: backupRestoreRouter,
   impersonation: impersonationRouter,
   digest: digestRouter,
+  verifyRoutines: routineVerificationRouter.verifyRoutines,
+  applyRoutineCorrections: routineVerificationRouter.applyRoutineCorrections,
 });

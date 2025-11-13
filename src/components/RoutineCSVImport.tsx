@@ -164,23 +164,21 @@ export default function RoutineCSVImport() {
     return bestMatch;
   };
 
-  // Calculate age at event date - Dec 31 cutoff
-  // FIXED: Bug discovered 11:31 AM Nov 12, 2025 - timezone shift caused +1 year error
-  // This bug affected O'Neill Academy's 68 bulk-imported routines
-  const calculateAgeAtEvent = (dateOfBirth: string | null, eventYear: number): number | null => {
-    if (!dateOfBirth) return null;
+  // Calculate age at actual competition date (not Dec 31st)
+  // FIXED: Bug discovered Nov 13, 2025 - December 31st logic caused incorrect ages
+  // Uses actual competition start date instead of year-end cutoff
+  const calculateAgeAtEvent = (dateOfBirth: string | null, eventDate: Date | null): number | null => {
+    if (!dateOfBirth || !eventDate) return null;
 
     const birthDate = parseISODateToUTC(dateOfBirth);
     if (!birthDate) return null;
 
-    const cutoffDate = new Date(Date.UTC(eventYear, 11, 31)); // Dec 31 UTC
-
     // Use UTC methods to prevent timezone mismatch
-    let age = cutoffDate.getUTCFullYear() - birthDate.getUTCFullYear();
-    const monthDiff = cutoffDate.getUTCMonth() - birthDate.getUTCMonth();
+    let age = eventDate.getUTCFullYear() - birthDate.getUTCFullYear();
+    const monthDiff = eventDate.getUTCMonth() - birthDate.getUTCMonth();
 
     // Adjust if birthday hasn't occurred yet this year
-    if (monthDiff < 0 || (monthDiff === 0 && cutoffDate.getUTCDate() < birthDate.getUTCDate())) {
+    if (monthDiff < 0 || (monthDiff === 0 && eventDate.getUTCDate() < birthDate.getUTCDate())) {
       age--;
     }
 
@@ -284,7 +282,7 @@ export default function RoutineCSVImport() {
   };
 
   // Match dancers for all routines
-  const matchDancersInRoutines = (routines: any[], eventYear: number): ParsedRoutine[] => {
+  const matchDancersInRoutines = (routines: any[], eventDate: Date | null): ParsedRoutine[] => {
     return routines.map(routine => {
       if (!routine.dancers) {
         return {
@@ -303,7 +301,7 @@ export default function RoutineCSVImport() {
       dancerNames.forEach((name: string) => {
         const match = matchDancerName(name);
         if (match) {
-          const age = calculateAgeAtEvent(match.dancer.date_of_birth, eventYear);
+          const age = calculateAgeAtEvent(match.dancer.date_of_birth, eventDate);
           matched.push({
             dancer_id: match.dancer.id,
             dancer_name: name,
@@ -380,12 +378,12 @@ export default function RoutineCSVImport() {
         throw new Error(`Unsupported file type: ${fileExt}. Please upload .csv, .xlsx, or .xls`);
       }
 
-      // Get event year from first available reservation
-      const eventYear = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
-        ? new Date(reservationsData.reservations[0].competitions.competition_start_date).getFullYear()
-        : new Date().getFullYear();
+      // Get event date from first available reservation
+      const eventDate = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
+        ? (parseISODateToUTC(reservationsData.reservations[0].competitions.competition_start_date) ?? null)
+        : null;
 
-      const matched = matchDancersInRoutines(parsed, eventYear);
+      const matched = matchDancersInRoutines(parsed, eventDate);
       setParsedData(matched);
 
       // Auto-select all routines
@@ -451,11 +449,11 @@ export default function RoutineCSVImport() {
     try {
       const parsed = parseExcel(excelWorkbook, sheetName);
 
-      const eventYear = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
-        ? new Date(reservationsData.reservations[0].competitions.competition_start_date).getFullYear()
-        : new Date().getFullYear();
+      const eventDate = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
+        ? (parseISODateToUTC(reservationsData.reservations[0].competitions.competition_start_date) ?? null)
+        : null;
 
-      const matched = matchDancersInRoutines(parsed, eventYear);
+      const matched = matchDancersInRoutines(parsed, eventDate);
       setParsedData(matched);
       setSelectedRoutines(new Set(matched.map((_, i) => i)));
 

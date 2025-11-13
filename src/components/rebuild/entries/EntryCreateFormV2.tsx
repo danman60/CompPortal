@@ -80,17 +80,14 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
   const dancers = (dancersData?.dancers || []) as any[];
 
-  // Age calculation uses December 31st of competition year (not competition date)
-  // FIXED: Create as UTC to prevent timezone shifts in age calculation
+  // Age calculation uses actual competition start date (as UTC)
+  // FIXED: Use parseISODateToUTC to prevent timezone shifts
   const eventStartDate = competition?.competition_start_date
-    ? (() => {
-        const year = new Date(competition.competition_start_date).getUTCFullYear();
-        return new Date(Date.UTC(year, 11, 31)); // Dec 31st UTC midnight
-      })()
+    ? (parseISODateToUTC(competition.competition_start_date) ?? null)
     : null;
 
   const formHook = useEntryFormV2({
-    eventStartDate,
+    eventStartDate: (eventStartDate ?? null) as Date | null,
     ageGroups: lookups?.ageGroups || [],
     sizeCategories: lookups?.entrySizeCategories || [],
   });
