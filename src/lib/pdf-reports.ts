@@ -628,6 +628,52 @@ export function generateInvoicePDF(invoice: {
   const brandColor = invoice.tenant?.branding?.primaryColor || COLORS.primary;
   const brandTagline = invoice.tenant?.branding?.tagline || 'Competition Management System';
 
+  // Helper to format dates (handles both Date objects and date strings)
+  const formatPDFDate = (dateValue: any, includeYear: boolean = true): string => {
+    console.log('[PDF formatPDFDate] Input:', { dateValue, type: typeof dateValue, isDate: dateValue instanceof Date, includeYear });
+    try {
+      let year: number, month: number, day: number;
+
+      if (dateValue instanceof Date) {
+        console.log('[PDF formatPDFDate] Processing as Date object');
+        year = dateValue.getUTCFullYear();
+        month = dateValue.getUTCMonth() + 1;
+        day = dateValue.getUTCDate();
+        console.log('[PDF formatPDFDate] Extracted from Date:', { year, month, day });
+      } else {
+        const dateStr = dateValue.toString();
+        console.log('[PDF formatPDFDate] Processing as string:', dateStr);
+        if (dateStr.includes('-')) {
+          const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
+          year = parseInt(yearStr);
+          month = parseInt(monthStr);
+          day = parseInt(dayStr);
+          console.log('[PDF formatPDFDate] Parsed from hyphenated string:', { year, month, day });
+        } else {
+          const d = new Date(dateStr);
+          year = d.getUTCFullYear();
+          month = d.getUTCMonth() + 1;
+          day = d.getUTCDate();
+          console.log('[PDF formatPDFDate] Created Date and extracted:', { year, month, day });
+        }
+      }
+
+      const MONTH_NAMES = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+
+      const result = includeYear
+        ? `${MONTH_NAMES[month - 1]} ${day}, ${year}`
+        : `${MONTH_NAMES[month - 1]} ${day}`;
+      console.log('[PDF formatPDFDate] Result:', result);
+      return result;
+    } catch (err) {
+      console.error('[PDF formatPDFDate] Error:', err);
+      return 'Date not available';
+    }
+  };
+
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -666,12 +712,7 @@ export function generateInvoicePDF(invoice: {
   doc.text(`Invoice #: ${invoice.invoiceNumber}`, 15, yPos);
   yPos += 5;
 
-  const invoiceDate = new Date(invoice.invoiceDate);
-  doc.text(`Date: ${invoiceDate.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })}`, 15, yPos);
+  doc.text(`Date: ${formatPDFDate(invoice.invoiceDate, true)}`, 15, yPos);
   yPos += 15;
 
   // Total amount in top right
@@ -749,59 +790,11 @@ export function generateInvoicePDF(invoice: {
   compYPos += 4;
 
   if (invoice.competition.startDate) {
-    // Helper to format dates (handles both Date objects and date strings)
-    const formatPDFDate = (dateValue: any, includeYear: boolean): string => {
-      console.log('[PDF formatPDFDate] Input:', { dateValue, type: typeof dateValue, isDate: dateValue instanceof Date, includeYear });
-      try {
-        let year: number, month: number, day: number;
-
-        if (dateValue instanceof Date) {
-          console.log('[PDF formatPDFDate] Processing as Date object');
-          year = dateValue.getUTCFullYear();
-          month = dateValue.getUTCMonth() + 1;
-          day = dateValue.getUTCDate();
-          console.log('[PDF formatPDFDate] Extracted from Date:', { year, month, day });
-        } else {
-          const dateStr = dateValue.toString();
-          console.log('[PDF formatPDFDate] Processing as string:', dateStr);
-          if (dateStr.includes('-')) {
-            const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
-            year = parseInt(yearStr);
-            month = parseInt(monthStr);
-            day = parseInt(dayStr);
-            console.log('[PDF formatPDFDate] Parsed from hyphenated string:', { year, month, day });
-          } else {
-            const d = new Date(dateStr);
-            year = d.getUTCFullYear();
-            month = d.getUTCMonth() + 1;
-            day = d.getUTCDate();
-            console.log('[PDF formatPDFDate] Created Date and extracted:', { year, month, day });
-          }
-        }
-
-        const MONTH_NAMES = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-
-        const result = includeYear
-          ? `${MONTH_NAMES[month - 1]} ${day}, ${year}`
-          : `${MONTH_NAMES[month - 1]} ${day}`;
-        console.log('[PDF formatPDFDate] Result:', result);
-        return result;
-      } catch (err) {
-        console.error('[PDF formatPDFDate] Error:', err);
-        return 'Date not available';
-      }
-    };
-
-    console.log('[PDF] Competition dates:', { startDate: invoice.competition.startDate, endDate: invoice.competition.endDate });
     let dateText = `Date: ${formatPDFDate(invoice.competition.startDate, true)}`;
 
     if (invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate) {
       dateText += ` - ${formatPDFDate(invoice.competition.endDate, false)}`;
     }
-    console.log('[PDF] Final dateText:', dateText);
 
     doc.text(dateText, rightX, compYPos);
     compYPos += 4;
@@ -913,12 +906,20 @@ export function generateInvoicePDF(invoice: {
 
   // Discount (if applicable)
   const creditAmount = invoice.summary.creditAmount || 0;
+  console.log('[PDF] Credit/Discount check:', {
+    creditAmount,
+    creditReason: invoice.summary.creditReason,
+    fullSummary: invoice.summary
+  });
   if (creditAmount > 0) {
+    console.log('[PDF] Adding discount to PDF');
     doc.setTextColor(COLORS.success);
     const discountLabel = invoice.summary.creditReason || 'Discount';
     doc.text(discountLabel, totalsX, yPos);
     doc.text(`-$${creditAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
     yPos += 6;
+  } else {
+    console.log('[PDF] No discount to add (creditAmount is 0 or undefined)');
   }
 
   // Tax (if applicable)
@@ -949,12 +950,12 @@ export function generateInvoicePDF(invoice: {
   const isEMPWR = invoice.tenantId === EMPWR_TENANT_ID;
 
   if (isEMPWR) {
-    yPos += 5;
+    yPos += 8;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(COLORS.text);
     doc.text('PAYMENT OPTIONS', 15, yPos);
-    yPos += 6;
+    yPos += 8;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -965,34 +966,38 @@ export function generateInvoicePDF(invoice: {
     doc.text('E-Transfer:', 15, yPos);
     doc.setFont('helvetica', 'normal');
     doc.text('empwrdance@gmail.com', 50, yPos);
-    yPos += 5;
+    yPos += 6;
 
     // Cheque
     doc.setFont('helvetica', 'bold');
     doc.text('Cheque:', 15, yPos);
     doc.setFont('helvetica', 'normal');
-    yPos += 5;
+    yPos += 6;
     doc.text('EMPWR Dance Experience', 20, yPos);
-    yPos += 4;
-    doc.text('Attn: Emily Einsmann', 20, yPos);
-    yPos += 4;
-    doc.text('69 Albert St', 20, yPos);
-    yPos += 4;
-    doc.text('Uxbridge, ON L9P 1E5', 20, yPos);
-    yPos += 12; // Extra spacing after payment instructions
-  } else {
     yPos += 5;
+    doc.text('Attn: Emily Einsmann', 20, yPos);
+    yPos += 5;
+    doc.text('69 Albert St', 20, yPos);
+    yPos += 5;
+    doc.text('Uxbridge, ON L9P 1E5', 20, yPos);
+    yPos += 15; // Extra spacing after payment instructions
+  } else {
+    yPos += 8;
   }
 
+  console.log('[PDF] Adding footer text at yPos:', yPos);
+  yPos += 5; // Extra space before thank you message
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(9);
   doc.setTextColor(COLORS.textLight);
   doc.text(`Thank you for participating in ${invoice.competition.name}!`, 15, yPos, { maxWidth: 180 });
-  yPos += 6; // Increase spacing between thank you messages
+  yPos += 7; // Increase spacing between thank you messages
   doc.text('For questions about this invoice, please contact the competition organizers.', 15, yPos, { maxWidth: 180 });
 
+  console.log('[PDF] Calling addFooter with:', { pageNum: 1, totalPages: 1, tenantName: invoice.competition.name });
   addFooter(doc, 1, 1, invoice.competition.name);
 
+  console.log('[PDF] PDF generation complete');
   return doc.output('blob');
 }
 

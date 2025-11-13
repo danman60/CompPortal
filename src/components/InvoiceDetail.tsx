@@ -633,7 +633,17 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         </button>
         <button
           onClick={() => {
-            const pdfBlob = generateInvoicePDF(invoice);
+            // Ensure invoice includes credit/discount info from database
+            const invoiceWithCredit = {
+              ...invoice,
+              summary: {
+                ...invoice.summary,
+                creditAmount: creditAmount,
+                creditReason: dbInvoice?.credit_reason || null,
+              }
+            };
+            console.log('[InvoiceDetail] Generating PDF with creditAmount:', creditAmount, 'creditReason:', dbInvoice?.credit_reason);
+            const pdfBlob = generateInvoicePDF(invoiceWithCredit);
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
             link.href = url;
