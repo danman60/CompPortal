@@ -248,11 +248,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       {invoice.reservation && (
         <div className="mb-8 pb-8 border-b border-white/20">
           <h3 className="text-sm font-semibold text-gray-400 mb-3">RESERVATION DETAILS</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-black/20 p-4 rounded-lg">
-              <div className="text-xs text-gray-400 mb-1">Routines Requested</div>
-              <div className="text-xl font-bold text-white">{invoice.reservation.spacesRequested}</div>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-black/20 p-4 rounded-lg">
               <div className="text-xs text-gray-400 mb-1">Routines Submitted</div>
               <div className="text-xl font-bold text-green-400">{invoice.lineItems.length}</div>

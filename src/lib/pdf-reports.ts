@@ -581,6 +581,8 @@ export function generateInvoicePDF(invoice: {
     taxRate: number;
     taxAmount: number;
     totalAmount: number;
+    creditAmount?: number;
+    creditReason?: string | null;
   };
 }): Blob {
   // Use tenant primary color if available, fallback to default
@@ -828,6 +830,16 @@ export function generateInvoicePDF(invoice: {
     yPos += 6;
   }
 
+  // Discount (if applicable)
+  const creditAmount = invoice.summary.creditAmount || 0;
+  if (creditAmount > 0) {
+    doc.setTextColor(COLORS.success);
+    const discountLabel = invoice.summary.creditReason || 'Discount';
+    doc.text(discountLabel, totalsX, yPos);
+    doc.text(`-$${creditAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+  }
+
   // Tax (if applicable)
   if (invoice.summary.taxAmount > 0) {
     doc.setTextColor(COLORS.textLight);
@@ -886,7 +898,7 @@ export function generateInvoicePDF(invoice: {
     doc.text('69 Albert St', 20, yPos);
     yPos += 4;
     doc.text('Uxbridge, ON L9P 1E5', 20, yPos);
-    yPos += 8;
+    yPos += 12; // Extra spacing after payment instructions
   } else {
     yPos += 5;
   }
@@ -895,7 +907,7 @@ export function generateInvoicePDF(invoice: {
   doc.setFontSize(9);
   doc.setTextColor(COLORS.textLight);
   doc.text(`Thank you for participating in ${invoice.competition.name}!`, 15, yPos, { maxWidth: 180 });
-  yPos += 5;
+  yPos += 6; // Increase spacing between thank you messages
   doc.text('For questions about this invoice, please contact the competition organizers.', 15, yPos, { maxWidth: 180 });
 
   addFooter(doc, 1, 1, invoice.competition.name);

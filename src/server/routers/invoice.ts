@@ -150,6 +150,8 @@ export const invoiceRouter = router({
           taxRate,
           taxAmount,
           totalAmount,
+          creditAmount: Number(invoice.credit_amount || 0),
+          creditReason: invoice.credit_reason,
         },
         status: invoice.status,
         paidAt: invoice.paid_at,
@@ -319,6 +321,8 @@ export const invoiceRouter = router({
           taxRate,
           taxAmount,
           totalAmount,
+          creditAmount: 0,
+          creditReason: null,
         },
       };
     }),
