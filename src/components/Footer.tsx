@@ -18,15 +18,15 @@ export default function Footer() {
     ? (() => {
         const date = new Date(parseInt(commitTimestamp) * 1000);
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = months[date.getMonth()];
-        const day = date.getDate();
-        const year = date.getFullYear();
-        const hours = date.getHours();
-        const minutes = date.getMinutes();
+        const month = months[date.getUTCMonth()];
+        const day = date.getUTCDate();
+        const year = date.getUTCFullYear();
+        const hours = date.getUTCHours();
+        const minutes = date.getUTCMinutes();
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         const displayMinutes = minutes.toString().padStart(2, '0');
-        return `${month} ${day}, ${year}, ${displayHours}:${displayMinutes} ${ampm} EST`;
+        return `${month} ${day}, ${year}, ${displayHours}:${displayMinutes} ${ampm} UTC`;
       })()
     : null;
 
