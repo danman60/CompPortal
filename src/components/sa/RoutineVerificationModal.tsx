@@ -39,7 +39,7 @@ export function RoutineVerificationModal({
 
   if (!isOpen) return null;
 
-  const results = verificationData?.results || [];
+  const results = useMemo(() => verificationData?.results || [], [verificationData?.results]);
   const summary = verificationData?.summary || { total: 0, passed: 0, warnings: 0, errors: 0 };
 
   // Filter results by active tab

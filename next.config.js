@@ -1,7 +1,20 @@
 const { withSentryConfig } = require('@sentry/nextjs');
+const { execSync } = require('child_process');
+
+// Get git commit timestamp at build time
+let commitTimestamp = 'unknown';
+try {
+  const timestamp = execSync('git log -1 --format=%ct', { encoding: 'utf-8' }).trim();
+  commitTimestamp = timestamp;
+} catch (e) {
+  console.warn('Could not fetch git commit timestamp:', e.message);
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_GIT_COMMIT_TIMESTAMP: commitTimestamp,
+  },
   // Use standalone output for better deployment
   output: 'standalone',
 
