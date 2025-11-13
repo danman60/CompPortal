@@ -65,7 +65,7 @@ export default function InvoiceDetailPage({ params }: Props) {
               </Link>
             )}
             <Link
-              href="/dashboard/invoices"
+              href="/dashboard/invoices/all"
               className="text-purple-400 hover:text-purple-300 text-sm inline-block"
             >
               ← Back to Invoices
