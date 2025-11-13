@@ -209,7 +209,8 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
   const totalAfterDiscount = currentSubtotal - creditAmount;
   const totalWithTax = totalAfterDiscount * (1 + taxRate);
-  const totalAmount = Math.max(0, totalWithTax - otherCredit.amount);
+  const depositAmount = invoice?.reservation?.depositAmount || 0;
+  const totalAmount = Math.max(0, totalWithTax - otherCredit.amount - depositAmount);
 
   if (isLoading) {
     return (
@@ -525,6 +526,13 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             </div>
           )}
 
+          {depositAmount > 0 && (
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-yellow-400">LESS Deposit</span>
+              <span className="text-yellow-400">-${depositAmount.toFixed(2)}</span>
+            </div>
+          )}
+
           {taxAmount > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
               <span className="text-gray-300">Tax ({(taxRate * 100).toFixed(2)}%)</span>
@@ -653,9 +661,10 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 ...invoice.summary,
                 creditAmount: creditAmount,
                 creditReason: dbInvoice?.credit_reason || null,
+                depositAmount: depositAmount,
               }
             };
-            console.log('[InvoiceDetail] Generating PDF with creditAmount:', creditAmount, 'creditReason:', dbInvoice?.credit_reason);
+            console.log('[InvoiceDetail] Generating PDF with creditAmount:', creditAmount, 'creditReason:', dbInvoice?.credit_reason, 'depositAmount:', depositAmount);
             const pdfBlob = generateInvoicePDF(invoiceWithCredit);
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');

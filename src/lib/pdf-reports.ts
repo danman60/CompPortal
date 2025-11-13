@@ -814,8 +814,7 @@ export function generateInvoicePDF(invoice: {
     yPos += 6;
 
     const resData = [
-      ['Spaces Requested', invoice.reservation.spacesRequested.toString()],
-      ['Spaces Confirmed', invoice.reservation.spacesConfirmed.toString()],
+      ['Routines Submitted', invoice.lineItems.length.toString()],
       ['Deposit Amount', `$${invoice.reservation.depositAmount.toFixed(2)}`],
       ['Payment Status', (invoice.reservation.paymentStatus || 'PENDING').toUpperCase()],
     ];
@@ -922,6 +921,18 @@ export function generateInvoicePDF(invoice: {
     console.log('[PDF] No discount to add (creditAmount is 0 or undefined)');
   }
 
+  // Deposit (if applicable)
+  const depositAmount = (invoice.summary as any).depositAmount || 0;
+  if (depositAmount > 0) {
+    console.log('[PDF] Adding deposit to PDF');
+    doc.setTextColor(255, 193, 7); // Yellow color for deposit
+    doc.text('LESS Deposit', totalsX, yPos);
+    doc.text(`-$${depositAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+  } else {
+    console.log('[PDF] No deposit to subtract (depositAmount is 0 or undefined)');
+  }
+
   // Tax (if applicable)
   if (invoice.summary.taxAmount > 0) {
     doc.setTextColor(COLORS.textLight);
@@ -931,7 +942,17 @@ export function generateInvoicePDF(invoice: {
     yPos += 6;
   }
 
-  // Total (highlighted)
+  // Total (highlighted) - Recalculate to include deposit
+  const pdfTotal = Math.max(0, invoice.summary.subtotal - creditAmount - depositAmount + invoice.summary.taxAmount);
+  console.log('[PDF] Total calculation:', {
+    subtotal: invoice.summary.subtotal,
+    creditAmount,
+    depositAmount,
+    taxAmount: invoice.summary.taxAmount,
+    calculatedTotal: pdfTotal,
+    originalTotal: invoice.summary.totalAmount
+  });
+
   doc.setDrawColor(COLORS.success);
   doc.setLineWidth(0.5);
   doc.line(totalsX, yPos, totalsX + totalsWidth, yPos);
@@ -942,7 +963,7 @@ export function generateInvoicePDF(invoice: {
   doc.text('TOTAL', totalsX, yPos);
   doc.setFontSize(14);
   doc.setTextColor(COLORS.success);
-  doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+  doc.text(`$${pdfTotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 10;
 
   // Payment Instructions Footer (EMPWR tenant only)
@@ -950,12 +971,12 @@ export function generateInvoicePDF(invoice: {
   const isEMPWR = invoice.tenantId === EMPWR_TENANT_ID;
 
   if (isEMPWR) {
-    yPos += 8;
+    yPos += 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(COLORS.text);
     doc.text('PAYMENT OPTIONS', 15, yPos);
-    yPos += 8;
+    yPos += 10;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -966,23 +987,23 @@ export function generateInvoicePDF(invoice: {
     doc.text('E-Transfer:', 15, yPos);
     doc.setFont('helvetica', 'normal');
     doc.text('empwrdance@gmail.com', 50, yPos);
-    yPos += 6;
+    yPos += 8;
 
     // Cheque
     doc.setFont('helvetica', 'bold');
     doc.text('Cheque:', 15, yPos);
     doc.setFont('helvetica', 'normal');
-    yPos += 6;
+    yPos += 8;
     doc.text('EMPWR Dance Experience', 20, yPos);
-    yPos += 5;
+    yPos += 6;
     doc.text('Attn: Emily Einsmann', 20, yPos);
-    yPos += 5;
+    yPos += 6;
     doc.text('69 Albert St', 20, yPos);
-    yPos += 5;
+    yPos += 6;
     doc.text('Uxbridge, ON L9P 1E5', 20, yPos);
     yPos += 15; // Extra spacing after payment instructions
   } else {
-    yPos += 8;
+    yPos += 10;
   }
 
   console.log('[PDF] Adding footer text at yPos:', yPos);
