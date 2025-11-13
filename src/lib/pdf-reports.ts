@@ -710,7 +710,9 @@ export function generateInvoicePDF(invoice: {
   compYPos += 4;
 
   if (invoice.competition.startDate) {
-    const startDate = new Date(invoice.competition.startDate);
+    // Parse date manually to avoid timezone offset (treat as local date, not UTC)
+    const [startYear, startMonth, startDay] = invoice.competition.startDate.toString().split('-');
+    const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay));
     let dateText = `Date: ${startDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -718,7 +720,8 @@ export function generateInvoicePDF(invoice: {
     })}`;
 
     if (invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate) {
-      const endDate = new Date(invoice.competition.endDate);
+      const [endYear, endMonth, endDay] = invoice.competition.endDate.toString().split('-');
+      const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay));
       dateText += ` - ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
     }
 

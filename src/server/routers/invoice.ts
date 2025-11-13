@@ -105,9 +105,12 @@ export const invoiceRouter = router({
           }))
         : [];
       const subtotal = parseFloat(invoice.subtotal?.toString() || '0');
+      const creditAmount = Number(invoice.credit_amount || 0);
       const taxRate = parseFloat(invoice.tax_rate?.toString() || '0.13') / 100;
-      const taxAmount = subtotal * taxRate;
-      const totalAmount = parseFloat(invoice.total?.toString() || '0');
+      // Tax is calculated AFTER discount is applied
+      const afterDiscount = subtotal - creditAmount;
+      const taxAmount = afterDiscount * taxRate;
+      const totalAmount = afterDiscount + taxAmount;
 
       return {
         id: invoice.id,
@@ -150,7 +153,7 @@ export const invoiceRouter = router({
           taxRate,
           taxAmount,
           totalAmount,
-          creditAmount: Number(invoice.credit_amount || 0),
+          creditAmount,
           creditReason: invoice.credit_reason,
         },
         status: invoice.status,
