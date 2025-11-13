@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { generateInvoicePDF } from '@/lib/pdf-reports';
 import toast from 'react-hot-toast';
@@ -194,15 +194,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0;
   const discountPercent = currentSubtotal > 0 ? (creditAmount / currentSubtotal) * 100 : 0;
 
-  console.log('[InvoiceDetail] Credit/Discount calculation:', {
-    hasDbInvoice: !!dbInvoice,
-    creditAmountFromDb: dbInvoice?.credit_amount,
-    creditAmountCalculated: creditAmount,
-    creditReason: dbInvoice?.credit_reason,
-    discountPercent,
-    currentSubtotal,
-    userRole: userProfile?.role
-  });
+  // Debug logging (safe in useEffect to avoid hydration errors)
+  useEffect(() => {
+    console.log('[InvoiceDetail] Credit/Discount calculation:', {
+      hasDbInvoice: !!dbInvoice,
+      creditAmountFromDb: dbInvoice?.credit_amount,
+      creditAmountCalculated: creditAmount,
+      creditReason: dbInvoice?.credit_reason,
+      discountPercent,
+      currentSubtotal,
+      userRole: userProfile?.role
+    });
+  }, [dbInvoice, creditAmount, discountPercent, currentSubtotal, userProfile]);
 
   const totalAfterDiscount = currentSubtotal - creditAmount;
   const totalWithTax = totalAfterDiscount * (1 + taxRate);
