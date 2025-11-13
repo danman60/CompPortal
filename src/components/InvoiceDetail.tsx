@@ -227,22 +227,36 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             {invoice.competition.startDate && (
               <p>
                 Date: {(() => {
-                  const [year, month, day] = invoice.competition.startDate.toString().split('-');
-                  const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                  return startDate.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  });
-                })()}
-                {invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate && (
-                  <> - {(() => {
-                    const [year, month, day] = invoice.competition.endDate.toString().split('-');
-                    const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                    return endDate.toLocaleDateString('en-US', {
+                  try {
+                    const dateStr = invoice.competition.startDate.toString();
+                    const [year, month, day] = dateStr.split('-');
+                    if (!year || !month || !day) return 'Date not available';
+                    const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    if (isNaN(startDate.getTime())) return 'Invalid date';
+                    return startDate.toLocaleDateString('en-US', {
+                      year: 'numeric',
                       month: 'long',
                       day: 'numeric',
                     });
+                  } catch {
+                    return 'Date not available';
+                  }
+                })()}
+                {invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate && (
+                  <> - {(() => {
+                    try {
+                      const dateStr = invoice.competition.endDate.toString();
+                      const [year, month, day] = dateStr.split('-');
+                      if (!year || !month || !day) return '';
+                      const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                      if (isNaN(endDate.getTime())) return '';
+                      return endDate.toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                      });
+                    } catch {
+                      return '';
+                    }
                   })()}</>
                 )}
               </p>
