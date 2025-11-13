@@ -15,50 +15,43 @@ const MONTH_NAMES = [
 
 function formatDate(dateValue: any, includeYear: boolean = true): string {
   try {
-    console.log('[formatDate] Input:', { dateValue, type: typeof dateValue, includeYear });
+    if (!dateValue) return includeYear ? 'Date not available' : '';
 
-    if (!dateValue) {
-      console.log('[formatDate] No dateValue, returning fallback');
-      return includeYear ? 'Date not available' : '';
-    }
+    let year: number, month: number, day: number;
 
-    const dateStr = dateValue.toString();
-    console.log('[formatDate] dateStr:', dateStr);
-
-    // Handle both YYYY-MM-DD and ISO timestamp formats
-    let year: string, month: string, day: string;
-
-    if (dateStr.includes('-')) {
-      [year, month, day] = dateStr.split('T')[0].split('-');
-      console.log('[formatDate] Parsed from string:', { year, month, day });
+    // Check if it's already a Date object
+    if (dateValue instanceof Date) {
+      year = dateValue.getUTCFullYear();
+      month = dateValue.getUTCMonth() + 1;
+      day = dateValue.getUTCDate();
     } else {
-      const d = new Date(dateStr);
-      year = d.getFullYear().toString();
-      month = (d.getMonth() + 1).toString().padStart(2, '0');
-      day = d.getDate().toString().padStart(2, '0');
-      console.log('[formatDate] Parsed from Date object:', { year, month, day });
+      // Handle string formats (YYYY-MM-DD or ISO timestamp)
+      const dateStr = dateValue.toString();
+
+      if (dateStr.includes('-')) {
+        // Parse YYYY-MM-DD format manually (avoid timezone offset)
+        const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
+        year = parseInt(yearStr);
+        month = parseInt(monthStr);
+        day = parseInt(dayStr);
+      } else {
+        // Fallback: create Date object
+        const d = new Date(dateStr);
+        year = d.getUTCFullYear();
+        month = d.getUTCMonth() + 1;
+        day = d.getUTCDate();
+      }
     }
 
-    if (!year || !month || !day) {
-      console.log('[formatDate] Missing components, returning fallback');
+    if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
       return includeYear ? 'Date not available' : '';
     }
 
-    const monthIndex = parseInt(month) - 1;
-    const dayNum = parseInt(day);
-    console.log('[formatDate] Indexes:', { monthIndex, dayNum });
-
-    if (monthIndex < 0 || monthIndex > 11 || isNaN(dayNum)) {
-      console.log('[formatDate] Invalid indexes, returning fallback');
-      return includeYear ? 'Date not available' : '';
+    if (includeYear) {
+      return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
+    } else {
+      return `${MONTH_NAMES[month - 1]} ${day}`;
     }
-
-    const result = includeYear
-      ? `${MONTH_NAMES[monthIndex]} ${dayNum}, ${year}`
-      : `${MONTH_NAMES[monthIndex]} ${dayNum}`;
-
-    console.log('[formatDate] Result:', result);
-    return result;
   } catch (err) {
     console.error('[formatDate] Error:', err);
     return includeYear ? 'Date not available' : '';
