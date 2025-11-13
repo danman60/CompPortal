@@ -12,17 +12,22 @@ export default function Footer() {
   const commitHash = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
   const version = packageJson.version;
 
-  // Get and format commit timestamp
+  // Get and format commit timestamp (manual formatting to avoid SSR/CSR hydration mismatch)
   const commitTimestamp = process.env.NEXT_PUBLIC_GIT_COMMIT_TIMESTAMP;
   const formattedTime = commitTimestamp && commitTimestamp !== 'unknown'
-    ? new Date(parseInt(commitTimestamp) * 1000).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZoneName: 'short',
-      })
+    ? (() => {
+        const date = new Date(parseInt(commitTimestamp) * 1000);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = months[date.getMonth()];
+        const day = date.getDate();
+        const year = date.getFullYear();
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const displayMinutes = minutes.toString().padStart(2, '0');
+        return `${month} ${day}, ${year}, ${displayHours}:${displayMinutes} ${ampm} EST`;
+      })()
     : null;
 
   return (

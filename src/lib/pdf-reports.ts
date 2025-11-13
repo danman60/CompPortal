@@ -6,6 +6,45 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Helper to format dates for PDF (handles both Date objects and date strings)
+const formatPDFDate = (dateValue: any, includeYear: boolean = true): string => {
+  try {
+    let year: number, month: number, day: number;
+
+    if (dateValue instanceof Date) {
+      year = dateValue.getUTCFullYear();
+      month = dateValue.getUTCMonth() + 1;
+      day = dateValue.getUTCDate();
+    } else {
+      const dateStr = dateValue.toString();
+      if (dateStr.includes('-')) {
+        const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
+        year = parseInt(yearStr);
+        month = parseInt(monthStr);
+        day = parseInt(dayStr);
+      } else {
+        const d = new Date(dateStr);
+        year = d.getUTCFullYear();
+        month = d.getUTCMonth() + 1;
+        day = d.getUTCDate();
+      }
+    }
+
+    const MONTH_NAMES = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    if (includeYear) {
+      return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
+    } else {
+      return `${MONTH_NAMES[month - 1]} ${day}`;
+    }
+  } catch {
+    return 'Date not available';
+  }
+};
+
 // Brand colors from design system
 const COLORS = {
   primary: '#a855f7', // purple-500
@@ -710,20 +749,59 @@ export function generateInvoicePDF(invoice: {
   compYPos += 4;
 
   if (invoice.competition.startDate) {
-    // Parse date manually to avoid timezone offset (treat as local date, not UTC)
-    const [startYear, startMonth, startDay] = invoice.competition.startDate.toString().split('-');
-    const startDate = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay));
-    let dateText = `Date: ${startDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })}`;
+    // Helper to format dates (handles both Date objects and date strings)
+    const formatPDFDate = (dateValue: any, includeYear: boolean): string => {
+      console.log('[PDF formatPDFDate] Input:', { dateValue, type: typeof dateValue, isDate: dateValue instanceof Date, includeYear });
+      try {
+        let year: number, month: number, day: number;
+
+        if (dateValue instanceof Date) {
+          console.log('[PDF formatPDFDate] Processing as Date object');
+          year = dateValue.getUTCFullYear();
+          month = dateValue.getUTCMonth() + 1;
+          day = dateValue.getUTCDate();
+          console.log('[PDF formatPDFDate] Extracted from Date:', { year, month, day });
+        } else {
+          const dateStr = dateValue.toString();
+          console.log('[PDF formatPDFDate] Processing as string:', dateStr);
+          if (dateStr.includes('-')) {
+            const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
+            year = parseInt(yearStr);
+            month = parseInt(monthStr);
+            day = parseInt(dayStr);
+            console.log('[PDF formatPDFDate] Parsed from hyphenated string:', { year, month, day });
+          } else {
+            const d = new Date(dateStr);
+            year = d.getUTCFullYear();
+            month = d.getUTCMonth() + 1;
+            day = d.getUTCDate();
+            console.log('[PDF formatPDFDate] Created Date and extracted:', { year, month, day });
+          }
+        }
+
+        const MONTH_NAMES = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const result = includeYear
+          ? `${MONTH_NAMES[month - 1]} ${day}, ${year}`
+          : `${MONTH_NAMES[month - 1]} ${day}`;
+        console.log('[PDF formatPDFDate] Result:', result);
+        return result;
+      } catch (err) {
+        console.error('[PDF formatPDFDate] Error:', err);
+        return 'Date not available';
+      }
+    };
+
+    console.log('[PDF] Competition dates:', { startDate: invoice.competition.startDate, endDate: invoice.competition.endDate });
+    let dateText = `Date: ${formatPDFDate(invoice.competition.startDate, true)}`;
 
     if (invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate) {
-      const [endYear, endMonth, endDay] = invoice.competition.endDate.toString().split('-');
-      const endDate = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay));
-      dateText += ` - ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+      dateText += ` - ${formatPDFDate(invoice.competition.endDate, false)}`;
     }
+    console.log('[PDF] Final dateText:', dateText);
 
     doc.text(dateText, rightX, compYPos);
     compYPos += 4;
