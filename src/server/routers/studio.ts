@@ -424,6 +424,18 @@ export const studioRouter = router({
 
       // Send "studio_profile_submitted" email to Competition Directors (non-blocking)
       try {
+        // Get tenant subdomain for URL construction
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: ctx.tenantId! },
+          select: { subdomain: true },
+        });
+
+        if (!tenant) {
+          throw new Error('Tenant not found');
+        }
+
+        const portalUrl = `https://${tenant.subdomain}.compsync.net`;
+
         // Get all Competition Directors for this tenant
         const competitionDirectors = await prisma.user_profiles.findMany({
           where: {
@@ -449,7 +461,7 @@ export const studioRouter = router({
             studioEmail: studio.email || '',
             city: studio.city || undefined,
             province: studio.province || undefined,
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/admin/studios`,
+            portalUrl: `${portalUrl}/dashboard/admin/studios`,
           };
 
           const html = await renderStudioProfileSubmitted(emailData);
@@ -575,10 +587,11 @@ export const studioRouter = router({
               ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
               : undefined;
 
+            const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
             const emailData: StudioApprovedData = {
               studioName: studio.name,
               ownerName,
-              portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+              portalUrl: `${portalUrl}/dashboard`,
             };
 
             const html = await renderStudioApproved(emailData);
@@ -598,7 +611,7 @@ export const studioRouter = router({
                 name: ownerName || 'Studio Owner',
                 email: studio.users_studios_owner_idTousers.email,
                 studioPublicCode: studio.public_code || undefined,
-                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+                dashboardUrl: `${portalUrl}/dashboard`,
                 tenantBranding: {
                   tenantName: studio.tenants?.name,
                   primaryColor: branding?.primaryColor,
@@ -657,6 +670,11 @@ export const studioRouter = router({
               },
             },
           },
+          tenants: {
+            select: {
+              subdomain: true,
+            },
+          },
         },
       });
 
@@ -690,11 +708,12 @@ export const studioRouter = router({
               ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
               : undefined;
 
+            const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
             const emailData: StudioRejectedData = {
               studioName: studio.name,
               ownerName,
               reason: input.reason,
-              portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+              portalUrl: `${portalUrl}/dashboard`,
               contactEmail: process.env.CONTACT_EMAIL || 'info@example.com',
             };
 

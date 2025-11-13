@@ -621,7 +621,7 @@ export const invoiceRouter = router({
         invoiceNumber: invoice.id.substring(0, 8),
         totalAmount,
         routineCount,
-        invoiceUrl: `${baseUrl}/dashboard/invoices`,
+        invoiceUrl: `${baseUrl}/dashboard/invoices/${invoice.id}/${invoice.competition_id}`,
       };
 
       const html = await renderInvoiceDelivery(emailData);
@@ -918,7 +918,12 @@ export const invoiceRouter = router({
       try {
         const studio = await prisma.studios.findUnique({
           where: { id: updatedInvoice.studio_id },
-          select: { owner_id: true, name: true, email: true },
+          select: {
+            owner_id: true,
+            name: true,
+            email: true,
+            tenants: { select: { subdomain: true } },
+          },
         });
 
         const competition = await prisma.competitions.findUnique({
@@ -935,6 +940,7 @@ export const invoiceRouter = router({
             const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
             const totalAmount = Number(updatedInvoice.total || 0);
 
+            const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
             const emailData: InvoiceDeliveryData = {
               studioName: studio.name,
               competitionName: competition.name,
@@ -942,7 +948,7 @@ export const invoiceRouter = router({
               invoiceNumber: updatedInvoice.id.substring(0, 8),
               totalAmount,
               routineCount,
-              invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices`,
+              invoiceUrl: `${baseUrl}/dashboard/invoices/${updatedInvoice.id}/${updatedInvoice.competition_id}`,
             };
 
             const html = await renderInvoiceDelivery(emailData);

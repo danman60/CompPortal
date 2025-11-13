@@ -214,7 +214,11 @@ export const musicRouter = router({
       const [studio, competition, entriesWithoutMusic] = await Promise.all([
         prisma.studios.findUnique({
           where: { id: input.studioId },
-          select: { name: true, email: true },
+          select: {
+            name: true,
+            email: true,
+            tenants: { select: { subdomain: true } },
+          },
         }),
         prisma.competitions.findUnique({
           where: { id: input.competitionId },
@@ -273,6 +277,7 @@ export const musicRouter = router({
       } = await import('@/lib/email-templates');
       const { sendEmail } = await import('@/lib/email');
 
+      const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
       const data = {
         studioName: studio.name,
         competitionName: competition.name,
@@ -282,7 +287,7 @@ export const musicRouter = router({
           entryNumber: entry.entry_number || undefined,
           category: entry.dance_categories?.name || 'N/A',
         })),
-        portalUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://portal.glowdance.com',
+        portalUrl,
         daysUntilCompetition,
       };
 
@@ -326,6 +331,7 @@ export const musicRouter = router({
           id: true,
           name: true,
           email: true,
+          tenants: { select: { subdomain: true } },
         },
       });
 
@@ -403,6 +409,7 @@ export const musicRouter = router({
           } = await import('@/lib/email-templates');
           const { sendEmail } = await import('@/lib/email');
 
+          const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
           const data = {
             studioName: studio.name,
             competitionName: competition.name,
@@ -412,7 +419,7 @@ export const musicRouter = router({
               entryNumber: entry.entry_number || undefined,
               category: entry.dance_categories?.name || 'N/A',
             })),
-            portalUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://portal.glowdance.com',
+            portalUrl,
             daysUntilCompetition,
           };
 
