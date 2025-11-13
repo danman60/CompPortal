@@ -4,35 +4,6 @@ Project-specific rules, patterns, and constants for CompPortal.
 
 ---
 
-## ⚠️ CRITICAL: Feature Freeze (January 2025)
-
-**PROJECT: CompPortal**
-**STATUS: MVP Verification Phase**
-**FREEZE DATE: January 13, 2025**
-
-### Feature Freeze Rules (MANDATORY)
-
-**NO NEW FEATURES** until user explicitly confirms MVP is 100% working:
-- ❌ Do NOT implement any features from backlog
-- ❌ Do NOT implement any items from BUGS_AND_FEATURES.md
-- ❌ Do NOT implement any TODO comments found in code
-- ❌ Do NOT implement any items from CURRENT_WORK.md queue
-- ❌ Do NOT start CADENCE protocol for new features
-- ❌ Do NOT delegate new tasks to Codex
-
-**ALLOWED WORK ONLY**:
-- ✅ Bug fixes explicitly reported by user
-- ✅ Critical production issues (downtime, data loss, security)
-- ✅ Documentation updates
-- ✅ Investigation and testing requested by user
-- ✅ Answering questions about existing functionality
-
-**REASON**: MVP must be verified stable and working by user before adding complexity.
-
-**RESUME FEATURES**: Only after user explicitly says "MVP confirmed working, resume features"
-
----
-
 ## Project Constants (Hardcoded - Don't Query MCP)
 
 **URLs:**
