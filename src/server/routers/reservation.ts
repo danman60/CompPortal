@@ -115,7 +115,14 @@ export const reservationRouter = router({
       }
 
       // Studio directors can only see their own studio's reservations
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // SECURITY: Block access if studioId is missing (prevents data leak)
+        if (!ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Studio not found. Please contact support.',
+          });
+        }
         where.studio_id = ctx.studioId;
       } else if (studioId) {
         // Admins can filter by studioId if provided

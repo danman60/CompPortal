@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector, isAdmin, isSuperAdmin } from '@/lib/auth-utils';
@@ -273,7 +274,14 @@ export const studioRouter = router({
     }
 
     // Studio directors can only see their own studio (studio.ts:42-49 sets ctx.studioId)
-    if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+    if (isStudioDirector(ctx.userRole)) {
+      // SECURITY: Block access if studioId is missing (prevents data leak)
+      if (!ctx.studioId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Studio not found. Please contact support.',
+        });
+      }
       where.id = ctx.studioId;
     }
 

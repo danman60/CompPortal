@@ -62,7 +62,14 @@ export const dancerRouter = router({
       }
 
       // Studio directors can only see their own studio's dancers
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // SECURITY: Block access if studioId is missing (prevents data leak)
+        if (!ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Studio not found. Please contact support.',
+          });
+        }
         where.studio_id = ctx.studioId;
       } else if (studioId) {
         // Admins can filter by studioId if provided
@@ -316,7 +323,14 @@ export const dancerRouter = router({
       const where: any = {};
 
       // Studio directors can only see their own studio's stats
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // SECURITY: Block access if studioId is missing (prevents data leak)
+        if (!ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Studio not found. Please contact support.',
+          });
+        }
         where.studio_id = ctx.studioId;
       } else if (input?.studioId) {
         // Admins can filter by studioId if provided
