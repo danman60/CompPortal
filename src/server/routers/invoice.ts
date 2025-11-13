@@ -893,7 +893,7 @@ export const invoiceRouter = router({
               invoiceNumber: updatedInvoice.id.substring(0, 8),
               totalAmount,
               routineCount,
-              invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices/${updatedInvoice.studio_id}/${updatedInvoice.competition_id}`,
+              invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices`,
             };
 
             const html = await renderInvoiceDelivery(emailData);
