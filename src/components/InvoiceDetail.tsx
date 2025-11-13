@@ -226,16 +226,24 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <p>Year: {invoice.competition.year}</p>
             {invoice.competition.startDate && (
               <p>
-                Date: {new Date(invoice.competition.startDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-                {invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate && (
-                  <> - {new Date(invoice.competition.endDate).toLocaleDateString('en-US', {
+                Date: {(() => {
+                  const [year, month, day] = invoice.competition.startDate.toString().split('-');
+                  const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                  return startDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
                     month: 'long',
                     day: 'numeric',
-                  })}</>
+                  });
+                })()}
+                {invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate && (
+                  <> - {(() => {
+                    const [year, month, day] = invoice.competition.endDate.toString().split('-');
+                    const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    return endDate.toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                    });
+                  })()}</>
                 )}
               </p>
             )}
@@ -543,7 +551,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         )}
 
         {/* Studio Director: Split Invoice / View Dancer Invoices */}
-        {isStudioDirector && dbInvoice && (
+        {isStudioDirector && !isCompetitionDirector && dbInvoice && (
           <div className="mb-4">
             {hasSubInvoices ? (
               <button
