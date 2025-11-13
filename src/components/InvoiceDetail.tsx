@@ -7,40 +7,54 @@ import toast from 'react-hot-toast';
 import SplitInvoiceWizard from '@/components/SplitInvoiceWizard';
 import SubInvoiceList from '@/components/SubInvoiceList';
 
-// Helper functions to format competition dates (avoid timezone offset)
-function formatCompetitionDate(dateValue: any): string {
+// Helper functions to format dates (manual formatting to avoid SSR/CSR hydration mismatch)
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+function formatDate(dateValue: any, includeYear: boolean = true): string {
   try {
-    if (!dateValue) return 'Date not available';
+    if (!dateValue) return includeYear ? 'Date not available' : '';
     const dateStr = dateValue.toString();
-    const [year, month, day] = dateStr.split('-');
-    if (!year || !month || !day) return 'Date not available';
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    if (isNaN(date.getTime())) return 'Date not available';
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+
+    // Handle both YYYY-MM-DD and ISO timestamp formats
+    let year: string, month: string, day: string;
+
+    if (dateStr.includes('-')) {
+      [year, month, day] = dateStr.split('T')[0].split('-');
+    } else {
+      const d = new Date(dateStr);
+      year = d.getFullYear().toString();
+      month = (d.getMonth() + 1).toString().padStart(2, '0');
+      day = d.getDate().toString().padStart(2, '0');
+    }
+
+    if (!year || !month || !day) return includeYear ? 'Date not available' : '';
+
+    const monthIndex = parseInt(month) - 1;
+    const dayNum = parseInt(day);
+
+    if (monthIndex < 0 || monthIndex > 11 || isNaN(dayNum)) {
+      return includeYear ? 'Date not available' : '';
+    }
+
+    if (includeYear) {
+      return `${MONTH_NAMES[monthIndex]} ${dayNum}, ${year}`;
+    } else {
+      return `${MONTH_NAMES[monthIndex]} ${dayNum}`;
+    }
   } catch {
-    return 'Date not available';
+    return includeYear ? 'Date not available' : '';
   }
 }
 
+function formatCompetitionDate(dateValue: any): string {
+  return formatDate(dateValue, true);
+}
+
 function formatCompetitionEndDate(dateValue: any): string {
-  try {
-    if (!dateValue) return '';
-    const dateStr = dateValue.toString();
-    const [year, month, day] = dateStr.split('-');
-    if (!year || !month || !day) return '';
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return '';
-  }
+  return formatDate(dateValue, false);
 }
 
 type Props = {
@@ -211,11 +225,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           <h2 className="text-3xl font-bold text-white mb-2">INVOICE</h2>
           <p className="text-gray-300">#{invoice.invoiceNumber}</p>
           <p className="text-sm text-gray-400">
-            Date: {new Date(invoice.invoiceDate).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+            Date: {formatDate(invoice.invoiceDate, true)}
           </p>
         </div>
         <div className="text-right">
@@ -565,7 +575,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             {dbInvoice.status === 'PAID' && (
               <div className="flex-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 px-6 py-3 rounded-lg font-semibold text-center flex items-center justify-center gap-2">
                 <span className="text-2xl">✓</span>
-                <span>Invoice Paid - {dbInvoice.paidAt ? new Date(dbInvoice.paidAt).toLocaleDateString() : 'Recently'}</span>
+                <span>Invoice Paid - {dbInvoice.paidAt ? formatDate(dbInvoice.paidAt, true) : 'Recently'}</span>
               </div>
             )}
           </div>
