@@ -10,7 +10,7 @@ import { MetadataRoute } from 'next';
  * - Disallow API endpoints
  */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL!;
 
   return {
     rules: [

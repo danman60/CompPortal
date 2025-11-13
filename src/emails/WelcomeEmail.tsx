@@ -35,7 +35,7 @@ export default function WelcomeEmail({
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
   const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
   const tenantName = tenantBranding?.tenantName || 'Competition Portal';
-  const portal = dashboardUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/dashboard`;
+  const portal = dashboardUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
 
   return (
     <Html>

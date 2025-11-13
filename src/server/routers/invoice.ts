@@ -572,13 +572,18 @@ export const invoiceRouter = router({
         throw new Error('Item not found - it may have been deleted');
       }
 
-      // Get studio and competition details
+      // Get studio and competition details with tenant subdomain
       const studio = await prisma.studios.findUnique({
         where: { id: studioId },
         select: {
           owner_id: true,
           name: true,
           email: true,
+          tenants: {
+            select: {
+              subdomain: true,
+            },
+          },
         },
       });
 
@@ -590,7 +595,7 @@ export const invoiceRouter = router({
         },
       });
 
-      if (!studio || !competition || !studio.email) {
+      if (!studio || !competition || !studio.email || !studio.tenants) {
         throw new Error('Studio or competition not found');
       }
 
@@ -606,6 +611,9 @@ export const invoiceRouter = router({
       const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
       const totalAmount = Number(invoice.total || 0);
 
+      // Build tenant-specific URL
+      const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+
       const emailData: InvoiceDeliveryData = {
         studioName: studio.name,
         competitionName: competition.name,
@@ -613,7 +621,7 @@ export const invoiceRouter = router({
         invoiceNumber: invoice.id.substring(0, 8),
         totalAmount,
         routineCount,
-        invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices`,
+        invoiceUrl: `${baseUrl}/dashboard/invoices`,
       };
 
       const html = await renderInvoiceDelivery(emailData);

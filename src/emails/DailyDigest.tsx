@@ -52,7 +52,7 @@ interface DailyDigestProps {
 export default function DailyDigest({
   userName = 'Competition Director',
   tenantName = 'CompSync',
-  portalUrl = 'https://compsync.net',
+  portalUrl,
   pendingActions = { classificationRequests: [], reservationReviews: [] },
   upcomingEvents = [],
   recentActivity = [],

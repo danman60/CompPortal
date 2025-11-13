@@ -37,7 +37,7 @@ export default function InvoiceDelivery({
   routineCount,
   invoiceUrl,
   dueDate,
-  portalUrl = 'https://www.compsync.net/dashboard',
+  portalUrl,
   tenantBranding,
 }: InvoiceDeliveryProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
