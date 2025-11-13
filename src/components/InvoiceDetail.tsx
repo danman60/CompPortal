@@ -15,36 +15,52 @@ const MONTH_NAMES = [
 
 function formatDate(dateValue: any, includeYear: boolean = true): string {
   try {
-    if (!dateValue) return includeYear ? 'Date not available' : '';
+    console.log('[formatDate] Input:', { dateValue, type: typeof dateValue, includeYear });
+
+    if (!dateValue) {
+      console.log('[formatDate] No dateValue, returning fallback');
+      return includeYear ? 'Date not available' : '';
+    }
+
     const dateStr = dateValue.toString();
+    console.log('[formatDate] dateStr:', dateStr);
 
     // Handle both YYYY-MM-DD and ISO timestamp formats
     let year: string, month: string, day: string;
 
     if (dateStr.includes('-')) {
       [year, month, day] = dateStr.split('T')[0].split('-');
+      console.log('[formatDate] Parsed from string:', { year, month, day });
     } else {
       const d = new Date(dateStr);
       year = d.getFullYear().toString();
       month = (d.getMonth() + 1).toString().padStart(2, '0');
       day = d.getDate().toString().padStart(2, '0');
+      console.log('[formatDate] Parsed from Date object:', { year, month, day });
     }
 
-    if (!year || !month || !day) return includeYear ? 'Date not available' : '';
-
-    const monthIndex = parseInt(month) - 1;
-    const dayNum = parseInt(day);
-
-    if (monthIndex < 0 || monthIndex > 11 || isNaN(dayNum)) {
+    if (!year || !month || !day) {
+      console.log('[formatDate] Missing components, returning fallback');
       return includeYear ? 'Date not available' : '';
     }
 
-    if (includeYear) {
-      return `${MONTH_NAMES[monthIndex]} ${dayNum}, ${year}`;
-    } else {
-      return `${MONTH_NAMES[monthIndex]} ${dayNum}`;
+    const monthIndex = parseInt(month) - 1;
+    const dayNum = parseInt(day);
+    console.log('[formatDate] Indexes:', { monthIndex, dayNum });
+
+    if (monthIndex < 0 || monthIndex > 11 || isNaN(dayNum)) {
+      console.log('[formatDate] Invalid indexes, returning fallback');
+      return includeYear ? 'Date not available' : '';
     }
-  } catch {
+
+    const result = includeYear
+      ? `${MONTH_NAMES[monthIndex]} ${dayNum}, ${year}`
+      : `${MONTH_NAMES[monthIndex]} ${dayNum}`;
+
+    console.log('[formatDate] Result:', result);
+    return result;
+  } catch (err) {
+    console.error('[formatDate] Error:', err);
     return includeYear ? 'Date not available' : '';
   }
 }
