@@ -194,6 +194,16 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0;
   const discountPercent = currentSubtotal > 0 ? (creditAmount / currentSubtotal) * 100 : 0;
 
+  console.log('[InvoiceDetail] Credit/Discount calculation:', {
+    hasDbInvoice: !!dbInvoice,
+    creditAmountFromDb: dbInvoice?.credit_amount,
+    creditAmountCalculated: creditAmount,
+    creditReason: dbInvoice?.credit_reason,
+    discountPercent,
+    currentSubtotal,
+    userRole: userProfile?.role
+  });
+
   const totalAfterDiscount = currentSubtotal - creditAmount;
   const totalWithTax = totalAfterDiscount * (1 + taxRate);
   const totalAmount = Math.max(0, totalWithTax - otherCredit.amount);
