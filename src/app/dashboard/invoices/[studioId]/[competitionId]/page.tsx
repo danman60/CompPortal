@@ -34,10 +34,11 @@ export default async function InvoiceDetailPage({ params }: Props) {
     const { data: userStudio } = await supabase
       .from('studios')
       .select('id')
+      .eq('id', studioId)
       .eq('owner_id', user.id)
       .single();
 
-    if (!userStudio || userStudio.id !== studioId) {
+    if (!userStudio) {
       redirect('/dashboard/invoices'); // Redirect to their own invoices
     }
   }

@@ -529,6 +529,7 @@ export function generateCompetitionSummaryReport(data: {
 export function generateInvoicePDF(invoice: {
   invoiceNumber: string;
   invoiceDate: Date | string;
+  tenantId?: string;
   studio: {
     name: string;
     code?: string | null;
@@ -850,8 +851,47 @@ export function generateInvoicePDF(invoice: {
   doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 10;
 
-  // Footer
-  yPos += 5;
+  // Payment Instructions Footer (EMPWR tenant only)
+  const EMPWR_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  const isEMPWR = invoice.tenantId === EMPWR_TENANT_ID;
+
+  if (isEMPWR) {
+    yPos += 5;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(COLORS.text);
+    doc.text('PAYMENT OPTIONS', 15, yPos);
+    yPos += 6;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.textLight);
+
+    // E-Transfer
+    doc.setFont('helvetica', 'bold');
+    doc.text('E-Transfer:', 15, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text('empwrdance@gmail.com', 50, yPos);
+    yPos += 5;
+
+    // Cheque
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cheque:', 15, yPos);
+    doc.setFont('helvetica', 'normal');
+    yPos += 5;
+    doc.text('EMPWR Dance Experience', 20, yPos);
+    yPos += 4;
+    doc.text('Attn: Emily Einsmann', 20, yPos);
+    yPos += 4;
+    doc.text('69 Albert St', 20, yPos);
+    yPos += 4;
+    doc.text('Uxbridge, ON L9P 1E5', 20, yPos);
+    yPos += 8;
+  } else {
+    yPos += 5;
+  }
+
+  doc.setFont('helvetica', 'italic');
   doc.setFontSize(9);
   doc.setTextColor(COLORS.textLight);
   doc.text(`Thank you for participating in ${invoice.competition.name}!`, 15, yPos, { maxWidth: 180 });

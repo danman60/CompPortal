@@ -13,7 +13,6 @@ type Props = {
 };
 
 export default function InvoiceDetail({ studioId, competitionId }: Props) {
-  const [discountPercent, setDiscountPercent] = useState(0);
   const [otherCredit, setOtherCredit] = useState({ amount: 0, reason: "" });
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [isEditingPrices, setIsEditingPrices] = useState(false);
@@ -74,6 +73,16 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     },
   });
 
+  const applyDiscountMutation = trpc.invoice.applyDiscount.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.discountAmount > 0 ? 'Discount applied!' : 'Discount removed!');
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to apply discount: ${error.message}`);
+    },
+  });
+
   const updateLineItemsMutation = trpc.invoice.updateLineItems.useMutation({
     onSuccess: () => {
       toast.success('Invoice prices updated!');
@@ -121,7 +130,12 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const currentSubtotal = currentLineItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
   const taxRate = invoice?.summary.taxRate || 0;
   const taxAmount = currentSubtotal * taxRate;
-  const totalAfterDiscount = currentSubtotal * (1 - discountPercent / 100);
+
+  // Get discount from database (source of truth)
+  const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0;
+  const discountPercent = currentSubtotal > 0 ? (creditAmount / currentSubtotal) * 100 : 0;
+
+  const totalAfterDiscount = currentSubtotal - creditAmount;
   const totalWithTax = totalAfterDiscount * (1 + taxRate);
   const totalAmount = Math.max(0, totalWithTax - otherCredit.amount);
 
@@ -361,9 +375,17 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           <div className="flex gap-2">
             <span className="text-gray-300 self-center mr-2">Apply Discount:</span>
             <button
-              onClick={() => setDiscountPercent(discountPercent === 5 ? 0 : 5)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                discountPercent === 5
+              onClick={() => {
+                if (!dbInvoice) return;
+                const newPercent = Math.abs(discountPercent - 5) < 0.01 ? 0 : 5;
+                applyDiscountMutation.mutate({
+                  invoiceId: dbInvoice.id,
+                  discountPercentage: newPercent,
+                });
+              }}
+              disabled={!dbInvoice || applyDiscountMutation.isPending}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
+                Math.abs(discountPercent - 5) < 0.01
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
                   : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
               }`}
@@ -371,9 +393,17 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               5%
             </button>
             <button
-              onClick={() => setDiscountPercent(discountPercent === 10 ? 0 : 10)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                discountPercent === 10
+              onClick={() => {
+                if (!dbInvoice) return;
+                const newPercent = Math.abs(discountPercent - 10) < 0.01 ? 0 : 10;
+                applyDiscountMutation.mutate({
+                  invoiceId: dbInvoice.id,
+                  discountPercentage: newPercent,
+                });
+              }}
+              disabled={!dbInvoice || applyDiscountMutation.isPending}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
+                Math.abs(discountPercent - 10) < 0.01
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
                   : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
               }`}
@@ -381,19 +411,34 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               10%
             </button>
             <button
-              onClick={() => setDiscountPercent(discountPercent === 15 ? 0 : 15)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                discountPercent === 15
+              onClick={() => {
+                if (!dbInvoice) return;
+                const newPercent = Math.abs(discountPercent - 15) < 0.01 ? 0 : 15;
+                applyDiscountMutation.mutate({
+                  invoiceId: dbInvoice.id,
+                  discountPercentage: newPercent,
+                });
+              }}
+              disabled={!dbInvoice || applyDiscountMutation.isPending}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
+                Math.abs(discountPercent - 15) < 0.01
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
                   : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
               }`}
             >
               15%
             </button>
-            {discountPercent > 0 && (
+            {discountPercent > 0.01 && (
               <button
-                onClick={() => setDiscountPercent(0)}
-                className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all"
+                onClick={() => {
+                  if (!dbInvoice) return;
+                  applyDiscountMutation.mutate({
+                    invoiceId: dbInvoice.id,
+                    discountPercentage: 0,
+                  });
+                }}
+                disabled={!dbInvoice || applyDiscountMutation.isPending}
+                className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all disabled:opacity-50"
               >
                 Clear
             </button>

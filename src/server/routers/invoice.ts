@@ -113,6 +113,7 @@ export const invoiceRouter = router({
         id: invoice.id,
         invoiceNumber: `INV-${invoice.competitions?.year}-${invoice.studios?.code || invoice.studios?.id.substring(0, 8) || 'UNKNOWN'}-${invoice.id.substring(0, 8)}`,
         invoiceDate: invoice.created_at || new Date(),
+        tenantId: invoice.tenant_id,
         studio: {
           id: invoice.studios?.id || '',
           name: invoice.studios?.name || 'Unknown',
@@ -153,6 +154,8 @@ export const invoiceRouter = router({
         status: invoice.status,
         paidAt: invoice.paid_at,
         isLocked: invoice.is_locked,
+        credit_amount: invoice.credit_amount,
+        credit_reason: invoice.credit_reason,
       };
     }),
 
@@ -279,6 +282,7 @@ export const invoiceRouter = router({
       return {
         invoiceNumber: `INV-${competition.year}-${studio.code || studio.id.substring(0, 8)}-${Date.now()}`,
         invoiceDate: new Date(),
+        tenantId: studio.tenant_id,
         studio: {
           id: studio.id,
           name: studio.name,
@@ -1105,6 +1109,65 @@ export const invoiceRouter = router({
       }
 
       return { success: true };
+    }),
+
+  // Apply or remove discount (Competition Directors only)
+  applyDiscount: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      discountPercentage: z.number().min(0).max(100), // 0 to remove discount
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can apply discounts
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can apply discounts to invoices.',
+        });
+      }
+
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
+      }
+
+      const subtotal = Number(invoice.subtotal);
+      const taxRate = Number(invoice.tax_rate);
+
+      // Calculate discount amount
+      const discountAmount = input.discountPercentage > 0
+        ? (subtotal * input.discountPercentage) / 100
+        : 0;
+
+      // Calculate new total: (subtotal - discount) * (1 + taxRate)
+      const afterDiscount = subtotal - discountAmount;
+      const newTotal = afterDiscount * (1 + taxRate);
+
+      // Update invoice with discount
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          credit_amount: discountAmount,
+          credit_reason: input.discountPercentage > 0
+            ? `${input.discountPercentage}% studio discount`
+            : null,
+          total: newTotal,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        discountAmount,
+        newTotal,
+      };
     }),
 
   // Update invoice line items (editable pricing - Competition Directors and Studio Directors)
