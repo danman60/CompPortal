@@ -128,7 +128,7 @@ export interface MissingMusicReminderData {
 export interface WelcomeEmailData {
   name: string;
   email: string;
-  dashboardUrl?: string;
+  dashboardUrl: string; // Required - must be tenant-specific URL
   tenantBranding?: TenantBranding;
 }
 
