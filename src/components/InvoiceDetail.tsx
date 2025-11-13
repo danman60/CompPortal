@@ -7,6 +7,42 @@ import toast from 'react-hot-toast';
 import SplitInvoiceWizard from '@/components/SplitInvoiceWizard';
 import SubInvoiceList from '@/components/SubInvoiceList';
 
+// Helper functions to format competition dates (avoid timezone offset)
+function formatCompetitionDate(dateValue: any): string {
+  try {
+    if (!dateValue) return 'Date not available';
+    const dateStr = dateValue.toString();
+    const [year, month, day] = dateStr.split('-');
+    if (!year || !month || !day) return 'Date not available';
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (isNaN(date.getTime())) return 'Date not available';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return 'Date not available';
+  }
+}
+
+function formatCompetitionEndDate(dateValue: any): string {
+  try {
+    if (!dateValue) return '';
+    const dateStr = dateValue.toString();
+    const [year, month, day] = dateStr.split('-');
+    if (!year || !month || !day) return '';
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return '';
+  }
+}
+
 type Props = {
   studioId: string;
   competitionId: string;
@@ -226,38 +262,9 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <p>Year: {invoice.competition.year}</p>
             {invoice.competition.startDate && (
               <p>
-                Date: {(() => {
-                  try {
-                    const dateStr = invoice.competition.startDate.toString();
-                    const [year, month, day] = dateStr.split('-');
-                    if (!year || !month || !day) return 'Date not available';
-                    const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                    if (isNaN(startDate.getTime())) return 'Invalid date';
-                    return startDate.toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    });
-                  } catch {
-                    return 'Date not available';
-                  }
-                })()}
+                Date: {formatCompetitionDate(invoice.competition.startDate)}
                 {invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate && (
-                  <> - {(() => {
-                    try {
-                      const dateStr = invoice.competition.endDate.toString();
-                      const [year, month, day] = dateStr.split('-');
-                      if (!year || !month || !day) return '';
-                      const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                      if (isNaN(endDate.getTime())) return '';
-                      return endDate.toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                      });
-                    } catch {
-                      return '';
-                    }
-                  })()}</>
+                  <> - {formatCompetitionEndDate(invoice.competition.endDate)}</>
                 )}
               </p>
             )}
