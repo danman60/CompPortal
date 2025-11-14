@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glow Dance Competition - Scheduling System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #4a2463 0%, #2d1b47 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .schedule-header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            padding: 2rem;
+            color: white;
+            position: relative;
+        }
+
+        .schedule-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .schedule-header .subtitle {
+            font-size: 1.1rem;
+            color: #fbbf24;
+            font-weight: 500;
+        }
+
+        /* State Machine Badge */
+        .state-badge {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            background: rgba(59, 130, 246, 0.9);
+            border: 2px solid #3b82f6;
+        }
+
+        /* View Selector */
+        .view-selector {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .view-selector label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .view-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .view-btn.active {
+            background: #8b5cf6;
+            border-color: #8b5cf6;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Waiver Indicator */
+        .waiver-indicator {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            border-radius: 6px;
+            color: #10b981;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Controls Bar */
+        .controls-bar {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #7c3aed;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Undo/Redo */
+        .history-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+
+        /* Main Content - 3 Panel Layout */
+        .main-content {
+            display: flex;
+            height: calc(100vh - 300px);
+            position: relative;
+        }
+
+        /* Panels */
+        .unscheduled-panel,
+        .schedule-panel,
+        .trophy-helper {
+            background: rgba(255, 255, 255, 0.03);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .unscheduled-panel {
+            width: 25%;
+            min-width: 50px;
+        }
+
+        .schedule-panel {
+            width: 50%;
+            min-width: 50px;
+        }
+
+        .trophy-helper {
+            width: 25%;
+            min-width: 50px;
+            border-right: none;
+        }
+
+        /* Collapsed states */
+        .unscheduled-panel.collapsed { width: 50px; }
+        .schedule-panel.collapsed { width: 50px; }
+        .trophy-helper.collapsed { width: 50px; }
+
+        /* Maximized states */
+        .unscheduled-panel.maximized { width: 100%; }
+        .schedule-panel.maximized { width: 100%; }
+        .trophy-helper.maximized { width: 100%; }
+
+        /* Panel Header */
+        .panel-header {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-controls {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .panel-control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .panel-control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Collapsed Label */
+        .collapsed-label {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            white-space: nowrap;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+
+        .collapsed .collapsed-label {
+            display: block;
+        }
+
+        .collapsed .panel-header,
+        .collapsed .panel-content {
+            display: none;
+        }
+
+        /* Panel Content */
+        .panel-content {
+            padding: 1rem;
+            overflow-y: auto;
+            height: calc(100% - 60px);
+        }
+
+        /* Unscheduled Routines */
+        .unscheduled-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .routine-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 0.75rem;
+            cursor: move;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .routine-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .routine-card.dragging {
+            opacity: 0.5;
+        }
+
+        .routine-checkbox {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .routine-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+            padding-left: 1.5rem;
+        }
+
+        .routine-meta {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        /* Day Selector Tabs */
+        .day-selector {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .day-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            margin-bottom: -2px;
+        }
+
+        .day-tab:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .day-tab.active {
+            color: white;
+            border-bottom-color: #8b5cf6;
+        }
+
+        /* Schedule Table */
+        .schedule-table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            height: calc(100% - 100px);
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .schedule-table th {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.75rem 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .schedule-table td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .schedule-table tbody tr {
+            transition: background 0.2s;
+            cursor: move;
+        }
+
+        .schedule-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Classification colors */
+        .classification-emerald {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .classification-sapphire {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .classification-crystal {
+            background: rgba(209, 213, 219, 0.15);
+        }
+
+        .classification-titanium {
+            background: rgba(156, 163, 175, 0.15);
+        }
+
+        .classification-production {
+            background: rgba(147, 51, 234, 0.15);
+        }
+
+        /* Classification badge */
+        .classification-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-emerald {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .badge-sapphire {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .badge-crystal {
+            background: rgba(209, 213, 219, 0.2);
+            color: #d1d5db;
+            border: 1px solid rgba(209, 213, 219, 0.4);
+        }
+
+        .badge-titanium {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+            border: 1px solid rgba(156, 163, 175, 0.4);
+        }
+
+        .badge-production {
+            background: rgba(147, 51, 234, 0.2);
+            color: #9333ea;
+            border: 1px solid rgba(147, 51, 234, 0.4);
+        }
+
+        /* Conflict indicator */
+        .conflict-box {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border: 3px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .conflict-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ef4444;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Row indicators */
+        .row-hidden {
+            display: none;
+        }
+
+        .entry-number {
+            font-weight: 700;
+            color: #fbbf24;
+        }
+
+        .time-col {
+            font-family: 'Courier New', monospace;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .routine-name {
+            font-weight: 600;
+        }
+
+        .studio-name {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Trophy Helper */
+        .trophy-category {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #fbbf24;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-radius: 4px;
+        }
+
+        .trophy-category-title {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #fbbf24;
+            margin-bottom: 0.5rem;
+        }
+
+        .trophy-category-info {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Drop zone */
+        .drop-zone {
+            position: relative;
+        }
+
+        .drop-zone.drag-over {
+            background: rgba(139, 92, 246, 0.2) !important;
+        }
+
+        .drop-zone.drag-over::after {
+            content: 'Drop here';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139, 92, 246, 0.3);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Break/Award rows */
+        .row-break,
+        .row-awards {
+            background: rgba(251, 191, 36, 0.1);
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="schedule-header">
+            <div class="state-badge draft">
+                <span>📝</span>
+                <span>DRAFT</span>
+            </div>
+            <h1>Glow Dance Competition</h1>
+            <div class="subtitle">April 9-12, 2026</div>
+        </div>
+
+        <!-- View Selector -->
+        <div class="view-selector">
+            <label>View Mode:</label>
+            <button class="view-btn active" data-view="cd" onclick="switchView('cd')">Competition Director</button>
+            <button class="view-btn" data-view="studio" onclick="switchView('studio')">Studio Director</button>
+            <button class="view-btn" data-view="judge" onclick="switchView('judge')">Judge</button>
+            <button class="view-btn" data-view="public" onclick="switchView('public')">Public</button>
+            <div class="waiver-indicator">
+                <span>✅</span>
+                <span>All Studios: Waiver Accepted</span>
+            </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+            <button class="btn btn-primary" onclick="autoGenerate()">🔄 Auto-Generate Draft</button>
+            <button class="btn btn-secondary" onclick="openModal('createBlock')">➕ Create Block</button>
+            <button class="btn btn-secondary" onclick="openModal('studioNotes')">💬 Studio Notes</button>
+            <button class="btn btn-secondary">📄 Export PDF</button>
+
+            <div class="history-controls">
+                <button class="btn btn-secondary" onclick="undo()" title="Undo (Ctrl+Z)">↶</button>
+                <button class="btn btn-secondary" onclick="redo()" title="Redo (Ctrl+Y)">↷</button>
+            </div>
+        </div>
+
+        <!-- Main 3-Panel Layout -->
+        <div class="main-content">
+            <!-- LEFT PANEL: Unscheduled Routines -->
+            <div class="unscheduled-panel" id="leftPanel">
+                <div class="collapsed-label" onclick="togglePanel('left')">📋 UNSCHEDULED ROUTINES</div>
+
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>📋</span>
+                        <span>Unscheduled Routines</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-control-btn" onclick="togglePanel('left')" title="Collapse">◀</button>
+                        <button class="panel-control-btn" onclick="maximizePanel('left')" title="Maximize">⛶</button>
+                    </div>
+                </div>
+
+                <div class="panel-content">
+                    <div class="unscheduled-grid" id="unscheduledGrid">
+                        <!-- Sample unscheduled routines -->
+                        <div class="routine-card" draggable="true" data-id="r1" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                            <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
+                            <div class="routine-title">Starlight</div>
+                            <div class="routine-meta">
+                                <div>🏫 Studio A</div>
+                                <div>🎭 Ballet • Solo</div>
+                                <div>👧 Emma (Age 8)</div>
+                                <div>⏱️ 3 min</div>
+                            </div>
+                        </div>
+
+                        <div class="routine-card" draggable="true" data-id="r2" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                            <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
+                            <div class="routine-title">Rhythm Nation</div>
+                            <div class="routine-meta">
+                                <div>🏫 Studio B</div>
+                                <div>🎭 Hip Hop • Duet</div>
+                                <div>👧 Maya & Zoe (Age 10)</div>
+                                <div>⏱️ 3 min</div>
+                            </div>
+                        </div>
+
+                        <div class="routine-card" draggable="true" data-id="r3" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                            <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
+                            <div class="routine-title">Unity</div>
+                            <div class="routine-meta">
+                                <div>🏫 Studio C</div>
+                                <div>🎭 Contemporary • Small Group</div>
+                                <div>👧 Group (7 dancers)</div>
+                                <div>⏱️ 5 min</div>
+                            </div>
+                        </div>
+
+                        <div class="routine-card" draggable="true" data-id="r4" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                            <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
+                            <div class="routine-title">Fire</div>
+                            <div class="routine-meta">
+                                <div>🏫 Studio D</div>
+                                <div>🎭 Jazz • Solo</div>
+                                <div>👧 Sophia (Age 9)</div>
+                                <div>⏱️ 3 min</div>
+                            </div>
+                        </div>
+
+                        <div class="routine-card" draggable="true" data-id="r5" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                            <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
+                            <div class="routine-title">Celestial</div>
+                            <div class="routine-meta">
+                                <div>🏫 Studio E</div>
+                                <div>🎭 Lyrical • Solo</div>
+                                <div>👧 Olivia (Age 11)</div>
+                                <div>⏱️ 3 min</div>
+                            </div>
+                        </div>
+
+                        <div class="routine-card" draggable="true" data-id="r6" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                            <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
+                            <div class="routine-title">Thunder</div>
+                            <div class="routine-meta">
+                                <div>🏫 Studio A</div>
+                                <div>🎭 Tap • Duet</div>
+                                <div>👧 Lily & Grace (Age 8)</div>
+                                <div>⏱️ 3 min</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER PANEL: Schedule Grid -->
+            <div class="schedule-panel" id="centerPanel">
+                <div class="collapsed-label" onclick="togglePanel('center')">📅 SCHEDULE</div>
+
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>📅</span>
+                        <span>Schedule Grid</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-control-btn" onclick="togglePanel('center')" title="Collapse">▼</button>
+                        <button class="panel-control-btn" onclick="maximizePanel('center')" title="Maximize">⛶</button>
+                    </div>
+                </div>
+
+                <div class="panel-content">
+                    <!-- Day Selector Tabs -->
+                    <div class="day-selector">
+                        <button class="day-tab active" data-day="1" onclick="switchDay(1)">Thursday, April 9</button>
+                        <button class="day-tab" data-day="2" onclick="switchDay(2)">Friday, April 10</button>
+                        <button class="day-tab" data-day="3" onclick="switchDay(3)">Saturday, April 11</button>
+                        <button class="day-tab" data-day="4" onclick="switchDay(4)">Sunday, April 12</button>
+                    </div>
+
+                    <!-- Schedule Table -->
+                    <div class="schedule-table-wrapper">
+                        <table class="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">#</th>
+                                    <th style="width: 80px;">Time</th>
+                                    <th style="width: 200px;">Routine</th>
+                                    <th style="width: 120px;">Studio</th>
+                                    <th style="width: 120px;">Classification</th>
+                                    <th style="width: 150px;">Dancers</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleBody">
+                                <!-- Day 1 - Thursday -->
+                                <tr class="classification-emerald drop-zone" draggable="true" data-day="1" data-studio="A" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">100</td>
+                                    <td class="time-col">8:00 AM</td>
+                                    <td class="routine-name"><strong>Dreams Come True</strong></td>
+                                    <td class="studio-name" data-code="A">Studio A</td>
+                                    <td><span class="classification-badge badge-emerald">Emerald</span></td>
+                                    <td>Ava Johnson</td>
+                                    <td>Ballet • Solo</td>
+                                </tr>
+
+                                <tr class="classification-emerald drop-zone" draggable="true" data-day="1" data-studio="B" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">101</td>
+                                    <td class="time-col">8:03 AM</td>
+                                    <td class="routine-name"><strong>Butterfly</strong></td>
+                                    <td class="studio-name" data-code="B">Studio B</td>
+                                    <td><span class="classification-badge badge-emerald">Emerald</span></td>
+                                    <td>Mia Davis</td>
+                                    <td>Jazz • Solo</td>
+                                </tr>
+
+                                <!-- Conflict Example: Emma in routine 102 and 104 -->
+                                <tr class="classification-sapphire drop-zone" draggable="true" data-day="1" data-studio="A" data-conflict="true" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">102</td>
+                                    <td class="time-col">8:06 AM</td>
+                                    <td class="routine-name"><strong>Flowing Waters</strong></td>
+                                    <td class="studio-name" data-code="A">Studio A</td>
+                                    <td><span class="classification-badge badge-sapphire">Sapphire</span></td>
+                                    <td>Emma Smith</td>
+                                    <td>Lyrical • Solo</td>
+                                </tr>
+
+                                <tr class="classification-sapphire drop-zone" draggable="true" data-day="1" data-studio="C" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">103</td>
+                                    <td class="time-col">8:09 AM</td>
+                                    <td class="routine-name"><strong>Shine Bright</strong></td>
+                                    <td class="studio-name" data-code="C">Studio C</td>
+                                    <td><span class="classification-badge badge-sapphire">Sapphire</span></td>
+                                    <td>Chloe Wilson</td>
+                                    <td>Contemporary • Solo</td>
+                                </tr>
+
+                                <tr class="classification-sapphire drop-zone" draggable="true" data-day="1" data-studio="A" data-conflict="true" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">104</td>
+                                    <td class="time-col">8:12 AM</td>
+                                    <td class="routine-name"><strong>Rhythm & Soul</strong></td>
+                                    <td class="studio-name" data-code="A">Studio A</td>
+                                    <td><span class="classification-badge badge-sapphire">Sapphire</span></td>
+                                    <td>Emma Smith, Lily Chen</td>
+                                    <td>Tap • Duet</td>
+                                </tr>
+
+                                <!-- Break -->
+                                <tr class="row-break" data-day="1">
+                                    <td></td>
+                                    <td class="time-col">8:15 AM</td>
+                                    <td colspan="5">☕ Break (15 minutes)</td>
+                                </tr>
+
+                                <tr class="classification-crystal drop-zone" draggable="true" data-day="1" data-studio="D" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">105</td>
+                                    <td class="time-col">8:30 AM</td>
+                                    <td class="routine-name"><strong>Electric</strong></td>
+                                    <td class="studio-name" data-code="D">Studio D</td>
+                                    <td><span class="classification-badge badge-crystal">Crystal</span></td>
+                                    <td>Group (8 dancers)</td>
+                                    <td>Hip Hop • Small Group</td>
+                                </tr>
+
+                                <tr class="classification-crystal drop-zone" draggable="true" data-day="1" data-studio="E" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">106</td>
+                                    <td class="time-col">8:35 AM</td>
+                                    <td class="routine-name"><strong>Unity</strong></td>
+                                    <td class="studio-name" data-code="E">Studio E</td>
+                                    <td><span class="classification-badge badge-crystal">Crystal</span></td>
+                                    <td>Group (10 dancers)</td>
+                                    <td>Contemporary • Large Group</td>
+                                </tr>
+
+                                <tr class="classification-titanium drop-zone" draggable="true" data-day="1" data-studio="A" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">107</td>
+                                    <td class="time-col">8:42 AM</td>
+                                    <td class="routine-name"><strong>Phoenix Rising</strong></td>
+                                    <td class="studio-name" data-code="A">Studio A</td>
+                                    <td><span class="classification-badge badge-titanium">Titanium</span></td>
+                                    <td>Sophia Martinez</td>
+                                    <td>Ballet • Solo</td>
+                                </tr>
+
+                                <!-- Production -->
+                                <tr class="classification-production drop-zone" draggable="true" data-day="1" data-studio="C" ondragstart="dragStartRow(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragleave="dragLeave(event)">
+                                    <td class="entry-number">108</td>
+                                    <td class="time-col">8:45 AM</td>
+                                    <td class="routine-name"><strong>Broadway Dreams</strong></td>
+                                    <td class="studio-name" data-code="C">Studio C</td>
+                                    <td><span class="classification-badge badge-production">Production</span></td>
+                                    <td>Ensemble (25 dancers)</td>
+                                    <td>Musical Theatre • Production</td>
+                                </tr>
+
+                                <!-- Awards -->
+                                <tr class="row-awards" data-day="1">
+                                    <td></td>
+                                    <td class="time-col">9:00 AM</td>
+                                    <td colspan="5">🏆 Awards Ceremony - Emerald Mini Solos (30 minutes)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: Trophy Helper -->
+            <div class="trophy-helper" id="rightPanel">
+                <div class="collapsed-label" onclick="togglePanel('right')">🏆 TROPHY HELPER</div>
+
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🏆</span>
+                        <span>Trophy Helper</span>
+                    </div>
+                    <div class="panel-controls">
+                        <button class="panel-control-btn" onclick="togglePanel('right')" title="Collapse">▶</button>
+                        <button class="panel-control-btn" onclick="maximizePanel('right')" title="Maximize">⛶</button>
+                    </div>
+                </div>
+
+                <div class="panel-content">
+                    <p style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 1rem;">
+                        Last routines per overall category (Classification + Age Group)
+                    </p>
+
+                    <div class="trophy-category">
+                        <div class="trophy-category-title">EMERALD MINI (Ages 7-8)</div>
+                        <div class="trophy-category-info">
+                            <strong>Last Routine:</strong> #101 at 8:03 AM<br>
+                            <strong>Total Routines:</strong> 2<br>
+                            <strong>Suggested Award Time:</strong> 8:33 AM (30 min after)
+                        </div>
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Create Award Block</button>
+                    </div>
+
+                    <div class="trophy-category">
+                        <div class="trophy-category-title">SAPPHIRE PRE-JUNIOR (Ages 9-10)</div>
+                        <div class="trophy-category-info">
+                            <strong>Last Routine:</strong> #104 at 8:12 AM<br>
+                            <strong>Total Routines:</strong> 3<br>
+                            <strong>Suggested Award Time:</strong> 8:42 AM (30 min after)
+                        </div>
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Create Award Block</button>
+                    </div>
+
+                    <div class="trophy-category">
+                        <div class="trophy-category-title">CRYSTAL JUNIOR (Ages 11-12)</div>
+                        <div class="trophy-category-info">
+                            <strong>Last Routine:</strong> #106 at 8:35 AM<br>
+                            <strong>Total Routines:</strong> 2<br>
+                            <strong>Suggested Award Time:</strong> 9:05 AM (30 min after)
+                        </div>
+                        <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Create Award Block</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Current view mode
+        let currentView = 'cd';
+        let currentDay = 1;
+        let currentStudio = 'A'; // For studio director view demo
+
+        // Drag and drop state
+        let draggedElement = null;
+        let draggedFromSchedule = false;
+
+        // View mode switching
+        function switchView(view) {
+            currentView = view;
+
+            // Update active button
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+
+            // Filter schedule based on view
+            const rows = document.querySelectorAll('#scheduleBody tr');
+
+            rows.forEach(row => {
+                const studio = row.dataset.studio;
+                const isBreakOrAward = row.classList.contains('row-break') || row.classList.contains('row-awards');
+
+                if (view === 'cd') {
+                    // CD sees everything
+                    row.classList.remove('row-hidden');
+                } else if (view === 'studio') {
+                    // Studio Director sees only their routines (demo: Studio A)
+                    if (isBreakOrAward || studio === currentStudio) {
+                        row.classList.remove('row-hidden');
+                    } else {
+                        row.classList.add('row-hidden');
+                    }
+                } else if (view === 'judge') {
+                    // Judge sees all with studio codes
+                    row.classList.remove('row-hidden');
+                    // Show codes instead of names
+                    const studioCell = row.querySelector('.studio-name');
+                    if (studioCell) {
+                        const code = studioCell.dataset.code;
+                        if (code) {
+                            studioCell.textContent = `Studio ${code}`;
+                        }
+                    }
+                } else if (view === 'public') {
+                    // Public sees all with full studio names
+                    row.classList.remove('row-hidden');
+                }
+            });
+
+            // Show conflict boxes for CD view only
+            updateConflictBoxes();
+        }
+
+        // Day switching
+        function switchDay(day) {
+            currentDay = day;
+
+            // Update active tab
+            document.querySelectorAll('.day-tab').forEach(tab => {
+                tab.classList.toggle('active', parseInt(tab.dataset.day) === day);
+            });
+
+            // Filter rows by day
+            const rows = document.querySelectorAll('#scheduleBody tr');
+            rows.forEach(row => {
+                const rowDay = parseInt(row.dataset.day);
+                if (rowDay && rowDay !== day) {
+                    row.style.display = 'none';
+                } else {
+                    row.style.display = '';
+                }
+            });
+        }
+
+        // Panel controls
+        function togglePanel(panel) {
+            const panelEl = document.getElementById(panel + 'Panel');
+            const allPanels = [document.getElementById('leftPanel'), document.getElementById('centerPanel'), document.getElementById('rightPanel')];
+
+            if (panelEl.classList.contains('collapsed')) {
+                // Expand this panel
+                panelEl.classList.remove('collapsed');
+            } else {
+                // Collapse this panel
+                panelEl.classList.add('collapsed');
+            }
+
+            // Remove maximized from all
+            allPanels.forEach(p => p.classList.remove('maximized'));
+        }
+
+        function maximizePanel(panel) {
+            const panelEl = document.getElementById(panel + 'Panel');
+            const allPanels = [document.getElementById('leftPanel'), document.getElementById('centerPanel'), document.getElementById('rightPanel')];
+
+            if (panelEl.classList.contains('maximized')) {
+                // Restore all panels
+                allPanels.forEach(p => {
+                    p.classList.remove('maximized', 'collapsed');
+                });
+            } else {
+                // Maximize this panel, collapse others
+                allPanels.forEach(p => {
+                    if (p === panelEl) {
+                        p.classList.add('maximized');
+                        p.classList.remove('collapsed');
+                    } else {
+                        p.classList.add('collapsed');
+                        p.classList.remove('maximized');
+                    }
+                });
+            }
+        }
+
+        // Drag and drop - Unscheduled cards
+        function dragStart(event) {
+            draggedElement = event.target;
+            draggedFromSchedule = false;
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/html', event.target.innerHTML);
+        }
+
+        function dragEnd(event) {
+            event.target.classList.remove('dragging');
+            draggedElement = null;
+        }
+
+        // Drag and drop - Schedule rows
+        function dragStartRow(event) {
+            draggedElement = event.target.closest('tr');
+            draggedFromSchedule = true;
+            event.target.closest('tr').style.opacity = '0.5';
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+
+            const dropZone = event.target.closest('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+        }
+
+        function dragLeave(event) {
+            const dropZone = event.target.closest('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.remove('drag-over');
+            }
+        }
+
+        function drop(event) {
+            event.preventDefault();
+
+            const dropZone = event.target.closest('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.remove('drag-over');
+            }
+
+            if (draggedFromSchedule) {
+                // Moving within schedule - reorder rows
+                const targetRow = event.target.closest('tr');
+                if (targetRow && draggedElement !== targetRow) {
+                    const tbody = document.getElementById('scheduleBody');
+                    tbody.insertBefore(draggedElement, targetRow.nextSibling);
+                    draggedElement.style.opacity = '1';
+                }
+            } else {
+                // Adding from unscheduled to schedule
+                const targetRow = event.target.closest('tr');
+                if (targetRow && draggedElement) {
+                    // In a real app, would create a new row here with routine data
+                    alert('Routine would be scheduled here! (Demo only)');
+                }
+            }
+
+            draggedElement = null;
+            draggedFromSchedule = false;
+        }
+
+        // Checkbox selection
+        function handleCheckbox(checkbox) {
+            const card = checkbox.closest('.routine-card');
+            if (checkbox.checked) {
+                card.style.background = 'rgba(139, 92, 246, 0.2)';
+                card.style.borderColor = '#8b5cf6';
+            } else {
+                card.style.background = '';
+                card.style.borderColor = '';
+            }
+        }
+
+        // Conflict boxes
+        function updateConflictBoxes() {
+            // Remove existing conflict boxes
+            document.querySelectorAll('.conflict-box').forEach(box => box.remove());
+
+            if (currentView !== 'cd') return;
+
+            // Find conflicts (demo: Emma in #102 and #104)
+            const rows = document.querySelectorAll('#scheduleBody tr[data-conflict="true"]');
+
+            if (rows.length >= 2) {
+                const firstRow = rows[0];
+                const lastRow = rows[rows.length - 1];
+
+                // Get positions
+                const firstRect = firstRow.getBoundingClientRect();
+                const lastRect = lastRow.getBoundingClientRect();
+                const tbody = document.getElementById('scheduleBody');
+                const tbodyRect = tbody.getBoundingClientRect();
+
+                // Create conflict box
+                const conflictBox = document.createElement('div');
+                conflictBox.className = 'conflict-box';
+                conflictBox.style.top = (firstRect.top - tbodyRect.top) + 'px';
+                conflictBox.style.height = (lastRect.bottom - firstRect.top) + 'px';
+
+                const label = document.createElement('div');
+                label.className = 'conflict-label';
+                label.textContent = '⚠️ CONFLICT: Emma Smith (< 6 routines apart)';
+                conflictBox.appendChild(label);
+
+                tbody.parentElement.style.position = 'relative';
+                tbody.parentElement.appendChild(conflictBox);
+            }
+        }
+
+        // Auto-generate
+        function autoGenerate() {
+            if (confirm('Auto-generate schedule using Classification → Age Group → Type sorting?\n\nThis will organize all unscheduled routines optimally.')) {
+                alert('Schedule generated! 12 routines scheduled, 2 conflicts detected.');
+            }
+        }
+
+        // Undo/Redo
+        function undo() {
+            alert('Undo last action (demo only)');
+        }
+
+        function redo() {
+            alert('Redo last action (demo only)');
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            updateConflictBoxes();
+            switchDay(1);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            } else if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+                e.preventDefault();
+                redo();
+            }
+        });
+    </script>
+</body>
+</html>
