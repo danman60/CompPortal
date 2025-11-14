@@ -256,8 +256,16 @@ export const schedulingRouter = router({
       performanceTime: z.string(), // Time block: "saturday-am", "saturday-pm", "sunday-am", "sunday-pm"
     }))
     .mutation(async ({ input, ctx }) => {
+      console.log('[scheduleRoutine] === START ===');
+      console.log('[scheduleRoutine] Input:', JSON.stringify(input, null, 2));
+      console.log('[scheduleRoutine] Context tenantId:', ctx.tenantId);
+
       // Verify tenant context matches request
       if (ctx.tenantId !== input.tenantId) {
+        console.error('[scheduleRoutine] ERROR: Tenant ID mismatch', {
+          contextTenantId: ctx.tenantId,
+          inputTenantId: input.tenantId,
+        });
         throw new Error('Tenant ID mismatch');
       }
 
@@ -279,18 +287,48 @@ export const schedulingRouter = router({
       const performanceTime = timeMap[input.performanceTime] || '09:00:00';
       const performanceDate = dateMap[input.performanceTime] || '2025-11-15';
 
-      const updated = await prisma.competition_entries.update({
-        where: {
-          id: input.routineId,
-          tenant_id: input.tenantId,
-        },
-        data: {
-          performance_date: new Date(performanceDate),
-          performance_time: performanceTime,
-        },
+      // Create datetime objects for both date and time
+      const performanceDateObject = new Date(performanceDate);
+      const performanceTimeObject = new Date(`2000-01-01T${performanceTime}`);
+
+      console.log('[scheduleRoutine] Calculated values:', {
+        performanceTime,
+        performanceDate,
+        performanceDateObject,
+        performanceTimeObject,
       });
 
-      return { success: true, routine: updated };
+      try {
+        console.log('[scheduleRoutine] Attempting database update...');
+        const updated = await prisma.competition_entries.update({
+          where: {
+            id: input.routineId,
+            tenant_id: input.tenantId,
+          },
+          data: {
+            performance_date: performanceDateObject,
+            performance_time: performanceTimeObject,
+          },
+        });
+
+        console.log('[scheduleRoutine] SUCCESS: Database updated', {
+          routineId: updated.id,
+          performance_date: updated.performance_date,
+          performance_time: updated.performance_time,
+        });
+
+        return { success: true, routine: updated };
+      } catch (error) {
+        console.error('[scheduleRoutine] ERROR: Database update failed');
+        console.error('[scheduleRoutine] Error details:', {
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          routineId: input.routineId,
+          tenantId: input.tenantId,
+        });
+        throw error;
+      }
     }),
 
   // Get conflicts for current schedule
