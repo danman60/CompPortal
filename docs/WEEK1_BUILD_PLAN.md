@@ -1768,3 +1768,79 @@ Evidence: week1-scheduling-page.png
 **Safety:** TEST tenant isolation enforced
 **Start Date:** November 18, 2025
 **End Date:** November 22, 2025
+
+---
+
+## 🎯 FINISH ACCEPTANCE PROTOCOL
+
+**Task is NOT complete until ALL criteria met:**
+
+### 1. Visual Verification (MANDATORY)
+- [ ] Navigate to `https://tester.compsync.net` via Playwright MCP
+- [ ] Login with SA credentials (`danieljohnabrahamson@gmail.com` / `123456`)
+- [ ] Navigate to `/dashboard/director-panel/schedule`
+- [ ] Take screenshot showing 3-panel layout
+- [ ] Verify left panel shows 60 unscheduled routines
+- [ ] Verify filter panel has classification/genre dropdowns + search
+- [ ] Verify routine cards display: title, studio, classification, age, genre, duration
+- [ ] Verify checkboxes are visible on each card
+- [ ] Verify page is BEAUTIFUL (proper spacing, colors, typography)
+
+### 2. Functional Verification (MANDATORY)
+- [ ] Test classification filter dropdown (should filter routines)
+- [ ] Test genre filter dropdown (should filter routines)
+- [ ] Test search input (should search by routine title)
+- [ ] Test checkbox selection (should highlight selected routines)
+- [ ] Verify drag-and-drop cursor changes on hover
+- [ ] Check browser console for errors (should be ZERO errors)
+
+### 3. Data Verification (MANDATORY)
+- [ ] Verify tRPC call succeeds in Network tab
+- [ ] Verify all 60 routines loaded from TEST tenant
+- [ ] Verify NO data from EMPWR or Glow tenants appears
+- [ ] Verify studio codes show correctly (A, B, C, D, E)
+
+### 4. Code Quality (MANDATORY)
+- [ ] `npm run build` passes with ZERO errors
+- [ ] `npm run type-check` passes with ZERO errors
+- [ ] All files use TEST tenant ID constant
+- [ ] No hardcoded production tenant IDs in code
+- [ ] Middleware restricts tester.compsync.net to TEST tenant only
+
+### 5. Commit & Push (MANDATORY)
+- [ ] Git commit with 8-line format
+- [ ] Evidence screenshot saved to `evidence/screenshots/week1-schedule-[date].png`
+- [ ] Pushed to `tester` branch
+- [ ] Vercel deployment successful on tester.compsync.net
+
+---
+
+## ⚠️ IMPORTANT: Definition of "WORKING and BEAUTIFUL"
+
+**WORKING:**
+- All filters functional
+- All 60 routines display correctly
+- No console errors
+- tRPC queries succeed
+- Tenant isolation enforced
+
+**BEAUTIFUL:**
+- Professional spacing and alignment
+- Consistent color scheme (brand colors from existing pages)
+- Proper typography hierarchy (headings, body text)
+- Smooth hover states and transitions
+- Cards have proper shadows/borders
+- Layout is responsive and clean
+- Matches design quality of existing CompPortal pages
+
+**NOT ACCEPTABLE:**
+- Cramped or cluttered layout
+- Misaligned elements
+- Inconsistent spacing
+- Missing hover states
+- Ugly or default-looking components
+- Console errors or warnings
+
+---
+
+**ONLY mark Task 11 as complete when viewing WORKING and BEAUTIFUL scheduling page on tester.compsync.net via Playwright MCP with evidence screenshot captured.**

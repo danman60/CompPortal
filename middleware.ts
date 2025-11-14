@@ -1,12 +1,16 @@
 import { updateSession } from './src/lib/supabase-middleware';
-import { type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { logger, generateRequestId } from './src/lib/logger';
+
+// TEST tenant ID for tester.compsync.net
+const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
 
 export async function middleware(request: NextRequest) {
   const requestId = generateRequestId();
   const start = Date.now();
   const { pathname, search } = request.nextUrl;
   const fullPath = `${pathname}${search}`;
+  const hostname = request.headers.get('host') || '';
 
   try {
     // Log incoming request (only in development or for errors)
@@ -15,10 +19,35 @@ export async function middleware(request: NextRequest) {
         requestId,
         method: request.method,
         path: fullPath,
+        hostname,
       });
     }
 
-    // Process Supabase session update
+    // 🚨 TENANT RESTRICTION: tester.compsync.net = TEST tenant ONLY
+    if (hostname.includes('tester.compsync.net')) {
+      // Add TEST tenant ID to request headers for downstream use
+      const response = await updateSession(request);
+      response.headers.set('X-Tenant-Restriction', TEST_TENANT_ID);
+      response.headers.set('X-Environment', 'testing');
+      response.headers.set('X-Request-ID', requestId);
+
+      const duration = Date.now() - start;
+
+      // Log slow requests (>1s)
+      if (duration > 1000) {
+        logger.warn('Slow request detected (TEST tenant)', {
+          requestId,
+          method: request.method,
+          path: fullPath,
+          duration,
+          tenantId: TEST_TENANT_ID,
+        });
+      }
+
+      return response;
+    }
+
+    // Process normal Supabase session update for production domains
     const response = await updateSession(request);
     const duration = Date.now() - start;
 

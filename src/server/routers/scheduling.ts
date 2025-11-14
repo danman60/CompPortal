@@ -138,6 +138,116 @@ export const schedulingRouter = router({
       return entries.map(toSchedulingEntry);
     }),
 
+  // Get unscheduled routines for Phase 2 scheduling interface
+  getRoutines: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      classificationId: z.string().uuid().optional(),
+      categoryId: z.string().uuid().optional(),
+      searchQuery: z.string().optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      // Verify tenant context matches request
+      if (ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      const where: any = {
+        competition_id: input.competitionId,
+        tenant_id: input.tenantId,
+        is_scheduled: false, // Only unscheduled routines
+      };
+
+      // Optional filters
+      if (input.classificationId) {
+        where.classification_id = input.classificationId;
+      }
+
+      if (input.categoryId) {
+        where.category_id = input.categoryId;
+      }
+
+      if (input.searchQuery) {
+        where.title = {
+          contains: input.searchQuery,
+          mode: 'insensitive',
+        };
+      }
+
+      const routines = await prisma.competition_entries.findMany({
+        where,
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              studio_code: true,
+            },
+          },
+          dance_categories: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          age_groups: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          entry_size_categories: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          classifications: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          entry_participants: {
+            select: {
+              dancer_id: true,
+              dancer_name: true,
+              dancer_age: true,
+            },
+          },
+        },
+        orderBy: [
+          { created_at: 'asc' },
+        ],
+      });
+
+      return routines.map(routine => ({
+        id: routine.id,
+        title: routine.title,
+        studioId: routine.studio_id,
+        studioName: routine.studios.name,
+        studioCode: routine.studios.studio_code || routine.studios.name, // Fallback to name if no code
+        classificationId: routine.classification_id,
+        classificationName: routine.classifications.name,
+        categoryId: routine.category_id,
+        categoryName: routine.dance_categories.name,
+        ageGroupId: routine.age_group_id,
+        ageGroupName: routine.age_groups.name,
+        entrySizeId: routine.entry_size_category_id,
+        entrySizeName: routine.entry_size_categories.name,
+        duration: routine.duration || 3, // Default 3 minutes
+        participants: routine.entry_participants.map(p => ({
+          dancerId: p.dancer_id,
+          dancerName: p.dancer_name,
+          dancerAge: p.dancer_age,
+        })),
+        isScheduled: routine.is_scheduled,
+        scheduledTime: routine.scheduled_time,
+        scheduledDay: routine.scheduled_day,
+      }));
+    }),
+
   // Get conflicts for current schedule
   getConflicts: publicProcedure
     .input(z.object({
