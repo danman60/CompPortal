@@ -253,8 +253,7 @@ export const schedulingRouter = router({
     .input(z.object({
       routineId: z.string().uuid(),
       tenantId: z.string().uuid(),
-      performanceDate: z.string(), // ISO date string (e.g., "2025-11-15")
-      performanceTime: z.string(), // Time block: "morning" or "afternoon"
+      performanceTime: z.string(), // Time block: "saturday-am", "saturday-pm", "sunday-am", "sunday-pm"
     }))
     .mutation(async ({ input, ctx }) => {
       // Verify tenant context matches request

@@ -170,7 +170,6 @@ export default function SchedulePage() {
       scheduleMutation.mutate({
         routineId: active.id as string,
         tenantId: TEST_TENANT_ID,
-        performanceDate: '', // Will be set by backend based on zone
         performanceTime: over.id as string, // Zone ID (e.g., "saturday-am")
       });
     }
