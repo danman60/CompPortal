@@ -164,6 +164,31 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
+        /* Filter buttons */
+        .filter-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            border-color: #8b5cf6;
+            color: white;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+        }
+
         /* Undo/Redo */
         .history-controls {
             display: flex;
@@ -580,8 +605,8 @@
                 <span>📝</span>
                 <span>DRAFT</span>
             </div>
-            <h1>Glow Dance Competition</h1>
-            <div class="subtitle">April 9-12, 2026</div>
+            <h1>GLOW Blue Mountain Summer 2026</h1>
+            <div class="subtitle">June 4-7, 2026</div>
         </div>
 
         <!-- View Selector -->
@@ -591,16 +616,13 @@
             <button class="view-btn" data-view="studio" onclick="switchView('studio')">Studio Director</button>
             <button class="view-btn" data-view="judge" onclick="switchView('judge')">Judge</button>
             <button class="view-btn" data-view="public" onclick="switchView('public')">Public</button>
-            <div class="waiver-indicator">
-                <span>✅</span>
-                <span>All Studios: Waiver Accepted</span>
-            </div>
         </div>
 
         <!-- Controls Bar -->
         <div class="controls-bar">
             <button class="btn btn-primary" onclick="autoGenerate()">🔄 Auto-Generate Draft</button>
-            <button class="btn btn-secondary" onclick="openModal('createBlock')">➕ Create Block</button>
+            <div class="btn btn-secondary" draggable="true" ondragstart="dragStartBlock(event, 'award')" ondragend="dragEndBlock(event)" style="cursor: move;">🏆 +Award Block</div>
+            <div class="btn btn-secondary" draggable="true" ondragstart="dragStartBlock(event, 'break')" ondragend="dragEndBlock(event)" style="cursor: move;">☕ +Break Block</div>
             <button class="btn btn-secondary" onclick="openModal('studioNotes')">💬 Studio Notes</button>
             <button class="btn btn-secondary">📄 Export PDF</button>
 
@@ -628,9 +650,36 @@
                 </div>
 
                 <div class="panel-content">
+                    <!-- Filters -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: rgba(255,255,255,0.8);">📊 Classification:</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                <button class="filter-btn" data-filter="classification" data-value="Emerald">Emerald</button>
+                                <button class="filter-btn" data-filter="classification" data-value="Sapphire">Sapphire</button>
+                                <button class="filter-btn" data-filter="classification" data-value="Crystal">Crystal</button>
+                                <button class="filter-btn" data-filter="classification" data-value="Titanium">Titanium</button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: rgba(255,255,255,0.8);">🎭 Genre:</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                <button class="filter-btn" data-filter="genre" data-value="Tap">Tap</button>
+                                <button class="filter-btn" data-filter="genre" data-value="Jazz">Jazz</button>
+                                <button class="filter-btn" data-filter="genre" data-value="Contemporary">Contemporary</button>
+                                <button class="filter-btn" data-filter="genre" data-value="Hip Hop">Hip Hop</button>
+                                <button class="filter-btn" data-filter="genre" data-value="Ballet">Ballet</button>
+                            </div>
+                        </div>
+                        <div>
+                            <input type="text" class="search-input" placeholder="🔍 Search..." id="poolSearchInput" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.8rem; padding: 0.5rem;">
+                            <button class="btn btn-secondary" onclick="clearPoolFilters()" style="width: 100%; font-size: 0.8rem; padding: 0.4rem;">✕ Clear Filters</button>
+                        </div>
+                    </div>
+
                     <div class="unscheduled-grid" id="unscheduledGrid">
                         <!-- Sample unscheduled routines -->
-                        <div class="routine-card" draggable="true" data-id="r1" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                        <div class="routine-card" draggable="true" data-id="r1" data-classification="Emerald" data-genre="Ballet" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
                             <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
                             <div class="routine-title">Starlight</div>
                             <div class="routine-meta">
@@ -641,7 +690,7 @@
                             </div>
                         </div>
 
-                        <div class="routine-card" draggable="true" data-id="r2" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                        <div class="routine-card" draggable="true" data-id="r2" data-classification="Sapphire" data-genre="Hip Hop" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
                             <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
                             <div class="routine-title">Rhythm Nation</div>
                             <div class="routine-meta">
@@ -652,7 +701,7 @@
                             </div>
                         </div>
 
-                        <div class="routine-card" draggable="true" data-id="r3" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                        <div class="routine-card" draggable="true" data-id="r3" data-classification="Crystal" data-genre="Contemporary" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
                             <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
                             <div class="routine-title">Unity</div>
                             <div class="routine-meta">
@@ -663,7 +712,7 @@
                             </div>
                         </div>
 
-                        <div class="routine-card" draggable="true" data-id="r4" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                        <div class="routine-card" draggable="true" data-id="r4" data-classification="Sapphire" data-genre="Jazz" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
                             <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
                             <div class="routine-title">Fire</div>
                             <div class="routine-meta">
@@ -674,7 +723,7 @@
                             </div>
                         </div>
 
-                        <div class="routine-card" draggable="true" data-id="r5" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                        <div class="routine-card" draggable="true" data-id="r5" data-classification="Crystal" data-genre="Contemporary" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
                             <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
                             <div class="routine-title">Celestial</div>
                             <div class="routine-meta">
@@ -685,7 +734,7 @@
                             </div>
                         </div>
 
-                        <div class="routine-card" draggable="true" data-id="r6" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                        <div class="routine-card" draggable="true" data-id="r6" data-classification="Emerald" data-genre="Tap" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
                             <input type="checkbox" class="routine-checkbox" onchange="handleCheckbox(this)">
                             <div class="routine-title">Thunder</div>
                             <div class="routine-meta">
@@ -717,10 +766,10 @@
                 <div class="panel-content">
                     <!-- Day Selector Tabs -->
                     <div class="day-selector">
-                        <button class="day-tab active" data-day="1" onclick="switchDay(1)">Thursday, April 9</button>
-                        <button class="day-tab" data-day="2" onclick="switchDay(2)">Friday, April 10</button>
-                        <button class="day-tab" data-day="3" onclick="switchDay(3)">Saturday, April 11</button>
-                        <button class="day-tab" data-day="4" onclick="switchDay(4)">Sunday, April 12</button>
+                        <button class="day-tab active" data-day="1" onclick="switchDay(1)">Thursday, June 4</button>
+                        <button class="day-tab" data-day="2" onclick="switchDay(2)">Friday, June 5</button>
+                        <button class="day-tab" data-day="3" onclick="switchDay(3)">Saturday, June 6</button>
+                        <button class="day-tab" data-day="4" onclick="switchDay(4)">Sunday, June 7</button>
                     </div>
 
                     <!-- Schedule Table -->
@@ -1069,7 +1118,19 @@
                 dropZone.classList.remove('drag-over');
             }
 
-            if (draggedFromSchedule) {
+            if (draggedBlockType) {
+                // Dropping award/break block
+                const targetRow = event.target.closest('tr');
+                if (targetRow) {
+                    if (draggedBlockType === 'award') {
+                        // Show recommended award from trophy helper
+                        alert('Award Block: Check trophy helper for recommended awards based on last routines in this session.\n\nExample: "Emerald Mini (Ages 7-8) - Last routine at [time]"');
+                    } else if (draggedBlockType === 'break') {
+                        alert('Break Block: Duration can be edited after placement (15, 30, 45, 60 min)');
+                    }
+                }
+                draggedBlockType = null;
+            } else if (draggedFromSchedule) {
                 // Moving within schedule - reorder rows
                 const targetRow = event.target.closest('tr');
                 if (targetRow && draggedElement !== targetRow) {
@@ -1102,6 +1163,73 @@
             }
         }
 
+        // Drag blocks (Award/Break)
+        let draggedBlockType = null;
+
+        function dragStartBlock(event, type) {
+            draggedBlockType = type;
+            draggedFromSchedule = false;
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData('text/plain', type);
+        }
+
+        function dragEndBlock(event) {
+            draggedBlockType = null;
+        }
+
+        // Filter functions
+        function clearPoolFilters() {
+            // Reset all filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            // Clear search
+            const searchInput = document.getElementById('poolSearchInput');
+            if (searchInput) searchInput.value = '';
+            // Show all cards
+            document.querySelectorAll('.routine-card').forEach(card => card.style.display = '');
+        }
+
+        // Add filter button click handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filter = this.dataset.filter;
+                    const value = this.dataset.value;
+
+                    // Toggle active state
+                    this.classList.toggle('active');
+
+                    // Filter routine cards
+                    const activeFilters = {
+                        classification: [],
+                        genre: []
+                    };
+
+                    document.querySelectorAll('.filter-btn.active').forEach(activeBtn => {
+                        const f = activeBtn.dataset.filter;
+                        const v = activeBtn.dataset.value;
+                        if (f === 'classification') activeFilters.classification.push(v);
+                        if (f === 'genre') activeFilters.genre.push(v);
+                    });
+
+                    // Apply filters
+                    document.querySelectorAll('.routine-card').forEach(card => {
+                        const cardClass = card.dataset.classification;
+                        const cardGenre = card.dataset.genre;
+
+                        let show = true;
+                        if (activeFilters.classification.length > 0 && !activeFilters.classification.includes(cardClass)) {
+                            show = false;
+                        }
+                        if (activeFilters.genre.length > 0 && !activeFilters.genre.includes(cardGenre)) {
+                            show = false;
+                        }
+
+                        card.style.display = show ? '' : 'none';
+                    });
+                });
+            });
+        });
+
         // Conflict boxes
         function updateConflictBoxes() {
             // Remove existing conflict boxes
@@ -1109,8 +1237,8 @@
 
             if (currentView !== 'cd') return;
 
-            // Find conflicts (demo: Emma in #102 and #104)
-            const rows = document.querySelectorAll('#scheduleBody tr[data-conflict="true"]');
+            // Find conflicts on current day only (demo: Emma in #102 and #104)
+            const rows = document.querySelectorAll(`#scheduleBody tr[data-conflict="true"][data-day="${currentDay}"]`);
 
             if (rows.length >= 2) {
                 const firstRow = rows[0];
