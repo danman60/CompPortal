@@ -30,8 +30,11 @@
 ## Task Dependency Graph
 
 ```
+DAY 0 (Prep):
+Task 0: Create Demo Data for TEST Tenant ← START HERE (BLOCKING)
+
 DAY 1 (Monday):
-Task 1: Tenant Restriction Middleware ← START HERE (BLOCKING)
+Task 1: Tenant Restriction Middleware
   ↓
 Task 2: Database Migrations (4 new tables)
   ↓
@@ -56,6 +59,254 @@ DAY 5 (Friday):
 Task 10: Drag-and-Drop Infrastructure (@dnd-kit)
   ↓
 Task 11: Testing & Verification
+```
+
+---
+
+## Day 0: Demo Data Creation (Prerequisite)
+
+### Task 0: Create Demo Data for TEST Tenant (CRITICAL - DO FIRST)
+
+**🚨 TESTING TENANT ONLY:**
+- **Tenant ID:** `00000000-0000-0000-0000-000000000003`
+- **Competition ID:** `1b786221-8f8e-413f-b532-06fa20a2ff63` ("Test Competition Spring 2026", April 9-12, 2026)
+- **ABSOLUTE RULE:** Zero risk to production data (EMPWR/Glow tenants)
+
+**Purpose:** Create realistic demo data for scheduling development and testing
+
+**Data Requirements:**
+- 5 Studios (for studio code testing: A, B, C, D, E)
+- 30 Dancers (distributed across studios)
+- 60 Routines with full variety for testing all features
+
+**Studio Distribution:**
+- Studio A: 15 routines (most routines)
+- Studio B: 12 routines
+- Studio C: 10 routines
+- Studio D: 8 routines
+- Studio E: 15 routines (Production-heavy studio)
+
+**Routine Variety (Must Cover All Categories):**
+
+**Category Types:**
+- Solo: 15 routines
+- Duet: 10 routines
+- Small Group (3-9 dancers): 15 routines
+- Large Group (10+ dancers): 10 routines
+- Production (15 min): 10 routines
+
+**Classifications:**
+- Emerald (Novice): 15 routines
+- Sapphire (Intermediate): 15 routines
+- Crystal (Advanced): 15 routines
+- Titanium (Elite): 10 routines
+- Production: 5 routines
+
+**Age Groups:**
+- Mini (7-8): 15 routines
+- Junior (9-12): 20 routines
+- Teen (13-16): 15 routines
+- Senior (17-18): 10 routines
+
+**Genres:**
+- Jazz: 15 routines
+- Contemporary: 15 routines
+- Tap: 10 routines
+- Ballet: 5 routines
+- Hip Hop: 10 routines
+- Lyrical: 5 routines
+
+**Critical Requirements for Testing:**
+
+1. **Shared Dancers (Conflict Detection):**
+   - Dancer "Sarah Johnson": 5 routines (for testing 6-routine spacing rule)
+   - Dancer "Emma Klein": 4 routines
+   - Dancer "Mia Rodriguez": 3 routines
+   - Dancers "Olivia Smith": 3 routines
+   - Ensure variety of spacing (2, 3, 5, 7 routines apart when scheduled)
+
+2. **Age Grouping (Trophy Helper):**
+   - Multiple routines per overall category (Category Type + Age Group + Classification)
+   - Example: 3 "Solo - Mini - Emerald" routines (to test last routine detection)
+
+3. **Studio Distribution (Studio Code Testing):**
+   - Each studio has 8-15 routines
+   - Studios registered in order (A first, E last)
+
+4. **Duration Variety:**
+   - Solo/Duet: 3 minutes
+   - Small Group: 5 minutes
+   - Large Group: 7 minutes
+   - Production: 15 minutes
+
+**Implementation:**
+
+**Step 1: Create Studios**
+```sql
+-- Create 5 studios for TEST tenant
+INSERT INTO studios (id, tenant_id, name, email, phone, created_at)
+VALUES
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', 'Starlight Dance Academy', 'starlight@example.com', '555-0101', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', 'Rhythm Dance Studio', 'rhythm@example.com', '555-0102', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', 'Elite Performing Arts', 'elite@example.com', '555-0103', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', 'Dance Expressions', 'expressions@example.com', '555-0104', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', 'Movement Arts Collective', 'movement@example.com', '555-0105', NOW());
+```
+
+**Step 2: Create Reservations (Approved - for studio codes)**
+```sql
+-- Create approved reservations for each studio
+-- This will trigger studio code assignment (A, B, C, D, E)
+INSERT INTO reservations (id, tenant_id, competition_id, studio_id, status, submitted_at, approved_at, created_at)
+SELECT
+  gen_random_uuid(),
+  '00000000-0000-0000-0000-000000000003',
+  '1b786221-8f8e-413f-b532-06fa20a2ff63',
+  s.id,
+  'approved',
+  NOW() - INTERVAL '5 days',
+  NOW() - INTERVAL '4 days',
+  NOW()
+FROM studios s
+WHERE s.tenant_id = '00000000-0000-0000-0000-000000000003'
+ORDER BY s.created_at;
+```
+
+**Step 3: Create Dancers**
+```sql
+-- Create 30 dancers distributed across studios
+-- Includes dancers with shared routines for conflict testing
+
+-- Starlight Dance Academy (Studio A) - 8 dancers
+INSERT INTO dancers (id, tenant_id, studio_id, first_name, last_name, date_of_birth, created_at)
+VALUES
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Sarah', 'Johnson', '2016-03-15', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Emma', 'Klein', '2014-07-22', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Olivia', 'Smith', '2015-11-08', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Ava', 'Martinez', '2017-05-12', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Isabella', 'Garcia', '2016-09-30', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Sophia', 'Wilson', '2013-12-14', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Mia', 'Rodriguez', '2018-02-20', NOW()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'), 'Charlotte', 'Lee', '2015-06-18', NOW());
+
+-- Repeat for other 4 studios (6 dancers each)
+-- Total: 8 + 6 + 6 + 6 + 4 = 30 dancers
+```
+
+**Step 4: Create Routines (60 total)**
+```sql
+-- Create 60 routines with variety across all dimensions
+-- This is a LARGE insert, will use a script/procedure
+
+-- Sample structure for each routine:
+INSERT INTO competition_entries (
+  id,
+  tenant_id,
+  competition_id,
+  studio_id,
+  routine_name,
+  category_type,
+  classification,
+  age_group,
+  genre,
+  duration_minutes,
+  status,
+  created_at
+)
+VALUES
+  -- Routine 1: Solo - Mini - Emerald - Jazz (Sarah Johnson)
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', '1b786221-8f8e-413f-b532-06fa20a2ff63',
+   (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'),
+   'Sparkle and Shine', 'solo', 'emerald', 'mini', 'jazz', 3, 'submitted', NOW()),
+
+  -- Routine 2: Duet - Mini - Emerald - Contemporary (Sarah + Emma)
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000003', '1b786221-8f8e-413f-b532-06fa20a2ff63',
+   (SELECT id FROM studios WHERE name = 'Starlight Dance Academy' AND tenant_id = '00000000-0000-0000-0000-000000000003'),
+   'Dream Together', 'duet', 'emerald', 'mini', 'contemporary', 3, 'submitted', NOW()),
+
+  -- Continue for all 60 routines...
+  -- Ensuring variety and shared dancers
+  ;
+```
+
+**Step 5: Create Entry Participants (Links between routines and dancers)**
+```sql
+-- Link dancers to routines
+-- Sarah Johnson appears in 5 routines (for conflict testing)
+-- Emma Klein appears in 4 routines
+-- Other dancers appear in 1-3 routines
+
+INSERT INTO entry_participants (id, entry_id, dancer_id, created_at)
+SELECT
+  gen_random_uuid(),
+  ce.id,
+  d.id,
+  NOW()
+FROM competition_entries ce
+JOIN dancers d ON d.studio_id = ce.studio_id
+WHERE ce.tenant_id = '00000000-0000-0000-0000-000000000003'
+-- Logic to distribute dancers across routines appropriately
+;
+```
+
+**Verification Queries:**
+```sql
+-- Verify studios created
+SELECT COUNT(*) as studio_count FROM studios WHERE tenant_id = '00000000-0000-0000-0000-000000000003';
+-- Expected: 5
+
+-- Verify dancers created
+SELECT COUNT(*) as dancer_count FROM dancers WHERE tenant_id = '00000000-0000-0000-0000-000000000003';
+-- Expected: 30
+
+-- Verify routines created
+SELECT COUNT(*) as routine_count FROM competition_entries WHERE tenant_id = '00000000-0000-0000-0000-000000000003';
+-- Expected: 60
+
+-- Verify variety in classifications
+SELECT classification, COUNT(*) as count
+FROM competition_entries
+WHERE tenant_id = '00000000-0000-0000-0000-000000000003'
+GROUP BY classification
+ORDER BY classification;
+-- Expected: Emerald (15), Sapphire (15), Crystal (15), Titanium (10), Production (5)
+
+-- Verify shared dancers
+SELECT
+  d.first_name || ' ' || d.last_name as dancer_name,
+  COUNT(*) as routine_count
+FROM entry_participants ep
+JOIN dancers d ON ep.dancer_id = d.id
+WHERE d.tenant_id = '00000000-0000-0000-0000-000000000003'
+GROUP BY d.id, d.first_name, d.last_name
+HAVING COUNT(*) > 1
+ORDER BY COUNT(*) DESC;
+-- Expected: Sarah (5), Emma (4), Mia (3), Olivia (3)
+```
+
+**Implementation Method:**
+
+Use Supabase MCP `execute_sql` tool with batched inserts:
+1. Create studios (5 INSERT statements)
+2. Create reservations (5 INSERT statements)
+3. Create dancers (30 INSERT statements, batched by studio)
+4. Create routines (60 INSERT statements, batched by studio/type)
+5. Create entry_participants (120+ INSERT statements for dancer-routine links)
+
+**Commit:**
+```
+data: Create demo data for TEST tenant
+
+- 5 studios (Starlight, Rhythm, Elite, Expressions, Movement)
+- 30 dancers (distributed across studios)
+- 60 routines (full variety: all classifications, ages, genres, types)
+- Entry participants linking dancers to routines
+- Shared dancers for conflict detection testing
+- All data in TEST tenant ONLY
+
+✅ Demo data ready for scheduling development
+
+🤖 Claude Code
 ```
 
 ---
