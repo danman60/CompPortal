@@ -156,7 +156,7 @@ export const schedulingRouter = router({
       const where: any = {
         competition_id: input.competitionId,
         tenant_id: input.tenantId,
-        is_scheduled: false, // Only unscheduled routines
+        performance_date: null, // Only unscheduled routines (no performance date set)
       };
 
       // Optional filters
@@ -236,15 +236,15 @@ export const schedulingRouter = router({
         ageGroupName: routine.age_groups.name,
         entrySizeId: routine.entry_size_category_id,
         entrySizeName: routine.entry_size_categories.name,
-        duration: routine.duration || 3, // Default 3 minutes
+        duration: 3, // Duration field is interval type (unsupported by Prisma), defaulting to 3 minutes
         participants: routine.entry_participants.map(p => ({
           dancerId: p.dancer_id,
           dancerName: p.dancer_name,
           dancerAge: p.dancer_age,
         })),
-        isScheduled: routine.is_scheduled,
-        scheduledTime: routine.scheduled_time,
-        scheduledDay: routine.scheduled_day,
+        isScheduled: routine.performance_date !== null && routine.performance_time !== null,
+        scheduledTime: routine.performance_time,
+        scheduledDay: routine.performance_date,
       }));
     }),
 
