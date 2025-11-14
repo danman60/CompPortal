@@ -392,20 +392,16 @@ model users {
   oauth_consents                                        oauth_consents[]
   one_time_tokens                                       one_time_tokens[]
   sessions                                              sessions[]
-  age_change_tracking                                   age_change_tracking[]
   capacity_ledger                                       capacity_ledger[]
   competition_sessions                                  competition_sessions[]
   documents                                             documents[]
+  email_queue                                           email_queue[]
   judges                                                judges[]
   reservations_reservations_approved_byTousers          reservations[]         @relation("reservations_approved_byTousers")
   reservations_reservations_payment_confirmed_byTousers reservations[]         @relation("reservations_payment_confirmed_byTousers")
-  routine_notes_routine_notes_tenant_idTousers          routine_notes[]        @relation("routine_notes_tenant_idTousers")
-  routine_notes_routine_notes_created_byTousers         routine_notes[]        @relation("routine_notes_created_byTousers")
-  schedule_blocks                                       schedule_blocks[]
-  schedule_conflicts                                    schedule_conflicts[]
+  studios_studios_owner_idTousers                       studios[]              @relation("studios_owner_idTousers")
   studios_studios_verified_byTousers                    studios[]              @relation("studios_verified_byTousers")
-  user_feedback_user_feedback_reviewed_byTousers        user_feedback[]        @relation("user_feedback_reviewed_byTousers")
-  user_feedback_user_feedback_user_idTousers            user_feedback[]        @relation("user_feedback_user_idTousers")
+  user_profiles                                         user_profiles?
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -446,15 +442,16 @@ model account_recovery_tokens {
   token      String    @unique
   expires_at DateTime  @db.Timestamptz(6)
   used_at    DateTime? @db.Timestamptz(6)
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  studios    studios   @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
   tenants    tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  studios    studios   @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([token], map: "idx_recovery_tokens_token")
   @@index([email], map: "idx_recovery_tokens_email")
   @@index([studio_id], map: "idx_recovery_tokens_studio")
   @@index([tenant_id], map: "idx_recovery_tokens_tenant")
+  @@index([expires_at], map: "idx_recovery_tokens_expires")
   @@schema("public")
 }
 
@@ -644,13 +641,6 @@ model competition_entries {
   routine_length_seconds                                                               Int?
   scheduling_notes                                                                     String?
   routine_age                                                                          Int?
-  scheduled_time                                                                       DateTime?                          @db.Timestamp(6)
-  scheduled_day                                                                        DateTime?                          @db.Date
-  schedule_sequence                                                                    Int?
-  is_scheduled                                                                         Boolean?                           @default(false)
-  is_trophy_helper                                                                     Boolean?                           @default(false)
-  overall_category_key                                                                 String?                            @db.VarChar(255)
-  conflicts_with_entry_ids                                                             String[]                           @db.Uuid
   awards                                                                               awards[]
   classification_exception_requests                                                    classification_exception_requests?
   age_groups                                                                           age_groups                         @relation(fields: [age_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -669,7 +659,6 @@ model competition_entries {
   documents                                                                            documents[]
   entry_participants                                                                   entry_participants[]
   rankings                                                                             rankings[]
-  routine_notes                                                                        routine_notes[]
   scores                                                                               scores[]
   summary_entries                                                                      summary_entries[]
 
@@ -688,7 +677,6 @@ model competition_entries {
   @@index([session_id], map: "idx_entries_session")
   @@index([studio_id], map: "idx_entries_studio")
   @@index([tenant_id], map: "idx_entries_tenant")
-  @@index([is_scheduled], map: "idx_competition_entries_is_scheduled")
   @@schema("public")
 }
 
@@ -829,8 +817,6 @@ model competitions {
   title_division_settings           Json?
   special_programs_settings         Json?
   tax_rate                          Decimal?                            @default(0.0000) @db.Decimal(5, 4)
-  schedule_state                    String?                             @default("draft") @db.VarChar(50)
-  age_change_tracking               age_change_tracking[]
   awards                            awards[]
   capacity_ledger                   capacity_ledger[]
   classification_exception_requests classification_exception_requests[]
@@ -845,8 +831,6 @@ model competitions {
   judges                            judges[]
   rankings                          rankings[]
   reservations                      reservations[]
-  schedule_blocks                   schedule_blocks[]
-  schedule_conflicts                schedule_conflicts[]
   title_rounds                      title_rounds[]
   vip_events                        vip_events[]
 
@@ -857,7 +841,6 @@ model competitions {
   @@index([status], map: "idx_competitions_status")
   @@index([tenant_id], map: "idx_competitions_tenant")
   @@index([year], map: "idx_competitions_year")
-  @@index([schedule_state], map: "idx_competitions_schedule_state")
   @@schema("public")
 }
 
@@ -891,42 +874,40 @@ model dance_categories {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model dancers {
-  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studio_id               String                @db.Uuid
-  first_name              String                @db.VarChar(100)
-  last_name               String                @db.VarChar(100)
-  date_of_birth           DateTime?             @db.Date
+  id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studio_id               String               @db.Uuid
+  first_name              String               @db.VarChar(100)
+  last_name               String               @db.VarChar(100)
+  date_of_birth           DateTime?            @db.Date
   age_override            Int?
-  gender                  String?               @db.VarChar(20)
-  email                   String?               @db.VarChar(255)
-  phone                   String?               @db.VarChar(50)
-  parent_name             String?               @db.VarChar(255)
-  parent_email            String?               @db.VarChar(255)
-  parent_phone            String?               @db.VarChar(50)
-  emergency_contact_name  String?               @db.VarChar(255)
-  emergency_contact_phone String?               @db.VarChar(50)
+  gender                  String?              @db.VarChar(20)
+  email                   String?              @db.VarChar(255)
+  phone                   String?              @db.VarChar(50)
+  parent_name             String?              @db.VarChar(255)
+  parent_email            String?              @db.VarChar(255)
+  parent_phone            String?              @db.VarChar(50)
+  emergency_contact_name  String?              @db.VarChar(255)
+  emergency_contact_phone String?              @db.VarChar(50)
   medical_conditions      String?
   allergies               String?
   medications             String?
   years_dancing           Int?
-  primary_style           String?               @db.VarChar(100)
-  skill_level             String?               @db.VarChar(50)
-  previous_competitions   Int?                  @default(0)
-  registration_number     String?               @unique @db.VarChar(50)
+  primary_style           String?              @db.VarChar(100)
+  skill_level             String?              @db.VarChar(50)
+  previous_competitions   Int?                 @default(0)
+  registration_number     String?              @unique @db.VarChar(50)
   photo_url               String?
-  waiver_signed           Boolean?              @default(false)
-  waiver_signed_date      DateTime?             @db.Date
-  status                  String?               @default("active") @db.VarChar(50)
-  created_at              DateTime?             @default(now()) @db.Timestamp(6)
-  updated_at              DateTime?             @default(now()) @db.Timestamp(6)
-  tenant_id               String                @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  classification_id       String?               @db.Uuid
-  age_change_tracking     age_change_tracking[]
-  classifications         classifications?      @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  studios                 studios               @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tenants                 tenants               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  waiver_signed           Boolean?             @default(false)
+  waiver_signed_date      DateTime?            @db.Date
+  status                  String?              @default("active") @db.VarChar(50)
+  created_at              DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?            @default(now()) @db.Timestamp(6)
+  tenant_id               String               @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classification_id       String?              @db.Uuid
+  classifications         classifications?     @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  studios                 studios              @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants                 tenants              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   entry_participants      entry_participants[]
-  schedule_conflicts      schedule_conflicts[]
 
   @@index([date_of_birth], map: "idx_dancers_age")
   @@index([first_name, last_name], map: "idx_dancers_name")
@@ -1055,6 +1036,7 @@ model email_queue {
   error           String?
   retry_count     Int       @default(0)
   tenants         tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([tenant_id], map: "idx_email_queue_tenant_id")
   @@index([user_id], map: "idx_email_queue_user_id")
@@ -1139,6 +1121,8 @@ model invoices {
   line_items               Json           @default("[]")
   subtotal                 Decimal        @default(0) @db.Decimal(10, 2)
   total                    Decimal        @default(0) @db.Decimal(10, 2)
+  deposit_amount           Decimal?       @default(0) @db.Decimal(10, 2)
+  amount_due               Decimal?       @default(0) @db.Decimal(10, 2)
   status                   String         @default("UNPAID") @db.VarChar(50)
   created_at               DateTime?      @default(now()) @db.Timestamp(6)
   updated_at               DateTime?      @default(now()) @db.Timestamp(6)
@@ -1153,8 +1137,6 @@ model invoices {
   is_locked                Boolean?       @default(false)
   has_dancer_invoices      Boolean?       @default(false)
   total_margin_applied     Decimal?       @db.Decimal(10, 2)
-  deposit_amount           Decimal?       @default(0) @db.Decimal(10, 2)
-  amount_due               Decimal?       @default(0) @db.Decimal(10, 2)
   competitions             competitions   @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   reservations             reservations?  @relation(fields: [reservation_id], references: [id], onUpdate: NoAction)
   studios                  studios        @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -1278,7 +1260,6 @@ model reservations {
   is_closed                                      Boolean?                            @default(false)
   discount_percentage                            Decimal?                            @default(0) @db.Decimal(5, 2)
   credits_applied                                Decimal?                            @default(0) @db.Decimal(10, 2)
-  studio_code_assigned_at                        DateTime?                           @db.Timestamp(6)
   capacity_ledger                                capacity_ledger[]
   classification_exception_requests              classification_exception_requests[]
   competition_entries                            competition_entries[]
@@ -1400,8 +1381,8 @@ model studios {
   consent_marketing                 DateTime?                           @db.Timestamptz(6)
   consent_data_processing           DateTime?                           @db.Timestamptz(6)
   public_code                       String                              @unique @db.VarChar(5)
-  invited_at                        DateTime?                           @db.Timestamptz(6)
   studio_code                       String?                             @db.VarChar(10)
+  invited_at                        DateTime?                           @db.Timestamptz(6)
   account_recovery_tokens           account_recovery_tokens[]
   activity_logs                     activity_logs[]
   classification_exception_requests classification_exception_requests[]
@@ -1412,12 +1393,14 @@ model studios {
   invoices                          invoices[]
   reservations                      reservations[]
   routine_import_sessions           routine_import_sessions[]
+  users_studios_owner_idTousers     users?                              @relation("studios_owner_idTousers", fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                           tenants                             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   users_studios_verified_byTousers  users?                              @relation("studios_verified_byTousers", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([code], map: "idx_studios_code")
   @@index([owner_id], map: "idx_studios_owner")
   @@index([public_code], map: "idx_studios_public_code")
+  @@index([studio_code], map: "idx_studios_studio_code")
   @@index([status], map: "idx_studios_status")
   @@index([tenant_id], map: "idx_studios_tenant")
   @@index([verified_by], map: "idx_studios_verified_by")
@@ -1538,8 +1521,8 @@ model tenants {
   summaries                         summaries[]
   summary_entries                   summary_entries[]
   title_rounds                      title_rounds[]
-  user_feedback                     user_feedback[]
   user_profiles                     user_profiles[]
+  user_feedback                     user_feedback[]
   vip_events                        vip_events[]
 
   @@index([age_division_settings], map: "idx_tenants_age_settings", type: Gin)
@@ -1614,13 +1597,14 @@ model user_profiles {
   two_factor_secret                                                                               String?
   two_factor_backup_codes                                                                         Json?
   two_factor_verified_at                                                                          DateTime?                           @db.Timestamp(6)
-  login_count                                                                                     Int                                 @default(0)
-  last_feedback_prompt_at                                                                         DateTime?                           @db.Timestamptz(6)
+  login_count                                                                                     Int?                                @default(0)
+  last_feedback_prompt_at                                                                         DateTime?                           @db.Timestamp(6)
   activity_logs                                                                                   activity_logs[]
   classification_exception_requests_classification_exception_requests_created_byTouser_profiles   classification_exception_requests[] @relation("classification_exception_requests_created_byTouser_profiles")
   classification_exception_requests_classification_exception_requests_responded_byTouser_profiles classification_exception_requests[] @relation("classification_exception_requests_responded_byTouser_profiles")
   email_preferences                                                                               email_preferences[]
   two_factor_audit_log                                                                            two_factor_audit_log[]
+  users                                                                                           users                               @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                                                                                         tenants?                            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
   @@index([tenant_id], map: "idx_user_profiles_tenant")
@@ -1629,25 +1613,23 @@ model user_profiles {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user_feedback {
-  id                                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                              String    @db.Uuid
-  user_id                                String    @db.Uuid
-  user_role                              String
-  user_email                             String
-  user_name                              String?
-  feedback_type                          String
-  star_rating                            Int?
-  comment                                String
-  page_url                               String?
-  user_agent                             String?
-  created_at                             DateTime  @default(now()) @db.Timestamptz(6)
-  status                                 String    @default("new")
-  admin_notes                            String?
-  reviewed_at                            DateTime? @db.Timestamptz(6)
-  reviewed_by                            String?   @db.Uuid
-  users_user_feedback_reviewed_byTousers users?    @relation("user_feedback_reviewed_byTousers", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tenants                                tenants   @relation(fields: [tenant_id], references: [id], onUpdate: NoAction)
-  users_user_feedback_user_idTousers     users     @relation("user_feedback_user_idTousers", fields: [user_id], references: [id], onUpdate: NoAction)
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id               String    @db.Uuid
+  user_id                 String    @db.Uuid
+  user_role               String
+  user_email              String
+  user_name               String?
+  feedback_type           String
+  star_rating             Int?
+  comment                 String
+  page_url                String?
+  user_agent              String?
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  status                  String    @default("new")
+  admin_notes             String?
+  reviewed_at             DateTime? @db.Timestamptz(6)
+  reviewed_by             String?   @db.Uuid
+  tenants                 tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@index([tenant_id], map: "idx_user_feedback_tenant")
   @@index([created_at(sort: Desc)], map: "idx_user_feedback_created")
@@ -1766,13 +1748,13 @@ model sub_invoices {
   total             Decimal  @db.Decimal(10, 2)
   status            String   @default("GENERATED") @db.VarChar(50)
   notes             String?
-  created_at        DateTime @default(now()) @db.Timestamp(6)
-  updated_at        DateTime @default(now()) @db.Timestamp(6)
-  tenant_id         String   @db.Uuid
   margin_type       String?  @db.VarChar(50)
   margin_value      Decimal? @db.Decimal(10, 2)
   margin_amount     Decimal? @db.Decimal(10, 2)
   original_subtotal Decimal? @db.Decimal(10, 2)
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+  updated_at        DateTime @default(now()) @db.Timestamp(6)
+  tenant_id         String   @db.Uuid
   invoices          invoices @relation(fields: [parent_invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants           tenants  @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -1780,111 +1762,6 @@ model sub_invoices {
   @@index([parent_invoice_id], map: "idx_sub_invoices_parent")
   @@index([tenant_id], map: "idx_sub_invoices_tenant")
   @@index([tenant_id, parent_invoice_id], map: "idx_sub_invoices_tenant_parent")
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model age_change_tracking {
-  id                    String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id             String       @db.Uuid
-  competition_id        String       @db.Uuid
-  dancer_id             String       @db.Uuid
-  dancer_name           String       @db.VarChar(255)
-  date_of_birth         DateTime     @db.Date
-  original_age          Int
-  new_age               Int
-  change_date           DateTime     @db.Date
-  age_group_before      String?      @db.VarChar(100)
-  age_group_after       String?      @db.VarChar(100)
-  affected_entry_ids    String[]     @db.Uuid
-  requires_rescheduling Boolean      @default(false)
-  notes                 String?
-  created_at            DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at            DateTime?    @default(now()) @db.Timestamp(6)
-  competitions          competitions @relation(fields: [competition_id], references: [id], onUpdate: NoAction)
-  dancers               dancers      @relation(fields: [dancer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                 users        @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_age_change_tracking_tenant")
-
-  @@index([change_date], map: "idx_age_change_tracking_change_date")
-  @@index([competition_id], map: "idx_age_change_tracking_competition")
-  @@index([dancer_id], map: "idx_age_change_tracking_dancer")
-  @@index([tenant_id], map: "idx_age_change_tracking_tenant")
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model routine_notes {
-  id                                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                             String              @db.Uuid
-  entry_id                              String              @db.Uuid
-  note_type                             String              @default("scheduling") @db.VarChar(50)
-  note_text                             String
-  is_internal                           Boolean             @default(false)
-  priority                              String              @default("normal") @db.VarChar(20)
-  created_by                            String?             @db.Uuid
-  created_at                            DateTime?           @default(now()) @db.Timestamp(6)
-  updated_at                            DateTime?           @default(now()) @db.Timestamp(6)
-  users_routine_notes_tenant_idTousers  users               @relation("routine_notes_tenant_idTousers", fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_routine_notes_tenant")
-  users_routine_notes_created_byTousers users?              @relation("routine_notes_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  competition_entries                   competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([entry_id], map: "idx_routine_notes_entry")
-  @@index([priority], map: "idx_routine_notes_priority")
-  @@index([tenant_id], map: "idx_routine_notes_tenant")
-  @@index([note_type], map: "idx_routine_notes_type")
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model schedule_blocks {
-  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id        String       @db.Uuid
-  competition_id   String       @db.Uuid
-  block_type       String       @db.VarChar(50)
-  title            String       @db.VarChar(255)
-  duration_minutes Int
-  scheduled_time   DateTime?    @db.Timestamp(6)
-  schedule_day     DateTime?    @db.Date
-  sort_order       Int?
-  notes            String?
-  created_at       DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?    @default(now()) @db.Timestamp(6)
-  users            users        @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_schedule_blocks_tenant")
-  competitions     competitions @relation(fields: [competition_id], references: [id], onUpdate: NoAction)
-
-  @@index([competition_id], map: "idx_schedule_blocks_competition")
-  @@index([scheduled_time], map: "idx_schedule_blocks_scheduled_time")
-  @@index([tenant_id], map: "idx_schedule_blocks_tenant")
-  @@index([block_type], map: "idx_schedule_blocks_type")
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model schedule_conflicts {
-  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id            String       @db.Uuid
-  competition_id       String       @db.Uuid
-  dancer_id            String       @db.Uuid
-  dancer_name          String       @db.VarChar(255)
-  entry_ids            String[]     @db.Uuid
-  routine_titles       String[]
-  min_spacing_routines Int          @default(6)
-  conflict_type        String       @default("spacing") @db.VarChar(50)
-  severity             String       @default("warning") @db.VarChar(20)
-  notes                String?
-  created_at           DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?    @default(now()) @db.Timestamp(6)
-  users                users        @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_schedule_conflicts_tenant")
-  competitions         competitions @relation(fields: [competition_id], references: [id], onUpdate: NoAction)
-  dancers              dancers      @relation(fields: [dancer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([competition_id], map: "idx_schedule_conflicts_competition")
-  @@index([dancer_id], map: "idx_schedule_conflicts_dancer")
-  @@index([tenant_id], map: "idx_schedule_conflicts_tenant")
-  @@index([conflict_type], map: "idx_schedule_conflicts_type")
   @@schema("public")
 }
 
