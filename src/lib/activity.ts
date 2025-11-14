@@ -46,7 +46,7 @@ export async function logActivity(params: LogActivityParams) {
     }
 
     await prisma.$executeRaw`
-      INSERT INTO public.activity_logs (user_id, tenant_id, studio_id, action, entity_type, entity_id, entity_name, details, ip_address)
+      INSERT INTO public.activity_logs (user_id, tenant_id, studio_id, action, entity_type, entity_id, entity_name, details)
       VALUES (
         ${params.userId}::uuid,
         ${tenantId}::uuid,
@@ -55,8 +55,7 @@ export async function logActivity(params: LogActivityParams) {
         ${params.entityType},
         ${params.entityId || null}::uuid,
         ${params.entityName || null},
-        ${params.details ? JSON.stringify(params.details) : null}::jsonb,
-        ${params.ipAddress || null}
+        ${params.details ? JSON.stringify(params.details) : null}::jsonb
       )
     `;
   } catch (error) {
