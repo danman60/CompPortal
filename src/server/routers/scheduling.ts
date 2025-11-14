@@ -148,10 +148,21 @@ export const schedulingRouter = router({
       searchQuery: z.string().optional(),
     }))
     .query(async ({ input, ctx }) => {
+      console.log('[getRoutines] === START ===');
+      console.log('[getRoutines] Input:', JSON.stringify(input, null, 2));
+      console.log('[getRoutines] Context tenantId:', ctx.tenantId);
+      console.log('[getRoutines] Context userId:', ctx.userId);
+
       // Verify tenant context matches request
       if (ctx.tenantId !== input.tenantId) {
-        throw new Error('Tenant ID mismatch');
+        console.error('[getRoutines] TENANT ID MISMATCH!', {
+          contextTenantId: ctx.tenantId,
+          inputTenantId: input.tenantId,
+        });
+        throw new Error(`Tenant ID mismatch: context=${ctx.tenantId}, input=${input.tenantId}`);
       }
+
+      console.log('[getRoutines] Tenant ID validation passed');
 
       const where: any = {
         competition_id: input.competitionId,
