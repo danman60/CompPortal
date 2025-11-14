@@ -248,6 +248,52 @@ export const schedulingRouter = router({
       }));
     }),
 
+  // Schedule a routine to a specific time block
+  scheduleRoutine: publicProcedure
+    .input(z.object({
+      routineId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      performanceDate: z.string(), // ISO date string (e.g., "2025-11-15")
+      performanceTime: z.string(), // Time block: "morning" or "afternoon"
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify tenant context matches request
+      if (ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      // Convert time block to actual time (simplified for now)
+      const timeMap: Record<string, string> = {
+        'saturday-am': '09:00:00',
+        'saturday-pm': '13:00:00',
+        'sunday-am': '09:00:00',
+        'sunday-pm': '13:00:00',
+      };
+
+      const dateMap: Record<string, string> = {
+        'saturday-am': '2025-11-15', // Example: Next Saturday
+        'saturday-pm': '2025-11-15',
+        'sunday-am': '2025-11-16', // Example: Next Sunday
+        'sunday-pm': '2025-11-16',
+      };
+
+      const performanceTime = timeMap[input.performanceTime] || '09:00:00';
+      const performanceDate = dateMap[input.performanceTime] || '2025-11-15';
+
+      const updated = await prisma.competition_entries.update({
+        where: {
+          id: input.routineId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          performance_date: new Date(performanceDate),
+          performance_time: performanceTime,
+        },
+      });
+
+      return { success: true, routine: updated };
+    }),
+
   // Get conflicts for current schedule
   getConflicts: publicProcedure
     .input(z.object({

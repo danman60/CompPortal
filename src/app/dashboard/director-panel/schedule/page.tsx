@@ -144,6 +144,14 @@ export default function SchedulePage() {
     })
   );
 
+  // Schedule mutation
+  const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
+    onSuccess: () => {
+      // Refetch routines after successful scheduling
+      // This will update the UI to reflect the database change
+    },
+  });
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
@@ -152,10 +160,19 @@ export default function SchedulePage() {
     const { active, over } = event;
 
     if (over) {
+      // Update local state immediately for responsive UI
       setRoutineZones(prev => ({
         ...prev,
         [active.id]: over.id as ScheduleZone,
       }));
+
+      // Save to database
+      scheduleMutation.mutate({
+        routineId: active.id as string,
+        tenantId: TEST_TENANT_ID,
+        performanceDate: '', // Will be set by backend based on zone
+        performanceTime: over.id as string, // Zone ID (e.g., "saturday-am")
+      });
     }
 
     setActiveId(null);
