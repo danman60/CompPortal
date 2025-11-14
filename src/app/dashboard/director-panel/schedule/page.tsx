@@ -73,12 +73,12 @@ function DraggableRoutineCard({ routine, inZone }: { routine: Routine; inZone?: 
       className={`
         border-2 rounded-lg p-4 cursor-grab transition-all
         ${isDragging ? 'opacity-50' : ''}
-        ${inZone ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}
+        ${inZone ? 'border-green-400 bg-green-900/30' : 'border-purple-400/50 bg-purple-900/30 hover:border-purple-400'}
       `}
     >
-      <div className="font-bold text-gray-900 mb-1">{routine.title}</div>
-      <div className="text-sm text-gray-600 space-y-0.5">
-        <div>Studio: <span className="font-medium text-indigo-600">{routine.studioCode}</span></div>
+      <div className="font-bold text-white mb-1">{routine.title}</div>
+      <div className="text-sm text-purple-200 space-y-0.5">
+        <div>Studio: <span className="font-medium text-purple-300">{routine.studioCode}</span></div>
         <div>{routine.classificationName} • {routine.categoryName}</div>
         <div>{routine.ageGroupName} • {routine.entrySizeName}</div>
         <div>Duration: {routine.duration} min</div>
@@ -95,13 +95,13 @@ function DropZone({ id, label, routines }: { id: ScheduleZone; label: string; ro
       ref={setNodeRef}
       className={`
         border-2 rounded-lg p-4 min-h-[200px] transition-colors
-        ${isOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-white'}
+        ${isOver ? 'border-purple-400 bg-purple-700/30' : 'border-purple-500/30 bg-purple-900/20'}
       `}
     >
-      <h3 className="font-bold text-gray-900 mb-3">{label}</h3>
+      <h3 className="font-bold text-white mb-3">{label}</h3>
       <div className="space-y-2">
         {routines.length === 0 && (
-          <p className="text-gray-400 text-sm text-center py-8">
+          <p className="text-purple-300 text-sm text-center py-8">
             Drop routines here
           </p>
         )}
@@ -109,8 +109,8 @@ function DropZone({ id, label, routines }: { id: ScheduleZone; label: string; ro
           <DraggableRoutineCard key={routine.id} routine={routine} inZone />
         ))}
       </div>
-      <div className="mt-3 pt-3 border-t border-gray-200">
-        <p className="text-xs text-gray-500">
+      <div className="mt-3 pt-3 border-t border-purple-500/30">
+        <p className="text-xs text-purple-300">
           {routines.length} routine{routines.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -216,13 +216,13 @@ export default function SchedulePage() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Schedule Builder
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Manual Scheduling System
           </h1>
-          <p className="text-gray-600">
+          <p className="text-purple-200">
             Drag routines from the pool to schedule blocks. Studio codes shown for anonymity.
           </p>
         </div>
@@ -233,12 +233,12 @@ export default function SchedulePage() {
           {/* LEFT PANEL: Unscheduled Routines Pool */}
           <div className="col-span-4 space-y-6">
             {/* Filter Panel */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Filters</h2>
+            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+              <h2 className="text-lg font-bold text-white mb-4">Filters</h2>
 
               {/* Search */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-purple-200 mb-2">
                   Search Routine
                 </label>
                 <input
@@ -246,19 +246,19 @@ export default function SchedulePage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by title..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                 />
               </div>
 
               {/* Classification Filter */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-purple-200 mb-2">
                   Classification
                 </label>
                 <select
                   value={selectedClassification}
                   onChange={(e) => setSelectedClassification(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                 >
                   <option value="">All Classifications</option>
                   {classifications.map(c => (
@@ -269,13 +269,13 @@ export default function SchedulePage() {
 
               {/* Category Filter */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-purple-200 mb-2">
                   Genre
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                 >
                   <option value="">All Genres</option>
                   {categories.map(c => (
@@ -286,12 +286,12 @@ export default function SchedulePage() {
             </div>
 
             {/* Unscheduled Routines List */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900">
+                <h2 className="text-lg font-bold text-white">
                   Unscheduled Routines
                 </h2>
-                <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium text-white bg-purple-600 px-3 py-1 rounded-full">
                   {unscheduledRoutines.length}
                 </span>
               </div>
@@ -299,16 +299,16 @@ export default function SchedulePage() {
               {/* Loading State */}
               {isLoading && (
                 <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-indigo-600"></div>
-                  <p className="mt-3 text-gray-600">Loading routines...</p>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-purple-200"></div>
+                  <p className="mt-3 text-purple-200">Loading routines...</p>
                 </div>
               )}
 
               {/* Error State */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-800 font-medium">Error loading routines</p>
-                  <p className="text-red-600 text-sm mt-1">{error.message}</p>
+                <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
+                  <p className="text-red-200 font-medium">Error loading routines</p>
+                  <p className="text-red-300 text-sm mt-1">{error.message}</p>
                 </div>
               )}
 
@@ -325,7 +325,7 @@ export default function SchedulePage() {
               {routines && unscheduledRoutines.length === 0 && !isLoading && (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">✅</div>
-                  <p className="text-gray-600 font-medium">All routines scheduled!</p>
+                  <p className="text-purple-200 font-medium">All routines scheduled!</p>
                 </div>
               )}
             </div>
@@ -333,13 +333,13 @@ export default function SchedulePage() {
 
           {/* MIDDLE PANEL: Schedule Builder */}
           <div className="col-span-5">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Schedule Timeline</h2>
+            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+              <h2 className="text-lg font-bold text-white mb-4">Schedule Timeline</h2>
 
               <div className="space-y-4">
                 {/* Saturday */}
                 <div>
-                  <h3 className="text-md font-bold text-gray-800 mb-2">Saturday</h3>
+                  <h3 className="text-md font-bold text-white mb-2">Saturday</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <DropZone id="saturday-am" label="Morning" routines={saturdayAM} />
                     <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} />
@@ -348,7 +348,7 @@ export default function SchedulePage() {
 
                 {/* Sunday */}
                 <div>
-                  <h3 className="text-md font-bold text-gray-800 mb-2">Sunday</h3>
+                  <h3 className="text-md font-bold text-white mb-2">Sunday</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <DropZone id="sunday-am" label="Morning" routines={sundayAM} />
                     <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} />
@@ -361,44 +361,44 @@ export default function SchedulePage() {
           {/* RIGHT PANEL: Conflicts & Stats */}
           <div className="col-span-3 space-y-6">
             {/* Conflicts Panel */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Conflicts</h2>
+            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+              <h2 className="text-lg font-bold text-white mb-4">Conflicts</h2>
               <div className="text-center py-8">
                 <div className="text-5xl mb-3">✅</div>
-                <p className="text-gray-600 text-sm">No conflicts detected</p>
+                <p className="text-purple-200 text-sm">No conflicts detected</p>
               </div>
             </div>
 
             {/* Stats Panel */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Statistics</h2>
+            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+              <h2 className="text-lg font-bold text-white mb-4">Statistics</h2>
               <div className="space-y-3">
-                <div className="flex justify-between text-gray-900">
-                  <span className="text-gray-600">Unscheduled:</span>
+                <div className="flex justify-between text-white">
+                  <span className="text-purple-200">Unscheduled:</span>
                   <span className="font-bold">{unscheduledRoutines.length}</span>
                 </div>
-                <div className="flex justify-between text-gray-900">
-                  <span className="text-gray-600">Scheduled:</span>
+                <div className="flex justify-between text-white">
+                  <span className="text-purple-200">Scheduled:</span>
                   <span className="font-bold">{scheduledCount}</span>
                 </div>
-                <div className="flex justify-between text-gray-900">
-                  <span className="text-gray-600">Total:</span>
+                <div className="flex justify-between text-white">
+                  <span className="text-purple-200">Total:</span>
                   <span className="font-bold">{routines?.length || 0}</span>
                 </div>
               </div>
             </div>
 
             {/* Actions Panel */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Actions</h2>
+            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+              <h2 className="text-lg font-bold text-white mb-4">Actions</h2>
               <div className="space-y-3">
                 <button
-                  className="w-full px-4 py-3 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="w-full px-4 py-3 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md"
                 >
                   Save Schedule
                 </button>
                 <button
-                  className="w-full px-4 py-3 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="w-full px-4 py-3 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md"
                 >
                   Export Schedule
                 </button>
@@ -412,10 +412,10 @@ export default function SchedulePage() {
       {/* Drag Overlay */}
       <DragOverlay>
         {activeRoutine && (
-          <div className="border-2 border-indigo-500 rounded-lg p-4 bg-white shadow-lg">
-            <div className="font-bold text-gray-900 mb-1">{activeRoutine.title}</div>
-            <div className="text-sm text-gray-600">
-              <div>Studio: <span className="font-medium text-indigo-600">{activeRoutine.studioCode}</span></div>
+          <div className="border-2 border-purple-400 rounded-lg p-4 bg-purple-800/90 backdrop-blur-sm shadow-xl">
+            <div className="font-bold text-white mb-1">{activeRoutine.title}</div>
+            <div className="text-sm text-purple-200">
+              <div>Studio: <span className="font-medium text-purple-300">{activeRoutine.studioCode}</span></div>
             </div>
           </div>
         )}
