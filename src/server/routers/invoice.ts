@@ -913,6 +913,7 @@ export const invoiceRouter = router({
       try {
         await logActivity({
           userId: ctx.userId,
+          tenantId: ctx.tenantId ?? undefined,
           studioId: invoice.studio_id,
           action: 'invoice.send',
           entityType: 'invoice',
