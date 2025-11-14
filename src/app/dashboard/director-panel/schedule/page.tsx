@@ -128,7 +128,7 @@ export default function SchedulePage() {
   const [routineZones, setRoutineZones] = useState<Record<string, ScheduleZone>>({});
 
   // Fetch routines
-  const { data: routines, isLoading, error } = trpc.scheduling.getRoutines.useQuery({
+  const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
     tenantId: TEST_TENANT_ID,
     classificationId: selectedClassification || undefined,
@@ -147,8 +147,15 @@ export default function SchedulePage() {
   // Schedule mutation
   const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
     onSuccess: () => {
-      // Refetch routines after successful scheduling
-      // This will update the UI to reflect the database change
+      console.log('[Schedule] Mutation SUCCESS - refetching routines');
+      // Refetch routines to get updated state from database
+      refetch();
+    },
+    onError: (error) => {
+      console.error('[Schedule] Mutation FAILED:', error);
+      // Revert the optimistic update by refetching from database
+      refetch();
+      // TODO: Show error toast to user
     },
   });
 
@@ -160,13 +167,16 @@ export default function SchedulePage() {
     const { active, over } = event;
 
     if (over) {
-      // Update local state immediately for responsive UI
+      console.log('[Schedule] Drag ended:', { routineId: active.id, targetZone: over.id });
+
+      // Update local state immediately for responsive UI (optimistic update)
       setRoutineZones(prev => ({
         ...prev,
         [active.id]: over.id as ScheduleZone,
       }));
 
       // Save to database
+      console.log('[Schedule] Calling mutation...');
       scheduleMutation.mutate({
         routineId: active.id as string,
         tenantId: TEST_TENANT_ID,
