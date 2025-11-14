@@ -152,7 +152,7 @@ export default function DigestControlPage() {
                 <option value="">-- Select User --</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.users.email} ({user.tenants?.name || 'Unknown Tenant'})
+                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.users.email}
                   </option>
                 ))}
               </select>
@@ -277,7 +277,7 @@ export default function DigestControlPage() {
                   <p className="text-white font-medium">
                     {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.users.email}
                   </p>
-                  <p className="text-sm text-gray-400">{user.tenants?.name || 'Unknown Tenant'}</p>
+                  <p className="text-sm text-gray-400">{user.users.email}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
