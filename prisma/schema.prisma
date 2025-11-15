@@ -918,9 +918,10 @@ model dancers {
   tenant_id               String               @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   classification_id       String?              @db.Uuid
   classifications         classifications?     @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  studios                 studios              @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tenants                 tenants              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  entry_participants      entry_participants[]
+  studios                        studios                        @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants                        tenants                        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  entry_participants             entry_participants[]
+  schedule_conflict_overrides    schedule_conflict_overrides[]
 
   @@index([date_of_birth], map: "idx_dancers_age")
   @@index([first_name, last_name], map: "idx_dancers_name")
@@ -1537,6 +1538,7 @@ model tenants {
   user_profiles                     user_profiles[]
   user_feedback                     user_feedback[]
   vip_events                        vip_events[]
+  schedule_conflict_overrides       schedule_conflict_overrides[]
 
   @@index([age_division_settings], map: "idx_tenants_age_settings", type: Gin)
   @@index([entry_size_settings], map: "idx_tenants_entry_size_settings", type: Gin)
@@ -1919,5 +1921,25 @@ model age_change_tracking {
   created_at            DateTime? @default(now()) @db.Timestamp(6)
   updated_at            DateTime? @default(now()) @db.Timestamp(6)
 
+  @@schema("public")
+}
+
+model schedule_conflict_overrides {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String    @db.Uuid
+  dancer_id              String    @db.Uuid
+  routine_1_id           String    @db.Uuid
+  routine_2_id           String    @db.Uuid
+  override_reason        String
+  overridden_by_user_id  String    @db.Uuid
+  overridden_at          DateTime  @db.Timestamp(6)
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+  updated_at             DateTime? @default(now()) @db.Timestamp(6)
+
+  // Relations
+  dancers                dancers   @relation(fields: [dancer_id], references: [id])
+  tenants                tenants   @relation(fields: [tenant_id], references: [id])
+
+  @@unique([dancer_id, routine_1_id, routine_2_id, tenant_id])
   @@schema("public")
 }

@@ -369,6 +369,19 @@ export default function SchedulePage() {
     },
   });
 
+  // Conflict override mutation
+  const overrideConflictMutation = trpc.scheduling.overrideConflict.useMutation({
+    onSuccess: () => {
+      alert('✅ Conflict override saved successfully!');
+      setOverrideConflictId(null);
+      setOverrideReason('');
+      refetchConflicts();
+    },
+    onError: (error) => {
+      alert(`Failed to override conflict: ${error.message}`);
+    },
+  });
+
   // Mock competition status (in production, fetch from database)
   const [scheduleStatus, setScheduleStatus] = useState<'draft' | 'finalized' | 'published'>('draft');
 
@@ -1387,14 +1400,21 @@ export default function SchedulePage() {
                     alert('Please provide a reason for the override');
                     return;
                   }
-                  // TODO: Backend mutation needed - create overrideConflict mutation
-                  alert('⚠️ Backend Override Mutation Needed\n\nThis feature requires a backend mutation to save the override to the schedule_conflicts table.\n\nReason: ' + overrideReason);
-                  setOverrideConflictId(null);
-                  setOverrideReason('');
+                  if (overrideReason.length < 10) {
+                    alert('Reason must be at least 10 characters');
+                    return;
+                  }
+                  overrideConflictMutation.mutate({
+                    conflictId: overrideConflictId,
+                    reason: overrideReason,
+                    userId: '00000000-0000-0000-0000-000000000001', // Test user
+                    tenantId: TEST_TENANT_ID,
+                  });
                 }}
-                className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors"
+                disabled={overrideConflictMutation.isPending}
+                className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
               >
-                ⚙️ Confirm Override
+                {overrideConflictMutation.isPending ? 'Saving...' : '⚙️ Confirm Override'}
               </button>
               <button
                 onClick={() => {

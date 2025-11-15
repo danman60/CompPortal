@@ -1735,4 +1735,82 @@ export const schedulingRouter = router({
       };
     }),
 
+  // Override a scheduling conflict with reason
+  overrideConflict: publicProcedure
+    .input(z.object({
+      conflictId: z.string(), // Format: dancerId-routine1Id-routine2Id
+      reason: z.string().min(10, 'Reason must be at least 10 characters'),
+      userId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Parse conflict ID
+      const [dancerId, routine1Id, routine2Id] = input.conflictId.split('-');
+
+      if (!dancerId || !routine1Id || !routine2Id) {
+        throw new Error('Invalid conflict ID format');
+      }
+
+      // Check if conflict override already exists
+      const existing = await prisma.schedule_conflict_overrides.findFirst({
+        where: {
+          dancer_id: dancerId,
+          routine_1_id: routine1Id,
+          routine_2_id: routine2Id,
+          tenant_id: input.tenantId,
+        },
+      });
+
+      if (existing) {
+        // Update existing override
+        return await prisma.schedule_conflict_overrides.update({
+          where: { id: existing.id },
+          data: {
+            override_reason: input.reason,
+            overridden_by_user_id: input.userId,
+            overridden_at: new Date(),
+          },
+        });
+      }
+
+      // Create new override
+      return await prisma.schedule_conflict_overrides.create({
+        data: {
+          dancer_id: dancerId,
+          routine_1_id: routine1Id,
+          routine_2_id: routine2Id,
+          override_reason: input.reason,
+          overridden_by_user_id: input.userId,
+          overridden_at: new Date(),
+          tenant_id: input.tenantId,
+        },
+      });
+    }),
+
+  // Get conflict overrides for a competition
+  getConflictOverrides: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      return await prisma.schedule_conflict_overrides.findMany({
+        where: {
+          tenant_id: input.tenantId,
+        },
+        include: {
+          dancers: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+            },
+          },
+        },
+        orderBy: {
+          overridden_at: 'desc',
+        },
+      });
+    }),
+
 });
