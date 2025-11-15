@@ -539,8 +539,8 @@ export default function SchedulingManager() {
                             {/* Category Name */}
                             <div className="font-semibold text-white text-sm mb-2 flex items-center gap-2">
                               <span>🏆</span>
-                              <span className="truncate" title={category.categoryName}>
-                                {category.categoryName}
+                              <span className="truncate" title={category.categoryDisplay}>
+                                {category.categoryDisplay}
                               </span>
                             </div>
 
@@ -565,16 +565,18 @@ export default function SchedulingManager() {
 
                               <div className="flex justify-between text-gray-300">
                                 <span>Total Routines:</span>
-                                <span className="text-white">{category.totalCount}</span>
+                                <span className="text-white">{category.totalRoutinesInCategory}</span>
                               </div>
 
                               <div className="flex justify-between text-yellow-300 mt-2 pt-2 border-t border-yellow-500/30">
                                 <span className="font-semibold">Suggested Award:</span>
                                 <span className="font-semibold">
-                                  {new Date(category.suggestedAwardTime).toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                  })}
+                                  {category.suggestedAwardTime
+                                    ? new Date(category.suggestedAwardTime).toLocaleTimeString('en-US', {
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                      })
+                                    : 'N/A'}
                                 </span>
                               </div>
                             </div>

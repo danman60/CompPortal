@@ -100,10 +100,37 @@ function DraggableBlock({ block }: { block: ScheduleBlock }) {
   );
 }
 
-function DraggableRoutineCard({ routine, inZone }: { routine: Routine; inZone?: boolean }) {
+function DraggableRoutineCard({ routine, inZone, viewMode }: { routine: Routine; inZone?: boolean; viewMode: 'cd' | 'studio' | 'judge' | 'public' }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: routine.id,
   });
+
+  // Determine studio display based on view mode
+  const getStudioDisplay = () => {
+    switch (viewMode) {
+      case 'cd':
+        return `${routine.studioCode} (${routine.studioName})`;
+      case 'studio':
+        return routine.studioName; // Full name only
+      case 'judge':
+        return routine.studioCode; // Code only, no prefix
+      case 'public':
+        return routine.studioName; // Full names revealed
+      default:
+        return routine.studioCode;
+    }
+  };
+
+  // Classification color mapping
+  const getClassificationColor = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('emerald')) return 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300';
+    if (lower.includes('sapphire')) return 'bg-blue-500/20 border-blue-500/40 text-blue-300';
+    if (lower.includes('crystal')) return 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300';
+    if (lower.includes('titanium')) return 'bg-slate-400/20 border-slate-400/40 text-slate-300';
+    if (lower.includes('production')) return 'bg-purple-500/20 border-purple-500/40 text-purple-300';
+    return 'bg-gray-500/20 border-gray-500/40 text-gray-300';
+  };
 
   return (
     <div
@@ -111,39 +138,70 @@ function DraggableRoutineCard({ routine, inZone }: { routine: Routine; inZone?: 
       {...listeners}
       {...attributes}
       className={`
-        border-2 rounded-lg p-4 cursor-grab transition-all
-        ${isDragging ? 'opacity-50' : ''}
-        ${inZone ? 'border-green-400 bg-green-900/30' : 'border-purple-400/50 bg-purple-900/30 hover:border-purple-400'}
+        relative rounded-xl p-4 cursor-grab transition-all
+        ${isDragging ? 'opacity-50 rotate-3 scale-105' : 'hover:translate-y-[-4px]'}
+        ${inZone
+          ? 'bg-white/15 border-2 border-green-400/50 shadow-[0_4px_16px_rgba(0,0,0,0.1)]'
+          : 'bg-white/15 border border-white/25 shadow-[0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.15)] hover:border-white/40'}
       `}
     >
-      <div className="font-bold text-white mb-1">{routine.title}</div>
-      <div className="text-sm text-purple-200 space-y-0.5">
-        <div>Studio: <span className="font-medium text-purple-300">{routine.studioCode}</span></div>
-        <div>{routine.classificationName} • {routine.categoryName}</div>
-        <div>{routine.ageGroupName} • {routine.entrySizeName}</div>
-        <div>Duration: {routine.duration} min</div>
+      {/* Title + Studio Badge Row */}
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="text-lg font-semibold text-white leading-tight flex-1 pr-2">
+          🎭 {routine.title}
+        </h3>
+        <span className="flex-shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm px-3 py-1 rounded-lg shadow-md">
+          {getStudioDisplay().split(' ')[0]}
+        </span>
+      </div>
+
+      {/* Duration Tag (top right corner) */}
+      <div className="absolute top-2 right-2 bg-black/30 px-2 py-1 rounded-md text-xs text-white/90">
+        ⏱️ {routine.duration} min
+      </div>
+
+      {/* Classification Badge */}
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium mb-2 ${getClassificationColor(routine.classificationName)}`}>
+        🔷 {routine.classificationName} • {routine.categoryName}
+      </div>
+
+      {/* Age Group + Size */}
+      <div className="flex gap-2 text-sm text-white/80">
+        <span>👥 {routine.ageGroupName}</span>
+        <span>•</span>
+        <span>{routine.entrySizeName}</span>
       </div>
     </div>
   );
 }
 
-function DropZone({ id, label, routines, blocks }: { id: ScheduleZone; label: string; routines: Routine[]; blocks: ScheduleBlock[] }) {
+function DropZone({ id, label, routines, blocks, viewMode }: { id: ScheduleZone; label: string; routines: Routine[]; blocks: ScheduleBlock[]; viewMode: 'cd' | 'studio' | 'judge' | 'public' }) {
   const { setNodeRef, isOver } = useDroppable({ id });
+  const isEmpty = routines.length === 0 && blocks.length === 0;
 
   return (
     <div
       ref={setNodeRef}
       className={`
-        border-2 rounded-lg p-4 min-h-[200px] transition-colors
-        ${isOver ? 'border-purple-400 bg-purple-700/30' : 'border-purple-500/30 bg-purple-900/20'}
+        rounded-xl p-4 min-h-[200px] transition-all duration-300
+        ${isEmpty
+          ? `border-2 border-dashed ${isOver ? 'border-amber-400 bg-amber-500/15 shadow-[0_0_24px_rgba(251,191,36,0.3)]' : 'border-white/30 bg-gradient-to-br from-white/5 to-white/2 hover:border-white/50 hover:bg-white/8'}`
+          : `border border-white/15 bg-white/5 ${isOver ? 'border-amber-400/50 bg-amber-500/10' : ''}`
+        }
       `}
     >
       <h3 className="font-bold text-white mb-3">{label}</h3>
       <div className="space-y-2">
-        {routines.length === 0 && blocks.length === 0 && (
-          <p className="text-purple-300 text-sm text-center py-8">
-            Drop routines or blocks here
-          </p>
+        {isEmpty && (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="text-4xl mb-2 opacity-60">📥</div>
+            <p className="text-white/70 text-sm font-medium">
+              Drop routines here
+            </p>
+            <p className="text-white/50 text-xs mt-1">
+              {isOver ? 'Release to schedule' : '0 routines'}
+            </p>
+          </div>
         )}
 
         {/* Schedule Blocks in Zone */}
@@ -169,7 +227,7 @@ function DropZone({ id, label, routines, blocks }: { id: ScheduleZone; label: st
 
         {/* Routines in Zone */}
         {routines.map((routine) => (
-          <DraggableRoutineCard key={routine.id} routine={routine} inZone />
+          <DraggableRoutineCard key={routine.id} routine={routine} inZone viewMode={viewMode} />
         ))}
       </div>
       <div className="mt-3 pt-3 border-t border-purple-500/30">
@@ -260,6 +318,9 @@ export default function SchedulePage() {
 
   // Mock competition status (in production, fetch from database)
   const [scheduleStatus, setScheduleStatus] = useState<'draft' | 'finalized' | 'published'>('draft');
+
+  // View mode switching
+  const [viewMode, setViewMode] = useState<'cd' | 'studio' | 'judge' | 'public'>('cd');
 
   const handleFinalize = () => {
     if (confirm('Lock entry numbers? This will prevent automatic renumbering.')) {
@@ -438,7 +499,7 @@ export default function SchedulePage() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">
@@ -447,6 +508,66 @@ export default function SchedulePage() {
           <p className="text-purple-200">
             Drag routines from the pool to schedule blocks. Studio codes shown for anonymity.
           </p>
+        </div>
+
+        {/* View Mode Selector */}
+        <div className="mb-4 bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-4 shadow-lg">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-purple-200">View Mode:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('cd')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  viewMode === 'cd'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
+                }`}
+              >
+                👨‍💼 CD View
+              </button>
+              <button
+                onClick={() => setViewMode('studio')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  viewMode === 'studio'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
+                }`}
+              >
+                🎭 Studio Director View
+              </button>
+              <button
+                onClick={() => setViewMode('judge')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  viewMode === 'judge'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
+                }`}
+              >
+                👔 Judge View
+              </button>
+              <button
+                onClick={() => setViewMode('public')}
+                disabled={scheduleStatus !== 'published'}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  viewMode === 'public'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
+                } disabled:opacity-30 disabled:cursor-not-allowed`}
+              >
+                🌍 Public View {scheduleStatus !== 'published' && '(After Publish)'}
+              </button>
+            </div>
+          </div>
+
+          {/* View Mode Info */}
+          <div className="mt-3 pt-3 border-t border-purple-600/30">
+            <p className="text-xs text-purple-300">
+              {viewMode === 'cd' && '👨‍💼 Full schedule • Studio codes + names • All notes visible'}
+              {viewMode === 'studio' && '🎭 Only your routines • Full studio name • Your requests only'}
+              {viewMode === 'judge' && '👔 Full schedule • Studio codes ONLY (anonymous) • No notes'}
+              {viewMode === 'public' && '🌍 Full schedule • Full studio names revealed • Read-only'}
+            </p>
+          </div>
         </div>
 
         {/* State Machine Toolbar */}
@@ -542,7 +663,7 @@ export default function SchedulePage() {
           {/* LEFT PANEL: Unscheduled Routines Pool */}
           <div className="col-span-4 space-y-6">
             {/* Filter Panel */}
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <h2 className="text-lg font-bold text-white mb-4">Filters</h2>
 
               {/* Search */}
@@ -595,7 +716,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Unscheduled Routines List */}
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-white">
                   Unscheduled Routines
@@ -625,7 +746,7 @@ export default function SchedulePage() {
               {unscheduledRoutines.length > 0 && (
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {unscheduledRoutines.map((routine) => (
-                    <DraggableRoutineCard key={routine.id} routine={routine} />
+                    <DraggableRoutineCard key={routine.id} routine={routine} viewMode={viewMode} />
                   ))}
                 </div>
               )}
@@ -640,7 +761,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Schedule Blocks */}
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg mt-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)] mt-6">
               <h2 className="text-lg font-bold text-white mb-4">Schedule Blocks</h2>
               <p className="text-xs text-purple-300 mb-4">Drag these blocks into the schedule</p>
 
@@ -652,7 +773,7 @@ export default function SchedulePage() {
 
           {/* MIDDLE PANEL: Schedule Builder */}
           <div className="col-span-5">
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <h2 className="text-lg font-bold text-white mb-4">Schedule Timeline</h2>
 
               <div className="space-y-4">
@@ -660,8 +781,8 @@ export default function SchedulePage() {
                 <div>
                   <h3 className="text-md font-bold text-white mb-2">Saturday</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} />
-                    <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} />
+                    <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} viewMode={viewMode} />
+                    <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} viewMode={viewMode} />
                   </div>
                 </div>
 
@@ -669,8 +790,8 @@ export default function SchedulePage() {
                 <div>
                   <h3 className="text-md font-bold text-white mb-2">Sunday</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} />
-                    <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} />
+                    <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} viewMode={viewMode} />
+                    <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} viewMode={viewMode} />
                   </div>
                 </div>
               </div>
@@ -680,7 +801,7 @@ export default function SchedulePage() {
           {/* RIGHT PANEL: Trophy Helper */}
           <div className="col-span-3 space-y-6">
             {/* Trophy Helper Panel */}
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">🏆</span>
                 <h2 className="text-lg font-bold text-white">Trophy Helper</h2>
@@ -731,7 +852,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Conflicts Panel */}
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <h2 className="text-lg font-bold text-white mb-4">
                 Conflicts
                 {conflictsData && conflictsData.summary.total > 0 && (
@@ -781,37 +902,75 @@ export default function SchedulePage() {
             </div>
 
             {/* Stats Panel */}
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <h2 className="text-lg font-bold text-white mb-4">Statistics</h2>
               <div className="space-y-3">
-                <div className="flex justify-between text-white">
-                  <span className="text-purple-200">Unscheduled:</span>
-                  <span className="font-bold">{unscheduledRoutines.length}</span>
+                {/* Unscheduled - Warning State */}
+                <div className="bg-amber-500/15 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
+                  <div className="text-3xl flex-shrink-0">⚠️</div>
+                  <div className="flex-1">
+                    <div className="text-xs text-amber-200/70 uppercase tracking-wide mb-1">Unscheduled</div>
+                    <div className="text-3xl font-bold text-amber-300">{unscheduledRoutines.length}</div>
+                    <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                      <div className="h-full bg-amber-400 rounded-full" style={{ width: `${routines?.length ? (unscheduledRoutines.length / routines.length) * 100 : 0}%` }}></div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between text-white">
-                  <span className="text-purple-200">Scheduled:</span>
-                  <span className="font-bold">{scheduledCount}</span>
+
+                {/* Scheduled - Success State */}
+                <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
+                  <div className="text-3xl flex-shrink-0">✅</div>
+                  <div className="flex-1">
+                    <div className="text-xs text-emerald-200/70 uppercase tracking-wide mb-1">Scheduled</div>
+                    <div className="text-3xl font-bold text-emerald-300">{scheduledCount}</div>
+                    <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                      <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${routines?.length ? (scheduledCount / routines.length) * 100 : 0}%` }}></div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between text-white">
-                  <span className="text-purple-200">Total:</span>
-                  <span className="font-bold">{routines?.length || 0}</span>
+
+                {/* Total - Info State */}
+                <div className="bg-blue-500/15 border border-blue-500/30 rounded-xl p-4 flex items-center gap-3">
+                  <div className="text-3xl flex-shrink-0">📊</div>
+                  <div className="flex-1">
+                    <div className="text-xs text-blue-200/70 uppercase tracking-wide mb-1">Total</div>
+                    <div className="text-3xl font-bold text-blue-300">{routines?.length || 0}</div>
+                  </div>
+                </div>
+
+                {/* Overall Progress */}
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-white/80">Overall Progress</span>
+                    <span className="font-semibold text-amber-300">
+                      {routines?.length ? Math.round((scheduledCount / routines.length) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all duration-500"
+                      style={{ width: `${routines?.length ? (scheduledCount / routines.length) * 100 : 0}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Actions Panel */}
-            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <h2 className="text-lg font-bold text-white mb-4">Actions</h2>
               <div className="space-y-3">
                 <button
-                  className="w-full px-4 py-3 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md"
+                  className="w-full px-4 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:translate-y-[-2px] flex items-center justify-center gap-2"
                 >
-                  Save Schedule
+                  <span>💾</span>
+                  <span>Save Schedule</span>
                 </button>
                 <button
-                  className="w-full px-4 py-3 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md"
+                  className="w-full px-4 py-3 rounded-lg font-semibold text-white border-2 border-white/30 hover:border-white/50 hover:bg-white/10 transition-all duration-300 hover:translate-y-[-2px] flex items-center justify-center gap-2"
                 >
-                  Export Schedule
+                  <span>📥</span>
+                  <span>Export Schedule</span>
                 </button>
               </div>
             </div>
