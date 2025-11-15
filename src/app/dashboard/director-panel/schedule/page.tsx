@@ -100,7 +100,7 @@ function DraggableBlock({ block }: { block: ScheduleBlock }) {
   );
 }
 
-function DraggableRoutineCard({ routine, inZone, viewMode, onRequestClick }: { routine: Routine; inZone?: boolean; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void }) {
+function DraggableRoutineCard({ routine, inZone, viewMode, onRequestClick, isAnyDragging }: { routine: Routine; inZone?: boolean; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void; isAnyDragging?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: routine.id,
   });
@@ -146,7 +146,7 @@ function DraggableRoutineCard({ routine, inZone, viewMode, onRequestClick }: { r
       `}
     >
       {/* Title + Studio Badge Row */}
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-2" style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
         <h3 className="text-lg font-semibold text-white leading-tight flex-1 pr-2">
           🎭 {routine.title}
         </h3>
@@ -156,17 +156,17 @@ function DraggableRoutineCard({ routine, inZone, viewMode, onRequestClick }: { r
       </div>
 
       {/* Duration Tag (top right corner) */}
-      <div className="absolute top-2 right-2 bg-black/30 px-2 py-1 rounded-md text-xs text-white/90">
+      <div className="absolute top-2 right-2 bg-black/30 px-2 py-1 rounded-md text-xs text-white/90" style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
         ⏱️ {routine.duration} min
       </div>
 
       {/* Classification Badge */}
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium mb-2 ${getClassificationColor(routine.classificationName)}`}>
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium mb-2 ${getClassificationColor(routine.classificationName)}`} style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
         🔷 {routine.classificationName} • {routine.categoryName}
       </div>
 
       {/* Age Group + Size */}
-      <div className="flex gap-2 text-sm text-white/80">
+      <div className="flex gap-2 text-sm text-white/80" style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
         <span>👥 {routine.ageGroupName}</span>
         <span>•</span>
         <span>{routine.entrySizeName}</span>
@@ -188,7 +188,7 @@ function DraggableRoutineCard({ routine, inZone, viewMode, onRequestClick }: { r
   );
 }
 
-function DropZone({ id, label, routines, blocks, viewMode, onRequestClick }: { id: ScheduleZone; label: string; routines: Routine[]; blocks: ScheduleBlock[]; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void }) {
+function DropZone({ id, label, routines, blocks, viewMode, onRequestClick, isAnyDragging }: { id: ScheduleZone; label: string; routines: Routine[]; blocks: ScheduleBlock[]; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void; isAnyDragging?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const isEmpty = routines.length === 0 && blocks.length === 0;
 
@@ -240,7 +240,7 @@ function DropZone({ id, label, routines, blocks, viewMode, onRequestClick }: { i
 
         {/* Routines in Zone */}
         {routines.map((routine) => (
-          <DraggableRoutineCard key={routine.id} routine={routine} inZone viewMode={viewMode} onRequestClick={onRequestClick} />
+          <DraggableRoutineCard key={routine.id} routine={routine} inZone viewMode={viewMode} onRequestClick={onRequestClick} isAnyDragging={isAnyDragging} />
         ))}
       </div>
       <div className="mt-3 pt-3 border-t border-purple-500/30">
@@ -996,7 +996,7 @@ export default function SchedulePage() {
               {unscheduledRoutines.length > 0 && (
                 <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                   {unscheduledRoutines.map((routine) => (
-                    <DraggableRoutineCard key={routine.id} routine={routine} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
+                    <DraggableRoutineCard key={routine.id} routine={routine} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
                   ))}
                 </div>
               )}
@@ -1035,8 +1035,8 @@ export default function SchedulePage() {
                     <span className="text-sm text-white/70 ml-auto">April 10, 2025</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
-                    <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
+                    <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
+                    <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
                   </div>
                 </div>
 
@@ -1048,8 +1048,8 @@ export default function SchedulePage() {
                     <span className="text-sm text-white/70 ml-auto">April 11, 2025</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
-                    <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
+                    <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
+                    <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
                   </div>
                 </div>
               </div>
