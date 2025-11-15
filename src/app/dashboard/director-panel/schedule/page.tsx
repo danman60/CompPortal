@@ -100,7 +100,7 @@ function DraggableBlock({ block }: { block: ScheduleBlock }) {
   );
 }
 
-function DraggableRoutineCard({ routine, inZone, viewMode }: { routine: Routine; inZone?: boolean; viewMode: 'cd' | 'studio' | 'judge' | 'public' }) {
+function DraggableRoutineCard({ routine, inZone, viewMode, onRequestClick }: { routine: Routine; inZone?: boolean; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: routine.id,
   });
@@ -171,11 +171,24 @@ function DraggableRoutineCard({ routine, inZone, viewMode }: { routine: Routine;
         <span>•</span>
         <span>{routine.entrySizeName}</span>
       </div>
+
+      {/* Studio Request Button (for Studio Directors) */}
+      {viewMode === 'studio' && onRequestClick && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent drag from triggering
+            onRequestClick(routine.id);
+          }}
+          className="mt-3 w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+        >
+          📝 Add Request
+        </button>
+      )}
     </div>
   );
 }
 
-function DropZone({ id, label, routines, blocks, viewMode }: { id: ScheduleZone; label: string; routines: Routine[]; blocks: ScheduleBlock[]; viewMode: 'cd' | 'studio' | 'judge' | 'public' }) {
+function DropZone({ id, label, routines, blocks, viewMode, onRequestClick }: { id: ScheduleZone; label: string; routines: Routine[]; blocks: ScheduleBlock[]; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const isEmpty = routines.length === 0 && blocks.length === 0;
 
@@ -227,7 +240,7 @@ function DropZone({ id, label, routines, blocks, viewMode }: { id: ScheduleZone;
 
         {/* Routines in Zone */}
         {routines.map((routine) => (
-          <DraggableRoutineCard key={routine.id} routine={routine} inZone viewMode={viewMode} />
+          <DraggableRoutineCard key={routine.id} routine={routine} inZone viewMode={viewMode} onRequestClick={onRequestClick} />
         ))}
       </div>
       <div className="mt-3 pt-3 border-t border-purple-500/30">
@@ -247,6 +260,17 @@ export default function SchedulePage() {
 
   // Track which zone each routine is in
   const [routineZones, setRoutineZones] = useState<Record<string, ScheduleZone>>({});
+
+  // Conflict override state
+  const [overrideConflictId, setOverrideConflictId] = useState<string | null>(null);
+  const [overrideReason, setOverrideReason] = useState('');
+
+  // Studio request state
+  const [showRequestForm, setShowRequestForm] = useState<string | null>(null); // routine ID
+  const [requestContent, setRequestContent] = useState('');
+
+  // CD Request Management
+  const [showRequestsPanel, setShowRequestsPanel] = useState(false);
 
   // Track schedule blocks
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([
@@ -281,8 +305,14 @@ export default function SchedulePage() {
   });
 
   // Fetch Conflicts
-  const { data: conflictsData } = trpc.scheduling.detectConflicts.useQuery({
+  const { data: conflictsData, refetch: refetchConflicts } = trpc.scheduling.detectConflicts.useQuery({
     competitionId: TEST_COMPETITION_ID,
+  });
+
+  // Fetch Studio Requests (for CD)
+  const { data: studioRequests, refetch: refetchRequests } = trpc.scheduling.getStudioRequests.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
   });
 
   // State Machine mutations
@@ -313,6 +343,29 @@ export default function SchedulePage() {
     },
     onError: (error) => {
       alert(`Cannot unlock: ${error.message}`);
+    },
+  });
+
+  // Studio Request mutations
+  const addRequestMutation = trpc.scheduling.addStudioRequest.useMutation({
+    onSuccess: () => {
+      alert('Request submitted successfully!');
+      setShowRequestForm(null);
+      setRequestContent('');
+      refetchRequests();
+    },
+    onError: (error) => {
+      alert(`Failed to submit request: ${error.message}`);
+    },
+  });
+
+  const updateRequestMutation = trpc.scheduling.updateRequestStatus.useMutation({
+    onSuccess: () => {
+      alert('Request status updated!');
+      refetchRequests();
+    },
+    onError: (error) => {
+      alert(`Failed to update request: ${error.message}`);
     },
   });
 
@@ -351,6 +404,26 @@ export default function SchedulePage() {
         tenantId: TEST_TENANT_ID,
       });
       setScheduleStatus('draft');
+    }
+  };
+
+  const handleSubmitRequest = (routineId: string) => {
+    if (!requestContent.trim()) {
+      alert('Please enter a request message');
+      return;
+    }
+
+    addRequestMutation.mutate({
+      routineId,
+      tenantId: TEST_TENANT_ID,
+      content: requestContent,
+      authorId: '00000000-0000-0000-0000-000000000001', // Test user
+    });
+  };
+
+  const handleUpdateRequestStatus = (noteId: string, status: 'completed' | 'ignored') => {
+    if (confirm(`Mark this request as ${status}?`)) {
+      updateRequestMutation.mutate({ noteId, status });
     }
   };
 
@@ -622,6 +695,18 @@ export default function SchedulePage() {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
+              {/* CD Requests Panel Button */}
+              <button
+                onClick={() => setShowRequestsPanel(!showRequestsPanel)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  showRequestsPanel
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-indigo-900/50 text-indigo-200 hover:bg-indigo-700'
+                }`}
+              >
+                📋 Studio Requests {studioRequests && studioRequests.length > 0 && `(${studioRequests.length})`}
+              </button>
+
               {scheduleStatus === 'draft' && (
                 <button
                   onClick={handleFinalize}
@@ -676,6 +761,120 @@ export default function SchedulePage() {
             </div>
           )}
         </div>
+
+        {/* CD Requests Management Panel (Collapsible) */}
+        {showRequestsPanel && (
+          <div className="mb-6 bg-indigo-900/30 backdrop-blur-sm rounded-xl border border-indigo-500/30 p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">Studio Scheduling Requests</h2>
+              <button
+                onClick={() => setShowRequestsPanel(false)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {studioRequests && studioRequests.length > 0 ? (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {studioRequests.map((request: any) => (
+                  <div
+                    key={request.id}
+                    className={`border-2 rounded-lg p-4 ${
+                      request.status === 'pending'
+                        ? 'border-indigo-500/50 bg-indigo-900/30'
+                        : request.status === 'completed'
+                        ? 'border-green-500/50 bg-green-900/30'
+                        : 'border-gray-500/50 bg-gray-900/30'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="font-bold text-white text-sm mb-1">
+                          {request.routine?.title || 'Routine'}
+                        </div>
+                        <div className="text-xs text-gray-300">
+                          Studio: {request.routine?.studioName || 'Unknown'}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          request.status === 'pending'
+                            ? 'bg-yellow-500 text-black'
+                            : request.status === 'completed'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-500 text-white'
+                        }`}
+                      >
+                        {request.status}
+                      </span>
+                    </div>
+                    <div className="text-sm text-white/90 mb-3">{request.content}</div>
+                    {request.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleUpdateRequestStatus(request.id, 'completed')}
+                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                        >
+                          ✓ Mark Complete
+                        </button>
+                        <button
+                          onClick={() => handleUpdateRequestStatus(request.id, 'ignored')}
+                          className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                        >
+                          ✕ Ignore
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-5xl mb-3">📋</div>
+                <p className="text-indigo-200 text-sm">No studio requests yet</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Hotel Attrition Warning */}
+        {(() => {
+          // Check if all Emerald routines are on one day
+          const emeraldRoutines = (routines || []).filter(r =>
+            r.classificationName.toLowerCase().includes('emerald')
+          );
+          const emeraldSaturday = emeraldRoutines.filter(r =>
+            routineZones[r.id]?.startsWith('saturday')
+          );
+          const emeraldSunday = emeraldRoutines.filter(r =>
+            routineZones[r.id]?.startsWith('sunday')
+          );
+
+          const showWarning = emeraldRoutines.length > 0 && (
+            emeraldSaturday.length === emeraldRoutines.length ||
+            emeraldSunday.length === emeraldRoutines.length
+          );
+
+          if (!showWarning) return null;
+
+          const day = emeraldSaturday.length === emeraldRoutines.length ? 'Saturday' : 'Sunday';
+
+          return (
+            <div className="mb-6 bg-red-900/30 backdrop-blur-sm rounded-xl border border-red-500/50 p-4 shadow-lg">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl flex-shrink-0">🚨</span>
+                <div>
+                  <h3 className="font-bold text-red-300 text-lg mb-1">Hotel Attrition Warning</h3>
+                  <p className="text-red-200 text-sm">
+                    All {emeraldRoutines.length} Emerald routines are scheduled on {day} only.
+                    This may cause hotel attrition issues. Consider spreading routines across both days.
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Main 3-Panel Layout */}
         <div className="grid grid-cols-12 gap-6">
@@ -797,7 +996,7 @@ export default function SchedulePage() {
               {unscheduledRoutines.length > 0 && (
                 <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                   {unscheduledRoutines.map((routine) => (
-                    <DraggableRoutineCard key={routine.id} routine={routine} viewMode={viewMode} />
+                    <DraggableRoutineCard key={routine.id} routine={routine} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
                   ))}
                 </div>
               )}
@@ -836,8 +1035,8 @@ export default function SchedulePage() {
                     <span className="text-sm text-white/70 ml-auto">April 10, 2025</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} viewMode={viewMode} />
-                    <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} viewMode={viewMode} />
+                    <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
+                    <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
                   </div>
                 </div>
 
@@ -849,8 +1048,8 @@ export default function SchedulePage() {
                     <span className="text-sm text-white/70 ml-auto">April 11, 2025</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} viewMode={viewMode} />
-                    <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} viewMode={viewMode} />
+                    <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
+                    <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} />
                   </div>
                 </div>
               </div>
@@ -1037,6 +1236,42 @@ export default function SchedulePage() {
 
         </div>
       </div>
+
+      {/* Studio Request Form Modal */}
+      {showRequestForm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl border border-purple-500/50 p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Submit Scheduling Request</h3>
+            <p className="text-purple-200 text-sm mb-4">
+              Add a note or request for the Competition Director regarding this routine's scheduling.
+            </p>
+            <textarea
+              value={requestContent}
+              onChange={(e) => setRequestContent(e.target.value)}
+              placeholder="Enter your request or note..."
+              className="w-full px-4 py-3 bg-purple-950/50 border border-purple-500/50 rounded-lg text-white placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none h-32"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => handleSubmitRequest(showRequestForm)}
+                disabled={addRequestMutation.isPending}
+                className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {addRequestMutation.isPending ? 'Submitting...' : '📝 Submit Request'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowRequestForm(null);
+                  setRequestContent('');
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Drag Overlay */}
       <DragOverlay>
