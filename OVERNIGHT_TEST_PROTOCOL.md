@@ -7,6 +7,26 @@
 
 ---
 
+## 🔒 CRITICAL SAFETY RULES (NON-NEGOTIABLE)
+
+**⚠️ PRODUCTION DATA PROTECTION:**
+
+1. ✅ **ONLY work on `tester` branch** - NEVER touch `main`
+2. ✅ **ONLY test on tester.compsync.net** - NEVER access production subdomains
+3. ❌ **NEVER navigate to empwr.compsync.net** (production EMPWR data)
+4. ❌ **NEVER navigate to glow.compsync.net** (production Glow data)
+5. ✅ **ALL code changes ONLY committed to `tester` branch**
+6. ✅ **ALL deployments ONLY to tester environment**
+
+**Production tenants are OFF LIMITS:**
+- EMPWR Dance Experience (empwr.compsync.net) - REAL CLIENT DATA
+- Glow Dance Competition (glow.compsync.net) - REAL CLIENT DATA
+
+**Testing tenant (SAFE):**
+- Test Competition (tester.compsync.net) - TEST DATA ONLY
+
+---
+
 ## Protocol Overview
 
 **Objective:** Achieve 100% spec compliance for scheduling suite through automated test-fix-deploy-verify cycles.
