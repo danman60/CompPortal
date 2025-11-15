@@ -194,7 +194,12 @@ export function DancerSelectionSection({
                   <div className="text-white font-medium">{fullName}</div>
                   <div className="flex items-center gap-2 text-sm">
                     {age !== null && (
-                      <span className="text-gray-400">{age} years old</span>
+                      <span
+                        className="text-gray-400 cursor-help"
+                        title={`Age as of Dec 31, ${eventStartDate?.getUTCFullYear() || 'registration year'}`}
+                      >
+                        {age} years old
+                      </span>
                     )}
                     {age !== null && dancer.classifications && (
                       <span className="text-gray-500">•</span>

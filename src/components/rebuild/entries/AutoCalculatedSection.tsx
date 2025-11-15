@@ -204,7 +204,12 @@ export function AutoCalculatedSection({
             <div className="text-sm text-blue-300">
               {calculatedAge !== null ? (
                 <>
-                  <span className="font-semibold">Calculated: {calculatedAge}</span>
+                  <span
+                    className="font-semibold cursor-help"
+                    title="Age calculated as of Dec 31 of registration year"
+                  >
+                    Calculated: {calculatedAge}
+                  </span>
                   <span className="text-blue-400 ml-2">
                     (can select {calculatedAge} or {calculatedAge + 1})
                   </span>
