@@ -2,8 +2,8 @@
 
 **Project:** CompPortal - Phase 2 Scheduling System
 **Environment:** tester.compsync.net
-**Last Updated:** November 15, 2025
-**Current Session:** Session 1 (Initial Status)
+**Last Updated:** November 15, 2025 (Session 1 Complete)
+**Current Session:** Session 2 (Ready to start)
 
 ---
 
@@ -11,10 +11,11 @@
 
 **Total Test Suite:** 25 tests (across 4 phases)
 **Completed:** 8 tests (~32%)
+**Failed:** 1 test (P0-006 - BLOCKER)
 **In Progress:** 0 tests
-**Not Started:** 17 tests (~68%)
+**Not Started:** 16 tests (~64%)
 
-**Estimated Remaining Time:** ~4-5 hours
+**Estimated Remaining Time:** ~4 hours
 
 ---
 
@@ -47,9 +48,9 @@
 
 ---
 
-### Phase 2: P0 Critical Features (6 tests) - 🟢 MOSTLY COMPLETE
+### Phase 2: P0 Critical Features (6 tests) - 🔴 CRITICAL FAILURE
 
-**Overall Status:** 5/6 COMPLETE (83%)
+**Overall Status:** 5/6 TESTED (83%) - P0-006 FAILS (blocker created)
 
 | Test | Description | Status | Evidence | Notes |
 |------|-------------|--------|----------|-------|
@@ -57,8 +58,8 @@
 | P0-002 | Manual Drag-Drop | ✅ PASS | schedule-comprehensive-test-5-scheduled-20251115.png | Nov 15 session |
 | P0-003 | Conflict Detection | ⚠️ PARTIAL | - | No conflicts triggered in test |
 | P0-004 | Studio Code Masking | ✅ PASS | e2e-suite-01-initial-state-60-routines.png | Codes visible (A, B, C, D, E) |
-| P0-005 | State Machine (Draft/Finalized/Published) | ❌ NOT STARTED | - | **CRITICAL - NOT TESTED** |
-| P0-006 | Schedule Blocks (Award & Break) | ❌ NOT STARTED | - | **CRITICAL - NOT TESTED** |
+| P0-005 | State Machine (Draft/Finalized/Published) | ⚠️ PASS (BUGS) | p0-005-01-draft-state.png, p0-005-02-finalized-state.png, p0-005-03-published-state-SUCCESS.png | **BLOCKER CREATED:** Database errors shown but transitions work. See BLOCKER_SCHEDULING_STATE_MACHINE_20251115.md |
+| P0-006 | Schedule Blocks (Award & Break) | ❌ FAIL | p0-006-FAIL-award-block-drag-timeout.png, p0-006-schedule-blocks-section.png | **P0 BLOCKER:** Drag-drop timeout - pointer events intercepted. See BLOCKER_SCHEDULING_P0-006_BLOCKS_20251115.md |
 
 **Recommendation:** **Complete P0-005 and P0-006** (state machine and blocks are launch-critical)
 
