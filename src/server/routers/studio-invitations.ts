@@ -604,9 +604,11 @@ ${studio.internal_notes}
 </html>
           `;
 
+          const emailSubject = `Claim Your ${studio.tenants.name} Account - ${studio.name}`;
+
           await sendEmail({
             to: studio.email,
-            subject: `Claim Your ${studio.tenants.name} Account - ${studio.name}`,
+            subject: emailSubject,
             html: emailHtml,
           });
 
@@ -616,6 +618,20 @@ ${studio.internal_notes}
             data: { invited_at: new Date() },
           });
 
+          // Log email send to database
+          await prisma.email_logs.create({
+            data: {
+              template_type: 'studio_invitation',
+              recipient_email: studio.email,
+              subject: emailSubject,
+              studio_id: studio.id,
+              competition_id: null,
+              success: true,
+              tenant_id: ctx.tenantId!,
+              sent_at: new Date(),
+            },
+          });
+
           results.sent.push(studio.name);
           logger.info('Studio invitation sent', {
             studioId: studio.id,
@@ -623,10 +639,33 @@ ${studio.internal_notes}
             email: studio.email,
           });
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
           results.failed.push({
             studio: studio.name,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: errorMessage,
           });
+
+          // Log failed email to database
+          try {
+            await prisma.email_logs.create({
+              data: {
+                template_type: 'studio_invitation',
+                recipient_email: studio.email || 'unknown',
+                subject: `Claim Your ${studio.tenants.name} Account - ${studio.name}`,
+                studio_id: studio.id,
+                competition_id: null,
+                success: false,
+                error_message: errorMessage,
+                tenant_id: ctx.tenantId!,
+                sent_at: new Date(),
+              },
+            });
+          } catch (logError) {
+            // Don't fail the whole operation if logging fails
+            logger.error('Failed to log email error', { logError });
+          }
+
           logger.error('Failed to send studio invitation', {
             error: error instanceof Error ? error : new Error(String(error)),
             studioId: studio.id,
