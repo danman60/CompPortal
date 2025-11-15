@@ -642,4 +642,72 @@ ${studio.internal_notes}
         details: results,
       };
     }),
+
+  /**
+   * Update studio email address
+   * Competition Director or Super Admin
+   * CDs can only update studios in their tenant
+   */
+  updateStudioEmail: publicProcedure
+    .input(
+      z.object({
+        studioId: z.string().uuid(),
+        email: z.string().email(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user is competition_director or super_admin
+      if (!['competition_director', 'super_admin'].includes(ctx.userRole || '')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can update studio emails',
+        });
+      }
+
+      // Build where clause with tenant filtering for CDs
+      const whereClause: any = {
+        id: input.studioId,
+      };
+
+      // CDs can only update studios in their tenant
+      if (ctx.userRole === 'competition_director' && ctx.tenantId) {
+        whereClause.tenant_id = ctx.tenantId;
+      }
+
+      // Verify studio exists and user has access
+      const studio = await prisma.studios.findFirst({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+
+      if (!studio) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Studio not found or access denied',
+        });
+      }
+
+      // Update the email
+      await prisma.studios.update({
+        where: { id: input.studioId },
+        data: { email: input.email },
+      });
+
+      logger.info('Studio email updated', {
+        studioId: studio.id,
+        studioName: studio.name,
+        oldEmail: studio.email,
+        newEmail: input.email,
+        updatedBy: ctx.userId,
+      });
+
+      return {
+        success: true,
+        message: `Email updated to ${input.email}`,
+      };
+    }),
 });

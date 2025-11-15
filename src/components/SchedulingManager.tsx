@@ -1,7 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SessionCard from './SessionCard';
 import UnscheduledEntries from './UnscheduledEntries';
 import ConflictPanel from './ConflictPanel';
@@ -9,6 +9,10 @@ import ConflictPanel from './ConflictPanel';
 export default function SchedulingManager() {
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
   const [showConflicts, setShowConflicts] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number>(0); // 0-indexed day selector
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [centerMaximized, setCenterMaximized] = useState(false);
 
   // Fetch competitions
   const { data: competitionsData, isLoading: competitionsLoading } = trpc.competition.getAll.useQuery();
@@ -30,6 +34,12 @@ export default function SchedulingManager() {
   const { data: conflictsData, refetch: refetchConflicts } = trpc.scheduling.getConflicts.useQuery(
     { competitionId: selectedCompetition },
     { enabled: !!selectedCompetition && showConflicts }
+  );
+
+  // Fetch trophy helper
+  const { data: trophyHelperData } = trpc.scheduling.getTrophyHelper.useQuery(
+    { competitionId: selectedCompetition },
+    { enabled: !!selectedCompetition }
   );
 
   // Mutations
@@ -177,149 +187,112 @@ export default function SchedulingManager() {
   const unscheduledEntries = entries?.filter(e => !e.sessionId) || [];
   const scheduledEntries = entries?.filter(e => e.sessionId) || [];
 
+  // Get selected competition details
+  const selectedCompetitionData = competitions.find(c => c.id === selectedCompetition);
+
+  // Generate competition days array
+  const competitionDays: Date[] = [];
+  if (selectedCompetitionData?.competition_start_date && selectedCompetitionData?.competition_end_date) {
+    const startDate = new Date(selectedCompetitionData.competition_start_date);
+    const endDate = new Date(selectedCompetitionData.competition_end_date);
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      competitionDays.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  }
+
+  // Reset selected day when competition changes
+  useEffect(() => {
+    setSelectedDay(0);
+  }, [selectedCompetition]);
+
   return (
     <div className="space-y-6">
-      {/* Event Selector */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
-        <label className="block text-white font-semibold mb-3">
-          Select Event
-        </label>
-        <div className="flex gap-4 items-center flex-wrap">
-          <select
-            value={selectedCompetition}
-            onChange={(e) => setSelectedCompetition(e.target.value)}
-            className="flex-1 min-w-[300px] px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="" className="bg-gray-900 text-white">-- Select an event --</option>
-            {competitions.map((comp) => (
-              <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
-                {comp.name} ({comp.year})
-              </option>
-            ))}
-          </select>
-
-          {selectedCompetition && (
-            <button
-              onClick={() => setShowConflicts(!showConflicts)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                showConflicts
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
+      {/* Top Toolbar */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+        <div className="flex gap-4 items-center flex-wrap justify-between">
+          {/* Event Selector */}
+          <div className="flex-1 min-w-[300px]">
+            <select
+              value={selectedCompetition}
+              onChange={(e) => setSelectedCompetition(e.target.value)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              {showConflicts ? '⚠️ Hide Conflicts' : '🔍 Show Conflicts'}
-            </button>
-          )}
-
-          {selectedCompetition && (
-            <button
-              onClick={handlePublishSchedule}
-              disabled={publishMutation.isPending}
-              className="px-4 py-2 rounded-lg font-semibold transition-all bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 disabled:opacity-50"
-            >
-              {publishMutation.isPending ? '⚙️ Publishing...' : '📋 Publish Schedule'}
-            </button>
-          )}
-
-          {selectedCompetition && (
-            <button
-              onClick={handleRefresh}
-              disabled={sessionsLoading || entriesLoading}
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-all disabled:opacity-50"
-            >
-              🔄 Refresh
-            </button>
-          )}
-        </div>
-
-        {/* Routine Numbering */}
-        {selectedCompetition && (
-          <div className="mt-4 pt-4 border-t border-white/20">
-            <label className="block text-white font-semibold mb-3 text-sm">
-              Routine Numbering
-            </label>
-            <button
-              onClick={handleAssignNumbers}
-              disabled={assignNumbersMutation.isPending}
-              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {assignNumbersMutation.isPending ? (
-                <>
-                  <span className="animate-spin">⚙️</span>
-                  Assigning Numbers...
-                </>
-              ) : (
-                <>
-                  🔢 Assign Routine Numbers (100+)
-                </>
-              )}
-            </button>
-            <p className="text-xs text-gray-400 mt-2">
-              Assigns sequential numbers starting at 100 to all scheduled routines without numbers
-            </p>
+              <option value="" className="bg-gray-900 text-white">-- Select an event --</option>
+              {competitions.map((comp) => (
+                <option key={comp.id} value={comp.id} className="bg-gray-900 text-white">
+                  {comp.name} ({comp.year})
+                </option>
+              ))}
+            </select>
           </div>
-        )}
 
-        {/* Export Buttons */}
-        {selectedCompetition && (
-          <div className="mt-4 pt-4 border-t border-white/20">
-            <label className="block text-white font-semibold mb-3 text-sm">
-              Export Schedule
-            </label>
-            <div className="flex gap-3 flex-wrap">
+          {/* Control Buttons */}
+          {selectedCompetition && (
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setShowConflicts(!showConflicts)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
+                  showConflicts
+                    ? 'bg-red-500 text-white'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                {showConflicts ? '⚠️ Hide Conflicts' : '🔍 Show Conflicts'}
+              </button>
+
+              <button
+                onClick={handlePublishSchedule}
+                disabled={publishMutation.isPending}
+                className="px-4 py-2 rounded-lg font-semibold transition-all text-sm bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 disabled:opacity-50"
+              >
+                {publishMutation.isPending ? '⚙️ Publishing...' : '📋 Publish Schedule'}
+              </button>
+
+              <button
+                onClick={handleRefresh}
+                disabled={sessionsLoading || entriesLoading}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-all text-sm disabled:opacity-50"
+              >
+                🔄 Refresh
+              </button>
+
+              <button
+                onClick={handleAssignNumbers}
+                disabled={assignNumbersMutation.isPending}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all text-sm disabled:opacity-50"
+              >
+                {assignNumbersMutation.isPending ? '⚙️ Assigning...' : '🔢 Assign Routine Numbers (100+)'}
+              </button>
+
               <button
                 onClick={handleExportPDF}
                 disabled={exportPDFMutation.isPending}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all text-sm disabled:opacity-50"
               >
-                {exportPDFMutation.isPending ? (
-                  <>
-                    <span className="animate-spin">⚙️</span>
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    📄 Export PDF
-                  </>
-                )}
+                {exportPDFMutation.isPending ? '⚙️ Exporting...' : '📄 Export PDF'}
               </button>
 
               <button
                 onClick={handleExportCSV}
                 disabled={exportCSVMutation.isPending}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all text-sm disabled:opacity-50"
               >
-                {exportCSVMutation.isPending ? (
-                  <>
-                    <span className="animate-spin">⚙️</span>
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    📊 Export CSV
-                  </>
-                )}
+                {exportCSVMutation.isPending ? '⚙️ Exporting...' : '📊 Export CSV'}
               </button>
 
               <button
                 onClick={handleExportICal}
                 disabled={exportICalMutation.isPending}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg font-semibold transition-all text-sm disabled:opacity-50"
               >
-                {exportICalMutation.isPending ? (
-                  <>
-                    <span className="animate-spin">⚙️</span>
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    📆 Export iCal
-                  </>
-                )}
+                {exportICalMutation.isPending ? '⚙️ Exporting...' : '📆 Export iCal'}
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {selectedCompetition && (
@@ -360,49 +333,254 @@ export default function SchedulingManager() {
             </div>
           </div>
 
-          {/* Main Content: Sessions and Unscheduled Entries */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Sessions (2/3 width) */}
-            <div className="lg:col-span-2 space-y-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                <span>🎭</span>
-                Sessions
-              </h2>
-
-              {sessionsLoading ? (
-                <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
-                  <div className="animate-spin text-4xl mb-2">⚙️</div>
-                  <p className="text-white">Loading sessions...</p>
+          {/* 3-PANEL HORIZONTAL LAYOUT: LEFT 25% + CENTER 50% + RIGHT 25% */}
+          <div className="flex gap-4 h-[calc(100vh-500px)] min-h-[600px]">
+            {/* LEFT PANEL: Unscheduled Routines (25%) */}
+            <div
+              className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 flex flex-col overflow-hidden transition-all ${
+                centerMaximized
+                  ? 'w-0 opacity-0'
+                  : leftPanelCollapsed
+                  ? 'w-16'
+                  : 'w-1/4'
+              }`}
+            >
+              {leftPanelCollapsed ? (
+                /* Collapsed state: vertical bar */
+                <div className="h-full flex items-center justify-center">
+                  <button
+                    onClick={() => setLeftPanelCollapsed(false)}
+                    className="writing-mode-vertical transform rotate-180 text-white font-semibold text-sm hover:text-purple-300 transition-colors p-2"
+                  >
+                    ▶ Unscheduled Routines
+                  </button>
                 </div>
-              ) : sessions && sessions.length > 0 ? (
-                sessions.map((session) => (
-                  <SessionCard
-                    key={session.sessionId}
-                    session={session}
-                    entries={entries?.filter(e => e.sessionId === session.sessionId) || []}
-                    onAssignEntry={handleAssignEntry}
-                    onClearEntries={handleClearEntries}
-                    onRefresh={handleRefresh}
-                  />
-                ))
               ) : (
-                <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
-                  <div className="text-4xl mb-2">📅</div>
-                  <p className="text-white">No sessions found for this event</p>
-                </div>
+                /* Expanded state */
+                <>
+                  {/* Competition Header */}
+                  {selectedCompetitionData && (
+                    <div className="p-4 border-b border-white/20 relative">
+                      <button
+                        onClick={() => setLeftPanelCollapsed(true)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-lg"
+                        title="Collapse panel"
+                      >
+                        ◀
+                      </button>
+                      <h2 className="text-xl font-bold text-white pr-8">
+                        {selectedCompetitionData.name}
+                      </h2>
+                      {selectedCompetitionData.competition_start_date && selectedCompetitionData.competition_end_date && (
+                        <p className="text-sm text-gray-300">
+                          ({new Date(selectedCompetitionData.competition_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(selectedCompetitionData.competition_end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex-1 overflow-y-auto">
+                    <UnscheduledEntries
+                      entries={unscheduledEntries}
+                      sessions={sessions || []}
+                      onAssignEntry={handleAssignEntry}
+                      onRefresh={handleRefresh}
+                      competitionId={selectedCompetition}
+                      isLoading={entriesLoading}
+                    />
+                  </div>
+                </>
               )}
             </div>
 
-            {/* Unscheduled Entries (1/3 width) */}
-            <div className="space-y-6">
-              <UnscheduledEntries
-                entries={unscheduledEntries}
-                sessions={sessions || []}
-                onAssignEntry={handleAssignEntry}
-                onRefresh={handleRefresh}
-                competitionId={selectedCompetition}
-                isLoading={entriesLoading}
-              />
+            {/* CENTER PANEL: Schedule Grid (50%) */}
+            <div
+              className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 flex flex-col overflow-hidden transition-all ${
+                centerMaximized ? 'flex-1' : 'w-1/2'
+              }`}
+            >
+              <div className="p-4 border-b border-white/20 relative">
+                <div className="flex items-center justify-between pr-8">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>📅</span>
+                    Schedule Grid
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setCenterMaximized(!centerMaximized);
+                      if (!centerMaximized) {
+                        setLeftPanelCollapsed(true);
+                        setRightPanelCollapsed(true);
+                      } else {
+                        setLeftPanelCollapsed(false);
+                        setRightPanelCollapsed(false);
+                      }
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors text-lg"
+                    title={centerMaximized ? 'Restore layout' : 'Maximize'}
+                  >
+                    {centerMaximized ? '⊟' : '⛶'}
+                  </button>
+                </div>
+
+                {/* Day Selector Tabs */}
+                {competitionDays.length > 0 && (
+                  <div className="flex gap-2 mt-4 overflow-x-auto">
+                    {competitionDays.map((day, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedDay(index)}
+                        className={`px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition-all ${
+                          selectedDay === index
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                        }`}
+                      >
+                        {day.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4">
+                {sessionsLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="animate-spin text-4xl mb-2">⚙️</div>
+                      <p className="text-white">Loading sessions...</p>
+                    </div>
+                  </div>
+                ) : sessions && sessions.length > 0 ? (
+                  <div className="space-y-4">
+                    {sessions.map((session) => (
+                      <SessionCard
+                        key={session.sessionId}
+                        session={session}
+                        entries={entries?.filter(e => e.sessionId === session.sessionId) || []}
+                        onAssignEntry={handleAssignEntry}
+                        onClearEntries={handleClearEntries}
+                        onRefresh={handleRefresh}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">📅</div>
+                      <p className="text-white">No sessions found for this event</p>
+                      <p className="text-sm text-gray-400 mt-2">Create sessions to start scheduling routines</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT PANEL: Trophy Helper (25%) */}
+            <div
+              className={`bg-white/10 backdrop-blur-md rounded-xl border border-white/20 flex flex-col overflow-hidden transition-all ${
+                centerMaximized
+                  ? 'w-0 opacity-0'
+                  : rightPanelCollapsed
+                  ? 'w-16'
+                  : 'w-1/4'
+              }`}
+            >
+              {rightPanelCollapsed ? (
+                /* Collapsed state: vertical bar */
+                <div className="h-full flex items-center justify-center">
+                  <button
+                    onClick={() => setRightPanelCollapsed(false)}
+                    className="writing-mode-vertical transform rotate-180 text-white font-semibold text-sm hover:text-purple-300 transition-colors p-2"
+                  >
+                    ◀ Trophy Helper
+                  </button>
+                </div>
+              ) : (
+                /* Expanded state */
+                <>
+                  <div className="p-4 border-b border-white/20 relative">
+                    <button
+                      onClick={() => setRightPanelCollapsed(true)}
+                      className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-lg"
+                      title="Collapse panel"
+                    >
+                      ▶
+                    </button>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2 pr-8">
+                      <span>🏆</span>
+                      Trophy Helper
+                    </h2>
+                    <p className="text-xs text-gray-400 mt-1">Last routine per category</p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4">
+                    {trophyHelperData && trophyHelperData.trophyHelper.length > 0 ? (
+                      <div className="space-y-3">
+                        {trophyHelperData.trophyHelper.map((category, index) => (
+                          <div
+                            key={index}
+                            className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-lg p-3"
+                          >
+                            {/* Category Name */}
+                            <div className="font-semibold text-white text-sm mb-2 flex items-center gap-2">
+                              <span>🏆</span>
+                              <span className="truncate" title={category.categoryName}>
+                                {category.categoryName}
+                              </span>
+                            </div>
+
+                            {/* Last Routine Info */}
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between text-gray-300">
+                                <span>Last Routine:</span>
+                                <span className="text-white font-semibold">
+                                  #{category.lastRoutineNumber || 'TBD'}
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between text-gray-300">
+                                <span>Time:</span>
+                                <span className="text-white">
+                                  {new Date(category.lastRoutineTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between text-gray-300">
+                                <span>Total Routines:</span>
+                                <span className="text-white">{category.totalCount}</span>
+                              </div>
+
+                              <div className="flex justify-between text-yellow-300 mt-2 pt-2 border-t border-yellow-500/30">
+                                <span className="font-semibold">Suggested Award:</span>
+                                <span className="font-semibold">
+                                  {new Date(category.suggestedAwardTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-400 text-sm">
+                        <div className="text-4xl mb-2">🏆</div>
+                        <p>Trophy Helper shows the last routine per overall category</p>
+                        <p className="mt-2 text-xs">Schedule routines to see trophy recommendations</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </>
