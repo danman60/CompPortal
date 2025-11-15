@@ -1,7 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SessionCard from './SessionCard';
 import UnscheduledEntries from './UnscheduledEntries';
 import ConflictPanel from './ConflictPanel';
@@ -190,18 +190,21 @@ export default function SchedulingManager() {
   // Get selected competition details
   const selectedCompetitionData = competitions.find(c => c.id === selectedCompetition);
 
-  // Generate competition days array
-  const competitionDays: Date[] = [];
-  if (selectedCompetitionData?.competition_start_date && selectedCompetitionData?.competition_end_date) {
-    const startDate = new Date(selectedCompetitionData.competition_start_date);
-    const endDate = new Date(selectedCompetitionData.competition_end_date);
-    const currentDate = new Date(startDate);
+  // Generate competition days array using useMemo to avoid hydration issues
+  const competitionDays = useMemo(() => {
+    const days: Date[] = [];
+    if (selectedCompetitionData?.competition_start_date && selectedCompetitionData?.competition_end_date) {
+      const startDate = new Date(selectedCompetitionData.competition_start_date);
+      const endDate = new Date(selectedCompetitionData.competition_end_date);
+      const currentDate = new Date(startDate);
 
-    while (currentDate <= endDate) {
-      competitionDays.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 1);
+      while (currentDate <= endDate) {
+        days.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
     }
-  }
+    return days;
+  }, [selectedCompetitionData?.competition_start_date, selectedCompetitionData?.competition_end_date]);
 
   // Reset selected day when competition changes
   useEffect(() => {
