@@ -54,6 +54,7 @@ interface Routine {
     dancerAge: number | null;
   }>;
   isScheduled: boolean;
+  scheduleZone: string | null; // Zone ID: saturday-am, saturday-pm, etc.
   scheduledTime: Date | null;
   scheduledDay: Date | null;
 }
@@ -142,9 +143,9 @@ export default function SchedulePage() {
 
     const initialZones: Record<string, ScheduleZone> = {};
     routines.forEach(routine => {
-      // If routine has scheduledTime, parse it to determine zone
-      if (routine.scheduledTime && typeof routine.scheduledTime === 'string') {
-        initialZones[routine.id] = routine.scheduledTime as ScheduleZone;
+      // Use scheduleZone field to determine which zone the routine is in
+      if (routine.scheduleZone) {
+        initialZones[routine.id] = routine.scheduleZone as ScheduleZone;
       }
     });
 

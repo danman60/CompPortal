@@ -601,6 +601,8 @@ model competition_entries {
   age_group_id                                                                         String                             @db.Uuid
   entry_size_category_id                                                               String                             @db.Uuid
   session_id                                                                           String?                            @db.Uuid
+  schedule_zone                                                                        String?                            @db.VarChar(20)
+  is_scheduled                                                                         Boolean?                           @default(false)
   performance_date                                                                     DateTime?                          @db.Date
   performance_time                                                                     DateTime?                          @db.Time(6)
   duration                                                                             Unsupported("interval")?

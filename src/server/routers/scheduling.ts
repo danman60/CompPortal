@@ -254,7 +254,8 @@ export const schedulingRouter = router({
           dancerName: p.dancer_name,
           dancerAge: p.dancer_age,
         })),
-        isScheduled: routine.performance_date !== null && routine.performance_time !== null,
+        isScheduled: routine.schedule_zone !== null, // Check zone instead of date/time
+        scheduleZone: routine.schedule_zone, // Return zone ID (saturday-am, etc.)
         scheduledTime: routine.performance_time,
         scheduledDay: routine.performance_date,
       }));
@@ -318,15 +319,19 @@ export const schedulingRouter = router({
             tenant_id: input.tenantId,
           },
           data: {
+            schedule_zone: input.performanceTime, // Save zone ID (saturday-am, etc.)
             performance_date: performanceDateObject,
             performance_time: performanceTimeObject,
+            is_scheduled: true, // Mark as scheduled
           },
         });
 
         console.log('[scheduleRoutine] SUCCESS: Database updated', {
           routineId: updated.id,
+          schedule_zone: updated.schedule_zone,
           performance_date: updated.performance_date,
           performance_time: updated.performance_time,
+          is_scheduled: updated.is_scheduled,
         });
 
         return { success: true, routine: updated };
