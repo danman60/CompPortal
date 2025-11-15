@@ -1109,6 +1109,84 @@ export default function SchedulePage() {
               )}
             </div>
 
+            {/* Age Change Warnings Panel */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">🎂</span>
+                <h2 className="text-lg font-bold text-white">Age Warnings</h2>
+              </div>
+
+              {(() => {
+                // Detect age mismatches - dancers who may have aged into different age groups
+                const ageWarnings: Array<{
+                  routineTitle: string;
+                  dancerName: string;
+                  currentAge: number | null;
+                  ageGroup: string;
+                }> = [];
+
+                (routines || []).forEach(routine => {
+                  routine.participants.forEach(participant => {
+                    if (participant.dancerAge !== null) {
+                      // Simple detection: warn if age seems outside typical range for age group
+                      // This is a placeholder - real implementation would check age group boundaries
+                      const age = participant.dancerAge;
+                      const ageGroupName = routine.ageGroupName.toLowerCase();
+
+                      let isOutOfRange = false;
+                      if (ageGroupName.includes('mini') && (age < 4 || age > 8)) isOutOfRange = true;
+                      if (ageGroupName.includes('junior') && (age < 9 || age > 11)) isOutOfRange = true;
+                      if (ageGroupName.includes('teen') && (age < 12 || age > 14)) isOutOfRange = true;
+                      if (ageGroupName.includes('senior') && (age < 15 || age > 19)) isOutOfRange = true;
+
+                      if (isOutOfRange) {
+                        ageWarnings.push({
+                          routineTitle: routine.title,
+                          dancerName: participant.dancerName,
+                          currentAge: age,
+                          ageGroup: routine.ageGroupName,
+                        });
+                      }
+                    }
+                  });
+                });
+
+                return ageWarnings.length > 0 ? (
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                    {ageWarnings.map((warning, index) => (
+                      <div
+                        key={index}
+                        className="border-2 border-orange-500/50 bg-orange-900/30 rounded-lg p-3"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-xl flex-shrink-0">⚠️</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-white mb-1">
+                              {warning.dancerName} ({warning.currentAge} years old)
+                            </div>
+                            <div className="text-xs text-orange-200">
+                              Age may be outside {warning.ageGroup} range
+                            </div>
+                            <div className="text-xs text-orange-300 mt-1">
+                              Routine: "{warning.routineTitle}"
+                            </div>
+                            <div className="text-xs text-yellow-400 mt-2">
+                              💡 Verify dancer's age matches competition date requirements
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="text-4xl mb-2">✅</div>
+                    <p className="text-purple-200 text-sm">No age warnings detected</p>
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* Conflicts Panel */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <h2 className="text-lg font-bold text-white mb-4">
@@ -1146,6 +1224,16 @@ export default function SchedulePage() {
                             <div>#{conflict.routine1Number} "{conflict.routine1Title}"</div>
                             <div>#{conflict.routine2Number} "{conflict.routine2Title}"</div>
                           </div>
+
+                          {/* Override Button */}
+                          {conflict.severity === 'critical' && scheduleStatus === 'draft' && (
+                            <button
+                              onClick={() => setOverrideConflictId(`${conflict.dancerId}-${conflict.routine1Id}-${conflict.routine2Id}`)}
+                              className="mt-3 w-full px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium rounded transition-colors"
+                            >
+                              ⚙️ Override with Reason
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1263,6 +1351,55 @@ export default function SchedulePage() {
                 onClick={() => {
                   setShowRequestForm(null);
                   setRequestContent('');
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conflict Override Modal */}
+      {overrideConflictId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-red-900 to-orange-900 rounded-xl border border-red-500/50 p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">⚠️ Override Conflict</h3>
+            <div className="bg-red-950/50 border border-red-500/30 rounded-lg p-4 mb-4">
+              <p className="text-red-200 text-sm mb-2">
+                <strong>Warning:</strong> You are about to override a critical scheduling conflict.
+              </p>
+              <p className="text-red-300 text-xs">
+                This dancer will have less than 6 routines between performances. Please provide a justification.
+              </p>
+            </div>
+            <textarea
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="Enter reason for override (required)..."
+              className="w-full px-4 py-3 bg-red-950/50 border border-red-500/50 rounded-lg text-white placeholder-red-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none h-32"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  if (!overrideReason.trim()) {
+                    alert('Please provide a reason for the override');
+                    return;
+                  }
+                  // TODO: Backend mutation needed - create overrideConflict mutation
+                  alert('⚠️ Backend Override Mutation Needed\n\nThis feature requires a backend mutation to save the override to the schedule_conflicts table.\n\nReason: ' + overrideReason);
+                  setOverrideConflictId(null);
+                  setOverrideReason('');
+                }}
+                className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors"
+              >
+                ⚙️ Confirm Override
+              </button>
+              <button
+                onClick={() => {
+                  setOverrideConflictId(null);
+                  setOverrideReason('');
                 }}
                 className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
               >
