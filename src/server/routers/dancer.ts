@@ -846,7 +846,7 @@ export const dancerRouter = router({
           studioId: ctx.studioId || input.studio_id,
           action: 'dancer.batchCreate',
           entityType: 'dancer',
-          entityId: 'batch',
+          entityId: undefined, // Batch operations don't have a single entity ID
           entityName: `Batch (${createdDancers.length} dancers)`,
           details: {
             count: createdDancers.length,
