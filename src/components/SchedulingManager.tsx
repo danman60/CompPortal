@@ -165,6 +165,33 @@ export default function SchedulingManager() {
     }
   };
 
+  // Get selected competition details
+  const selectedCompetitionData = competitions.find(c => c.id === selectedCompetition);
+
+  // Generate competition days array using useMemo to avoid hydration issues
+  // MUST be before early returns to comply with Rules of Hooks
+  const competitionDays = useMemo(() => {
+    const days: Date[] = [];
+    if (selectedCompetitionData?.competition_start_date && selectedCompetitionData?.competition_end_date) {
+      const startDate = new Date(selectedCompetitionData.competition_start_date);
+      const endDate = new Date(selectedCompetitionData.competition_end_date);
+      const currentDate = new Date(startDate);
+
+      while (currentDate <= endDate) {
+        days.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+    return days;
+  }, [selectedCompetitionData?.competition_start_date, selectedCompetitionData?.competition_end_date]);
+
+  // Reset selected day when competition changes
+  // MUST be before early returns to comply with Rules of Hooks
+  useEffect(() => {
+    setSelectedDay(0);
+  }, [selectedCompetition]);
+
+  // Early returns AFTER all hooks
   if (competitionsLoading) {
     return (
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
@@ -186,30 +213,6 @@ export default function SchedulingManager() {
 
   const unscheduledEntries = entries?.filter(e => !e.sessionId) || [];
   const scheduledEntries = entries?.filter(e => e.sessionId) || [];
-
-  // Get selected competition details
-  const selectedCompetitionData = competitions.find(c => c.id === selectedCompetition);
-
-  // Generate competition days array using useMemo to avoid hydration issues
-  const competitionDays = useMemo(() => {
-    const days: Date[] = [];
-    if (selectedCompetitionData?.competition_start_date && selectedCompetitionData?.competition_end_date) {
-      const startDate = new Date(selectedCompetitionData.competition_start_date);
-      const endDate = new Date(selectedCompetitionData.competition_end_date);
-      const currentDate = new Date(startDate);
-
-      while (currentDate <= endDate) {
-        days.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    }
-    return days;
-  }, [selectedCompetitionData?.competition_start_date, selectedCompetitionData?.competition_end_date]);
-
-  // Reset selected day when competition changes
-  useEffect(() => {
-    setSelectedDay(0);
-  }, [selectedCompetition]);
 
   return (
     <div className="space-y-6">
