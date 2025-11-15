@@ -7,18 +7,12 @@ import UnscheduledEntries from './UnscheduledEntries';
 import ConflictPanel from './ConflictPanel';
 
 export default function SchedulingManager() {
-  const [mounted, setMounted] = useState(false);
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
   const [showConflicts, setShowConflicts] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number>(0); // 0-indexed day selector
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [centerMaximized, setCenterMaximized] = useState(false);
-
-  // Prevent hydration issues
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Fetch competitions
   const { data: competitionsData, isLoading: competitionsLoading } = trpc.competition.getAll.useQuery();
@@ -216,16 +210,6 @@ export default function SchedulingManager() {
   useEffect(() => {
     setSelectedDay(0);
   }, [selectedCompetition]);
-
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted) {
-    return (
-      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
-        <div className="animate-spin text-6xl mb-4">⚙️</div>
-        <p className="text-white">Loading scheduler...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

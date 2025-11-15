@@ -1,16 +1,36 @@
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase-server-client';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase';
 import SchedulingManager from '@/components/SchedulingManager';
 
-export default async function SchedulingPage() {
-  const supabase = await createServerSupabaseClient();
+export default function SchedulingPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+      } else {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, [supabase, router]);
 
-  if (!user) {
-    redirect('/login');
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin text-6xl mb-4">⚙️</div>
+          <p className="text-white">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
