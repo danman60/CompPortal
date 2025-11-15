@@ -127,6 +127,15 @@ export default function SchedulePage() {
   // Track which zone each routine is in
   const [routineZones, setRoutineZones] = useState<Record<string, ScheduleZone>>({});
 
+  // Fetch routines
+  const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+    classificationId: selectedClassification || undefined,
+    categoryId: selectedCategory || undefined,
+    searchQuery: searchQuery || undefined,
+  });
+
   // Initialize routine zones from database on data load
   useEffect(() => {
     if (!routines) return;
@@ -141,15 +150,6 @@ export default function SchedulePage() {
 
     setRoutineZones(initialZones);
   }, [routines]);
-
-  // Fetch routines
-  const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
-    classificationId: selectedClassification || undefined,
-    categoryId: selectedCategory || undefined,
-    searchQuery: searchQuery || undefined,
-  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
