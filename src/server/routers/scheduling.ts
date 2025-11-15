@@ -1813,4 +1813,358 @@ export const schedulingRouter = router({
       });
     }),
 
+  // Assign studio codes based on registration order
+  assignStudioCodes: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Get all studios with approved reservations for this competition
+      const reservations = await prisma.reservations.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          status: 'approved',
+        },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              studio_code: true,
+              created_at: true,
+            },
+          },
+        },
+        orderBy: {
+          created_at: 'asc', // Order by reservation submission date
+        },
+      });
+
+      // Generate codes A, B, C, D...
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const updates = [];
+
+      for (let i = 0; i < reservations.length; i++) {
+        const studio = reservations[i].studios;
+
+        // Generate code (A, B, C... Z, AA, AB...)
+        let code = '';
+        let num = i;
+        while (num >= 0) {
+          code = alphabet[num % 26] + code;
+          num = Math.floor(num / 26) - 1;
+        }
+
+        // Update studio with code if not already assigned
+        if (!studio.studio_code || studio.studio_code !== code) {
+          await prisma.studios.update({
+            where: { id: studio.id },
+            data: {
+              studio_code: code,
+            },
+          });
+
+          updates.push({
+            studioId: studio.id,
+            studioName: studio.name,
+            code,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        codesAssigned: updates.length,
+        studios: updates,
+      };
+    }),
+
+  // Get schedule filtered by view mode
+  getViewModeSchedule: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      viewMode: z.enum(['cd', 'studio', 'judge', 'public']),
+      studioId: z.string().uuid().optional(), // Required for studio view
+    }))
+    .query(async ({ input }) => {
+      // Base query
+      const where: any = {
+        competition_id: input.competitionId,
+        tenant_id: input.tenantId,
+        is_scheduled: true,
+      };
+
+      // Studio view - only show their routines
+      if (input.viewMode === 'studio') {
+        if (!input.studioId) {
+          throw new Error('Studio ID required for studio view');
+        }
+        where.studio_id = input.studioId;
+      }
+
+      // Get routines
+      const routines = await prisma.competition_entries.findMany({
+        where,
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              studio_code: true,
+            },
+          },
+          dance_categories: {
+            select: { id: true, name: true },
+          },
+          classifications: {
+            select: { id: true, name: true },
+          },
+          age_groups: {
+            select: { id: true, name: true },
+          },
+          entry_size_categories: {
+            select: { id: true, name: true },
+          },
+          entry_participants: {
+            select: {
+              dancer_id: true,
+              dancer_name: true,
+              dancer_age: true,
+            },
+          },
+        },
+        orderBy: [
+          { performance_date: 'asc' },
+          { performance_time: 'asc' },
+          { display_order: 'asc' },
+        ],
+      });
+
+      // Check if schedule is published
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: { schedule_state: true },
+      });
+
+      const isPublished = competition?.schedule_state === 'published';
+
+      // Transform based on view mode
+      return routines.map(routine => {
+        const base = {
+          id: routine.id,
+          title: routine.title,
+          categoryName: routine.dance_categories.name,
+          classificationName: routine.classifications.name,
+          ageGroupName: routine.age_groups.name,
+          sizeCategoryName: routine.entry_size_categories.name,
+          performanceDate: routine.performance_date,
+          performanceTime: routine.performance_time,
+          displayOrder: routine.display_order,
+          participants: routine.entry_participants,
+        };
+
+        // CD View: Show codes + full names
+        if (input.viewMode === 'cd') {
+          return {
+            ...base,
+            studioCode: routine.studios.studio_code,
+            studioName: routine.studios.name,
+            showFullName: true,
+          };
+        }
+
+        // Studio View: Show only their routines with full name
+        if (input.viewMode === 'studio') {
+          return {
+            ...base,
+            studioCode: routine.studios.studio_code,
+            studioName: routine.studios.name,
+            showFullName: true,
+          };
+        }
+
+        // Judge View: Show codes only (anonymized)
+        if (input.viewMode === 'judge') {
+          return {
+            ...base,
+            studioCode: routine.studios.studio_code,
+            studioName: null, // Hide full name
+            showFullName: false,
+          };
+        }
+
+        // Public View: Show full names if published, codes if not
+        if (input.viewMode === 'public') {
+          if (isPublished) {
+            return {
+              ...base,
+              studioCode: routine.studios.studio_code,
+              studioName: routine.studios.name,
+              showFullName: true,
+            };
+          } else {
+            return {
+              ...base,
+              studioCode: routine.studios.studio_code,
+              studioName: null,
+              showFullName: false,
+            };
+          }
+        }
+
+        return base;
+      });
+    }),
+
+  // Detect age changes for scheduled routines
+  detectAgeChanges: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Get all scheduled routines for the competition
+      const routines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          is_scheduled: true,
+        },
+        include: {
+          entry_participants: {
+            include: {
+              dancers: {
+                select: {
+                  id: true,
+                  date_of_birth: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const changedRoutines = [];
+
+      // Check each routine for age changes
+      for (const routine of routines) {
+        let hasAgeChange = false;
+
+        for (const participant of routine.entry_participants) {
+          // Skip if no birthdate
+          if (!participant.dancers.date_of_birth) continue;
+
+          // Compare current age with stored age at scheduling
+          const currentAge = participant.dancer_age;
+          if (!currentAge) continue;
+
+          // Calculate age from birthdate
+          const dob = new Date(participant.dancers.date_of_birth);
+          const now = new Date();
+          const calculatedAge = now.getFullYear() - dob.getFullYear();
+
+          // Check if age has changed
+          if (currentAge !== calculatedAge) {
+            hasAgeChange = true;
+
+            // Create age change tracking record
+            await prisma.age_change_tracking.create({
+              data: {
+                competition_id: input.competitionId,
+                dancer_id: participant.dancer_id,
+                dancer_name: participant.dancer_name,
+                date_of_birth: participant.dancers.date_of_birth,
+                original_age: currentAge,
+                new_age: calculatedAge,
+                change_date: new Date(),
+                affected_entry_ids: [routine.id],
+                tenant_id: input.tenantId,
+              },
+            });
+          }
+        }
+
+        // Flag routine if age change detected
+        if (hasAgeChange) {
+          await prisma.competition_entries.update({
+            where: { id: routine.id },
+            data: { age_changed: true },
+          });
+
+          changedRoutines.push({
+            routineId: routine.id,
+            routineTitle: routine.title,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        changesDetected: changedRoutines.length,
+        routines: changedRoutines,
+      };
+    }),
+
+  // Check for hotel attrition warning (all Emerald on one day)
+  getHotelAttritionWarning: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      // Get all scheduled Emerald routines
+      const emeraldRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          is_scheduled: true,
+          classifications: {
+            name: {
+              in: ['Emerald', 'emerald', 'EMERALD'],
+            },
+          },
+        },
+        select: {
+          id: true,
+          performance_date: true,
+          title: true,
+        },
+      });
+
+      // Count routines per day
+      const dayMap = new Map<string, number>();
+      for (const routine of emeraldRoutines) {
+        if (routine.performance_date) {
+          const dateStr = routine.performance_date.toISOString().split('T')[0];
+          dayMap.set(dateStr, (dayMap.get(dateStr) || 0) + 1);
+        }
+      }
+
+      // Check if all routines are on a single day
+      const totalEmeraldRoutines = emeraldRoutines.length;
+      const daysWithRoutines = Array.from(dayMap.entries());
+
+      if (daysWithRoutines.length === 1 && totalEmeraldRoutines > 0) {
+        const [singleDay, count] = daysWithRoutines[0];
+        return {
+          hasWarning: true,
+          severity: 'high',
+          message: `All ${count} Emerald routines are scheduled on ${singleDay}. Consider spreading across multiple days to reduce hotel attrition risk.`,
+          dayDistribution: daysWithRoutines,
+          totalEmeraldRoutines,
+        };
+      }
+
+      return {
+        hasWarning: false,
+        severity: 'none',
+        message: null,
+        dayDistribution: daysWithRoutines,
+        totalEmeraldRoutines,
+      };
+    }),
+
 });
