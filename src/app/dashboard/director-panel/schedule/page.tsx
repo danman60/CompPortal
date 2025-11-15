@@ -12,7 +12,7 @@
  * - Studio code masking (A, B, C, etc.)
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import {
   DndContext,
@@ -126,6 +126,21 @@ export default function SchedulePage() {
 
   // Track which zone each routine is in
   const [routineZones, setRoutineZones] = useState<Record<string, ScheduleZone>>({});
+
+  // Initialize routine zones from database on data load
+  useEffect(() => {
+    if (!routines) return;
+
+    const initialZones: Record<string, ScheduleZone> = {};
+    routines.forEach(routine => {
+      // If routine has scheduledTime, parse it to determine zone
+      if (routine.scheduledTime && typeof routine.scheduledTime === 'string') {
+        initialZones[routine.id] = routine.scheduledTime as ScheduleZone;
+      }
+    });
+
+    setRoutineZones(initialZones);
+  }, [routines]);
 
   // Fetch routines
   const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
