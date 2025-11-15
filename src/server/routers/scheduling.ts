@@ -167,7 +167,8 @@ export const schedulingRouter = router({
       const where: any = {
         competition_id: input.competitionId,
         tenant_id: input.tenantId,
-        performance_date: null, // Only unscheduled routines (no performance date set)
+        // Return ALL routines (both scheduled and unscheduled)
+        // Frontend will separate them into zones based on scheduledTime
       };
 
       // Optional filters
