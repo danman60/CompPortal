@@ -412,12 +412,32 @@ export const invoiceRouter = router({
         _sum: { total_fee: true },
       });
 
-      // Extract unique studio and competition IDs
-      const studioIds = [...new Set(entryGroups.map(g => g.studio_id))];
-      const competitionIds = [...new Set(entryGroups.map(g => g.competition_id))];
+      // Fetch ALL invoices first to get complete studio+competition list
+      const allInvoices = await prisma.invoices.findMany({
+        where: {
+          ...whereClause,
+          ...(competitionId && { competition_id: competitionId }),
+        },
+        select: {
+          id: true,
+          studio_id: true,
+          competition_id: true,
+          status: true,
+          created_at: true,
+        },
+      });
 
-      // Fetch all studios, competitions, reservations, and invoices in parallel
-      const [studios, competitions, reservations, invoices] = await Promise.all([
+      // Extract unique studio and competition IDs from BOTH entries AND invoices
+      const studioIdsFromEntries = entryGroups.map(g => g.studio_id);
+      const studioIdsFromInvoices = allInvoices.map(inv => inv.studio_id);
+      const studioIds = [...new Set([...studioIdsFromEntries, ...studioIdsFromInvoices])];
+
+      const competitionIdsFromEntries = entryGroups.map(g => g.competition_id);
+      const competitionIdsFromInvoices = allInvoices.map(inv => inv.competition_id);
+      const competitionIds = [...new Set([...competitionIdsFromEntries, ...competitionIdsFromInvoices])];
+
+      // Fetch all studios, competitions, and reservations in parallel (invoices already fetched)
+      const [studios, competitions, reservations] = await Promise.all([
         prisma.studios.findMany({
           where: { id: { in: studioIds } },
           select: {
@@ -460,21 +480,10 @@ export const invoiceRouter = router({
             status: true,
           },
         }),
-        prisma.invoices.findMany({
-          where: {
-            ...whereClause,
-            studio_id: { in: studioIds },
-            competition_id: { in: competitionIds },
-          },
-          select: {
-            id: true,
-            studio_id: true,
-            competition_id: true,
-            status: true,
-            created_at: true,
-          },
-        }),
       ]);
+
+      // Use allInvoices (already fetched above)
+      const invoices = allInvoices;
 
       // Create maps for fast lookup
       const studioMap = new Map(studios.map(s => [s.id, s]));
@@ -488,13 +497,26 @@ export const invoiceRouter = router({
         invoiceMap.set(`${inv.studio_id}-${inv.competition_id}`, inv);
       });
 
-      // Build invoices from grouped data
-      const summaries = entryGroups
-        .map((group) => {
-          const studio = studioMap.get(group.studio_id);
-          const competition = competitionMap.get(group.competition_id);
-          const reservation = reservationMap.get(`${group.studio_id}-${group.competition_id}`);
-          const existingInvoice = invoiceMap.get(`${group.studio_id}-${group.competition_id}`);
+      // Create entry group map for fast lookup
+      const entryGroupMap = new Map<string, typeof entryGroups[0]>();
+      entryGroups.forEach(group => {
+        entryGroupMap.set(`${group.studio_id}-${group.competition_id}`, group);
+      });
+
+      // Get all unique studio+competition combinations from BOTH invoices and entries
+      const allCombinations = new Set<string>();
+      entryGroups.forEach(group => allCombinations.add(`${group.studio_id}-${group.competition_id}`));
+      invoices.forEach(inv => allCombinations.add(`${inv.studio_id}-${inv.competition_id}`));
+
+      // Build invoices from all combinations (entries + invoices)
+      const summaries = Array.from(allCombinations)
+        .map((key) => {
+          const [studio_id, competition_id] = key.split('-');
+          const group = entryGroupMap.get(key);
+          const studio = studioMap.get(studio_id!);
+          const competition = competitionMap.get(competition_id!);
+          const reservation = reservationMap.get(key);
+          const existingInvoice = invoiceMap.get(key);
 
           // Skip if studio or competition not found
           if (!studio || !competition) {
@@ -523,8 +545,8 @@ export const invoiceRouter = router({
             competitionYear: competition.year || 0,
             competitionStartDate: competition.competition_start_date,
             competitionEndDate: competition.competition_end_date,
-            entryCount: group._count.id,
-            totalAmount: Number(group._sum.total_fee || 0),
+            entryCount: group?._count.id || 0,
+            totalAmount: Number(group?._sum.total_fee || 0),
             hasInvoice: !!existingInvoice,
             invoiceId: existingInvoice?.id || null,
             invoiceStatus: existingInvoice?.status || null,

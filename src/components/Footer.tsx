@@ -12,21 +12,31 @@ export default function Footer() {
   const commitHash = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev';
   const version = packageJson.version;
 
-  // Get and format commit timestamp (manual formatting to avoid SSR/CSR hydration mismatch)
+  // Get and format commit timestamp in EST (manual formatting to avoid SSR/CSR hydration mismatch)
   const commitTimestamp = process.env.NEXT_PUBLIC_GIT_COMMIT_TIMESTAMP;
   const formattedTime = commitTimestamp && commitTimestamp !== 'unknown'
     ? (() => {
         const date = new Date(parseInt(commitTimestamp) * 1000);
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = months[date.getUTCMonth()];
-        const day = date.getUTCDate();
-        const year = date.getUTCFullYear();
-        const hours = date.getUTCHours();
-        const minutes = date.getUTCMinutes();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const displayHours = hours % 12 || 12;
-        const displayMinutes = minutes.toString().padStart(2, '0');
-        return `${month} ${day}, ${year}, ${displayHours}:${displayMinutes} ${ampm} UTC`;
+
+        // Convert to EST by using toLocaleString with America/New_York timezone
+        const estString = date.toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+
+        // Add EST/EDT suffix
+        const isDST = new Date().toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+          timeZoneName: 'short'
+        }).includes('EDT');
+        const tzSuffix = isDST ? 'EDT' : 'EST';
+
+        return `${estString} ${tzSuffix}`;
       })()
     : null;
 
