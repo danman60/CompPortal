@@ -529,9 +529,9 @@ export default function SchedulingManager() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4">
-                    {trophyHelperData && trophyHelperData.trophyHelper.length > 0 ? (
+                    {trophyHelperData && Array.isArray(trophyHelperData) && trophyHelperData.length > 0 ? (
                       <div className="space-y-3">
-                        {trophyHelperData.trophyHelper.map((category, index) => (
+                        {trophyHelperData.map((category, index) => (
                           <div
                             key={index}
                             className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-lg p-3"
