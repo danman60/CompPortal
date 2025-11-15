@@ -35,12 +35,16 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
   const dancers = (dancersData?.dancers || []) as any[];
 
   // Age calculation uses Dec 31 of REGISTRATION year (not competition date)
+  // Fallback: If registration_closes is null, use Dec 31 of current year
   const eventStartDate = entry.competitions.registration_closes
     ? (() => {
         const regYear = new Date(entry.competitions.registration_closes).getUTCFullYear();
         return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
       })()
-    : null;
+    : (() => {
+        const currentYear = new Date().getUTCFullYear();
+        return new Date(Date.UTC(currentYear, 11, 31)); // Fallback: Dec 31 of current year
+      })();
 
   const formHook = useEntryFormV2({
     eventStartDate,

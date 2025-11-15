@@ -82,12 +82,16 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
   // Age calculation uses Dec 31 of REGISTRATION year (not competition date)
   // E.g., for 2026 competition with registration closing Dec 2025 → use Dec 31, 2025
+  // Fallback: If registration_closes is null, use Dec 31 of current year
   const eventStartDate = competition?.registration_closes
     ? (() => {
         const regYear = new Date(competition.registration_closes).getUTCFullYear();
         return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
       })()
-    : null;
+    : (() => {
+        const currentYear = new Date().getUTCFullYear();
+        return new Date(Date.UTC(currentYear, 11, 31)); // Fallback: Dec 31 of current year
+      })();
 
   const formHook = useEntryFormV2({
     eventStartDate: (eventStartDate ?? null) as Date | null,

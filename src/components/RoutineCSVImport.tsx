@@ -379,12 +379,16 @@ export default function RoutineCSVImport() {
       }
 
       // Get event date - use Dec 31 of REGISTRATION year (not competition date)
+      // Fallback: If registration_closes is null, use Dec 31 of current year
       const eventDate = reservationsData?.reservations?.[0]?.competitions?.registration_closes
         ? (() => {
             const regYear = new Date(reservationsData.reservations[0].competitions.registration_closes).getUTCFullYear();
             return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
           })()
-        : null;
+        : (() => {
+            const currentYear = new Date().getUTCFullYear();
+            return new Date(Date.UTC(currentYear, 11, 31)); // Fallback: Dec 31 of current year
+          })();
 
       const matched = matchDancersInRoutines(parsed, eventDate);
       setParsedData(matched);
@@ -453,12 +457,16 @@ export default function RoutineCSVImport() {
       const parsed = parseExcel(excelWorkbook, sheetName);
 
       // Use Dec 31 of REGISTRATION year (not competition date)
+      // Fallback: If registration_closes is null, use Dec 31 of current year
       const eventDate = reservationsData?.reservations?.[0]?.competitions?.registration_closes
         ? (() => {
             const regYear = new Date(reservationsData.reservations[0].competitions.registration_closes).getUTCFullYear();
             return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
           })()
-        : null;
+        : (() => {
+            const currentYear = new Date().getUTCFullYear();
+            return new Date(Date.UTC(currentYear, 11, 31)); // Fallback: Dec 31 of current year
+          })();
 
       const matched = matchDancersInRoutines(parsed, eventDate);
       setParsedData(matched);
