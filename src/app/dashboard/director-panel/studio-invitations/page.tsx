@@ -23,6 +23,10 @@ export default function CDStudioInvitationsPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Email editing state
+  const [editingStudioId, setEditingStudioId] = useState<string | null>(null);
+  const [editingEmail, setEditingEmail] = useState('');
+
   // Quick Add Studio modal state (CD version - no tenant selector)
   const [addStudioModal, setAddStudioModal] = useState<{
     isOpen: boolean;
@@ -63,6 +67,19 @@ export default function CDStudioInvitationsPage() {
     onSuccess: (data) => {
       toast.success(data.message);
       setAddStudioModal(null);
+      refetch(); // Refresh studios list
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Update studio email mutation
+  const updateEmailMutation = trpc.studioInvitations.updateStudioEmail.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.message);
+      setEditingStudioId(null);
+      setEditingEmail('');
       refetch(); // Refresh studios list
     },
     onError: (error) => {
@@ -262,6 +279,36 @@ export default function CDStudioInvitationsPage() {
       depositAmount: deposit,
       comments: addStudioModal.comments || undefined,
     });
+  };
+
+  // Email editing handlers
+  const handleEmailDoubleClick = (studioId: string, currentEmail: string | null) => {
+    setEditingStudioId(studioId);
+    setEditingEmail(currentEmail || '');
+  };
+
+  const handleEmailSave = (studioId: string) => {
+    if (!editingEmail.trim()) {
+      toast.error('Email address is required');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editingEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    updateEmailMutation.mutate({
+      studioId,
+      email: editingEmail,
+    });
+  };
+
+  const handleEmailCancel = () => {
+    setEditingStudioId(null);
+    setEditingEmail('');
   };
 
   const SortButton = ({ field, label }: { field: SortField; label: string }) => (
@@ -464,7 +511,46 @@ export default function CDStudioInvitationsPage() {
                             {studio.publicCode}
                           </span>
                         </div>
-                        <div className="text-sm text-gray-300 mb-2">{studio.email}</div>
+
+                        {/* Email display with inline editing */}
+                        {editingStudioId === studio.id ? (
+                          <div className="flex items-center gap-2 mb-2">
+                            <input
+                              type="email"
+                              value={editingEmail}
+                              onChange={(e) => setEditingEmail(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleEmailSave(studio.id);
+                                if (e.key === 'Escape') handleEmailCancel();
+                              }}
+                              placeholder="studio@email.com"
+                              autoFocus
+                              className="px-3 py-1 bg-white/10 border border-purple-400 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button
+                              onClick={() => handleEmailSave(studio.id)}
+                              disabled={updateEmailMutation.isPending}
+                              className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded disabled:opacity-50 transition-colors"
+                            >
+                              {updateEmailMutation.isPending ? '⚙️' : '✓'}
+                            </button>
+                            <button
+                              onClick={handleEmailCancel}
+                              disabled={updateEmailMutation.isPending}
+                              className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded disabled:opacity-50 transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className="text-sm text-gray-300 mb-2 cursor-pointer hover:text-purple-300 transition-colors inline-block"
+                            onDoubleClick={() => handleEmailDoubleClick(studio.id, studio.email)}
+                            title="Double-click to edit email"
+                          >
+                            {studio.email || '(no email)'}
+                          </div>
+                        )}
                       </div>
 
                       {/* Status Badges */}
