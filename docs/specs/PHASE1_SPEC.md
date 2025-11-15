@@ -545,23 +545,26 @@ def add_dancers_to_entry(entry_id, dancer_ids):
 
 **Step 3: Auto-Calculate and Create**
 ```python
-def calculate_entry_metadata(entry_id, event_start_date):
+def calculate_entry_metadata(entry_id, competition_year):
     entry = Entry.get(id=entry_id)
     dancers = entry.dancers.all()
-    
+
     # Age division (youngest dancer)
+    # BUSINESS RULE: Ages calculated as of December 31st of registration year
+    # NOT based on competition date - this is standard competition practice
     youngest_dob = min(d.date_of_birth for d in dancers)
-    age_at_event = (event_start_date - youngest_dob).days // 365
-    
+    dec_31_reference = datetime(competition_year, 12, 31).date()
+    age_at_dec_31 = (dec_31_reference - youngest_dob).days // 365
+
     age_divisions = entry.event.competition_settings.age_divisions
     age_division = next(
-        (div for div in age_divisions 
-         if div['min_age'] <= age_at_event <= div['max_age']),
+        (div for div in age_divisions
+         if div['min_age'] <= age_at_dec_31 <= div['max_age']),
         None
     )
-    
+
     if not age_division:
-        raise ValidationError(f"No age division found for age {age_at_event}")
+        raise ValidationError(f"No age division found for age {age_at_dec_31}")
     
     # Group size
     dancer_count = len(dancers)
