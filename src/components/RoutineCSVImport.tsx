@@ -378,9 +378,12 @@ export default function RoutineCSVImport() {
         throw new Error(`Unsupported file type: ${fileExt}. Please upload .csv, .xlsx, or .xls`);
       }
 
-      // Get event date from first available reservation
-      const eventDate = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
-        ? (parseISODateToUTC(reservationsData.reservations[0].competitions.competition_start_date) ?? null)
+      // Get event date - use Dec 31 of REGISTRATION year (not competition date)
+      const eventDate = reservationsData?.reservations?.[0]?.competitions?.registration_closes
+        ? (() => {
+            const regYear = new Date(reservationsData.reservations[0].competitions.registration_closes).getUTCFullYear();
+            return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
+          })()
         : null;
 
       const matched = matchDancersInRoutines(parsed, eventDate);
@@ -449,8 +452,12 @@ export default function RoutineCSVImport() {
     try {
       const parsed = parseExcel(excelWorkbook, sheetName);
 
-      const eventDate = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
-        ? (parseISODateToUTC(reservationsData.reservations[0].competitions.competition_start_date) ?? null)
+      // Use Dec 31 of REGISTRATION year (not competition date)
+      const eventDate = reservationsData?.reservations?.[0]?.competitions?.registration_closes
+        ? (() => {
+            const regYear = new Date(reservationsData.reservations[0].competitions.registration_closes).getUTCFullYear();
+            return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
+          })()
         : null;
 
       const matched = matchDancersInRoutines(parsed, eventDate);

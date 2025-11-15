@@ -158,6 +158,7 @@ export const reservationRouter = router({
                 name: true,
                 year: true,
                 competition_start_date: true,
+                registration_closes: true,
                 tenant_id: true,
                 tenants: {
                   select: {

@@ -80,10 +80,13 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
   const dancers = (dancersData?.dancers || []) as any[];
 
-  // Age calculation uses actual competition start date (as UTC)
-  // FIXED: Use parseISODateToUTC to prevent timezone shifts
-  const eventStartDate = competition?.competition_start_date
-    ? (parseISODateToUTC(competition.competition_start_date) ?? null)
+  // Age calculation uses Dec 31 of REGISTRATION year (not competition date)
+  // E.g., for 2026 competition with registration closing Dec 2025 → use Dec 31, 2025
+  const eventStartDate = competition?.registration_closes
+    ? (() => {
+        const regYear = new Date(competition.registration_closes).getUTCFullYear();
+        return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
+      })()
     : null;
 
   const formHook = useEntryFormV2({

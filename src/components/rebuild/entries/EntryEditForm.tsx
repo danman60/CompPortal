@@ -34,8 +34,12 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
 
   const dancers = (dancersData?.dancers || []) as any[];
 
-  const eventStartDate = entry.competitions.competition_start_date
-    ? new Date(entry.competitions.competition_start_date)
+  // Age calculation uses Dec 31 of REGISTRATION year (not competition date)
+  const eventStartDate = entry.competitions.registration_closes
+    ? (() => {
+        const regYear = new Date(entry.competitions.registration_closes).getUTCFullYear();
+        return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
+      })()
     : null;
 
   const formHook = useEntryFormV2({
