@@ -137,6 +137,16 @@ export default function SchedulePage() {
     searchQuery: searchQuery || undefined,
   });
 
+  // Fetch Trophy Helper
+  const { data: trophyHelper } = trpc.scheduling.getTrophyHelper.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+  });
+
+  // Fetch Conflicts
+  const { data: conflictsData } = trpc.scheduling.detectConflicts.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+  });
+
   // Initialize routine zones from database on data load
   useEffect(() => {
     if (!routines) return;
@@ -384,15 +394,107 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          {/* RIGHT PANEL: Conflicts & Stats */}
+          {/* RIGHT PANEL: Trophy Helper */}
           <div className="col-span-3 space-y-6">
+            {/* Trophy Helper Panel */}
+            <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">🏆</span>
+                <h2 className="text-lg font-bold text-white">Trophy Helper</h2>
+              </div>
+
+              {trophyHelper && Array.isArray(trophyHelper) && trophyHelper.length > 0 ? (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {trophyHelper.map((entry, index) => (
+                    <div
+                      key={entry.overallCategory}
+                      className="border-2 border-yellow-500/30 bg-yellow-900/20 rounded-lg p-3"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-yellow-400 text-xl flex-shrink-0">🏆</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-white mb-1 truncate">
+                            {entry.categoryDisplay}
+                          </div>
+                          <div className="text-xs text-yellow-200 space-y-1">
+                            <div>Last: #{entry.lastRoutineNumber || '?'} "{entry.lastRoutineTitle}"</div>
+                            <div>Zone: {entry.lastRoutineZone}</div>
+                            <div className="text-yellow-300 font-medium">
+                              {entry.totalRoutinesInCategory} routine{entry.totalRoutinesInCategory !== 1 ? 's' : ''}
+                            </div>
+                            <div className="text-xs text-yellow-400 mt-2">
+                              💡 Suggested award: {entry.suggestedAwardTime
+                                ? new Date(entry.suggestedAwardTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                  })
+                                : 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-5xl mb-3">🏆</div>
+                  <p className="text-purple-200 text-sm">
+                    Schedule routines to see award recommendations
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Conflicts Panel */}
             <div className="bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-6 shadow-lg">
-              <h2 className="text-lg font-bold text-white mb-4">Conflicts</h2>
-              <div className="text-center py-8">
-                <div className="text-5xl mb-3">✅</div>
-                <p className="text-purple-200 text-sm">No conflicts detected</p>
-              </div>
+              <h2 className="text-lg font-bold text-white mb-4">
+                Conflicts
+                {conflictsData && conflictsData.summary.total > 0 && (
+                  <span className="ml-2 text-sm font-medium bg-red-600 text-white px-2 py-1 rounded-full">
+                    {conflictsData.summary.total}
+                  </span>
+                )}
+              </h2>
+
+              {conflictsData && conflictsData.conflicts.length > 0 ? (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {conflictsData.conflicts.map((conflict, index) => (
+                    <div
+                      key={index}
+                      className={`border-2 rounded-lg p-3 ${
+                        conflict.severity === 'critical'
+                          ? 'border-red-500/50 bg-red-900/30'
+                          : conflict.severity === 'error'
+                          ? 'border-orange-500/50 bg-orange-900/30'
+                          : 'border-yellow-500/50 bg-yellow-900/30'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-xl flex-shrink-0">⚠️</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-white mb-1">
+                            {conflict.dancerName}
+                          </div>
+                          <div className="text-xs text-gray-200">
+                            {conflict.message}
+                          </div>
+                          <div className="text-xs text-gray-300 mt-2 space-y-1">
+                            <div>#{conflict.routine1Number} "{conflict.routine1Title}"</div>
+                            <div>#{conflict.routine2Number} "{conflict.routine2Title}"</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-5xl mb-3">✅</div>
+                  <p className="text-purple-200 text-sm">No conflicts detected</p>
+                </div>
+              )}
             </div>
 
             {/* Stats Panel */}

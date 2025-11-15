@@ -161,7 +161,11 @@ export default function SchedulingManager() {
   const handlePublishSchedule = () => {
     if (!selectedCompetition) return;
     if (confirm('Publish schedule? This will lock all entry numbers and prevent changes.')) {
-      publishMutation.mutate({ competitionId: selectedCompetition });
+      publishMutation.mutate({
+        competitionId: selectedCompetition,
+        tenantId: '00000000-0000-0000-0000-000000000003', // TEST tenant
+        userId: '00000000-0000-0000-0000-000000000001', // Test user
+      });
     }
   };
 

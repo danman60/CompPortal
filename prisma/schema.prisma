@@ -605,6 +605,13 @@ model competition_entries {
   is_scheduled                                                                         Boolean?                           @default(false)
   performance_date                                                                     DateTime?                          @db.Date
   performance_time                                                                     DateTime?                          @db.Time(6)
+  display_order                                                                        Int?
+  age_at_scheduling                                                                    Decimal?                           @db.Decimal(4, 2)
+  dancer_names                                                                         String[]
+  conflict_count                                                                       Int?                               @default(0)
+  has_studio_requests                                                                  Boolean?                           @default(false)
+  has_cd_notes                                                                         Boolean?                           @default(false)
+  age_changed                                                                          Boolean?                           @default(false)
   duration                                                                             Unsupported("interval")?
   warm_up_time                                                                         DateTime?                          @db.Time(6)
   heat                                                                                 String?                            @db.VarChar(50)
@@ -808,6 +815,10 @@ model competitions {
   tokens_override_enabled           Boolean?                            @default(false)
   schedule_published_at             DateTime?                           @db.Timestamptz(6)
   schedule_locked                   Boolean?                            @default(false)
+  schedule_state                    String?                             @default("draft") @db.VarChar(20)
+  schedule_finalized_at             DateTime?                           @db.Timestamptz(6)
+  schedule_finalized_by             String?                             @db.Uuid
+  schedule_published_by             String?                             @db.Uuid
   scoring_ranges                    Json?                               @default("{\"gold\": [85, 89.9], \"bronze\": [70, 79.9], \"silver\": [80, 84.9], \"platinum\": [95, 100], \"high_gold\": [90, 94.9]}")
   tenant_id                         String                              @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   age_division_settings             Json?
@@ -1855,6 +1866,58 @@ enum user_role {
   studio_director
   competition_director
   super_admin
+
+  @@schema("public")
+}
+
+model schedule_blocks {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String    @db.Uuid
+  competition_id      String    @db.Uuid
+  block_type          String    @db.VarChar(20)
+  title               String    @db.VarChar(255)
+  duration_minutes    Int
+  scheduled_start_time DateTime? @db.Timestamp(6)
+  schedule_day        DateTime? @db.Date
+  display_order       Int?
+  metadata            Json?
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
+}
+
+model routine_notes {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id   String    @db.Uuid
+  routine_id  String    @db.Uuid
+  note_type   String    @db.VarChar(50)
+  content     String
+  author_id   String    @db.Uuid
+  status      String?   @default("pending") @db.VarChar(20)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
+}
+
+model age_change_tracking {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  competition_id        String    @db.Uuid
+  dancer_id             String    @db.Uuid
+  dancer_name           String    @db.VarChar(255)
+  date_of_birth         DateTime  @db.Date
+  original_age          Int
+  new_age               Int
+  change_date           DateTime  @db.Date
+  age_group_before      String?   @db.VarChar(100)
+  age_group_after       String?   @db.VarChar(100)
+  affected_entry_ids    String[]
+  requires_rescheduling Boolean?  @default(false)
+  notes                 String?
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  updated_at            DateTime? @default(now()) @db.Timestamp(6)
 
   @@schema("public")
 }

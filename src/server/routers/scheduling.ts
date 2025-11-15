@@ -348,7 +348,192 @@ export const schedulingRouter = router({
       }
     }),
 
-  // Get conflicts for current schedule
+  // Get Trophy Helper report
+  // Shows last routine per overall category to guide award block placement
+  getTrophyHelper: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new Error('Tenant ID is required');
+      }
+
+      // Get all scheduled routines
+      const scheduledRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          schedule_zone: { not: null },
+          is_scheduled: true,
+        },
+        include: {
+          classifications: {
+            select: { id: true, name: true },
+          },
+          age_groups: {
+            select: { id: true, name: true },
+          },
+          entry_size_categories: {
+            select: { id: true, name: true },
+          },
+        },
+        orderBy: [
+          { performance_date: 'asc' },
+          { performance_time: 'asc' },
+        ],
+      });
+
+      // Group by overall category: CategoryType + AgeGroup + Classification
+      const categoryMap = new Map<string, any[]>();
+
+      for (const routine of scheduledRoutines) {
+        const categoryKey = `${routine.entry_size_category_id}-${routine.age_group_id}-${routine.classification_id}`;
+
+        if (!categoryMap.has(categoryKey)) {
+          categoryMap.set(categoryKey, []);
+        }
+
+        categoryMap.get(categoryKey)!.push(routine);
+      }
+
+      // Find last routine in each category
+      const trophyHelperEntries = [];
+
+      for (const [categoryKey, routines] of categoryMap.entries()) {
+        if (routines.length === 0) continue;
+
+        const lastRoutine = routines[routines.length - 1];
+        const firstRoutine = routines[0];
+
+        // Format category display name
+        const categoryDisplay = `${firstRoutine.entry_size_categories.name} - ${firstRoutine.age_groups.name} - ${firstRoutine.classifications.name}`;
+
+        // Calculate suggested award time (last routine time + 30 minutes)
+        const lastTime = lastRoutine.performance_time;
+        const suggestedAwardTime = lastTime
+          ? new Date(new Date(lastTime).getTime() + 30 * 60 * 1000)
+          : null;
+
+        trophyHelperEntries.push({
+          overallCategory: categoryKey,
+          categoryDisplay,
+          lastRoutineId: lastRoutine.id,
+          lastRoutineNumber: lastRoutine.display_order || 0,
+          lastRoutineTitle: lastRoutine.title,
+          lastRoutineTime: lastRoutine.performance_time,
+          lastRoutineDate: lastRoutine.performance_date,
+          lastRoutineZone: lastRoutine.schedule_zone,
+          totalRoutinesInCategory: routines.length,
+          suggestedAwardTime,
+        });
+      }
+
+      // Sort by suggested award time
+      trophyHelperEntries.sort((a, b) => {
+        if (!a.suggestedAwardTime) return 1;
+        if (!b.suggestedAwardTime) return -1;
+        return a.suggestedAwardTime.getTime() - b.suggestedAwardTime.getTime();
+      });
+
+      return trophyHelperEntries;
+    }),
+
+  // Detect conflicts for current schedule
+  // Rule: Minimum 6 routines between any two routines featuring the same dancer
+  detectConflicts: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new Error('Tenant ID is required');
+      }
+
+      const MIN_ROUTINES_BETWEEN = 6;
+
+      // Get all scheduled routines with participants
+      const scheduledRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          schedule_zone: { not: null },
+          is_scheduled: true,
+          display_order: { not: null },
+        },
+        include: {
+          entry_participants: {
+            select: {
+              dancer_id: true,
+              dancer_name: true,
+            },
+          },
+        },
+        orderBy: { display_order: 'asc' },
+      });
+
+      const conflicts = [];
+
+      // Build dancer-to-routines map
+      const dancerRoutines = new Map<string, typeof scheduledRoutines>();
+
+      for (const routine of scheduledRoutines) {
+        for (const participant of routine.entry_participants) {
+          if (!dancerRoutines.has(participant.dancer_id)) {
+            dancerRoutines.set(participant.dancer_id, []);
+          }
+          dancerRoutines.get(participant.dancer_id)!.push(routine);
+        }
+      }
+
+      // Check spacing between routines for each dancer
+      for (const [dancerId, routines] of dancerRoutines.entries()) {
+        if (routines.length < 2) continue; // No conflicts if dancer is in only 1 routine
+
+        // Sort by display_order
+        const sortedRoutines = routines.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+
+        for (let i = 0; i < sortedRoutines.length - 1; i++) {
+          const routine1 = sortedRoutines[i];
+          const routine2 = sortedRoutines[i + 1];
+
+          const routinesBetween = (routine2.display_order || 0) - (routine1.display_order || 0) - 1;
+
+          if (routinesBetween < MIN_ROUTINES_BETWEEN) {
+            const dancerName = routine1.entry_participants.find(p => p.dancer_id === dancerId)?.dancer_name || 'Unknown';
+
+            const severity = routinesBetween === 0 ? 'critical' :
+                           routinesBetween <= 3 ? 'error' : 'warning';
+
+            conflicts.push({
+              dancerId,
+              dancerName,
+              routine1Id: routine1.id,
+              routine1Number: routine1.display_order,
+              routine1Title: routine1.title,
+              routine2Id: routine2.id,
+              routine2Number: routine2.display_order,
+              routine2Title: routine2.title,
+              routinesBetween,
+              severity,
+              message: `${dancerName} has only ${routinesBetween} routine${routinesBetween !== 1 ? 's' : ''} between performances (need ${MIN_ROUTINES_BETWEEN} minimum)`,
+            });
+          }
+        }
+      }
+
+      return {
+        conflicts,
+        summary: {
+          total: conflicts.length,
+          critical: conflicts.filter(c => c.severity === 'critical').length,
+          errors: conflicts.filter(c => c.severity === 'error').length,
+          warnings: conflicts.filter(c => c.severity === 'warning').length,
+        },
+      };
+    }),
+
+  // Get conflicts for current schedule (old session-based system - deprecated)
   getConflicts: publicProcedure
     .input(z.object({
       competitionId: z.string().uuid(),
@@ -401,6 +586,274 @@ export const schedulingRouter = router({
       const conflicts = getAllConflicts(schedulingEntries, sessionCapacities, constraints);
 
       return { conflicts, total: conflicts.length };
+    }),
+
+  // Finalize schedule (lock entry numbers)
+  finalizeSchedule: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      userId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Verify no critical conflicts
+      const conflictsResponse = await prisma.$queryRaw<any[]>`
+        SELECT COUNT(*) as critical_count
+        FROM schedule_conflicts
+        WHERE competition_id = ${input.competitionId}::uuid
+          AND severity = 'critical'
+          AND status = 'active'
+      `;
+
+      const criticalCount = conflictsResponse[0]?.critical_count || 0;
+
+      if (criticalCount > 0) {
+        throw new Error(`Cannot finalize schedule: ${criticalCount} critical conflict(s) must be resolved first`);
+      }
+
+      // Update competition status
+      const updated = await prisma.competitions.update({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          schedule_state: 'finalized',
+          schedule_finalized_at: new Date(),
+          schedule_finalized_by: input.userId,
+          schedule_locked: true,
+        },
+      });
+
+      return { success: true, competition: updated };
+    }),
+
+  // Publish schedule (reveal studio names)
+  publishSchedule: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      userId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Verify status is finalized
+      const competition = await prisma.competitions.findUnique({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        select: { schedule_state: true },
+      });
+
+      if (competition?.schedule_state !== 'finalized') {
+        throw new Error('Schedule must be finalized before publishing');
+      }
+
+      // Update competition status
+      const updated = await prisma.competitions.update({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          schedule_state: 'published',
+          schedule_published_at: new Date(),
+          schedule_published_by: input.userId,
+        },
+      });
+
+      return { success: true, competition: updated };
+    }),
+
+  // Unlock schedule (finalized -> draft)
+  unlockSchedule: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Verify status is finalized (can't unlock published schedules)
+      const competition = await prisma.competitions.findUnique({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        select: { schedule_state: true },
+      });
+
+      if (competition?.schedule_state === 'published') {
+        throw new Error('Cannot unlock a published schedule');
+      }
+
+      // Update competition status
+      const updated = await prisma.competitions.update({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          schedule_state: 'draft',
+          schedule_locked: false,
+          schedule_finalized_at: null,
+          schedule_finalized_by: null,
+        },
+      });
+
+      return { success: true, competition: updated };
+    }),
+
+  // Create schedule block (award or break)
+  createScheduleBlock: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      blockType: z.enum(['award', 'break']),
+      title: z.string(),
+      durationMinutes: z.number(),
+      metadata: z.any().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const block = await prisma.schedule_blocks.create({
+        data: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          block_type: input.blockType,
+          title: input.title,
+          duration_minutes: input.durationMinutes,
+          metadata: input.metadata || {},
+        },
+      });
+
+      return block;
+    }),
+
+  // Place schedule block at position
+  placeScheduleBlock: publicProcedure
+    .input(z.object({
+      blockId: z.string().uuid(),
+      targetTime: z.date(),
+      displayOrder: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      // Round targetTime to nearest 5 minutes
+      const minutes = input.targetTime.getMinutes();
+      const roundedMinutes = Math.round(minutes / 5) * 5;
+      const roundedTime = new Date(input.targetTime);
+      roundedTime.setMinutes(roundedMinutes);
+      roundedTime.setSeconds(0);
+      roundedTime.setMilliseconds(0);
+
+      const updated = await prisma.schedule_blocks.update({
+        where: { id: input.blockId },
+        data: {
+          scheduled_start_time: roundedTime,
+          display_order: input.displayOrder,
+          updated_at: new Date(),
+        },
+      });
+
+      return updated;
+    }),
+
+  // Add studio request/note to routine
+  addStudioRequest: publicProcedure
+    .input(z.object({
+      routineId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      content: z.string(),
+      authorId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      const note = await prisma.routine_notes.create({
+        data: {
+          routine_id: input.routineId,
+          tenant_id: input.tenantId,
+          note_type: 'studio_request',
+          content: input.content,
+          author_id: input.authorId,
+          status: 'pending',
+        },
+      });
+
+      // Update has_studio_requests flag
+      await prisma.competition_entries.update({
+        where: { id: input.routineId },
+        data: { has_studio_requests: true },
+      });
+
+      return note;
+    }),
+
+  // Get studio requests for competition director
+  getStudioRequests: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      filters: z.object({
+        status: z.enum(['pending', 'completed', 'ignored']).optional(),
+        studioId: z.string().uuid().optional(),
+      }).optional(),
+    }))
+    .query(async ({ input }) => {
+      // Query notes directly with joins
+      const notes = await prisma.routine_notes.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          note_type: 'studio_request',
+          ...(input.filters?.status ? { status: input.filters.status } : {}),
+        },
+      });
+
+      // Get associated routine details
+      const routineIds = notes.map(n => n.routine_id);
+      const routines = await prisma.competition_entries.findMany({
+        where: {
+          id: { in: routineIds },
+          competition_id: input.competitionId,
+          ...(input.filters?.studioId ? { studio_id: input.filters.studioId } : {}),
+        },
+        include: {
+          studios: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      const routineMap = new Map(routines.map(r => [r.id, r]));
+
+      const requests = notes
+        .map(note => {
+          const routine = routineMap.get(note.routine_id);
+          if (!routine) return null;
+
+          return {
+            ...note,
+            routineTitle: routine.title,
+            routineId: routine.id,
+            studioName: routine.studios.name,
+          };
+        })
+        .filter(r => r !== null);
+
+      return requests;
+    }),
+
+  // Update studio request status
+  updateRequestStatus: publicProcedure
+    .input(z.object({
+      noteId: z.string().uuid(),
+      status: z.enum(['completed', 'ignored']),
+    }))
+    .mutation(async ({ input }) => {
+      const updated = await prisma.routine_notes.update({
+        where: { id: input.noteId },
+        data: {
+          status: input.status,
+          updated_at: new Date(),
+        },
+      });
+
+      return updated;
     }),
 
   // Auto-schedule entries to a session
@@ -577,35 +1030,6 @@ export const schedulingRouter = router({
       });
 
       return { success: true, clearedCount: input.entryIds.length };
-    }),
-
-  // Publish schedule and lock entry numbers
-  publishSchedule: publicProcedure
-    .input(z.object({ competitionId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      // Check if all entries have numbers
-      const unnumberedCount = await prisma.competition_entries.count({
-        where: {
-          competition_id: input.competitionId,
-          entry_number: null,
-        },
-      });
-
-      if (unnumberedCount > 0) {
-        throw new Error(`Cannot publish: ${unnumberedCount} entries are not scheduled`);
-      }
-
-      // Lock the schedule
-      await prisma.competitions.update({
-        where: { id: input.competitionId },
-        data: {
-          schedule_locked: true,
-          schedule_published_at: new Date(),
-          updated_at: new Date(),
-        },
-      });
-
-      return { success: true, message: 'Schedule published and locked' };
     }),
 
   // Assign suffix to late entry (e.g., 156a, 156b)
