@@ -499,6 +499,26 @@ export default function SchedulePage() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+        }
+      `}</style>
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6">
         {/* Header */}
         <div className="mb-6">
@@ -671,13 +691,26 @@ export default function SchedulePage() {
                 <label className="block text-sm font-medium text-purple-200 mb-2">
                   Search Routine
                 </label>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by title..."
-                  className="w-full px-4 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 pointer-events-none">
+                    🔍
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by title..."
+                    className="w-full pl-10 pr-10 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-all"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Classification Filter */}
@@ -685,16 +718,21 @@ export default function SchedulePage() {
                 <label className="block text-sm font-medium text-purple-200 mb-2">
                   Classification
                 </label>
-                <select
-                  value={selectedClassification}
-                  onChange={(e) => setSelectedClassification(e.target.value)}
-                  className="w-full px-4 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                >
-                  <option value="">All Classifications</option>
-                  {classifications.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedClassification}
+                    onChange={(e) => setSelectedClassification(e.target.value)}
+                    className="w-full px-4 py-2 pr-10 border border-white/20 rounded-lg bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent hover:bg-white/15 hover:border-white/30 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="" className="bg-gray-800">All Classifications</option>
+                    {classifications.map(c => (
+                      <option key={c.id} value={c.id} className="bg-gray-800">{c.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/60">
+                    ▼
+                  </div>
+                </div>
               </div>
 
               {/* Category Filter */}
@@ -702,16 +740,21 @@ export default function SchedulePage() {
                 <label className="block text-sm font-medium text-purple-200 mb-2">
                   Genre
                 </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                >
-                  <option value="">All Genres</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-4 py-2 pr-10 border border-white/20 rounded-lg bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent hover:bg-white/15 hover:border-white/30 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="" className="bg-gray-800">All Genres</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id} className="bg-gray-800">{c.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/60">
+                    ▼
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -726,11 +769,19 @@ export default function SchedulePage() {
                 </span>
               </div>
 
-              {/* Loading State */}
+              {/* Loading State - Skeleton Loaders */}
               {isLoading && (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-purple-200"></div>
-                  <p className="mt-3 text-purple-200">Loading routines...</p>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-white/10 border border-white/20 rounded-xl p-4 animate-pulse">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="h-5 bg-white/20 rounded w-3/4"></div>
+                        <div className="h-6 w-8 bg-white/20 rounded"></div>
+                      </div>
+                      <div className="h-8 bg-white/15 rounded-lg w-2/3 mb-2"></div>
+                      <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -744,7 +795,7 @@ export default function SchedulePage() {
 
               {/* Routines List */}
               {unscheduledRoutines.length > 0 && (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                   {unscheduledRoutines.map((routine) => (
                     <DraggableRoutineCard key={routine.id} routine={routine} viewMode={viewMode} />
                   ))}
@@ -778,8 +829,12 @@ export default function SchedulePage() {
 
               <div className="space-y-4">
                 {/* Saturday */}
-                <div>
-                  <h3 className="text-md font-bold text-white mb-2">Saturday</h3>
+                <div className="bg-gradient-to-br from-indigo-500/15 to-purple-500/15 border border-indigo-500/30 rounded-2xl p-5">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-white/10">
+                    <span className="text-3xl">📅</span>
+                    <h3 className="text-xl font-bold text-white">Saturday</h3>
+                    <span className="text-sm text-white/70 ml-auto">April 10, 2025</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} viewMode={viewMode} />
                     <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} viewMode={viewMode} />
@@ -787,8 +842,12 @@ export default function SchedulePage() {
                 </div>
 
                 {/* Sunday */}
-                <div>
-                  <h3 className="text-md font-bold text-white mb-2">Sunday</h3>
+                <div className="bg-gradient-to-br from-blue-500/15 to-indigo-500/15 border border-blue-500/30 rounded-2xl p-5">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-white/10">
+                    <span className="text-3xl">☀️</span>
+                    <h3 className="text-xl font-bold text-white">Sunday</h3>
+                    <span className="text-sm text-white/70 ml-auto">April 11, 2025</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} viewMode={viewMode} />
                     <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} viewMode={viewMode} />
@@ -808,7 +867,7 @@ export default function SchedulePage() {
               </div>
 
               {trophyHelper && Array.isArray(trophyHelper) && trophyHelper.length > 0 ? (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                   {trophyHelper.map((entry, index) => (
                     <div
                       key={entry.overallCategory}
@@ -863,7 +922,7 @@ export default function SchedulePage() {
               </h2>
 
               {conflictsData && conflictsData.conflicts.length > 0 ? (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                   {conflictsData.conflicts.map((conflict, index) => (
                     <div
                       key={index}
