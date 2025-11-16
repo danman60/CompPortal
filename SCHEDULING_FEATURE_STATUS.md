@@ -1,8 +1,8 @@
 # Scheduling Feature Status - Spec vs. Implementation
 
-**Date:** 2025-11-15
+**Date:** 2025-11-15 (Session 56)
 **Branch:** tester
-**Commit:** 0444789
+**Commit:** 9e47d55
 **Spec:** SCHEDULING_SPEC_V4_UNIFIED.md
 
 ---
@@ -15,13 +15,13 @@
 |---------|----------|---------|----|----|-------|
 | **1. Manual Scheduling Interface** | §1 | ⚠️ Partial | ⚠️ Partial | 🟡 IN PROGRESS | Zone-based, not timeline |
 | - 3-Panel Layout | §1 | ✅ | ⚠️ | 🟡 | Using zones vs. timeline grid |
-| - LEFT: Unscheduled Pool | §1 | ✅ | ✅ | ✅ | Filters + search working |
-| - CENTER: Schedule Grid | §1 | ⚠️ | ⚠️ | 🟡 | Zone drops, not table rows |
+| - LEFT: Unscheduled Pool | §1 | ✅ | ✅ | ✅ | FilterPanel ✅ (Session 56) |
+| - CENTER: Schedule Grid | §1 | ⚠️ | ⚠️ | 🟡 | TimelineHeader ✅ (Session 56) |
 | - RIGHT: Trophy Helper | §1 | ✅ | ✅ | ✅ | **COMPLETE** |
 | - Day Selector Tabs | §1 | ❌ | ❌ | ❌ | Using zones (sat-am, sat-pm, etc.) |
-| - View Mode Selector | §1 | ⚠️ Partial | ❌ | 🟡 | Backend ready, no UI |
+| - View Mode Selector | §1 | ⚠️ Partial | ✅ | ✅ | ScheduleToolbar ✅ (Session 56) |
 | - Conflict Boxes | §1 | ✅ | ✅ | ✅ | **COMPLETE** |
-| - Top Toolbar | §1 | ⚠️ Partial | ❌ | 🟡 | Backend ready, no UI |
+| - Top Toolbar | §1 | ⚠️ Partial | ✅ | ✅ | ScheduleToolbar ✅ (Session 56) |
 | **2. Conflict Detection** | §2 | ✅ | ✅ | ✅ | **COMPLETE** |
 | - Real-time detection | §2 | ✅ | ✅ | ✅ | 6-routine spacing |
 | - Dancer name display | §2 | ✅ | ✅ | ✅ | Shows in warnings |
@@ -30,13 +30,13 @@
 | **3. Studio Code System** | §3 | ❌ | ❌ | ❌ | Not implemented |
 | - Code assignment | §3 | ❌ | ❌ | ❌ | A, B, C masking |
 | - Display logic | §3 | ❌ | ❌ | ❌ | View-based names |
-| **4. State Machine** | §4 | ✅ | ❌ | 🟡 | **Backend COMPLETE** |
-| - Draft mode | §4 | ✅ | ❌ | 🟡 | Auto-renumber logic |
-| - Finalize mutation | §4 | ✅ | ❌ | 🟡 | Locks numbers |
-| - Publish mutation | §4 | ✅ | ❌ | 🟡 | Reveals names |
-| - Unlock mutation | §4 | ✅ | ❌ | 🟡 | Draft rollback |
-| - Status badge UI | §4 | ❌ | ❌ | ❌ | Draft/Finalized/Published |
-| - Action buttons UI | §4 | ❌ | ❌ | ❌ | Finalize/Publish/Unlock |
+| **4. State Machine** | §4 | ✅ | ✅ | ✅ | **COMPLETE** (Session 56) |
+| - Draft mode | §4 | ✅ | ✅ | ✅ | Auto-renumber logic |
+| - Finalize mutation | §4 | ✅ | ✅ | ✅ | Locks numbers |
+| - Publish mutation | §4 | ✅ | ✅ | ✅ | Reveals names |
+| - Unlock mutation | §4 | ✅ | ✅ | ✅ | Draft rollback |
+| - Status badge UI | §4 | ✅ | ✅ | ✅ | ScheduleToolbar (Session 56) |
+| - Action buttons UI | §4 | ✅ | ✅ | ✅ | ScheduleToolbar (Session 56) |
 | **5. Schedule Blocks** | §5 | ✅ | ❌ | 🟡 | **Backend COMPLETE** |
 | - Award blocks | §5 | ✅ | ❌ | 🟡 | Create/place backend |
 | - Break blocks | §5 | ✅ | ❌ | 🟡 | Create/place backend |
@@ -120,18 +120,23 @@
   - updateRequestStatus ✅
 
 **Frontend Components:**
-- ✅ Implemented: 2 major features
-  - Trophy Helper panel ✅
-  - Conflict detection display ✅
-- ❌ Missing: 8 major features
-  - State machine toolbar
-  - Award/Break blocks draggable UI
-  - View mode selector
-  - Studio feedback UI
-  - Age change warnings
-  - Hotel attrition warnings
-  - Routine notes panel
-  - Studio code masking
+- ✅ Implemented: 8 components (2,389 lines)
+  - Session 55 (5 components, 1,559 lines):
+    - ScheduleStateMachine.tsx ✅
+    - ConflictOverrideModal.tsx ✅
+    - TrophyHelperPanel.tsx ✅
+    - ScheduleBlockCard.tsx ✅
+    - ScheduleBlockModal.tsx ✅
+  - Session 56 (3 components, 830 lines):
+    - ScheduleToolbar.tsx ✅
+    - FilterPanel.tsx ✅
+    - TimelineHeader.tsx ✅
+- ❌ Missing: 5 major features
+  - Award/Break blocks integration (components exist, need page integration)
+  - Studio feedback UI panel
+  - Age change warnings banner
+  - Hotel attrition warnings banner
+  - Studio code masking logic
 
 ---
 
@@ -139,25 +144,27 @@
 
 ### Must Have for Dec 26 (P0)
 
-1. **Timeline Grid View** (currently using zones)
-   - Swap zone-based system for proper timeline table
-   - Day tabs with actual dates
-   - Time-based row insertion
+1. ~~**State Machine UI**~~ ✅ **COMPLETE** (Session 56)
+   - ✅ Status badge (Draft/Finalized/Published)
+   - ✅ Finalize/Publish/Unlock buttons
+   - ✅ Stats display
 
-2. **State Machine UI**
-   - Status badge (Draft/Finalized/Published)
-   - Finalize/Publish/Unlock buttons
-   - Guard dialogs ("Are you sure?")
+2. **Award/Break Blocks Integration**
+   - ✅ Components created (Session 55)
+   - ❌ Integrate into page.tsx
+   - ❌ Connect to backend mutations
 
-3. **Award/Break Blocks UI**
-   - Draggable blocks from toolbar
-   - Drop into schedule
-   - Inline duration editing
+3. **Studio Code System**
+   - ❌ A, B, C code assignment
+   - ❌ View-based name display
+   - ❌ Masking until published
 
-4. **Studio Code System**
-   - A, B, C code assignment
-   - View-based name display
-   - Masking until published
+4. **Component Integration** (High Priority)
+   - ❌ Replace inline code with ScheduleToolbar
+   - ❌ Replace inline filters with FilterPanel
+   - ❌ Replace inline header with TimelineHeader
+   - ❌ Extract RoutinePool component
+   - ❌ Extract ScheduleGrid component
 
 ### High Priority (P1)
 
@@ -186,20 +193,27 @@
 
 **Tester Domain:** https://tester.compsync.net
 **Scheduler URL:** /dashboard/director-panel/schedule
-**Last Deploy:** 2025-11-15 (commit 0444789)
+**Last Deploy:** 2025-11-15 Session 56 (commit 9e47d55)
 
 **Ready to Test:**
 - ✅ Trophy Helper
 - ✅ Conflict Detection
 - ✅ Basic drag-drop scheduling (zone-based)
 - ✅ Filters and search
+- ✅ State machine controls (ScheduleToolbar component exists, needs integration)
+- ✅ View mode switching (ScheduleToolbar component exists, needs integration)
+
+**Components Created But Not Integrated:**
+- ⚠️ ScheduleToolbar (needs page.tsx integration)
+- ⚠️ FilterPanel (needs page.tsx integration)
+- ⚠️ TimelineHeader (needs page.tsx integration)
+- ⚠️ ScheduleBlockCard & Modal (need page.tsx integration)
 
 **Not Yet in UI:**
-- ❌ State machine controls
-- ❌ Award/break blocks
-- ❌ View switching
+- ❌ Award/break blocks integration
 - ❌ Studio feedback
-- ❌ All other features
+- ❌ Age change warnings
+- ❌ Hotel attrition warnings
 
 ---
 
