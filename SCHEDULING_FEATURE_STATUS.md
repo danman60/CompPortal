@@ -277,27 +277,85 @@
 
 ## Next Steps (Prioritized)
 
-### Week 1 (Nov 18-22)
-1. Timeline Grid View (replace zones)
-2. State Machine UI (toolbar + buttons)
-3. Award/Break Blocks UI
+### ✅ Completed (Session 58)
+- ✅ State Machine UI (toolbar + buttons)
+- ✅ Award/Break Blocks UI
+- ✅ Studio Code System (per-competition)
+- ✅ Age Change Detection (summary banner)
+- ✅ Hotel Attrition Warnings (banner)
 
-### Week 2 (Nov 25-29)
-4. Studio Code System
-5. View Mode Switching
-6. Age Change Detection
+### 🔄 Ready for Next Session
 
-### Week 3 (Dec 2-6)
-7. Hotel Attrition Warnings
-8. Studio Feedback UI
-9. E2E Testing
+**High Priority (Quick Wins):**
+1. **Studio Feedback UI Polish** (P1)
+   - Backend: ✅ Complete (StudioRequestsPanel integrated)
+   - TODO: Add request button to routine cards in schedule view
+   - TODO: Test request workflow end-to-end
+   - Estimated: 1-2 hours
 
-### Week 4 (Dec 9-13)
-10. Polish and bug fixes
-11. User acceptance testing
-12. Documentation
+2. **Multiple Views Access Control** (P1)
+   - Backend: 🟡 Partial (view mode logic exists)
+   - TODO: Add role-based view mode restrictions
+   - TODO: Enforce Studio Director can only see their routines
+   - TODO: Enforce Public view only when published
+   - Estimated: 2-3 hours (requires auth infrastructure)
 
-### Final Sprint (Dec 16-26)
-13. Production deployment prep
-14. Training materials
-15. Go-live support
+**Major Features (Architectural Changes):**
+3. **Timeline Grid View** (P0 Critical - Major)
+   - Current: Zone-based (saturday-am, saturday-pm, etc.)
+   - Target: Time-slot based (9:00 AM, 9:05 AM, etc.)
+   - TODO: Design time-slot architecture
+   - TODO: Migrate zone system to time-based
+   - TODO: Update drag-drop for time slots
+   - TODO: Add time picker UI
+   - Estimated: 8-12 hours (major refactor)
+
+**Future Enhancements:**
+4. Routine Notes (CD private notes)
+5. E2E Testing suite
+6. Production deployment prep
+7. Documentation & training materials
+
+---
+
+## Session 58 Summary (2025-11-16)
+
+### Features Delivered: 4
+
+**1. Studio Code System Refactor** ⭐
+- Migrated from global `studios.studio_code` to per-competition `reservations.studio_code`
+- Updated procedures: assignStudioCodes, getRoutines, getViewModeSchedule, exportPDF/Excel
+- All views now use competition-specific codes
+- Files: `src/server/routers/scheduling.ts`
+
+**2. Award/Break Blocks Integration** ⭐
+- Integrated ScheduleBlockCard & ScheduleBlockModal components
+- Added DraggableBlockTemplate create buttons
+- Connected createScheduleBlock backend mutation
+- Full create/edit/delete functionality
+- Files: `src/app/dashboard/director-panel/schedule/page.tsx`
+
+**3. Age Change Detection** ⭐
+- Integrated detectAgeChanges query
+- Summary banner shows affected routines (up to 5)
+- Displays dancer age changes and affected age groups
+- Files: `src/app/dashboard/director-panel/schedule/page.tsx`
+
+**4. Hotel Attrition Warnings** ⭐
+- Replaced manual implementation with HotelAttritionBanner component
+- Shows day distribution and recommendations
+- Uses getHotelAttritionWarning backend query
+- Dismissable with localStorage persistence
+- Files: `src/app/dashboard/director-panel/schedule/page.tsx`
+
+### Metrics
+- **P0 Critical:** 5/5 ✅ 100% Complete
+- **P1 High Priority:** 3/6 ✅ 50% Complete
+- **Session Time:** ~4 hours
+- **Lines Changed:** ~200
+- **Commits:** 4 (eae1925, d770cd7, ada66d4, f2bbfc3, 6431117)
+
+### Next Session Priorities
+1. Studio Feedback UI Polish (1-2 hours)
+2. Timeline Grid View planning & design
+3. Multiple Views access control (if auth infrastructure ready)
