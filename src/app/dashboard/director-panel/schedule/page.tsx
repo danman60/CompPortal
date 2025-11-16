@@ -161,13 +161,12 @@ export default function SchedulePage() {
     },
   ]);
 
-  // Fetch routines (use filter state)
+  // Fetch routines (search handled by backend, other filters client-side)
   const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
     tenantId: TEST_TENANT_ID,
-    classificationId: filters.classifications[0] || undefined, // TODO: Support multiple
-    categoryId: filters.genres[0] || undefined, // TODO: Support multiple
-    searchQuery: filters.search || undefined,
+    searchQuery: filters.search || undefined, // Backend search for performance
+    // Other filters (classification, age, genre, studio) handled client-side for multi-select
   });
 
   // Fetch Trophy Helper
@@ -423,6 +422,20 @@ export default function SchedulePage() {
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
 
+  // Get unique age groups from routines
+  const ageGroups = routines
+    ? Array.from(new Set(routines.map(r => ({ id: r.ageGroupId, name: r.ageGroupName }))))
+        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
+  // Get unique studios from routines
+  const studios = routines
+    ? Array.from(new Set(routines.map(r => ({ id: r.studioId, name: r.studioName, code: r.studioCode }))))
+        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
   // Group routines by zone
   const routinesByZone = (routines || []).reduce((acc, routine) => {
     const zone = routineZones[routine.id] || 'unscheduled';
@@ -431,7 +444,37 @@ export default function SchedulePage() {
     return acc;
   }, {} as Record<ScheduleZone, Routine[]>);
 
-  const unscheduledRoutines = routinesByZone['unscheduled'] || [];
+  // Apply client-side filters to unscheduled routines
+  const allUnscheduled = routinesByZone['unscheduled'] || [];
+  const unscheduledRoutines = allUnscheduled.filter(routine => {
+    // Classification filter
+    if (filters.classifications.length > 0 && !filters.classifications.includes(routine.classificationId)) {
+      return false;
+    }
+
+    // Age group filter
+    if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(routine.ageGroupId)) {
+      return false;
+    }
+
+    // Genre filter
+    if (filters.genres.length > 0 && !filters.genres.includes(routine.categoryId)) {
+      return false;
+    }
+
+    // Studio filter
+    if (filters.studios.length > 0 && !filters.studios.includes(routine.studioId)) {
+      return false;
+    }
+
+    // Search filter (already handled by backend query, but add client-side for consistency)
+    if (filters.search && !routine.title.toLowerCase().includes(filters.search.toLowerCase())) {
+      return false;
+    }
+
+    return true;
+  });
+
   const saturdayAM = routinesByZone['saturday-am'] || [];
   const saturdayPM = routinesByZone['saturday-pm'] || [];
   const sundayAM = routinesByZone['sunday-am'] || [];
@@ -628,9 +671,9 @@ export default function SchedulePage() {
             {/* Filter Panel (Session 56) */}
             <FilterPanel
               classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
-              ageGroups={[]} // TODO: Get age groups from data
+              ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
               genres={categories.map(c => ({ id: c.id, label: c.name }))}
-              studios={[]} // TODO: Get studios from data
+              studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
               filters={filters}
               onFiltersChange={setFilters}
               totalRoutines={routines?.length || 0}
