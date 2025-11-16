@@ -158,6 +158,12 @@ export default function SchedulePage() {
     tenantId: TEST_TENANT_ID,
   });
 
+  // NEW: Fetch Age Changes (Session 58)
+  const { data: ageChangesData } = trpc.scheduling.detectAgeChanges.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+  });
+
   // Fetch Studio Requests (for CD)
   const { data: studioRequests, refetch: refetchRequests } = trpc.scheduling.getStudioRequests.useQuery({
     competitionId: TEST_COMPETITION_ID,
@@ -767,43 +773,43 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Hotel Attrition Warning */}
-        {(() => {
-          // Check if all Emerald routines are on one day
-          const emeraldRoutines = (routines || []).filter(r =>
-            r.classificationName.toLowerCase().includes('emerald')
-          );
-          const emeraldSaturday = emeraldRoutines.filter(r =>
-            routineZones[r.id]?.startsWith('saturday')
-          );
-          const emeraldSunday = emeraldRoutines.filter(r =>
-            routineZones[r.id]?.startsWith('sunday')
-          );
-
-          const showWarning = emeraldRoutines.length > 0 && (
-            emeraldSaturday.length === emeraldRoutines.length ||
-            emeraldSunday.length === emeraldRoutines.length
-          );
-
-          if (!showWarning) return null;
-
-          const day = emeraldSaturday.length === emeraldRoutines.length ? 'Saturday' : 'Sunday';
-
-          return (
-            <div className="mb-6 bg-red-900/30 backdrop-blur-sm rounded-xl border border-red-500/50 p-4 shadow-lg">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl flex-shrink-0">🚨</span>
-                <div>
-                  <h3 className="font-bold text-red-300 text-lg mb-1">Hotel Attrition Warning</h3>
-                  <p className="text-red-200 text-sm">
-                    All {emeraldRoutines.length} Emerald routines are scheduled on {day} only.
-                    This may cause hotel attrition issues. Consider spreading routines across both days.
-                  </p>
+        {/* Age Change Warnings */}
+        {ageChangesData && ageChangesData.changedRoutines && ageChangesData.changedRoutines.length > 0 && (
+          <div className="mb-6 bg-yellow-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/50 p-4 shadow-lg">
+            <div className="flex items-start gap-3">
+              <span className="text-3xl flex-shrink-0">⚠️</span>
+              <div className="flex-1">
+                <h3 className="font-bold text-yellow-300 text-lg mb-1">Dancer Age Changes Detected</h3>
+                <p className="text-yellow-200 text-sm mb-3">
+                  {ageChangesData.changedRoutines.length} routine{ageChangesData.changedRoutines.length !== 1 ? 's have' : ' has'} dancers whose ages have changed since scheduling.
+                  This may affect age group categories.
+                </p>
+                <div className="space-y-2">
+                  {ageChangesData.changedRoutines.slice(0, 5).map((routine: any) => (
+                    <div key={routine.id} className="text-xs text-yellow-100 bg-yellow-900/20 rounded p-2">
+                      🎭 {routine.title} - {routine.ageChanges?.length || 0} dancer{(routine.ageChanges?.length || 0) !== 1 ? 's' : ''}
+                    </div>
+                  ))}
+                  {ageChangesData.changedRoutines.length > 5 && (
+                    <div className="text-xs text-yellow-300 italic">
+                      +{ageChangesData.changedRoutines.length - 5} more routine{ageChangesData.changedRoutines.length - 5 !== 1 ? 's' : ''}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          );
-        })()}
+          </div>
+        )}
+
+        {/* Hotel Attrition Warning */}
+        {hotelWarningData && (
+          <HotelAttritionBanner
+            hasWarning={hotelWarningData.hasWarning}
+            message={hotelWarningData.message}
+            dayDistribution={hotelWarningData.dayDistribution || []}
+            totalEmeraldRoutines={hotelWarningData.totalEmeraldRoutines || 0}
+          />
+        )}
 
         {/* Main 3-Panel Layout */}
         <div className="grid grid-cols-12 gap-6">

@@ -1,11 +1,11 @@
 # Scheduling Feature Status - Spec vs. Implementation
 
-**Date:** 2025-11-16 (Session 58 - Studio Codes + Award/Break Blocks)
+**Date:** 2025-11-16 (Session 58 - 4 Features Complete)
 **Branch:** tester
-**Commit:** Pending (2 features completed)
+**Commit:** Pending (4 features completed)
 **Spec:** SCHEDULING_SPEC_V4_UNIFIED.md
 **Last E2E Test:** Session 4 - View modes verified
-**Session 58 Progress:** Studio codes (per-competition) + Award/Break blocks integration COMPLETE
+**Session 58 Progress:** Studio codes + Award/Break blocks + Age warnings + Hotel warnings COMPLETE
 
 ---
 
@@ -61,10 +61,10 @@
 | - Update status | §7 | ✅ | ✅ | ✅ | updateRequestStatus procedure |
 | - Request list UI | §7 | ✅ | ✅ | ✅ | StudioRequestsPanel component |
 | - Add note button | §7 | ✅ | ✅ | ✅ | Integrated in schedule page |
-| **8. Age Change Detection** | §8 | ❌ | ❌ | ❌ | Not implemented |
-| - Detection algorithm | §8 | ❌ | ❌ | ❌ | Compare ages |
-| - Visual warnings | §8 | ❌ | ❌ | ❌ | Yellow highlights |
-| - Tracking table | §8 | ✅ | ❌ | 🟡 | Table exists, no logic |
+| **8. Age Change Detection** | §8 | ✅ | ✅ | ✅ | **COMPLETE** (Session 58) |
+| - Detection algorithm | §8 | ✅ | ✅ | ✅ | detectAgeChanges query |
+| - Visual warnings | §8 | ✅ | ✅ | ✅ | Summary banner |
+| - Tracking table | §8 | ✅ | ✅ | ✅ | Integrated |
 | **9. Routine Notes** | §9 | ⚠️ Partial | ❌ | 🟡 | Studio requests only |
 | - CD private notes | §9 | ❌ | ❌ | ❌ | Missing |
 | - Studio requests | §9 | ✅ | ❌ | 🟡 | Backend ready |
@@ -75,9 +75,9 @@
 | - Judge view | §10 | ❌ | ✅ | 🟡 | **UI works, no code masking** |
 | - Public view | §10 | ❌ | ✅ | 🟡 | **UI works, no access control** |
 | - View selector UI | §10 | ✅ | ✅ | ✅ | **E2E VERIFIED (4 modes)** |
-| **11. Hotel Attrition** | §11 | ❌ | ❌ | ❌ | Not implemented |
-| - Emerald day check | §11 | ❌ | ❌ | ❌ | Warning logic |
-| - Warning display | §11 | ❌ | ❌ | ❌ | In finalization |
+| **11. Hotel Attrition** | §11 | ✅ | ✅ | ✅ | **COMPLETE** (Session 58) |
+| - Emerald day check | §11 | ✅ | ✅ | ✅ | Backend query integrated |
+| - Warning display | §11 | ✅ | ✅ | ✅ | HotelAttritionBanner |
 
 ### P2 NICE-TO-HAVE
 
@@ -103,9 +103,9 @@
 - ❌ Missing: 0
 
 **P1 High Priority (6 features):**
-- ✅ Complete: 1 (Trophy Helper - counted in P0)
-- 🟡 Partial: 3 (Studio Feedback, Routine Notes, Multiple Views)
-- ❌ Missing: 2 (Age Change Detection, Hotel Attrition)
+- ✅ Complete: 3 (Trophy Helper, Age Change Detection, Hotel Attrition)
+- 🟡 Partial: 2 (Studio Feedback, Routine Notes, Multiple Views)
+- ❌ Missing: 0
 
 **P2 Nice-to-Have (3 features):**
 - ❌ All missing
@@ -178,6 +178,13 @@
 - ✅ Connected createScheduleBlock backend mutation
 - ✅ Implemented create/edit/delete handlers
 - ✅ Removed old inline DraggableBlock component
+- 📝 Files Changed: `src/app/dashboard/director-panel/schedule/page.tsx`
+
+**COMPLETED 3:** Age Change Detection & Hotel Attrition Warnings
+- ✅ Integrated detectAgeChanges query
+- ✅ Added age change summary banner (shows affected routines)
+- ✅ Replaced manual hotel attrition with HotelAttritionBanner component
+- ✅ Both warnings display automatically when conditions are met
 - 📝 Files Changed: `src/app/dashboard/director-panel/schedule/page.tsx`
 
 ### Must Have for Dec 26 (P0)
@@ -260,14 +267,11 @@
 **Session 58 Completed:**
 - ✅ Studio code system refactor (global → per-competition)
 - ✅ Award/Break blocks integration (create/edit/delete/drag)
+- ✅ Age change warnings (summary banner integrated)
+- ✅ Hotel attrition warnings (HotelAttritionBanner integrated)
 
 **Not Yet in UI:**
-- ❌ Age change warnings (backend exists)
-- ❌ Hotel attrition warnings (backend exists)
-
-**Missing Backend Logic:**
-- ❌ Age change detection algorithm (procedure exists, needs integration)
-- ❌ Hotel attrition check integration (procedure exists, needs UI)
+- ❌ Timeline Grid View (major architectural change - requires zone → time-slot refactor)
 
 ---
 
