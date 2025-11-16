@@ -43,7 +43,6 @@ export function TrophyHelperPanel({
   // Fetch trophy helper data
   const { data: trophyData, isLoading, error } = trpc.scheduling.getTrophyHelper.useQuery({
     competitionId,
-    tenantId,
   });
 
   const handleToggle = () => {
@@ -90,7 +89,7 @@ export function TrophyHelperPanel({
           <div>
             <h3 className="text-lg font-bold text-white">Trophy Helper</h3>
             <p className="text-xs text-purple-300">
-              {trophyData?.categories.length || 0} categories with scheduled routines
+              {trophyData?.length || 0} categories with scheduled routines
             </p>
           </div>
         </div>
@@ -152,26 +151,26 @@ export function TrophyHelperPanel({
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="bg-white/5 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-white">
-                    {trophyData.categories.length}
+                    {trophyData.length}
                   </div>
                   <div className="text-xs text-purple-300 mt-1">Categories</div>
                 </div>
                 <div className="bg-white/5 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-white">
-                    {trophyData.totalRoutines || 0}
+                    {trophyData.reduce((sum, cat) => sum + (cat.totalRoutinesInCategory || 0), 0)}
                   </div>
                   <div className="text-xs text-purple-300 mt-1">Total Routines</div>
                 </div>
                 <div className="bg-white/5 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-amber-400">
-                    {trophyData.categories.filter(c => c.suggestedAwardTime).length}
+                    {trophyData.filter((c: any) => c.suggestedAwardTime).length}
                   </div>
                   <div className="text-xs text-purple-300 mt-1">Awards Scheduled</div>
                 </div>
               </div>
 
               {/* Category List */}
-              {trophyData.categories.length === 0 ? (
+              {trophyData.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-2">📅</div>
                   <p className="text-gray-400">No categories with scheduled routines yet</p>
@@ -181,7 +180,7 @@ export function TrophyHelperPanel({
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
-                  {trophyData.categories.map((category: TrophyHelperData) => (
+                  {trophyData.map((category: any) => (
                     <div
                       key={category.categoryName}
                       className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 rounded-lg p-4 hover:border-amber-500/50 transition-all"
@@ -209,11 +208,11 @@ export function TrophyHelperPanel({
                           {category.lastRoutineTitle}
                         </button>
                         <div className="text-xs text-purple-300 mt-1">
-                          {category.lastRoutineTime && (
+                          {category.lastRoutineDate && category.lastRoutineTime && (
                             <>
-                              {formatDate(category.lastRoutineTime)} at{' '}
+                              {formatDate(new Date(category.lastRoutineDate))} at{' '}
                               <span className="font-medium text-white">
-                                {formatTime(category.lastRoutineTime)}
+                                {formatTime(new Date(category.lastRoutineTime))}
                               </span>
                             </>
                           )}
@@ -227,7 +226,7 @@ export function TrophyHelperPanel({
                           <div>
                             <div className="text-xs text-amber-300">Suggested Award Time:</div>
                             <div className="text-white font-bold">
-                              {formatTime(category.suggestedAwardTime)}
+                              {category.suggestedAwardTime ? formatTime(new Date(category.suggestedAwardTime)) : 'N/A'}
                             </div>
                           </div>
                         </div>
@@ -260,11 +259,10 @@ export function TrophyHelperPanel({
 export function useLastRoutineIds(competitionId: string, tenantId: string) {
   const { data: trophyData } = trpc.scheduling.getTrophyHelper.useQuery({
     competitionId,
-    tenantId,
   });
 
   const lastRoutineIds = new Set(
-    trophyData?.categories.map((cat: TrophyHelperData) => cat.lastRoutineId) || []
+    trophyData?.map((cat: any) => cat.lastRoutineId) || []
   );
 
   return lastRoutineIds;

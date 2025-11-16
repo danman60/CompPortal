@@ -15,18 +15,20 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 
+// Using the actual backend response type
 interface StudioRequest {
   id: string;
+  routine_id: string;
   routineId: string;
   routineTitle: string;
-  studioId: string;
   studioName: string;
-  studioCode: string;
-  note: string;
-  priority: 'low' | 'normal' | 'high';
-  status: 'pending' | 'completed' | 'ignored';
-  createdAt: Date;
-  updatedAt: Date;
+  content: string;
+  status: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+  tenant_id: string;
+  note_type: string;
+  author_id: string;
 }
 
 interface StudioRequestsPanelProps {
@@ -80,6 +82,11 @@ export function StudioRequestsPanel({
       noteId: requestId,
       status: 'ignored',
     });
+  };
+
+  // Get priority from content (placeholder - backend doesn't return priority)
+  const getPriority = (request: StudioRequest): 'low' | 'normal' | 'high' => {
+    return 'normal'; // Default priority
   };
 
   // Get priority styling
@@ -244,7 +251,8 @@ export function StudioRequestsPanel({
           {!isLoading && requests.length > 0 && (
             <div className="space-y-3">
               {requests.map((request: StudioRequest) => {
-                const statusBadge = getStatusBadge(request.status);
+                const statusBadge = getStatusBadge(request.status || 'pending');
+                const priority = getPriority(request);
 
                 return (
                   <div
@@ -261,24 +269,21 @@ export function StudioRequestsPanel({
                           {request.routineTitle}
                         </button>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded">
-                            {request.studioCode}
-                          </span>
                           <span className="text-xs text-gray-400">{request.studioName}</span>
                         </div>
                       </div>
 
                       {/* Priority Badge */}
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs border ${getPriorityClasses(request.priority)}`}>
-                        <span>{getPriorityIcon(request.priority)}</span>
-                        <span className="capitalize">{request.priority}</span>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs border ${getPriorityClasses(priority)}`}>
+                        <span>{getPriorityIcon(priority)}</span>
+                        <span className="capitalize">{priority}</span>
                       </div>
                     </div>
 
                     {/* Request Note */}
                     <div className="bg-white/5 rounded-lg p-3 mb-3">
                       <div className="text-xs text-purple-300 mb-1">Request:</div>
-                      <div className="text-sm text-white">{request.note}</div>
+                      <div className="text-sm text-white">{request.content}</div>
                     </div>
 
                     {/* Footer */}
@@ -311,7 +316,7 @@ export function StudioRequestsPanel({
 
                     {/* Timestamp */}
                     <div className="text-xs text-gray-500 mt-2">
-                      Submitted {new Date(request.createdAt).toLocaleDateString()}
+                      Submitted {request.created_at ? new Date(request.created_at).toLocaleDateString() : 'Unknown date'}
                     </div>
                   </div>
                 );
