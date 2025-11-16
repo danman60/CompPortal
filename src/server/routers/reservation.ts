@@ -2008,10 +2008,230 @@ export const reservationRouter = router({
         console.error('Failed to log studio creation activity:', err);
       });
 
+      // 5. Send invitation email AFTER transaction completes
+      let invitationSent = false;
+      try {
+        // Get tenant info for email
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: ctx.tenantId! },
+          select: { name: true, subdomain: true },
+        });
+
+        if (!tenant) {
+          throw new Error('Tenant not found');
+        }
+
+        const claimUrl = `https://${tenant.subdomain}.compsync.net/claim?code=${result.studio.public_code}`;
+
+        // Build email HTML
+        const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claim Your ${tenant.name} Account</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f3f4f6;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                🎉 You're Pre-Approved!
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Hi <strong>${input.studioName}</strong>,
+              </p>
+
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Great news! You've been pre-approved for <strong>${tenant.name}</strong> competitions.
+              </p>
+
+              ${
+                input.comments
+                  ? `
+              <!-- CD Personal Message -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 8px; color: #1e40af; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                      Personal Message from Competition Director
+                    </p>
+                    <p style="margin: 0; color: #1e3a8a; font-size: 16px; line-height: 1.6; white-space: pre-wrap;">
+${input.comments}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              `
+                  : ''
+              }
+
+              <!-- Reservation Details Box -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <tr>
+                  <td>
+                    <h2 style="margin: 0 0 15px; color: #1f2937; font-size: 18px; font-weight: 600;">Your Reservation:</h2>
+                    <div style="margin-bottom: 10px; padding-left: 10px; border-left: 3px solid #667eea;">
+                      <strong style="color: #374151;">${competition.name}</strong><br>
+                      <span style="color: #6b7280; font-size: 14px;">
+                        ${input.preApprovedSpaces} entries${input.depositAmount ? ` • $${input.depositAmount} deposit` : ''}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                <strong>Your Studio Code:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #667eea; font-weight: bold;">${
+                  result.studio.public_code
+                }</code>
+              </p>
+
+              <!-- CTA Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                <tr>
+                  <td style="text-align: center;">
+                    <a href="${claimUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.4);">
+                      Claim Your Account →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Plaintext Fallback -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 8px; color: #92400e; font-size: 13px; font-weight: 600;">
+                      Don't see the button above?
+                    </p>
+                    <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.6;">
+                      Copy and paste this link into your browser:
+                    </p>
+                    <p style="margin: 8px 0 0; word-break: break-all;">
+                      <a href="${claimUrl}" style="color: #2563eb; text-decoration: underline; font-size: 13px;">${claimUrl}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 20px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                Once you claim your account, you'll be able to:
+              </p>
+              <ul style="margin: 10px 0; padding-left: 25px; color: #6b7280; font-size: 14px; line-height: 1.8;">
+                <li>Enter your studio contact details</li>
+                <li>Add your dancers to the roster</li>
+                <li>View your approved reservations and competition schedule</li>
+              </ul>
+
+              <p style="margin: 20px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                Questions? Contact us at <a href="mailto:techsupport@compsync.net" style="color: #667eea; text-decoration: none; font-weight: 600;">techsupport@compsync.net</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px; background-color: #f9fafb; border-radius: 0 0 12px 12px; text-align: center;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                — ${tenant.name} Team
+              </p>
+              <p style="margin: 10px 0 0; color: #9ca3af; font-size: 11px;">
+                This is an automated invitation. For support, email techsupport@compsync.net
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `;
+
+        const emailSubject = `Claim Your ${tenant.name} Account - ${input.studioName}`;
+
+        await sendEmail({
+          to: input.email,
+          subject: emailSubject,
+          html: emailHtml,
+        });
+
+        // Mark invitation as sent
+        await prisma.studios.update({
+          where: { id: result.studio.id },
+          data: { invited_at: new Date() },
+        });
+
+        // Log email send to database
+        await prisma.email_logs.create({
+          data: {
+            template_type: 'studio_invitation',
+            recipient_email: input.email,
+            subject: emailSubject,
+            studio_id: result.studio.id,
+            competition_id: input.competitionId,
+            success: true,
+            tenant_id: ctx.tenantId!,
+            sent_at: new Date(),
+          },
+        });
+
+        invitationSent = true;
+        logger.info('Studio invitation sent automatically', {
+          studioId: result.studio.id,
+          studioName: input.studioName,
+          email: input.email,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Log failed email to database
+        try {
+          await prisma.email_logs.create({
+            data: {
+              template_type: 'studio_invitation',
+              recipient_email: input.email,
+              subject: `Claim Your ${competition.name} Account - ${input.studioName}`,
+              studio_id: result.studio.id,
+              competition_id: input.competitionId,
+              success: false,
+              error_message: errorMessage,
+              tenant_id: ctx.tenantId!,
+              sent_at: new Date(),
+            },
+          });
+        } catch (logError) {
+          logger.error('Failed to log email error', { logError });
+        }
+
+        logger.error('Failed to send studio invitation automatically', {
+          error: error instanceof Error ? error : new Error(String(error)),
+          studioId: result.studio.id,
+          studioName: input.studioName,
+        });
+        // Don't fail the entire operation if email fails - studio creation succeeded
+      }
+
       return {
         studio: result.studio,
         reservation: result.reservation,
-        message: `Studio "${input.studioName}" created with ${input.preApprovedSpaces} pre-approved spaces. Studio director can now claim their account.`,
+        message: invitationSent
+          ? `Studio "${input.studioName}" created with ${input.preApprovedSpaces} pre-approved spaces. Invitation email sent to ${input.email}.`
+          : `Studio "${input.studioName}" created with ${input.preApprovedSpaces} pre-approved spaces. Warning: Invitation email failed to send - please resend from Studio Invitations page.`,
       };
     }),
 });
