@@ -61,10 +61,10 @@
 | - Update status | §7 | ✅ | ✅ | ✅ | updateRequestStatus procedure |
 | - Request list UI | §7 | ✅ | ✅ | ✅ | StudioRequestsPanel component |
 | - Add note button | §7 | ✅ | ✅ | ✅ | Integrated in schedule page |
-| **8. Age Change Detection** | §8 | ✅ | ✅ | ✅ | **COMPLETE** (Session 58) |
-| - Detection algorithm | §8 | ✅ | ✅ | ✅ | detectAgeChanges query |
-| - Visual warnings | §8 | ✅ | ✅ | ✅ | Summary banner |
-| - Tracking table | §8 | ✅ | ✅ | ✅ | Integrated |
+| **8. Age Change Detection** | §8 | ✅ | 🟡 | 🟡 | **BLOCKED** - Needs query conversion |
+| - Detection algorithm | §8 | ✅ | 🟡 | 🟡 | Mutation exists, needs query |
+| - Visual warnings | §8 | ✅ | ✅ | ✅ | Banner ready (commented out) |
+| - Tracking table | §8 | ✅ | ❌ | 🟡 | Backend ready |
 | **9. Routine Notes** | §9 | ⚠️ Partial | ❌ | 🟡 | Studio requests only |
 | - CD private notes | §9 | ❌ | ❌ | ❌ | Missing |
 | - Studio requests | §9 | ✅ | ❌ | 🟡 | Backend ready |
@@ -103,8 +103,8 @@
 - ❌ Missing: 0
 
 **P1 High Priority (6 features):**
-- ✅ Complete: 3 (Trophy Helper, Age Change Detection, Hotel Attrition)
-- 🟡 Partial: 2 (Studio Feedback, Routine Notes, Multiple Views)
+- ✅ Complete: 3 (Trophy Helper, Studio Feedback, Hotel Attrition)
+- 🟡 Partial: 2 (Age Change Detection - blocked, Routine Notes, Multiple Views)
 - ❌ Missing: 0
 
 **P2 Nice-to-Have (3 features):**
@@ -287,11 +287,12 @@
 ### 🔄 Ready for Next Session
 
 **High Priority (Quick Wins):**
-1. **Studio Feedback UI Polish** (P1)
-   - Backend: ✅ Complete (StudioRequestsPanel integrated)
-   - TODO: Add request button to routine cards in schedule view
-   - TODO: Test request workflow end-to-end
-   - Estimated: 1-2 hours
+1. **Age Change Detection - Convert to Query** (P1) 🚨 BLOCKER
+   - Backend: 🟡 detectAgeChanges is a mutation, needs to be a query
+   - Frontend: ✅ Banner UI ready (currently commented out)
+   - TODO: Convert backend mutation to query procedure
+   - TODO: Re-enable age change banner
+   - Estimated: 1 hour
 
 2. **Multiple Views Access Control** (P1)
    - Backend: 🟡 Partial (view mode logic exists)

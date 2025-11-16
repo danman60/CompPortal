@@ -159,10 +159,9 @@ export default function SchedulePage() {
   });
 
   // NEW: Fetch Age Changes (Session 58)
-  const { data: ageChangesData } = trpc.scheduling.detectAgeChanges.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
-  });
+  // Note: detectAgeChanges is a mutation - call it on-demand rather than on load
+  // For now, we'll skip age change detection until it's converted to a query
+  const ageChangesData = null; // TODO: Convert detectAgeChanges to query or trigger on schedule changes
 
   // Fetch Studio Requests (for CD)
   const { data: studioRequests, refetch: refetchRequests } = trpc.scheduling.getStudioRequests.useQuery({
@@ -773,7 +772,7 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Age Change Warnings */}
+        {/* Age Change Warnings - DISABLED: detectAgeChanges is a mutation, needs conversion to query
         {ageChangesData && ageChangesData.changedRoutines && ageChangesData.changedRoutines.length > 0 && (
           <div className="mb-6 bg-yellow-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/50 p-4 shadow-lg">
             <div className="flex items-start gap-3">
@@ -800,6 +799,7 @@ export default function SchedulePage() {
             </div>
           </div>
         )}
+        */}
 
         {/* Hotel Attrition Warning */}
         {hotelWarningData && (
