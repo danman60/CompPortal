@@ -48,6 +48,7 @@ import { FilterPanel, FilterState } from '@/components/FilterPanel';
 import { TimelineHeader, TimelineSession } from '@/components/TimelineHeader';
 import { RoutinePool } from '@/components/scheduling/RoutinePool';
 import { ScheduleGrid, ScheduleZone as ScheduleZoneType, ScheduleBlock as ScheduleBlockType } from '@/components/scheduling/ScheduleGrid';
+import { TimelineGrid } from '@/components/scheduling/TimelineGrid';
 
 // TEST tenant ID
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -184,6 +185,12 @@ export default function SchedulePage() {
     tenantId: TEST_TENANT_ID,
   });
 
+  // Fetch Competition Sessions with Time Slots (for Timeline Grid)
+  const { data: sessions } = trpc.scheduling.getCompetitionSessions.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+  });
+
   // State Machine mutations
   const finalizeMutation = trpc.scheduling.finalizeSchedule.useMutation({
     onSuccess: () => {
@@ -250,6 +257,17 @@ export default function SchedulePage() {
     },
     onError: (error) => {
       toast.error(`Failed to save note: ${error.message}`);
+    },
+  });
+
+  // Timeline Grid - Schedule routine to time slot
+  const scheduleToTimeSlotMutation = trpc.scheduling.scheduleRoutineToTimeSlot.useMutation({
+    onSuccess: () => {
+      toast.success('✅ Routine scheduled successfully!');
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to schedule: ${error.message}`);
     },
   });
 
@@ -1016,6 +1034,51 @@ export default function SchedulePage() {
               isDraggingAnything={activeId !== null}
               onRequestClick={(id) => setShowRequestForm(id)}
             />
+
+            {/* Timeline Grid (Session 59 - Time-Slot Based Scheduling) */}
+            {sessions && sessions.length > 0 && (
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center justify-between px-4">
+                  <h3 className="text-lg font-bold text-white">
+                    📅 Timeline Grid (New)
+                  </h3>
+                  <span className="text-xs text-gray-400 bg-purple-500/20 px-3 py-1 rounded-full border border-purple-500/30">
+                    Time-Slot Based Scheduling
+                  </span>
+                </div>
+
+                {sessions.map((session: any) => {
+                  // Map routines to Timeline Grid format
+                  const mappedRoutines = (routines || []).map((r: any) => ({
+                    id: r.id,
+                    title: r.title,
+                    studioName: r.studioName,
+                    studioCode: r.studioCode,
+                    categoryName: r.categoryName,
+                    classificationName: r.classificationName,
+                    ageGroupName: r.ageGroupName,
+                    duration: r.duration || 3,
+                    performanceDate: r.scheduledDay,
+                    performanceTime: r.scheduledTime,
+                  }));
+
+                  // Map conflicts to routine IDs
+                  const routineConflicts = (conflictsData?.conflicts || []).flatMap((c: any) => [
+                    { routineId: c.routine1Id, severity: c.severity },
+                    { routineId: c.routine2Id, severity: c.severity },
+                  ]);
+
+                  return (
+                    <TimelineGrid
+                      key={session.id}
+                      session={session}
+                      routines={mappedRoutines}
+                      conflicts={routineConflicts}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* RIGHT PANEL: Trophy Helper */}
