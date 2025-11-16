@@ -1,11 +1,11 @@
 # Scheduling Feature Status - Spec vs. Implementation
 
-**Date:** 2025-11-16 (Session 58 - 4 Features Complete)
+**Date:** 2025-11-16 (Session 59 - 2 P1 Features Complete)
 **Branch:** tester
-**Commit:** Pending (4 features completed)
+**Commit:** 3130edd (Multiple Views Access Control + Routine Notes UI)
 **Spec:** SCHEDULING_SPEC_V4_UNIFIED.md
 **Last E2E Test:** Session 4 - View modes verified
-**Session 58 Progress:** Studio codes + Award/Break blocks + Age warnings + Hotel warnings COMPLETE
+**Session 59 Progress:** Multiple Views Access Control + Routine Notes UI COMPLETE
 
 ---
 
@@ -65,16 +65,16 @@
 | - Detection algorithm | §8 | ✅ | ✅ | ✅ | Query procedure (read-only) |
 | - Visual warnings | §8 | ✅ | ✅ | ✅ | Banner enabled |
 | - Tracking table | §8 | ✅ | ✅ | ✅ | Real-time detection |
-| **9. Routine Notes** | §9 | ⚠️ Partial | ❌ | 🟡 | Studio requests only |
-| - CD private notes | §9 | ❌ | ❌ | ❌ | Missing |
-| - Studio requests | §9 | ✅ | ❌ | 🟡 | Backend ready |
-| - Submission notes | §9 | ❌ | ❌ | ❌ | Missing |
-| **10. Multiple Views** | §10 | ⚠️ Partial | ✅ | 🟡 | **UI WORKS - Scoping needed** |
-| - CD view | §10 | ✅ | ✅ | ✅ | **E2E VERIFIED** |
-| - Studio director view | §10 | ❌ | ✅ | 🟡 | **UI works, no scoping** |
-| - Judge view | §10 | ❌ | ✅ | 🟡 | **UI works, no code masking** |
-| - Public view | §10 | ❌ | ✅ | 🟡 | **UI works, no access control** |
-| - View selector UI | §10 | ✅ | ✅ | ✅ | **E2E VERIFIED (4 modes)** |
+| **9. Routine Notes** | §9 | ✅ | ✅ | ✅ | **COMPLETE** (Session 59) |
+| - CD private notes | §9 | ✅ | ✅ | ✅ | addCDNote + CDNoteModal |
+| - Studio requests | §9 | ✅ | ✅ | ✅ | addStudioRequest + StudioRequestsPanel |
+| - Submission notes | §9 | ❌ | ❌ | ❌ | Not yet implemented |
+| **10. Multiple Views** | §10 | ✅ | ✅ | ✅ | **COMPLETE** (Session 59) |
+| - CD view | §10 | ✅ | ✅ | ✅ | Shows all routines + full names |
+| - Studio director view | §10 | ✅ | ✅ | ✅ | Filters to only their routines |
+| - Judge view | §10 | ✅ | ✅ | ✅ | Masks names → "Studio A", "Studio B" |
+| - Public view | §10 | ✅ | ✅ | ✅ | Shows full names (when published) |
+| - View selector UI | §10 | ✅ | ✅ | ✅ | 4 modes integrated with filtering |
 | **11. Hotel Attrition** | §11 | ✅ | ✅ | ✅ | **COMPLETE** (Session 58) |
 | - Emerald day check | §11 | ✅ | ✅ | ✅ | Backend query integrated |
 | - Warning display | §11 | ✅ | ✅ | ✅ | HotelAttritionBanner |
@@ -103,8 +103,8 @@
 - ❌ Missing: 0
 
 **P1 High Priority (6 features):**
-- ✅ Complete: 4 (Trophy Helper, Studio Feedback, Hotel Attrition, Age Change Detection)
-- 🟡 Partial: 2 (Routine Notes, Multiple Views)
+- ✅ Complete: 6 (Trophy Helper, Studio Feedback, Hotel Attrition, Age Change Detection, Routine Notes, Multiple Views)
+- 🟡 Partial: 0
 - ❌ Missing: 0
 
 **P2 Nice-to-Have (3 features):**
