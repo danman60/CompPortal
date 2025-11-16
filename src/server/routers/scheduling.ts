@@ -67,6 +67,57 @@ function toSessionCapacity(session: any): SessionCapacity {
   };
 }
 
+// Time-slot generation utilities for timeline grid
+interface TimeSlot {
+  date: string;
+  time: string;
+  displayTime: string;
+  index: number;
+  available: boolean;
+  routineId?: string;
+  blockId?: string;
+}
+
+function timeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
+}
+
+function formatDisplayTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHours}:${String(mins).padStart(2, '0')} ${period}`;
+}
+
+function generateTimeSlots(session: any, slotDuration: number = 5): TimeSlot[] {
+  const slots: TimeSlot[] = [];
+  const startTimeStr = session.start_time.toISOString().split('T')[1].substring(0, 8);
+  const endTimeStr = session.end_time ? session.end_time.toISOString().split('T')[1].substring(0, 8) : '23:59:59';
+  const startMinutes = timeToMinutes(startTimeStr);
+  const endMinutes = timeToMinutes(endTimeStr);
+  const dateStr = session.session_date.toISOString().split('T')[0];
+
+  for (let minutes = startMinutes; minutes < endMinutes; minutes += slotDuration) {
+    slots.push({
+      date: dateStr,
+      time: minutesToTime(minutes),
+      displayTime: formatDisplayTime(minutes),
+      index: slots.length,
+      available: true,
+    });
+  }
+
+  return slots;
+}
+
 export const schedulingRouter = router({
   // Get all sessions for a competition
   getSessions: publicProcedure
@@ -89,6 +140,136 @@ export const schedulingRouter = router({
         ...toSessionCapacity(session),
         currentEntryCount: session.competition_entries.length,
       }));
+    }),
+
+  getCompetitionSessions: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      const sessions = await prisma.competition_sessions.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        orderBy: [
+          { session_date: 'asc' },
+          { start_time: 'asc' },
+        ],
+      });
+
+      return sessions.map(session => ({
+        id: session.id,
+        competitionId: session.competition_id,
+        sessionNumber: session.session_number,
+        sessionName: session.session_name || `Session ${session.session_number}`,
+        sessionDate: session.session_date,
+        startTime: session.start_time,
+        endTime: session.end_time,
+        maxEntries: session.max_entries,
+        entryCount: session.entry_count,
+        timeSlots: generateTimeSlots(session),
+      }));
+    }),
+
+  scheduleRoutineToTimeSlot: publicProcedure
+    .input(z.object({
+      routineId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      sessionId: z.string().uuid(),
+      targetDate: z.string(),
+      targetTime: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const session = await prisma.competition_sessions.findUnique({
+        where: { id: input.sessionId },
+      });
+
+      if (!session) throw new Error('Session not found');
+
+      const targetMinutes = timeToMinutes(input.targetTime);
+      const sessionStartMinutes = timeToMinutes(
+        session.start_time.toISOString().split('T')[1].substring(0, 8)
+      );
+      const displayOrder = Math.floor((targetMinutes - sessionStartMinutes) / 5);
+
+      const updated = await prisma.competition_entries.update({
+        where: { id: input.routineId },
+        data: {
+          session_id: input.sessionId,
+          performance_date: new Date(input.targetDate),
+          performance_time: input.targetTime,
+          display_order: displayOrder,
+          schedule_zone: null,
+        },
+      });
+
+      return updated;
+    }),
+
+  getScheduleByTimeSlots: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      sessionId: z.string().uuid().optional(),
+    }))
+    .query(async ({ input }) => {
+      const where: any = {
+        competition_id: input.competitionId,
+        tenant_id: input.tenantId,
+        performance_date: { not: null },
+        performance_time: { not: null },
+      };
+
+      if (input.sessionId) {
+        where.session_id = input.sessionId;
+      }
+
+      const routines = await prisma.competition_entries.findMany({
+        where,
+        include: {
+          studios: { select: { id: true, name: true } },
+          dance_categories: { select: { name: true } },
+          classifications: { select: { name: true } },
+          age_groups: { select: { name: true } },
+          entry_size_categories: { select: { name: true } },
+          entry_participants: {
+            select: {
+              dancer_id: true,
+              dancer_name: true,
+              dancer_age: true,
+            },
+          },
+        },
+        orderBy: [
+          { performance_date: 'asc' },
+          { performance_time: 'asc' },
+          { display_order: 'asc' },
+        ],
+      });
+
+      const groupedByDate: Record<string, any[]> = {};
+
+      routines.forEach(routine => {
+        if (!routine.performance_date || !routine.performance_time) return;
+
+        const dateKey = routine.performance_date.toISOString().split('T')[0];
+        const timeKey = routine.performance_time instanceof Date
+          ? routine.performance_time.toISOString().split('T')[1].substring(0, 8)
+          : routine.performance_time;
+
+        if (!groupedByDate[dateKey]) {
+          groupedByDate[dateKey] = [];
+        }
+
+        groupedByDate[dateKey].push({
+          ...routine,
+          timeKey,
+        });
+      });
+
+      return groupedByDate;
     }),
 
   // Get all entries for a competition with scheduling info
