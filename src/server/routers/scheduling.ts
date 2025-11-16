@@ -1546,194 +1546,6 @@ export const schedulingRouter = router({
       };
     }),
 
-  exportSchedulePDF: publicProcedure
-    .input(z.object({
-      competitionId: z.string().uuid(),
-      studioId: z.string().uuid().optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const where: any = {
-        competition_id: input.competitionId,
-        session_id: { not: null },
-      };
-
-      if (input.studioId) {
-        where.studio_id = input.studioId;
-      }
-
-      // Fetch competition details
-      const competition = await prisma.competitions.findUnique({
-        where: { id: input.competitionId },
-        select: { name: true },
-      });
-
-      const entries = await prisma.competition_entries.findMany({
-        where,
-        include: {
-          studios: { select: { name: true } },
-          dance_categories: { select: { name: true } },
-          age_groups: { select: { name: true } },
-          entry_size_categories: { select: { name: true } },
-          competition_sessions: {
-            select: {
-              session_name: true,
-              session_number: true,
-              session_date: true,
-              start_time: true,
-            },
-          },
-        },
-        orderBy: [
-          { session_id: 'asc' },
-          { running_order: 'asc' },
-        ],
-      });
-
-      // Group by session
-      type EntryWithRelations = typeof entries[0];
-      const sessionGroups = entries.reduce((acc, entry) => {
-        const sessionId = entry.session_id || 'unscheduled';
-        if (!acc[sessionId]) {
-          acc[sessionId] = [];
-        }
-        acc[sessionId].push(entry);
-        return acc;
-      }, {} as Record<string, EntryWithRelations[]>);
-
-      // Create PDF
-      const doc = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      let isFirstPage = true;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      // Title on first page
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Competition Schedule - ${competition?.name || 'Competition'}`, pageWidth / 2, 15, {
-        align: 'center',
-      });
-
-      let yPosition = 25;
-
-      // Process each session
-      for (const [sessionId, sessionEntries] of Object.entries(sessionGroups)) {
-        if (!isFirstPage) {
-          doc.addPage();
-          yPosition = 15;
-        }
-        isFirstPage = false;
-
-        const firstEntry = sessionEntries[0];
-        const sessionName = firstEntry.competition_sessions?.session_name ||
-                           `Session ${firstEntry.competition_sessions?.session_number || ''}`;
-        const sessionDate = firstEntry.competition_sessions?.session_date
-          ? new Date(firstEntry.competition_sessions.session_date).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })
-          : 'Date TBD';
-
-        // Session header
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${sessionName}`, 14, yPosition);
-        yPosition += 6;
-
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-        doc.text(sessionDate, 14, yPosition);
-        yPosition += 8;
-
-        // Table data
-        const tableData = sessionEntries.map(entry => {
-          // Format entry number with suffix (e.g., "156" or "156a")
-          const entryNumber = entry.entry_number
-            ? `${entry.entry_number}${entry.entry_suffix || ''}`
-            : '';
-
-          return [
-            entryNumber,
-            entry.title || '',
-            entry.studios.name || '',
-            entry.dance_categories.name || '',
-            entry.age_groups.name || '',
-            entry.performance_time
-              ? new Date(entry.performance_time).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : 'TBD',
-            entry.running_order?.toString() || '',
-          ];
-        });
-
-        autoTable(doc, {
-          head: [['Entry #', 'Routine Name', 'Studio', 'Category', 'Age Group', 'Time', 'Order']],
-          body: tableData,
-          startY: yPosition,
-          theme: 'striped',
-          headStyles: {
-            fillColor: [66, 66, 66],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            fontSize: 9,
-          },
-          bodyStyles: {
-            fontSize: 8,
-          },
-          alternateRowStyles: {
-            fillColor: [245, 245, 245],
-          },
-          columnStyles: {
-            0: { cellWidth: 15 },  // Entry #
-            1: { cellWidth: 50 },  // Routine Name
-            2: { cellWidth: 45 },  // Studio
-            3: { cellWidth: 35 },  // Category
-            4: { cellWidth: 30 },  // Age Group
-            5: { cellWidth: 20 },  // Time
-            6: { cellWidth: 15 },  // Order
-          },
-          margin: { top: yPosition, left: 14, right: 14 },
-          didDrawPage: (data) => {
-            // Footer with page numbers
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
-            doc.text(
-              `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-              14,
-              pageHeight - 10
-            );
-            doc.text(
-              `Page ${doc.getCurrentPageInfo().pageNumber}`,
-              pageWidth - 14,
-              pageHeight - 10,
-              { align: 'right' }
-            );
-          },
-        });
-
-        yPosition = (doc as any).lastAutoTable.finalY + 10;
-      }
-
-      // Get PDF as buffer
-      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-      const base64Data = pdfBuffer.toString('base64');
-      const timestamp = new Date().toISOString().split('T')[0];
-      const slug = competition?.name.toLowerCase().replace(/\s+/g, '-') || 'competition';
-
-      return {
-        filename: `schedule-${slug}-${timestamp}.pdf`,
-        data: base64Data,
-        mimeType: 'application/pdf',
-      };
-    }),
 
   // Override a scheduling conflict with reason
   overrideConflict: publicProcedure
@@ -2178,7 +1990,7 @@ export const schedulingRouter = router({
       const { competitionId, tenantId, viewMode } = input;
 
       // Fetch competition details
-      const competition = await ctx.prisma.competitions.findFirst({
+      const competition = await prisma.competitions.findFirst({
         where: {
           id: competitionId,
           tenant_id: tenantId,
@@ -2190,21 +2002,20 @@ export const schedulingRouter = router({
       }
 
       // Fetch all routines for the schedule
-      const routines = await ctx.prisma.competition_entries.findMany({
+      const routines = await prisma.competition_entries.findMany({
         where: {
           competition_id: competitionId,
           tenant_id: tenantId,
         },
         include: {
           classifications: true,
-          categories: true,
+          dance_categories: true,
           age_groups: true,
-          entry_sizes: true,
+          entry_size_categories: true,
           studios: true,
         },
         orderBy: [
-          { scheduled_day: 'asc' },
-          { scheduled_time: 'asc' },
+          { created_at: 'asc' },
         ],
       });
 
@@ -2212,8 +2023,8 @@ export const schedulingRouter = router({
       return {
         competition: {
           name: competition.name,
-          startDate: competition.start_date,
-          endDate: competition.end_date,
+          startDate: competition.competition_start_date,
+          endDate: competition.competition_end_date,
         },
         routines: routines.map(r => ({
           id: r.id,
@@ -2221,13 +2032,13 @@ export const schedulingRouter = router({
           studioName: viewMode === 'judge' ? null : r.studios?.name,
           studioCode: r.studios?.studio_code,
           classification: r.classifications?.name,
-          category: r.categories?.name,
+          category: r.dance_categories?.name,
           ageGroup: r.age_groups?.name,
-          entrySize: r.entry_sizes?.name,
-          duration: r.duration_seconds ? Math.ceil(r.duration_seconds / 60) : 3,
-          scheduledDay: r.scheduled_day,
-          scheduledTime: r.scheduled_time,
-          zone: r.schedule_zone,
+          entrySize: r.entry_size_categories?.name,
+          duration: 3, // Default duration (Phase 2 will use actual duration field)
+          scheduledDay: null, // Phase 2 field
+          scheduledTime: null, // Phase 2 field
+          zone: null, // Phase 2 field
         })),
       };
     }),
@@ -2243,7 +2054,7 @@ export const schedulingRouter = router({
       const { competitionId, tenantId, viewMode } = input;
 
       // Fetch competition details
-      const competition = await ctx.prisma.competitions.findFirst({
+      const competition = await prisma.competitions.findFirst({
         where: {
           id: competitionId,
           tenant_id: tenantId,
@@ -2255,21 +2066,20 @@ export const schedulingRouter = router({
       }
 
       // Fetch all routines for the schedule
-      const routines = await ctx.prisma.competition_entries.findMany({
+      const routines = await prisma.competition_entries.findMany({
         where: {
           competition_id: competitionId,
           tenant_id: tenantId,
         },
         include: {
           classifications: true,
-          categories: true,
+          dance_categories: true,
           age_groups: true,
-          entry_sizes: true,
+          entry_size_categories: true,
           studios: true,
         },
         orderBy: [
-          { scheduled_day: 'asc' },
-          { scheduled_time: 'asc' },
+          { created_at: 'asc' },
         ],
       });
 
@@ -2277,20 +2087,20 @@ export const schedulingRouter = router({
       return {
         competition: {
           name: competition.name,
-          startDate: competition.start_date,
-          endDate: competition.end_date,
+          startDate: competition.competition_start_date,
+          endDate: competition.competition_end_date,
         },
         routines: routines.map(r => ({
-          day: r.scheduled_day?.toLocaleDateString(),
-          session: r.schedule_zone?.replace('-', ' ').toUpperCase(),
-          time: r.scheduled_time?.toLocaleTimeString(),
+          day: null, // Phase 2 field
+          session: null, // Phase 2 field
+          time: null, // Phase 2 field
           routine: r.title,
           studio: viewMode === 'judge' ? r.studios?.studio_code : r.studios?.name,
           classification: r.classifications?.name,
-          category: r.categories?.name,
+          category: r.dance_categories?.name,
           ageGroup: r.age_groups?.name,
-          entrySize: r.entry_sizes?.name,
-          duration: r.duration_seconds ? Math.ceil(r.duration_seconds / 60) : 3,
+          entrySize: r.entry_size_categories?.name,
+          duration: 3, // Default duration (Phase 2 will use actual duration field)
         })),
       };
     }),

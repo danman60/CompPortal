@@ -275,7 +275,7 @@ export default function SchedulePage() {
       doc.text(`Schedule Export - ${new Date().toLocaleDateString()}`, 14, 22);
 
       // Prepare table data
-      const tableData = data.routines.map(r => [
+      const tableData = data.routines.map((r: any) => [
         r.scheduledDay?.toLocaleDateString() || 'Unscheduled',
         r.zone?.replace('-', ' ').toUpperCase() || '',
         r.scheduledTime?.toLocaleTimeString() || '',
@@ -330,7 +330,7 @@ export default function SchedulePage() {
       };
 
       // Add data
-      data.routines.forEach(r => {
+      data.routines.forEach((r: any) => {
         worksheet.addRow(r);
       });
 
@@ -631,7 +631,7 @@ export default function SchedulePage() {
           competitionDates="April 9-12, 2026"
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          onSaveDraft={() => toast.info('💾 Changes are saved automatically')}
+          onSaveDraft={() => toast('💾 Changes are saved automatically')}
           onFinalize={handleFinalize}
           onPublish={handlePublish}
           onExport={() => {

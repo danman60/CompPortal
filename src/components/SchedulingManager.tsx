@@ -82,10 +82,13 @@ export default function SchedulingManager() {
   const handleExportPDF = async () => {
     if (!selectedCompetition) return;
     try {
-      const result = await exportPDFMutation.mutateAsync({ competitionId: selectedCompetition });
+      const result = await exportPDFMutation.mutateAsync({
+        competitionId: selectedCompetition,
+        tenantId: '00000000-0000-0000-0000-000000000003', // TEST tenant
+      });
       const competition = competitions.find(c => c.id === selectedCompetition);
       const filename = `schedule_${competition?.name || 'competition'}_${new Date().toISOString().split('T')[0]}.pdf`;
-      downloadFile(result.data, filename, 'application/pdf');
+      downloadFile(result as any, filename, 'application/pdf');
     } catch (error) {
       console.error('PDF export failed:', error);
       alert('Failed to export PDF. Please try again.');
@@ -95,10 +98,12 @@ export default function SchedulingManager() {
   const handleExportCSV = async () => {
     if (!selectedCompetition) return;
     try {
-      const result = await exportCSVMutation.mutateAsync({ competitionId: selectedCompetition });
+      const result = await exportCSVMutation.mutateAsync({
+        competitionId: selectedCompetition,
+      });
       const competition = competitions.find(c => c.id === selectedCompetition);
       const filename = `schedule_${competition?.name || 'competition'}_${new Date().toISOString().split('T')[0]}.csv`;
-      downloadFile(result.data, filename, 'text/csv');
+      downloadFile(result as any, filename, 'text/csv');
     } catch (error) {
       console.error('CSV export failed:', error);
       alert('Failed to export CSV. Please try again.');
@@ -108,10 +113,12 @@ export default function SchedulingManager() {
   const handleExportICal = async () => {
     if (!selectedCompetition) return;
     try {
-      const result = await exportICalMutation.mutateAsync({ competitionId: selectedCompetition });
+      const result = await exportICalMutation.mutateAsync({
+        competitionId: selectedCompetition,
+      });
       const competition = competitions.find(c => c.id === selectedCompetition);
       const filename = `schedule_${competition?.name || 'competition'}_${new Date().toISOString().split('T')[0]}.ics`;
-      downloadFile(result.data, filename, 'text/calendar');
+      downloadFile(result as any, filename, 'text/calendar');
     } catch (error) {
       console.error('iCal export failed:', error);
       alert('Failed to export iCal. Please try again.');
