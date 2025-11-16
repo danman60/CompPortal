@@ -29,6 +29,17 @@ import {
   useDroppable,
 } from '@dnd-kit/core';
 
+// Session 55 Components
+import { TrophyHelperPanel } from '@/components/TrophyHelperPanel';
+import { ScheduleStateMachine } from '@/components/ScheduleStateMachine';
+import { DaySelector, countRoutinesByDay } from '@/components/DaySelector';
+import { StudioRequestsPanel } from '@/components/StudioRequestsPanel';
+import { HotelAttritionBanner } from '@/components/HotelAttritionBanner';
+import { AgeChangeWarning } from '@/components/AgeChangeWarning';
+import { ScheduleBlockCard, DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
+import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
+import { ConflictOverrideModal } from '@/components/ConflictOverrideModal';
+
 // TEST tenant ID
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
 const TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
@@ -272,6 +283,13 @@ export default function SchedulePage() {
   // CD Request Management
   const [showRequestsPanel, setShowRequestsPanel] = useState(false);
 
+  // NEW: Day selector state
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+
+  // NEW: Schedule block modal state
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockType, setBlockType] = useState<'award' | 'break'>('award');
+
   // Track schedule blocks
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([
     {
@@ -302,11 +320,19 @@ export default function SchedulePage() {
   // Fetch Trophy Helper
   const { data: trophyHelper } = trpc.scheduling.getTrophyHelper.useQuery({
     competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
   });
 
   // Fetch Conflicts
   const { data: conflictsData, refetch: refetchConflicts } = trpc.scheduling.detectConflicts.useQuery({
     competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+  });
+
+  // NEW: Fetch Hotel Attrition Warning
+  const { data: hotelWarningData } = trpc.scheduling.getHotelAttritionWarning.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
   });
 
   // Fetch Studio Requests (for CD)
