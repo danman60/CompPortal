@@ -146,6 +146,8 @@ export const schedulingRouter = router({
       classificationId: z.string().uuid().optional(),
       categoryId: z.string().uuid().optional(),
       searchQuery: z.string().optional(),
+      viewMode: z.enum(['cd', 'studio', 'judge', 'public']).optional().default('cd'),
+      studioId: z.string().uuid().optional(), // Required for studio view
     }))
     .query(async ({ input, ctx }) => {
       console.log('[getRoutines] === START ===');
@@ -170,6 +172,14 @@ export const schedulingRouter = router({
         // Return ALL routines (both scheduled and unscheduled)
         // Frontend will separate them into zones based on scheduledTime
       };
+
+      // View mode filtering: Studio directors only see their own routines
+      if (input.viewMode === 'studio') {
+        if (!input.studioId) {
+          throw new Error('Studio ID required for studio view');
+        }
+        where.studio_id = input.studioId;
+      }
 
       // Optional filters
       if (input.classificationId) {
@@ -251,31 +261,49 @@ export const schedulingRouter = router({
         reservations.map(r => [r.studio_id, r.studio_code])
       );
 
-      return routines.map(routine => ({
-        id: routine.id,
-        title: routine.title,
-        studioId: routine.studio_id,
-        studioName: routine.studios.name,
-        studioCode: studioCodeMap.get(routine.studio_id) || routine.studios.name, // Use per-competition code, fallback to name
-        classificationId: routine.classification_id,
-        classificationName: routine.classifications.name,
-        categoryId: routine.category_id,
-        categoryName: routine.dance_categories.name,
-        ageGroupId: routine.age_group_id,
-        ageGroupName: routine.age_groups.name,
-        entrySizeId: routine.entry_size_category_id,
-        entrySizeName: routine.entry_size_categories.name,
-        duration: 3, // Duration field is interval type (unsupported by Prisma), defaulting to 3 minutes
-        participants: routine.entry_participants.map(p => ({
-          dancerId: p.dancer_id,
-          dancerName: p.dancer_name,
-          dancerAge: p.dancer_age,
-        })),
-        isScheduled: routine.schedule_zone !== null, // Check zone instead of date/time
-        scheduleZone: routine.schedule_zone, // Return zone ID (saturday-am, etc.)
-        scheduledTime: routine.performance_time,
-        scheduledDay: routine.performance_date,
-      }));
+      // Transform data based on view mode
+      return routines.map(routine => {
+        const studioCode = studioCodeMap.get(routine.studio_id) || 'X';
+        const studioName = routine.studios.name;
+
+        // View mode logic:
+        // - CD View: Show full names + codes
+        // - Judge View: Show codes only (anonymized)
+        // - Studio View: Show full names (only their own routines)
+        // - Public View: Show full names (when published)
+
+        let displayStudioName = studioName;
+        if (input.viewMode === 'judge') {
+          // Judge view: Use code only
+          displayStudioName = `Studio ${studioCode}`;
+        }
+
+        return {
+          id: routine.id,
+          title: routine.title,
+          studioId: routine.studio_id,
+          studioName: displayStudioName,
+          studioCode: studioCode,
+          classificationId: routine.classification_id,
+          classificationName: routine.classifications.name,
+          categoryId: routine.category_id,
+          categoryName: routine.dance_categories.name,
+          ageGroupId: routine.age_group_id,
+          ageGroupName: routine.age_groups.name,
+          entrySizeId: routine.entry_size_category_id,
+          entrySizeName: routine.entry_size_categories.name,
+          duration: 3, // Duration field is interval type (unsupported by Prisma), defaulting to 3 minutes
+          participants: routine.entry_participants.map(p => ({
+            dancerId: p.dancer_id,
+            dancerName: p.dancer_name,
+            dancerAge: p.dancer_age,
+          })),
+          isScheduled: routine.schedule_zone !== null, // Check zone instead of date/time
+          scheduleZone: routine.schedule_zone, // Return zone ID (saturday-am, etc.)
+          scheduledTime: routine.performance_time,
+          scheduledDay: routine.performance_date,
+        };
+      });
     }),
 
   // Schedule a routine to a specific time block
@@ -871,6 +899,88 @@ export const schedulingRouter = router({
       });
 
       return updated;
+    }),
+
+  // Add CD private note to routine
+  addCDNote: publicProcedure
+    .input(z.object({
+      routineId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      content: z.string(),
+      authorId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      const note = await prisma.routine_notes.create({
+        data: {
+          routine_id: input.routineId,
+          tenant_id: input.tenantId,
+          note_type: 'cd_private',
+          content: input.content,
+          author_id: input.authorId,
+          status: null, // CD notes don't have status
+        },
+      });
+
+      return note;
+    }),
+
+  // Get CD private notes for competition or specific routine
+  getCDNotes: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid().optional(),
+      routineId: z.string().uuid().optional(),
+      tenantId: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      // Build where clause
+      const where: any = {
+        tenant_id: input.tenantId,
+        note_type: 'cd_private',
+      };
+
+      if (input.routineId) {
+        where.routine_id = input.routineId;
+      }
+
+      const notes = await prisma.routine_notes.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+      });
+
+      // If competition ID provided, filter by competition
+      if (input.competitionId) {
+        const routineIds = notes.map(n => n.routine_id);
+        const routines = await prisma.competition_entries.findMany({
+          where: {
+            id: { in: routineIds },
+            competition_id: input.competitionId,
+          },
+          include: {
+            studios: {
+              select: { id: true, name: true },
+            },
+          },
+        });
+
+        const routineMap = new Map(routines.map(r => [r.id, r]));
+
+        return notes
+          .map(note => {
+            const routine = routineMap.get(note.routine_id);
+            if (!routine) return null;
+
+            return {
+              ...note,
+              routineTitle: routine.title,
+              routineId: routine.id,
+              studioName: routine.studios.name,
+            };
+          })
+          .filter(r => r !== null);
+      }
+
+      // If no competition ID, just return notes without routine details
+      return notes;
     }),
 
   // Auto-schedule entries to a session

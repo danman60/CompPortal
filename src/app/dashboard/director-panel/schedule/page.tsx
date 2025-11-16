@@ -40,6 +40,7 @@ import { AgeChangeWarning } from '@/components/AgeChangeWarning';
 import { ScheduleBlockCard, DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { ConflictOverrideModal } from '@/components/ConflictOverrideModal';
+import { CDNoteModal } from '@/components/CDNoteModal';
 
 // Session 56 Components
 import { ScheduleToolbar, ScheduleStatus, ViewMode } from '@/components/ScheduleToolbar';
@@ -99,6 +100,11 @@ export default function SchedulePage() {
   // CD Request Management
   const [showRequestsPanel, setShowRequestsPanel] = useState(false);
 
+  // CD Notes state
+  const [showCDNoteModal, setShowCDNoteModal] = useState(false);
+  const [cdNoteRoutineId, setCDNoteRoutineId] = useState<string | null>(null);
+  const [cdNoteRoutineTitle, setCDNoteRoutineTitle] = useState<string>('');
+
   // NEW: Day selector state
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
@@ -106,6 +112,9 @@ export default function SchedulePage() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockModalMode, setBlockModalMode] = useState<'create' | 'edit'>('create');
   const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
+
+  // View mode state (needs to be before queries that use it)
+  const [viewMode, setViewMode] = useState<ViewMode>('cd');
 
   // Filter state (Session 56)
   const [filters, setFilters] = useState<FilterState>({
@@ -135,10 +144,15 @@ export default function SchedulePage() {
   ]);
 
   // Fetch routines (search handled by backend, other filters client-side)
+  // View mode filtering will be added to getRoutines procedure
+  const TEST_STUDIO_ID = '00000000-0000-0000-0000-000000000001';
+
   const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
     tenantId: TEST_TENANT_ID,
     searchQuery: filters.search || undefined, // Backend search for performance
+    viewMode: viewMode,
+    studioId: viewMode === 'studio' ? TEST_STUDIO_ID : undefined,
     // Other filters (classification, age, genre, studio) handled client-side for multi-select
   });
 
@@ -221,6 +235,21 @@ export default function SchedulePage() {
     },
     onError: (error) => {
       toast.error(`Failed to update request: ${error.message}`);
+    },
+  });
+
+  // CD Note mutations
+  const addCDNoteMutation = trpc.scheduling.addCDNote.useMutation({
+    onSuccess: () => {
+      toast.success('✅ Private note saved successfully!');
+      setShowCDNoteModal(false);
+      setCDNoteRoutineId(null);
+      setCDNoteRoutineTitle('');
+      // Refetch routines to update note indicators
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to save note: ${error.message}`);
     },
   });
 
@@ -329,9 +358,6 @@ export default function SchedulePage() {
   // Mock competition status (in production, fetch from database)
   const [scheduleStatus, setScheduleStatus] = useState<ScheduleStatus>('draft');
 
-  // View mode switching
-  const [viewMode, setViewMode] = useState<ViewMode>('cd');
-
   const handleFinalize = () => {
     if (confirm('Lock entry numbers? This will prevent automatic renumbering.')) {
       finalizeMutation.mutate({
@@ -351,6 +377,23 @@ export default function SchedulePage() {
         userId: '00000000-0000-0000-0000-000000000001',
       });
       setScheduleStatus('published');
+    }
+  };
+
+  const handleAddCDNote = (routineId: string, routineTitle: string) => {
+    setCDNoteRoutineId(routineId);
+    setCDNoteRoutineTitle(routineTitle);
+    setShowCDNoteModal(true);
+  };
+
+  const handleSubmitCDNote = (content: string) => {
+    if (cdNoteRoutineId) {
+      addCDNoteMutation.mutate({
+        routineId: cdNoteRoutineId,
+        tenantId: TEST_TENANT_ID,
+        content: content,
+        authorId: 'cd-user-id', // In production, get from auth context
+      });
     }
   };
 
@@ -1374,6 +1417,16 @@ export default function SchedulePage() {
         tenantId={TEST_TENANT_ID}
         initialBlock={editingBlock}
         mode={blockModalMode}
+      />
+
+      {/* CD Note Modal */}
+      <CDNoteModal
+        isOpen={showCDNoteModal}
+        onClose={() => setShowCDNoteModal(false)}
+        routineId={cdNoteRoutineId || ''}
+        routineTitle={cdNoteRoutineTitle}
+        onSubmit={handleSubmitCDNote}
+        isSubmitting={addCDNoteMutation.isPending}
       />
     </DndContext>
   );
