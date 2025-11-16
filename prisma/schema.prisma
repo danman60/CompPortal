@@ -887,41 +887,41 @@ model dance_categories {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model dancers {
-  id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studio_id               String               @db.Uuid
-  first_name              String               @db.VarChar(100)
-  last_name               String               @db.VarChar(100)
-  date_of_birth           DateTime?            @db.Date
-  age_override            Int?
-  gender                  String?              @db.VarChar(20)
-  email                   String?              @db.VarChar(255)
-  phone                   String?              @db.VarChar(50)
-  parent_name             String?              @db.VarChar(255)
-  parent_email            String?              @db.VarChar(255)
-  parent_phone            String?              @db.VarChar(50)
-  emergency_contact_name  String?              @db.VarChar(255)
-  emergency_contact_phone String?              @db.VarChar(50)
-  medical_conditions      String?
-  allergies               String?
-  medications             String?
-  years_dancing           Int?
-  primary_style           String?              @db.VarChar(100)
-  skill_level             String?              @db.VarChar(50)
-  previous_competitions   Int?                 @default(0)
-  registration_number     String?              @unique @db.VarChar(50)
-  photo_url               String?
-  waiver_signed           Boolean?             @default(false)
-  waiver_signed_date      DateTime?            @db.Date
-  status                  String?              @default("active") @db.VarChar(50)
-  created_at              DateTime?            @default(now()) @db.Timestamp(6)
-  updated_at              DateTime?            @default(now()) @db.Timestamp(6)
-  tenant_id               String               @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  classification_id       String?              @db.Uuid
-  classifications         classifications?     @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  studios                        studios                        @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tenants                        tenants                        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  entry_participants             entry_participants[]
-  schedule_conflict_overrides    schedule_conflict_overrides[]
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studio_id                   String                        @db.Uuid
+  first_name                  String                        @db.VarChar(100)
+  last_name                   String                        @db.VarChar(100)
+  date_of_birth               DateTime?                     @db.Date
+  age_override                Int?
+  gender                      String?                       @db.VarChar(20)
+  email                       String?                       @db.VarChar(255)
+  phone                       String?                       @db.VarChar(50)
+  parent_name                 String?                       @db.VarChar(255)
+  parent_email                String?                       @db.VarChar(255)
+  parent_phone                String?                       @db.VarChar(50)
+  emergency_contact_name      String?                       @db.VarChar(255)
+  emergency_contact_phone     String?                       @db.VarChar(50)
+  medical_conditions          String?
+  allergies                   String?
+  medications                 String?
+  years_dancing               Int?
+  primary_style               String?                       @db.VarChar(100)
+  skill_level                 String?                       @db.VarChar(50)
+  previous_competitions       Int?                          @default(0)
+  registration_number         String?                       @unique @db.VarChar(50)
+  photo_url                   String?
+  waiver_signed               Boolean?                      @default(false)
+  waiver_signed_date          DateTime?                     @db.Date
+  status                      String?                       @default("active") @db.VarChar(50)
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  tenant_id                   String                        @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classification_id           String?                       @db.Uuid
+  classifications             classifications?              @relation(fields: [classification_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  studios                     studios                       @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants                     tenants                       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  entry_participants          entry_participants[]
+  schedule_conflict_overrides schedule_conflict_overrides[]
 
   @@index([date_of_birth], map: "idx_dancers_age")
   @@index([first_name, last_name], map: "idx_dancers_name")
@@ -1629,23 +1629,23 @@ model user_profiles {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user_feedback {
-  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id               String    @db.Uuid
-  user_id                 String    @db.Uuid
-  user_role               String
-  user_email              String
-  user_name               String?
-  feedback_type           String
-  star_rating             Int?
-  comment                 String
-  page_url                String?
-  user_agent              String?
-  created_at              DateTime  @default(now()) @db.Timestamptz(6)
-  status                  String    @default("new")
-  admin_notes             String?
-  reviewed_at             DateTime? @db.Timestamptz(6)
-  reviewed_by             String?   @db.Uuid
-  tenants                 tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id     String    @db.Uuid
+  user_id       String    @db.Uuid
+  user_role     String
+  user_email    String
+  user_name     String?
+  feedback_type String
+  star_rating   Int?
+  comment       String
+  page_url      String?
+  user_agent    String?
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  status        String    @default("new")
+  admin_notes   String?
+  reviewed_at   DateTime? @db.Timestamptz(6)
+  reviewed_by   String?   @db.Uuid
+  tenants       tenants   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@index([tenant_id], map: "idx_user_feedback_tenant")
   @@index([created_at(sort: Desc)], map: "idx_user_feedback_created")
@@ -1874,32 +1874,32 @@ enum user_role {
 }
 
 model schedule_blocks {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id           String    @db.Uuid
-  competition_id      String    @db.Uuid
-  block_type          String    @db.VarChar(20)
-  title               String    @db.VarChar(255)
-  duration_minutes    Int
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id            String    @db.Uuid
+  competition_id       String    @db.Uuid
+  block_type           String    @db.VarChar(20)
+  title                String    @db.VarChar(255)
+  duration_minutes     Int
   scheduled_start_time DateTime? @db.Timestamp(6)
-  schedule_day        DateTime? @db.Date
-  display_order       Int?
-  metadata            Json?
-  created_at          DateTime? @default(now()) @db.Timestamp(6)
-  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+  schedule_day         DateTime? @db.Date
+  display_order        Int?
+  metadata             Json?
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  updated_at           DateTime? @default(now()) @db.Timestamp(6)
 
   @@schema("public")
 }
 
 model routine_notes {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id   String    @db.Uuid
-  routine_id  String    @db.Uuid
-  note_type   String    @db.VarChar(50)
-  content     String
-  author_id   String    @db.Uuid
-  status      String?   @default("pending") @db.VarChar(20)
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
-  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String    @db.Uuid
+  routine_id String    @db.Uuid
+  note_type  String    @db.VarChar(50)
+  content    String
+  author_id  String    @db.Uuid
+  status     String?   @default("pending") @db.VarChar(20)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
 
   @@schema("public")
 }
@@ -1926,20 +1926,20 @@ model age_change_tracking {
 }
 
 model schedule_conflict_overrides {
-  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id              String    @db.Uuid
-  dancer_id              String    @db.Uuid
-  routine_1_id           String    @db.Uuid
-  routine_2_id           String    @db.Uuid
-  override_reason        String
-  overridden_by_user_id  String    @db.Uuid
-  overridden_at          DateTime  @db.Timestamp(6)
-  created_at             DateTime? @default(now()) @db.Timestamp(6)
-  updated_at             DateTime? @default(now()) @db.Timestamp(6)
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id             String    @db.Uuid
+  dancer_id             String    @db.Uuid
+  routine_1_id          String    @db.Uuid
+  routine_2_id          String    @db.Uuid
+  override_reason       String
+  overridden_by_user_id String    @db.Uuid
+  overridden_at         DateTime  @db.Timestamp(6)
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  updated_at            DateTime? @default(now()) @db.Timestamp(6)
 
   // Relations
-  dancers                dancers   @relation(fields: [dancer_id], references: [id])
-  tenants                tenants   @relation(fields: [tenant_id], references: [id])
+  dancers dancers @relation(fields: [dancer_id], references: [id])
+  tenants tenants @relation(fields: [tenant_id], references: [id])
 
   @@unique([dancer_id, routine_1_id, routine_2_id, tenant_id])
   @@schema("public")

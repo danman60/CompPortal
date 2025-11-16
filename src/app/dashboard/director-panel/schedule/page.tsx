@@ -1031,6 +1031,7 @@ export default function SchedulePage() {
               viewMode={viewMode}
               isDraggingAnything={activeId !== null}
               onRequestClick={(id) => setShowRequestForm(id)}
+              onNoteClick={handleAddCDNote}
               conflicts={conflictsForUI}
               trophyHelper={trophyHelperForUI}
               ageChanges={ageChangesForUI}

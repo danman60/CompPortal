@@ -23,6 +23,7 @@ interface RoutinePoolProps {
   viewMode: ViewMode;
   isDraggingAnything?: boolean;
   onRequestClick?: (routineId: string) => void;
+  onNoteClick?: (routineId: string, routineTitle: string) => void;
   // Visual indicators (Session 58)
   conflicts?: Array<{ routine1Id: string; routine2Id: string; severity: 'critical' | 'error' | 'warning' }>;
   trophyHelper?: Array<{ routineId: string }>;
@@ -37,6 +38,7 @@ export function RoutinePool({
   viewMode,
   isDraggingAnything = false,
   onRequestClick,
+  onNoteClick,
   conflicts = [],
   trophyHelper = [],
   ageChanges = [],
@@ -110,6 +112,7 @@ export function RoutinePool({
               viewMode={viewMode}
               isDraggingAnything={isDraggingAnything}
               onRequestClick={onRequestClick}
+              onNoteClick={onNoteClick}
               hasConflict={hasConflict(routine.id)}
               conflictSeverity={getConflictSeverity(routine.id)}
               hasNotes={routineNotes[routine.id] || false}

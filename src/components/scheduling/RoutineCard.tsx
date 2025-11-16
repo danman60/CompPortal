@@ -50,6 +50,7 @@ interface RoutineCardProps {
   inZone?: boolean; // Is routine scheduled in a zone?
   isDraggingAnything?: boolean; // Is any item being dragged?
   onRequestClick?: (routineId: string) => void; // Studio request callback
+  onNoteClick?: (routineId: string, routineTitle: string) => void; // CD note callback
   // Visual indicators (Session 58)
   hasConflict?: boolean; // Red badge if routine has scheduling conflicts
   conflictSeverity?: 'critical' | 'error' | 'warning'; // Conflict severity level
@@ -64,6 +65,7 @@ export function RoutineCard({
   inZone = false,
   isDraggingAnything = false,
   onRequestClick,
+  onNoteClick,
   hasConflict = false,
   conflictSeverity = 'warning',
   hasNotes = false,
@@ -227,6 +229,20 @@ export function RoutineCard({
           data-action="add-request"
         >
           📝 Add Request
+        </button>
+      )}
+
+      {/* CD Note Button (for Competition Directors) */}
+      {viewMode === 'cd' && onNoteClick && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent drag from triggering
+            onNoteClick(routine.id, routine.title);
+          }}
+          className="mt-3 w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors font-medium"
+          data-action="add-note"
+        >
+          📝 {hasNotes ? 'View/Add Note' : 'Add Private Note'}
         </button>
       )}
     </div>
