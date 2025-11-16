@@ -124,9 +124,8 @@ export function StudioRequestsPanel({
   };
 
   // Group requests by studio
-  const uniqueStudios = Array.from(new Set(requests.map(r => r.studioId))).map(id => {
-    const req = requests.find(r => r.studioId === id);
-    return { id, name: req?.studioName || '', code: req?.studioCode || '' };
+  const uniqueStudios = Array.from(new Set(requests.map(r => r.studioName))).map(name => {
+    return { id: name, name };
   });
 
   // Count by status
@@ -213,7 +212,7 @@ export function StudioRequestsPanel({
               <option value="">All Studios</option>
               {uniqueStudios.map(studio => (
                 <option key={studio.id} value={studio.id}>
-                  {studio.code} - {studio.name}
+                  {studio.name}
                 </option>
               ))}
             </select>

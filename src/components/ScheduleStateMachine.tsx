@@ -15,6 +15,7 @@ import { trpc } from '@/lib/trpc';
 interface ScheduleStateMachineProps {
   competitionId: string;
   tenantId: string;
+  userId: string;
   currentState: 'draft' | 'finalized' | 'published';
   onStateChange?: () => void;
 }
@@ -22,6 +23,7 @@ interface ScheduleStateMachineProps {
 export function ScheduleStateMachine({
   competitionId,
   tenantId,
+  userId,
   currentState,
   onStateChange,
 }: ScheduleStateMachineProps) {
@@ -34,7 +36,6 @@ export function ScheduleStateMachine({
   // Get conflicts to check if can finalize
   const { data: conflictsData } = trpc.scheduling.getConflicts.useQuery({
     competitionId,
-    tenantId,
   });
 
   const finalizeSchedule = trpc.scheduling.finalizeSchedule.useMutation({
@@ -71,20 +72,20 @@ export function ScheduleStateMachine({
   });
 
   const handleFinalize = () => {
-    finalizeSchedule.mutate({ competitionId, tenantId });
+    finalizeSchedule.mutate({ competitionId, tenantId, userId });
   };
 
   const handlePublish = () => {
-    publishSchedule.mutate({ competitionId, tenantId });
+    publishSchedule.mutate({ competitionId, tenantId, userId });
   };
 
   const handleUnlock = () => {
     unlockSchedule.mutate({ competitionId, tenantId });
   };
 
-  // Check for critical conflicts
+  // Check for critical conflicts (using 'error' as highest severity)
   const criticalConflicts = conflictsData?.conflicts?.filter(
-    (c) => c.severity === 'critical'
+    (c) => c.severity === 'error'
   ) || [];
   const hasCriticalConflicts = criticalConflicts.length > 0;
 

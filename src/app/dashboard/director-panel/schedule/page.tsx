@@ -320,13 +320,11 @@ export default function SchedulePage() {
   // Fetch Trophy Helper
   const { data: trophyHelper } = trpc.scheduling.getTrophyHelper.useQuery({
     competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
   });
 
   // Fetch Conflicts
   const { data: conflictsData, refetch: refetchConflicts } = trpc.scheduling.detectConflicts.useQuery({
     competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
   });
 
   // NEW: Fetch Hotel Attrition Warning
