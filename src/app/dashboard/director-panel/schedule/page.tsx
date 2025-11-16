@@ -14,6 +14,7 @@
 
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
+import toast from 'react-hot-toast';
 import {
   DndContext,
   DragEndEvent,
@@ -194,67 +195,67 @@ export default function SchedulePage() {
   // State Machine mutations
   const finalizeMutation = trpc.scheduling.finalizeSchedule.useMutation({
     onSuccess: () => {
-      alert('Schedule finalized! Entry numbers are now locked.');
+      toast.success('🔒 Schedule finalized! Entry numbers are now locked.');
       refetch();
     },
     onError: (error) => {
-      alert(`Cannot finalize: ${error.message}`);
+      toast.error(`Cannot finalize: ${error.message}`);
     },
   });
 
   const publishMutation = trpc.scheduling.publishSchedule.useMutation({
     onSuccess: () => {
-      alert('Schedule published! Studio names are now revealed.');
+      toast.success('✅ Schedule published! Studio names are now revealed.');
       refetch();
     },
     onError: (error) => {
-      alert(`Cannot publish: ${error.message}`);
+      toast.error(`Cannot publish: ${error.message}`);
     },
   });
 
   const unlockMutation = trpc.scheduling.unlockSchedule.useMutation({
     onSuccess: () => {
-      alert('Schedule unlocked! You can now make changes.');
+      toast.success('🔓 Schedule unlocked! You can now make changes.');
       refetch();
     },
     onError: (error) => {
-      alert(`Cannot unlock: ${error.message}`);
+      toast.error(`Cannot unlock: ${error.message}`);
     },
   });
 
   // Studio Request mutations
   const addRequestMutation = trpc.scheduling.addStudioRequest.useMutation({
     onSuccess: () => {
-      alert('Request submitted successfully!');
+      toast.success('📝 Request submitted successfully!');
       setShowRequestForm(null);
       setRequestContent('');
       refetchRequests();
     },
     onError: (error) => {
-      alert(`Failed to submit request: ${error.message}`);
+      toast.error(`Failed to submit request: ${error.message}`);
     },
   });
 
   const updateRequestMutation = trpc.scheduling.updateRequestStatus.useMutation({
     onSuccess: () => {
-      alert('Request status updated!');
+      toast.success('✓ Request status updated!');
       refetchRequests();
     },
     onError: (error) => {
-      alert(`Failed to update request: ${error.message}`);
+      toast.error(`Failed to update request: ${error.message}`);
     },
   });
 
   // Conflict override mutation
   const overrideConflictMutation = trpc.scheduling.overrideConflict.useMutation({
     onSuccess: () => {
-      alert('✅ Conflict override saved successfully!');
+      toast.success('✅ Conflict override saved successfully!');
       setOverrideConflictId(null);
       setOverrideReason('');
       refetchConflicts();
     },
     onError: (error) => {
-      alert(`Failed to override conflict: ${error.message}`);
+      toast.error(`Failed to override conflict: ${error.message}`);
     },
   });
 
@@ -343,14 +344,16 @@ export default function SchedulePage() {
   const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
     onSuccess: () => {
       console.log('[Schedule] Mutation SUCCESS - refetching routines');
+      toast.success('🎭 Routine scheduled successfully!');
       // Refetch routines to get updated state from database
       refetch();
+      refetchConflicts();
     },
     onError: (error) => {
       console.error('[Schedule] Mutation FAILED:', error);
+      toast.error(`Failed to schedule routine: ${error.message}`);
       // Revert the optimistic update by refetching from database
       refetch();
-      // TODO: Show error toast to user
     },
   });
 
