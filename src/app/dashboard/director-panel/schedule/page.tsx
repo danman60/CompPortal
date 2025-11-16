@@ -582,19 +582,47 @@ export default function SchedulePage() {
         // Dragging a routine
         console.log('[Schedule] Drag ended:', { routineId: activeId, targetZone });
 
-        // Update local state immediately for responsive UI (optimistic update)
-        setRoutineZones(prev => ({
-          ...prev,
-          [activeId]: targetZone,
-        }));
+        // Check if dropping to a time slot (Timeline Grid) vs zone (old ScheduleGrid)
+        if (typeof targetZone === 'string' && targetZone.startsWith('slot-')) {
+          // Timeline Grid: Time-slot based scheduling
+          const slotData = over?.data?.current?.slot;
 
-        // Save to database
-        console.log('[Schedule] Calling mutation...');
-        scheduleMutation.mutate({
-          routineId: activeId,
-          tenantId: TEST_TENANT_ID,
-          performanceTime: targetZone, // Zone ID (e.g., "saturday-am")
-        });
+          if (slotData && sessions && sessions.length > 0) {
+            // Find the session that matches this slot's date
+            const session = sessions.find((s: any) => {
+              const sessionDate = new Date(s.sessionDate).toISOString().split('T')[0];
+              return sessionDate === slotData.date;
+            });
+
+            if (session) {
+              console.log('[Timeline] Scheduling to time slot:', { slotData, sessionId: session.id });
+              scheduleToTimeSlotMutation.mutate({
+                routineId: activeId,
+                tenantId: TEST_TENANT_ID,
+                sessionId: session.id,
+                targetDate: slotData.date,
+                targetTime: slotData.time,
+              });
+            } else {
+              toast.error('Could not find session for this time slot');
+            }
+          }
+        } else {
+          // Old ScheduleGrid: Zone-based scheduling
+          // Update local state immediately for responsive UI (optimistic update)
+          setRoutineZones(prev => ({
+            ...prev,
+            [activeId]: targetZone,
+          }));
+
+          // Save to database
+          console.log('[Schedule] Calling mutation...');
+          scheduleMutation.mutate({
+            routineId: activeId,
+            tenantId: TEST_TENANT_ID,
+            performanceTime: targetZone, // Zone ID (e.g., "saturday-am")
+          });
+        }
       }
     }
 
