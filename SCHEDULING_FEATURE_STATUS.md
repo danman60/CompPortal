@@ -238,14 +238,14 @@
 
 **Tester Domain:** https://tester.compsync.net
 **Scheduler URL:** /dashboard/director-panel/schedule
-**Last Deploy:** Pending (Session 58 - 2 features)
+**Last Deploy:** Pending (Session 58 - 4 features)
 
 **Session 58 Changes:**
 - ✅ Studio code system COMPLETE (global → per-competition)
 - ✅ Award/Break blocks COMPLETE (create/edit/delete/drag)
-- ✅ ScheduleBlockCard & ScheduleBlockModal integrated
-- ✅ DraggableBlockTemplate buttons added
-- ✅ Backend mutations connected (createScheduleBlock)
+- ✅ Age change warnings COMPLETE (summary banner)
+- ✅ Hotel attrition warnings COMPLETE (HotelAttritionBanner)
+- ✅ detectAgeChanges & getHotelAttritionWarning queries integrated
 
 **Ready to Test (after build & deploy):**
 - ✅ Trophy Helper
