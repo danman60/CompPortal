@@ -40,6 +40,11 @@ import { ScheduleBlockCard, DraggableBlockTemplate } from '@/components/Schedule
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { ConflictOverrideModal } from '@/components/ConflictOverrideModal';
 
+// Session 56 Components
+import { ScheduleToolbar, ScheduleStatus, ViewMode } from '@/components/ScheduleToolbar';
+import { FilterPanel, FilterState } from '@/components/FilterPanel';
+import { TimelineHeader, TimelineSession } from '@/components/TimelineHeader';
+
 // TEST tenant ID
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
 const TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
@@ -265,9 +270,6 @@ function DropZone({ id, label, routines, blocks, viewMode, onRequestClick, isAny
 }
 
 export default function SchedulePage() {
-  const [selectedClassification, setSelectedClassification] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Track which zone each routine is in
@@ -291,6 +293,15 @@ export default function SchedulePage() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockType, setBlockType] = useState<'award' | 'break'>('award');
 
+  // Filter state (Session 56)
+  const [filters, setFilters] = useState<FilterState>({
+    classifications: [],
+    ageGroups: [],
+    genres: [],
+    studios: [],
+    search: '',
+  });
+
   // Track schedule blocks
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([
     {
@@ -309,13 +320,13 @@ export default function SchedulePage() {
     },
   ]);
 
-  // Fetch routines
+  // Fetch routines (use filter state)
   const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
     tenantId: TEST_TENANT_ID,
-    classificationId: selectedClassification || undefined,
-    categoryId: selectedCategory || undefined,
-    searchQuery: searchQuery || undefined,
+    classificationId: filters.classifications[0] || undefined, // TODO: Support multiple
+    categoryId: filters.genres[0] || undefined, // TODO: Support multiple
+    searchQuery: filters.search || undefined,
   });
 
   // Fetch Trophy Helper
@@ -408,10 +419,10 @@ export default function SchedulePage() {
   });
 
   // Mock competition status (in production, fetch from database)
-  const [scheduleStatus, setScheduleStatus] = useState<'draft' | 'finalized' | 'published'>('draft');
+  const [scheduleStatus, setScheduleStatus] = useState<ScheduleStatus>('draft');
 
   // View mode switching
-  const [viewMode, setViewMode] = useState<'cd' | 'studio' | 'judge' | 'public'>('cd');
+  const [viewMode, setViewMode] = useState<ViewMode>('cd');
 
   const handleFinalize = () => {
     if (confirm('Lock entry numbers? This will prevent automatic renumbering.')) {
@@ -633,175 +644,26 @@ export default function SchedulePage() {
           scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
         }
       `}</style>
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Manual Scheduling System
-          </h1>
-          <p className="text-purple-200">
-            Drag routines from the pool to schedule blocks. Studio codes shown for anonymity.
-          </p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
+        {/* Schedule Toolbar (Session 56) */}
+        <ScheduleToolbar
+          status={scheduleStatus}
+          competitionName="Test Competition Spring 2026"
+          competitionDates="April 9-12, 2026"
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onSaveDraft={() => alert('Save draft - TODO')}
+          onFinalize={handleFinalize}
+          onPublish={handlePublish}
+          onExport={() => alert('Export - TODO')}
+          isFinalizing={finalizeMutation.isPending}
+          isPublishing={publishMutation.isPending}
+          totalRoutines={routines?.length || 0}
+          scheduledRoutines={scheduledCount}
+          unscheduledRoutines={unscheduledRoutines.length}
+        />
 
-        {/* View Mode Selector */}
-        <div className="mb-4 bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-4 shadow-lg">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-purple-200">View Mode:</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewMode('cd')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === 'cd'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
-                }`}
-              >
-                👨‍💼 CD View
-              </button>
-              <button
-                onClick={() => setViewMode('studio')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === 'studio'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
-                }`}
-              >
-                🎭 Studio Director View
-              </button>
-              <button
-                onClick={() => setViewMode('judge')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === 'judge'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
-                }`}
-              >
-                👔 Judge View
-              </button>
-              <button
-                onClick={() => setViewMode('public')}
-                disabled={scheduleStatus !== 'published'}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === 'public'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-purple-900/50 text-purple-300 hover:bg-purple-700'
-                } disabled:opacity-30 disabled:cursor-not-allowed`}
-              >
-                🌍 Public View {scheduleStatus !== 'published' && '(After Publish)'}
-              </button>
-            </div>
-          </div>
-
-          {/* View Mode Info */}
-          <div className="mt-3 pt-3 border-t border-purple-600/30">
-            <p className="text-xs text-purple-300">
-              {viewMode === 'cd' && '👨‍💼 Full schedule • Studio codes + names • All notes visible'}
-              {viewMode === 'studio' && '🎭 Only your routines • Full studio name • Your requests only'}
-              {viewMode === 'judge' && '👔 Full schedule • Studio codes ONLY (anonymous) • No notes'}
-              {viewMode === 'public' && '🌍 Full schedule • Full studio names revealed • Read-only'}
-            </p>
-          </div>
-        </div>
-
-        {/* State Machine Toolbar */}
-        <div className="mb-6 bg-purple-800/50 backdrop-blur-sm rounded-xl border border-purple-600/30 p-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            {/* Status Badge */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-purple-200">Status:</span>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    scheduleStatus === 'draft'
-                      ? 'bg-blue-500 text-white'
-                      : scheduleStatus === 'finalized'
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-green-500 text-white'
-                  }`}
-                >
-                  {scheduleStatus === 'draft' && '📝 Draft'}
-                  {scheduleStatus === 'finalized' && '🔒 Finalized'}
-                  {scheduleStatus === 'published' && '✅ Published'}
-                </span>
-              </div>
-
-              {/* Status Info */}
-              <div className="text-xs text-purple-300">
-                {scheduleStatus === 'draft' && 'Entry numbers auto-renumber on changes'}
-                {scheduleStatus === 'finalized' && 'Entry numbers locked • Studios can view'}
-                {scheduleStatus === 'published' && 'Studio names revealed • Schedule locked'}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              {/* CD Requests Panel Button */}
-              <button
-                onClick={() => setShowRequestsPanel(!showRequestsPanel)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  showRequestsPanel
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-indigo-900/50 text-indigo-200 hover:bg-indigo-700'
-                }`}
-              >
-                📋 Studio Requests {studioRequests && studioRequests.length > 0 && `(${studioRequests.length})`}
-              </button>
-
-              {scheduleStatus === 'draft' && (
-                <button
-                  onClick={handleFinalize}
-                  disabled={finalizeMutation.isPending}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {finalizeMutation.isPending ? 'Finalizing...' : '🔒 Finalize Schedule'}
-                </button>
-              )}
-
-              {scheduleStatus === 'finalized' && (
-                <>
-                  <button
-                    onClick={handleUnlock}
-                    disabled={unlockMutation.isPending}
-                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {unlockMutation.isPending ? 'Unlocking...' : '🔓 Unlock'}
-                  </button>
-                  <button
-                    onClick={handlePublish}
-                    disabled={publishMutation.isPending}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {publishMutation.isPending ? 'Publishing...' : '✅ Publish Schedule'}
-                  </button>
-                </>
-              )}
-
-              {scheduleStatus === 'published' && (
-                <div className="text-sm text-green-300 font-medium">
-                  Schedule is live • No changes allowed
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Conflict Summary in Toolbar */}
-          {conflictsData && conflictsData.summary.total > 0 && (
-            <div className="mt-3 pt-3 border-t border-purple-600/30">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-red-400 font-medium">⚠️ Conflicts Detected:</span>
-                <span className="text-white">
-                  {conflictsData.summary.critical} Critical • {conflictsData.summary.errors} Errors • {conflictsData.summary.warnings} Warnings
-                </span>
-                {scheduleStatus === 'draft' && (
-                  <span className="text-yellow-300 ml-2">
-                    (Resolve critical conflicts before finalizing)
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <div className="p-6">
 
         {/* CD Requests Management Panel (Collapsible) */}
         {showRequestsPanel && (
@@ -922,81 +784,17 @@ export default function SchedulePage() {
 
           {/* LEFT PANEL: Unscheduled Routines Pool */}
           <div className="col-span-4 space-y-6">
-            {/* Filter Panel */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <h2 className="text-lg font-bold text-white mb-4">Filters</h2>
-
-              {/* Search */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-purple-200 mb-2">
-                  Search Routine
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-300 pointer-events-none">
-                    🔍
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by title..."
-                    className="w-full pl-10 pr-10 py-2 border border-purple-500/50 rounded-lg bg-purple-900/50 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-all"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Classification Filter */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-purple-200 mb-2">
-                  Classification
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedClassification}
-                    onChange={(e) => setSelectedClassification(e.target.value)}
-                    className="w-full px-4 py-2 pr-10 border border-white/20 rounded-lg bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent hover:bg-white/15 hover:border-white/30 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="" className="bg-gray-800">All Classifications</option>
-                    {classifications.map(c => (
-                      <option key={c.id} value={c.id} className="bg-gray-800">{c.name}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/60">
-                    ▼
-                  </div>
-                </div>
-              </div>
-
-              {/* Category Filter */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-purple-200 mb-2">
-                  Genre
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-4 py-2 pr-10 border border-white/20 rounded-lg bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent hover:bg-white/15 hover:border-white/30 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="" className="bg-gray-800">All Genres</option>
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id} className="bg-gray-800">{c.name}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/60">
-                    ▼
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Filter Panel (Session 56) */}
+            <FilterPanel
+              classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
+              ageGroups={[]} // TODO: Get age groups from data
+              genres={categories.map(c => ({ id: c.id, label: c.name }))}
+              studios={[]} // TODO: Get studios from data
+              filters={filters}
+              onFiltersChange={setFilters}
+              totalRoutines={routines?.length || 0}
+              filteredRoutines={unscheduledRoutines.length}
+            />
 
             {/* Unscheduled Routines List */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
@@ -1064,6 +862,52 @@ export default function SchedulePage() {
 
           {/* MIDDLE PANEL: Schedule Builder */}
           <div className="col-span-5">
+            {/* Timeline Header (Session 56) */}
+            <TimelineHeader
+              sessions={[
+                {
+                  id: 'saturday-am',
+                  name: 'Saturday Morning',
+                  day: new Date('2026-04-10'),
+                  startTime: '09:00 AM',
+                  endTime: '12:00 PM',
+                  routineCount: saturdayAM.length,
+                  blockCount: saturdayAMBlocks.length,
+                  color: 'bg-gradient-to-br from-indigo-500/15 to-purple-500/15',
+                },
+                {
+                  id: 'saturday-pm',
+                  name: 'Saturday Afternoon',
+                  day: new Date('2026-04-10'),
+                  startTime: '01:00 PM',
+                  endTime: '05:00 PM',
+                  routineCount: saturdayPM.length,
+                  blockCount: saturdayPMBlocks.length,
+                  color: 'bg-gradient-to-br from-purple-500/15 to-pink-500/15',
+                },
+                {
+                  id: 'sunday-am',
+                  name: 'Sunday Morning',
+                  day: new Date('2026-04-11'),
+                  startTime: '09:00 AM',
+                  endTime: '12:00 PM',
+                  routineCount: sundayAM.length,
+                  blockCount: sundayAMBlocks.length,
+                  color: 'bg-gradient-to-br from-blue-500/15 to-indigo-500/15',
+                },
+                {
+                  id: 'sunday-pm',
+                  name: 'Sunday Afternoon',
+                  day: new Date('2026-04-11'),
+                  startTime: '01:00 PM',
+                  endTime: '05:00 PM',
+                  routineCount: sundayPM.length,
+                  blockCount: sundayPMBlocks.length,
+                  color: 'bg-gradient-to-br from-indigo-500/15 to-blue-500/15',
+                },
+              ]}
+            />
+
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
               <h2 className="text-lg font-bold text-white mb-4">Schedule Timeline</h2>
 
@@ -1363,6 +1207,7 @@ export default function SchedulePage() {
             </div>
           </div>
 
+        </div>
         </div>
       </div>
 
