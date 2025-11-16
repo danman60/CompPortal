@@ -1,11 +1,11 @@
 # Scheduling Feature Status - Spec vs. Implementation
 
-**Date:** 2025-11-16 (Session 58 - Studio Code Refactor Complete)
+**Date:** 2025-11-16 (Session 58 - Studio Codes + Award/Break Blocks)
 **Branch:** tester
-**Commit:** Pending (Studio code per-competition refactor)
+**Commit:** Pending (2 features completed)
 **Spec:** SCHEDULING_SPEC_V4_UNIFIED.md
 **Last E2E Test:** Session 4 - View modes verified
-**Session 58 Progress:** Studio code system refactored from global to per-competition
+**Session 58 Progress:** Studio codes (per-competition) + Award/Break blocks integration COMPLETE
 
 ---
 
@@ -39,12 +39,12 @@
 | - Unlock mutation | §4 | ✅ | ✅ | ✅ | Draft rollback |
 | - Status badge UI | §4 | ✅ | ✅ | ✅ | ScheduleToolbar (Session 56) |
 | - Action buttons UI | §4 | ✅ | ✅ | ✅ | ScheduleToolbar (Session 56) |
-| **5. Schedule Blocks** | §5 | ✅ | ❌ | 🟡 | **Backend COMPLETE** |
-| - Award blocks | §5 | ✅ | ❌ | 🟡 | Create/place backend |
-| - Break blocks | §5 | ✅ | ❌ | 🟡 | Create/place backend |
-| - Time rounding | §5 | ✅ | ❌ | 🟡 | 5-min increments |
-| - Draggable UI | §5 | ❌ | ❌ | ❌ | Not in UI |
-| - Inline editing | §5 | ❌ | ❌ | ❌ | Duration/title |
+| **5. Schedule Blocks** | §5 | ✅ | ✅ | ✅ | **COMPLETE** (Session 58) |
+| - Award blocks | §5 | ✅ | ✅ | ✅ | Create/drag/edit/delete |
+| - Break blocks | §5 | ✅ | ✅ | ✅ | Create/drag/edit/delete |
+| - Time rounding | §5 | ✅ | ✅ | ✅ | 5-min increments |
+| - Draggable UI | §5 | ✅ | ✅ | ✅ | ScheduleBlockCard |
+| - Inline editing | §5 | ✅ | ✅ | ✅ | Modal-based editing |
 
 ### P1 HIGH PRIORITY
 
@@ -98,8 +98,8 @@
 ### By Priority
 
 **P0 Critical (5 features):**
-- ✅ Complete: 4 (Conflict Detection, Trophy Helper, Studio Code System, State Machine)
-- 🟡 Partial: 1 (Schedule Blocks - UI integration needed)
+- ✅ Complete: 5/5 (Conflict Detection, Trophy Helper, Studio Code System, State Machine, Schedule Blocks)
+- 🟡 Partial: 0
 - ❌ Missing: 0
 
 **P1 High Priority (6 features):**
@@ -165,12 +165,20 @@
 
 ### ✅ Session 58 Completed
 
-**COMPLETED:** Studio Code System Refactor
+**COMPLETED 1:** Studio Code System Refactor
 - ✅ Migration: `reservations.studio_code` column exists
 - ✅ Backend: `assignStudioCodes` procedure updated to write to `reservations.studio_code`
 - ✅ Queries: `getRoutines` and `getViewModeSchedule` now join reservations for per-competition codes
 - ✅ Exports: PDF and Excel exports also use per-competition codes
 - 📝 Files Changed: `src/server/routers/scheduling.ts` (4 procedures updated)
+
+**COMPLETED 2:** Award/Break Blocks Integration
+- ✅ Integrated ScheduleBlockCard and ScheduleBlockModal components
+- ✅ Added DraggableBlockTemplate buttons for creating new blocks
+- ✅ Connected createScheduleBlock backend mutation
+- ✅ Implemented create/edit/delete handlers
+- ✅ Removed old inline DraggableBlock component
+- 📝 Files Changed: `src/app/dashboard/director-panel/schedule/page.tsx`
 
 ### Must Have for Dec 26 (P0)
 
@@ -191,10 +199,10 @@
    - ✅ Queries: getRoutines & getViewModeSchedule join reservations
    - ✅ View-based masking: Already implemented (Judge view uses codes)
 
-4. **Award/Break Blocks Integration**
+4. ~~**Award/Break Blocks Integration**~~ ✅ **COMPLETE** (Session 58)
    - ✅ Components created (Session 55)
-   - ❌ Integrate into page.tsx
-   - ❌ Connect to backend mutations
+   - ✅ Integrated into page.tsx (Session 58)
+   - ✅ Connected to backend mutations (Session 58)
 
 ### High Priority (P1)
 
@@ -243,18 +251,19 @@
 - ✅ Studio feedback (StudioRequestsPanel)
 
 **Components Fully Integrated:**
-- ✅ ScheduleToolbar (schedule/page.tsx:628)
-- ✅ FilterPanel (schedule/page.tsx:783)
-- ✅ TimelineHeader (schedule/page.tsx:818)
-- ⚠️ ScheduleBlockCard & Modal (components exist, need page.tsx integration)
+- ✅ ScheduleToolbar (schedule/page.tsx)
+- ✅ FilterPanel (schedule/page.tsx)
+- ✅ TimelineHeader (schedule/page.tsx)
+- ✅ ScheduleBlockCard & Modal (schedule/page.tsx) - **NEW Session 58**
+- ✅ DraggableBlockTemplate (schedule/page.tsx) - **NEW Session 58**
 
 **Session 58 Completed:**
 - ✅ Studio code system refactor (global → per-competition)
+- ✅ Award/Break blocks integration (create/edit/delete/drag)
 
 **Not Yet in UI:**
-- ❌ Award/break blocks integration (components ready)
-- ❌ Age change warnings
-- ❌ Hotel attrition warnings
+- ❌ Age change warnings (backend exists)
+- ❌ Hotel attrition warnings (backend exists)
 
 **Missing Backend Logic:**
 - ❌ Age change detection algorithm (procedure exists, needs integration)
