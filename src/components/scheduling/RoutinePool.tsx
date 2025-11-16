@@ -1,0 +1,98 @@
+'use client';
+
+/**
+ * RoutinePool Component
+ *
+ * Display pool of unscheduled routines with:
+ * - Loading skeleton states
+ * - Error handling
+ * - Empty state (all routines scheduled)
+ * - Scrollable list of routine cards
+ * - Routine count badge
+ *
+ * Created: Session 56 (Frontend Component Extraction - Part 2)
+ * Spec: SCHEDULING_SPEC_V4_UNIFIED.md
+ */
+
+import { RoutineCard, Routine, ViewMode } from './RoutineCard';
+
+interface RoutinePoolProps {
+  routines: Routine[];
+  isLoading?: boolean;
+  error?: { message: string } | null;
+  viewMode: ViewMode;
+  isDraggingAnything?: boolean;
+  onRequestClick?: (routineId: string) => void;
+}
+
+export function RoutinePool({
+  routines,
+  isLoading = false,
+  error = null,
+  viewMode,
+  isDraggingAnything = false,
+  onRequestClick,
+}: RoutinePoolProps) {
+  const isEmpty = routines.length === 0 && !isLoading;
+
+  return (
+    <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-white">
+          Unscheduled Routines
+        </h2>
+        <span className="text-sm font-medium text-white bg-purple-600 px-3 py-1 rounded-full">
+          {routines.length}
+        </span>
+      </div>
+
+      {/* Loading State - Skeleton Loaders */}
+      {isLoading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white/10 border border-white/20 rounded-xl p-4 animate-pulse">
+              <div className="flex items-start justify-between mb-2">
+                <div className="h-5 bg-white/20 rounded w-3/4"></div>
+                <div className="h-6 w-8 bg-white/20 rounded"></div>
+              </div>
+              <div className="h-8 bg-white/15 rounded-lg w-2/3 mb-2"></div>
+              <div className="h-4 bg-white/10 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
+          <p className="text-red-200 font-medium">Error loading routines</p>
+          <p className="text-red-300 text-sm mt-1">{error.message}</p>
+        </div>
+      )}
+
+      {/* Routines List */}
+      {routines.length > 0 && !isLoading && (
+        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+          {routines.map((routine) => (
+            <RoutineCard
+              key={routine.id}
+              routine={routine}
+              viewMode={viewMode}
+              isDraggingAnything={isDraggingAnything}
+              onRequestClick={onRequestClick}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {isEmpty && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">✅</div>
+          <p className="text-purple-200 font-medium">All routines scheduled!</p>
+        </div>
+      )}
+    </div>
+  );
+}

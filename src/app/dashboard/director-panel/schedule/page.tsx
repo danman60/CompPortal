@@ -23,10 +23,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
-import {
   useDraggable,
-  useDroppable,
 } from '@dnd-kit/core';
 
 // Session 55 Components
@@ -44,6 +41,8 @@ import { ConflictOverrideModal } from '@/components/ConflictOverrideModal';
 import { ScheduleToolbar, ScheduleStatus, ViewMode } from '@/components/ScheduleToolbar';
 import { FilterPanel, FilterState } from '@/components/FilterPanel';
 import { TimelineHeader, TimelineSession } from '@/components/TimelineHeader';
+import { RoutinePool } from '@/components/scheduling/RoutinePool';
+import { ScheduleGrid, ScheduleZone as ScheduleZoneType, ScheduleBlock as ScheduleBlockType } from '@/components/scheduling/ScheduleGrid';
 
 // TEST tenant ID
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -75,15 +74,9 @@ interface Routine {
   scheduledDay: Date | null;
 }
 
-type ScheduleZone = 'saturday-am' | 'saturday-pm' | 'sunday-am' | 'sunday-pm' | 'unscheduled';
-
-interface ScheduleBlock {
-  id: string;
-  type: 'award' | 'break';
-  title: string;
-  duration: number; // minutes
-  zone: ScheduleZone | null;
-}
+// Use imported types from ScheduleGrid
+type ScheduleZone = ScheduleZoneType;
+type ScheduleBlock = ScheduleBlockType;
 
 function DraggableBlock({ block }: { block: ScheduleBlock }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -112,158 +105,6 @@ function DraggableBlock({ block }: { block: ScheduleBlock }) {
           <div className="font-bold text-white text-sm">{block.title}</div>
           <div className="text-xs text-gray-300">{block.duration} minutes</div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function DraggableRoutineCard({ routine, inZone, viewMode, onRequestClick, isAnyDragging }: { routine: Routine; inZone?: boolean; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void; isAnyDragging?: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: routine.id,
-  });
-
-  // Determine studio display based on view mode
-  const getStudioDisplay = () => {
-    switch (viewMode) {
-      case 'cd':
-        return `${routine.studioCode} (${routine.studioName})`;
-      case 'studio':
-        return routine.studioName; // Full name only
-      case 'judge':
-        return routine.studioCode; // Code only, no prefix
-      case 'public':
-        return routine.studioName; // Full names revealed
-      default:
-        return routine.studioCode;
-    }
-  };
-
-  // Classification color mapping
-  const getClassificationColor = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower.includes('emerald')) return 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300';
-    if (lower.includes('sapphire')) return 'bg-blue-500/20 border-blue-500/40 text-blue-300';
-    if (lower.includes('crystal')) return 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300';
-    if (lower.includes('titanium')) return 'bg-slate-400/20 border-slate-400/40 text-slate-300';
-    if (lower.includes('production')) return 'bg-purple-500/20 border-purple-500/40 text-purple-300';
-    return 'bg-gray-500/20 border-gray-500/40 text-gray-300';
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`
-        relative rounded-xl p-4 cursor-grab transition-all
-        ${isDragging ? 'opacity-50 rotate-3 scale-105' : 'hover:translate-y-[-4px]'}
-        ${inZone
-          ? 'bg-white/15 border-2 border-green-400/50 shadow-[0_4px_16px_rgba(0,0,0,0.1)]'
-          : 'bg-white/15 border border-white/25 shadow-[0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.15)] hover:border-white/40'}
-      `}
-    >
-      {/* Title + Studio Badge Row */}
-      <div className="flex items-start justify-between mb-2" style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
-        <h3 className="text-lg font-semibold text-white leading-tight flex-1 pr-2">
-          🎭 {routine.title}
-        </h3>
-        <span className="flex-shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm px-3 py-1 rounded-lg shadow-md">
-          {getStudioDisplay().split(' ')[0]}
-        </span>
-      </div>
-
-      {/* Duration Tag (top right corner) */}
-      <div className="absolute top-2 right-2 bg-black/30 px-2 py-1 rounded-md text-xs text-white/90" style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
-        ⏱️ {routine.duration} min
-      </div>
-
-      {/* Classification Badge */}
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium mb-2 ${getClassificationColor(routine.classificationName)}`} style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
-        🔷 {routine.classificationName} • {routine.categoryName}
-      </div>
-
-      {/* Age Group + Size */}
-      <div className="flex gap-2 text-sm text-white/80" style={{ pointerEvents: isAnyDragging ? 'none' : 'auto' }}>
-        <span>👥 {routine.ageGroupName}</span>
-        <span>•</span>
-        <span>{routine.entrySizeName}</span>
-      </div>
-
-      {/* Studio Request Button (for Studio Directors) */}
-      {viewMode === 'studio' && onRequestClick && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent drag from triggering
-            onRequestClick(routine.id);
-          }}
-          className="mt-3 w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
-        >
-          📝 Add Request
-        </button>
-      )}
-    </div>
-  );
-}
-
-function DropZone({ id, label, routines, blocks, viewMode, onRequestClick, isAnyDragging }: { id: ScheduleZone; label: string; routines: Routine[]; blocks: ScheduleBlock[]; viewMode: 'cd' | 'studio' | 'judge' | 'public'; onRequestClick?: (routineId: string) => void; isAnyDragging?: boolean }) {
-  const { setNodeRef, isOver } = useDroppable({ id });
-  const isEmpty = routines.length === 0 && blocks.length === 0;
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`
-        rounded-xl p-4 min-h-[200px] transition-all duration-300
-        ${isEmpty
-          ? `border-2 border-dashed ${isOver ? 'border-amber-400 bg-amber-500/15 shadow-[0_0_24px_rgba(251,191,36,0.3)]' : 'border-white/30 bg-gradient-to-br from-white/5 to-white/2 hover:border-white/50 hover:bg-white/8'}`
-          : `border border-white/15 bg-white/5 ${isOver ? 'border-amber-400/50 bg-amber-500/10' : ''}`
-        }
-      `}
-    >
-      <h3 className="font-bold text-white mb-3">{label}</h3>
-      <div className="space-y-2">
-        {isEmpty && (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="text-4xl mb-2 opacity-60">📥</div>
-            <p className="text-white/70 text-sm font-medium">
-              Drop routines here
-            </p>
-            <p className="text-white/50 text-xs mt-1">
-              {isOver ? 'Release to schedule' : '0 routines'}
-            </p>
-          </div>
-        )}
-
-        {/* Schedule Blocks in Zone */}
-        {blocks.map((block) => (
-          <div
-            key={block.id}
-            className={`
-              border-2 rounded-lg p-3 mb-2
-              ${block.type === 'award'
-                ? 'border-yellow-500 bg-yellow-900/40'
-                : 'border-gray-500 bg-gray-900/40'}
-            `}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{block.type === 'award' ? '🏆' : '☕'}</span>
-              <div className="flex-1">
-                <div className="font-bold text-white text-sm">{block.title}</div>
-                <div className="text-xs text-gray-300">{block.duration} min</div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Routines in Zone */}
-        {routines.map((routine) => (
-          <DraggableRoutineCard key={routine.id} routine={routine} inZone viewMode={viewMode} onRequestClick={onRequestClick} isAnyDragging={isAnyDragging} />
-        ))}
-      </div>
-      <div className="mt-3 pt-3 border-t border-purple-500/30">
-        <p className="text-xs text-purple-300">
-          {routines.length} routine{routines.length !== 1 ? 's' : ''} • {blocks.length} block{blocks.length !== 1 ? 's' : ''}
-        </p>
       </div>
     </div>
   );
@@ -796,58 +637,15 @@ export default function SchedulePage() {
               filteredRoutines={unscheduledRoutines.length}
             />
 
-            {/* Unscheduled Routines List */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white">
-                  Unscheduled Routines
-                </h2>
-                <span className="text-sm font-medium text-white bg-purple-600 px-3 py-1 rounded-full">
-                  {unscheduledRoutines.length}
-                </span>
-              </div>
-
-              {/* Loading State - Skeleton Loaders */}
-              {isLoading && (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white/10 border border-white/20 rounded-xl p-4 animate-pulse">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="h-5 bg-white/20 rounded w-3/4"></div>
-                        <div className="h-6 w-8 bg-white/20 rounded"></div>
-                      </div>
-                      <div className="h-8 bg-white/15 rounded-lg w-2/3 mb-2"></div>
-                      <div className="h-4 bg-white/10 rounded w-1/2"></div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Error State */}
-              {error && (
-                <div className="bg-red-900/50 border border-red-500 rounded-lg p-4">
-                  <p className="text-red-200 font-medium">Error loading routines</p>
-                  <p className="text-red-300 text-sm mt-1">{error.message}</p>
-                </div>
-              )}
-
-              {/* Routines List */}
-              {unscheduledRoutines.length > 0 && (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                  {unscheduledRoutines.map((routine) => (
-                    <DraggableRoutineCard key={routine.id} routine={routine} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
-                  ))}
-                </div>
-              )}
-
-              {/* Empty State */}
-              {routines && unscheduledRoutines.length === 0 && !isLoading && (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">✅</div>
-                  <p className="text-purple-200 font-medium">All routines scheduled!</p>
-                </div>
-              )}
-            </div>
+            {/* Unscheduled Routines Pool (Session 56) */}
+            <RoutinePool
+              routines={unscheduledRoutines}
+              isLoading={isLoading}
+              error={error}
+              viewMode={viewMode}
+              isDraggingAnything={activeId !== null}
+              onRequestClick={(id) => setShowRequestForm(id)}
+            />
 
             {/* Schedule Blocks */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)] mt-6">
@@ -908,37 +706,56 @@ export default function SchedulePage() {
               ]}
             />
 
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <h2 className="text-lg font-bold text-white mb-4">Schedule Timeline</h2>
-
-              <div className="space-y-4">
-                {/* Saturday */}
-                <div className="bg-gradient-to-br from-indigo-500/15 to-purple-500/15 border border-indigo-500/30 rounded-2xl p-5">
-                  <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-white/10">
-                    <span className="text-3xl">📅</span>
-                    <h3 className="text-xl font-bold text-white">Saturday</h3>
-                    <span className="text-sm text-white/70 ml-auto">April 10, 2025</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="saturday-am" label="Morning" routines={saturdayAM} blocks={saturdayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
-                    <DropZone id="saturday-pm" label="Afternoon" routines={saturdayPM} blocks={saturdayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
-                  </div>
-                </div>
-
-                {/* Sunday */}
-                <div className="bg-gradient-to-br from-blue-500/15 to-indigo-500/15 border border-blue-500/30 rounded-2xl p-5">
-                  <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-white/10">
-                    <span className="text-3xl">☀️</span>
-                    <h3 className="text-xl font-bold text-white">Sunday</h3>
-                    <span className="text-sm text-white/70 ml-auto">April 11, 2025</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <DropZone id="sunday-am" label="Morning" routines={sundayAM} blocks={sundayAMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
-                    <DropZone id="sunday-pm" label="Afternoon" routines={sundayPM} blocks={sundayPMBlocks} viewMode={viewMode} onRequestClick={(id) => setShowRequestForm(id)} isAnyDragging={activeId !== null} />
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Schedule Grid (Session 56) */}
+            <ScheduleGrid
+              days={[
+                {
+                  day: 'Saturday',
+                  date: 'April 10, 2025',
+                  icon: '📅',
+                  gradient: 'bg-gradient-to-br from-indigo-500/15 to-purple-500/15',
+                  borderColor: 'border-indigo-500/30',
+                  sessions: [
+                    {
+                      id: 'saturday-am' as ScheduleZoneType,
+                      label: 'Morning',
+                      routines: saturdayAM,
+                      blocks: saturdayAMBlocks,
+                    },
+                    {
+                      id: 'saturday-pm' as ScheduleZoneType,
+                      label: 'Afternoon',
+                      routines: saturdayPM,
+                      blocks: saturdayPMBlocks,
+                    },
+                  ],
+                },
+                {
+                  day: 'Sunday',
+                  date: 'April 11, 2025',
+                  icon: '☀️',
+                  gradient: 'bg-gradient-to-br from-blue-500/15 to-indigo-500/15',
+                  borderColor: 'border-blue-500/30',
+                  sessions: [
+                    {
+                      id: 'sunday-am' as ScheduleZoneType,
+                      label: 'Morning',
+                      routines: sundayAM,
+                      blocks: sundayAMBlocks,
+                    },
+                    {
+                      id: 'sunday-pm' as ScheduleZoneType,
+                      label: 'Afternoon',
+                      routines: sundayPM,
+                      blocks: sundayPMBlocks,
+                    },
+                  ],
+                },
+              ]}
+              viewMode={viewMode}
+              isDraggingAnything={activeId !== null}
+              onRequestClick={(id) => setShowRequestForm(id)}
+            />
           </div>
 
           {/* RIGHT PANEL: Trophy Helper */}
