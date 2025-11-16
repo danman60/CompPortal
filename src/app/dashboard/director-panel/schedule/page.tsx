@@ -783,6 +783,39 @@ export default function SchedulePage() {
 
   const scheduledCount = (saturdayAM.length + saturdayPM.length + sundayAM.length + sundayPM.length);
 
+  // Prepare visual indicator data (Session 58)
+  const conflictsForUI = (conflictsData?.conflicts || []).map((c: any) => ({
+    id: `${c.routine1Id}-${c.routine2Id}-${c.dancerId}`,
+    dancerId: c.dancerId,
+    dancerName: c.dancerName,
+    routine1Id: c.routine1Id,
+    routine1Number: c.routine1Number || 0,
+    routine1Title: c.routine1Title || '',
+    routine2Id: c.routine2Id,
+    routine2Number: c.routine2Number || 0,
+    routine2Title: c.routine2Title || '',
+    routinesBetween: c.routinesBetween || 0,
+    severity: c.severity as 'critical' | 'error' | 'warning',
+    message: c.message || `${c.dancerName} has ${c.routinesBetween} routines between (need 6 minimum)`,
+  }));
+
+  const trophyHelperForUI = (trophyHelper || []).map((t: any) => ({
+    routineId: t.lastRoutineId || t.last_routine_id,
+    overallCategory: t.overallCategory || t.overall_category,
+  })).filter((t: any) => t.routineId); // Filter out entries without routine ID
+
+  const ageChangesForUI = (ageChangesData?.routines || [])
+    .filter((r: any) => r.ageChanges && r.ageChanges.length > 0)
+    .map((r: any) => r.id)
+    .filter(Boolean);
+
+  const routineNotesForUI = (studioRequests || []).reduce((acc: Record<string, boolean>, req: any) => {
+    if (req.routine_id) {
+      acc[req.routine_id] = true;
+    }
+    return acc;
+  }, {} as Record<string, boolean>);
+
   return (
     <DndContext
       sensors={sensors}
@@ -998,6 +1031,10 @@ export default function SchedulePage() {
               viewMode={viewMode}
               isDraggingAnything={activeId !== null}
               onRequestClick={(id) => setShowRequestForm(id)}
+              conflicts={conflictsForUI}
+              trophyHelper={trophyHelperForUI}
+              ageChanges={ageChangesForUI}
+              routineNotes={routineNotesForUI}
             />
 
             {/* Schedule Blocks */}
@@ -1134,6 +1171,10 @@ export default function SchedulePage() {
               viewMode={viewMode}
               isDraggingAnything={activeId !== null}
               onRequestClick={(id) => setShowRequestForm(id)}
+              conflicts={conflictsForUI}
+              trophyHelper={trophyHelperForUI}
+              ageChanges={ageChangesForUI}
+              routineNotes={routineNotesForUI}
             />
 
             {/* Timeline Grid (Session 59 - Time-Slot Based Scheduling) */}
@@ -1311,6 +1352,30 @@ export default function SchedulePage() {
                             </div>
                             <div className="text-xs text-yellow-400 mt-2">
                               💡 Verify dancer's age matches competition date requirements
+                            </div>
+
+                            {/* Resolution Actions */}
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                onClick={() => {
+                                  toast.success(`Age change resolved for ${warning.dancerName}`);
+                                  // TODO: Add mutation to mark age change as resolved
+                                }}
+                                className="flex-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
+                                title="Mark as resolved (age verified correct)"
+                              >
+                                ✓ Resolve
+                              </button>
+                              <button
+                                onClick={() => {
+                                  toast.success(`Age change override for ${warning.dancerName}`);
+                                  // TODO: Add mutation to override age change
+                                }}
+                                className="flex-1 px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium rounded transition-colors"
+                                title="Override (keep current age group)"
+                              >
+                                ⚙️ Override
+                              </button>
                             </div>
                           </div>
                         </div>

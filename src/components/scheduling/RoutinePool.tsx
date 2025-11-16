@@ -23,6 +23,11 @@ interface RoutinePoolProps {
   viewMode: ViewMode;
   isDraggingAnything?: boolean;
   onRequestClick?: (routineId: string) => void;
+  // Visual indicators (Session 58)
+  conflicts?: Array<{ routine1Id: string; routine2Id: string; severity: 'critical' | 'error' | 'warning' }>;
+  trophyHelper?: Array<{ routineId: string }>;
+  ageChanges?: string[];
+  routineNotes?: Record<string, boolean>;
 }
 
 export function RoutinePool({
@@ -32,8 +37,32 @@ export function RoutinePool({
   viewMode,
   isDraggingAnything = false,
   onRequestClick,
+  conflicts = [],
+  trophyHelper = [],
+  ageChanges = [],
+  routineNotes = {},
 }: RoutinePoolProps) {
   const isEmpty = routines.length === 0 && !isLoading;
+
+  // Helper: Check if routine has conflict
+  const hasConflict = (routineId: string) => {
+    return conflicts.some((c) => c.routine1Id === routineId || c.routine2Id === routineId);
+  };
+
+  // Helper: Get conflict severity
+  const getConflictSeverity = (routineId: string): 'critical' | 'error' | 'warning' => {
+    const routineConflicts = conflicts.filter((c) => c.routine1Id === routineId || c.routine2Id === routineId);
+    if (routineConflicts.length === 0) return 'warning';
+    return routineConflicts.reduce((max, c) => {
+      const severityOrder = { critical: 3, error: 2, warning: 1 };
+      return severityOrder[c.severity] > severityOrder[max] ? c.severity : max;
+    }, 'warning' as 'critical' | 'error' | 'warning');
+  };
+
+  // Helper: Check if routine is last (trophy helper)
+  const isLastRoutine = (routineId: string) => {
+    return trophyHelper.some((t) => t.routineId === routineId);
+  };
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
@@ -81,6 +110,11 @@ export function RoutinePool({
               viewMode={viewMode}
               isDraggingAnything={isDraggingAnything}
               onRequestClick={onRequestClick}
+              hasConflict={hasConflict(routine.id)}
+              conflictSeverity={getConflictSeverity(routine.id)}
+              hasNotes={routineNotes[routine.id] || false}
+              hasAgeChange={ageChanges.includes(routine.id)}
+              isLastRoutine={isLastRoutine(routine.id)}
             />
           ))}
         </div>

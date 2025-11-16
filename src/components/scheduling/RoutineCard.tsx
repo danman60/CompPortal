@@ -50,6 +50,12 @@ interface RoutineCardProps {
   inZone?: boolean; // Is routine scheduled in a zone?
   isDraggingAnything?: boolean; // Is any item being dragged?
   onRequestClick?: (routineId: string) => void; // Studio request callback
+  // Visual indicators (Session 58)
+  hasConflict?: boolean; // Red badge if routine has scheduling conflicts
+  conflictSeverity?: 'critical' | 'error' | 'warning'; // Conflict severity level
+  hasNotes?: boolean; // Blue dot if CD notes or studio requests exist
+  hasAgeChange?: boolean; // Yellow background if age group changed
+  isLastRoutine?: boolean; // Gold border if last routine in category (trophy helper)
 }
 
 export function RoutineCard({
@@ -58,6 +64,11 @@ export function RoutineCard({
   inZone = false,
   isDraggingAnything = false,
   onRequestClick,
+  hasConflict = false,
+  conflictSeverity = 'warning',
+  hasNotes = false,
+  hasAgeChange = false,
+  isLastRoutine = false,
 }: RoutineCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: routine.id,
@@ -90,6 +101,27 @@ export function RoutineCard({
     return 'bg-gray-500/20 border-gray-500/40 text-gray-300';
   };
 
+  // Get border styling based on indicators
+  const getBorderStyle = () => {
+    // Priority: Last Routine > Conflict > Age Change > Default
+    if (isLastRoutine) return 'border-2 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.4)]'; // Gold border for trophy helper
+    if (hasConflict) {
+      if (conflictSeverity === 'critical') return 'border-2 border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]';
+      if (conflictSeverity === 'error') return 'border-2 border-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.4)]';
+      return 'border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.3)]';
+    }
+    if (hasAgeChange) return 'border-2 border-yellow-400/70';
+    if (inZone) return 'border-2 border-green-400/50';
+    return 'border border-white/25';
+  };
+
+  // Get background styling
+  const getBackgroundStyle = () => {
+    if (hasAgeChange) return 'bg-yellow-900/30'; // Yellow background for age changes
+    if (inZone) return 'bg-white/15';
+    return 'bg-white/15';
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -98,13 +130,65 @@ export function RoutineCard({
       className={`
         relative rounded-xl p-4 cursor-grab transition-all
         ${isDragging ? 'opacity-50 rotate-3 scale-105' : 'hover:translate-y-[-4px]'}
-        ${inZone
-          ? 'bg-white/15 border-2 border-green-400/50 shadow-[0_4px_16px_rgba(0,0,0,0.1)]'
-          : 'bg-white/15 border border-white/25 shadow-[0_2px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.15)] hover:border-white/40'}
+        ${getBackgroundStyle()}
+        ${getBorderStyle()}
+        shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.15)]
       `}
       data-routine-id={routine.id}
       data-in-zone={inZone}
+      data-has-conflict={hasConflict}
+      data-has-notes={hasNotes}
+      data-has-age-change={hasAgeChange}
+      data-is-last-routine={isLastRoutine}
     >
+      {/* Indicator Badges (Top Left Corner) */}
+      <div className="absolute top-2 left-2 flex gap-1" style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto' }}>
+        {/* Trophy Icon for Last Routine */}
+        {isLastRoutine && (
+          <div
+            className="bg-yellow-500/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg"
+            title="Last routine in category - Award ceremony recommended after this"
+          >
+            🏆
+          </div>
+        )}
+
+        {/* Conflict Badge */}
+        {hasConflict && (
+          <div
+            className={`px-2 py-1 rounded-md text-xs font-bold shadow-lg ${
+              conflictSeverity === 'critical'
+                ? 'bg-red-600/90 text-white'
+                : conflictSeverity === 'error'
+                ? 'bg-orange-600/90 text-white'
+                : 'bg-yellow-600/90 text-white'
+            }`}
+            title={`Scheduling conflict: ${conflictSeverity}`}
+          >
+            ⚠️
+          </div>
+        )}
+
+        {/* Age Change Badge */}
+        {hasAgeChange && (
+          <div
+            className="bg-yellow-600/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg"
+            title="Age group changed since scheduling started"
+          >
+            🎂
+          </div>
+        )}
+
+        {/* Notes Badge (Blue Dot) */}
+        {hasNotes && (
+          <div
+            className="bg-blue-500/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg"
+            title="Has notes or studio requests"
+          >
+            📝
+          </div>
+        )}
+      </div>
       {/* Title + Studio Badge Row */}
       <div className="flex items-start justify-between mb-2" style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto' }}>
         <h3 className="text-lg font-semibold text-white leading-tight flex-1 pr-2">

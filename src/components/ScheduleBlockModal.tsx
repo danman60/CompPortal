@@ -245,6 +245,10 @@ export function ScheduleBlockModal({
                 max={120}
                 className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
               />
+              <div className="text-xs text-purple-300 mt-2 flex items-center gap-1">
+                <span>⏰</span>
+                <span>Block start times auto-round to nearest 5-minute increment</span>
+              </div>
             </div>
           </div>
 

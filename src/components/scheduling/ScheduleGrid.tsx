@@ -27,6 +27,21 @@ export interface ScheduleBlock {
   zone: ScheduleZone | null;
 }
 
+export interface Conflict {
+  id: string;
+  dancerId: string;
+  dancerName: string;
+  routine1Id: string;
+  routine1Number: number;
+  routine1Title: string;
+  routine2Id: string;
+  routine2Number: number;
+  routine2Title: string;
+  routinesBetween: number;
+  severity: 'critical' | 'error' | 'warning';
+  message: string;
+}
+
 interface DropZoneProps {
   id: ScheduleZone;
   label: string;
@@ -35,6 +50,10 @@ interface DropZoneProps {
   viewMode: ViewMode;
   isDraggingAnything?: boolean;
   onRequestClick?: (routineId: string) => void;
+  conflicts?: Conflict[]; // Conflicts in this zone
+  trophyHelper?: Array<{ routineId: string; overallCategory: string }>; // Last routines for trophy helper
+  ageChanges?: string[]; // Routine IDs with age changes
+  routineNotes?: Record<string, boolean>; // Routine ID -> has notes
 }
 
 function DropZone({
@@ -45,9 +64,25 @@ function DropZone({
   viewMode,
   isDraggingAnything = false,
   onRequestClick,
+  conflicts = [],
+  trophyHelper = [],
+  ageChanges = [],
+  routineNotes = {},
 }: DropZoneProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const isEmpty = routines.length === 0 && blocks.length === 0;
+
+  // Helper: Check if routine has conflict
+  const getRoutineConflicts = (routineId: string) => {
+    return conflicts.filter(
+      (c) => c.routine1Id === routineId || c.routine2Id === routineId
+    );
+  };
+
+  // Helper: Check if routine is last in category (trophy helper)
+  const isLastRoutine = (routineId: string) => {
+    return trophyHelper.some((t) => t.routineId === routineId);
+  };
 
   return (
     <div
@@ -98,16 +133,65 @@ function DropZone({
         ))}
 
         {/* Routines in Zone */}
-        {routines.map((routine) => (
-          <RoutineCard
-            key={routine.id}
-            routine={routine}
-            inZone
-            viewMode={viewMode}
-            isDraggingAnything={isDraggingAnything}
-            onRequestClick={onRequestClick}
-          />
-        ))}
+        {routines.map((routine, index) => {
+          const routineConflicts = getRoutineConflicts(routine.id);
+          const hasConflict = routineConflicts.length > 0;
+          const conflictSeverity = hasConflict
+            ? routineConflicts.reduce((max, c) => {
+                const severityOrder = { critical: 3, error: 2, warning: 1 };
+                return severityOrder[c.severity] > severityOrder[max] ? c.severity : max;
+              }, 'warning' as 'critical' | 'error' | 'warning')
+            : 'warning';
+
+          return (
+            <div key={routine.id} className="relative">
+              {/* Conflict Boxes - Render above routines that START a conflict */}
+              {routineConflicts
+                .filter((c) => c.routine1Id === routine.id && c.routine1Number < c.routine2Number)
+                .map((conflict) => (
+                  <div
+                    key={conflict.id}
+                    className={`mb-2 p-3 rounded-lg border-2 ${
+                      conflict.severity === 'critical'
+                        ? 'border-red-500 bg-red-900/40'
+                        : conflict.severity === 'error'
+                        ? 'border-orange-500 bg-orange-900/40'
+                        : 'border-yellow-500 bg-yellow-900/40'
+                    }`}
+                    data-conflict-id={conflict.id}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-xl flex-shrink-0">⚠️</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white mb-1">
+                          CONFLICT: {conflict.dancerName}
+                        </div>
+                        <div className="text-xs text-white/80">
+                          {conflict.message}
+                        </div>
+                        <div className="text-xs text-white/60 mt-1">
+                          #{conflict.routine1Number} "{conflict.routine1Title}" ↔ #{conflict.routine2Number} "{conflict.routine2Title}"
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+              <RoutineCard
+                routine={routine}
+                inZone
+                viewMode={viewMode}
+                isDraggingAnything={isDraggingAnything}
+                onRequestClick={onRequestClick}
+                hasConflict={hasConflict}
+                conflictSeverity={conflictSeverity}
+                hasNotes={routineNotes[routine.id] || false}
+                hasAgeChange={ageChanges.includes(routine.id)}
+                isLastRoutine={isLastRoutine(routine.id)}
+              />
+            </div>
+          );
+        })}
       </div>
       <div className="mt-3 pt-3 border-t border-purple-500/30">
         <p className="text-xs text-purple-300">
@@ -138,6 +222,10 @@ interface ScheduleGridProps {
   viewMode: ViewMode;
   isDraggingAnything?: boolean;
   onRequestClick?: (routineId: string) => void;
+  conflicts?: Conflict[]; // All conflicts
+  trophyHelper?: Array<{ routineId: string; overallCategory: string }>; // Last routines
+  ageChanges?: string[]; // Routine IDs with age changes
+  routineNotes?: Record<string, boolean>; // Routine ID -> has notes
 }
 
 export function ScheduleGrid({
@@ -145,7 +233,19 @@ export function ScheduleGrid({
   viewMode,
   isDraggingAnything = false,
   onRequestClick,
+  conflicts = [],
+  trophyHelper = [],
+  ageChanges = [],
+  routineNotes = {},
 }: ScheduleGridProps) {
+  // Filter conflicts by zone (only show conflicts within same zone)
+  const getZoneConflicts = (zoneId: ScheduleZone, routines: Routine[]) => {
+    const routineIds = new Set(routines.map((r) => r.id));
+    return conflicts.filter(
+      (c) => routineIds.has(c.routine1Id) && routineIds.has(c.routine2Id)
+    );
+  };
+
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
       <h2 className="text-lg font-bold text-white mb-4">Schedule Timeline</h2>
@@ -176,6 +276,10 @@ export function ScheduleGrid({
                   viewMode={viewMode}
                   isDraggingAnything={isDraggingAnything}
                   onRequestClick={onRequestClick}
+                  conflicts={getZoneConflicts(session.id, session.routines)}
+                  trophyHelper={trophyHelper}
+                  ageChanges={ageChanges}
+                  routineNotes={routineNotes}
                 />
               ))}
             </div>
