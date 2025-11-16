@@ -231,14 +231,14 @@
 
 **Tester Domain:** https://tester.compsync.net
 **Scheduler URL:** /dashboard/director-panel/schedule
-**Last Deploy:** Pending (Session 58 - Studio code refactor)
+**Last Deploy:** Pending (Session 58 - 2 features)
 
 **Session 58 Changes:**
 - ✅ Studio code system COMPLETE (global → per-competition)
-- ✅ assignStudioCodes writes to reservations.studio_code
-- ✅ getRoutines query uses per-competition codes
-- ✅ getViewModeSchedule query uses per-competition codes
-- ✅ Export PDF/Excel use per-competition codes
+- ✅ Award/Break blocks COMPLETE (create/edit/delete/drag)
+- ✅ ScheduleBlockCard & ScheduleBlockModal integrated
+- ✅ DraggableBlockTemplate buttons added
+- ✅ Backend mutations connected (createScheduleBlock)
 
 **Ready to Test (after build & deploy):**
 - ✅ Trophy Helper
