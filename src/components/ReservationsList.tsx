@@ -667,7 +667,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Left: Studio & Competition Info */}
                   <div>
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white mb-1">
                           {(reservation as any).studios?.name || 'Unknown Studio'}
@@ -766,18 +766,20 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                     {/* Payment status hidden for Studio Directors */}
                     {!isStudioDirector && reservation.payment_status && (
                       <div className="pt-3 border-t border-white/10">
-                        <div className="text-sm text-gray-400 mb-1">Payment Status</div>
-                        <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            reservation.payment_status === 'paid'
-                              ? 'bg-green-500/20 text-green-400'
-                              : reservation.payment_status === 'pending'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}
-                        >
-                          {reservation.payment_status.toUpperCase()}
-                        </span>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-400">Payment Status:</span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              reservation.payment_status === 'paid'
+                                ? 'bg-green-500/20 text-green-400'
+                                : reservation.payment_status === 'pending'
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : 'bg-red-500/20 text-red-400'
+                            }`}
+                          >
+                            {reservation.payment_status.toUpperCase()}
+                          </span>
+                        </div>
                       </div>
                     )}
 
