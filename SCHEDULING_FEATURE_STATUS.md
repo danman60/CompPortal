@@ -1,9 +1,10 @@
 # Scheduling Feature Status - Spec vs. Implementation
 
-**Date:** 2025-11-15 (Session 56)
+**Date:** 2025-11-15 (Session 56 + E2E Session 4)
 **Branch:** tester
-**Commit:** 9e47d55
+**Commit:** 07b2a8f
 **Spec:** SCHEDULING_SPEC_V4_UNIFIED.md
+**Last E2E Test:** Session 4 - View modes verified, backend errors discovered
 
 ---
 
@@ -53,9 +54,9 @@
 | - Last routine detection | §6 | ✅ | ✅ | ✅ | Per category |
 | - Suggested award time | §6 | ✅ | ✅ | ✅ | +30 min calculation |
 | - Visual indicators | §6 | ❌ | ❌ | ❌ | Gold border on last routines |
-| **7. Studio Feedback** | §7 | ✅ | ❌ | 🟡 | **Backend COMPLETE** |
+| **7. Studio Feedback** | §7 | 🐛 | ❌ | 🔴 | **Backend ERROR - HTTP 500** |
 | - Add request | §7 | ✅ | ❌ | 🟡 | addStudioRequest |
-| - Get requests | §7 | ✅ | ❌ | 🟡 | getStudioRequests |
+| - Get requests | §7 | 🐛 | ❌ | 🔴 | **getStudioRequests returns 500** |
 | - Update status | §7 | ✅ | ❌ | 🟡 | updateRequestStatus |
 | - Request list UI | §7 | ❌ | ❌ | ❌ | CD panel |
 | - Add note button | §7 | ❌ | ❌ | ❌ | On routine cards |
@@ -67,12 +68,12 @@
 | - CD private notes | §9 | ❌ | ❌ | ❌ | Missing |
 | - Studio requests | §9 | ✅ | ❌ | 🟡 | Backend ready |
 | - Submission notes | §9 | ❌ | ❌ | ❌ | Missing |
-| **10. Multiple Views** | §10 | ⚠️ Partial | ❌ | 🟡 | Backend partial |
-| - CD view | §10 | ✅ | ❌ | 🟡 | Default |
-| - Studio director view | §10 | ❌ | ❌ | ❌ | Scoping needed |
-| - Judge view | §10 | ❌ | ❌ | ❌ | Codes only |
-| - Public view | §10 | ❌ | ❌ | ❌ | After publish |
-| - View selector UI | §10 | ❌ | ❌ | ❌ | Toolbar buttons |
+| **10. Multiple Views** | §10 | ⚠️ Partial | ✅ | 🟡 | **UI WORKS - Scoping needed** |
+| - CD view | §10 | ✅ | ✅ | ✅ | **E2E VERIFIED** |
+| - Studio director view | §10 | ❌ | ✅ | 🟡 | **UI works, no scoping** |
+| - Judge view | §10 | ❌ | ✅ | 🟡 | **UI works, no code masking** |
+| - Public view | §10 | ❌ | ✅ | 🟡 | **UI works, no access control** |
+| - View selector UI | §10 | ✅ | ✅ | ✅ | **E2E VERIFIED (4 modes)** |
 | **11. Hotel Attrition** | §11 | ❌ | ❌ | ❌ | Not implemented |
 | - Emerald day check | §11 | ❌ | ❌ | ❌ | Warning logic |
 | - Warning display | §11 | ❌ | ❌ | ❌ | In finalization |
@@ -142,6 +143,14 @@
 
 ## Critical Gaps for MVP
 
+### 🚨 Blockers Discovered (E2E Session 4)
+
+**CRITICAL:** Studio Request Backend Error
+- 🐛 `getStudioRequests` returns HTTP 500
+- ❌ Blocks Happy Path Steps 12-13 testing
+- 🔍 Investigation needed: Check `routine_notes` table schema
+- **Priority:** P0 - Must fix before testing studio workflow
+
 ### Must Have for Dec 26 (P0)
 
 1. ~~**State Machine UI**~~ ✅ **COMPLETE** (Session 56)
@@ -200,8 +209,8 @@
 - ✅ Conflict Detection
 - ✅ Basic drag-drop scheduling (zone-based)
 - ✅ Filters and search
-- ✅ State machine controls (ScheduleToolbar component exists, needs integration)
-- ✅ View mode switching (ScheduleToolbar component exists, needs integration)
+- ✅ View mode switching - **E2E VERIFIED** (CD/Judge/Studio/Public all working)
+- ⚠️ State machine controls (ScheduleToolbar component exists, needs integration)
 
 **Components Created But Not Integrated:**
 - ⚠️ ScheduleToolbar (needs page.tsx integration)
@@ -211,9 +220,15 @@
 
 **Not Yet in UI:**
 - ❌ Award/break blocks integration
-- ❌ Studio feedback
+- 🐛 Studio feedback (backend returns 500 error)
 - ❌ Age change warnings
 - ❌ Hotel attrition warnings
+
+**Missing Backend Logic:**
+- ❌ Studio code assignment (A, B, C masking)
+- ❌ View mode scoping (Studio/Judge filtering)
+- ❌ Age change detection algorithm
+- ❌ Hotel attrition check (Emerald single-day)
 
 ---
 
