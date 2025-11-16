@@ -101,6 +101,14 @@ export default function SchedulePage() {
   // CD Request Management
   const [showRequestsPanel, setShowRequestsPanel] = useState(false);
 
+  // Panel collapse state
+  const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
+  const [isTrophyPanelCollapsed, setIsTrophyPanelCollapsed] = useState(false);
+
+  // Undo/Redo state
+  const [history, setHistory] = useState<Array<Record<string, ScheduleZone>>>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
   // CD Notes state
   const [showCDNoteModal, setShowCDNoteModal] = useState(false);
   const [cdNoteRoutineId, setCDNoteRoutineId] = useState<string | null>(null);
@@ -551,6 +559,55 @@ export default function SchedulePage() {
     setActiveId(event.active.id as string);
   };
 
+  // Save state to history for undo/redo
+  const saveToHistory = (newState: Record<string, ScheduleZone>) => {
+    // Remove future history if we're not at the end
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  // Undo function
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const previousState = history[historyIndex - 1];
+      setRoutineZones(previousState);
+      setHistoryIndex(historyIndex - 1);
+      toast.success('↶ Undo successful');
+    } else {
+      toast.error('Nothing to undo');
+    }
+  };
+
+  // Redo function
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setRoutineZones(nextState);
+      setHistoryIndex(historyIndex + 1);
+      toast.success('↷ Redo successful');
+    } else {
+      toast.error('Nothing to redo');
+    }
+  };
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [historyIndex, history]);
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -609,11 +666,15 @@ export default function SchedulePage() {
           }
         } else {
           // Old ScheduleGrid: Zone-based scheduling
+          // Save current state to history before updating
+          saveToHistory(routineZones);
+
           // Update local state immediately for responsive UI (optimistic update)
-          setRoutineZones(prev => ({
-            ...prev,
+          const newState = {
+            ...routineZones,
             [activeId]: targetZone,
-          }));
+          };
+          setRoutineZones(newState);
 
           // Save to database
           console.log('[Schedule] Calling mutation...');
@@ -777,8 +838,18 @@ export default function SchedulePage() {
               });
             }
           }}
+          // Undo/Redo
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={historyIndex > 0}
+          canRedo={historyIndex < history.length - 1}
+          // Studio Requests
+          onViewRequests={() => setShowRequestsPanel(!showRequestsPanel)}
+          requestsCount={studioRequests?.length || 0}
+          // Loading states
           isFinalizing={finalizeMutation.isPending}
           isPublishing={publishMutation.isPending}
+          // Stats
           totalRoutines={routines?.length || 0}
           scheduledRoutines={scheduledCount}
           unscheduledRoutines={unscheduledRoutines.length}
@@ -915,6 +986,8 @@ export default function SchedulePage() {
               onFiltersChange={setFilters}
               totalRoutines={routines?.length || 0}
               filteredRoutines={unscheduledRoutines.length}
+              isCollapsed={isFilterPanelCollapsed}
+              onToggleCollapse={() => setIsFilterPanelCollapsed(!isFilterPanelCollapsed)}
             />
 
             {/* Unscheduled Routines Pool (Session 56) */}
@@ -1113,52 +1186,65 @@ export default function SchedulePage() {
           <div className="col-span-3 space-y-6">
             {/* Trophy Helper Panel */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">🏆</span>
-                <h2 className="text-lg font-bold text-white">Trophy Helper</h2>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🏆</span>
+                  <h2 className="text-lg font-bold text-white">Trophy Helper</h2>
+                </div>
+                <button
+                  onClick={() => setIsTrophyPanelCollapsed(!isTrophyPanelCollapsed)}
+                  className="text-white/60 hover:text-white transition-colors text-sm font-medium px-2 py-1 hover:bg-white/10 rounded"
+                  title={isTrophyPanelCollapsed ? "Expand panel" : "Collapse panel"}
+                >
+                  {isTrophyPanelCollapsed ? '▶' : '▼'}
+                </button>
               </div>
 
-              {trophyHelper && Array.isArray(trophyHelper) && trophyHelper.length > 0 ? (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                  {trophyHelper.map((entry, index) => (
-                    <div
-                      key={entry.overallCategory}
-                      className="border-2 border-yellow-500/30 bg-yellow-900/20 rounded-lg p-3"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="text-yellow-400 text-xl flex-shrink-0">🏆</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold text-white mb-1 truncate">
-                            {entry.categoryDisplay}
-                          </div>
-                          <div className="text-xs text-yellow-200 space-y-1">
-                            <div>Last: #{entry.lastRoutineNumber || '?'} "{entry.lastRoutineTitle}"</div>
-                            <div>Zone: {entry.lastRoutineZone}</div>
-                            <div className="text-yellow-300 font-medium">
-                              {entry.totalRoutinesInCategory} routine{entry.totalRoutinesInCategory !== 1 ? 's' : ''}
-                            </div>
-                            <div className="text-xs text-yellow-400 mt-2">
-                              💡 Suggested award: {entry.suggestedAwardTime
-                                ? new Date(entry.suggestedAwardTime).toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true,
-                                  })
-                                : 'N/A'}
+              {!isTrophyPanelCollapsed && (
+                <>
+                  {trophyHelper && Array.isArray(trophyHelper) && trophyHelper.length > 0 ? (
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {trophyHelper.map((entry, index) => (
+                        <div
+                          key={entry.overallCategory}
+                          className="border-2 border-yellow-500/30 bg-yellow-900/20 rounded-lg p-3"
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className="text-yellow-400 text-xl flex-shrink-0">🏆</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-white mb-1 truncate">
+                                {entry.categoryDisplay}
+                              </div>
+                              <div className="text-xs text-yellow-200 space-y-1">
+                                <div>Last: #{entry.lastRoutineNumber || '?'} "{entry.lastRoutineTitle}"</div>
+                                <div>Zone: {entry.lastRoutineZone}</div>
+                                <div className="text-yellow-300 font-medium">
+                                  {entry.totalRoutinesInCategory} routine{entry.totalRoutinesInCategory !== 1 ? 's' : ''}
+                                </div>
+                                <div className="text-xs text-yellow-400 mt-2">
+                                  💡 Suggested award: {entry.suggestedAwardTime
+                                    ? new Date(entry.suggestedAwardTime).toLocaleTimeString('en-US', {
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true,
+                                      })
+                                    : 'N/A'}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-5xl mb-3">🏆</div>
-                  <p className="text-purple-200 text-sm">
-                    Schedule routines to see award recommendations
-                  </p>
-                </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-5xl mb-3">🏆</div>
+                      <p className="text-purple-200 text-sm">
+                        Schedule routines to see award recommendations
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

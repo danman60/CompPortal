@@ -34,6 +34,16 @@ interface ScheduleToolbarProps {
   onPublish?: () => void;
   onExport?: () => void;
 
+  // Undo/Redo
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+
+  // Studio Requests Panel
+  onViewRequests?: () => void;
+  requestsCount?: number;
+
   // Loading states
   isSaving?: boolean;
   isFinalizing?: boolean;
@@ -55,6 +65,12 @@ export function ScheduleToolbar({
   onFinalize,
   onPublish,
   onExport,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
+  onViewRequests,
+  requestsCount = 0,
   isSaving = false,
   isFinalizing = false,
   isPublishing = false,
@@ -119,6 +135,47 @@ export function ScheduleToolbar({
 
         {/* Right: Action Buttons */}
         <div className="flex items-center gap-3">
+          {/* Undo/Redo Controls */}
+          {onUndo && onRedo && (
+            <div className="flex items-center gap-1 bg-black/20 rounded-lg p-1 mr-2">
+              <button
+                onClick={onUndo}
+                disabled={!canUndo}
+                className="px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium"
+                title="Undo (Ctrl+Z)"
+                data-action="undo"
+              >
+                ↶ Undo
+              </button>
+              <button
+                onClick={onRedo}
+                disabled={!canRedo}
+                className="px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium"
+                title="Redo (Ctrl+Y)"
+                data-action="redo"
+              >
+                ↷ Redo
+              </button>
+            </div>
+          )}
+
+          {/* Studio Requests Button (CD only) */}
+          {onViewRequests && (
+            <button
+              onClick={onViewRequests}
+              className="relative px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors"
+              data-action="view-requests"
+              title="View studio scheduling requests"
+            >
+              📝 Requests
+              {requestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                  {requestsCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Save Draft Button */}
           {status === 'draft' && onSaveDraft && (
             <button
