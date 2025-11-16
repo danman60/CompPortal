@@ -102,7 +102,7 @@ export function ScheduleBlockModal({
       tenantId,
       blockType,
       title: finalTitle,
-      duration,
+      durationMinutes: duration,
     });
   };
 
