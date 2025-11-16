@@ -1866,13 +1866,13 @@ export const schedulingRouter = router({
       });
     }),
 
-  // Detect age changes for scheduled routines
+  // Detect age changes for scheduled routines (converted to query - Session 58)
   detectAgeChanges: publicProcedure
     .input(z.object({
       competitionId: z.string().uuid(),
       tenantId: z.string().uuid(),
     }))
-    .mutation(async ({ input }) => {
+    .query(async ({ input }) => {
       // Get all scheduled routines for the competition
       const routines = await prisma.competition_entries.findMany({
         where: {
@@ -1898,7 +1898,7 @@ export const schedulingRouter = router({
 
       // Check each routine for age changes
       for (const routine of routines) {
-        let hasAgeChange = false;
+        const ageChanges = [];
 
         for (const participant of routine.entry_participants) {
           // Skip if no birthdate
@@ -1915,35 +1915,22 @@ export const schedulingRouter = router({
 
           // Check if age has changed
           if (currentAge !== calculatedAge) {
-            hasAgeChange = true;
-
-            // Create age change tracking record
-            await prisma.age_change_tracking.create({
-              data: {
-                competition_id: input.competitionId,
-                dancer_id: participant.dancer_id,
-                dancer_name: participant.dancer_name,
-                date_of_birth: participant.dancers.date_of_birth,
-                original_age: currentAge,
-                new_age: calculatedAge,
-                change_date: new Date(),
-                affected_entry_ids: [routine.id],
-                tenant_id: input.tenantId,
-              },
+            ageChanges.push({
+              dancerId: participant.dancer_id,
+              dancerName: participant.dancer_name,
+              oldAge: currentAge,
+              newAge: calculatedAge,
+              detectedAt: new Date(),
             });
           }
         }
 
-        // Flag routine if age change detected
-        if (hasAgeChange) {
-          await prisma.competition_entries.update({
-            where: { id: routine.id },
-            data: { age_changed: true },
-          });
-
+        // Add routine to changed list if age changes detected
+        if (ageChanges.length > 0) {
           changedRoutines.push({
-            routineId: routine.id,
-            routineTitle: routine.title,
+            id: routine.id,
+            title: routine.title,
+            ageChanges,
           });
         }
       }

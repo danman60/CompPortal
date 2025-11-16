@@ -158,10 +158,11 @@ export default function SchedulePage() {
     tenantId: TEST_TENANT_ID,
   });
 
-  // NEW: Fetch Age Changes (Session 58)
-  // Note: detectAgeChanges is a mutation - call it on-demand rather than on load
-  // For now, we'll skip age change detection until it's converted to a query
-  const ageChangesData = null; // TODO: Convert detectAgeChanges to query or trigger on schedule changes
+  // NEW: Fetch Age Changes (Session 58 - Fixed: Converted to query)
+  const { data: ageChangesData } = trpc.scheduling.detectAgeChanges.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+  });
 
   // Fetch Studio Requests (for CD)
   const { data: studioRequests, refetch: refetchRequests } = trpc.scheduling.getStudioRequests.useQuery({
@@ -772,26 +773,26 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Age Change Warnings - DISABLED: detectAgeChanges is a mutation, needs conversion to query
-        {ageChangesData && ageChangesData.changedRoutines && ageChangesData.changedRoutines.length > 0 && (
+        {/* Age Change Warnings */}
+        {ageChangesData && ageChangesData.routines && ageChangesData.routines.length > 0 && (
           <div className="mb-6 bg-yellow-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/50 p-4 shadow-lg">
             <div className="flex items-start gap-3">
               <span className="text-3xl flex-shrink-0">⚠️</span>
               <div className="flex-1">
                 <h3 className="font-bold text-yellow-300 text-lg mb-1">Dancer Age Changes Detected</h3>
                 <p className="text-yellow-200 text-sm mb-3">
-                  {ageChangesData.changedRoutines.length} routine{ageChangesData.changedRoutines.length !== 1 ? 's have' : ' has'} dancers whose ages have changed since scheduling.
+                  {ageChangesData.routines.length} routine{ageChangesData.routines.length !== 1 ? 's have' : ' has'} dancers whose ages have changed since scheduling.
                   This may affect age group categories.
                 </p>
                 <div className="space-y-2">
-                  {ageChangesData.changedRoutines.slice(0, 5).map((routine: any) => (
+                  {ageChangesData.routines.slice(0, 5).map((routine: any) => (
                     <div key={routine.id} className="text-xs text-yellow-100 bg-yellow-900/20 rounded p-2">
                       🎭 {routine.title} - {routine.ageChanges?.length || 0} dancer{(routine.ageChanges?.length || 0) !== 1 ? 's' : ''}
                     </div>
                   ))}
-                  {ageChangesData.changedRoutines.length > 5 && (
+                  {ageChangesData.routines.length > 5 && (
                     <div className="text-xs text-yellow-300 italic">
-                      +{ageChangesData.changedRoutines.length - 5} more routine{ageChangesData.changedRoutines.length - 5 !== 1 ? 's' : ''}
+                      +{ageChangesData.routines.length - 5} more routine{ageChangesData.routines.length - 5 !== 1 ? 's' : ''}
                     </div>
                   )}
                 </div>
@@ -799,7 +800,6 @@ export default function SchedulePage() {
             </div>
           </div>
         )}
-        */}
 
         {/* Hotel Attrition Warning */}
         {hotelWarningData && (
