@@ -15,6 +15,9 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import ExcelJS from 'exceljs';
 import {
   DndContext,
   DragEndEvent,
@@ -256,6 +259,95 @@ export default function SchedulePage() {
     },
     onError: (error) => {
       toast.error(`Failed to override conflict: ${error.message}`);
+    },
+  });
+
+  // Export mutations
+  const exportPDFMutation = trpc.scheduling.exportSchedulePDF.useMutation({
+    onSuccess: (data) => {
+      // Generate PDF client-side
+      const doc = new jsPDF();
+
+      // Add title
+      doc.setFontSize(16);
+      doc.text(data.competition.name, 14, 15);
+      doc.setFontSize(10);
+      doc.text(`Schedule Export - ${new Date().toLocaleDateString()}`, 14, 22);
+
+      // Prepare table data
+      const tableData = data.routines.map(r => [
+        r.scheduledDay?.toLocaleDateString() || 'Unscheduled',
+        r.zone?.replace('-', ' ').toUpperCase() || '',
+        r.scheduledTime?.toLocaleTimeString() || '',
+        r.title,
+        viewMode === 'judge' ? r.studioCode : r.studioName,
+        `${r.duration} min`,
+      ]);
+
+      // Add table
+      autoTable(doc, {
+        startY: 28,
+        head: [['Day', 'Session', 'Time', 'Routine', 'Studio', 'Duration']],
+        body: tableData,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [99, 102, 241] },
+      });
+
+      // Save PDF
+      doc.save(`schedule-${data.competition.name.replace(/\s+/g, '-')}.pdf`);
+      toast.success('📄 PDF exported successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Export failed: ${error.message}`);
+    },
+  });
+
+  const exportExcelMutation = trpc.scheduling.exportScheduleExcel.useMutation({
+    onSuccess: async (data) => {
+      // Generate Excel client-side
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Schedule');
+
+      // Add headers
+      worksheet.columns = [
+        { header: 'Day', key: 'day', width: 15 },
+        { header: 'Session', key: 'session', width: 15 },
+        { header: 'Time', key: 'time', width: 12 },
+        { header: 'Routine', key: 'routine', width: 30 },
+        { header: 'Studio', key: 'studio', width: 20 },
+        { header: 'Classification', key: 'classification', width: 15 },
+        { header: 'Category', key: 'category', width: 15 },
+        { header: 'Age Group', key: 'ageGroup', width: 15 },
+        { header: 'Duration', key: 'duration', width: 10 },
+      ];
+
+      // Style header row
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF6366F1' },
+      };
+
+      // Add data
+      data.routines.forEach(r => {
+        worksheet.addRow(r);
+      });
+
+      // Generate buffer and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `schedule-${data.competition.name.replace(/\s+/g, '-')}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('📊 Excel exported successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Export failed: ${error.message}`);
     },
   });
 
@@ -539,10 +631,26 @@ export default function SchedulePage() {
           competitionDates="April 9-12, 2026"
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          onSaveDraft={() => alert('Save draft - TODO')}
+          onSaveDraft={() => toast.info('💾 Changes are saved automatically')}
           onFinalize={handleFinalize}
           onPublish={handlePublish}
-          onExport={() => alert('Export - TODO')}
+          onExport={() => {
+            // Show export options
+            const exportType = prompt('Export as PDF or Excel? (Type "pdf" or "excel")');
+            if (exportType === 'pdf') {
+              exportPDFMutation.mutate({
+                competitionId: TEST_COMPETITION_ID,
+                tenantId: TEST_TENANT_ID,
+                viewMode,
+              });
+            } else if (exportType === 'excel') {
+              exportExcelMutation.mutate({
+                competitionId: TEST_COMPETITION_ID,
+                tenantId: TEST_TENANT_ID,
+                viewMode,
+              });
+            }
+          }}
           isFinalizing={finalizeMutation.isPending}
           isPublishing={publishMutation.isPending}
           totalRoutines={routines?.length || 0}

@@ -2167,4 +2167,132 @@ export const schedulingRouter = router({
       };
     }),
 
+  // Export schedule as PDF
+  exportSchedulePDF: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      viewMode: z.enum(['cd', 'judge', 'studio', 'public']).default('cd'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { competitionId, tenantId, viewMode } = input;
+
+      // Fetch competition details
+      const competition = await ctx.prisma.competitions.findFirst({
+        where: {
+          id: competitionId,
+          tenant_id: tenantId,
+        },
+      });
+
+      if (!competition) {
+        throw new Error('Competition not found');
+      }
+
+      // Fetch all routines for the schedule
+      const routines = await ctx.prisma.competition_entries.findMany({
+        where: {
+          competition_id: competitionId,
+          tenant_id: tenantId,
+        },
+        include: {
+          classifications: true,
+          categories: true,
+          age_groups: true,
+          entry_sizes: true,
+          studios: true,
+        },
+        orderBy: [
+          { scheduled_day: 'asc' },
+          { scheduled_time: 'asc' },
+        ],
+      });
+
+      // Return data for client-side PDF generation
+      return {
+        competition: {
+          name: competition.name,
+          startDate: competition.start_date,
+          endDate: competition.end_date,
+        },
+        routines: routines.map(r => ({
+          id: r.id,
+          title: r.title,
+          studioName: viewMode === 'judge' ? null : r.studios?.name,
+          studioCode: r.studios?.studio_code,
+          classification: r.classifications?.name,
+          category: r.categories?.name,
+          ageGroup: r.age_groups?.name,
+          entrySize: r.entry_sizes?.name,
+          duration: r.duration_seconds ? Math.ceil(r.duration_seconds / 60) : 3,
+          scheduledDay: r.scheduled_day,
+          scheduledTime: r.scheduled_time,
+          zone: r.schedule_zone,
+        })),
+      };
+    }),
+
+  // Export schedule as Excel
+  exportScheduleExcel: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      viewMode: z.enum(['cd', 'judge', 'studio', 'public']).default('cd'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { competitionId, tenantId, viewMode } = input;
+
+      // Fetch competition details
+      const competition = await ctx.prisma.competitions.findFirst({
+        where: {
+          id: competitionId,
+          tenant_id: tenantId,
+        },
+      });
+
+      if (!competition) {
+        throw new Error('Competition not found');
+      }
+
+      // Fetch all routines for the schedule
+      const routines = await ctx.prisma.competition_entries.findMany({
+        where: {
+          competition_id: competitionId,
+          tenant_id: tenantId,
+        },
+        include: {
+          classifications: true,
+          categories: true,
+          age_groups: true,
+          entry_sizes: true,
+          studios: true,
+        },
+        orderBy: [
+          { scheduled_day: 'asc' },
+          { scheduled_time: 'asc' },
+        ],
+      });
+
+      // Return data for client-side Excel generation
+      return {
+        competition: {
+          name: competition.name,
+          startDate: competition.start_date,
+          endDate: competition.end_date,
+        },
+        routines: routines.map(r => ({
+          day: r.scheduled_day?.toLocaleDateString(),
+          session: r.schedule_zone?.replace('-', ' ').toUpperCase(),
+          time: r.scheduled_time?.toLocaleTimeString(),
+          routine: r.title,
+          studio: viewMode === 'judge' ? r.studios?.studio_code : r.studios?.name,
+          classification: r.classifications?.name,
+          category: r.categories?.name,
+          ageGroup: r.age_groups?.name,
+          entrySize: r.entry_sizes?.name,
+          duration: r.duration_seconds ? Math.ceil(r.duration_seconds / 60) : 3,
+        })),
+      };
+    }),
+
 });
