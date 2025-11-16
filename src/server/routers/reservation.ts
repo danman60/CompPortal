@@ -1918,17 +1918,44 @@ export const reservationRouter = router({
         });
       }
 
-      // Generate unique studio code (5 chars: 3 from name + 2 random)
-      const generateStudioCode = (name: string): string => {
-        const prefix = name.replace(/[^A-Z]/g, '').substring(0, 3).toUpperCase();
-        const random = Math.random().toString(36).substring(2, 4).toUpperCase();
-        return `${prefix}${random}`;
-      };
-
       // Atomic transaction: Create studio, reservation, invitation
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Create studio record (unclaimed status)
-        const studioCode = generateStudioCode(input.studioName);
+        // 1. Generate UNIQUE studio code (5 chars: 3 from name + 2 random)
+        // Check against existing codes to prevent collisions
+        let studioCode = '';
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+          const prefix = input.studioName.replace(/[^A-Z]/g, '').substring(0, 3).toUpperCase();
+          const random = Math.random().toString(36).substring(2, 4).toUpperCase();
+          const candidateCode = `${prefix}${random}`;
+
+          // Check if code already exists for this tenant
+          const existingCode = await tx.studios.findFirst({
+            where: {
+              tenant_id: ctx.tenantId!,
+              code: candidateCode,
+            },
+            select: { id: true },
+          });
+
+          if (!existingCode) {
+            studioCode = candidateCode;
+            break;
+          }
+
+          attempts++;
+        }
+
+        if (!studioCode) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to generate unique studio code after 10 attempts',
+          });
+        }
+
+        // Create studio record (unclaimed status)
         const studio = await tx.studios.create({
           data: {
             tenant_id: ctx.tenantId!,
@@ -1944,7 +1971,7 @@ export const reservationRouter = router({
           },
         });
 
-        // 2. Create reservation with pre-approved status
+        // Create reservation with pre-approved status
         const reservation = await tx.reservations.create({
           data: {
             tenant_id: ctx.tenantId!,
@@ -1961,7 +1988,7 @@ export const reservationRouter = router({
           },
         });
 
-        // 3. Reserve capacity directly (avoid nested transaction with capacityService)
+        // Reserve capacity directly (avoid nested transaction with capacityService)
         await tx.competitions.update({
           where: { id: input.competitionId },
           data: {
