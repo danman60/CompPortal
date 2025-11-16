@@ -61,10 +61,10 @@
 | - Update status | §7 | ✅ | ✅ | ✅ | updateRequestStatus procedure |
 | - Request list UI | §7 | ✅ | ✅ | ✅ | StudioRequestsPanel component |
 | - Add note button | §7 | ✅ | ✅ | ✅ | Integrated in schedule page |
-| **8. Age Change Detection** | §8 | ✅ | 🟡 | 🟡 | **BLOCKED** - Needs query conversion |
-| - Detection algorithm | §8 | ✅ | 🟡 | 🟡 | Mutation exists, needs query |
-| - Visual warnings | §8 | ✅ | ✅ | ✅ | Banner ready (commented out) |
-| - Tracking table | §8 | ✅ | ❌ | 🟡 | Backend ready |
+| **8. Age Change Detection** | §8 | ✅ | ✅ | ✅ | **COMPLETE** (Session 58 - Fixed) |
+| - Detection algorithm | §8 | ✅ | ✅ | ✅ | Query procedure (read-only) |
+| - Visual warnings | §8 | ✅ | ✅ | ✅ | Banner enabled |
+| - Tracking table | §8 | ✅ | ✅ | ✅ | Real-time detection |
 | **9. Routine Notes** | §9 | ⚠️ Partial | ❌ | 🟡 | Studio requests only |
 | - CD private notes | §9 | ❌ | ❌ | ❌ | Missing |
 | - Studio requests | §9 | ✅ | ❌ | 🟡 | Backend ready |
@@ -103,8 +103,8 @@
 - ❌ Missing: 0
 
 **P1 High Priority (6 features):**
-- ✅ Complete: 3 (Trophy Helper, Studio Feedback, Hotel Attrition)
-- 🟡 Partial: 2 (Age Change Detection - blocked, Routine Notes, Multiple Views)
+- ✅ Complete: 4 (Trophy Helper, Studio Feedback, Hotel Attrition, Age Change Detection)
+- 🟡 Partial: 2 (Routine Notes, Multiple Views)
 - ❌ Missing: 0
 
 **P2 Nice-to-Have (3 features):**
@@ -286,15 +286,8 @@
 
 ### 🔄 Ready for Next Session
 
-**High Priority (Quick Wins):**
-1. **Age Change Detection - Convert to Query** (P1) 🚨 BLOCKER
-   - Backend: 🟡 detectAgeChanges is a mutation, needs to be a query
-   - Frontend: ✅ Banner UI ready (currently commented out)
-   - TODO: Convert backend mutation to query procedure
-   - TODO: Re-enable age change banner
-   - Estimated: 1 hour
-
-2. **Multiple Views Access Control** (P1)
+**High Priority (Remaining):**
+1. **Multiple Views Access Control** (P1)
    - Backend: 🟡 Partial (view mode logic exists)
    - TODO: Add role-based view mode restrictions
    - TODO: Enforce Studio Director can only see their routines
@@ -352,12 +345,20 @@
 - Dismissable with localStorage persistence
 - Files: `src/app/dashboard/director-panel/schedule/page.tsx`
 
+**5. Age Change Detection** ⭐ (Blocker Fixed)
+- Converted detectAgeChanges from mutation to query
+- Removed database writes (read-only detection)
+- Re-enabled age change warning banner
+- Shows affected routines with age changes
+- Files: `src/server/routers/scheduling.ts`, `src/app/dashboard/director-panel/schedule/page.tsx`
+
 ### Metrics
 - **P0 Critical:** 5/5 ✅ 100% Complete
-- **P1 High Priority:** 3/6 ✅ 50% Complete
-- **Session Time:** ~4 hours
-- **Lines Changed:** ~200
-- **Commits:** 4 (eae1925, d770cd7, ada66d4, f2bbfc3, 6431117)
+- **P1 High Priority:** 4/6 ✅ 67% Complete
+- **Session Time:** ~5 hours
+- **Features Delivered:** 5 (Studio Codes, Award/Break, Hotel, Age Change fixed, Studio Feedback verified)
+- **Lines Changed:** ~300
+- **Commits:** 7 (eae1925, d770cd7, f2bbfc3, 8948291, 86e5b7b, 1cf9d07 + parallel agent)
 
 ### Parallel Work (Other Agent)
 **Timeline Grid View - Architecture Design** ⭐
