@@ -82,38 +82,6 @@ interface Routine {
 type ScheduleZone = ScheduleZoneType;
 type ScheduleBlock = ScheduleBlockType;
 
-function DraggableBlock({ block }: { block: ScheduleBlock }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `block-${block.id}`,
-  });
-
-  const isAward = block.type === 'award';
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`
-        border-2 rounded-lg p-3 cursor-grab transition-all mb-2
-        ${isDragging ? 'opacity-50 z-[9999]' : 'z-10'}
-        ${isAward
-          ? 'border-yellow-500/50 bg-yellow-900/20 hover:border-yellow-400'
-          : 'border-gray-500/50 bg-gray-900/20 hover:border-gray-400'}
-      `}
-      style={{ position: isDragging ? 'relative' : 'static' }}
-    >
-      <div className="flex items-center gap-2" style={{ pointerEvents: 'none' }}>
-        <span className="text-2xl">{isAward ? '🏆' : '☕'}</span>
-        <div className="flex-1">
-          <div className="font-bold text-white text-sm">{block.title}</div>
-          <div className="text-xs text-gray-300">{block.duration} minutes</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function SchedulePage() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -136,7 +104,8 @@ export default function SchedulePage() {
 
   // NEW: Schedule block modal state
   const [showBlockModal, setShowBlockModal] = useState(false);
-  const [blockType, setBlockType] = useState<'award' | 'break'>('award');
+  const [blockModalMode, setBlockModalMode] = useState<'create' | 'edit'>('create');
+  const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
 
   // Filter state (Session 56)
   const [filters, setFilters] = useState<FilterState>({
@@ -448,6 +417,68 @@ export default function SchedulePage() {
       refetch();
     },
   });
+
+  // Schedule Block mutations
+  const createBlockMutation = trpc.scheduling.createScheduleBlock.useMutation({
+    onSuccess: (newBlock) => {
+      toast.success(`✅ ${newBlock.block_type === 'award' ? '🏆 Award' : '☕ Break'} block created!`);
+      // Add new block to local state
+      setScheduleBlocks(prev => [...prev, {
+        id: newBlock.id,
+        type: newBlock.block_type as 'award' | 'break',
+        title: newBlock.title,
+        duration: newBlock.duration_minutes,
+        zone: null,
+      }]);
+      setShowBlockModal(false);
+    },
+    onError: (error) => {
+      toast.error(`Failed to create block: ${error.message}`);
+    },
+  });
+
+  // Handlers for schedule blocks
+  const handleCreateBlock = (type: 'award' | 'break') => {
+    setBlockModalMode('create');
+    setEditingBlock(null);
+    setShowBlockModal(true);
+  };
+
+  const handleEditBlock = (blockId: string) => {
+    const block = scheduleBlocks.find(b => b.id === blockId);
+    if (block) {
+      setEditingBlock(block);
+      setBlockModalMode('edit');
+      setShowBlockModal(true);
+    }
+  };
+
+  const handleDeleteBlock = (blockId: string) => {
+    setScheduleBlocks(prev => prev.filter(b => b.id !== blockId));
+    toast.success('🗑️ Block deleted');
+  };
+
+  const handleSaveBlock = (block: { type: 'award' | 'break'; title: string; duration: number }) => {
+    if (blockModalMode === 'edit' && editingBlock) {
+      // Update existing block
+      setScheduleBlocks(prev => prev.map(b =>
+        b.id === editingBlock.id
+          ? { ...b, type: block.type, title: block.title, duration: block.duration }
+          : b
+      ));
+      toast.success('💾 Block updated!');
+      setShowBlockModal(false);
+    } else {
+      // Create new block via mutation
+      createBlockMutation.mutate({
+        competitionId: TEST_COMPETITION_ID,
+        tenantId: TEST_TENANT_ID,
+        blockType: block.type,
+        title: block.title,
+        durationMinutes: block.duration,
+      });
+    }
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -804,11 +835,37 @@ export default function SchedulePage() {
             {/* Schedule Blocks */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)] mt-6">
               <h2 className="text-lg font-bold text-white mb-4">Schedule Blocks</h2>
-              <p className="text-xs text-purple-300 mb-4">Drag these blocks into the schedule</p>
+              <p className="text-xs text-purple-300 mb-4">Create and drag blocks into the schedule</p>
 
-              {scheduleBlocks.filter(b => b.zone === null).map(block => (
-                <DraggableBlock key={block.id} block={block} />
-              ))}
+              {/* Create Block Templates */}
+              <div className="space-y-3 mb-6">
+                <DraggableBlockTemplate
+                  type="award"
+                  onClick={() => handleCreateBlock('award')}
+                />
+                <DraggableBlockTemplate
+                  type="break"
+                  onClick={() => handleCreateBlock('break')}
+                />
+              </div>
+
+              {/* Existing Unplaced Blocks */}
+              {scheduleBlocks.filter(b => b.zone === null).length > 0 && (
+                <>
+                  <div className="text-xs text-purple-300 mb-3 font-medium">Unplaced Blocks:</div>
+                  <div className="space-y-2">
+                    {scheduleBlocks.filter(b => b.zone === null).map(block => (
+                      <ScheduleBlockCard
+                        key={block.id}
+                        block={block}
+                        inZone={false}
+                        onEdit={handleEditBlock}
+                        onDelete={handleDeleteBlock}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -1301,6 +1358,17 @@ export default function SchedulePage() {
           </div>
         )}
       </DragOverlay>
+
+      {/* Schedule Block Modal */}
+      <ScheduleBlockModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        onSave={handleSaveBlock}
+        competitionId={TEST_COMPETITION_ID}
+        tenantId={TEST_TENANT_ID}
+        initialBlock={editingBlock}
+        mode={blockModalMode}
+      />
     </DndContext>
   );
 }

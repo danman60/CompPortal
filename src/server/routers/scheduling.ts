@@ -243,8 +243,8 @@ export const schedulingRouter = router({
         select: {
           studio_id: true,
           studio_code: true,
-        },
-      });
+        } as any, // Type assertion until Prisma regenerates
+      }) as any[];
 
       // Create map of studio_id to per-competition studio_code
       const studioCodeMap = new Map(
@@ -1667,7 +1667,7 @@ export const schedulingRouter = router({
         orderBy: {
           created_at: 'asc', // Order by reservation submission date
         },
-      });
+      }) as any[]; // Type assertion until Prisma regenerates
 
       // Generate codes A, B, C, D...
       const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -1690,7 +1690,7 @@ export const schedulingRouter = router({
             where: { id: reservation.id },
             data: {
               studio_code: code,
-            },
+            } as any, // Type assertion until Prisma regenerates
           });
 
           updates.push({
@@ -1780,8 +1780,8 @@ export const schedulingRouter = router({
         select: {
           studio_id: true,
           studio_code: true,
-        },
-      });
+        } as any, // Type assertion until Prisma regenerates
+      }) as any[];
 
       // Create map of studio_id to per-competition studio_code
       const studioCodeMap = new Map(
@@ -2046,8 +2046,8 @@ export const schedulingRouter = router({
         select: {
           studio_id: true,
           studio_code: true,
-        },
-      });
+        } as any, // Type assertion until Prisma regenerates
+      }) as any[];
 
       // Create map of studio_id to per-competition studio_code
       const studioCodeMap = new Map(
@@ -2128,8 +2128,8 @@ export const schedulingRouter = router({
         select: {
           studio_id: true,
           studio_code: true,
-        },
-      });
+        } as any, // Type assertion until Prisma regenerates
+      }) as any[];
 
       // Create map of studio_id to per-competition studio_code
       const studioCodeMap = new Map(
