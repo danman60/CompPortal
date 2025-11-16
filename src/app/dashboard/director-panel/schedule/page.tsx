@@ -94,13 +94,14 @@ function DraggableBlock({ block }: { block: ScheduleBlock }) {
       {...attributes}
       className={`
         border-2 rounded-lg p-3 cursor-grab transition-all mb-2
-        ${isDragging ? 'opacity-50' : ''}
+        ${isDragging ? 'opacity-50 z-[9999]' : 'z-10'}
         ${isAward
           ? 'border-yellow-500/50 bg-yellow-900/20 hover:border-yellow-400'
           : 'border-gray-500/50 bg-gray-900/20 hover:border-gray-400'}
       `}
+      style={{ position: isDragging ? 'relative' : 'static' }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" style={{ pointerEvents: 'none' }}>
         <span className="text-2xl">{isAward ? '🏆' : '☕'}</span>
         <div className="flex-1">
           <div className="font-bold text-white text-sm">{block.title}</div>
@@ -599,6 +600,9 @@ export default function SchedulePage() {
   const sundayPMBlocks = blocksByZone['sunday-pm'] || [];
 
   const activeRoutine = routines?.find(r => r.id === activeId);
+  const activeBlock = activeId?.startsWith('block-')
+    ? scheduleBlocks.find(b => `block-${b.id}` === activeId)
+    : null;
 
   const scheduledCount = (saturdayAM.length + saturdayPM.length + sundayAM.length + sundayPM.length);
 
@@ -1461,6 +1465,22 @@ export default function SchedulePage() {
             <div className="font-bold text-white mb-1">{activeRoutine.title}</div>
             <div className="text-sm text-purple-200">
               <div>Studio: <span className="font-medium text-purple-300">{activeRoutine.studioCode}</span></div>
+            </div>
+          </div>
+        )}
+        {activeBlock && (
+          <div className={`
+            border-2 rounded-lg p-3 backdrop-blur-sm shadow-xl
+            ${activeBlock.type === 'award'
+              ? 'border-yellow-400 bg-yellow-900/90'
+              : 'border-gray-400 bg-gray-900/90'}
+          `}>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{activeBlock.type === 'award' ? '🏆' : '☕'}</span>
+              <div className="flex-1">
+                <div className="font-bold text-white text-sm">{activeBlock.title}</div>
+                <div className="text-xs text-gray-300">{activeBlock.duration} minutes</div>
+              </div>
             </div>
           </div>
         )}
