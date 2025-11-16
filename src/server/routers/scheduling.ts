@@ -194,7 +194,6 @@ export const schedulingRouter = router({
             select: {
               id: true,
               name: true,
-              studio_code: true,
             },
           },
           dance_categories: {
@@ -234,12 +233,30 @@ export const schedulingRouter = router({
         ],
       });
 
+      // Get per-competition studio codes from reservations
+      const reservations = await prisma.reservations.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          status: 'approved',
+        },
+        select: {
+          studio_id: true,
+          studio_code: true,
+        },
+      });
+
+      // Create map of studio_id to per-competition studio_code
+      const studioCodeMap = new Map(
+        reservations.map(r => [r.studio_id, r.studio_code])
+      );
+
       return routines.map(routine => ({
         id: routine.id,
         title: routine.title,
         studioId: routine.studio_id,
         studioName: routine.studios.name,
-        studioCode: routine.studios.studio_code || routine.studios.name, // Fallback to name if no code
+        studioCode: studioCodeMap.get(routine.studio_id) || routine.studios.name, // Use per-competition code, fallback to name
         classificationId: routine.classification_id,
         classificationName: routine.classifications.name,
         categoryId: routine.category_id,
@@ -1625,14 +1642,14 @@ export const schedulingRouter = router({
       });
     }),
 
-  // Assign studio codes based on registration order
+  // Assign studio codes based on registration order (per-competition)
   assignStudioCodes: publicProcedure
     .input(z.object({
       competitionId: z.string().uuid(),
       tenantId: z.string().uuid(),
     }))
     .mutation(async ({ input }) => {
-      // Get all studios with approved reservations for this competition
+      // Get all approved reservations for this competition
       const reservations = await prisma.reservations.findMany({
         where: {
           competition_id: input.competitionId,
@@ -1644,8 +1661,6 @@ export const schedulingRouter = router({
             select: {
               id: true,
               name: true,
-              studio_code: true,
-              created_at: true,
             },
           },
         },
@@ -1659,7 +1674,7 @@ export const schedulingRouter = router({
       const updates = [];
 
       for (let i = 0; i < reservations.length; i++) {
-        const studio = reservations[i].studios;
+        const reservation = reservations[i];
 
         // Generate code (A, B, C... Z, AA, AB...)
         let code = '';
@@ -1669,18 +1684,19 @@ export const schedulingRouter = router({
           num = Math.floor(num / 26) - 1;
         }
 
-        // Update studio with code if not already assigned
-        if (!studio.studio_code || studio.studio_code !== code) {
-          await prisma.studios.update({
-            where: { id: studio.id },
+        // Update reservation with per-competition studio code
+        if (!reservation.studio_code || reservation.studio_code !== code) {
+          await prisma.reservations.update({
+            where: { id: reservation.id },
             data: {
               studio_code: code,
             },
           });
 
           updates.push({
-            studioId: studio.id,
-            studioName: studio.name,
+            reservationId: reservation.id,
+            studioId: reservation.studios.id,
+            studioName: reservation.studios.name,
             code,
           });
         }
@@ -1689,7 +1705,7 @@ export const schedulingRouter = router({
       return {
         success: true,
         codesAssigned: updates.length,
-        studios: updates,
+        reservations: updates,
       };
     }),
 
@@ -1725,7 +1741,6 @@ export const schedulingRouter = router({
             select: {
               id: true,
               name: true,
-              studio_code: true,
             },
           },
           dance_categories: {
@@ -1755,6 +1770,24 @@ export const schedulingRouter = router({
         ],
       });
 
+      // Get per-competition studio codes from reservations
+      const reservations = await prisma.reservations.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          status: 'approved',
+        },
+        select: {
+          studio_id: true,
+          studio_code: true,
+        },
+      });
+
+      // Create map of studio_id to per-competition studio_code
+      const studioCodeMap = new Map(
+        reservations.map(r => [r.studio_id, r.studio_code])
+      );
+
       // Check if schedule is published
       const competition = await prisma.competitions.findUnique({
         where: { id: input.competitionId },
@@ -1765,6 +1798,8 @@ export const schedulingRouter = router({
 
       // Transform based on view mode
       return routines.map(routine => {
+        const studioCode = studioCodeMap.get(routine.studio_id);
+
         const base = {
           id: routine.id,
           title: routine.title,
@@ -1782,7 +1817,7 @@ export const schedulingRouter = router({
         if (input.viewMode === 'cd') {
           return {
             ...base,
-            studioCode: routine.studios.studio_code,
+            studioCode,
             studioName: routine.studios.name,
             showFullName: true,
           };
@@ -1792,7 +1827,7 @@ export const schedulingRouter = router({
         if (input.viewMode === 'studio') {
           return {
             ...base,
-            studioCode: routine.studios.studio_code,
+            studioCode,
             studioName: routine.studios.name,
             showFullName: true,
           };
@@ -1802,7 +1837,7 @@ export const schedulingRouter = router({
         if (input.viewMode === 'judge') {
           return {
             ...base,
-            studioCode: routine.studios.studio_code,
+            studioCode,
             studioName: null, // Hide full name
             showFullName: false,
           };
@@ -1813,14 +1848,14 @@ export const schedulingRouter = router({
           if (isPublished) {
             return {
               ...base,
-              studioCode: routine.studios.studio_code,
+              studioCode,
               studioName: routine.studios.name,
               showFullName: true,
             };
           } else {
             return {
               ...base,
-              studioCode: routine.studios.studio_code,
+              studioCode,
               studioName: null,
               showFullName: false,
             };
@@ -2001,6 +2036,24 @@ export const schedulingRouter = router({
         throw new Error('Competition not found');
       }
 
+      // Get per-competition studio codes from reservations
+      const reservations = await prisma.reservations.findMany({
+        where: {
+          competition_id: competitionId,
+          tenant_id: tenantId,
+          status: 'approved',
+        },
+        select: {
+          studio_id: true,
+          studio_code: true,
+        },
+      });
+
+      // Create map of studio_id to per-competition studio_code
+      const studioCodeMap = new Map(
+        reservations.map(r => [r.studio_id, r.studio_code])
+      );
+
       // Fetch all routines for the schedule
       const routines = await prisma.competition_entries.findMany({
         where: {
@@ -2030,7 +2083,7 @@ export const schedulingRouter = router({
           id: r.id,
           title: r.title,
           studioName: viewMode === 'judge' ? null : r.studios?.name,
-          studioCode: r.studios?.studio_code,
+          studioCode: studioCodeMap.get(r.studio_id),
           classification: r.classifications?.name,
           category: r.dance_categories?.name,
           ageGroup: r.age_groups?.name,
@@ -2065,6 +2118,24 @@ export const schedulingRouter = router({
         throw new Error('Competition not found');
       }
 
+      // Get per-competition studio codes from reservations
+      const reservations = await prisma.reservations.findMany({
+        where: {
+          competition_id: competitionId,
+          tenant_id: tenantId,
+          status: 'approved',
+        },
+        select: {
+          studio_id: true,
+          studio_code: true,
+        },
+      });
+
+      // Create map of studio_id to per-competition studio_code
+      const studioCodeMap = new Map(
+        reservations.map(r => [r.studio_id, r.studio_code])
+      );
+
       // Fetch all routines for the schedule
       const routines = await prisma.competition_entries.findMany({
         where: {
@@ -2095,7 +2166,7 @@ export const schedulingRouter = router({
           session: null, // Phase 2 field
           time: null, // Phase 2 field
           routine: r.title,
-          studio: viewMode === 'judge' ? r.studios?.studio_code : r.studios?.name,
+          studio: viewMode === 'judge' ? studioCodeMap.get(r.studio_id) : r.studios?.name,
           classification: r.classifications?.name,
           category: r.dance_categories?.name,
           ageGroup: r.age_groups?.name,

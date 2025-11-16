@@ -1274,6 +1274,7 @@ model reservations {
   is_closed                                      Boolean?                            @default(false)
   discount_percentage                            Decimal?                            @default(0) @db.Decimal(5, 2)
   credits_applied                                Decimal?                            @default(0) @db.Decimal(10, 2)
+  studio_code                                    String?                             @db.VarChar(10)
   capacity_ledger                                capacity_ledger[]
   classification_exception_requests              classification_exception_requests[]
   competition_entries                            competition_entries[]

@@ -1,11 +1,11 @@
 # Scheduling Feature Status - Spec vs. Implementation
 
-**Date:** 2025-11-16 (Session 57 - Studio Code Refactoring)
+**Date:** 2025-11-16 (Session 58 - Studio Code Refactor Complete)
 **Branch:** tester
-**Commit:** 63cb97e (Build fixes)
+**Commit:** Pending (Studio code per-competition refactor)
 **Spec:** SCHEDULING_SPEC_V4_UNIFIED.md
 **Last E2E Test:** Session 4 - View modes verified
-**Session 57 Progress:** Export complete, components integrated, studio codes need per-competition refactor
+**Session 58 Progress:** Studio code system refactored from global to per-competition
 
 ---
 
@@ -29,9 +29,9 @@
 | - Dancer name display | §2 | ✅ | ✅ | ✅ | Shows in warnings |
 | - Severity levels | §2 | ✅ | ✅ | ✅ | Critical/Error/Warning |
 | - Conflict persistence | §2 | ✅ | ❌ | 🟡 | DB tracking exists |
-| **3. Studio Code System** | §3 | ⚠️ Partial | ⚠️ Partial | 🟡 | **NEEDS REFACTOR** (global→per-comp) |
-| - Code assignment | §3 | ⚠️ | ❌ | 🟡 | Assigns to studios (global), need reservations |
-| - Display logic | §3 | ⚠️ | ⚠️ | 🟡 | Uses studio.studio_code, need reservation join |
+| **3. Studio Code System** | §3 | ✅ | ✅ | ✅ | **COMPLETE** (Session 58 - per-competition) |
+| - Code assignment | §3 | ✅ | ✅ | ✅ | Assigns to reservations.studio_code |
+| - Display logic | §3 | ✅ | ✅ | ✅ | Joins reservations for per-competition codes |
 | **4. State Machine** | §4 | ✅ | ✅ | ✅ | **COMPLETE** (Session 56) |
 | - Draft mode | §4 | ✅ | ✅ | ✅ | Auto-renumber logic |
 | - Finalize mutation | §4 | ✅ | ✅ | ✅ | Locks numbers |
@@ -98,8 +98,8 @@
 ### By Priority
 
 **P0 Critical (5 features):**
-- ✅ Complete: 2 (Conflict Detection, Trophy Helper)
-- 🟡 Partial: 3 (Manual Interface, State Machine, Schedule Blocks)
+- ✅ Complete: 4 (Conflict Detection, Trophy Helper, Studio Code System, State Machine)
+- 🟡 Partial: 1 (Schedule Blocks - UI integration needed)
 - ❌ Missing: 0
 
 **P1 High Priority (6 features):**
@@ -163,12 +163,14 @@
 - ✅ StudioRequestsPanel component integrated
 - **Note:** Tracker issue was outdated, no actual error found
 
-### 🔄 Active Work (Session 57)
+### ✅ Session 58 Completed
 
-**IN PROGRESS:** Studio Code System Refactor
-- ⚠️ Current: Assigns codes globally to `studios.studio_code`
-- 🎯 Required: Assign codes per-competition to `reservations.studio_code`
-- 📝 Status: Migration + refactor via DevTeam protocol
+**COMPLETED:** Studio Code System Refactor
+- ✅ Migration: `reservations.studio_code` column exists
+- ✅ Backend: `assignStudioCodes` procedure updated to write to `reservations.studio_code`
+- ✅ Queries: `getRoutines` and `getViewModeSchedule` now join reservations for per-competition codes
+- ✅ Exports: PDF and Excel exports also use per-competition codes
+- 📝 Files Changed: `src/server/routers/scheduling.ts` (4 procedures updated)
 
 ### Must Have for Dec 26 (P0)
 
@@ -182,12 +184,12 @@
    - ✅ FilterPanel integrated
    - ✅ TimelineHeader integrated
 
-3. **Studio Code System** 🔄 IN PROGRESS
-   - ⚠️ Refactor: Global → Per-competition
-   - 🔄 Add reservations.studio_code migration
-   - 🔄 Update assignStudioCodes procedure
-   - 🔄 Update queries to join reservations
-   - ⚠️ View-based masking (Judge view uses codes)
+3. ~~**Studio Code System**~~ ✅ **COMPLETE** (Session 58)
+   - ✅ Refactored: Global → Per-competition
+   - ✅ Migration: reservations.studio_code exists
+   - ✅ Backend: assignStudioCodes writes to reservations
+   - ✅ Queries: getRoutines & getViewModeSchedule join reservations
+   - ✅ View-based masking: Already implemented (Judge view uses codes)
 
 4. **Award/Break Blocks Integration**
    - ✅ Components created (Session 55)
@@ -221,15 +223,16 @@
 
 **Tester Domain:** https://tester.compsync.net
 **Scheduler URL:** /dashboard/director-panel/schedule
-**Last Deploy:** 2025-11-16 Session 57 (commit 63cb97e)
+**Last Deploy:** Pending (Session 58 - Studio code refactor)
 
-**Session 57 Discoveries:**
-- ✅ Export functionality COMPLETE (PDF + Excel)
-- ✅ All components INTEGRATED (ScheduleToolbar, FilterPanel, TimelineHeader)
-- ✅ Studio feedback COMPLETE (trackers were outdated)
-- ⚠️ Studio codes need refactor (global → per-competition)
+**Session 58 Changes:**
+- ✅ Studio code system COMPLETE (global → per-competition)
+- ✅ assignStudioCodes writes to reservations.studio_code
+- ✅ getRoutines query uses per-competition codes
+- ✅ getViewModeSchedule query uses per-competition codes
+- ✅ Export PDF/Excel use per-competition codes
 
-**Ready to Test:**
+**Ready to Test (after build & deploy):**
 - ✅ Trophy Helper
 - ✅ Conflict Detection
 - ✅ Basic drag-drop scheduling (zone-based)
@@ -245,8 +248,8 @@
 - ✅ TimelineHeader (schedule/page.tsx:818)
 - ⚠️ ScheduleBlockCard & Modal (components exist, need page.tsx integration)
 
-**Active Work (Session 57):**
-- 🔄 Studio code system refactor (global → per-competition)
+**Session 58 Completed:**
+- ✅ Studio code system refactor (global → per-competition)
 
 **Not Yet in UI:**
 - ❌ Award/break blocks integration (components ready)
@@ -254,9 +257,8 @@
 - ❌ Hotel attrition warnings
 
 **Missing Backend Logic:**
-- ⚠️ Studio code per-competition assignment (refactor needed)
-- ❌ Age change detection algorithm
-- ❌ Hotel attrition check (Emerald single-day)
+- ❌ Age change detection algorithm (procedure exists, needs integration)
+- ❌ Hotel attrition check integration (procedure exists, needs UI)
 
 ---
 
