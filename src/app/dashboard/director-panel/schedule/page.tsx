@@ -1133,7 +1133,8 @@ export default function SchedulePage() {
     ? scheduleBlocks.find(b => `block-${b.id}` === activeId)
     : null;
 
-  const scheduledCount = (saturdayAM.length + saturdayPM.length + sundayAM.length + sundayPM.length);
+  // V4: Count scheduled routines (routines with performance_date set)
+  const scheduledCount = routines?.filter(r => r.isScheduled).length || 0;
 
   // Prepare visual indicator data (Session 58)
   const conflictsForUI = (conflictsData?.conflicts || []).map((c: any) => ({
