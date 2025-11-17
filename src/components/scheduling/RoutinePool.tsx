@@ -20,6 +20,20 @@ import { useState } from 'react';
 import { RoutineCard, Routine, ViewMode } from './RoutineCard';
 import { useDraggable } from '@dnd-kit/core';
 
+interface FilterOption {
+  id: string;
+  label: string;
+}
+
+export interface FilterState {
+  classifications: string[];
+  ageGroups: string[];
+  genres: string[];
+  groupSizes: string[];
+  studios: string[];
+  search: string;
+}
+
 interface RoutinePoolProps {
   routines: Routine[];
   isLoading?: boolean;
@@ -38,6 +52,16 @@ interface RoutinePoolProps {
   onToggleSelection?: (routineId: string, shiftKey: boolean) => void;
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
+  // Filter options and state (Session 64)
+  classifications?: FilterOption[];
+  ageGroups?: FilterOption[];
+  genres?: FilterOption[];
+  groupSizes?: FilterOption[];
+  studios?: FilterOption[];
+  filters?: FilterState;
+  onFiltersChange?: (filters: FilterState) => void;
+  totalRoutines?: number;
+  filteredRoutines?: number;
 }
 
 // Helper: Get classification color
@@ -159,11 +183,23 @@ export function RoutinePool({
   onToggleSelection,
   onSelectAll,
   onDeselectAll,
+  classifications = [],
+  ageGroups = [],
+  genres = [],
+  groupSizes = [],
+  studios = [],
+  filters = { classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], search: '' },
+  onFiltersChange,
+  totalRoutines = 0,
+  filteredRoutines = 0,
 }: RoutinePoolProps) {
   const isEmpty = routines.length === 0 && !isLoading;
 
   // Display mode: 'table' (default) or 'cards'
   const [displayMode, setDisplayMode] = useState<'table' | 'cards'>('table');
+
+  // Dropdown state for each filter category
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Helper: Check if routine has conflict
   const hasConflict = (routineId: string) => {
@@ -224,6 +260,118 @@ export function RoutinePool({
             </div>
           </div>
         </div>
+
+        {/* Filters Row */}
+        {onFiltersChange && (
+          <div className="flex flex-wrap items-center gap-2 mb-3 bg-white/5 border border-white/10 rounded-lg p-3">
+            {/* Search Box */}
+            <div className="flex-1 min-w-[200px]">
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+                placeholder="🔍 Search routines..."
+                className="w-full px-3 py-1.5 bg-black/20 border border-white/20 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Classification Filter */}
+            {classifications.length > 0 && (
+              <FilterDropdown
+                label="Classification"
+                options={classifications}
+                selectedIds={filters.classifications}
+                onToggle={(id) => {
+                  const newValues = filters.classifications.includes(id)
+                    ? filters.classifications.filter(v => v !== id)
+                    : [...filters.classifications, id];
+                  onFiltersChange({ ...filters, classifications: newValues });
+                }}
+                isOpen={openDropdown === 'classifications'}
+                onToggleOpen={() => setOpenDropdown(openDropdown === 'classifications' ? null : 'classifications')}
+              />
+            )}
+
+            {/* Age Group Filter */}
+            {ageGroups.length > 0 && (
+              <FilterDropdown
+                label="Age"
+                options={ageGroups}
+                selectedIds={filters.ageGroups}
+                onToggle={(id) => {
+                  const newValues = filters.ageGroups.includes(id)
+                    ? filters.ageGroups.filter(v => v !== id)
+                    : [...filters.ageGroups, id];
+                  onFiltersChange({ ...filters, ageGroups: newValues });
+                }}
+                isOpen={openDropdown === 'ageGroups'}
+                onToggleOpen={() => setOpenDropdown(openDropdown === 'ageGroups' ? null : 'ageGroups')}
+              />
+            )}
+
+            {/* Category Filter */}
+            {genres.length > 0 && (
+              <FilterDropdown
+                label="Category"
+                options={genres}
+                selectedIds={filters.genres}
+                onToggle={(id) => {
+                  const newValues = filters.genres.includes(id)
+                    ? filters.genres.filter(v => v !== id)
+                    : [...filters.genres, id];
+                  onFiltersChange({ ...filters, genres: newValues });
+                }}
+                isOpen={openDropdown === 'genres'}
+                onToggleOpen={() => setOpenDropdown(openDropdown === 'genres' ? null : 'genres')}
+              />
+            )}
+
+            {/* Group Size Filter */}
+            {groupSizes.length > 0 && (
+              <FilterDropdown
+                label="Size"
+                options={groupSizes}
+                selectedIds={filters.groupSizes}
+                onToggle={(id) => {
+                  const newValues = filters.groupSizes.includes(id)
+                    ? filters.groupSizes.filter(v => v !== id)
+                    : [...filters.groupSizes, id];
+                  onFiltersChange({ ...filters, groupSizes: newValues });
+                }}
+                isOpen={openDropdown === 'groupSizes'}
+                onToggleOpen={() => setOpenDropdown(openDropdown === 'groupSizes' ? null : 'groupSizes')}
+              />
+            )}
+
+            {/* Studio Filter */}
+            {studios.length > 0 && (
+              <FilterDropdown
+                label="Studio"
+                options={studios}
+                selectedIds={filters.studios}
+                onToggle={(id) => {
+                  const newValues = filters.studios.includes(id)
+                    ? filters.studios.filter(v => v !== id)
+                    : [...filters.studios, id];
+                  onFiltersChange({ ...filters, studios: newValues });
+                }}
+                isOpen={openDropdown === 'studios'}
+                onToggleOpen={() => setOpenDropdown(openDropdown === 'studios' ? null : 'studios')}
+              />
+            )}
+
+            {/* Clear Filters */}
+            {(filters.classifications.length > 0 || filters.ageGroups.length > 0 || filters.genres.length > 0 || filters.groupSizes.length > 0 || filters.studios.length > 0 || filters.search.length > 0) && (
+              <button
+                onClick={() => onFiltersChange({ classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], search: '' })}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
+                title="Clear all filters"
+              >
+                ✕ Clear
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Bulk Selection Controls */}
         {routines.length > 0 && onSelectAll && onDeselectAll && (
@@ -362,6 +510,59 @@ export function RoutinePool({
         <div className="text-center py-12">
           <div className="text-6xl mb-4">✅</div>
           <p className="text-purple-200 font-medium">All routines scheduled!</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// FilterDropdown Component
+function FilterDropdown({
+  label,
+  options,
+  selectedIds,
+  onToggle,
+  isOpen,
+  onToggleOpen,
+}: {
+  label: string;
+  options: FilterOption[];
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+}) {
+  const selectedCount = selectedIds.length;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggleOpen}
+        className={`px-3 py-1.5 text-sm font-medium rounded border transition-colors ${
+          selectedCount > 0
+            ? 'bg-purple-600 text-white border-purple-500'
+            : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
+        }`}
+      >
+        {label} {selectedCount > 0 && `(${selectedCount})`} ▼
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => onToggle(option.id)}
+              className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                selectedIds.includes(option.id)
+                  ? 'bg-purple-600 text-white'
+                  : 'text-white/80 hover:bg-white/10'
+              }`}
+            >
+              <span className="mr-2">{selectedIds.includes(option.id) ? '✓' : ' '}</span>
+              {option.label}
+            </button>
+          ))}
         </div>
       )}
     </div>

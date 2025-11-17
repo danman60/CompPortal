@@ -45,7 +45,6 @@ import { CDNoteModal } from '@/components/CDNoteModal';
 
 // Session 56 Components
 import { ScheduleToolbar, ScheduleStatus, ViewMode } from '@/components/ScheduleToolbar';
-import { FilterPanel, FilterState } from '@/components/FilterPanel';
 import { RoutinePool } from '@/components/scheduling/RoutinePool';
 import { ScheduleZone as ScheduleZoneType, ScheduleBlock as ScheduleBlockType } from '@/components/scheduling/ScheduleGrid';
 
@@ -105,7 +104,6 @@ export default function SchedulePage() {
   const [showRequestsPanel, setShowRequestsPanel] = useState(false);
 
   // Panel collapse state
-  const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
   const [isTrophyPanelCollapsed, setIsTrophyPanelCollapsed] = useState(false);
 
   // Undo/Redo state
@@ -138,11 +136,19 @@ export default function SchedulePage() {
   // View mode state (needs to be before queries that use it)
   const [viewMode, setViewMode] = useState<ViewMode>('cd');
 
-  // Filter state (Session 56)
-  const [filters, setFilters] = useState<FilterState>({
+  // Filter state (Session 56, Updated Session 64 with groupSizes)
+  const [filters, setFilters] = useState<{
+    classifications: string[];
+    ageGroups: string[];
+    genres: string[];
+    groupSizes: string[];
+    studios: string[];
+    search: string;
+  }>({
     classifications: [],
     ageGroups: [],
     genres: [],
+    groupSizes: [],
     studios: [],
     search: '',
   });
@@ -1096,6 +1102,13 @@ export default function SchedulePage() {
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
 
+  // Get unique group sizes from routines
+  const groupSizes = routines
+    ? Array.from(new Set(routines.map(r => ({ id: r.entrySizeId, name: r.entrySizeName }))))
+        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
   // Group routines by zone
   const routinesByZone = (routines || []).reduce((acc, routine) => {
     const zone = routineZones[routine.id] || 'unscheduled';
@@ -1119,6 +1132,11 @@ export default function SchedulePage() {
 
     // Genre filter
     if (filters.genres.length > 0 && !filters.genres.includes(routine.categoryId)) {
+      return false;
+    }
+
+    // Group size filter (Session 64)
+    if (filters.groupSizes.length > 0 && !filters.groupSizes.includes(routine.entrySizeId)) {
       return false;
     }
 
@@ -1391,21 +1409,7 @@ export default function SchedulePage() {
 
           {/* LEFT PANEL: Unscheduled Routines Pool (33%) */}
           <div className="col-span-1 space-y-6">
-            {/* Filter Panel (Session 56) */}
-            <FilterPanel
-              classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
-              ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
-              genres={categories.map(c => ({ id: c.id, label: c.name }))}
-              studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
-              filters={filters}
-              onFiltersChange={setFilters}
-              totalRoutines={routines?.length || 0}
-              filteredRoutines={unscheduledRoutines.length}
-              isCollapsed={isFilterPanelCollapsed}
-              onToggleCollapse={() => setIsFilterPanelCollapsed(!isFilterPanelCollapsed)}
-            />
-
-            {/* Unscheduled Routines Pool (Session 56) */}
+            {/* Unscheduled Routines Pool (Session 56, Filters integrated Session 64) */}
             <RoutinePool
               routines={unscheduledRoutines}
               isLoading={isLoading}
@@ -1422,6 +1426,15 @@ export default function SchedulePage() {
               onToggleSelection={handleToggleRoutineSelection}
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
+              classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
+              ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
+              genres={categories.map(c => ({ id: c.id, label: c.name }))}
+              groupSizes={groupSizes.map(gs => ({ id: gs.id, label: gs.name }))}
+              studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
+              filters={filters}
+              onFiltersChange={setFilters}
+              totalRoutines={routines?.length || 0}
+              filteredRoutines={unscheduledRoutines.length}
             />
 
             {/* Schedule Blocks */}
