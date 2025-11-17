@@ -518,8 +518,8 @@ export const schedulingRouter = router({
           },
           data: {
             schedule_zone: null, // Clear old zone-based data
-            performance_date: input.performanceDate, // Keep as "YYYY-MM-DD" string
-            performance_time: input.performanceTime, // Keep as "HH:MM:SS" string
+            performance_date: new Date(input.performanceDate), // Convert string to Date for UPDATE
+            performance_time: new Date(`1970-01-01T${input.performanceTime}`), // Convert TIME to Date
             entry_number: input.entryNumber,
             is_scheduled: true,
           },
