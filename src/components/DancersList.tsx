@@ -366,7 +366,9 @@ export default function DancersList() {
                   ? dancer.date_of_birth.toISOString().split('T')[0]
                   : dancer.date_of_birth;
                 const dob = parseISODateToUTC(isoString)!;
-                const age = calculateAge(isoString);
+                // Calculate age as of Dec 31 of current year (not TODAY)
+                const ageCalculationDate = new Date(Date.UTC(new Date().getUTCFullYear(), 11, 31));
+                const age = calculateAge(isoString, ageCalculationDate);
                 return (
                   <div className="flex items-center gap-2 text-gray-400 text-sm mb-3">
                     <span>🎂</span>
@@ -479,7 +481,9 @@ export default function DancersList() {
                           ? dancer.date_of_birth.toISOString().split('T')[0]
                           : dancer.date_of_birth;
                         const dob = parseISODateToUTC(isoString)!;
-                        const age = calculateAge(isoString);
+                        // Calculate age as of Dec 31 of current year (not TODAY)
+                        const ageCalculationDate = new Date(Date.UTC(new Date().getUTCFullYear(), 11, 31));
+                        const age = calculateAge(isoString, ageCalculationDate);
                         return (
                           <div className="text-white">
                             {age} yrs

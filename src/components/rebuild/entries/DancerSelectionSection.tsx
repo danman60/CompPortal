@@ -196,7 +196,7 @@ export function DancerSelectionSection({
                     {dancer.date_of_birth && (
                       <>
                         <span className="text-gray-400">
-                          DOB: {new Date(dancer.date_of_birth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          DOB: {new Date(dancer.date_of_birth + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
                         </span>
                         <span className="text-gray-500">•</span>
                       </>

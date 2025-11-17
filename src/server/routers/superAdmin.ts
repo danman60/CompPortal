@@ -1782,6 +1782,7 @@ const routineVerificationRouter = router({
           t.id as tenant_id,
           t.name as tenant_name,
           s.name as studio_name,
+          c.competition_start_date,
           jsonb_agg(
             jsonb_build_object(
               'dob', d.date_of_birth,
@@ -1792,34 +1793,44 @@ const routineVerificationRouter = router({
         LEFT JOIN age_groups ag ON ce.age_group_id = ag.id
         LEFT JOIN tenants t ON ce.tenant_id = t.id
         LEFT JOIN reservations r ON ce.reservation_id = r.id
+        LEFT JOIN competitions c ON r.competition_id = c.id
         LEFT JOIN studios s ON r.studio_id = s.id
         LEFT JOIN entry_participants ep ON ep.entry_id = ce.id
         LEFT JOIN dancers d ON ep.dancer_id = d.id
         WHERE ce.routine_age IS NOT NULL
           ${whereClause}
-        GROUP BY ce.id, ce.title, ce.routine_age, ce.age_group_id, ce.status, ce.created_at, ag.name, ag.min_age, ag.max_age, t.id, t.name, s.name
+        GROUP BY ce.id, ce.title, ce.routine_age, ce.age_group_id, ce.status, ce.created_at, ag.name, ag.min_age, ag.max_age, t.id, t.name, s.name, c.competition_start_date
         ORDER BY ce.created_at DESC
       `, ...params);
 
       // Process each routine to calculate correct age
       const results = routines.map((routine) => {
-        const { routine_id, routine_title, stored_age, age_group_id, age_group_name, min_age, max_age, status, created_at, tenant_id, tenant_name, studio_name, dancers } = routine;
+        const { routine_id, routine_title, stored_age, age_group_id, age_group_name, min_age, max_age, status, created_at, tenant_id, tenant_name, studio_name, competition_start_date, dancers } = routine;
+
+        // Calculate age calculation date: Dec 31 of REGISTRATION year
+        // Registration year = Competition year - 1 (ALWAYS the fall prior to comp year)
+        // E.g., 2026 competition → 2025 registration year → Dec 31, 2025
+        const ageCalcDate = competition_start_date
+          ? (() => {
+              const competitionYear = new Date(competition_start_date).getUTCFullYear();
+              const registrationYear = competitionYear - 1;
+              return new Date(Date.UTC(registrationYear, 11, 31));
+            })()
+          : new Date(Date.UTC(new Date().getUTCFullYear(), 11, 31)); // Fallback: Dec 31 of current year
 
         // Calculate correct age from dancers
         let correctAge: number;
         const dancerList = dancers as Array<{ dob: string; name: string }>;
 
         if (dancerList.length === 1) {
-          // Solo - calculate age at competition date (Dec 31, 2025)
+          // Solo - calculate age at competition date
           const dob = new Date(dancerList[0].dob);
-          const compDate = new Date('2025-12-31');
-          correctAge = compDate.getFullYear() - dob.getFullYear();
+          correctAge = ageCalcDate.getFullYear() - dob.getFullYear();
         } else {
           // Group - average ages (floored)
           const ages = dancerList.map((dancer) => {
             const dob = new Date(dancer.dob);
-            const compDate = new Date('2025-12-31');
-            return compDate.getFullYear() - dob.getFullYear();
+            return ageCalcDate.getFullYear() - dob.getFullYear();
           });
           correctAge = Math.floor(ages.reduce((sum, age) => sum + age, 0) / ages.length);
         }

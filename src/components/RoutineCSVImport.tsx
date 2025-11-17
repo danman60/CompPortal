@@ -378,12 +378,14 @@ export default function RoutineCSVImport() {
         throw new Error(`Unsupported file type: ${fileExt}. Please upload .csv, .xlsx, or .xls`);
       }
 
-      // Get event date - use Dec 31 of REGISTRATION year (not competition date)
-      // Fallback: If registration_closes is null, use Dec 31 of current year
-      const eventDate = reservationsData?.reservations?.[0]?.competitions?.registration_closes
+      // Get event date - use Dec 31 of REGISTRATION year
+      // Registration year = Competition year - 1 (ALWAYS the fall prior to comp year)
+      // E.g., 2026 competition → 2025 registration year → Dec 31, 2025
+      const eventDate = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
         ? (() => {
-            const regYear = new Date(reservationsData.reservations[0].competitions.registration_closes).getUTCFullYear();
-            return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
+            const competitionYear = new Date(reservationsData.reservations[0].competitions.competition_start_date).getUTCFullYear();
+            const registrationYear = competitionYear - 1;
+            return new Date(Date.UTC(registrationYear, 11, 31)); // Dec 31 of registration year
           })()
         : (() => {
             const currentYear = new Date().getUTCFullYear();
@@ -456,12 +458,14 @@ export default function RoutineCSVImport() {
     try {
       const parsed = parseExcel(excelWorkbook, sheetName);
 
-      // Use Dec 31 of REGISTRATION year (not competition date)
-      // Fallback: If registration_closes is null, use Dec 31 of current year
-      const eventDate = reservationsData?.reservations?.[0]?.competitions?.registration_closes
+      // Use Dec 31 of REGISTRATION year
+      // Registration year = Competition year - 1 (ALWAYS the fall prior to comp year)
+      // E.g., 2026 competition → 2025 registration year → Dec 31, 2025
+      const eventDate = reservationsData?.reservations?.[0]?.competitions?.competition_start_date
         ? (() => {
-            const regYear = new Date(reservationsData.reservations[0].competitions.registration_closes).getUTCFullYear();
-            return new Date(Date.UTC(regYear, 11, 31)); // Dec 31 of registration year
+            const competitionYear = new Date(reservationsData.reservations[0].competitions.competition_start_date).getUTCFullYear();
+            const registrationYear = competitionYear - 1;
+            return new Date(Date.UTC(registrationYear, 11, 31)); // Dec 31 of registration year
           })()
         : (() => {
             const currentYear = new Date().getUTCFullYear();
