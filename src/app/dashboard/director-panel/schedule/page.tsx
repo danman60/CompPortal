@@ -12,7 +12,7 @@
  * - Studio code masking (A, B, C, etc.)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -143,6 +143,9 @@ export default function SchedulePage() {
     studios: [],
     search: '',
   });
+
+  // Ref to track if we're currently reordering (to suppress individual toasts)
+  const isReorderingRef = useRef(false);
 
   // Track schedule blocks
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([
@@ -627,7 +630,10 @@ export default function SchedulePage() {
   const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
     onSuccess: () => {
       console.log('[Schedule] Mutation SUCCESS - refetching routines');
-      toast.success('🎭 Routine scheduled successfully!');
+      // Only show toast if not reordering (avoid toast spam during reorder)
+      if (!isReorderingRef.current) {
+        toast.success('🎭 Routine scheduled successfully!');
+      }
       // Refetch routines to get updated state from database
       refetch();
       refetchConflicts();
@@ -957,6 +963,9 @@ export default function SchedulePage() {
               // Phase 1: Move to temporary numbers, Phase 2: Move to final numbers
               (async () => {
                 try {
+                  // Set reordering flag to suppress individual toasts
+                  isReorderingRef.current = true;
+
                   // Identify routines that need updating
                   const routinesToUpdate = reorderedRoutines.filter(
                     (routine, index) => routine.entryNumber !== baseEntryNumber + index
@@ -964,6 +973,7 @@ export default function SchedulePage() {
 
                   if (routinesToUpdate.length === 0) {
                     console.log('[V4 Reorder] No updates needed');
+                    isReorderingRef.current = false;
                     return;
                   }
 
@@ -1009,9 +1019,13 @@ export default function SchedulePage() {
                   await Promise.all(finalUpdates);
                   console.log('[V4 Reorder] Phase 2 complete');
 
+                  // Reset reordering flag and show single success toast
+                  isReorderingRef.current = false;
                   toast.success('Routines reordered successfully');
                 } catch (error) {
                   console.error('[V4 Reorder] Error during reorder:', error);
+                  // Reset reordering flag on error
+                  isReorderingRef.current = false;
                   toast.error('Failed to reorder routines');
                 }
               })();
