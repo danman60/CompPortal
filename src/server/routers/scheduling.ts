@@ -992,12 +992,13 @@ export const schedulingRouter = router({
     .mutation(async ({ input }) => {
       const note = await prisma.routine_notes.create({
         data: {
-          routine_id: input.routineId,
+          entry_id: input.routineId,
           tenant_id: input.tenantId,
           note_type: 'studio_request',
-          content: input.content,
-          author_id: input.authorId,
-          status: 'pending',
+          note_text: input.content,
+          created_by: input.authorId,
+          is_internal: false, // Studio requests are external
+          priority: 'normal',
         },
       });
 
@@ -1022,16 +1023,18 @@ export const schedulingRouter = router({
     }))
     .query(async ({ input }) => {
       // Query notes directly with joins
+      // Note: status filter is ignored since DB uses priority field
       const notes = await prisma.routine_notes.findMany({
         where: {
           tenant_id: input.tenantId,
           note_type: 'studio_request',
-          ...(input.filters?.status ? { status: input.filters.status } : {}),
+          is_internal: false,
+          // TODO: Add proper status field to DB or map priority to status
         },
       });
 
       // Get associated routine details
-      const routineIds = notes.map(n => n.routine_id);
+      const routineIds = notes.map(n => n.entry_id);
       const routines = await prisma.competition_entries.findMany({
         where: {
           id: { in: routineIds },
@@ -1049,14 +1052,22 @@ export const schedulingRouter = router({
 
       const requests = notes
         .map(note => {
-          const routine = routineMap.get(note.routine_id);
+          const routine = routineMap.get(note.entry_id);
           if (!routine) return null;
+
+          // Map priority to status for frontend compatibility
+          const priorityToStatus: Record<string, string> = {
+            'normal': 'pending',
+            'high': 'pending',
+            'low': 'completed',
+          };
 
           return {
             ...note,
             routineTitle: routine.title,
             routineId: routine.id,
             studioName: routine.studios.name,
+            status: priorityToStatus[note.priority || 'normal'] || 'pending',
           };
         })
         .filter(r => r !== null);
@@ -1064,17 +1075,25 @@ export const schedulingRouter = router({
       return requests;
     }),
 
-  // Update studio request status
+  // Update studio request status (maps to priority in DB)
   updateRequestStatus: publicProcedure
     .input(z.object({
       noteId: z.string().uuid(),
-      status: z.enum(['completed', 'ignored']),
+      status: z.enum(['completed', 'ignored', 'pending']),
     }))
     .mutation(async ({ input }) => {
+      // Map frontend status to backend priority for now
+      // In future: add a proper status field or use a different mapping
+      const priorityMap: Record<string, string> = {
+        'completed': 'low',
+        'ignored': 'low',
+        'pending': 'normal',
+      };
+
       const updated = await prisma.routine_notes.update({
         where: { id: input.noteId },
         data: {
-          status: input.status,
+          priority: priorityMap[input.status] || 'normal',
           updated_at: new Date(),
         },
       });
@@ -1093,12 +1112,13 @@ export const schedulingRouter = router({
     .mutation(async ({ input }) => {
       const note = await prisma.routine_notes.create({
         data: {
-          routine_id: input.routineId,
+          entry_id: input.routineId,
           tenant_id: input.tenantId,
           note_type: 'cd_private',
-          content: input.content,
-          author_id: input.authorId,
-          status: null, // CD notes don't have status
+          note_text: input.content,
+          created_by: input.authorId,
+          is_internal: true, // CD notes are internal
+          priority: null,
         },
       });
 
@@ -1120,7 +1140,7 @@ export const schedulingRouter = router({
       };
 
       if (input.routineId) {
-        where.routine_id = input.routineId;
+        where.entry_id = input.routineId;
       }
 
       const notes = await prisma.routine_notes.findMany({
@@ -1130,7 +1150,7 @@ export const schedulingRouter = router({
 
       // If competition ID provided, filter by competition
       if (input.competitionId) {
-        const routineIds = notes.map(n => n.routine_id);
+        const routineIds = notes.map(n => n.entry_id);
         const routines = await prisma.competition_entries.findMany({
           where: {
             id: { in: routineIds },
@@ -1147,7 +1167,7 @@ export const schedulingRouter = router({
 
         return notes
           .map(note => {
-            const routine = routineMap.get(note.routine_id);
+            const routine = routineMap.get(note.entry_id);
             if (!routine) return null;
 
             return {

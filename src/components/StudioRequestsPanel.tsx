@@ -18,17 +18,19 @@ import { trpc } from '@/lib/trpc';
 // Using the actual backend response type
 interface StudioRequest {
   id: string;
-  routine_id: string;
+  entry_id: string;
   routineId: string;
   routineTitle: string;
   studioName: string;
-  content: string;
-  status: string | null;
+  note_text: string;
+  status: string; // Mapped from priority in backend
   created_at: Date | null;
   updated_at: Date | null;
   tenant_id: string;
   note_type: string;
-  author_id: string;
+  created_by: string;
+  is_internal: boolean | null;
+  priority: string | null;
 }
 
 interface StudioRequestsPanelProps {
@@ -283,7 +285,7 @@ export function StudioRequestsPanel({
                     {/* Request Note */}
                     <div className="bg-white/5 rounded-lg p-3 mb-3">
                       <div className="text-xs text-purple-300 mb-1">Request:</div>
-                      <div className="text-sm text-white">{request.content}</div>
+                      <div className="text-sm text-white">{request.note_text}</div>
                     </div>
 
                     {/* Footer */}
