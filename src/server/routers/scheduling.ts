@@ -675,6 +675,23 @@ export const schedulingRouter = router({
         const lastRoutine = routines[routines.length - 1];
         const firstRoutine = routines[0];
 
+        // Count total routines in this category (scheduled + unscheduled)
+        const totalRoutinesInCategory = await prisma.competition_entries.count({
+          where: {
+            competition_id: input.competitionId,
+            tenant_id: ctx.tenantId,
+            entry_size_category_id: firstRoutine.entry_size_category_id,
+            age_group_id: firstRoutine.age_group_id,
+            classification_id: firstRoutine.classification_id,
+          },
+        });
+
+        // Calculate unscheduled count
+        const unscheduledCount = totalRoutinesInCategory - routines.length;
+
+        // Only show trophy helper when fewer than 3 unscheduled routines remain
+        if (unscheduledCount >= 3) continue;
+
         // Format category display name
         const categoryDisplay = `${firstRoutine.entry_size_categories.name} - ${firstRoutine.age_groups.name} - ${firstRoutine.classifications.name}`;
 
