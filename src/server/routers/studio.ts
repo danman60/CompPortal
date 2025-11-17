@@ -170,15 +170,27 @@ export const studioRouter = router({
         logger.error('Failed to log activity (studio.claim)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
-      // Send notification email to Super Admin
+      // Get Competition Director for this tenant
+      const competitionDirector = await prisma.user_profiles.findFirst({
+        where: {
+          tenant_id: studio.tenant_id,
+          role: 'competition_director',
+        },
+        select: {
+          users: {
+            select: { email: true }
+          }
+        },
+      });
+
+      // Send notification email to Super Admin AND tenant CD
       const { sendEmail } = await import('@/lib/email');
-      try {
-        const emailResult = await sendEmail({
-          to: 'danieljohnabrahamson@gmail.com',
-          subject: `🎉 Studio Claimed: ${studio.name} (${tenant?.name})`,
-          templateType: 'studio-claimed',
-          studioId: studio.id,
-          html: `
+      const emailRecipients = ['danieljohnabrahamson@gmail.com'];
+      if (competitionDirector?.users?.email) {
+        emailRecipients.push(competitionDirector.users.email);
+      }
+
+      const emailTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -213,22 +225,34 @@ export const studioRouter = router({
   </div>
 </body>
 </html>
-          `,
-        });
+      `;
 
-        // Log email result
-        if (!emailResult.success) {
-          logger.error('Failed to send claim notification email', {
-            error: new Error(emailResult.error || 'Unknown email error'),
+      try {
+        // Send to all recipients
+        for (const recipient of emailRecipients) {
+          const emailResult = await sendEmail({
+            to: recipient,
+            subject: `🎉 Studio Claimed: ${studio.name} (${tenant?.name})`,
+            templateType: 'studio-claimed',
             studioId: studio.id,
-            studioName: studio.name,
+            html: emailTemplate,
           });
-        } else {
-          logger.info('Claim notification email sent', {
-            studioId: studio.id,
-            studioName: studio.name,
-            to: 'danieljohnabrahamson@gmail.com',
-          });
+
+          // Log email result
+          if (!emailResult.success) {
+            logger.error('Failed to send claim notification email', {
+              error: new Error(emailResult.error || 'Unknown email error'),
+              studioId: studio.id,
+              studioName: studio.name,
+              recipient,
+            });
+          } else {
+            logger.info('Claim notification email sent', {
+              studioId: studio.id,
+              studioName: studio.name,
+              to: recipient,
+            });
+          }
         }
       } catch (emailError) {
         // Don't fail the claim if email fails - just log it
@@ -301,6 +325,13 @@ export const studioRouter = router({
         phone: true,
         website: true,
         created_at: true,
+        _count: {
+          select: {
+            dancers: true,
+            competition_entries: true,
+            reservations: true,
+          },
+        },
       },
       orderBy: {
         name: 'asc',

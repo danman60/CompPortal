@@ -192,13 +192,18 @@ export function DancerSelectionSection({
                 </div>
                 <div className="flex-1 text-left">
                   <div className="text-white font-medium">{fullName}</div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm flex-wrap">
+                    {dancer.date_of_birth && (
+                      <>
+                        <span className="text-gray-400">
+                          DOB: {new Date(dancer.date_of_birth).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className="text-gray-500">•</span>
+                      </>
+                    )}
                     {age !== null && (
-                      <span
-                        className="text-gray-400 cursor-help"
-                        title={`Age as of Dec 31, ${eventStartDate?.getUTCFullYear() || 'registration year'}`}
-                      >
-                        {age} years old
+                      <span className="text-gray-400">
+                        {age} years old (Age as of December 31st, {eventStartDate?.getUTCFullYear() || new Date().getUTCFullYear()})
                       </span>
                     )}
                     {age !== null && dancer.classifications && (

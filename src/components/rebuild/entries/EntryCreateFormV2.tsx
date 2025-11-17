@@ -32,7 +32,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   const isEditMode = !!entryId;
 
   // Load existing entry if in edit mode
-  const { data: existingEntry, isLoading: entryLoading } = trpc.entry.getById.useQuery(
+  const { data: existingEntry, isLoading: entryLoading, isError: entryError, error: entryErrorDetails } = trpc.entry.getById.useQuery(
     { id: entryId! },
     { enabled: isEditMode }
   );
@@ -82,7 +82,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
   // Age calculation uses Dec 31 of REGISTRATION year (not competition date)
   // E.g., for 2026 competition with registration closing Dec 2025 → use Dec 31, 2025
-  // Fallback: If registration_closes is null, use Dec 31 of current year
+  // This is the correct business logic - dancers compete at their age as of Dec 31
   const eventStartDate = competition?.registration_closes
     ? (() => {
         const regYear = new Date(competition.registration_closes).getUTCFullYear();
@@ -362,6 +362,24 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
       <div className="max-w-4xl mx-auto mt-20 bg-red-500/20 border border-red-500/50 rounded-xl p-8 text-center">
         <h2 className="text-2xl font-bold text-red-300 mb-4">Missing Reservation</h2>
         <button onClick={() => router.push('/dashboard/entries')} className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg">
+          Back to Entries
+        </button>
+      </div>
+    );
+  }
+
+  // Check for entry loading error (e.g., entry not found, 500 error, permission denied)
+  if (isEditMode && entryError) {
+    return (
+      <div className="max-w-4xl mx-auto mt-20 bg-red-500/20 border border-red-500/50 rounded-xl p-8 text-center">
+        <h2 className="text-2xl font-bold text-red-300 mb-4">Failed to Load Entry</h2>
+        <p className="text-red-200 mb-6">
+          {entryErrorDetails?.message || 'The entry could not be loaded. It may have been deleted or you may not have permission to view it.'}
+        </p>
+        <button
+          onClick={() => router.push('/dashboard/entries')}
+          className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+        >
           Back to Entries
         </button>
       </div>

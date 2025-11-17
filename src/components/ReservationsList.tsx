@@ -507,6 +507,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Competition Filter */}
         <div className="flex-1">
+          <label className="block text-xs text-gray-400 mb-1">Competition</label>
           <select
             value={selectedCompetition}
             onChange={(e) => setSelectedCompetition(e.target.value)}
