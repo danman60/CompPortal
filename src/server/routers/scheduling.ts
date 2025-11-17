@@ -539,6 +539,84 @@ export const schedulingRouter = router({
       }
     }),
 
+  // Reset schedule for a specific day (V4 redesign)
+  resetScheduleForDay: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      performanceDate: z.string(), // ISO date: "2026-04-11"
+    }))
+    .mutation(async ({ input, ctx }) => {
+      console.log('[resetScheduleForDay] === START ===');
+      console.log('[resetScheduleForDay] Date:', input.performanceDate);
+
+      if (ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      try {
+        const result = await prisma.competition_entries.updateMany({
+          where: {
+            tenant_id: input.tenantId,
+            competition_id: input.competitionId,
+            performance_date: new Date(input.performanceDate),
+            is_scheduled: true,
+          },
+          data: {
+            performance_date: null,
+            performance_time: null,
+            entry_number: null,
+            schedule_zone: null,
+            is_scheduled: false,
+          },
+        });
+
+        console.log('[resetScheduleForDay] SUCCESS:', result.count, 'routines reset');
+        return { success: true, count: result.count };
+      } catch (error) {
+        console.error('[resetScheduleForDay] ERROR:', error);
+        throw error;
+      }
+    }),
+
+  // Reset schedule for entire competition (V4 redesign)
+  resetScheduleForCompetition: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      console.log('[resetScheduleForCompetition] === START ===');
+      console.log('[resetScheduleForCompetition] Competition:', input.competitionId);
+
+      if (ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      try {
+        const result = await prisma.competition_entries.updateMany({
+          where: {
+            tenant_id: input.tenantId,
+            competition_id: input.competitionId,
+            is_scheduled: true,
+          },
+          data: {
+            performance_date: null,
+            performance_time: null,
+            entry_number: null,
+            schedule_zone: null,
+            is_scheduled: false,
+          },
+        });
+
+        console.log('[resetScheduleForCompetition] SUCCESS:', result.count, 'routines reset');
+        return { success: true, count: result.count };
+      } catch (error) {
+        console.error('[resetScheduleForCompetition] ERROR:', error);
+        throw error;
+      }
+    }),
+
   // Get next available time slot for a given day (V4 redesign)
   getNextAvailableSlot: publicProcedure
     .input(z.object({

@@ -132,6 +132,9 @@ export default function SchedulePage() {
   const [blockModalMode, setBlockModalMode] = useState<'create' | 'edit'>('create');
   const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
 
+  // Reset schedule confirmation dialog state
+  const [showResetConfirm, setShowResetConfirm] = useState<'day' | 'all' | null>(null);
+
   // View mode state (needs to be before queries that use it)
   const [viewMode, setViewMode] = useState<ViewMode>('cd');
 
@@ -662,6 +665,29 @@ export default function SchedulePage() {
     },
     onError: (error) => {
       toast.error(`Failed to create block: ${error.message}`);
+    },
+  });
+
+  // Reset schedule mutations
+  const resetDayMutation = trpc.scheduling.resetScheduleForDay.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Reset ${result.count} routine${result.count !== 1 ? 's' : ''} for this day`);
+      refetch();
+      refetchConflicts();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reset schedule: ${error.message}`);
+    },
+  });
+
+  const resetAllMutation = trpc.scheduling.resetScheduleForCompetition.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Reset ${result.count} routine${result.count !== 1 ? 's' : ''} for entire competition`);
+      refetch();
+      refetchConflicts();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reset schedule: ${error.message}`);
     },
   });
 
@@ -1451,6 +1477,22 @@ export default function SchedulePage() {
               tenantId={TEST_TENANT_ID}
             />
 
+            {/* Reset Schedule Buttons */}
+            <div className="flex items-center justify-end gap-3 px-4">
+              <button
+                onClick={() => setShowResetConfirm('day')}
+                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-300 rounded-lg hover:bg-red-100 transition-colors"
+              >
+                Reset This Day
+              </button>
+              <button
+                onClick={() => setShowResetConfirm('all')}
+                className="px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-400 rounded-lg hover:bg-red-200 transition-colors"
+              >
+                Reset Entire Schedule
+              </button>
+            </div>
+
             {/* V4: Schedule Table */}
             <ScheduleTable
               routines={(routinesByDay || []).map((r: any) => ({
@@ -1680,6 +1722,53 @@ export default function SchedulePage() {
         onSubmit={handleSubmitCDNote}
         isSubmitting={addCDNoteMutation.isPending}
       />
+
+      {/* Reset Schedule Confirmation Dialog */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border-2 border-red-500">
+            <h3 className="text-xl font-bold text-red-700 mb-4">
+              ⚠️ {showResetConfirm === 'day' ? 'Reset This Day' : 'Reset Entire Schedule'}
+            </h3>
+            <p className="text-gray-700 mb-6">
+              {showResetConfirm === 'day'
+                ? `This will remove ALL scheduled routines for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. All routines will return to the unscheduled pool.`
+                : 'This will remove ALL scheduled routines for the ENTIRE competition. All routines will return to the unscheduled pool.'}
+            </p>
+            <p className="text-sm text-red-600 font-semibold mb-6">
+              This action cannot be undone!
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowResetConfirm(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (showResetConfirm === 'day') {
+                    resetDayMutation.mutate({
+                      tenantId: TEST_TENANT_ID,
+                      competitionId: TEST_COMPETITION_ID,
+                      performanceDate: selectedDate,
+                    });
+                  } else {
+                    resetAllMutation.mutate({
+                      tenantId: TEST_TENANT_ID,
+                      competitionId: TEST_COMPETITION_ID,
+                    });
+                  }
+                  setShowResetConfirm(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Reset Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DndContext>
   );
 }
