@@ -556,7 +556,7 @@ export const schedulingRouter = router({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
-          performance_date: input.targetDate, // Keep as "YYYY-MM-DD" string
+          performance_date: new Date(input.targetDate), // Convert string to Date for WHERE clause
           is_scheduled: true,
         },
         orderBy: {
@@ -600,7 +600,7 @@ export const schedulingRouter = router({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
-          performance_date: input.date, // Keep as "YYYY-MM-DD" string
+          performance_date: new Date(input.date), // Convert string to Date for WHERE clause
           is_scheduled: true,
         },
         orderBy: [
