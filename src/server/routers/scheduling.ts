@@ -505,9 +505,10 @@ export const schedulingRouter = router({
         throw new Error('Tenant ID mismatch');
       }
 
-      // Parse date and time
-      const performanceDateObject = new Date(input.performanceDate);
-      const performanceTimeObject = new Date(`2000-01-01T${input.performanceTime}`);
+      // FIX: Pass date/time strings directly to Prisma
+      // Prisma handles conversion to PostgreSQL DATE and TIME types
+      // Converting to Date objects causes timezone issues (date off by 1 day)
+      // and corruption (time becomes Unix epoch)
 
       try {
         const updated = await prisma.competition_entries.update({
@@ -517,8 +518,8 @@ export const schedulingRouter = router({
           },
           data: {
             schedule_zone: null, // Clear old zone-based data
-            performance_date: performanceDateObject,
-            performance_time: performanceTimeObject,
+            performance_date: input.performanceDate, // Keep as "YYYY-MM-DD" string
+            performance_time: input.performanceTime, // Keep as "HH:MM:SS" string
             entry_number: input.entryNumber,
             is_scheduled: true,
           },
@@ -555,7 +556,7 @@ export const schedulingRouter = router({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
-          performance_date: new Date(input.targetDate),
+          performance_date: input.targetDate, // Keep as "YYYY-MM-DD" string
           is_scheduled: true,
         },
         orderBy: {
@@ -599,7 +600,7 @@ export const schedulingRouter = router({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
-          performance_date: new Date(input.date),
+          performance_date: input.date, // Keep as "YYYY-MM-DD" string
           is_scheduled: true,
         },
         orderBy: [
