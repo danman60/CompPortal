@@ -117,6 +117,10 @@ export default function SchedulePage() {
   // NEW: Day selector state
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
+  // Bulk selection state
+  const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
+  const [lastClickedRoutineId, setLastClickedRoutineId] = useState<string | null>(null);
+
   // NEW: Schedule block modal state
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockModalMode, setBlockModalMode] = useState<'create' | 'edit'>('create');
@@ -451,6 +455,53 @@ export default function SchedulePage() {
     if (confirm(`Mark this request as ${status}?`)) {
       updateRequestMutation.mutate({ noteId, status });
     }
+  };
+
+  // Bulk selection handlers
+  const handleToggleRoutineSelection = (routineId: string, shiftKey: boolean) => {
+    setSelectedRoutineIds(prev => {
+      const newSet = new Set(prev);
+
+      // Shift+click range selection
+      if (shiftKey && lastClickedRoutineId && unscheduledRoutines.length > 0) {
+        const lastIndex = unscheduledRoutines.findIndex(r => r.id === lastClickedRoutineId);
+        const currentIndex = unscheduledRoutines.findIndex(r => r.id === routineId);
+
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+
+          // Select all routines in range
+          for (let i = start; i <= end; i++) {
+            newSet.add(unscheduledRoutines[i].id);
+          }
+          setLastClickedRoutineId(routineId);
+          return newSet;
+        }
+      }
+
+      // Normal click - toggle single routine
+      if (newSet.has(routineId)) {
+        newSet.delete(routineId);
+      } else {
+        newSet.add(routineId);
+      }
+
+      setLastClickedRoutineId(routineId);
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const allIds = new Set(unscheduledRoutines.map(r => r.id));
+    setSelectedRoutineIds(allIds);
+    toast.success(`Selected ${allIds.size} routines`);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedRoutineIds(new Set());
+    setLastClickedRoutineId(null);
+    toast.success('Cleared selection');
   };
 
   // Initialize routine zones from database on data load
@@ -1036,6 +1087,10 @@ export default function SchedulePage() {
               trophyHelper={trophyHelperForUI}
               ageChanges={ageChangesForUI}
               routineNotes={routineNotesForUI}
+              selectedRoutineIds={selectedRoutineIds}
+              onToggleSelection={handleToggleRoutineSelection}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
             />
 
             {/* Schedule Blocks */}

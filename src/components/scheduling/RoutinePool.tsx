@@ -29,6 +29,11 @@ interface RoutinePoolProps {
   trophyHelper?: Array<{ routineId: string }>;
   ageChanges?: string[];
   routineNotes?: Record<string, boolean>;
+  // Bulk selection (Session 63)
+  selectedRoutineIds?: Set<string>;
+  onToggleSelection?: (routineId: string, shiftKey: boolean) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
 }
 
 export function RoutinePool({
@@ -43,6 +48,10 @@ export function RoutinePool({
   trophyHelper = [],
   ageChanges = [],
   routineNotes = {},
+  selectedRoutineIds = new Set(),
+  onToggleSelection,
+  onSelectAll,
+  onDeselectAll,
 }: RoutinePoolProps) {
   const isEmpty = routines.length === 0 && !isLoading;
 
@@ -69,13 +78,45 @@ export function RoutinePool({
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-white">
-          Unscheduled Routines
-        </h2>
-        <span className="text-sm font-medium text-white bg-purple-600 px-3 py-1 rounded-full">
-          {routines.length}
-        </span>
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-white">
+            Unscheduled Routines
+          </h2>
+          <span className="text-sm font-medium text-white bg-purple-600 px-3 py-1 rounded-full">
+            {routines.length}
+          </span>
+        </div>
+
+        {/* Bulk Selection Controls */}
+        {routines.length > 0 && onSelectAll && onDeselectAll && (
+          <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3">
+            <div className="flex-1 flex items-center gap-2 text-sm text-white/80">
+              <span className="font-medium">{selectedRoutineIds.size} selected</span>
+              {selectedRoutineIds.size > 0 && (
+                <span className="text-white/50">of {routines.length}</span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={onSelectAll}
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                title="Select all filtered routines"
+              >
+                ✓ Select All
+              </button>
+              {selectedRoutineIds.size > 0 && (
+                <button
+                  onClick={onDeselectAll}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
+                  title="Clear selection"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading State - Skeleton Loaders */}
@@ -118,6 +159,8 @@ export function RoutinePool({
               hasNotes={routineNotes[routine.id] || false}
               hasAgeChange={ageChanges.includes(routine.id)}
               isLastRoutine={isLastRoutine(routine.id)}
+              isSelected={selectedRoutineIds.has(routine.id)}
+              onToggleSelection={onToggleSelection}
             />
           ))}
         </div>

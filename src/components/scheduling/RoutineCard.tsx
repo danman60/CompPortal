@@ -57,6 +57,9 @@ interface RoutineCardProps {
   hasNotes?: boolean; // Blue dot if CD notes or studio requests exist
   hasAgeChange?: boolean; // Yellow background if age group changed
   isLastRoutine?: boolean; // Gold border if last routine in category (trophy helper)
+  // Bulk selection (Session 63)
+  isSelected?: boolean;
+  onToggleSelection?: (routineId: string, shiftKey: boolean) => void;
 }
 
 export function RoutineCard({
@@ -71,6 +74,8 @@ export function RoutineCard({
   hasNotes = false,
   hasAgeChange = false,
   isLastRoutine = false,
+  isSelected = false,
+  onToggleSelection,
 }: RoutineCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: routine.id,
@@ -143,8 +148,24 @@ export function RoutineCard({
       data-has-age-change={hasAgeChange}
       data-is-last-routine={isLastRoutine}
     >
-      {/* Indicator Badges (Top Left Corner) */}
-      <div className="absolute top-2 left-2 flex gap-1" style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto' }}>
+      {/* Selection Checkbox (Top Left) */}
+      {onToggleSelection && (
+        <div className="absolute top-2 left-2" style={{ pointerEvents: 'auto', zIndex: 10 }}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation();
+              onToggleSelection(routine.id, e.nativeEvent.shiftKey);
+            }}
+            className="w-5 h-5 rounded border-2 border-white/40 bg-white/10 checked:bg-purple-600 checked:border-purple-600 cursor-pointer hover:border-white/60 transition-colors"
+            title={isSelected ? "Deselect routine" : "Select routine (Shift+click for range)"}
+          />
+        </div>
+      )}
+
+      {/* Indicator Badges (Top Left Corner, offset if checkbox present) */}
+      <div className={`absolute top-2 flex gap-1 ${onToggleSelection ? 'left-9' : 'left-2'}`} style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto' }}>
         {/* Trophy Icon for Last Routine */}
         {isLastRoutine && (
           <div
