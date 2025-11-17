@@ -750,15 +750,10 @@ export default function SchedulePage() {
           });
           setRoutineZones(newState);
 
-          // Save to database - schedule all selected routines
-          console.log('[Schedule] Calling mutation for', routineIds.length, 'routine(s)...');
-          routineIds.forEach((routineId) => {
-            scheduleMutation.mutate({
-              routineId,
-              tenantId: TEST_TENANT_ID,
-              performanceTime: targetZone, // Zone ID (e.g., "saturday-am")
-            });
-          });
+          // TODO: V4 Redesign - This will be replaced with proper date+time scheduling
+          // Temporarily disabled zone-based scheduling - new components coming in Phase 4-5
+          console.log('[Schedule] Zone-based scheduling deprecated - awaiting V4 components');
+          toast.error('Schedule redesign in progress - drag-and-drop temporarily disabled');
 
           if (isBulkDrag) {
             toast.success(`Scheduled ${routineIds.length} routines to ${targetZone}`);
@@ -1170,7 +1165,7 @@ export default function SchedulePage() {
                 {
                   id: 'saturday-am',
                   name: 'Saturday Morning',
-                  day: new Date('2026-04-10'),
+                  day: new Date('2026-04-11'), // April 11, 2026 is Saturday
                   startTime: '09:00 AM',
                   endTime: '12:00 PM',
                   routineCount: saturdayAM.length,
@@ -1180,7 +1175,7 @@ export default function SchedulePage() {
                 {
                   id: 'saturday-pm',
                   name: 'Saturday Afternoon',
-                  day: new Date('2026-04-10'),
+                  day: new Date('2026-04-11'), // April 11, 2026 is Saturday
                   startTime: '01:00 PM',
                   endTime: '05:00 PM',
                   routineCount: saturdayPM.length,
@@ -1190,7 +1185,7 @@ export default function SchedulePage() {
                 {
                   id: 'sunday-am',
                   name: 'Sunday Morning',
-                  day: new Date('2026-04-11'),
+                  day: new Date('2026-04-12'), // April 12, 2026 is Sunday
                   startTime: '09:00 AM',
                   endTime: '12:00 PM',
                   routineCount: sundayAM.length,
@@ -1200,7 +1195,7 @@ export default function SchedulePage() {
                 {
                   id: 'sunday-pm',
                   name: 'Sunday Afternoon',
-                  day: new Date('2026-04-11'),
+                  day: new Date('2026-04-12'), // April 12, 2026 is Sunday
                   startTime: '01:00 PM',
                   endTime: '05:00 PM',
                   routineCount: sundayPM.length,
@@ -1215,7 +1210,7 @@ export default function SchedulePage() {
               days={[
                 {
                   day: 'Saturday',
-                  date: 'April 10, 2025',
+                  date: 'April 11, 2026', // April 11, 2026 is Saturday
                   icon: '📅',
                   gradient: 'bg-gradient-to-br from-indigo-500/15 to-purple-500/15',
                   borderColor: 'border-indigo-500/30',
@@ -1236,7 +1231,7 @@ export default function SchedulePage() {
                 },
                 {
                   day: 'Sunday',
-                  date: 'April 11, 2025',
+                  date: 'April 12, 2026', // April 12, 2026 is Sunday
                   icon: '☀️',
                   gradient: 'bg-gradient-to-br from-blue-500/15 to-indigo-500/15',
                   borderColor: 'border-blue-500/30',

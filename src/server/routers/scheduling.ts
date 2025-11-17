@@ -393,6 +393,8 @@ export const schedulingRouter = router({
           schedule_zone: true,
           performance_time: true,
           performance_date: true,
+          entry_number: true, // V4: Sequential entry number
+          routine_length_minutes: true, // V4: Routine duration
           created_at: true,
           studios: {
             select: {
@@ -474,101 +476,144 @@ export const schedulingRouter = router({
           ageGroupName: routine.age_groups.name,
           entrySizeId: routine.entry_size_category_id,
           entrySizeName: routine.entry_size_categories.name,
-          duration: 3, // Duration field is interval type (unsupported by Prisma), defaulting to 3 minutes
+          duration: routine.routine_length_minutes || 3, // Use actual routine length or default 3 min
           participants: [], // PERFORMANCE: Empty array - participants fetched separately by detectConflicts
-          isScheduled: routine.schedule_zone !== null, // Check zone instead of date/time
-          scheduleZone: routine.schedule_zone, // Return zone ID (saturday-am, etc.)
+          isScheduled: routine.performance_date !== null, // V4: Check date instead of zone
+          scheduleZone: null, // V4: Deprecated zone field
           scheduledTime: routine.performance_time,
           scheduledDay: routine.performance_date,
+          entryNumber: routine.entry_number, // V4: Sequential entry number
         };
       });
     }),
 
-  // Schedule a routine to a specific time block
+  // Schedule a routine to specific date + time + entry number (V4 redesign)
   scheduleRoutine: publicProcedure
     .input(z.object({
       routineId: z.string().uuid(),
       tenantId: z.string().uuid(),
-      performanceTime: z.string(), // Time block: "saturday-am", "saturday-pm", "sunday-am", "sunday-pm"
+      performanceDate: z.string(), // ISO date: "2026-04-11"
+      performanceTime: z.string(), // HH:mm:ss format: "08:00:00"
+      entryNumber: z.number(),     // Sequential #100, #101...
     }))
     .mutation(async ({ input, ctx }) => {
-      console.log('[scheduleRoutine] === START ===');
+      console.log('[scheduleRoutine] === START (V4) ===');
       console.log('[scheduleRoutine] Input:', JSON.stringify(input, null, 2));
-      console.log('[scheduleRoutine] Context tenantId:', ctx.tenantId);
 
-      // Verify tenant context matches request
+      // Verify tenant context
       if (ctx.tenantId !== input.tenantId) {
-        console.error('[scheduleRoutine] ERROR: Tenant ID mismatch', {
-          contextTenantId: ctx.tenantId,
-          inputTenantId: input.tenantId,
-        });
         throw new Error('Tenant ID mismatch');
       }
 
-      // Convert time block to actual time (simplified for now)
-      const timeMap: Record<string, string> = {
-        'saturday-am': '09:00:00',
-        'saturday-pm': '13:00:00',
-        'sunday-am': '09:00:00',
-        'sunday-pm': '13:00:00',
-      };
-
-      const dateMap: Record<string, string> = {
-        'saturday-am': '2025-11-15', // Example: Next Saturday
-        'saturday-pm': '2025-11-15',
-        'sunday-am': '2025-11-16', // Example: Next Sunday
-        'sunday-pm': '2025-11-16',
-      };
-
-      const performanceTime = timeMap[input.performanceTime] || '09:00:00';
-      const performanceDate = dateMap[input.performanceTime] || '2025-11-15';
-
-      // Create datetime objects for both date and time
-      const performanceDateObject = new Date(performanceDate);
-      const performanceTimeObject = new Date(`2000-01-01T${performanceTime}`);
-
-      console.log('[scheduleRoutine] Calculated values:', {
-        performanceTime,
-        performanceDate,
-        performanceDateObject,
-        performanceTimeObject,
-      });
+      // Parse date and time
+      const performanceDateObject = new Date(input.performanceDate);
+      const performanceTimeObject = new Date(`2000-01-01T${input.performanceTime}`);
 
       try {
-        console.log('[scheduleRoutine] Attempting database update...');
         const updated = await prisma.competition_entries.update({
           where: {
             id: input.routineId,
             tenant_id: input.tenantId,
           },
           data: {
-            schedule_zone: input.performanceTime, // Save zone ID (saturday-am, etc.)
+            schedule_zone: null, // Clear old zone-based data
             performance_date: performanceDateObject,
             performance_time: performanceTimeObject,
-            is_scheduled: true, // Mark as scheduled
+            entry_number: input.entryNumber,
+            is_scheduled: true,
           },
         });
 
-        console.log('[scheduleRoutine] SUCCESS: Database updated', {
+        console.log('[scheduleRoutine] SUCCESS:', {
           routineId: updated.id,
-          schedule_zone: updated.schedule_zone,
+          entry_number: updated.entry_number,
           performance_date: updated.performance_date,
           performance_time: updated.performance_time,
-          is_scheduled: updated.is_scheduled,
         });
 
         return { success: true, routine: updated };
       } catch (error) {
-        console.error('[scheduleRoutine] ERROR: Database update failed');
-        console.error('[scheduleRoutine] Error details:', {
-          name: error instanceof Error ? error.name : 'Unknown',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          routineId: input.routineId,
-          tenantId: input.tenantId,
-        });
+        console.error('[scheduleRoutine] ERROR:', error);
         throw error;
       }
+    }),
+
+  // Get next available time slot for a given day (V4 redesign)
+  getNextAvailableSlot: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      targetDate: z.string(), // ISO date
+      routineDuration: z.number(), // minutes
+      startTime: z.string().optional(), // HH:mm:ss - day start time (default 08:00:00)
+    }))
+    .query(async ({ input, ctx }) => {
+      const dayStartTime = input.startTime || '08:00:00';
+
+      // Find last scheduled routine on this date
+      const lastRoutine = await prisma.competition_entries.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          performance_date: new Date(input.targetDate),
+          is_scheduled: true,
+        },
+        orderBy: {
+          entry_number: 'desc',
+        },
+        select: {
+          entry_number: true,
+          performance_time: true,
+          routine_length_minutes: true,
+        },
+      });
+
+      if (!lastRoutine) {
+        // First routine of the day
+        return {
+          time: dayStartTime,
+          entryNumber: 100,
+        };
+      }
+
+      // Calculate next time
+      const lastTime = lastRoutine.performance_time ? new Date(lastRoutine.performance_time) : new Date(`2000-01-01T${dayStartTime}`);
+      const lastDuration = lastRoutine.routine_length_minutes || 3;
+      const nextTime = new Date(lastTime.getTime() + lastDuration * 60000);
+
+      return {
+        time: nextTime.toTimeString().slice(0, 8), // HH:mm:ss
+        entryNumber: (lastRoutine.entry_number || 99) + 1,
+      };
+    }),
+
+  // Get routines for specific day, chronologically (V4 redesign)
+  getRoutinesByDay: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      date: z.string(), // ISO date
+    }))
+    .query(async ({ input, ctx }) => {
+      return await prisma.competition_entries.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          performance_date: new Date(input.date),
+          is_scheduled: true,
+        },
+        orderBy: [
+          { entry_number: 'asc' },
+          { performance_time: 'asc' },
+        ],
+        include: {
+          studios: { select: { id: true, name: true, studio_code: true } },
+          dance_categories: { select: { id: true, name: true } },
+          age_groups: { select: { id: true, name: true } },
+          classifications: { select: { id: true, name: true } },
+          entry_size_categories: { select: { id: true, name: true } },
+        },
+      });
     }),
 
   // Get Trophy Helper report
