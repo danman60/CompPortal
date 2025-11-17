@@ -29,6 +29,7 @@ import {
   useSensors,
   useDraggable,
 } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 
 // Session 55 Components
 import { TrophyHelperPanel } from '@/components/TrophyHelperPanel';
@@ -911,9 +912,74 @@ export default function SchedulePage() {
             }
           }
         } else {
-          // Old ScheduleGrid: Zone-based scheduling (deprecated but keeping for backward compat)
-          console.log('[Schedule] Zone-based scheduling deprecated - use V4 day-based scheduling');
-          toast.error('Please use the new schedule table for drag-and-drop');
+          // V4: Reordering within the same day
+          // Detect if we're dragging a routine over another routine (not a droppable zone)
+          const draggedRoutine = routines?.find(r => r.id === activeId);
+          const targetRoutine = routines?.find(r => r.id === over?.id);
+
+          if (draggedRoutine && targetRoutine && draggedRoutine.scheduledDay && targetRoutine.scheduledDay) {
+            // Check if both routines are on the same day
+            const dragDate = new Date(draggedRoutine.scheduledDay).toISOString().split('T')[0];
+            const targetDate = new Date(targetRoutine.scheduledDay).toISOString().split('T')[0];
+
+            if (dragDate === targetDate && routines) {
+            console.log('[V4 Reorder] Reordering routine within schedule table');
+
+            // Get all routines for the same day, sorted by entry number
+            const sameDayRoutines = routines
+              .filter(r => {
+                if (!r.scheduledDay || !draggedRoutine.scheduledDay) return false;
+                const rDate = new Date(r.scheduledDay).toISOString().split('T')[0];
+                const dragDate = new Date(draggedRoutine.scheduledDay).toISOString().split('T')[0];
+                return rDate === dragDate;
+              })
+              .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+            // Find old and new positions
+            const oldIndex = sameDayRoutines.findIndex(r => r.id === activeId);
+            const newIndex = sameDayRoutines.findIndex(r => r.id === over.id);
+
+            if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+              // Reorder the array
+              const reorderedRoutines = arrayMove(sameDayRoutines, oldIndex, newIndex);
+
+              // Get the base entry number from the first routine
+              const baseEntryNumber = reorderedRoutines[0].entryNumber || 100;
+
+              console.log('[V4 Reorder] Updating entry numbers:', {
+                oldIndex,
+                newIndex,
+                routineCount: reorderedRoutines.length,
+                baseEntryNumber,
+              });
+
+              // Update entry numbers for all affected routines
+              reorderedRoutines.forEach((routine, index) => {
+                const newEntryNumber = baseEntryNumber + index;
+
+                if (routine.entryNumber !== newEntryNumber) {
+                  console.log(`[V4 Reorder] Updating ${routine.title}: #${routine.entryNumber} → #${newEntryNumber}`);
+
+                  // Update entry number via mutation
+                  scheduleMutation.mutate({
+                    routineId: routine.id,
+                    tenantId: TEST_TENANT_ID,
+                    performanceDate: new Date(routine.scheduledDay!).toISOString().split('T')[0],
+                    performanceTime: routine.scheduledTime
+                      ? new Date(routine.scheduledTime).toTimeString().split(' ')[0]
+                      : '08:00:00',
+                    entryNumber: newEntryNumber,
+                  });
+                }
+              });
+
+              toast.success('Routines reordered successfully');
+            }
+            }
+          } else {
+            // Dragging between different days or zones - not supported for reordering
+            console.log('[V4 Reorder] Cannot reorder between different days');
+          }
         }
       }
     }

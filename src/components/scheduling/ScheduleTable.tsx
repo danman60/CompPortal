@@ -15,6 +15,12 @@
 
 import { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { ViewMode } from '@/components/ScheduleToolbar';
 
 interface ScheduleTableProps {
@@ -64,6 +70,144 @@ interface OverallsCategory {
   groupSize: string;
   ageGroup: string;
   classification: string;
+}
+
+// Sortable Row Component
+function SortableRoutineRow({
+  routine,
+  index,
+  isLastInOveralls,
+  conflict,
+  isFirstInConflict,
+  conflictSpan,
+  performanceTime,
+  classificationColor,
+  studioDisplay,
+  viewMode,
+  onRoutineClick,
+}: {
+  routine: Routine;
+  index: number;
+  isLastInOveralls: boolean;
+  conflict: any;
+  isFirstInConflict: boolean;
+  conflictSpan: number;
+  performanceTime: string;
+  classificationColor: string;
+  studioDisplay: string;
+  viewMode: ViewMode;
+  onRoutineClick?: (routineId: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: routine.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`
+        border-b border-white/10 hover:bg-white/5 transition-colors cursor-move relative
+        ${isLastInOveralls ? 'bg-yellow-500/10' : ''}
+      `}
+      onClick={() => onRoutineClick?.(routine.id)}
+    >
+      {/* Gold border for trophy helper */}
+      {isLastInOveralls && (
+        <td className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-yellow-600" />
+      )}
+
+      {/* Entry Number */}
+      <td className="px-4 py-3 text-sm font-mono font-bold text-white whitespace-nowrap">
+        #{routine.entryNumber || '?'}
+      </td>
+
+      {/* Time */}
+      <td className="px-4 py-3 text-sm font-mono text-white/90 whitespace-nowrap">
+        {performanceTime}
+      </td>
+
+      {/* Routine Title */}
+      <td className="px-4 py-3 text-sm font-medium text-white relative">
+        <div className="flex items-center gap-2">
+          {routine.title}
+          {isLastInOveralls && (
+            <span
+              className="text-yellow-400 text-lg"
+              title={`Last routine for ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}
+            >
+              🏆
+            </span>
+          )}
+        </div>
+        {isLastInOveralls && (
+          <div className="absolute top-1 right-2 bg-yellow-500/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg whitespace-nowrap">
+            Last: {routine.entrySizeName} • {routine.ageGroupName} • {routine.classificationName}
+          </div>
+        )}
+      </td>
+
+      {/* Studio */}
+      <td className="px-4 py-3 text-sm text-white/80">
+        {studioDisplay}
+      </td>
+
+      {/* Classification */}
+      <td className="px-4 py-3">
+        <span
+          className={`inline-block px-2 py-1 rounded-md text-xs font-semibold ${classificationColor}`}
+        >
+          {routine.classificationName}
+        </span>
+      </td>
+
+      {/* Dancers */}
+      <td className="px-4 py-3 text-sm text-white/70">
+        {routine.participants.length > 0 ? (
+          <div className="truncate" title={routine.participants.map(p => p.dancerName).join(', ')}>
+            {routine.participants.slice(0, 2).map(p => p.dancerName).join(', ')}
+            {routine.participants.length > 2 && ` +${routine.participants.length - 2}`}
+          </div>
+        ) : (
+          <span className="text-white/40">No dancers</span>
+        )}
+      </td>
+
+      {/* Category */}
+      <td className="px-4 py-3 text-sm text-white/80">
+        {routine.categoryName}
+      </td>
+
+      {/* Conflict indicator */}
+      {conflict && isFirstInConflict && (
+        <td
+          className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"
+          style={{
+            height: `calc(${conflictSpan} * 100%)`,
+          }}
+        >
+          <div className="absolute left-2 top-2 bg-red-600 text-white px-3 py-1 rounded-md text-xs font-bold shadow-lg whitespace-nowrap z-10">
+            ⚠️ {conflict.conflict.dancerName}: {conflict.conflict.routinesBetween} routines between (need 6 min)
+          </div>
+        </td>
+      )}
+    </tr>
+  );
 }
 
 export function ScheduleTable({
@@ -201,122 +345,53 @@ export function ScheduleTable({
               </th>
             </tr>
           </thead>
-          <tbody>
-            {sortedRoutines.map((routine, index) => {
-              const isLastInOveralls = lastRoutineIds.has(routine.id);
-              const conflict = getRoutineConflict(routine.id);
-              const isFirstInConflict = isFirstInConflictGroup(routine.id);
-              const conflictSpan = getConflictSpan(routine.id);
+          <SortableContext
+            items={sortedRoutines.map(r => r.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <tbody>
+              {sortedRoutines.map((routine, index) => {
+                const isLastInOveralls = lastRoutineIds.has(routine.id);
+                const conflict = getRoutineConflict(routine.id);
+                const isFirstInConflict = isFirstInConflictGroup(routine.id);
+                const conflictSpan = getConflictSpan(routine.id);
 
-              // Format time
-              const performanceTime = routine.scheduledTime
-                ? new Date(routine.scheduledTime).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                  })
-                : 'TBD';
+                // Format time
+                const performanceTime = routine.scheduledTime
+                  ? new Date(routine.scheduledTime).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    })
+                  : 'TBD';
 
-              // Classification color
-              const classificationColor = getClassificationColor(routine.classificationName);
+                // Classification color
+                const classificationColor = getClassificationColor(routine.classificationName);
 
-              // Studio display based on view mode
-              const studioDisplay = viewMode === 'judge'
-                ? `Studio ${routine.studioCode}`
-                : routine.studioName;
+                // Studio display based on view mode
+                const studioDisplay = viewMode === 'judge'
+                  ? `Studio ${routine.studioCode}`
+                  : routine.studioName;
 
-              return (
-                <tr
-                  key={routine.id}
-                  className={`
-                    border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer relative
-                    ${isLastInOveralls ? 'bg-yellow-500/10' : ''}
-                  `}
-                  onClick={() => onRoutineClick?.(routine.id)}
-                >
-                  {/* Gold border for trophy helper */}
-                  {isLastInOveralls && (
-                    <td className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-yellow-600" />
-                  )}
-
-                  {/* Entry Number */}
-                  <td className="px-4 py-3 text-sm font-mono font-bold text-white whitespace-nowrap">
-                    #{routine.entryNumber || '?'}
-                  </td>
-
-                  {/* Time */}
-                  <td className="px-4 py-3 text-sm font-mono text-white/90 whitespace-nowrap">
-                    {performanceTime}
-                  </td>
-
-                  {/* Routine Title */}
-                  <td className="px-4 py-3 text-sm font-medium text-white relative">
-                    <div className="flex items-center gap-2">
-                      {routine.title}
-                      {isLastInOveralls && (
-                        <span
-                          className="text-yellow-400 text-lg"
-                          title={`Last routine for ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}
-                        >
-                          🏆
-                        </span>
-                      )}
-                    </div>
-                    {isLastInOveralls && (
-                      <div className="absolute top-1 right-2 bg-yellow-500/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg whitespace-nowrap">
-                        Last: {routine.entrySizeName} • {routine.ageGroupName} • {routine.classificationName}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Studio */}
-                  <td className="px-4 py-3 text-sm text-white/80">
-                    {studioDisplay}
-                  </td>
-
-                  {/* Classification */}
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block px-2 py-1 rounded-md text-xs font-semibold ${classificationColor}`}
-                    >
-                      {routine.classificationName}
-                    </span>
-                  </td>
-
-                  {/* Dancers */}
-                  <td className="px-4 py-3 text-sm text-white/70">
-                    {routine.participants.length > 0 ? (
-                      <div className="truncate" title={routine.participants.map(p => p.dancerName).join(', ')}>
-                        {routine.participants.slice(0, 2).map(p => p.dancerName).join(', ')}
-                        {routine.participants.length > 2 && ` +${routine.participants.length - 2}`}
-                      </div>
-                    ) : (
-                      <span className="text-white/40">No dancers</span>
-                    )}
-                  </td>
-
-                  {/* Category */}
-                  <td className="px-4 py-3 text-sm text-white/80">
-                    {routine.categoryName}
-                  </td>
-
-                  {/* Conflict indicator */}
-                  {conflict && isFirstInConflict && (
-                    <td
-                      className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"
-                      style={{
-                        height: `calc(${conflictSpan} * 100%)`,
-                      }}
-                    >
-                      <div className="absolute left-2 top-2 bg-red-600 text-white px-3 py-1 rounded-md text-xs font-bold shadow-lg whitespace-nowrap z-10">
-                        ⚠️ {conflict.conflict.dancerName}: {conflict.conflict.routinesBetween} routines between (need 6 min)
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
+                return (
+                  <SortableRoutineRow
+                    key={routine.id}
+                    routine={routine}
+                    index={index}
+                    isLastInOveralls={isLastInOveralls}
+                    conflict={conflict}
+                    isFirstInConflict={!!isFirstInConflict}
+                    conflictSpan={conflictSpan}
+                    performanceTime={performanceTime}
+                    classificationColor={classificationColor}
+                    studioDisplay={studioDisplay}
+                    viewMode={viewMode}
+                    onRoutineClick={onRoutineClick}
+                  />
+                );
+              })}
+            </tbody>
+          </SortableContext>
         </table>
       </div>
 
