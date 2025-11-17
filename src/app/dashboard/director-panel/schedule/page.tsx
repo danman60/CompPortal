@@ -1070,16 +1070,8 @@ export default function SchedulePage() {
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
 
-  // Group routines by zone
-  const routinesByZone = (routines || []).reduce((acc, routine) => {
-    const zone = routineZones[routine.id] || 'unscheduled';
-    if (!acc[zone]) acc[zone] = [];
-    acc[zone].push(routine);
-    return acc;
-  }, {} as Record<ScheduleZone, Routine[]>);
-
-  // Apply client-side filters to unscheduled routines
-  const allUnscheduled = routinesByZone['unscheduled'] || [];
+  // V4: Get unscheduled routines directly (routines without performance_date)
+  const allUnscheduled = routines?.filter(r => !r.isScheduled) || [];
   const unscheduledRoutines = allUnscheduled.filter(routine => {
     // Classification filter
     if (filters.classifications.length > 0 && !filters.classifications.includes(routine.classificationId)) {
@@ -1109,24 +1101,7 @@ export default function SchedulePage() {
     return true;
   });
 
-  const saturdayAM = routinesByZone['saturday-am'] || [];
-  const saturdayPM = routinesByZone['saturday-pm'] || [];
-  const sundayAM = routinesByZone['sunday-am'] || [];
-  const sundayPM = routinesByZone['sunday-pm'] || [];
-
-  // Group blocks by zone
-  const blocksByZone = scheduleBlocks.reduce((acc, block) => {
-    if (block.zone) {
-      if (!acc[block.zone]) acc[block.zone] = [];
-      acc[block.zone].push(block);
-    }
-    return acc;
-  }, {} as Record<ScheduleZone, ScheduleBlock[]>);
-
-  const saturdayAMBlocks = blocksByZone['saturday-am'] || [];
-  const saturdayPMBlocks = blocksByZone['saturday-pm'] || [];
-  const sundayAMBlocks = blocksByZone['sunday-am'] || [];
-  const sundayPMBlocks = blocksByZone['sunday-pm'] || [];
+  // V4: Zone-based arrays removed (dead code)
 
   const activeRoutine = routines?.find(r => r.id === activeId);
   const activeBlock = activeId?.startsWith('block-')
