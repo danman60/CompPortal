@@ -721,13 +721,14 @@ export const schedulingRouter = router({
 
       const MIN_ROUTINES_BETWEEN = 6;
 
-      // Get all scheduled routines with participants (V4: use performance_date)
+      // Get all scheduled routines with participants
       const scheduledRoutines = await prisma.competition_entries.findMany({
         where: {
           competition_id: input.competitionId,
           tenant_id: ctx.tenantId,
-          performance_date: { not: null }, // V4: scheduled routines have performance_date set
+          schedule_zone: { not: null },
           is_scheduled: true,
+          display_order: { not: null },
         },
         include: {
           entry_participants: {
@@ -737,11 +738,7 @@ export const schedulingRouter = router({
             },
           },
         },
-        orderBy: [
-          { performance_date: 'asc' },
-          { performance_time: 'asc' },
-          { entry_number: 'asc' },
-        ],
+        orderBy: { display_order: 'asc' },
       });
 
       const conflicts = [];
@@ -762,16 +759,14 @@ export const schedulingRouter = router({
       for (const [dancerId, routines] of dancerRoutines.entries()) {
         if (routines.length < 2) continue; // No conflicts if dancer is in only 1 routine
 
-        // Already sorted by performance_date, performance_time, entry_number from query
-        // Just need to find positions in the global scheduledRoutines array
-        for (let i = 0; i < routines.length - 1; i++) {
-          const routine1 = routines[i];
-          const routine2 = routines[i + 1];
+        // Sort by display_order
+        const sortedRoutines = routines.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-          // V4: Calculate spacing based on position in scheduledRoutines array
-          const idx1 = scheduledRoutines.findIndex(r => r.id === routine1.id);
-          const idx2 = scheduledRoutines.findIndex(r => r.id === routine2.id);
-          const routinesBetween = idx2 - idx1 - 1;
+        for (let i = 0; i < sortedRoutines.length - 1; i++) {
+          const routine1 = sortedRoutines[i];
+          const routine2 = sortedRoutines[i + 1];
+
+          const routinesBetween = (routine2.display_order || 0) - (routine1.display_order || 0) - 1;
 
           if (routinesBetween < MIN_ROUTINES_BETWEEN) {
             const dancerName = routine1.entry_participants.find(p => p.dancer_id === dancerId)?.dancer_name || 'Unknown';
@@ -783,10 +778,10 @@ export const schedulingRouter = router({
               dancerId,
               dancerName,
               routine1Id: routine1.id,
-              routine1Number: routine1.entry_number,
+              routine1Number: routine1.display_order,
               routine1Title: routine1.title,
               routine2Id: routine2.id,
-              routine2Number: routine2.entry_number,
+              routine2Number: routine2.display_order,
               routine2Title: routine2.title,
               routinesBetween,
               severity,
