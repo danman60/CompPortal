@@ -436,6 +436,9 @@ export default function SchedulePage() {
       // Distribute routines evenly across days
       const routinesPerDay = Math.ceil(unscheduledRoutines.length / competitionDays.length);
 
+      // Sequential entry numbering starting from 100 (V4 spec)
+      let entryNumberCounter = 100;
+
       for (let dayIndex = 0; dayIndex < competitionDays.length; dayIndex++) {
         const date = competitionDays[dayIndex];
         const dayRoutines = unscheduledRoutines.slice(
@@ -448,15 +451,18 @@ export default function SchedulePage() {
         // Schedule routines for this day sequentially
         let currentTime = '08:00:00'; // Starting time
         for (const routine of dayRoutines) {
-          console.log(`[Auto-Generate] Scheduling: ${routine.title} at ${currentTime}`);
+          console.log(`[Auto-Generate] Scheduling: ${routine.title} at ${currentTime} (Entry #${entryNumberCounter})`);
 
           await scheduleMutation.mutateAsync({
             routineId: routine.id,
             tenantId: TEST_TENANT_ID,
             performanceDate: date,
             performanceTime: currentTime,
-            entryNumber: 0, // Auto-assigned by backend
+            entryNumber: entryNumberCounter,
           });
+
+          // Increment entry number for next routine
+          entryNumberCounter++;
 
           // Increment time for next routine
           const [hours, minutes] = currentTime.split(':').map(Number);
