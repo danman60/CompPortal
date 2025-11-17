@@ -144,8 +144,9 @@ export default function SchedulePage() {
     search: '',
   });
 
-  // Ref to track if we're currently reordering (to suppress individual toasts)
+  // Refs to track operations (to suppress individual toasts during batch operations)
   const isReorderingRef = useRef(false);
+  const isAutoGeneratingRef = useRef(false);
 
   // Track schedule blocks
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([
@@ -425,6 +426,7 @@ export default function SchedulePage() {
     }
 
     setIsAutoGenerating(true);
+    isAutoGeneratingRef.current = true; // Suppress individual toasts during batch operation
     console.log('[Auto-Generate] ========== STARTING AUTO-GENERATION ==========');
     console.log('[Auto-Generate] Unscheduled routines:', unscheduledRoutines.length);
 
@@ -484,6 +486,7 @@ export default function SchedulePage() {
       toast.error(`Auto-generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsAutoGenerating(false);
+      isAutoGeneratingRef.current = false; // Re-enable individual toasts
     }
   };
 
@@ -630,8 +633,8 @@ export default function SchedulePage() {
   const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
     onSuccess: () => {
       console.log('[Schedule] Mutation SUCCESS - refetching routines');
-      // Only show toast if not reordering (avoid toast spam during reorder)
-      if (!isReorderingRef.current) {
+      // Only show toast if not in batch operation (avoid toast spam during reorder/auto-generate)
+      if (!isReorderingRef.current && !isAutoGeneratingRef.current) {
         toast.success('🎭 Routine scheduled successfully!');
       }
       // Refetch routines to get updated state from database
