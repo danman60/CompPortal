@@ -2516,4 +2516,89 @@ export const schedulingRouter = router({
       };
     }),
 
+  // Update day start time - recalculates all routine times for that day (V4 redesign)
+  updateDayStartTime: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      date: z.string(), // ISO date: "2026-04-11"
+      newStartTime: z.string(), // HH:mm:ss format: "08:00:00"
+    }))
+    .mutation(async ({ input, ctx }) => {
+      console.log('[updateDayStartTime] === START ===');
+      console.log('[updateDayStartTime] Input:', JSON.stringify(input, null, 2));
+
+      const { tenantId, competitionId, date, newStartTime } = input;
+
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      // Get all scheduled routines for this date, ordered by entry_number
+      const routines = await prisma.competition_entries.findMany({
+        where: {
+          tenant_id: tenantId,
+          competition_id: competitionId,
+          performance_date: new Date(date),
+          is_scheduled: true,
+        },
+        orderBy: {
+          entry_number: 'asc',
+        },
+        select: {
+          id: true,
+          entry_number: true,
+          routine_length_minutes: true,
+        },
+      });
+
+      console.log('[updateDayStartTime] Found routines:', routines.length);
+
+      if (routines.length === 0) {
+        console.log('[updateDayStartTime] No routines to update');
+        return { success: true, updatedCount: 0 };
+      }
+
+      // Parse new start time
+      const [hours, minutes, seconds] = newStartTime.split(':').map(Number);
+      const baseTime = new Date(`2000-01-01T${newStartTime}`);
+
+      console.log('[updateDayStartTime] Base time:', baseTime.toISOString());
+
+      // Recalculate times sequentially
+      let currentTime = baseTime;
+      const updates = [];
+
+      for (const routine of routines) {
+        const duration = routine.routine_length_minutes || 3; // Default 3 minutes
+
+        // Update this routine's performance_time
+        updates.push(
+          prisma.competition_entries.update({
+            where: { id: routine.id },
+            data: {
+              performance_time: currentTime,
+              updated_at: new Date(),
+            },
+          })
+        );
+
+        console.log('[updateDayStartTime] Routine #' + routine.entry_number, {
+          time: currentTime.toTimeString().slice(0, 8),
+          duration,
+        });
+
+        // Advance time for next routine
+        currentTime = new Date(currentTime.getTime() + duration * 60000);
+      }
+
+      // Execute all updates
+      await Promise.all(updates);
+
+      console.log('[updateDayStartTime] SUCCESS: Updated', updates.length, 'routines');
+
+      return { success: true, updatedCount: updates.length };
+    }),
+
 });
