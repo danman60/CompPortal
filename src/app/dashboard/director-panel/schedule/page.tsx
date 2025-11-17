@@ -45,10 +45,12 @@ import { CDNoteModal } from '@/components/CDNoteModal';
 // Session 56 Components
 import { ScheduleToolbar, ScheduleStatus, ViewMode } from '@/components/ScheduleToolbar';
 import { FilterPanel, FilterState } from '@/components/FilterPanel';
-import { TimelineHeader, TimelineSession } from '@/components/TimelineHeader';
 import { RoutinePool } from '@/components/scheduling/RoutinePool';
-import { ScheduleGrid, ScheduleZone as ScheduleZoneType, ScheduleBlock as ScheduleBlockType } from '@/components/scheduling/ScheduleGrid';
-import { TimelineGrid } from '@/components/scheduling/TimelineGrid';
+import { ScheduleZone as ScheduleZoneType, ScheduleBlock as ScheduleBlockType } from '@/components/scheduling/ScheduleGrid';
+
+// V4 Components (Schedule Redesign)
+import { DayTabs } from '@/components/scheduling/DayTabs';
+import { ScheduleTable } from '@/components/scheduling/ScheduleTable';
 
 // TEST tenant ID
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -116,6 +118,9 @@ export default function SchedulePage() {
 
   // NEW: Day selector state
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+
+  // V4: Selected date state (ISO string format)
+  const [selectedDate, setSelectedDate] = useState<string>('2026-04-11'); // Default to first day
 
   // Bulk selection state
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
@@ -202,6 +207,21 @@ export default function SchedulePage() {
     competitionId: TEST_COMPETITION_ID,
     tenantId: TEST_TENANT_ID,
   });
+
+  // V4: Fetch routines for selected day
+  const { data: routinesByDay, refetch: refetchRoutinesByDay } = trpc.scheduling.getRoutinesByDay.useQuery({
+    tenantId: TEST_TENANT_ID,
+    competitionId: TEST_COMPETITION_ID,
+    date: selectedDate,
+  });
+
+  // V4: Competition days configuration
+  const competitionDays = [
+    { date: '2026-04-09', routineCount: 0, startTime: '08:00:00' },
+    { date: '2026-04-10', routineCount: 0, startTime: '08:00:00' },
+    { date: '2026-04-11', routineCount: 0, startTime: '08:00:00' },
+    { date: '2026-04-12', routineCount: 0, startTime: '08:00:00' },
+  ];
 
   // State Machine mutations
   const finalizeMutation = trpc.scheduling.finalizeSchedule.useMutation({
@@ -738,29 +758,52 @@ export default function SchedulePage() {
               toast.error('Could not find session for this time slot');
             }
           }
-        } else {
-          // Old ScheduleGrid: Zone-based scheduling
-          // Save current state to history before updating
-          saveToHistory(routineZones);
+        } else if (typeof targetZone === 'string' && targetZone.startsWith('day-')) {
+          // V4: Day-based scheduling (from ScheduleTable droppable)
+          const dayData = over?.data?.current?.day;
 
-          // Update local state immediately for responsive UI (optimistic update)
-          const newState = { ...routineZones };
-          routineIds.forEach(routineId => {
-            newState[routineId] = targetZone;
-          });
-          setRoutineZones(newState);
+          if (dayData && dayData.date) {
+            console.log('[V4 Schedule] Scheduling to day:', {
+              date: dayData.date,
+              count: routineIds.length,
+            });
 
-          // TODO: V4 Redesign - This will be replaced with proper date+time scheduling
-          // Temporarily disabled zone-based scheduling - new components coming in Phase 4-5
-          console.log('[Schedule] Zone-based scheduling deprecated - awaiting V4 components');
-          toast.error('Schedule redesign in progress - drag-and-drop temporarily disabled');
+            // Schedule all selected routines sequentially with auto-assigned times
+            // The backend scheduleRoutine will calculate next available slot automatically
+            let currentTime = '08:00:00'; // Starting time
+            routineIds.forEach((routineId, index) => {
+              const routine = routines?.find(r => r.id === routineId);
+              if (routine) {
+                // Each routine gets a basic time slot calculation
+                // Backend will handle actual slot assignment and entry numbers
+                scheduleMutation.mutate({
+                  routineId,
+                  tenantId: TEST_TENANT_ID,
+                  performanceDate: dayData.date,
+                  performanceTime: currentTime,
+                  entryNumber: 0, // Let backend auto-assign
+                });
 
-          if (isBulkDrag) {
-            toast.success(`Scheduled ${routineIds.length} routines to ${targetZone}`);
-            // Clear selection after bulk drag
-            setSelectedRoutineIds(new Set());
-            setLastClickedRoutineId(null);
+                // Increment time for next routine (rough estimate)
+                const [hours, minutes] = currentTime.split(':').map(Number);
+                const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
+                const newHours = Math.floor(totalMinutes / 60);
+                const newMinutes = totalMinutes % 60;
+                currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
+              }
+            });
+
+            if (isBulkDrag) {
+              toast.success(`Scheduling ${routineIds.length} routines to ${dayData.date}...`);
+              // Clear selection after bulk drag
+              setSelectedRoutineIds(new Set());
+              setLastClickedRoutineId(null);
+            }
           }
+        } else {
+          // Old ScheduleGrid: Zone-based scheduling (deprecated but keeping for backward compat)
+          console.log('[Schedule] Zone-based scheduling deprecated - use V4 day-based scheduling');
+          toast.error('Please use the new schedule table for drag-and-drop');
         }
       }
     }
@@ -1082,11 +1125,11 @@ export default function SchedulePage() {
           />
         )}
 
-        {/* Main 3-Panel Layout */}
-        <div className="grid grid-cols-12 gap-6">
+        {/* Main 2-Panel Layout (V4: 33% left, 67% right) */}
+        <div className="grid grid-cols-3 gap-6">
 
-          {/* LEFT PANEL: Unscheduled Routines Pool */}
-          <div className="col-span-4 space-y-6">
+          {/* LEFT PANEL: Unscheduled Routines Pool (33%) */}
+          <div className="col-span-1 space-y-6">
             {/* Filter Panel (Session 56) */}
             <FilterPanel
               classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
@@ -1157,366 +1200,102 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          {/* MIDDLE PANEL: Schedule Builder */}
-          <div className="col-span-5">
-            {/* Timeline Header (Session 56) */}
-            <TimelineHeader
-              sessions={[
-                {
-                  id: 'saturday-am',
-                  name: 'Saturday Morning',
-                  day: new Date('2026-04-11'), // April 11, 2026 is Saturday
-                  startTime: '09:00 AM',
-                  endTime: '12:00 PM',
-                  routineCount: saturdayAM.length,
-                  blockCount: saturdayAMBlocks.length,
-                  color: 'bg-gradient-to-br from-indigo-500/15 to-purple-500/15',
-                },
-                {
-                  id: 'saturday-pm',
-                  name: 'Saturday Afternoon',
-                  day: new Date('2026-04-11'), // April 11, 2026 is Saturday
-                  startTime: '01:00 PM',
-                  endTime: '05:00 PM',
-                  routineCount: saturdayPM.length,
-                  blockCount: saturdayPMBlocks.length,
-                  color: 'bg-gradient-to-br from-purple-500/15 to-pink-500/15',
-                },
-                {
-                  id: 'sunday-am',
-                  name: 'Sunday Morning',
-                  day: new Date('2026-04-12'), // April 12, 2026 is Sunday
-                  startTime: '09:00 AM',
-                  endTime: '12:00 PM',
-                  routineCount: sundayAM.length,
-                  blockCount: sundayAMBlocks.length,
-                  color: 'bg-gradient-to-br from-blue-500/15 to-indigo-500/15',
-                },
-                {
-                  id: 'sunday-pm',
-                  name: 'Sunday Afternoon',
-                  day: new Date('2026-04-12'), // April 12, 2026 is Sunday
-                  startTime: '01:00 PM',
-                  endTime: '05:00 PM',
-                  routineCount: sundayPM.length,
-                  blockCount: sundayPMBlocks.length,
-                  color: 'bg-gradient-to-br from-indigo-500/15 to-blue-500/15',
-                },
-              ]}
+          {/* RIGHT PANEL: Schedule Table (V4 Redesign - 67%) */}
+          <div className="col-span-2 space-y-6">
+            {/* V4: Day Tabs */}
+            <DayTabs
+              days={competitionDays.map(day => ({
+                ...day,
+                routineCount: (routinesByDay || []).filter((r: any) =>
+                  r.performance_date && new Date(r.performance_date).toISOString().split('T')[0] === day.date
+                ).length,
+              }))}
+              activeDay={selectedDate}
+              onDayChange={setSelectedDate}
+              competitionId={TEST_COMPETITION_ID}
+              tenantId={TEST_TENANT_ID}
             />
 
-            {/* Schedule Grid (Session 56) */}
-            <ScheduleGrid
-              days={[
-                {
-                  day: 'Saturday',
-                  date: 'April 11, 2026', // April 11, 2026 is Saturday
-                  icon: '📅',
-                  gradient: 'bg-gradient-to-br from-indigo-500/15 to-purple-500/15',
-                  borderColor: 'border-indigo-500/30',
-                  sessions: [
-                    {
-                      id: 'saturday-am' as ScheduleZoneType,
-                      label: 'Morning',
-                      routines: saturdayAM,
-                      blocks: saturdayAMBlocks,
-                    },
-                    {
-                      id: 'saturday-pm' as ScheduleZoneType,
-                      label: 'Afternoon',
-                      routines: saturdayPM,
-                      blocks: saturdayPMBlocks,
-                    },
-                  ],
-                },
-                {
-                  day: 'Sunday',
-                  date: 'April 12, 2026', // April 12, 2026 is Sunday
-                  icon: '☀️',
-                  gradient: 'bg-gradient-to-br from-blue-500/15 to-indigo-500/15',
-                  borderColor: 'border-blue-500/30',
-                  sessions: [
-                    {
-                      id: 'sunday-am' as ScheduleZoneType,
-                      label: 'Morning',
-                      routines: sundayAM,
-                      blocks: sundayAMBlocks,
-                    },
-                    {
-                      id: 'sunday-pm' as ScheduleZoneType,
-                      label: 'Afternoon',
-                      routines: sundayPM,
-                      blocks: sundayPMBlocks,
-                    },
-                  ],
-                },
-              ]}
+            {/* V4: Schedule Table */}
+            <ScheduleTable
+              routines={(routinesByDay || []).map((r: any) => ({
+                id: r.id,
+                title: r.title,
+                studioId: r.studio_id,
+                studioName: r.studios?.name || 'Unknown Studio',
+                studioCode: r.studios?.studio_code || '?',
+                classificationId: r.classification_id || '',
+                classificationName: r.classifications?.name || 'Unknown',
+                categoryId: r.category_id || '',
+                categoryName: r.dance_categories?.name || 'Unknown',
+                ageGroupId: r.age_group_id || '',
+                ageGroupName: r.age_groups?.name || 'Unknown',
+                entrySizeId: r.entry_size_category_id || '',
+                entrySizeName: r.entry_size_categories?.name || 'Unknown',
+                duration: r.routine_length_minutes || 3,
+                participants: [],
+                entryNumber: r.entry_number,
+                scheduledTime: r.performance_time,
+                scheduledDay: r.performance_date,
+              }))}
+              selectedDate={selectedDate}
               viewMode={viewMode}
-              isDraggingAnything={activeId !== null}
-              onRequestClick={(id) => setShowRequestForm(id)}
               conflicts={conflictsForUI}
-              trophyHelper={trophyHelperForUI}
-              ageChanges={ageChangesForUI}
-              routineNotes={routineNotesForUI}
+              onRoutineClick={(id) => console.log('Routine clicked:', id)}
             />
 
-            {/* Timeline Grid (Session 59 - Time-Slot Based Scheduling) */}
-            {sessions && sessions.length > 0 && (
-              <div className="mt-6 space-y-4">
-                <div className="flex items-center justify-between px-4">
-                  <h3 className="text-lg font-bold text-white">
-                    📅 Timeline Grid (New)
-                  </h3>
-                  <span className="text-xs text-gray-400 bg-purple-500/20 px-3 py-1 rounded-full border border-purple-500/30">
-                    Time-Slot Based Scheduling
-                  </span>
-                </div>
-
-                {sessions.map((session: any) => {
-                  // Map routines to Timeline Grid format
-                  const mappedRoutines = (routines || []).map((r: any) => ({
-                    id: r.id,
-                    title: r.title,
-                    studioName: r.studioName,
-                    studioCode: r.studioCode,
-                    categoryName: r.categoryName,
-                    classificationName: r.classificationName,
-                    ageGroupName: r.ageGroupName,
-                    duration: r.duration || 3,
-                    performanceDate: r.scheduledDay,
-                    performanceTime: r.scheduledTime,
-                  }));
-
-                  // Map conflicts to routine IDs
-                  const routineConflicts = (conflictsData?.conflicts || []).flatMap((c: any) => [
-                    { routineId: c.routine1Id, severity: c.severity },
-                    { routineId: c.routine2Id, severity: c.severity },
-                  ]);
-
-                  return (
-                    <TimelineGrid
-                      key={session.id}
-                      session={session}
-                      routines={mappedRoutines}
-                      conflicts={routineConflicts}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT PANEL: Trophy Helper */}
-          <div className="col-span-3 space-y-6">
-            {/* Trophy Helper Panel */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🏆</span>
-                  <h2 className="text-lg font-bold text-white">Trophy Helper</h2>
-                </div>
-                <button
-                  onClick={() => setIsTrophyPanelCollapsed(!isTrophyPanelCollapsed)}
-                  className="text-white/60 hover:text-white transition-colors text-sm font-medium px-2 py-1 hover:bg-white/10 rounded"
-                  title={isTrophyPanelCollapsed ? "Expand panel" : "Collapse panel"}
-                >
-                  {isTrophyPanelCollapsed ? '▶' : '▼'}
-                </button>
-              </div>
-
-              {!isTrophyPanelCollapsed && (
-                <>
-                  {trophyHelper && Array.isArray(trophyHelper) && trophyHelper.length > 0 ? (
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {trophyHelper.map((entry, index) => (
-                        <div
-                          key={entry.overallCategory}
-                          className="border-2 border-yellow-500/30 bg-yellow-900/20 rounded-lg p-3"
-                        >
-                          <div className="flex items-start gap-2">
-                            <span className="text-yellow-400 text-xl flex-shrink-0">🏆</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-bold text-white mb-1 truncate">
-                                {entry.categoryDisplay}
-                              </div>
-                              <div className="text-xs text-yellow-200 space-y-1">
-                                <div>Last: #{entry.lastRoutineNumber || '?'} "{entry.lastRoutineTitle}"</div>
-                                <div>Zone: {entry.lastRoutineZone}</div>
-                                <div className="text-yellow-300 font-medium">
-                                  {entry.totalRoutinesInCategory} routine{entry.totalRoutinesInCategory !== 1 ? 's' : ''}
-                                </div>
-                                <div className="text-xs text-yellow-400 mt-2">
-                                  💡 Suggested award: {entry.suggestedAwardTime
-                                    ? new Date(entry.suggestedAwardTime).toLocaleTimeString('en-US', {
-                                        hour: 'numeric',
-                                        minute: '2-digit',
-                                        hour12: true,
-                                      })
-                                    : 'N/A'}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-5xl mb-3">🏆</div>
-                      <p className="text-purple-200 text-sm">
-                        Schedule routines to see award recommendations
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Age Change Warnings Panel */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">🎂</span>
-                <h2 className="text-lg font-bold text-white">Age Warnings</h2>
-              </div>
-
-              {/* PERFORMANCE: Age detection now handled by backend detectAgeChanges query */}
-              {/* Client-side detection removed to avoid fetching 6000+ participant rows */}
-              <div className="text-center py-6">
-                <div className="text-4xl mb-2">✅</div>
-                <p className="text-purple-200 text-sm">No age warnings detected</p>
-              </div>
-            </div>
-
-            {/* Conflicts Panel */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <h2 className="text-lg font-bold text-white mb-4">
-                Conflicts
-                {conflictsData && conflictsData.summary.total > 0 && (
-                  <span className="ml-2 text-sm font-medium bg-red-600 text-white px-2 py-1 rounded-full">
-                    {conflictsData.summary.total}
-                  </span>
-                )}
-              </h2>
-
-              {conflictsData && conflictsData.conflicts.length > 0 ? (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                  {conflictsData.conflicts.map((conflict, index) => (
+            {/* Stats and Actions Section (inline below schedule) */}
+            <div className="grid grid-cols-3 gap-4 mt-6">
+              {/* Stats Panel */}
+              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+                <h3 className="text-sm font-bold text-white mb-3">Statistics</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/70">Unscheduled:</span>
+                    <span className="text-amber-300 font-bold">{unscheduledRoutines.length}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/70">Scheduled:</span>
+                    <span className="text-emerald-300 font-bold">{scheduledCount}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/70">Total:</span>
+                    <span className="text-blue-300 font-bold">{routines?.length || 0}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden">
                     <div
-                      key={index}
-                      className={`border-2 rounded-lg p-3 ${
-                        conflict.severity === 'critical'
-                          ? 'border-red-500/50 bg-red-900/30'
-                          : conflict.severity === 'error'
-                          ? 'border-orange-500/50 bg-orange-900/30'
-                          : 'border-yellow-500/50 bg-yellow-900/30'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="text-xl flex-shrink-0">⚠️</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold text-white mb-1">
-                            {conflict.dancerName}
-                          </div>
-                          <div className="text-xs text-gray-200">
-                            {conflict.message}
-                          </div>
-                          <div className="text-xs text-gray-300 mt-2 space-y-1">
-                            <div>#{conflict.routine1Number} "{conflict.routine1Title}"</div>
-                            <div>#{conflict.routine2Number} "{conflict.routine2Title}"</div>
-                          </div>
-
-                          {/* Override Button */}
-                          {conflict.severity === 'critical' && scheduleStatus === 'draft' && (
-                            <button
-                              onClick={() => setOverrideConflictId(`${conflict.dancerId}-${conflict.routine1Id}-${conflict.routine2Id}`)}
-                              className="mt-3 w-full px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium rounded transition-colors"
-                            >
-                              ⚙️ Override with Reason
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-5xl mb-3">✅</div>
-                  <p className="text-purple-200 text-sm">No conflicts detected</p>
-                </div>
-              )}
-            </div>
-
-            {/* Stats Panel */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <h2 className="text-lg font-bold text-white mb-4">Statistics</h2>
-              <div className="space-y-3">
-                {/* Unscheduled - Warning State */}
-                <div className="bg-amber-500/15 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
-                  <div className="text-3xl flex-shrink-0">⚠️</div>
-                  <div className="flex-1">
-                    <div className="text-xs text-amber-200/70 uppercase tracking-wide mb-1">Unscheduled</div>
-                    <div className="text-3xl font-bold text-amber-300">{unscheduledRoutines.length}</div>
-                    <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
-                      <div className="h-full bg-amber-400 rounded-full" style={{ width: `${routines?.length ? (unscheduledRoutines.length / routines.length) * 100 : 0}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scheduled - Success State */}
-                <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
-                  <div className="text-3xl flex-shrink-0">✅</div>
-                  <div className="flex-1">
-                    <div className="text-xs text-emerald-200/70 uppercase tracking-wide mb-1">Scheduled</div>
-                    <div className="text-3xl font-bold text-emerald-300">{scheduledCount}</div>
-                    <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
-                      <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${routines?.length ? (scheduledCount / routines.length) * 100 : 0}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Total - Info State */}
-                <div className="bg-blue-500/15 border border-blue-500/30 rounded-xl p-4 flex items-center gap-3">
-                  <div className="text-3xl flex-shrink-0">📊</div>
-                  <div className="flex-1">
-                    <div className="text-xs text-blue-200/70 uppercase tracking-wide mb-1">Total</div>
-                    <div className="text-3xl font-bold text-blue-300">{routines?.length || 0}</div>
-                  </div>
-                </div>
-
-                {/* Overall Progress */}
-                <div className="mt-4 pt-4 border-t border-white/10">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-white/80">Overall Progress</span>
-                    <span className="font-semibold text-amber-300">
-                      {routines?.length ? Math.round((scheduledCount / routines.length) * 100) : 0}%
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all"
                       style={{ width: `${routines?.length ? (scheduledCount / routines.length) * 100 : 0}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Actions Panel */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <h2 className="text-lg font-bold text-white mb-4">Actions</h2>
-              <div className="space-y-3">
-                <button
-                  className="w-full px-4 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:translate-y-[-2px] flex items-center justify-center gap-2"
-                >
-                  <span>💾</span>
-                  <span>Save Schedule</span>
-                </button>
-                <button
-                  className="w-full px-4 py-3 rounded-lg font-semibold text-white border-2 border-white/30 hover:border-white/50 hover:bg-white/10 transition-all duration-300 hover:translate-y-[-2px] flex items-center justify-center gap-2"
-                >
-                  <span>📥</span>
-                  <span>Export Schedule</span>
+              {/* Conflicts Summary Panel */}
+              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+                <h3 className="text-sm font-bold text-white mb-3 flex items-center justify-between">
+                  <span>Conflicts</span>
+                  {conflictsData && conflictsData.summary.total > 0 && (
+                    <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
+                      {conflictsData.summary.total}
+                    </span>
+                  )}
+                </h3>
+                <div className="text-center py-3">
+                  {conflictsData && conflictsData.conflicts.length > 0 ? (
+                    <div className="text-xs text-red-300">
+                      {conflictsData.summary.critical || 0} critical, {conflictsData.summary.errors || 0} errors
+                    </div>
+                  ) : (
+                    <div className="text-xs text-emerald-300">No conflicts</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions Panel */}
+              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+                <button className="w-full px-3 py-2 text-xs rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all">
+                  💾 Save
                 </button>
               </div>
             </div>
