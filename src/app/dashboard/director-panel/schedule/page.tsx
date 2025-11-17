@@ -687,8 +687,16 @@ export default function SchedulePage() {
           alert(`${block.type === 'award' ? '🏆 Award' : '☕ Break'} block added to ${targetZone}`);
         }
       } else {
-        // Dragging a routine
-        console.log('[Schedule] Drag ended:', { routineId: activeId, targetZone });
+        // Dragging a routine - check if bulk drag (multiple selected)
+        const isBulkDrag = selectedRoutineIds.has(activeId) && selectedRoutineIds.size > 1;
+        const routineIds = isBulkDrag ? Array.from(selectedRoutineIds) : [activeId];
+
+        console.log('[Schedule] Drag ended:', {
+          routineId: activeId,
+          targetZone,
+          isBulkDrag,
+          count: routineIds.length
+        });
 
         // Check if dropping to a time slot (Timeline Grid) vs zone (old ScheduleGrid)
         if (typeof targetZone === 'string' && targetZone.startsWith('slot-')) {
@@ -703,14 +711,29 @@ export default function SchedulePage() {
             });
 
             if (session) {
-              console.log('[Timeline] Scheduling to time slot:', { slotData, sessionId: session.id });
-              scheduleToTimeSlotMutation.mutate({
-                routineId: activeId,
-                tenantId: TEST_TENANT_ID,
+              console.log('[Timeline] Scheduling to time slot:', {
+                slotData,
                 sessionId: session.id,
-                targetDate: slotData.date,
-                targetTime: slotData.time,
+                count: routineIds.length
               });
+
+              // Schedule all selected routines
+              routineIds.forEach((routineId, index) => {
+                scheduleToTimeSlotMutation.mutate({
+                  routineId,
+                  tenantId: TEST_TENANT_ID,
+                  sessionId: session.id,
+                  targetDate: slotData.date,
+                  targetTime: slotData.time,
+                });
+              });
+
+              if (isBulkDrag) {
+                toast.success(`Scheduled ${routineIds.length} routines to ${slotData.time}`);
+                // Clear selection after bulk drag
+                setSelectedRoutineIds(new Set());
+                setLastClickedRoutineId(null);
+              }
             } else {
               toast.error('Could not find session for this time slot');
             }
@@ -721,19 +744,28 @@ export default function SchedulePage() {
           saveToHistory(routineZones);
 
           // Update local state immediately for responsive UI (optimistic update)
-          const newState = {
-            ...routineZones,
-            [activeId]: targetZone,
-          };
+          const newState = { ...routineZones };
+          routineIds.forEach(routineId => {
+            newState[routineId] = targetZone;
+          });
           setRoutineZones(newState);
 
-          // Save to database
-          console.log('[Schedule] Calling mutation...');
-          scheduleMutation.mutate({
-            routineId: activeId,
-            tenantId: TEST_TENANT_ID,
-            performanceTime: targetZone, // Zone ID (e.g., "saturday-am")
+          // Save to database - schedule all selected routines
+          console.log('[Schedule] Calling mutation for', routineIds.length, 'routine(s)...');
+          routineIds.forEach((routineId) => {
+            scheduleMutation.mutate({
+              routineId,
+              tenantId: TEST_TENANT_ID,
+              performanceTime: targetZone, // Zone ID (e.g., "saturday-am")
+            });
           });
+
+          if (isBulkDrag) {
+            toast.success(`Scheduled ${routineIds.length} routines to ${targetZone}`);
+            // Clear selection after bulk drag
+            setSelectedRoutineIds(new Set());
+            setLastClickedRoutineId(null);
+          }
         }
       }
     }

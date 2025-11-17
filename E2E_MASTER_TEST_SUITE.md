@@ -10,11 +10,11 @@
 
 ## 📊 Overall Progress
 
-**Total Tests:** 32 tests (across all priorities)
-**Completed:** 27 tests (84%)
+**Total Tests:** 35 tests (across all priorities)
+**Completed:** 27 tests (77%)
 **In Progress:** 0 tests
-**Not Started/Blocked:** 5 tests (16%)
-**Estimated Time Remaining:** ~1 hour (pending missing features)
+**Not Started/Blocked:** 8 tests (23%)
+**Estimated Time Remaining:** ~1.5 hours (includes new bulk selection tests)
 
 ---
 
@@ -397,7 +397,7 @@
 | D3 | Finalize Workflow | ✅ Complete | 5 min | p0-005-02.png | 56 |
 | D4 | Publish Workflow | ❌ Not Started | 10 min | session60-08 | 60 |
 
-### P1 High-Priority Tests (10 tests)
+### P1 High-Priority Tests (13 tests)
 
 | ID | Test Name | Status | Time | Evidence | Session |
 |----|-----------|--------|------|----------|---------|
@@ -411,6 +411,9 @@
 | H1 | Publish Transition | ❌ Not Started | 10 min | session60-08 | 60 |
 | H2 | View Mode Verification | ✅ Complete | 10 min | session-57-05/06/07.png | 57 |
 | I1 | Studio Requests Panel | ❌ Not Started | 10 min | session60-10 | 60 |
+| **M1** | **Bulk Selection UI** | ❌ Not Started | 10 min | session63-01 | 63 |
+| **M2** | **Bulk Drag to Zone** | ❌ Not Started | 10 min | session63-02 | 63 |
+| **M3** | **Bulk Drag with Filters** | ❌ Not Started | 10 min | session63-03 | 63 |
 
 ### P2 Edge Cases (10 tests)
 
@@ -584,6 +587,149 @@ playwright.navigate("https://tester.compsync.net")
 playwright.screenshot("footer-commit-hash.png")
 # Look for commit hash in footer
 ```
+
+---
+
+## 🆕 Session 63: Bulk Selection Tests (30 min)
+
+**Prerequisites:**
+- Deploy latest bulk selection build to tester.compsync.net
+- Login as CD
+- Navigate to /dashboard/director-panel/schedule
+- Verify 60 routines loaded (53 unscheduled)
+
+### **M1. Bulk Selection UI (10 min)** ❌ NOT STARTED
+
+**Objective:** Verify bulk selection controls work correctly
+
+**Steps:**
+1. Navigate to schedule page
+2. Locate "Unscheduled Routines" section
+3. **Verify UI elements:**
+   - [ ] Checkboxes appear on ALL routine cards (top-left corner)
+   - [ ] "Select All" button visible above routine list
+   - [ ] Selection count display shows "0 selected"
+   - [ ] Indicator badges (trophy, notes, etc.) shifted right to avoid checkbox overlap
+
+4. **Test individual selection:**
+   - [ ] Click checkbox on "Rhythm Nation" routine
+   - [ ] Verify checkbox checked
+   - [ ] Verify selection count updates to "1 selected of 53"
+   - [ ] Click checkbox again to deselect
+   - [ ] Verify count returns to "0 selected"
+
+5. **Test "Select All" button:**
+   - [ ] Click "Select All" button
+   - [ ] Verify ALL 53 routine checkboxes become checked
+   - [ ] Verify selection count shows "53 selected of 53"
+   - [ ] Verify "Clear" button appears next to "Select All"
+   - [ ] Take screenshot: `session63-bulk-select-all.png`
+
+6. **Test "Clear" button:**
+   - [ ] Click "Clear" button
+   - [ ] Verify all checkboxes become unchecked
+   - [ ] Verify selection count returns to "0 selected"
+   - [ ] Verify "Clear" button disappears
+
+7. **Test Shift+click range selection:**
+   - [ ] Click checkbox on 1st routine (Rhythm Nation)
+   - [ ] Hold Shift key and click checkbox on 5th routine
+   - [ ] Verify routines 1-5 all become checked
+   - [ ] Verify selection count shows "5 selected of 53"
+   - [ ] Take screenshot: `session63-shift-click-range.png`
+
+**Expected Results:**
+- ✅ All checkboxes functional
+- ✅ Select All/Clear buttons work correctly
+- ✅ Selection count accurate
+- ✅ Shift+click selects range
+- ✅ Toast message appears: "Selected 53 routines" (on Select All)
+
+**Evidence:** session63-bulk-select-all.png, session63-shift-click-range.png
+
+---
+
+### **M2. Bulk Drag to Zone (10 min)** ❌ NOT STARTED
+
+**Objective:** Verify bulk drag functionality moves ALL selected routines
+
+**Steps:**
+1. Start with cleared selection (0 selected)
+
+2. **Select 3 routines:**
+   - [ ] Check "Rhythm Nation"
+   - [ ] Check "Grace in Motion"
+   - [ ] Check "Firecracker"
+   - [ ] Verify selection count: "3 selected of 53"
+
+3. **Bulk drag to Saturday Morning:**
+   - [ ] Drag "Rhythm Nation" card to "Saturday Morning" zone
+   - [ ] Verify toast message: "Scheduled 3 routines to saturday-am"
+   - [ ] Verify ALL 3 routines disappear from unscheduled pool
+   - [ ] Verify unscheduled count decreases from 53 to 50
+   - [ ] Verify selection automatically cleared (0 selected)
+
+4. **Verify routines appear in Saturday Morning:**
+   - [ ] Scroll to Saturday Morning schedule timeline
+   - [ ] Verify "Rhythm Nation" appears
+   - [ ] Verify "Grace in Motion" appears
+   - [ ] Verify "Firecracker" appears
+   - [ ] Take screenshot: `session63-bulk-drag-3-routines.png`
+
+5. **Test single-routine drag (non-selected):**
+   - [ ] Drag "Dream Together" (not selected) to Sunday AM
+   - [ ] Verify ONLY 1 routine moves (not bulk operation)
+   - [ ] Verify no toast message about multiple routines
+
+**Expected Results:**
+- ✅ Dragging a selected routine triggers bulk drag
+- ✅ ALL selected routines move to target zone
+- ✅ Selection cleared after bulk drag
+- ✅ Toast shows count of routines moved
+- ✅ Single-routine drag still works for non-selected routines
+
+**Evidence:** session63-bulk-drag-3-routines.png
+
+---
+
+### **M3. Bulk Drag with Filters (10 min)** ❌ NOT STARTED
+
+**Objective:** Verify bulk selection works with filtered routines
+
+**Steps:**
+1. Clear all selections (0 selected)
+
+2. **Apply filter:**
+   - [ ] Click "🔷 Classification" dropdown
+   - [ ] Select "Emerald" only
+   - [ ] Verify routine pool shows only Emerald routines
+   - [ ] Note filtered count (e.g., "15 / 60 routines")
+
+3. **Select ALL filtered routines:**
+   - [ ] Click "Select All" button
+   - [ ] Verify selection count matches filtered count
+   - [ ] Verify ONLY visible (filtered) routines are checked
+   - [ ] Take screenshot: `session63-filter-emerald-select-all.png`
+
+4. **Bulk drag filtered routines:**
+   - [ ] Drag any selected Emerald routine to "Sunday PM"
+   - [ ] Verify toast: "Scheduled {N} routines to sunday-pm"
+   - [ ] Verify ALL selected Emerald routines moved
+   - [ ] Verify filtered pool now empty (if all moved)
+
+5. **Clear filter and verify:**
+   - [ ] Click "Emerald" again to deselect filter
+   - [ ] Verify all remaining unscheduled routines visible
+   - [ ] Verify moved Emerald routines NOT in unscheduled pool
+   - [ ] Scroll to Sunday PM and verify all Emerald routines present
+
+**Expected Results:**
+- ✅ "Select All" only selects FILTERED routines (not all 60)
+- ✅ Bulk drag works with filtered selection
+- ✅ Filters clear correctly after bulk operation
+- ✅ Selection count accurate for filtered subset
+
+**Evidence:** session63-filter-emerald-select-all.png
 
 ---
 
