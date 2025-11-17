@@ -739,7 +739,6 @@ export const studioRouter = router({
   delete: protectedProcedure
     .input(z.object({
       id: z.string().uuid(),
-      hardDelete: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
       // Only CDs and super admins can delete studios
@@ -751,11 +750,22 @@ export const studioRouter = router({
         where: { id: input.id },
         select: {
           name: true,
+          tenant_id: true,
           _count: {
             select: {
               dancers: true,
               competition_entries: true,
               reservations: true,
+            },
+          },
+          reservations: {
+            where: {
+              status: 'approved',
+            },
+            select: {
+              id: true,
+              competition_id: true,
+              spaces_confirmed: true,
             },
           },
         },
@@ -765,54 +775,58 @@ export const studioRouter = router({
         throw new Error('Studio not found');
       }
 
+      let totalRefunded = 0;
+
       await prisma.$transaction(async (tx) => {
-        if (input.hardDelete) {
-          // Hard delete: remove all related data
-          // 1. Delete entries
-          await tx.competition_entries.deleteMany({
-            where: { studio_id: input.id },
-          });
+        // Soft delete: mark studio as deleted
+        await tx.studios.update({
+          where: { id: input.id },
+          data: {
+            status: 'deleted',
+            updated_at: new Date(),
+          },
+        });
 
-          // 2. Delete reservations
-          await tx.reservations.deleteMany({
-            where: { studio_id: input.id },
-          });
+        // Cancel active reservations and refund spaces
+        await tx.reservations.updateMany({
+          where: {
+            studio_id: input.id,
+            status: { in: ['pending', 'approved'] },
+          },
+          data: {
+            status: 'cancelled',
+            internal_notes: 'Studio deleted - spaces refunded to competition',
+          },
+        });
 
-          // 3. Delete dancers
-          await tx.dancers.deleteMany({
-            where: { studio_id: input.id },
-          });
+        // Refund approved reservation spaces back to competitions
+        for (const reservation of studio.reservations) {
+          const spacesToRefund = reservation.spaces_confirmed || 0;
+          if (spacesToRefund > 0) {
+            // Increment competition capacity
+            await tx.competitions.update({
+              where: { id: reservation.competition_id },
+              data: {
+                available_reservation_tokens: {
+                  increment: spacesToRefund,
+                },
+              },
+            });
 
-          // 4. Delete invoices
-          await tx.invoices.deleteMany({
-            where: { studio_id: input.id },
-          });
+            // Log refund to capacity ledger
+            await tx.capacity_ledger.create({
+              data: {
+                tenant_id: studio.tenant_id,
+                competition_id: reservation.competition_id,
+                reservation_id: reservation.id,
+                change_amount: spacesToRefund, // Positive = refund
+                reason: 'reservation_cancellation',
+                created_by: ctx.userId,
+              },
+            });
 
-          // 5. Delete studio
-          await tx.studios.delete({
-            where: { id: input.id },
-          });
-        } else {
-          // Soft delete: mark as deleted
-          await tx.studios.update({
-            where: { id: input.id },
-            data: {
-              status: 'deleted',
-              updated_at: new Date(),
-            },
-          });
-
-          // Cancel active reservations
-          await tx.reservations.updateMany({
-            where: {
-              studio_id: input.id,
-              status: { in: ['pending', 'approved'] },
-            },
-            data: {
-              status: 'cancelled',
-              internal_notes: 'Studio deleted by super admin',
-            },
-          });
+            totalRefunded += spacesToRefund;
+          }
         }
       });
 
@@ -821,7 +835,7 @@ export const studioRouter = router({
         await logActivity({
           userId: ctx.userId,
           studioId: input.id,
-          action: input.hardDelete ? 'studio.hard_delete' : 'studio.soft_delete',
+          action: 'studio.delete',
           entityType: 'studio',
           entityId: input.id,
           details: {
@@ -829,6 +843,7 @@ export const studioRouter = router({
             dancers_count: studio._count.dancers,
             entries_count: studio._count.competition_entries,
             reservations_count: studio._count.reservations,
+            spaces_refunded: totalRefunded,
           },
         });
       } catch (err) {
@@ -837,12 +852,13 @@ export const studioRouter = router({
 
       return {
         success: true,
-        message: input.hardDelete ? 'Studio permanently deleted' : 'Studio soft deleted',
+        message: 'Studio deleted and spaces refunded',
         deletedCounts: {
           dancers: studio._count.dancers,
           entries: studio._count.competition_entries,
           reservations: studio._count.reservations,
         },
+        spacesRefunded: totalRefunded,
       };
     }),
 });

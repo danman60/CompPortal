@@ -35,6 +35,14 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [expandedStudioId, setExpandedStudioId] = useState<string | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    studioId: string;
+    studioName: string;
+    hasActiveReservations: boolean;
+    reservationCount: number;
+    entryCount: number;
+  } | null>(null);
   const [editData, setEditData] = useState({
     name: '',
     email: '',
@@ -84,6 +92,19 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     onSuccess: (data) => {
       toast.success(data.message);
       setAddStudioModal(null);
+      // Refetch studios list
+      window.location.reload(); // Simple refresh for now
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
+  // Delete Studio mutation (CD feature)
+  const deleteStudioMutation = trpc.studio.delete.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.message}${data.spacesRefunded > 0 ? ` (${data.spacesRefunded} spaces refunded)` : ''}`);
+      setDeleteConfirmModal(null);
       // Refetch studios list
       window.location.reload(); // Simple refresh for now
     },
@@ -151,6 +172,24 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
       depositAmount: deposit,
       comments: addStudioModal.comments || undefined,
     });
+  };
+
+  // CD Feature: Delete Studio handler
+  const handleDeleteStudio = (studio: any) => {
+    const hasActiveReservations = studio._count?.reservations > 0;
+    setDeleteConfirmModal({
+      isOpen: true,
+      studioId: studio.id,
+      studioName: studio.name,
+      hasActiveReservations,
+      reservationCount: studio._count?.reservations || 0,
+      entryCount: studio._count?.competition_entries || 0,
+    });
+  };
+
+  const confirmDeleteStudio = () => {
+    if (!deleteConfirmModal) return;
+    deleteStudioMutation.mutate({ id: deleteConfirmModal.studioId });
   };
 
   // Initialize edit data when studio data is loaded
@@ -812,6 +851,21 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
                         </div>
                       </div>
                     )}
+
+                    {/* CD Feature: Delete Studio Button */}
+                    {isCompetitionDirector && (
+                      <div className="pt-3 border-t border-white/10">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteStudio(studio);
+                          }}
+                          className="w-full px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-all border border-red-400/30 text-sm font-medium"
+                        >
+                          Delete Studio
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1011,6 +1065,70 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
                 className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-purple-500/50 disabled:to-pink-500/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
               >
                 {createStudioMutation.isPending ? '⚙️ Creating...' : '✅ Create Studio & Send Invitation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Studio Confirmation Modal (CD Feature) */}
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
+            <h3 className="text-2xl font-bold text-white mb-2">Delete Studio</h3>
+            <p className="text-gray-400 mb-6">
+              Are you sure you want to delete <span className="text-white font-semibold">{deleteConfirmModal.studioName}</span>?
+            </p>
+
+            {/* Warning if has active data */}
+            {(deleteConfirmModal.hasActiveReservations || deleteConfirmModal.entryCount > 0) && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-2">
+                  <span className="text-yellow-500 text-xl">⚠</span>
+                  <div>
+                    <p className="text-yellow-400 font-semibold mb-2">This studio has active data:</p>
+                    <ul className="text-yellow-300 text-sm space-y-1">
+                      {deleteConfirmModal.reservationCount > 0 && (
+                        <li>{deleteConfirmModal.reservationCount} reservation(s) - spaces will be refunded</li>
+                      )}
+                      {deleteConfirmModal.entryCount > 0 && (
+                        <li>{deleteConfirmModal.entryCount} competition entry(ies)</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-2">
+                <span className="text-blue-400 text-xl">ℹ</span>
+                <div className="text-blue-300 text-sm">
+                  <p className="font-semibold mb-1">This is a soft delete:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Studio marked as deleted (not permanently removed)</li>
+                    <li>All approved reservation spaces refunded to competition</li>
+                    <li>All reservations cancelled</li>
+                    <li>Changes logged in activity log</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteStudio}
+                disabled={deleteStudioMutation.isPending}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-red-500/50 disabled:to-red-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+              >
+                {deleteStudioMutation.isPending ? 'Deleting...' : 'Delete Studio'}
               </button>
             </div>
           </div>

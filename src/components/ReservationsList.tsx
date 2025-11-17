@@ -25,6 +25,9 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
   const { data: entriesData } = trpc.entry.getAll.useQuery({ limit: 100 });
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
+  const [selectedStudio, setSelectedStudio] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'studio-alpha' | 'spaces-desc' | 'competition-alpha'>('studio-alpha');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectModalData, setRejectModalData] = useState<{ id: string; studioName: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -430,13 +433,33 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
 
   const reservations = data?.reservations || [];
   const competitions = data?.competitions || [];
+  const studios = studiosData?.studios || [];
 
-  // Filter reservations
-  const filteredReservations = reservations.filter((reservation) => {
-    const matchesStatus = filter === 'all' || reservation.status === filter;
-    const matchesCompetition = selectedCompetition === 'all' || (reservation as any).competition_id === selectedCompetition;
-    return matchesStatus && matchesCompetition;
-  });
+  // Filter and sort reservations
+  const filteredReservations = reservations
+    .filter((reservation) => {
+      const matchesStatus = filter === 'all' || reservation.status === filter;
+      const matchesCompetition = selectedCompetition === 'all' || (reservation as any).competition_id === selectedCompetition;
+      const matchesStudio = selectedStudio === 'all' || (reservation as any).studio_id === selectedStudio;
+      return matchesStatus && matchesCompetition && matchesStudio;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'studio-alpha') {
+        // Alphabetical by studio name (DEFAULT)
+        const studioA = ((a as any).studios?.name || '').toLowerCase();
+        const studioB = ((b as any).studios?.name || '').toLowerCase();
+        return studioA.localeCompare(studioB);
+      } else if (sortBy === 'spaces-desc') {
+        // Sort by spaces confirmed (descending - highest first)
+        return (b.spaces_confirmed || 0) - (a.spaces_confirmed || 0);
+      } else if (sortBy === 'competition-alpha') {
+        // Sort by competition name (alphabetical)
+        const compA = ((a as any).competitions?.name || '').toLowerCase();
+        const compB = ((b as any).competitions?.name || '').toLowerCase();
+        return compA.localeCompare(compB);
+      }
+      return 0;
+    });
 
   // Calculate capacity percentage
   const getCapacityPercentage = (requested: number, confirmed: number) => {
@@ -538,6 +561,40 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
           })()}
         </div>
 
+        {/* Studio Filter */}
+        <div className="flex-1">
+          <label className="block text-xs text-gray-400 mb-1">Studio</label>
+          <select
+            value={selectedStudio}
+            onChange={(e) => setSelectedStudio(e.target.value)}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="all" className="bg-gray-900 text-white">All Studios</option>
+            {studios.map((studio) => (
+              <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
+                {studio.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Sort By */}
+        <div className="flex-1">
+          <label className="block text-xs text-gray-400 mb-1">Sort By</label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="studio-alpha" className="bg-gray-900 text-white">Studio Name (A-Z)</option>
+            <option value="spaces-desc" className="bg-gray-900 text-white">Reservation Spaces (High-Low)</option>
+            <option value="competition-alpha" className="bg-gray-900 text-white">Competition Name (A-Z)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Status Filter Row */}
+      <div className="mb-6">
         {/* Status Filter - Wraps on Mobile */}
         <div className="flex gap-2 flex-wrap">
           <button
@@ -611,6 +668,38 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
         </div>
       </div>
 
+      {/* View Toggle */}
+      <div className="flex justify-end mb-4">
+        <div className="flex gap-2 bg-white/5 p-1 rounded-lg border border-white/20">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+              viewMode === 'grid'
+                ? 'bg-purple-500 text-white'
+                : 'text-gray-300 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            Grid
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+              viewMode === 'table'
+                ? 'bg-purple-500 text-white'
+                : 'text-gray-300 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Table
+          </button>
+        </div>
+      </div>
+
       {/* Data Refresh Indicator */}
       {dataUpdatedAt && (
         <div className="flex justify-end mb-4">
@@ -651,7 +740,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             </button>
           ) : null}
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredReservations.map((reservation) => {
             const capacityPercentage = getCapacityPercentage(
@@ -1031,6 +1120,104 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
               </div>
             );
           })}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-white/5 border-b border-white/20">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Studio</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Competition</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Status</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Requested</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Confirmed</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Created</th>
+                  {!isStudioDirector && (
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Actions</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {filteredReservations.map((reservation) => {
+                  const entriesCount = (reservation as any)._count?.competition_entries || 0;
+                  return (
+                    <tr key={reservation.id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="text-white font-semibold">
+                          {(reservation as any).studios?.name || 'Unknown Studio'}
+                        </div>
+                        {!isStudioDirector && reservation.agent_first_name && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {reservation.agent_first_name} {reservation.agent_last_name}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-gray-300">
+                          {(reservation as any).competitions?.name || 'Unknown Competition'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <StatusBadge status={(reservation.status || 'pending') as any} />
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-white font-semibold">{reservation.spaces_requested}</div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-white font-semibold">
+                          {reservation.spaces_confirmed || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-white font-semibold">{entriesCount}</div>
+                      </td>
+                      {!isStudioDirector && (
+                        <td className="px-6 py-4">
+                          {reservation.status === 'pending' ? (
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => handleApprove(reservation.id, reservation.spaces_requested)}
+                                disabled={processingId === reservation.id}
+                                className="px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white text-sm font-semibold rounded transition-all disabled:cursor-not-allowed"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(reservation.id, (reservation as any).studios?.name || 'studio')}
+                                disabled={processingId === reservation.id}
+                                className="px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white text-sm font-semibold rounded transition-all disabled:cursor-not-allowed"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') ? (
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => handleEditSpaces(reservation)}
+                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 text-sm font-semibold rounded transition-all"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleRecordDeposit(reservation)}
+                                className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 text-sm font-semibold rounded transition-all"
+                              >
+                                Deposit
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-sm text-center">-</div>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
