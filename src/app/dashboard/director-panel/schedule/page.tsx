@@ -633,10 +633,7 @@ export default function SchedulePage() {
   const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
     onSuccess: () => {
       console.log('[Schedule] Mutation SUCCESS - refetching routines');
-      // Only show toast if not in batch operation (avoid toast spam during reorder/auto-generate)
-      if (!isReorderingRef.current && !isAutoGeneratingRef.current) {
-        toast.success('🎭 Routine scheduled successfully!');
-      }
+      // No toast on success - too spammy during drag operations
       // Refetch routines to get updated state from database
       refetch();
       refetchConflicts();

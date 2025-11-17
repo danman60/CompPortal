@@ -5,7 +5,7 @@
  *
  * Draggable table row component for the chronological schedule view.
  * Features:
- * - 7-column layout: # | Time | Routine | Studio | Classification | Dancers | Category
+ * - 6-column layout: # | Time | Routine | Studio | Classification | Category
  * - Drag-and-drop reordering with DnD Kit
  * - Trophy helper highlighting for last routine in overalls category
  * - Conflict detection with visual indicators
@@ -178,11 +178,6 @@ export function ScheduleRow({
           >
             {routine.classificationName}
           </span>
-        </td>
-
-        {/* Dancer Count */}
-        <td className="px-4 py-3 text-sm text-gray-700 text-center">
-          {routine.participantCount}
         </td>
 
         {/* Category (Dance Style) */}

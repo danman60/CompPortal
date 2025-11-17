@@ -176,18 +176,6 @@ function SortableRoutineRow({
         </span>
       </td>
 
-      {/* Dancers */}
-      <td className="px-4 py-3 text-sm text-white/70">
-        {routine.participants.length > 0 ? (
-          <div className="truncate" title={routine.participants.map(p => p.dancerName).join(', ')}>
-            {routine.participants.slice(0, 2).map(p => p.dancerName).join(', ')}
-            {routine.participants.length > 2 && ` +${routine.participants.length - 2}`}
-          </div>
-        ) : (
-          <span className="text-white/40">No dancers</span>
-        )}
-      </td>
-
       {/* Category */}
       <td className="px-4 py-3 text-sm text-white/80">
         {routine.categoryName}
@@ -336,9 +324,6 @@ export function ScheduleTable({
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '120px' }}>
                 Classification
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '150px' }}>
-                Dancers
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
                 Category
