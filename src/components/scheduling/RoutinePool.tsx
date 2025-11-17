@@ -143,9 +143,9 @@ export function RoutinePool({
         </div>
       )}
 
-      {/* Routines List */}
+      {/* Routines List - 2-column grid layout */}
       {routines.length > 0 && !isLoading && (
-        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="grid grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
           {routines.map((routine) => (
             <RoutineCard
               key={routine.id}

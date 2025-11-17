@@ -118,8 +118,8 @@ export function ScheduleToolbar({
       <div className="flex items-center justify-between mb-4">
         {/* Left: Competition Info */}
         <div>
-          <h1 className="text-2xl font-bold text-white">{competitionName}</h1>
-          <p className="text-sm text-gray-300">{competitionDates}</p>
+          <h1 className="text-4xl font-bold text-white">{competitionName}</h1>
+          <p className="text-xl text-yellow-400 font-medium">{competitionDates}</p>
         </div>
 
         {/* Center: Status Badge */}
