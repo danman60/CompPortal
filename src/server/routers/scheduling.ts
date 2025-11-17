@@ -511,6 +511,37 @@ export const schedulingRouter = router({
       // and corruption (time becomes Unix epoch)
 
       try {
+        // Get the routine to find competition_id
+        const routine = await prisma.competition_entries.findUnique({
+          where: { id: input.routineId },
+          select: { competition_id: true },
+        });
+
+        if (!routine) {
+          throw new Error('Routine not found');
+        }
+
+        // Auto-assign entry number if 0 or not provided
+        let finalEntryNumber = input.entryNumber;
+        if (!finalEntryNumber || finalEntryNumber === 0) {
+          console.log('[scheduleRoutine] Auto-assigning entry number...');
+
+          // Find the highest entry_number for this competition
+          const maxEntry = await prisma.competition_entries.findFirst({
+            where: {
+              competition_id: routine.competition_id,
+              tenant_id: input.tenantId,
+              entry_number: { not: null },
+            },
+            orderBy: { entry_number: 'desc' },
+            select: { entry_number: true },
+          });
+
+          // Start at 100, or increment from highest existing
+          finalEntryNumber = maxEntry?.entry_number ? maxEntry.entry_number + 1 : 100;
+          console.log('[scheduleRoutine] Assigned entry number:', finalEntryNumber);
+        }
+
         const updated = await prisma.competition_entries.update({
           where: {
             id: input.routineId,
@@ -520,7 +551,7 @@ export const schedulingRouter = router({
             schedule_zone: null, // Clear old zone-based data
             performance_date: new Date(input.performanceDate), // Convert string to Date for UPDATE
             performance_time: new Date(`1970-01-01T${input.performanceTime}`), // Convert TIME to Date
-            entry_number: input.entryNumber,
+            entry_number: finalEntryNumber,
             is_scheduled: true,
           },
         });

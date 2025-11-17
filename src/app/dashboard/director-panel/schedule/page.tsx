@@ -1463,20 +1463,6 @@ export default function SchedulePage() {
 
           {/* RIGHT PANEL: Schedule Table (V4 Redesign - 67%) */}
           <div className="col-span-2 space-y-6">
-            {/* V4: Day Tabs */}
-            <DayTabs
-              days={competitionDays.map(day => ({
-                ...day,
-                routineCount: (routinesByDay || []).filter((r: any) =>
-                  r.performance_date && new Date(r.performance_date).toISOString().split('T')[0] === day.date
-                ).length,
-              }))}
-              activeDay={selectedDate}
-              onDayChange={setSelectedDate}
-              competitionId={TEST_COMPETITION_ID}
-              tenantId={TEST_TENANT_ID}
-            />
-
             {/* Reset Schedule Buttons */}
             <div className="flex items-center justify-end gap-3 px-4">
               <button
@@ -1492,6 +1478,20 @@ export default function SchedulePage() {
                 Reset Entire Schedule
               </button>
             </div>
+
+            {/* V4: Day Tabs */}
+            <DayTabs
+              days={competitionDays.map(day => ({
+                ...day,
+                routineCount: (routinesByDay || []).filter((r: any) =>
+                  r.performance_date && new Date(r.performance_date).toISOString().split('T')[0] === day.date
+                ).length,
+              }))}
+              activeDay={selectedDate}
+              onDayChange={setSelectedDate}
+              competitionId={TEST_COMPETITION_ID}
+              tenantId={TEST_TENANT_ID}
+            />
 
             {/* V4: Schedule Table */}
             <ScheduleTable

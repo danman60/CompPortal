@@ -165,7 +165,7 @@ export function RoutineCard({
       )}
 
       {/* Indicator Badges (Top Left Corner, offset if checkbox present) */}
-      <div className={`absolute top-2 flex gap-1 ${onToggleSelection ? 'left-9' : 'left-2'}`} style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto' }}>
+      <div className={`absolute top-2 flex gap-1 ${onToggleSelection ? 'left-9' : 'left-2'} max-w-[60%]`} style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto', zIndex: 8 }}>
         {/* Trophy Icon for Last Routine */}
         {isLastRoutine && (
           <div
@@ -223,7 +223,7 @@ export function RoutineCard({
       </div>
 
       {/* Duration Tag (top right corner) */}
-      <div className="absolute top-2 right-2 bg-black/30 px-2 py-1 rounded-md text-xs text-white/90" style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto' }}>
+      <div className="absolute top-2 right-2 bg-black/30 px-2 py-1 rounded-md text-xs text-white/90" style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto', zIndex: 9 }}>
         ⏱️ {routine.duration} min
       </div>
 
