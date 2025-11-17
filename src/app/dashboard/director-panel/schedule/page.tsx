@@ -953,27 +953,68 @@ export default function SchedulePage() {
                 baseEntryNumber,
               });
 
-              // Update entry numbers for all affected routines
-              reorderedRoutines.forEach((routine, index) => {
-                const newEntryNumber = baseEntryNumber + index;
+              // Two-phase update to prevent unique constraint violations
+              // Phase 1: Move to temporary numbers, Phase 2: Move to final numbers
+              (async () => {
+                try {
+                  // Identify routines that need updating
+                  const routinesToUpdate = reorderedRoutines.filter(
+                    (routine, index) => routine.entryNumber !== baseEntryNumber + index
+                  );
 
-                if (routine.entryNumber !== newEntryNumber) {
-                  console.log(`[V4 Reorder] Updating ${routine.title}: #${routine.entryNumber} → #${newEntryNumber}`);
+                  if (routinesToUpdate.length === 0) {
+                    console.log('[V4 Reorder] No updates needed');
+                    return;
+                  }
 
-                  // Update entry number via mutation
-                  scheduleMutation.mutate({
-                    routineId: routine.id,
-                    tenantId: TEST_TENANT_ID,
-                    performanceDate: new Date(routine.scheduledDay!).toISOString().split('T')[0],
-                    performanceTime: routine.scheduledTime
-                      ? new Date(routine.scheduledTime).toTimeString().split(' ')[0]
-                      : '08:00:00',
-                    entryNumber: newEntryNumber,
+                  console.log(`[V4 Reorder] Phase 1: Moving ${routinesToUpdate.length} routines to temporary numbers`);
+
+                  // Phase 1: Move to temporary entry numbers (10000+)
+                  const tempUpdates = routinesToUpdate.map((routine) => {
+                    const tempNumber = 10000 + (routine.entryNumber || 0);
+                    console.log(`[V4 Reorder] Phase 1: ${routine.title} #${routine.entryNumber} → temp #${tempNumber}`);
+
+                    return scheduleMutation.mutateAsync({
+                      routineId: routine.id,
+                      tenantId: TEST_TENANT_ID,
+                      performanceDate: new Date(routine.scheduledDay!).toISOString().split('T')[0],
+                      performanceTime: routine.scheduledTime
+                        ? new Date(routine.scheduledTime).toTimeString().split(' ')[0]
+                        : '08:00:00',
+                      entryNumber: tempNumber,
+                    });
                   });
-                }
-              });
 
-              toast.success('Routines reordered successfully');
+                  await Promise.all(tempUpdates);
+                  console.log('[V4 Reorder] Phase 1 complete');
+
+                  console.log(`[V4 Reorder] Phase 2: Moving ${reorderedRoutines.length} routines to final numbers`);
+
+                  // Phase 2: Move ALL routines to final entry numbers
+                  const finalUpdates = reorderedRoutines.map((routine, index) => {
+                    const newEntryNumber = baseEntryNumber + index;
+                    console.log(`[V4 Reorder] Phase 2: ${routine.title} → final #${newEntryNumber}`);
+
+                    return scheduleMutation.mutateAsync({
+                      routineId: routine.id,
+                      tenantId: TEST_TENANT_ID,
+                      performanceDate: new Date(routine.scheduledDay!).toISOString().split('T')[0],
+                      performanceTime: routine.scheduledTime
+                        ? new Date(routine.scheduledTime).toTimeString().split(' ')[0]
+                        : '08:00:00',
+                      entryNumber: newEntryNumber,
+                    });
+                  });
+
+                  await Promise.all(finalUpdates);
+                  console.log('[V4 Reorder] Phase 2 complete');
+
+                  toast.success('Routines reordered successfully');
+                } catch (error) {
+                  console.error('[V4 Reorder] Error during reorder:', error);
+                  toast.error('Failed to reorder routines');
+                }
+              })();
             }
             }
           } else {
