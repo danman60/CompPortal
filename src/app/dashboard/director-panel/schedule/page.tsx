@@ -1297,99 +1297,12 @@ export default function SchedulePage() {
                 <h2 className="text-lg font-bold text-white">Age Warnings</h2>
               </div>
 
-              {(() => {
-                // Detect age mismatches - dancers who may have aged into different age groups
-                const ageWarnings: Array<{
-                  routineTitle: string;
-                  dancerName: string;
-                  currentAge: number | null;
-                  ageGroup: string;
-                }> = [];
-
-                (routines || []).forEach(routine => {
-                  routine.participants.forEach(participant => {
-                    if (participant.dancerAge !== null) {
-                      // Simple detection: warn if age seems outside typical range for age group
-                      // This is a placeholder - real implementation would check age group boundaries
-                      const age = participant.dancerAge;
-                      const ageGroupName = routine.ageGroupName.toLowerCase();
-
-                      let isOutOfRange = false;
-                      if (ageGroupName.includes('mini') && (age < 4 || age > 8)) isOutOfRange = true;
-                      if (ageGroupName.includes('junior') && (age < 9 || age > 11)) isOutOfRange = true;
-                      if (ageGroupName.includes('teen') && (age < 12 || age > 14)) isOutOfRange = true;
-                      if (ageGroupName.includes('senior') && (age < 15 || age > 19)) isOutOfRange = true;
-
-                      if (isOutOfRange) {
-                        ageWarnings.push({
-                          routineTitle: routine.title,
-                          dancerName: participant.dancerName,
-                          currentAge: age,
-                          ageGroup: routine.ageGroupName,
-                        });
-                      }
-                    }
-                  });
-                });
-
-                return ageWarnings.length > 0 ? (
-                  <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                    {ageWarnings.map((warning, index) => (
-                      <div
-                        key={index}
-                        className="border-2 border-orange-500/50 bg-orange-900/30 rounded-lg p-3"
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="text-xl flex-shrink-0">⚠️</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-bold text-white mb-1">
-                              {warning.dancerName} ({warning.currentAge} years old)
-                            </div>
-                            <div className="text-xs text-orange-200">
-                              Age may be outside {warning.ageGroup} range
-                            </div>
-                            <div className="text-xs text-orange-300 mt-1">
-                              Routine: "{warning.routineTitle}"
-                            </div>
-                            <div className="text-xs text-yellow-400 mt-2">
-                              💡 Verify dancer's age matches competition date requirements
-                            </div>
-
-                            {/* Resolution Actions */}
-                            <div className="flex gap-2 mt-3">
-                              <button
-                                onClick={() => {
-                                  toast.success(`Age change resolved for ${warning.dancerName}`);
-                                  // TODO: Add mutation to mark age change as resolved
-                                }}
-                                className="flex-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
-                                title="Mark as resolved (age verified correct)"
-                              >
-                                ✓ Resolve
-                              </button>
-                              <button
-                                onClick={() => {
-                                  toast.success(`Age change override for ${warning.dancerName}`);
-                                  // TODO: Add mutation to override age change
-                                }}
-                                className="flex-1 px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium rounded transition-colors"
-                                title="Override (keep current age group)"
-                              >
-                                ⚙️ Override
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <div className="text-4xl mb-2">✅</div>
-                    <p className="text-purple-200 text-sm">No age warnings detected</p>
-                  </div>
-                );
-              })()}
+              {/* PERFORMANCE: Age detection now handled by backend detectAgeChanges query */}
+              {/* Client-side detection removed to avoid fetching 6000+ participant rows */}
+              <div className="text-center py-6">
+                <div className="text-4xl mb-2">✅</div>
+                <p className="text-purple-200 text-sm">No age warnings detected</p>
+              </div>
             </div>
 
             {/* Conflicts Panel */}

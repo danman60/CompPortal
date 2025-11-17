@@ -378,13 +378,37 @@ export const schedulingRouter = router({
         };
       }
 
+      // PERFORMANCE OPTIMIZATION: Fetch routines with studio codes in single query
+      // Include reservation data via JOIN instead of separate query
       const routines = await prisma.competition_entries.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          studio_id: true,
+          classification_id: true,
+          category_id: true,
+          age_group_id: true,
+          entry_size_category_id: true,
+          schedule_zone: true,
+          performance_time: true,
+          performance_date: true,
+          created_at: true,
           studios: {
             select: {
               id: true,
               name: true,
+              // Get studio code from approved reservation
+              reservations: {
+                where: {
+                  competition_id: input.competitionId,
+                  status: 'approved',
+                },
+                select: {
+                  studio_code: true,
+                },
+                take: 1, // Only need one reservation per studio for this competition
+              },
             },
           },
           dance_categories: {
@@ -411,40 +435,17 @@ export const schedulingRouter = router({
               name: true,
             },
           },
-          entry_participants: {
-            select: {
-              dancer_id: true,
-              dancer_name: true,
-              dancer_age: true,
-            },
-          },
+          // REMOVED entry_participants - not needed for display (6000+ rows for 600 routines!)
+          // Participants are fetched separately by detectConflicts when scheduling
         },
         orderBy: [
           { created_at: 'asc' },
         ],
       });
 
-      // Get per-competition studio codes from reservations
-      const reservations = await prisma.reservations.findMany({
-        where: {
-          competition_id: input.competitionId,
-          tenant_id: input.tenantId,
-          status: 'approved',
-        },
-        select: {
-          studio_id: true,
-          studio_code: true,
-        } as any, // Type assertion until Prisma regenerates
-      }) as any[];
-
-      // Create map of studio_id to per-competition studio_code
-      const studioCodeMap = new Map(
-        reservations.map(r => [r.studio_id, r.studio_code])
-      );
-
       // Transform data based on view mode
       return routines.map(routine => {
-        const studioCode = studioCodeMap.get(routine.studio_id) || 'X';
+        const studioCode = routine.studios.reservations[0]?.studio_code || 'X';
         const studioName = routine.studios.name;
 
         // View mode logic:
@@ -474,11 +475,7 @@ export const schedulingRouter = router({
           entrySizeId: routine.entry_size_category_id,
           entrySizeName: routine.entry_size_categories.name,
           duration: 3, // Duration field is interval type (unsupported by Prisma), defaulting to 3 minutes
-          participants: routine.entry_participants.map(p => ({
-            dancerId: p.dancer_id,
-            dancerName: p.dancer_name,
-            dancerAge: p.dancer_age,
-          })),
+          participants: [], // PERFORMANCE: Empty array - participants fetched separately by detectConflicts
           isScheduled: routine.schedule_zone !== null, // Check zone instead of date/time
           scheduleZone: routine.schedule_zone, // Return zone ID (saturday-am, etc.)
           scheduledTime: routine.performance_time,
