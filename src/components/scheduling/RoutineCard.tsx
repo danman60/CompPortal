@@ -156,7 +156,7 @@ export function RoutineCard({
             checked={isSelected}
             onChange={(e) => {
               e.stopPropagation();
-              onToggleSelection(routine.id, e.nativeEvent.shiftKey);
+              onToggleSelection(routine.id, (e.nativeEvent as MouseEvent).shiftKey);
             }}
             className="w-5 h-5 rounded border-2 border-white/40 bg-white/10 checked:bg-purple-600 checked:border-purple-600 cursor-pointer hover:border-white/60 transition-colors"
             title={isSelected ? "Deselect routine" : "Select routine (Shift+click for range)"}
