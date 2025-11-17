@@ -758,13 +758,13 @@ export default function SchedulePage() {
               toast.error('Could not find session for this time slot');
             }
           }
-        } else if (typeof targetZone === 'string' && targetZone.startsWith('day-')) {
+        } else if (typeof targetZone === 'string' && targetZone.startsWith('schedule-table-')) {
           // V4: Day-based scheduling (from ScheduleTable droppable)
-          const dayData = over?.data?.current?.day;
+          const date = over?.data?.current?.date;
 
-          if (dayData && dayData.date) {
+          if (date) {
             console.log('[V4 Schedule] Scheduling to day:', {
-              date: dayData.date,
+              date,
               count: routineIds.length,
             });
 
@@ -779,7 +779,7 @@ export default function SchedulePage() {
                 scheduleMutation.mutate({
                   routineId,
                   tenantId: TEST_TENANT_ID,
-                  performanceDate: dayData.date,
+                  performanceDate: date,
                   performanceTime: currentTime,
                   entryNumber: 0, // Let backend auto-assign
                 });
@@ -794,7 +794,7 @@ export default function SchedulePage() {
             });
 
             if (isBulkDrag) {
-              toast.success(`Scheduling ${routineIds.length} routines to ${dayData.date}...`);
+              toast.success(`Scheduling ${routineIds.length} routines to ${date}...`);
               // Clear selection after bulk drag
               setSelectedRoutineIds(new Set());
               setLastClickedRoutineId(null);
