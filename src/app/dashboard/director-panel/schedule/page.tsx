@@ -407,6 +407,75 @@ export default function SchedulePage() {
 
   // Mock competition status (in production, fetch from database)
   const [scheduleStatus, setScheduleStatus] = useState<ScheduleStatus>('draft');
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+
+  // Auto-Generate Draft Schedule
+  const handleAutoGenerate = async () => {
+    if (unscheduledRoutines.length === 0) {
+      toast.error('No unscheduled routines to schedule');
+      return;
+    }
+
+    if (!confirm(`Auto-generate schedule for ${unscheduledRoutines.length} routines across Thursday-Sunday?`)) {
+      return;
+    }
+
+    setIsAutoGenerating(true);
+    console.log('[Auto-Generate] ========== STARTING AUTO-GENERATION ==========');
+    console.log('[Auto-Generate] Unscheduled routines:', unscheduledRoutines.length);
+
+    try {
+      // Competition days: Thursday-Sunday (April 9-12, 2026)
+      const competitionDays = [
+        '2026-04-09', // Thursday
+        '2026-04-10', // Friday
+        '2026-04-11', // Saturday
+        '2026-04-12', // Sunday
+      ];
+
+      // Distribute routines evenly across days
+      const routinesPerDay = Math.ceil(unscheduledRoutines.length / competitionDays.length);
+
+      for (let dayIndex = 0; dayIndex < competitionDays.length; dayIndex++) {
+        const date = competitionDays[dayIndex];
+        const dayRoutines = unscheduledRoutines.slice(
+          dayIndex * routinesPerDay,
+          (dayIndex + 1) * routinesPerDay
+        );
+
+        console.log(`[Auto-Generate] Day ${dayIndex + 1} (${date}): Scheduling ${dayRoutines.length} routines`);
+
+        // Schedule routines for this day sequentially
+        let currentTime = '08:00:00'; // Starting time
+        for (const routine of dayRoutines) {
+          console.log(`[Auto-Generate] Scheduling: ${routine.title} at ${currentTime}`);
+
+          await scheduleMutation.mutateAsync({
+            routineId: routine.id,
+            tenantId: TEST_TENANT_ID,
+            performanceDate: date,
+            performanceTime: currentTime,
+            entryNumber: 0, // Auto-assigned by backend
+          });
+
+          // Increment time for next routine
+          const [hours, minutes] = currentTime.split(':').map(Number);
+          const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
+          const newHours = Math.floor(totalMinutes / 60);
+          const newMinutes = totalMinutes % 60;
+          currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
+        }
+      }
+
+      console.log('[Auto-Generate] ========== AUTO-GENERATION COMPLETE ==========');
+      toast.success(`✅ Auto-generated schedule for ${unscheduledRoutines.length} routines!`);
+    } catch (error) {
+      console.error('[Auto-Generate] ERROR:', error);
+      toast.error(`Auto-generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsAutoGenerating(false);
+    }
+  };
 
   const handleFinalize = () => {
     if (confirm('Lock entry numbers? This will prevent automatic renumbering.')) {
@@ -763,10 +832,10 @@ export default function SchedulePage() {
           const date = over?.data?.current?.date;
 
           if (date) {
-            console.log('[V4 Schedule] Scheduling to day:', {
-              date,
-              count: routineIds.length,
-            });
+            console.log('[V4 Schedule] ========== SCHEDULING SESSION START ==========');
+            console.log('[V4 Schedule] Target Date:', date);
+            console.log('[V4 Schedule] Total Routines:', routineIds.length);
+            console.log('[V4 Schedule] Routine IDs:', routineIds);
 
             // Schedule all selected routines sequentially with auto-assigned times
             // The backend scheduleRoutine will calculate next available slot automatically
@@ -774,15 +843,46 @@ export default function SchedulePage() {
             routineIds.forEach((routineId, index) => {
               const routine = routines?.find(r => r.id === routineId);
               if (routine) {
+                console.log(`[V4 Schedule] Routine #${index + 1}/${routineIds.length}:`, {
+                  routineId,
+                  title: routine.title,
+                  duration: routine.duration || 3,
+                  classification: routine.classificationName,
+                  studio: routine.studioName,
+                  scheduledDate: date,
+                  scheduledTime: currentTime,
+                  entryNumber: 0, // Auto-assigned by backend
+                });
+
                 // Each routine gets a basic time slot calculation
                 // Backend will handle actual slot assignment and entry numbers
-                scheduleMutation.mutate({
-                  routineId,
-                  tenantId: TEST_TENANT_ID,
-                  performanceDate: date,
-                  performanceTime: currentTime,
-                  entryNumber: 0, // Let backend auto-assign
-                });
+                scheduleMutation.mutate(
+                  {
+                    routineId,
+                    tenantId: TEST_TENANT_ID,
+                    performanceDate: date,
+                    performanceTime: currentTime,
+                    entryNumber: 0, // Let backend auto-assign
+                  },
+                  {
+                    onSuccess: (data) => {
+                      console.log(`[V4 Schedule] ✅ SUCCESS - Routine scheduled:`, {
+                        routineId,
+                        title: routine.title,
+                        entryNumber: data.routine.entry_number,
+                        date: data.routine.performance_date,
+                        time: data.routine.performance_time,
+                      });
+                    },
+                    onError: (error) => {
+                      console.error(`[V4 Schedule] ❌ ERROR - Failed to schedule routine:`, {
+                        routineId,
+                        title: routine.title,
+                        error: error.message,
+                      });
+                    },
+                  }
+                );
 
                 // Increment time for next routine (rough estimate)
                 const [hours, minutes] = currentTime.split(':').map(Number);
@@ -790,8 +890,12 @@ export default function SchedulePage() {
                 const newHours = Math.floor(totalMinutes / 60);
                 const newMinutes = totalMinutes % 60;
                 currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
+              } else {
+                console.warn(`[V4 Schedule] ⚠️ WARNING - Routine not found:`, { routineId });
               }
             });
+
+            console.log('[V4 Schedule] ========== SCHEDULING SESSION END ==========');
 
             if (isBulkDrag) {
               toast.success(`Scheduling ${routineIds.length} routines to ${date}...`);
@@ -992,6 +1096,8 @@ export default function SchedulePage() {
               });
             }
           }}
+          // Auto-Generate
+          onAutoGenerate={handleAutoGenerate}
           // Undo/Redo
           onUndo={handleUndo}
           onRedo={handleRedo}
@@ -1003,6 +1109,7 @@ export default function SchedulePage() {
           // Loading states
           isFinalizing={finalizeMutation.isPending}
           isPublishing={publishMutation.isPending}
+          isAutoGenerating={isAutoGenerating}
           // Stats
           totalRoutines={routines?.length || 0}
           scheduledRoutines={scheduledCount}

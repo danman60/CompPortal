@@ -33,6 +33,7 @@ interface ScheduleToolbarProps {
   onFinalize?: () => void;
   onPublish?: () => void;
   onExport?: () => void;
+  onAutoGenerate?: () => void;
 
   // Undo/Redo
   onUndo?: () => void;
@@ -48,6 +49,7 @@ interface ScheduleToolbarProps {
   isSaving?: boolean;
   isFinalizing?: boolean;
   isPublishing?: boolean;
+  isAutoGenerating?: boolean;
 
   // Stats
   totalRoutines?: number;
@@ -65,6 +67,7 @@ export function ScheduleToolbar({
   onFinalize,
   onPublish,
   onExport,
+  onAutoGenerate,
   onUndo,
   onRedo,
   canUndo = false,
@@ -74,6 +77,7 @@ export function ScheduleToolbar({
   isSaving = false,
   isFinalizing = false,
   isPublishing = false,
+  isAutoGenerating = false,
   totalRoutines = 0,
   scheduledRoutines = 0,
   unscheduledRoutines = 0,
@@ -157,6 +161,19 @@ export function ScheduleToolbar({
                 ↷ Redo
               </button>
             </div>
+          )}
+
+          {/* Auto-Generate Button */}
+          {status === 'draft' && onAutoGenerate && (
+            <button
+              onClick={onAutoGenerate}
+              disabled={isAutoGenerating || unscheduledRoutines === 0}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              data-action="auto-generate"
+              title={unscheduledRoutines === 0 ? 'No unscheduled routines' : 'Auto-generate schedule for all unscheduled routines'}
+            >
+              {isAutoGenerating ? '🔄 Generating...' : '🔄 Auto-Generate Draft'}
+            </button>
           )}
 
           {/* Studio Requests Button (CD only) */}
