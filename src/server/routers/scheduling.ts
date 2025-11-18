@@ -544,6 +544,10 @@ export const schedulingRouter = router({
           console.log('[scheduleRoutine] Assigned entry number:', finalEntryNumber);
         }
 
+        // Parse time as UTC to avoid timezone conversion bugs
+        const [hours, minutes, seconds] = input.performanceTime.split(':').map(Number);
+        const performanceTimeUTC = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
+
         const updated = await prisma.competition_entries.update({
           where: {
             id: input.routineId,
@@ -552,7 +556,7 @@ export const schedulingRouter = router({
           data: {
             schedule_zone: null, // Clear old zone-based data
             performance_date: new Date(input.performanceDate), // Convert string to Date for UPDATE
-            performance_time: new Date(`1970-01-01T${input.performanceTime}`), // Convert TIME to Date
+            performance_time: performanceTimeUTC, // Use UTC to avoid timezone bugs
             entry_number: finalEntryNumber,
             is_scheduled: true,
           },
@@ -688,8 +692,14 @@ export const schedulingRouter = router({
         };
       }
 
-      // Calculate next time
-      const lastTime = lastRoutine.performance_time ? new Date(lastRoutine.performance_time) : new Date(`2000-01-01T${dayStartTime}`);
+      // Calculate next time (use UTC to avoid timezone bugs)
+      let lastTime: Date;
+      if (lastRoutine.performance_time) {
+        lastTime = new Date(lastRoutine.performance_time);
+      } else {
+        const [hours, minutes, seconds] = dayStartTime.split(':').map(Number);
+        lastTime = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
+      }
       const lastDuration = lastRoutine.routine_length_minutes || 3;
       const nextTime = new Date(lastTime.getTime() + lastDuration * 60000);
 
@@ -2689,9 +2699,9 @@ export const schedulingRouter = router({
         return { success: true, updatedCount: 0 };
       }
 
-      // Parse new start time
+      // Parse new start time (use UTC to avoid timezone bugs)
       const [hours, minutes, seconds] = newStartTime.split(':').map(Number);
-      const baseTime = new Date(`2000-01-01T${newStartTime}`);
+      const baseTime = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
 
       console.log('[updateDayStartTime] Base time:', baseTime.toISOString());
 
