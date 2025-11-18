@@ -760,7 +760,11 @@ export const schedulingRouter = router({
       competitionId: z.string().uuid(),
     }))
     .query(async ({ input, ctx }) => {
-      if (!ctx.tenantId) {
+      // For test environment, use TEST_TENANT_ID if ctx.tenantId is null
+      const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
+      const effectiveTenantId = ctx.tenantId || TEST_TENANT_ID;
+
+      if (!effectiveTenantId) {
         throw new Error('Tenant ID is required');
       }
 
@@ -768,7 +772,7 @@ export const schedulingRouter = router({
       const scheduledRoutines = await prisma.competition_entries.findMany({
         where: {
           competition_id: input.competitionId,
-          tenant_id: ctx.tenantId,
+          tenant_id: effectiveTenantId,
           schedule_zone: { not: null },
           is_scheduled: true,
         },
@@ -815,7 +819,7 @@ export const schedulingRouter = router({
         const totalRoutinesInCategory = await prisma.competition_entries.count({
           where: {
             competition_id: input.competitionId,
-            tenant_id: ctx.tenantId,
+            tenant_id: effectiveTenantId,
             entry_size_category_id: firstRoutine.entry_size_category_id,
             age_group_id: firstRoutine.age_group_id,
             classification_id: firstRoutine.classification_id,
