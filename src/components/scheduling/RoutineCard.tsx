@@ -136,7 +136,7 @@ export function RoutineCard({
       {...listeners}
       {...attributes}
       className={`
-        relative rounded-xl p-4 cursor-grab transition-all
+        relative rounded-xl p-4 pt-10 cursor-grab transition-all
         ${isDragging ? 'opacity-50 rotate-3 scale-105' : 'hover:translate-y-[-4px]'}
         ${getBackgroundStyle()}
         ${getBorderStyle()}
@@ -166,7 +166,7 @@ export function RoutineCard({
       )}
 
       {/* Indicator Badges (Top Left Corner, offset if checkbox present) */}
-      <div className={`absolute top-2 flex gap-1 ${onToggleSelection ? 'left-9' : 'left-2'} ${onToggleSelection ? 'max-w-[calc(100%-140px)]' : 'max-w-[calc(100%-100px)]'}`} style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto', zIndex: 8 }}>
+      <div className={`absolute top-2 flex gap-1 ${onToggleSelection ? 'left-9' : 'left-2'} ${onToggleSelection ? 'max-w-[calc(100%-160px)]' : 'max-w-[calc(100%-120px)]'}`} style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto', zIndex: 8 }}>
         {/* Trophy Icon for Last Routine */}
         {isLastRoutine && (
           <div

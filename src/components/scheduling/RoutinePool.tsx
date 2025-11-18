@@ -114,7 +114,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       className={rowClasses}
     >
       {/* Checkbox */}
-      <td className="px-2 py-2">
+      <td className="px-1.5 py-1.5">
         {onToggleSelection && (
           <input
             type="checkbox"
@@ -130,7 +130,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Title with indicators */}
-      <td className="px-2 py-2 text-sm font-medium text-white">
+      <td className="px-1.5 py-1.5 text-xs font-medium text-white">
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate" title={routine.title}>{routine.title}</span>
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -143,31 +143,31 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Studio */}
-      <td className="px-2 py-2 text-sm text-white/80">{studioDisplay}</td>
+      <td className="px-1.5 py-1.5 text-xs text-white/80">{studioDisplay}</td>
 
       {/* Classification */}
-      <td className="px-2 py-2">
-        <span className={`inline-block px-2 py-1 rounded-md text-xs font-semibold ${getClassificationColor(routine.classificationName)}`}>
+      <td className="px-1.5 py-1.5">
+        <span className={`inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold truncate ${getClassificationColor(routine.classificationName)}`}>
           {routine.classificationName}
         </span>
       </td>
 
       {/* Size */}
-      <td className="px-2 py-2 text-sm text-white/80">{routine.entrySizeName}</td>
+      <td className="px-1.5 py-1.5 text-xs text-white/80">{routine.entrySizeName}</td>
 
       {/* Routine Age (stored routine_age field) */}
-      <td className="px-2 py-2 text-sm text-white/80">
+      <td className="px-1.5 py-1.5 text-xs text-white/80">
         {routine.routineAge ?? '-'}
       </td>
 
       {/* Overalls Age (Age Group) */}
-      <td className="px-2 py-2 text-sm text-white/80">{routine.ageGroupName}</td>
+      <td className="px-1.5 py-1.5 text-xs text-white/80">{routine.ageGroupName}</td>
 
       {/* Category */}
-      <td className="px-2 py-2 text-sm text-white/80">{routine.categoryName}</td>
+      <td className="px-1.5 py-1.5 text-xs text-white/80">{routine.categoryName}</td>
 
       {/* Duration */}
-      <td className="px-2 py-2 text-sm text-white/80 whitespace-nowrap">⏱️ {routine.duration} min</td>
+      <td className="px-1.5 py-1.5 text-xs text-white/80 whitespace-nowrap">⏱️ {routine.duration} min</td>
     </tr>
   );
 }
@@ -441,31 +441,31 @@ export function RoutinePool({
             <table className="w-full" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '40px' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '40px' }}>
                     ✓
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '25%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '25%' }}>
                     Routine
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '8%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '8%' }}>
                     Studio
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '12%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '12%' }}>
                     Classification
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '8%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '8%' }}>
                     Size
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '9%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '9%' }}>
                     Routine Age
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '12%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '12%' }}>
                     Overalls Age
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '14%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '14%' }}>
                     Category
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '10%' }}>
+                  <th className="px-1.5 py-1.5 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '10%' }}>
                     Duration
                   </th>
                 </tr>
