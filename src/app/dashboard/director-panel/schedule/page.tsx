@@ -1305,7 +1305,7 @@ export default function SchedulePage() {
           // Stats
           totalRoutines={routines?.length || 0}
           scheduledRoutines={scheduledCount}
-          unscheduledRoutines={unscheduledRoutines.length}
+          unscheduledRoutines={(routines?.length || 0) - scheduledCount}
         />
 
         <div className="p-6">
