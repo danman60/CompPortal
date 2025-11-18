@@ -861,14 +861,13 @@ export const schedulingRouter = router({
 
       const MIN_ROUTINES_BETWEEN = 6;
 
-      // Get all scheduled routines with participants
+      // Get all scheduled routines with participants (V4: use performance_date instead of schedule_zone)
       const scheduledRoutines = await prisma.competition_entries.findMany({
         where: {
           competition_id: input.competitionId,
           tenant_id: ctx.tenantId,
-          schedule_zone: { not: null },
+          performance_date: { not: null }, // V4: Check date instead of zone
           is_scheduled: true,
-          display_order: { not: null },
         },
         include: {
           entry_participants: {
@@ -878,7 +877,7 @@ export const schedulingRouter = router({
             },
           },
         },
-        orderBy: { display_order: 'asc' },
+        orderBy: { entry_number: 'asc' }, // V4: Use entry_number instead of display_order
       });
 
       const conflicts = [];
@@ -899,14 +898,14 @@ export const schedulingRouter = router({
       for (const [dancerId, routines] of dancerRoutines.entries()) {
         if (routines.length < 2) continue; // No conflicts if dancer is in only 1 routine
 
-        // Sort by display_order
-        const sortedRoutines = routines.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+        // Sort by entry_number (V4: use entry_number instead of display_order)
+        const sortedRoutines = routines.sort((a, b) => (a.entry_number || 0) - (b.entry_number || 0));
 
         for (let i = 0; i < sortedRoutines.length - 1; i++) {
           const routine1 = sortedRoutines[i];
           const routine2 = sortedRoutines[i + 1];
 
-          const routinesBetween = (routine2.display_order || 0) - (routine1.display_order || 0) - 1;
+          const routinesBetween = (routine2.entry_number || 0) - (routine1.entry_number || 0) - 1;
 
           if (routinesBetween < MIN_ROUTINES_BETWEEN) {
             const dancerName = routine1.entry_participants.find(p => p.dancer_id === dancerId)?.dancer_name || 'Unknown';
@@ -918,10 +917,10 @@ export const schedulingRouter = router({
               dancerId,
               dancerName,
               routine1Id: routine1.id,
-              routine1Number: routine1.display_order,
+              routine1Number: routine1.entry_number, // V4: Use entry_number
               routine1Title: routine1.title,
               routine2Id: routine2.id,
-              routine2Number: routine2.display_order,
+              routine2Number: routine2.entry_number, // V4: Use entry_number
               routine2Title: routine2.title,
               routinesBetween,
               severity,
