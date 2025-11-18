@@ -625,15 +625,13 @@ export default function SchedulePage() {
     const initialZones: Record<string, ScheduleZone> = {};
     routines.forEach(routine => {
       // V4: Use isScheduled flag to exclude from unscheduled pool
-      // If routine is scheduled (isScheduled=true), don't add it to routineZones
-      // This prevents it from appearing in UR even if scheduleZone is null
+      // Scheduled routines (isScheduled=true) should NOT be in routineZones
+      // This prevents them from appearing in UR even if scheduleZone is null
       if (routine.scheduleZone) {
         initialZones[routine.id] = routine.scheduleZone as ScheduleZone;
-      } else if (!routine.isScheduled) {
-        // Only mark as unscheduled if NOT already scheduled
-        // This ensures scheduled routines don't default to 'unscheduled' zone
-        // (no explicit zone assignment means it won't be in routinesByZone['unscheduled'])
       }
+      // Note: routines with isScheduled=true are excluded from UR via
+      // routinesByZone filter at line 1163 (skips if routine.isScheduled=true)
     });
 
     setRoutineZones(initialZones);
