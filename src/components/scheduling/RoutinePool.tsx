@@ -131,12 +131,14 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
 
       {/* Title with indicators */}
       <td className="px-2 py-2 text-sm font-medium text-white">
-        <div className="flex items-center gap-2">
-          {routine.title}
-          {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
-          {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
-          {hasNotes && <span className="text-blue-400" title="Has notes">📝</span>}
-          {hasAgeChange && <span className="text-yellow-400" title="Age changed">🎂</span>}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="truncate" title={routine.title}>{routine.title}</span>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
+            {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
+            {hasNotes && <span className="text-blue-400" title="Has notes">📝</span>}
+            {hasAgeChange && <span className="text-yellow-400" title="Age changed">🎂</span>}
+          </div>
         </div>
       </td>
 
@@ -436,34 +438,34 @@ export function RoutinePool({
       {displayMode === 'table' && routines.length > 0 && !isLoading && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
-            <table className="w-full">
+            <table className="w-full" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
                   <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '40px' }}>
                     ✓
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '25%' }}>
                     Routine
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '8%' }}>
                     Studio
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '12%' }}>
                     Classification
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '8%' }}>
                     Size
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '9%' }}>
                     Routine Age
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '12%' }}>
                     Overalls Age
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '14%' }}>
                     Category
                   </th>
-                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '10%' }}>
                     Duration
                   </th>
                 </tr>
