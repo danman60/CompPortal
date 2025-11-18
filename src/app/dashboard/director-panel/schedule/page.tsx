@@ -682,6 +682,7 @@ export default function SchedulePage() {
       toast.success(`Reset ${result.count} routine${result.count !== 1 ? 's' : ''} for this day`);
       refetch();
       refetchConflicts();
+      refetchRoutinesByDay(); // Update schedule table immediately
     },
     onError: (error) => {
       toast.error(`Failed to reset schedule: ${error.message}`);
@@ -693,6 +694,7 @@ export default function SchedulePage() {
       toast.success(`Reset ${result.count} routine${result.count !== 1 ? 's' : ''} for entire competition`);
       refetch();
       refetchConflicts();
+      refetchRoutinesByDay(); // Update schedule table immediately
     },
     onError: (error) => {
       toast.error(`Failed to reset schedule: ${error.message}`);
@@ -936,6 +938,7 @@ export default function SchedulePage() {
               isBatchSchedulingRef.current = false;
               await refetch();
               await refetchConflicts();
+              await refetchRoutinesByDay(); // Refetch schedule table for selected day
 
               if (isBulkDrag) {
                 if (successCount > 0) {
