@@ -165,12 +165,12 @@ export const entryRouter = router({
 
       // Fetch studio and competition data
       // First find the reservation to filter entries by reservation_id (per PHASE1_SPEC.md line 602)
+      // Note: Don't filter by status='approved' here - let idempotency check handle already-submitted summaries
       const reservation = await prisma.reservations.findFirst({
         where: {
           tenant_id: ctx.tenantId!,
           studio_id: studioId,
           competition_id: competitionId,
-          status: 'approved',
         },
         select: { id: true },
       });
@@ -257,7 +257,7 @@ export const entryRouter = router({
       if (!fullReservation) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'You don\'t have an approved reservation yet. Please request a reservation from the Competition Director first, or check back soon if you\'ve already requested one.',
+          message: 'No reservation found for this studio and competition. Please contact the Competition Director if you believe this is an error.',
         });
       }
 
