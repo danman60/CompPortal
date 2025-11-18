@@ -93,10 +93,8 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
 
   const style = isDragging ? { opacity: 0.5 } : {};
 
-  // Determine studio display
-  const studioDisplay = viewMode === 'judge' || viewMode === 'public'
-    ? routine.studioCode
-    : routine.studioName;
+  // Always show studio code (5-digit code)
+  const studioDisplay = routine.studioCode;
 
   // Row classes
   const rowClasses = [
@@ -116,7 +114,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       className={rowClasses}
     >
       {/* Checkbox */}
-      <td className="px-4 py-3">
+      <td className="px-2 py-2">
         {onToggleSelection && (
           <input
             type="checkbox"
@@ -132,7 +130,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Title with indicators */}
-      <td className="px-4 py-3 text-sm font-medium text-white">
+      <td className="px-2 py-2 text-sm font-medium text-white">
         <div className="flex items-center gap-2">
           {routine.title}
           {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
@@ -143,31 +141,31 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Studio */}
-      <td className="px-4 py-3 text-sm text-white/80">{studioDisplay}</td>
+      <td className="px-2 py-2 text-sm text-white/80">{studioDisplay}</td>
 
       {/* Classification */}
-      <td className="px-4 py-3">
+      <td className="px-2 py-2">
         <span className={`inline-block px-2 py-1 rounded-md text-xs font-semibold ${getClassificationColor(routine.classificationName)}`}>
           {routine.classificationName}
         </span>
       </td>
 
-      {/* Category */}
-      <td className="px-4 py-3 text-sm text-white/80">{routine.categoryName}</td>
-
-      {/* Age Group */}
-      <td className="px-4 py-3 text-sm text-white/80">{routine.ageGroupName}</td>
+      {/* Size */}
+      <td className="px-2 py-2 text-sm text-white/80">{routine.entrySizeName}</td>
 
       {/* Routine Age (stored routine_age field) */}
-      <td className="px-4 py-3 text-sm text-white/80">
+      <td className="px-2 py-2 text-sm text-white/80">
         {routine.routineAge ?? '-'}
       </td>
 
-      {/* Group Size */}
-      <td className="px-4 py-3 text-sm text-white/80">{routine.entrySizeName}</td>
+      {/* Overalls Age (Age Group) */}
+      <td className="px-2 py-2 text-sm text-white/80">{routine.ageGroupName}</td>
+
+      {/* Category */}
+      <td className="px-2 py-2 text-sm text-white/80">{routine.categoryName}</td>
 
       {/* Duration */}
-      <td className="px-4 py-3 text-sm text-white/80 whitespace-nowrap">⏱️ {routine.duration} min</td>
+      <td className="px-2 py-2 text-sm text-white/80 whitespace-nowrap">⏱️ {routine.duration} min</td>
     </tr>
   );
 }
@@ -441,31 +439,31 @@ export function RoutinePool({
             <table className="w-full">
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '40px' }}>
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '40px' }}>
                     ✓
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
                     Routine
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
                     Studio
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
                     Classification
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                    Age
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                    Routine Age
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
                     Size
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                    Routine Age
+                  </th>
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                    Overalls Age
+                  </th>
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
                     Duration
                   </th>
                 </tr>

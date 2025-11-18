@@ -166,7 +166,7 @@ export function RoutineCard({
       )}
 
       {/* Indicator Badges (Top Left Corner, offset if checkbox present) */}
-      <div className={`absolute top-2 flex gap-1 ${onToggleSelection ? 'left-9' : 'left-2'} max-w-[60%]`} style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto', zIndex: 8 }}>
+      <div className={`absolute top-2 flex gap-1 ${onToggleSelection ? 'left-9' : 'left-2'} ${onToggleSelection ? 'max-w-[calc(100%-140px)]' : 'max-w-[calc(100%-100px)]'}`} style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto', zIndex: 8 }}>
         {/* Trophy Icon for Last Routine */}
         {isLastRoutine && (
           <div

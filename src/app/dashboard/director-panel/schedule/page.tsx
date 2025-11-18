@@ -934,8 +934,8 @@ export default function SchedulePage() {
 
               // Reset ref and do single refetch at the end (10x faster than per-mutation)
               isBatchSchedulingRef.current = false;
-              refetch();
-              refetchConflicts();
+              await refetch();
+              await refetchConflicts();
 
               if (isBulkDrag) {
                 if (successCount > 0) {

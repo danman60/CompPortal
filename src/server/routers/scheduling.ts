@@ -800,8 +800,8 @@ export const schedulingRouter = router({
         // Calculate unscheduled count
         const unscheduledCount = totalRoutinesInCategory - routines.length;
 
-        // Only show trophy helper when fewer than 3 unscheduled routines remain
-        if (unscheduledCount >= 3) continue;
+        // Only show trophy helper when ALL routines in category are scheduled
+        if (unscheduledCount > 0) continue;
 
         // Format category display name
         const categoryDisplay = `${firstRoutine.entry_size_categories.name} - ${firstRoutine.age_groups.name} - ${firstRoutine.classifications.name}`;
