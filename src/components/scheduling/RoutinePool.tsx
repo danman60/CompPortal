@@ -114,7 +114,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       className={rowClasses}
     >
       {/* Checkbox */}
-      <td className="px-1.5 py-2 align-middle">
+      <td className="px-1 py-2 align-middle">
         {onToggleSelection && (
           <input
             type="checkbox"
@@ -130,9 +130,9 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Title with indicators */}
-      <td className="px-1.5 py-2 text-xs font-medium text-white align-middle">
+      <td className="px-1 py-2 text-xs font-medium text-white align-middle">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="truncate" title={routine.title}>{routine.title}</span>
+          <span className="truncate max-w-[80px]" title={routine.title}>{routine.title}</span>
           <div className="flex items-center gap-1 flex-shrink-0">
             {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
             {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
@@ -143,31 +143,31 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Studio */}
-      <td className="px-1.5 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{studioDisplay}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{studioDisplay}</td>
 
       {/* Classification */}
-      <td className="px-1.5 py-2 align-middle">
+      <td className="px-1 py-2 align-middle">
         <span className={`inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold truncate max-w-full ${getClassificationColor(routine.classificationName)}`}>
           {routine.classificationName}
         </span>
       </td>
 
       {/* Size */}
-      <td className="px-1.5 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.entrySizeName}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.entrySizeName}</td>
 
       {/* Routine Age (stored routine_age field) */}
-      <td className="px-1.5 py-2 text-xs text-white/80 align-middle whitespace-nowrap">
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">
         {routine.routineAge ?? '-'}
       </td>
 
       {/* Overalls Age (Age Group) */}
-      <td className="px-1.5 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.ageGroupName}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.ageGroupName}</td>
 
       {/* Category */}
-      <td className="px-1.5 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.categoryName}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.categoryName}</td>
 
       {/* Duration */}
-      <td className="px-1.5 py-2 text-xs text-white/80 align-middle whitespace-nowrap">⏱️ {routine.duration} min</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">⏱️ {routine.duration} min</td>
     </tr>
   );
 }
@@ -441,31 +441,31 @@ export function RoutinePool({
             <table className="w-full" style={{ minWidth: '900px' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
                     ✓
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '180px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '180px' }}>
                     Routine
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '60px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '60px' }}>
                     Studio
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '100px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '100px' }}>
                     Classification
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
                     Size
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
                     Routine Age
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
                     Overalls Age
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '120px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '120px' }}>
                     Category
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
                     Duration
                   </th>
                 </tr>
