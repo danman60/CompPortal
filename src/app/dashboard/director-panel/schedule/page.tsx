@@ -71,6 +71,7 @@ interface Routine {
   entrySizeId: string;
   entrySizeName: string;
   duration: number;
+  routineAge: number | null; // Final selected age for routine
   participants: Array<{
     dancerId: string;
     dancerName: string;
@@ -1084,17 +1085,12 @@ export default function SchedulePage() {
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
 
-  // Get unique age groups from routines
-  // Get unique routine ages (max participant age) instead of age groups
+  // Get unique routine ages from stored routine_age field
   const routineAges = routines
     ? Array.from(new Set(
         routines
-          .map(r => {
-            if (r.participants.length === 0) return 0;
-            const ages = r.participants.map((p: any) => p.dancerAge || 0);
-            return Math.max(...ages);
-          })
-          .filter(age => age > 0) // Filter out routines with no ages
+          .map(r => r.routineAge)
+          .filter((age): age is number => age !== null && age > 0)
       ))
         .sort((a, b) => a - b)
         .map(age => ({ id: age.toString(), name: `${age} years` }))
@@ -1130,12 +1126,9 @@ export default function SchedulePage() {
       return false;
     }
 
-    // Routine age filter (max participant age)
+    // Routine age filter (stored routine_age field)
     if (filters.ageGroups.length > 0) {
-      if (routine.participants.length === 0) return false;
-      const ages = routine.participants.map((p: any) => p.dancerAge || 0);
-      const routineAge = Math.max(...ages);
-      if (!filters.ageGroups.includes(routineAge.toString())) {
+      if (!routine.routineAge || !filters.ageGroups.includes(routine.routineAge.toString())) {
         return false;
       }
     }

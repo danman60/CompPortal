@@ -390,6 +390,7 @@ export const schedulingRouter = router({
           category_id: true,
           age_group_id: true,
           entry_size_category_id: true,
+          routine_age: true, // Final selected age for routine
           schedule_zone: true,
           performance_time: true,
           performance_date: true,
@@ -477,6 +478,7 @@ export const schedulingRouter = router({
           entrySizeId: routine.entry_size_category_id,
           entrySizeName: routine.entry_size_categories.name,
           duration: routine.routine_length_minutes || 3, // Use actual routine length or default 3 min
+          routineAge: routine.routine_age, // Final selected age for routine
           participants: [], // PERFORMANCE: Empty array - participants fetched separately by detectConflicts
           isScheduled: routine.performance_date !== null, // V4: Check date instead of zone
           scheduleZone: null, // V4: Deprecated zone field

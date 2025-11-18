@@ -158,11 +158,9 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       {/* Age Group */}
       <td className="px-4 py-3 text-sm text-white/80">{routine.ageGroupName}</td>
 
-      {/* Routine Age (max age of participants) */}
+      {/* Routine Age (stored routine_age field) */}
       <td className="px-4 py-3 text-sm text-white/80">
-        {routine.participants.length > 0
-          ? Math.max(...routine.participants.map(p => p.dancerAge || 0))
-          : '-'}
+        {routine.routineAge ?? '-'}
       </td>
 
       {/* Group Size */}

@@ -33,6 +33,7 @@ export interface Routine {
   entrySizeId: string;
   entrySizeName: string;
   duration: number;
+  routineAge: number | null; // Final selected age for routine
   participants: Array<{
     dancerId: string;
     dancerName: string;
