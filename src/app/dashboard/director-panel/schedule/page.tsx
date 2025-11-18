@@ -1534,7 +1534,10 @@ export default function SchedulePage() {
                 entrySizeId: r.entry_size_category_id || '',
                 entrySizeName: r.entry_size_categories?.name || 'Unknown',
                 duration: r.routine_length_minutes || 3,
-                participants: [],
+                participants: (r.entry_participants || []).map((p: any) => ({
+                  dancerId: p.dancer_id,
+                  dancerName: p.dancer_name,
+                })),
                 entryNumber: r.entry_number,
                 scheduledTime: r.performance_time,
                 scheduledDay: r.performance_date,

@@ -736,6 +736,12 @@ export const schedulingRouter = router({
           age_groups: { select: { id: true, name: true } },
           classifications: { select: { id: true, name: true } },
           entry_size_categories: { select: { id: true, name: true } },
+          entry_participants: {
+            select: {
+              dancer_id: true,
+              dancer_name: true,
+            },
+          },
         },
       });
     }),

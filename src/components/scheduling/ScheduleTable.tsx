@@ -4,6 +4,8 @@
  * Schedule V4 Redesign - ScheduleTable Component
  *
  * Single chronological table displaying all scheduled routines for a specific day.
+ * 7-column layout: # | Time | Routine | Studio | Classification | Category | Dancers
+ *
  * Features:
  * - Chronological ordering by entry_number
  * - Auto-calculated time display (not editable)
@@ -11,6 +13,7 @@
  * - Conflict detection (red box spanning multiple rows)
  * - Drag-and-drop support via DnD Kit
  * - ViewMode filtering (CD/Studio/Judge/Public)
+ * - Dancer names display (first 2 names + "+X more" if needed)
  */
 
 import { useMemo } from 'react';
@@ -181,6 +184,26 @@ function SortableRoutineRow({
         {routine.categoryName}
       </td>
 
+      {/* Dancers */}
+      <td className="px-4 py-3 text-sm text-white/80">
+        {routine.participants && routine.participants.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {routine.participants.slice(0, 2).map((p, idx) => (
+              <span key={p.dancerId} className="text-xs">
+                {p.dancerName}{idx < Math.min(1, routine.participants.length - 1) ? ',' : ''}
+              </span>
+            ))}
+            {routine.participants.length > 2 && (
+              <span className="text-xs text-white/60">
+                +{routine.participants.length - 2} more
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-white/40 text-xs italic">No dancers</span>
+        )}
+      </td>
+
       {/* Conflict indicator */}
       {conflict && isFirstInConflict && (
         <td
@@ -327,6 +350,9 @@ export function ScheduleTable({
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
                 Category
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '180px' }}>
+                Dancers
               </th>
             </tr>
           </thead>
