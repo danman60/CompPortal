@@ -1134,8 +1134,13 @@ export default function SchedulePage() {
   , [routines]);
 
   // Group routines by zone (memoized for performance)
-  const routinesByZone = useMemo(() =>
-    (routines || []).reduce((acc, routine) => {
+  const routinesByZone = useMemo(() => {
+    console.log('[routinesByZone] Total routines from API:', routines?.length || 0);
+    const scheduledCount = routines?.filter(r => r.isScheduled).length || 0;
+    const unscheduledCount = routines?.filter(r => !r.isScheduled).length || 0;
+    console.log('[routinesByZone] Scheduled:', scheduledCount, 'Unscheduled:', unscheduledCount);
+
+    return (routines || []).reduce((acc, routine) => {
       // V4: Skip scheduled routines from being assigned to any zone
       // This prevents them from appearing in 'unscheduled' zone (UR)
       // Scheduled routines are managed by ScheduleTable/DayTabs, not RoutinePool
@@ -1147,8 +1152,8 @@ export default function SchedulePage() {
       if (!acc[zone]) acc[zone] = [];
       acc[zone].push(routine);
       return acc;
-    }, {} as Record<ScheduleZone, Routine[]>)
-  , [routines, routineZones]);
+    }, {} as Record<ScheduleZone, Routine[]>);
+  }, [routines, routineZones]);
 
   // Apply client-side filters to unscheduled routines (memoized for performance)
   const unscheduledRoutines = useMemo(() => {
