@@ -2700,9 +2700,12 @@ export const schedulingRouter = router({
         // Use Prisma transaction to update all routines atomically
         const updates = await prisma.$transaction(
           routines.map(({ routineId, entryNumber, performanceTime }) => {
-            // Parse time as UTC to avoid timezone conversion bugs
-            const [hours, minutes, seconds] = performanceTime.split(':').map(Number);
-            const performanceTimeUTC = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
+            // Combine the date parameter with the performanceTime to create proper timestamp
+            // date is "2026-04-11", performanceTime is "08:00:00"
+            const dateTimeString = `${date}T${performanceTime}`;
+            const performanceTimeLocal = new Date(dateTimeString);
+
+            console.log('[batchReorderRoutines] Routine', routineId, ':', dateTimeString, '→', performanceTimeLocal);
 
             return prisma.competition_entries.update({
               where: {
@@ -2711,7 +2714,7 @@ export const schedulingRouter = router({
               },
               data: {
                 entry_number: entryNumber,
-                performance_time: performanceTimeUTC,
+                performance_time: performanceTimeLocal,
                 updated_at: new Date(),
               },
             });

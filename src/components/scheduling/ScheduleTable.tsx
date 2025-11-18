@@ -154,17 +154,17 @@ function SortableRoutineRow({
       )}
 
       {/* Entry Number */}
-      <td className="px-2 py-2 text-xs font-mono font-bold text-white whitespace-nowrap">
+      <td className="px-1 py-1 text-xs font-mono font-bold text-white whitespace-nowrap">
         #{routine.entryNumber || '?'}
       </td>
 
       {/* Time */}
-      <td className="px-2 py-2 text-xs font-mono text-white/90 whitespace-nowrap">
+      <td className="px-1 py-1 text-xs font-mono text-white/90 whitespace-nowrap">
         {performanceTime}
       </td>
 
       {/* Routine Title */}
-      <td className="px-2 py-2 text-xs font-medium text-white">
+      <td className="px-1 py-1 text-xs font-medium text-white">
         <div className="flex items-center gap-1">
           {routine.title}
           {isLastInOveralls && (
@@ -179,12 +179,12 @@ function SortableRoutineRow({
       </td>
 
       {/* Studio */}
-      <td className="px-2 py-2 text-xs text-white/80 text-center">
+      <td className="px-1 py-1 text-xs text-white/80 text-center">
         {studioDisplay}
       </td>
 
       {/* Classification */}
-      <td className="px-2 py-2">
+      <td className="px-1 py-1">
         <span
           className={`inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold ${classificationColor}`}
         >
@@ -193,12 +193,12 @@ function SortableRoutineRow({
       </td>
 
       {/* Size */}
-      <td className="px-2 py-2 text-xs text-white/80">
+      <td className="px-1 py-1 text-xs text-white/80">
         {routine.entrySizeName}
       </td>
 
       {/* Routine Age */}
-      <td className="px-2 py-2 text-xs text-white/80 text-center">
+      <td className="px-1 py-1 text-xs text-white/80 text-center">
         {routine.routineAge ?? '-'}
       </td>
 
@@ -220,7 +220,7 @@ function SortableRoutineRow({
       {/* Session Separator */}
       {isLastInSession && (
         <tr className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20">
-          <td colSpan={6} className="px-2 py-2">
+          <td colSpan={7} className="px-1 py-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-purple-500"></div>
@@ -448,25 +448,25 @@ export function ScheduleTable({
         <table className="w-full">
           <thead>
             <tr className="bg-white/10 border-b border-white/20">
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '45px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '32px' }}>
                 #
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '65px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '55px' }}>
                 Time
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '140px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '100px' }}>
                 Routine
               </th>
-              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '55px' }}>
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '45px' }}>
                 Studio
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '90px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '70px' }}>
                 Classification
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '70px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '50px' }}>
                 Size
               </th>
-              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '60px' }}>
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '40px' }}>
                 Routine Age
               </th>
             </tr>
@@ -523,7 +523,7 @@ export function ScheduleTable({
       </div>
 
       {/* Table Footer Summary */}
-      <div className="bg-white/5 border-t border-white/20 px-2 py-2 flex items-center justify-between text-xs">
+      <div className="bg-white/5 border-t border-white/20 px-1 py-1 flex items-center justify-between text-xs">
         <div className="text-white/60">
           Total: <span className="font-semibold text-white">{sortedRoutines.length}</span> routines
         </div>
