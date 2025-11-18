@@ -448,25 +448,25 @@ export function ScheduleTable({
         <table className="w-full">
           <thead>
             <tr className="bg-white/10 border-b border-white/20">
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '50px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '45px' }}>
                 #
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '70px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '65px' }}>
                 Time
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '180px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '140px' }}>
                 Routine
               </th>
-              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '70px' }}>
+              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '55px' }}>
                 Studio
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '110px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '90px' }}>
                 Classification
               </th>
-              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '90px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '70px' }}>
                 Size
               </th>
-              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '80px' }}>
+              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '60px' }}>
                 Routine Age
               </th>
             </tr>
@@ -494,10 +494,8 @@ export function ScheduleTable({
                 // Classification color
                 const classificationColor = getClassificationColor(routine.classificationName);
 
-                // Studio display based on view mode
-                const studioDisplay = viewMode === 'judge'
-                  ? `Studio ${routine.studioCode}`
-                  : routine.studioName;
+                // Studio display - always show 5-char code
+                const studioDisplay = routine.studioCode;
 
                 return (
                   <SortableRoutineRow

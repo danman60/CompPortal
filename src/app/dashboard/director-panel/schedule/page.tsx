@@ -1349,7 +1349,7 @@ export default function SchedulePage() {
           unscheduledRoutines={(routines?.length || 0) - scheduledCount}
         />
 
-        <div className="p-4">
+        <div className="p-2">
 
         {/* CD Requests Management Panel (Collapsible) */}
         {showRequestsPanel && (
@@ -1472,7 +1472,7 @@ export default function SchedulePage() {
         )}
 
         {/* Main 2-Panel Layout (V4: 33% left, 67% right) */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2">
 
           {/* LEFT PANEL: Unscheduled Routines Pool (33%) - Sticky */}
           <div className="col-span-1 space-y-4 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
