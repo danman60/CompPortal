@@ -188,7 +188,7 @@ export const entryRouter = router({
           where: {
             tenant_id: ctx.tenantId!,
             reservation_id: reservation?.id,
-            status: { not: 'cancelled' },
+            status: { notIn: ['cancelled', 'withdrawn'] },
           },
           // Fetch full entry data for snapshot (entry.ts:351)
           select: {
