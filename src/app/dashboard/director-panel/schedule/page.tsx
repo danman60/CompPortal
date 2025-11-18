@@ -1085,10 +1085,19 @@ export default function SchedulePage() {
     : [];
 
   // Get unique age groups from routines
-  const ageGroups = routines
-    ? Array.from(new Set(routines.map(r => ({ id: r.ageGroupId, name: r.ageGroupName }))))
-        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-        .sort((a, b) => a.name.localeCompare(b.name))
+  // Get unique routine ages (max participant age) instead of age groups
+  const routineAges = routines
+    ? Array.from(new Set(
+        routines
+          .map(r => {
+            if (r.participants.length === 0) return 0;
+            const ages = r.participants.map((p: any) => p.dancerAge || 0);
+            return Math.max(...ages);
+          })
+          .filter(age => age > 0) // Filter out routines with no ages
+      ))
+        .sort((a, b) => a - b)
+        .map(age => ({ id: age.toString(), name: `${age} years` }))
     : [];
 
   // Get unique studios from routines
@@ -1121,9 +1130,14 @@ export default function SchedulePage() {
       return false;
     }
 
-    // Age group filter
-    if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(routine.ageGroupId)) {
-      return false;
+    // Routine age filter (max participant age)
+    if (filters.ageGroups.length > 0) {
+      if (routine.participants.length === 0) return false;
+      const ages = routine.participants.map((p: any) => p.dancerAge || 0);
+      const routineAge = Math.max(...ages);
+      if (!filters.ageGroups.includes(routineAge.toString())) {
+        return false;
+      }
     }
 
     // Genre filter
@@ -1423,7 +1437,7 @@ export default function SchedulePage() {
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
               classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
-              ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
+              ageGroups={routineAges.map(ag => ({ id: ag.id, label: ag.name }))}
               genres={categories.map(c => ({ id: c.id, label: c.name }))}
               groupSizes={groupSizes.map(gs => ({ id: gs.id, label: gs.name }))}
               studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
