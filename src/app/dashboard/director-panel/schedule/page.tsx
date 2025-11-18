@@ -1553,7 +1553,7 @@ export default function SchedulePage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-white/70">Unscheduled:</span>
-                    <span className="text-amber-300 font-bold">{unscheduledRoutines.length}</span>
+                    <span className="text-amber-300 font-bold">{(routines?.length || 0) - scheduledCount}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-white/70">Scheduled:</span>
