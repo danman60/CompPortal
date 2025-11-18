@@ -385,6 +385,8 @@ export const schedulingRouter = router({
         };
       }
 
+      console.log('[getRoutines] WHERE clause:', JSON.stringify(where, null, 2));
+
       // PERFORMANCE OPTIMIZATION: Fetch routines with studio codes in single query
       // Include reservation data via JOIN instead of separate query
       const routines = await prisma.competition_entries.findMany({
@@ -453,6 +455,9 @@ export const schedulingRouter = router({
           { created_at: 'asc' },
         ],
       });
+
+      console.log('[getRoutines] Prisma returned:', routines.length, 'routines');
+      console.log('[getRoutines] First routine (if any):', routines[0] ? { id: routines[0].id, title: routines[0].title } : 'NONE');
 
       // Transform data based on view mode
       return routines.map(routine => {
