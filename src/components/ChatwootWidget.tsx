@@ -111,21 +111,33 @@ export function ChatwootWidget({
           config.customAttributes = customAttributes;
         }
 
+        // Detect Safari and delay initialization to prevent hydration errors
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const initDelay = isSafari ? 500 : 0;
+
         // Wrap SDK initialization to suppress known race condition errors
-        try {
-          window.chatwootSDK.run(config);
-        } catch (error) {
-          // Suppress known Chatwoot SDK race condition with contentWindow
-          // This is a cosmetic error that doesn't affect functionality
-          if (error instanceof Error && error.message?.includes('contentWindow')) {
-            if (process.env.NODE_ENV === 'development') {
-              console.debug('Chatwoot SDK race condition (harmless, widget will still work):', error.message);
+        const initializeChatwoot = () => {
+          try {
+            window.chatwootSDK?.run(config);
+          } catch (error) {
+            // Suppress known Chatwoot SDK race condition with contentWindow/parentNode
+            // This is a cosmetic error that doesn't affect functionality
+            if (error instanceof Error && (error.message?.includes('contentWindow') || error.message?.includes('parentNode'))) {
+              if (process.env.NODE_ENV === 'development') {
+                console.debug('Chatwoot SDK race condition (harmless, widget will still work):', error.message);
+              }
+            } else {
+              // Re-throw unexpected errors
+              console.error('ChatwootWidget: Unexpected SDK initialization error', error);
+              throw error;
             }
-          } else {
-            // Re-throw unexpected errors
-            console.error('ChatwootWidget: Unexpected SDK initialization error', error);
-            throw error;
           }
+        };
+
+        if (initDelay > 0) {
+          setTimeout(initializeChatwoot, initDelay);
+        } else {
+          initializeChatwoot();
         }
       }
     };
