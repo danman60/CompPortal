@@ -16,7 +16,7 @@
  * Spec: SCHEDULING_SPEC_V4_UNIFIED.md
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { RoutineCard, Routine, ViewMode } from './RoutineCard';
 import { useDraggable } from '@dnd-kit/core';
 
@@ -544,9 +544,24 @@ function FilterDropdown({
   onToggleOpen: () => void;
 }) {
   const selectedCount = selectedIds.length;
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        onToggleOpen(); // Close the dropdown
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onToggleOpen]);
 
   return (
-    <div className="relative">
+    <div ref={dropdownRef} className="relative">
       <button
         onClick={onToggleOpen}
         className={`px-3 py-1.5 text-sm font-medium rounded border transition-colors ${
