@@ -401,6 +401,7 @@ export const schedulingRouter = router({
             select: {
               id: true,
               name: true,
+              code: true, // Studio's own 5-digit code (fallback)
               // Get studio code from approved reservation
               reservations: {
                 where: {
@@ -448,7 +449,8 @@ export const schedulingRouter = router({
 
       // Transform data based on view mode
       return routines.map(routine => {
-        const studioCode = routine.studios.reservations[0]?.studio_code || 'X';
+        // Fallback priority: reservation code > studio code > 'X'
+        const studioCode = routine.studios.reservations[0]?.studio_code || routine.studios.code || 'X';
         const studioName = routine.studios.name;
 
         // View mode logic:
