@@ -275,31 +275,9 @@ export function ScheduleToolbar({
         </div>
       </div>
 
-      {/* Bottom Row: View Mode Toggle + Stats */}
+      {/* Bottom Row: Stats Only (View selector removed per Issue #5) */}
       <div className="flex items-center justify-between">
-        {/* Left: View Mode Toggle */}
-        <div className="flex items-center gap-2 bg-black/20 rounded-lg p-1">
-          {viewModes.map((mode) => (
-            <button
-              key={mode.id}
-              onClick={() => onViewModeChange(mode.id)}
-              className={`
-                px-4 py-2 rounded-lg font-medium text-sm transition-all
-                ${
-                  viewMode === mode.id
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                    : 'bg-transparent text-gray-300 hover:bg-white/10'
-                }
-              `}
-              data-view={mode.id}
-              title={mode.description}
-            >
-              {mode.icon} {mode.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Right: Stats */}
+        {/* Stats */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-gray-400">Total Routines:</span>
