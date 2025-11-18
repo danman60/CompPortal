@@ -144,6 +144,7 @@ export default function SchedulePage() {
     genres: string[];
     groupSizes: string[];
     studios: string[];
+    routineAges: string[];
     search: string;
   }>({
     classifications: [],
@@ -151,6 +152,7 @@ export default function SchedulePage() {
     genres: [],
     groupSizes: [],
     studios: [],
+    routineAges: [],
     search: '',
   });
 
@@ -1088,6 +1090,13 @@ export default function SchedulePage() {
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
 
+  // Get unique age groups from routines
+  const ageGroups = routines
+    ? Array.from(new Set(routines.map(r => ({ id: r.ageGroupId, name: r.ageGroupName }))))
+        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
   // Get unique routine ages from stored routine_age field
   const routineAges = routines
     ? Array.from(new Set(
@@ -1129,11 +1138,9 @@ export default function SchedulePage() {
       return false;
     }
 
-    // Routine age filter (stored routine_age field)
-    if (filters.ageGroups.length > 0) {
-      if (!routine.routineAge || !filters.ageGroups.includes(routine.routineAge.toString())) {
-        return false;
-      }
+    // Age group filter
+    if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(routine.ageGroupId)) {
+      return false;
     }
 
     // Genre filter
@@ -1149,6 +1156,13 @@ export default function SchedulePage() {
     // Studio filter
     if (filters.studios.length > 0 && !filters.studios.includes(routine.studioId)) {
       return false;
+    }
+
+    // Routine age filter
+    if (filters.routineAges.length > 0) {
+      if (!routine.routineAge || !filters.routineAges.includes(routine.routineAge.toString())) {
+        return false;
+      }
     }
 
     // Search filter (already handled by backend query, but add client-side for consistency)
@@ -1433,10 +1447,11 @@ export default function SchedulePage() {
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
               classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
-              ageGroups={routineAges.map(ag => ({ id: ag.id, label: ag.name }))}
+              ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
               genres={categories.map(c => ({ id: c.id, label: c.name }))}
               groupSizes={groupSizes.map(gs => ({ id: gs.id, label: gs.name }))}
               studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
+              routineAges={routineAges.map(ra => ({ id: ra.id, label: ra.name }))}
               filters={filters}
               onFiltersChange={setFilters}
               totalRoutines={routines?.length || 0}

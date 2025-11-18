@@ -31,6 +31,7 @@ export interface FilterState {
   genres: string[];
   groupSizes: string[];
   studios: string[];
+  routineAges: string[];
   search: string;
 }
 
@@ -58,6 +59,7 @@ interface RoutinePoolProps {
   genres?: FilterOption[];
   groupSizes?: FilterOption[];
   studios?: FilterOption[];
+  routineAges?: FilterOption[];
   filters?: FilterState;
   onFiltersChange?: (filters: FilterState) => void;
   totalRoutines?: number;
@@ -193,7 +195,8 @@ export function RoutinePool({
   genres = [],
   groupSizes = [],
   studios = [],
-  filters = { classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], search: '' },
+  routineAges = [],
+  filters = { classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], routineAges: [], search: '' },
   onFiltersChange,
   totalRoutines = 0,
   filteredRoutines = 0,
@@ -395,10 +398,27 @@ export function RoutinePool({
               />
             )}
 
+            {/* Routine Age Filter */}
+            {routineAges.length > 0 && (
+              <FilterDropdown
+                label="Routine Age"
+                options={routineAges}
+                selectedIds={filters.routineAges}
+                onToggle={(id) => {
+                  const newValues = filters.routineAges.includes(id)
+                    ? filters.routineAges.filter(v => v !== id)
+                    : [...filters.routineAges, id];
+                  onFiltersChange({ ...filters, routineAges: newValues });
+                }}
+                isOpen={openDropdown === 'routineAges'}
+                onToggleOpen={() => setOpenDropdown(openDropdown === 'routineAges' ? null : 'routineAges')}
+              />
+            )}
+
             {/* Clear Filters */}
-            {(filters.classifications.length > 0 || filters.ageGroups.length > 0 || filters.genres.length > 0 || filters.groupSizes.length > 0 || filters.studios.length > 0 || filters.search.length > 0) && (
+            {(filters.classifications.length > 0 || filters.ageGroups.length > 0 || filters.genres.length > 0 || filters.groupSizes.length > 0 || filters.studios.length > 0 || filters.routineAges.length > 0 || filters.search.length > 0) && (
               <button
-                onClick={() => onFiltersChange({ classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], search: '' })}
+                onClick={() => onFiltersChange({ classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], routineAges: [], search: '' })}
                 className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
                 title="Clear all filters"
               >
