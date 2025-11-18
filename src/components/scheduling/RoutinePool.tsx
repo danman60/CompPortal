@@ -135,7 +135,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       <td className="px-1 py-2 text-xs font-medium text-white align-middle">
         <div className="flex items-center gap-2 min-w-0">
           <span className="truncate max-w-[80px]" title={routine.title}>{routine.title}</span>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 flex-shrink-0 w-[60px]">
             {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
             {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
             {hasNotes && <span className="text-blue-400" title="Has notes">📝</span>}
