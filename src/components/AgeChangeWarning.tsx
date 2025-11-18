@@ -27,6 +27,7 @@ interface AgeChangeWarningProps {
   routineTitle: string;
   ageChanges: AgeChange[];
   onResolve?: (routineId: string) => void;
+  onDismiss?: (routineId: string) => void;
   compact?: boolean;
 }
 
@@ -35,6 +36,7 @@ export function AgeChangeWarning({
   routineTitle,
   ageChanges,
   onResolve,
+  onDismiss,
   compact = false,
 }: AgeChangeWarningProps) {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -87,13 +89,26 @@ export function AgeChangeWarning({
 
   // Full version - card with details
   return (
-    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 relative">
+      {/* Dismiss Button */}
+      {onDismiss && (
+        <button
+          onClick={() => onDismiss(routineId)}
+          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white transition-colors rounded hover:bg-white/10"
+          title="Dismiss warning"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-yellow-500/20 border border-yellow-500/50 flex items-center justify-center flex-shrink-0">
           <span className="text-xl">⚠️</span>
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 pr-8">
           <h4 className="font-bold text-yellow-300 mb-1">
             Age Change Detected
           </h4>

@@ -445,7 +445,7 @@ export default function SchedulePage() {
 
     try {
       // Competition days: Thursday-Sunday (April 9-12, 2026)
-      const competitionDays = [
+      const competitionDateStrings = [
         '2026-04-09', // Thursday
         '2026-04-10', // Friday
         '2026-04-11', // Saturday
@@ -453,13 +453,13 @@ export default function SchedulePage() {
       ];
 
       // Distribute routines evenly across days
-      const routinesPerDay = Math.ceil(unscheduledRoutines.length / competitionDays.length);
+      const routinesPerDay = Math.ceil(unscheduledRoutines.length / competitionDateStrings.length);
 
       // Backend will auto-assign entry numbers sequentially (starting from max+1)
       // No hardcoded counter needed - prevents collision with existing scheduled routines
 
-      for (let dayIndex = 0; dayIndex < competitionDays.length; dayIndex++) {
-        const date = competitionDays[dayIndex];
+      for (let dayIndex = 0; dayIndex < competitionDateStrings.length; dayIndex++) {
+        const date = competitionDateStrings[dayIndex];
         const dayRoutines = unscheduledRoutines.slice(
           dayIndex * routinesPerDay,
           (dayIndex + 1) * routinesPerDay
@@ -467,8 +467,11 @@ export default function SchedulePage() {
 
         console.log(`[Auto-Generate] Day ${dayIndex + 1} (${date}): Scheduling ${dayRoutines.length} routines`);
 
-        // Schedule routines for this day sequentially
-        let currentTime = '08:00:00'; // Starting time
+        // Find the day's editable start time from the top-level competitionDays config
+        const dayConfig = [...competitionDays].find((d: any) => d.date === date);
+        const dayStartTime = dayConfig?.startTime || '08:00:00';
+        let currentTime = dayStartTime; // Use day's editable start time
+        console.log(`[Auto-Generate] Using day start time: ${dayStartTime}`);
         for (const routine of dayRoutines) {
           console.log(`[Auto-Generate] Scheduling: ${routine.title} at ${currentTime}`);
 
@@ -894,42 +897,57 @@ export default function SchedulePage() {
             let entryNumberCounter = maxEntryNumber + 1;
             console.log('[V4 Schedule] Starting entry number:', entryNumberCounter);
 
-            // Schedule all selected routines sequentially to avoid race conditions
+            // Find the day's editable start time from competitionDays
+            const dayConfig = competitionDays.find(d => d.date === date);
+            const dayStartTime = dayConfig?.startTime || '08:00:00';
+            console.log('[V4 Schedule] Using day start time:', dayStartTime);
+
+            // Schedule all selected routines in parallel for instant response
             (async () => {
               isBatchSchedulingRef.current = true; // Suppress individual refetches
-              let currentTime = '08:00:00'; // Starting time
+              let currentTime = dayStartTime; // Use day's editable start time
               let successCount = 0;
               let errorCount = 0;
 
-              for (let index = 0; index < routineIds.length; index++) {
-                const routineId = routineIds[index];
+              // Create all mutation promises in parallel (instant response)
+              const mutationPromises = routineIds.map((routineId, index) => {
                 const routine = routines?.find(r => r.id === routineId);
+                if (!routine) return Promise.resolve(null);
 
-                if (routine) {
-                  try {
-                    await scheduleMutation.mutateAsync({
-                      routineId,
-                      tenantId: TEST_TENANT_ID,
-                      performanceDate: date,
-                      performanceTime: currentTime,
-                      entryNumber: entryNumberCounter,
-                    });
-
-                    successCount++;
-                    entryNumberCounter++;
-                  } catch (error) {
-                    errorCount++;
-                    toast.error(`Failed: ${routine.title}`);
+                // Calculate time for this routine
+                const routineTime = (() => {
+                  let time = dayStartTime;
+                  for (let i = 0; i < index; i++) {
+                    const prevRoutine = routines?.find(r => r.id === routineIds[i]);
+                    if (prevRoutine) {
+                      const [hours, minutes] = time.split(':').map(Number);
+                      const totalMinutes = hours * 60 + minutes + (prevRoutine.duration || 3);
+                      const newHours = Math.floor(totalMinutes / 60);
+                      const newMinutes = totalMinutes % 60;
+                      time = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
+                    }
                   }
+                  return time;
+                })();
 
-                  // Increment time for next routine
-                  const [hours, minutes] = currentTime.split(':').map(Number);
-                  const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
-                  const newHours = Math.floor(totalMinutes / 60);
-                  const newMinutes = totalMinutes % 60;
-                  currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
-                }
-              }
+                return scheduleMutation.mutateAsync({
+                  routineId,
+                  tenantId: TEST_TENANT_ID,
+                  performanceDate: date,
+                  performanceTime: routineTime,
+                  entryNumber: entryNumberCounter + index,
+                }).then(() => {
+                  successCount++;
+                  return true;
+                }).catch((error) => {
+                  errorCount++;
+                  toast.error(`Failed: ${routine.title}`);
+                  return false;
+                });
+              });
+
+              // Execute all mutations in parallel
+              await Promise.all(mutationPromises);
 
               console.log('[V4 Schedule] Batch complete:', { successCount, errorCount });
 
@@ -1424,8 +1442,8 @@ export default function SchedulePage() {
         {/* Main 2-Panel Layout (V4: 33% left, 67% right) */}
         <div className="grid grid-cols-3 gap-6">
 
-          {/* LEFT PANEL: Unscheduled Routines Pool (33%) */}
-          <div className="col-span-1 space-y-6">
+          {/* LEFT PANEL: Unscheduled Routines Pool (33%) - Sticky */}
+          <div className="col-span-1 space-y-6 sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
             {/* Unscheduled Routines Pool (Session 56, Filters integrated Session 64) */}
             <RoutinePool
               routines={unscheduledRoutines}
@@ -1455,53 +1473,44 @@ export default function SchedulePage() {
               filteredRoutines={unscheduledRoutines.length}
             />
 
-            {/* Schedule Blocks */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)] mt-6">
-              <h2 className="text-lg font-bold text-white mb-4">Schedule Blocks</h2>
-              <p className="text-xs text-purple-300 mb-4">Create and drag blocks into the schedule</p>
-
-              {/* Create Block Templates */}
-              <div className="space-y-3 mb-6">
-                <DraggableBlockTemplate
-                  type="award"
-                  onClick={() => handleCreateBlock('award')}
-                />
-                <DraggableBlockTemplate
-                  type="break"
-                  onClick={() => handleCreateBlock('break')}
-                />
-              </div>
-
-              {/* Existing Unplaced Blocks */}
-              {scheduleBlocks.filter(b => b.zone === null).length > 0 && (
-                <>
-                  <div className="text-xs text-purple-300 mb-3 font-medium">Unplaced Blocks:</div>
-                  <div className="space-y-2">
-                    {scheduleBlocks.filter(b => b.zone === null).map(block => (
-                      <ScheduleBlockCard
-                        key={block.id}
-                        block={block}
-                        inZone={false}
-                        onEdit={handleEditBlock}
-                        onDelete={handleDeleteBlock}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
 
           {/* RIGHT PANEL: Schedule Table (V4 Redesign - 67%) */}
           <div className="col-span-2 space-y-6">
             {/* V4: Day Tabs with inline reset buttons */}
             <DayTabs
-              days={competitionDays.map(day => ({
-                ...day,
-                routineCount: (routines || []).filter((r: any) =>
+              days={competitionDays.map(day => {
+                // Get all routines for this day
+                const dayRoutines = (routines || []).filter((r: any) =>
                   r.isScheduled && r.scheduledDay && new Date(r.scheduledDay).toISOString().split('T')[0] === day.date
-                ).length,
-              }))}
+                );
+
+                // Calculate end time based on last routine
+                let endTime: string | undefined = undefined;
+                if (dayRoutines.length > 0) {
+                  // Find routine with latest scheduled time
+                  const sortedRoutines = [...dayRoutines].sort((a, b) => {
+                    if (!a.scheduledTime || !b.scheduledTime) return 0;
+                    return new Date(b.scheduledTime).getTime() - new Date(a.scheduledTime).getTime();
+                  });
+                  const lastRoutine = sortedRoutines[0];
+
+                  if (lastRoutine.scheduledTime) {
+                    const lastTime = new Date(lastRoutine.scheduledTime);
+                    const duration = lastRoutine.duration || 3;
+
+                    // Add duration to get end time
+                    const endTimeDate = new Date(lastTime.getTime() + duration * 60000);
+                    endTime = endTimeDate.toTimeString().substring(0, 8); // HH:mm:ss format
+                  }
+                }
+
+                return {
+                  ...day,
+                  routineCount: dayRoutines.length,
+                  endTime,
+                };
+              })}
               activeDay={selectedDate}
               onDayChange={setSelectedDate}
               competitionId={TEST_COMPETITION_ID}
@@ -1513,6 +1522,67 @@ export default function SchedulePage() {
                 refetchRoutinesByDay(); // Refetch schedule table
               }}
             />
+
+            {/* V4: Schedule Blocks (Inline) */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+              <div className="flex items-center gap-4">
+                {/* Label */}
+                <div className="flex-shrink-0">
+                  <h3 className="text-sm font-bold text-white">Schedule Blocks:</h3>
+                  <p className="text-xs text-purple-300">Create & drag into schedule</p>
+                </div>
+
+                {/* Block Template Buttons (Inline) */}
+                <div className="flex gap-3 flex-1">
+                  {/* Award Block Button */}
+                  <button
+                    onClick={() => handleCreateBlock('award')}
+                    className="px-4 py-2 rounded-lg border-2 border-amber-500/50 bg-amber-600/10 hover:bg-amber-600/20 hover:border-amber-500 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
+                      <span className="text-lg">🏆</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-white">+Award Block</div>
+                      <div className="text-xs text-purple-300">Add ceremony</div>
+                    </div>
+                  </button>
+
+                  {/* Break Block Button */}
+                  <button
+                    onClick={() => handleCreateBlock('break')}
+                    className="px-4 py-2 rounded-lg border-2 border-cyan-500/50 bg-cyan-600/10 hover:bg-cyan-600/20 hover:border-cyan-500 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                      <span className="text-lg">☕</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-white">+Break Block</div>
+                      <div className="text-xs text-purple-300">Add break</div>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Unplaced Blocks (Inline) */}
+                {scheduleBlocks.filter(b => b.zone === null).length > 0 && (
+                  <div className="flex items-center gap-2 border-l border-white/20 pl-4">
+                    <span className="text-xs text-purple-300 font-medium whitespace-nowrap">Unplaced:</span>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {scheduleBlocks.filter(b => b.zone === null).map(block => (
+                        <div key={block.id} className="flex-shrink-0 w-48">
+                          <ScheduleBlockCard
+                            block={block}
+                            inZone={false}
+                            onEdit={handleEditBlock}
+                            onDelete={handleDeleteBlock}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* V4: Schedule Table */}
             <ScheduleTable
@@ -1538,6 +1608,13 @@ export default function SchedulePage() {
                 entryNumber: r.entry_number,
                 scheduledTime: r.performance_time,
                 scheduledDay: r.performance_date,
+              }))}
+              allRoutines={(routines || []).map((r: any) => ({
+                id: r.id,
+                entrySizeName: r.entry_size_categories?.name || 'Unknown',
+                ageGroupName: r.age_groups?.name || 'Unknown',
+                classificationName: r.classifications?.name || 'Unknown',
+                isScheduled: r.isScheduled,
               }))}
               selectedDate={selectedDate}
               viewMode={viewMode}

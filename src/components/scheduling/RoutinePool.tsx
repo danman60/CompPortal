@@ -133,9 +133,9 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
 
       {/* Title with indicators */}
       <td className="px-1 py-2 text-xs font-medium text-white align-middle">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="truncate max-w-[80px]" title={routine.title}>{routine.title}</span>
-          <div className="flex items-center gap-1 flex-shrink-0 w-[60px]">
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="truncate max-w-[120px]" title={routine.title}>{routine.title}</span>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
             {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
             {hasNotes && <span className="text-blue-400" title="Has notes">📝</span>}
@@ -301,18 +301,9 @@ export function RoutinePool({
 
         {/* Filters Row */}
         {onFiltersChange && (
-          <div className="flex flex-wrap items-center gap-2 mb-3 bg-white/5 border border-white/10 rounded-lg p-3">
-            {/* Search Box */}
-            <div className="flex-1 min-w-[200px]">
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-                placeholder="🔍 Search routines..."
-                className="w-full px-3 py-1.5 bg-black/20 border border-white/20 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-
+          <div className="space-y-2 mb-3">
+            {/* Filters on same line */}
+            <div className="flex flex-wrap items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-3">
             {/* Classification Filter */}
             {classifications.length > 0 && (
               <FilterDropdown
@@ -425,6 +416,18 @@ export function RoutinePool({
                 ✕ Clear
               </button>
             )}
+            </div>
+
+            {/* Search Box (below filters) */}
+            <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+                placeholder="🔍 Search routines..."
+                className="w-full px-3 py-1.5 bg-black/20 border border-white/20 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
           </div>
         )}
 

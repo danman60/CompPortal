@@ -10,6 +10,7 @@ interface CompetitionDay {
   date: string; // ISO date: "2026-04-11"
   routineCount: number;
   startTime: string; // HH:mm:ss format: "08:00:00"
+  endTime?: string; // HH:mm:ss format: "18:00:00" (calculated from last routine)
 }
 
 interface DayTabsProps {
@@ -115,9 +116,9 @@ export function DayTabs({
                 {format(dateObj, 'EEEE, MMMM d')}
               </div>
 
-              {/* Start Time + Routine Count */}
+              {/* Start Time + End Time + Routine Count */}
               <div className="flex items-center justify-between gap-3 text-xs">
-                {/* Start Time Input */}
+                {/* Start/End Time Display */}
                 <div className="flex items-center gap-2">
                   {isEditing ? (
                     <>
@@ -133,7 +134,7 @@ export function DayTabs({
                           e.stopPropagation();
                           handleSaveClick(day);
                         }}
-                        className="text-green-600 hover:text-green-700"
+                        className="text-green-400 hover:text-green-300"
                         disabled={updateDayStartTimeMutation.isPending}
                       >
                         <Check className="h-4 w-4" />
@@ -143,7 +144,7 @@ export function DayTabs({
                           e.stopPropagation();
                           handleCancelClick();
                         }}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-400 hover:text-red-300"
                         disabled={updateDayStartTimeMutation.isPending}
                       >
                         <X className="h-4 w-4" />
@@ -151,8 +152,9 @@ export function DayTabs({
                     </>
                   ) : (
                     <>
-                      <span className={isActive ? 'text-white/90' : 'text-gray-600'}>
+                      <span className={isActive ? 'text-white/90' : 'text-white/70'}>
                         {day.startTime.substring(0, 5)}
+                        {day.endTime && ` - ${day.endTime.substring(0, 5)}`}
                       </span>
                       <button
                         onClick={(e) => {
@@ -162,7 +164,7 @@ export function DayTabs({
                         className={`${
                           isActive
                             ? 'text-white/80 hover:text-white'
-                            : 'text-gray-500 hover:text-gray-700'
+                            : 'text-white/60 hover:text-white/80'
                         }`}
                       >
                         <Pencil className="h-4 w-4" />

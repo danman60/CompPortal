@@ -28,6 +28,13 @@ import { ViewMode } from '@/components/ScheduleToolbar';
 
 interface ScheduleTableProps {
   routines: Routine[];
+  allRoutines?: Array<{
+    id: string;
+    entrySizeName: string;
+    ageGroupName: string;
+    classificationName: string;
+    isScheduled: boolean;
+  }>;
   selectedDate: string; // ISO date
   viewMode: ViewMode;
   conflicts: Conflict[];
@@ -87,6 +94,9 @@ function SortableRoutineRow({
   classificationColor,
   studioDisplay,
   viewMode,
+  sessionNumber,
+  isLastInSession,
+  sessionBlock,
   onRoutineClick,
 }: {
   routine: Routine;
@@ -99,6 +109,9 @@ function SortableRoutineRow({
   classificationColor: string;
   studioDisplay: string;
   viewMode: ViewMode;
+  sessionNumber: number;
+  isLastInSession: boolean;
+  sessionBlock: any;
   onRoutineClick?: (routineId: string) => void;
 }) {
   const {
@@ -118,18 +131,22 @@ function SortableRoutineRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Session background colors (alternating faded colors)
+  const sessionBg = sessionNumber % 2 === 0 ? 'bg-purple-500/5' : 'bg-blue-500/5';
+
   return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`
-        border-b border-white/10 hover:bg-white/5 transition-colors cursor-move relative
-        ${isLastInOveralls ? 'bg-yellow-500/10' : ''}
-      `}
-      onClick={() => onRoutineClick?.(routine.id)}
-    >
+    <>
+      <tr
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`
+          border-b border-white/10 hover:bg-white/5 transition-colors cursor-move relative
+          ${isLastInOveralls ? 'bg-yellow-500/10' : sessionBg}
+        `}
+        onClick={() => onRoutineClick?.(routine.id)}
+      >
       {/* Gold border for trophy helper */}
       {isLastInOveralls && (
         <td className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-yellow-600" />
@@ -146,23 +163,18 @@ function SortableRoutineRow({
       </td>
 
       {/* Routine Title */}
-      <td className="px-4 py-3 text-sm font-medium text-white relative">
+      <td className="px-4 py-3 text-sm font-medium text-white">
         <div className="flex items-center gap-2">
           {routine.title}
           {isLastInOveralls && (
             <span
-              className="text-yellow-400 text-lg"
+              className="text-yellow-400 text-lg cursor-help"
               title={`Last routine for ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}
             >
               🏆
             </span>
           )}
         </div>
-        {isLastInOveralls && (
-          <div className="absolute top-1 right-2 bg-yellow-500/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg whitespace-nowrap">
-            Last: {routine.entrySizeName} • {routine.ageGroupName} • {routine.classificationName}
-          </div>
-        )}
       </td>
 
       {/* Studio */}
@@ -218,11 +230,37 @@ function SortableRoutineRow({
         </td>
       )}
     </tr>
+
+      {/* Session Separator */}
+      {isLastInSession && (
+        <tr className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20">
+          <td colSpan={7} className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                <span className="text-sm font-bold text-purple-300">
+                  End of Session {sessionNumber}
+                </span>
+              </div>
+              {sessionBlock?.suggestAward && (
+                <div className="flex items-center gap-2 bg-amber-600/20 border border-amber-500/50 px-3 py-1 rounded-lg">
+                  <span className="text-lg">🏆</span>
+                  <span className="text-xs font-medium text-amber-300">
+                    Suggested Award Ceremony Location
+                  </span>
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
 export function ScheduleTable({
   routines,
+  allRoutines = [],
   selectedDate,
   viewMode,
   conflicts,
@@ -233,27 +271,118 @@ export function ScheduleTable({
     return [...routines].sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
   }, [routines]);
 
-  // Calculate last routines per Overalls category
+  // Calculate routines to show trophy helper (when ≤5 unscheduled remain in category)
   const lastRoutineIds = useMemo(() => {
-    const categories = new Map<string, Routine>();
+    // Count total and scheduled per category
+    const categoryCounts = new Map<string, { total: number; scheduled: number; lastRoutineId: string }>();
 
+    // Count all routines (scheduled + unscheduled) per category
+    allRoutines.forEach(routine => {
+      const key = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
+      const current = categoryCounts.get(key) || { total: 0, scheduled: 0, lastRoutineId: '' };
+      current.total++;
+      if (routine.isScheduled) {
+        current.scheduled++;
+      }
+      categoryCounts.set(key, current);
+    });
+
+    // Find last scheduled routine per category (highest entry number)
     sortedRoutines.forEach(routine => {
       const key = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
-
-      // Track last routine per category (highest entry number)
-      if (!categories.has(key) ||
-          (routine.entryNumber || 0) > (categories.get(key)!.entryNumber || 0)) {
-        categories.set(key, routine);
+      const current = categoryCounts.get(key);
+      if (current && (!current.lastRoutineId || (routine.entryNumber || 0) > 0)) {
+        current.lastRoutineId = routine.id;
       }
     });
 
+    // Show trophy only when unscheduled count ≤ 5
     const lastIds = new Set<string>();
-    categories.forEach(routine => {
-      lastIds.add(routine.id);
+    categoryCounts.forEach((counts, key) => {
+      const unscheduled = counts.total - counts.scheduled;
+      if (unscheduled <= 5 && counts.lastRoutineId) {
+        lastIds.add(counts.lastRoutineId);
+      }
     });
 
     return lastIds;
-  }, [sortedRoutines]);
+  }, [sortedRoutines, allRoutines]);
+
+  // Calculate session blocks (~3-4 hour chunks) for visual indicators
+  const sessionBlocks = useMemo(() => {
+    if (sortedRoutines.length === 0) return [];
+
+    const blocks: Array<{ sessionNumber: number; startIndex: number; endIndex: number; startTime: Date | null; endTime: Date | null; suggestAward: boolean }> = [];
+    let sessionNumber = 1;
+    let sessionStartIndex = 0;
+    let sessionStartTime = sortedRoutines[0]?.scheduledTime ? new Date(sortedRoutines[0].scheduledTime) : null;
+
+    sortedRoutines.forEach((routine, index) => {
+      if (!routine.scheduledTime || !sessionStartTime) return;
+
+      const currentTime = new Date(routine.scheduledTime);
+      const hoursElapsed = (currentTime.getTime() - sessionStartTime.getTime()) / (1000 * 60 * 60);
+
+      // Start new session after ~3.5 hours
+      if (hoursElapsed >= 3.5 && index > 0) {
+        const prevRoutine = sortedRoutines[index - 1];
+        const endTime = prevRoutine?.scheduledTime ? new Date(prevRoutine.scheduledTime) : null;
+
+        // Check if there are trophy helper routines near this boundary (within last 10 routines of session)
+        const lastFewRoutines = sortedRoutines.slice(Math.max(sessionStartIndex, index - 10), index);
+        const hasTrophyHelperNearby = lastFewRoutines.some(r => lastRoutineIds.has(r.id));
+
+        blocks.push({
+          sessionNumber,
+          startIndex: sessionStartIndex,
+          endIndex: index - 1,
+          startTime: sessionStartTime,
+          endTime,
+          suggestAward: hasTrophyHelperNearby,
+        });
+
+        sessionNumber++;
+        sessionStartIndex = index;
+        sessionStartTime = currentTime;
+      }
+    });
+
+    // Add final session
+    if (sessionStartIndex < sortedRoutines.length) {
+      const lastRoutine = sortedRoutines[sortedRoutines.length - 1];
+      const endTime = lastRoutine?.scheduledTime ? new Date(lastRoutine.scheduledTime) : null;
+
+      const lastFewRoutines = sortedRoutines.slice(Math.max(sessionStartIndex, sortedRoutines.length - 10));
+      const hasTrophyHelperNearby = lastFewRoutines.some(r => lastRoutineIds.has(r.id));
+
+      blocks.push({
+        sessionNumber,
+        startIndex: sessionStartIndex,
+        endIndex: sortedRoutines.length - 1,
+        startTime: sessionStartTime,
+        endTime,
+        suggestAward: hasTrophyHelperNearby,
+      });
+    }
+
+    return blocks;
+  }, [sortedRoutines, lastRoutineIds]);
+
+  // Helper: Get session number for a routine index
+  const getSessionNumber = (index: number): number => {
+    const session = sessionBlocks.find(s => index >= s.startIndex && index <= s.endIndex);
+    return session?.sessionNumber || 1;
+  };
+
+  // Helper: Check if this is the last routine in a session
+  const isLastInSession = (index: number): boolean => {
+    return sessionBlocks.some(s => s.endIndex === index);
+  };
+
+  // Helper: Get session block for routine index
+  const getSessionBlock = (index: number) => {
+    return sessionBlocks.find(s => index >= s.startIndex && index <= s.endIndex);
+  };
 
   // Detect conflict groups (consecutive routines with same dancer)
   const conflictGroups = useMemo(() => {
@@ -397,6 +526,9 @@ export function ScheduleTable({
                     classificationColor={classificationColor}
                     studioDisplay={studioDisplay}
                     viewMode={viewMode}
+                    sessionNumber={getSessionNumber(index)}
+                    isLastInSession={isLastInSession(index)}
+                    sessionBlock={getSessionBlock(index)}
                     onRoutineClick={onRoutineClick}
                   />
                 );
