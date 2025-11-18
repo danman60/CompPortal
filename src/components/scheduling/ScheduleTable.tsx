@@ -63,6 +63,7 @@ interface Routine {
   entryNumber?: number;
   scheduledTime?: Date | null;
   scheduledDay?: Date | null;
+  routineAge?: number | null;
 }
 
 interface Conflict {
@@ -153,22 +154,22 @@ function SortableRoutineRow({
       )}
 
       {/* Entry Number */}
-      <td className="px-4 py-3 text-sm font-mono font-bold text-white whitespace-nowrap">
+      <td className="px-2 py-2 text-xs font-mono font-bold text-white whitespace-nowrap">
         #{routine.entryNumber || '?'}
       </td>
 
       {/* Time */}
-      <td className="px-4 py-3 text-sm font-mono text-white/90 whitespace-nowrap">
+      <td className="px-2 py-2 text-xs font-mono text-white/90 whitespace-nowrap">
         {performanceTime}
       </td>
 
       {/* Routine Title */}
-      <td className="px-4 py-3 text-sm font-medium text-white">
-        <div className="flex items-center gap-2">
+      <td className="px-2 py-2 text-xs font-medium text-white">
+        <div className="flex items-center gap-1">
           {routine.title}
           {isLastInOveralls && (
             <span
-              className="text-yellow-400 text-lg cursor-help"
+              className="text-yellow-400 text-sm cursor-help"
               title={`Last routine for ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}
             >
               🏆
@@ -178,42 +179,27 @@ function SortableRoutineRow({
       </td>
 
       {/* Studio */}
-      <td className="px-4 py-3 text-sm text-white/80">
+      <td className="px-2 py-2 text-xs text-white/80 text-center">
         {studioDisplay}
       </td>
 
       {/* Classification */}
-      <td className="px-4 py-3">
+      <td className="px-2 py-2">
         <span
-          className={`inline-block px-2 py-1 rounded-md text-xs font-semibold ${classificationColor}`}
+          className={`inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold ${classificationColor}`}
         >
           {routine.classificationName}
         </span>
       </td>
 
-      {/* Category */}
-      <td className="px-4 py-3 text-sm text-white/80">
-        {routine.categoryName}
+      {/* Size */}
+      <td className="px-2 py-2 text-xs text-white/80">
+        {routine.entrySizeName}
       </td>
 
-      {/* Dancers */}
-      <td className="px-4 py-3 text-sm text-white/80">
-        {routine.participants && routine.participants.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {routine.participants.slice(0, 2).map((p, idx) => (
-              <span key={p.dancerId} className="text-xs">
-                {p.dancerName}{idx < Math.min(1, routine.participants.length - 1) ? ',' : ''}
-              </span>
-            ))}
-            {routine.participants.length > 2 && (
-              <span className="text-xs text-white/60">
-                +{routine.participants.length - 2} more
-              </span>
-            )}
-          </div>
-        ) : (
-          <span className="text-white/40 text-xs italic">No dancers</span>
-        )}
+      {/* Routine Age */}
+      <td className="px-2 py-2 text-xs text-white/80 text-center">
+        {routine.routineAge ?? '-'}
       </td>
 
       {/* Conflict indicator */}
@@ -234,17 +220,17 @@ function SortableRoutineRow({
       {/* Session Separator */}
       {isLastInSession && (
         <tr className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20">
-          <td colSpan={7} className="px-4 py-3">
+          <td colSpan={6} className="px-2 py-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                <span className="text-sm font-bold text-purple-300">
+                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                <span className="text-xs font-bold text-purple-300">
                   End of Session {sessionNumber}
                 </span>
               </div>
               {sessionBlock?.suggestAward && (
-                <div className="flex items-center gap-2 bg-amber-600/20 border border-amber-500/50 px-3 py-1 rounded-lg">
-                  <span className="text-lg">🏆</span>
+                <div className="flex items-center gap-1 bg-amber-600/20 border border-amber-500/50 px-2 py-1 rounded-lg">
+                  <span className="text-sm">🏆</span>
                   <span className="text-xs font-medium text-amber-300">
                     Suggested Award Ceremony Location
                   </span>
@@ -462,26 +448,26 @@ export function ScheduleTable({
         <table className="w-full">
           <thead>
             <tr className="bg-white/10 border-b border-white/20">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '60px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '50px' }}>
                 #
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '80px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '70px' }}>
                 Time
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '200px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '180px' }}>
                 Routine
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '120px' }}>
+              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '70px' }}>
                 Studio
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '120px' }}>
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '110px' }}>
                 Classification
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                Category
+              <th className="px-2 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '90px' }}>
+                Size
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '180px' }}>
-                Dancers
+              <th className="px-2 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider" style={{ width: '80px' }}>
+                Routine Age
               </th>
             </tr>
           </thead>
@@ -539,7 +525,7 @@ export function ScheduleTable({
       </div>
 
       {/* Table Footer Summary */}
-      <div className="bg-white/5 border-t border-white/20 px-4 py-3 flex items-center justify-between text-sm">
+      <div className="bg-white/5 border-t border-white/20 px-2 py-2 flex items-center justify-between text-xs">
         <div className="text-white/60">
           Total: <span className="font-semibold text-white">{sortedRoutines.length}</span> routines
         </div>

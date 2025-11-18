@@ -145,7 +145,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Studio */}
-      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{studioDisplay}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-10 text-center">{studioDisplay}</td>
 
       {/* Classification */}
       <td className="px-1 py-2 align-middle">
@@ -230,31 +230,31 @@ export function RoutinePool({
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+    <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
       {/* Header - Compact with controls inline */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-3 bg-white/5 border border-white/10 rounded-lg p-3">
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2 bg-white/5 border border-white/10 rounded-lg p-2">
           {/* Left: Title + Count */}
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-white">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-white">
               Unscheduled Routines
             </h2>
-            <span className="text-sm font-medium text-white bg-purple-600 px-3 py-1 rounded-full">
+            <span className="text-xs font-medium text-white bg-purple-600 px-2 py-0.5 rounded-full">
               {routines.length}
             </span>
           </div>
 
           {/* Right: Bulk Selection + View Toggle */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Bulk Selection Controls (merged from below) */}
             {routines.length > 0 && onSelectAll && onDeselectAll && (
               <>
-                <span className="text-sm text-white/70">
+                <span className="text-xs text-white/70">
                   {selectedRoutineIds.size > 0 ? `${selectedRoutineIds.size} selected` : '0 selected'}
                 </span>
                 <button
                   onClick={onSelectAll}
-                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                  className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
                   title="Select all filtered routines"
                 >
                   ✓ Select All
@@ -262,7 +262,7 @@ export function RoutinePool({
                 {selectedRoutineIds.size > 0 && (
                   <button
                     onClick={onDeselectAll}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
+                    className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
                     title="Clear selection"
                   >
                     Clear
@@ -275,7 +275,7 @@ export function RoutinePool({
             <div className="flex items-center bg-white/10 border border-white/20 rounded-lg overflow-hidden">
               <button
                 onClick={() => setDisplayMode('table')}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`px-2 py-1 text-xs font-medium transition-colors ${
                   displayMode === 'table'
                     ? 'bg-purple-600 text-white'
                     : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -286,7 +286,7 @@ export function RoutinePool({
               </button>
               <button
                 onClick={() => setDisplayMode('cards')}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`px-2 py-1 text-xs font-medium transition-colors ${
                   displayMode === 'cards'
                     ? 'bg-purple-600 text-white'
                     : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -301,9 +301,9 @@ export function RoutinePool({
 
         {/* Filters Row */}
         {onFiltersChange && (
-          <div className="space-y-2 mb-3">
+          <div className="space-y-2 mb-2">
             {/* Filters on same line */}
-            <div className="flex flex-wrap items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-3">
+            <div className="flex flex-nowrap items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-2 overflow-x-auto custom-scrollbar">
             {/* Classification Filter */}
             {classifications.length > 0 && (
               <FilterDropdown
@@ -410,7 +410,7 @@ export function RoutinePool({
             {(filters.classifications.length > 0 || filters.ageGroups.length > 0 || filters.genres.length > 0 || filters.groupSizes.length > 0 || filters.studios.length > 0 || filters.routineAges.length > 0 || filters.search.length > 0) && (
               <button
                 onClick={() => onFiltersChange({ classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], routineAges: [], search: '' })}
-                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
+                className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors flex-shrink-0 whitespace-nowrap"
                 title="Clear all filters"
               >
                 ✕ Clear
@@ -419,13 +419,13 @@ export function RoutinePool({
             </div>
 
             {/* Search Box (below filters) */}
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+            <div className="bg-white/5 border border-white/10 rounded-lg p-2">
               <input
                 type="text"
                 value={filters.search}
                 onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
                 placeholder="🔍 Search routines..."
-                className="w-full px-3 py-1.5 bg-black/20 border border-white/20 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-2 py-1 bg-black/20 border border-white/20 rounded-lg text-white text-xs placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -460,7 +460,7 @@ export function RoutinePool({
       {/* TABLE VIEW */}
       {displayMode === 'table' && routines.length > 0 && !isLoading && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
             <table className="w-full" style={{ minWidth: '900px' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
@@ -470,7 +470,7 @@ export function RoutinePool({
                   <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '180px' }}>
                     Routine
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '60px' }}>
+                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
                     Studio
                   </th>
                   <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '100px' }}>
@@ -516,7 +516,7 @@ export function RoutinePool({
 
       {/* CARDS VIEW */}
       {displayMode === 'cards' && routines.length > 0 && !isLoading && (
-        <div className="grid grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="grid grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
           {routines.map((routine) => (
             <RoutineCard
               key={routine.id}
@@ -582,16 +582,16 @@ function FilterDropdown({
   }, [isOpen, onToggleOpen]);
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative flex-shrink-0">
       <button
         onClick={onToggleOpen}
-        className={`px-3 py-1.5 text-sm font-medium rounded border transition-colors ${
+        className={`px-2 py-1 text-xs font-medium rounded border transition-colors whitespace-nowrap ${
           selectedCount > 0
             ? 'bg-purple-600 text-white border-purple-500'
             : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
         }`}
       >
-        {label} {selectedCount > 0 && `(${selectedCount})`} ▼
+        {label}{selectedCount > 0 && ` (${selectedCount})`} ▼
       </button>
 
       {isOpen && (

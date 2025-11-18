@@ -12,7 +12,7 @@
  * - Studio code masking (A, B, C, etc.)
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -32,10 +32,6 @@ import {
 import { arrayMove } from '@dnd-kit/sortable';
 
 // Session 55 Components
-import { TrophyHelperPanel } from '@/components/TrophyHelperPanel';
-import { ScheduleStateMachine } from '@/components/ScheduleStateMachine';
-import { DaySelector, countRoutinesByDay } from '@/components/DaySelector';
-import { StudioRequestsPanel } from '@/components/StudioRequestsPanel';
 import { HotelAttritionBanner } from '@/components/HotelAttritionBanner';
 import { AgeChangeWarning } from '@/components/AgeChangeWarning';
 import { ScheduleBlockCard, DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
@@ -106,6 +102,9 @@ export default function SchedulePage() {
 
   // Panel collapse state
   const [isTrophyPanelCollapsed, setIsTrophyPanelCollapsed] = useState(false);
+
+  // Age warning dismiss state
+  const [ageWarningDismissed, setAgeWarningDismissed] = useState(false);
 
   // Undo/Redo state
   const [history, setHistory] = useState<Array<Record<string, ScheduleZone>>>([]);
@@ -625,9 +624,15 @@ export default function SchedulePage() {
 
     const initialZones: Record<string, ScheduleZone> = {};
     routines.forEach(routine => {
-      // Use scheduleZone field to determine which zone the routine is in
+      // V4: Use isScheduled flag to exclude from unscheduled pool
+      // If routine is scheduled (isScheduled=true), don't add it to routineZones
+      // This prevents it from appearing in UR even if scheduleZone is null
       if (routine.scheduleZone) {
         initialZones[routine.id] = routine.scheduleZone as ScheduleZone;
+      } else if (!routine.isScheduled) {
+        // Only mark as unscheduled if NOT already scheduled
+        // This ensures scheduled routines don't default to 'unscheduled' zone
+        // (no explicit zone assignment means it won't be in routinesByZone['unscheduled'])
       }
     });
 
@@ -995,11 +1000,11 @@ export default function SchedulePage() {
             const newIndex = sameDayRoutines.findIndex(r => r.id === over.id);
 
             if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+              // Get the base entry number from the first routine BEFORE reordering
+              const baseEntryNumber = sameDayRoutines[0].entryNumber || 100;
+
               // Reorder the array
               const reorderedRoutines = arrayMove(sameDayRoutines, oldIndex, newIndex);
-
-              // Get the base entry number from the first routine
-              const baseEntryNumber = reorderedRoutines[0].entryNumber || 100;
 
               console.log('[V4 Reorder] Updating entry numbers:', {
                 oldIndex,
@@ -1091,102 +1096,125 @@ export default function SchedulePage() {
     setActiveId(null);
   };
 
-  // Get unique classifications from routines
-  const classifications = routines
-    ? Array.from(new Set(routines.map(r => ({ id: r.classificationId, name: r.classificationName }))))
-        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-        .sort((a, b) => a.name.localeCompare(b.name))
-    : [];
+  // Get unique classifications from routines (memoized for performance)
+  const classifications = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.classificationId, name: r.classificationName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
 
-  // Get unique categories from routines
-  const categories = routines
-    ? Array.from(new Set(routines.map(r => ({ id: r.categoryId, name: r.categoryName }))))
-        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-        .sort((a, b) => a.name.localeCompare(b.name))
-    : [];
+  // Get unique categories from routines (memoized for performance)
+  const categories = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.categoryId, name: r.categoryName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
 
-  // Get unique age groups from routines
-  const ageGroups = routines
-    ? Array.from(new Set(routines.map(r => ({ id: r.ageGroupId, name: r.ageGroupName }))))
-        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-        .sort((a, b) => a.name.localeCompare(b.name))
-    : [];
+  // Get unique age groups from routines (memoized for performance)
+  const ageGroups = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.ageGroupId, name: r.ageGroupName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
 
-  // Get unique routine ages from stored routine_age field
-  const routineAges = routines
-    ? Array.from(new Set(
-        routines
-          .map(r => r.routineAge)
-          .filter((age): age is number => age !== null && age > 0)
-      ))
-        .sort((a, b) => a - b)
-        .map(age => ({ id: age.toString(), name: `${age} years` }))
-    : [];
+  // Get unique routine ages from stored routine_age field (memoized for performance)
+  const routineAges = useMemo(() =>
+    routines
+      ? Array.from(new Set(
+          routines
+            .map(r => r.routineAge)
+            .filter((age): age is number => age !== null && age > 0)
+        ))
+          .sort((a, b) => a - b)
+          .map(age => ({ id: age.toString(), name: `${age} years` }))
+      : []
+  , [routines]);
 
-  // Get unique studios from routines
-  const studios = routines
-    ? Array.from(new Set(routines.map(r => ({ id: r.studioId, name: r.studioName, code: r.studioCode }))))
-        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-        .sort((a, b) => a.name.localeCompare(b.name))
-    : [];
+  // Get unique studios from routines (memoized for performance)
+  const studios = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.studioId, name: r.studioName, code: r.studioCode }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
 
-  // Get unique group sizes from routines
-  const groupSizes = routines
-    ? Array.from(new Set(routines.map(r => ({ id: r.entrySizeId, name: r.entrySizeName }))))
-        .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-        .sort((a, b) => a.name.localeCompare(b.name))
-    : [];
+  // Get unique group sizes from routines (memoized for performance)
+  const groupSizes = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.entrySizeId, name: r.entrySizeName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
 
-  // Group routines by zone
-  const routinesByZone = (routines || []).reduce((acc, routine) => {
-    const zone = routineZones[routine.id] || 'unscheduled';
-    if (!acc[zone]) acc[zone] = [];
-    acc[zone].push(routine);
-    return acc;
-  }, {} as Record<ScheduleZone, Routine[]>);
+  // Group routines by zone (memoized for performance)
+  const routinesByZone = useMemo(() =>
+    (routines || []).reduce((acc, routine) => {
+      // V4: Skip scheduled routines from being assigned to any zone
+      // This prevents them from appearing in 'unscheduled' zone (UR)
+      // Scheduled routines are managed by ScheduleTable/DayTabs, not RoutinePool
+      if (routine.isScheduled) {
+        return acc; // Skip scheduling to any zone
+      }
 
-  // Apply client-side filters to unscheduled routines
-  const allUnscheduled = routinesByZone['unscheduled'] || [];
-  const unscheduledRoutines = allUnscheduled.filter(routine => {
-    // Classification filter
-    if (filters.classifications.length > 0 && !filters.classifications.includes(routine.classificationId)) {
-      return false;
-    }
+      const zone = routineZones[routine.id] || 'unscheduled';
+      if (!acc[zone]) acc[zone] = [];
+      acc[zone].push(routine);
+      return acc;
+    }, {} as Record<ScheduleZone, Routine[]>)
+  , [routines, routineZones]);
 
-    // Age group filter
-    if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(routine.ageGroupId)) {
-      return false;
-    }
-
-    // Genre filter
-    if (filters.genres.length > 0 && !filters.genres.includes(routine.categoryId)) {
-      return false;
-    }
-
-    // Group size filter (Session 64)
-    if (filters.groupSizes.length > 0 && !filters.groupSizes.includes(routine.entrySizeId)) {
-      return false;
-    }
-
-    // Studio filter
-    if (filters.studios.length > 0 && !filters.studios.includes(routine.studioId)) {
-      return false;
-    }
-
-    // Routine age filter
-    if (filters.routineAges.length > 0) {
-      if (!routine.routineAge || !filters.routineAges.includes(routine.routineAge.toString())) {
+  // Apply client-side filters to unscheduled routines (memoized for performance)
+  const unscheduledRoutines = useMemo(() => {
+    const allUnscheduled = routinesByZone['unscheduled'] || [];
+    return allUnscheduled.filter(routine => {
+      // Classification filter
+      if (filters.classifications.length > 0 && !filters.classifications.includes(routine.classificationId)) {
         return false;
       }
-    }
 
-    // Search filter (already handled by backend query, but add client-side for consistency)
-    if (filters.search && !routine.title.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false;
-    }
+      // Age group filter
+      if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(routine.ageGroupId)) {
+        return false;
+      }
 
-    return true;
-  });
+      // Genre filter
+      if (filters.genres.length > 0 && !filters.genres.includes(routine.categoryId)) {
+        return false;
+      }
+
+      // Group size filter (Session 64)
+      if (filters.groupSizes.length > 0 && !filters.groupSizes.includes(routine.entrySizeId)) {
+        return false;
+      }
+
+      // Studio filter
+      if (filters.studios.length > 0 && !filters.studios.includes(routine.studioId)) {
+        return false;
+      }
+
+      // Routine age filter
+      if (filters.routineAges.length > 0) {
+        if (!routine.routineAge || !filters.routineAges.includes(routine.routineAge.toString())) {
+          return false;
+        }
+      }
+
+      // Search filter (already handled by backend query, but add client-side for consistency)
+      if (filters.search && !routine.title.toLowerCase().includes(filters.search.toLowerCase())) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [routinesByZone, filters]);
 
   const saturdayAM = routinesByZone['saturday-am'] || [];
   const saturdayPM = routinesByZone['saturday-pm'] || [];
@@ -1323,13 +1351,13 @@ export default function SchedulePage() {
           unscheduledRoutines={(routines?.length || 0) - scheduledCount}
         />
 
-        <div className="p-6">
+        <div className="p-4">
 
         {/* CD Requests Management Panel (Collapsible) */}
         {showRequestsPanel && (
-          <div className="mb-6 bg-indigo-900/30 backdrop-blur-sm rounded-xl border border-indigo-500/30 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">Studio Scheduling Requests</h2>
+          <div className="mb-4 bg-indigo-900/30 backdrop-blur-sm rounded-xl border border-indigo-500/30 p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-white">Studio Scheduling Requests</h2>
               <button
                 onClick={() => setShowRequestsPanel(false)}
                 className="text-white/60 hover:text-white transition-colors"
@@ -1402,13 +1430,19 @@ export default function SchedulePage() {
         )}
 
         {/* Age Change Warnings */}
-        {ageChangesData && ageChangesData.routines && ageChangesData.routines.length > 0 && (
-          <div className="mb-6 bg-yellow-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/50 p-4 shadow-lg">
+        {!ageWarningDismissed && ageChangesData && ageChangesData.routines && ageChangesData.routines.length > 0 && (
+          <div className="relative mb-4 bg-yellow-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/50 p-3 shadow-lg">
+            <button
+              onClick={() => setAgeWarningDismissed(true)}
+              className="absolute top-3 right-3 text-yellow-300/60 hover:text-yellow-300 transition-colors"
+            >
+              ✕
+            </button>
             <div className="flex items-start gap-3">
               <span className="text-3xl flex-shrink-0">⚠️</span>
               <div className="flex-1">
-                <h3 className="font-bold text-yellow-300 text-lg mb-1">Dancer Age Changes Detected</h3>
-                <p className="text-yellow-200 text-sm mb-3">
+                <h3 className="font-bold text-yellow-300 text-base mb-1">Dancer Age Changes Detected</h3>
+                <p className="text-yellow-200 text-xs mb-2">
                   {ageChangesData.routines.length} routine{ageChangesData.routines.length !== 1 ? 's have' : ' has'} dancers whose ages have changed since scheduling.
                   This may affect age group categories.
                 </p>
@@ -1440,10 +1474,10 @@ export default function SchedulePage() {
         )}
 
         {/* Main 2-Panel Layout (V4: 33% left, 67% right) */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-4">
 
           {/* LEFT PANEL: Unscheduled Routines Pool (33%) - Sticky */}
-          <div className="col-span-1 space-y-6 sticky top-6 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
+          <div className="col-span-1 space-y-4 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
             {/* Unscheduled Routines Pool (Session 56, Filters integrated Session 64) */}
             <RoutinePool
               routines={unscheduledRoutines}
@@ -1476,8 +1510,8 @@ export default function SchedulePage() {
           </div>
 
           {/* RIGHT PANEL: Schedule Table (V4 Redesign - 67%) */}
-          <div className="col-span-2 space-y-6">
-            {/* V4: Day Tabs with inline reset buttons */}
+          <div className="col-span-2 space-y-4">
+            {/* V4: Day Tabs with inline block creation and reset buttons */}
             <DayTabs
               days={competitionDays.map(day => {
                 // Get all routines for this day
@@ -1521,68 +1555,9 @@ export default function SchedulePage() {
                 refetch(); // Refetch all routines
                 refetchRoutinesByDay(); // Refetch schedule table
               }}
+              onCreateBlock={handleCreateBlock}
             />
 
-            {/* V4: Schedule Blocks (Inline) */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-              <div className="flex items-center gap-4">
-                {/* Label */}
-                <div className="flex-shrink-0">
-                  <h3 className="text-sm font-bold text-white">Schedule Blocks:</h3>
-                  <p className="text-xs text-purple-300">Create & drag into schedule</p>
-                </div>
-
-                {/* Block Template Buttons (Inline) */}
-                <div className="flex gap-3 flex-1">
-                  {/* Award Block Button */}
-                  <button
-                    onClick={() => handleCreateBlock('award')}
-                    className="px-4 py-2 rounded-lg border-2 border-amber-500/50 bg-amber-600/10 hover:bg-amber-600/20 hover:border-amber-500 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
-                      <span className="text-lg">🏆</span>
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-bold text-white">+Award Block</div>
-                      <div className="text-xs text-purple-300">Add ceremony</div>
-                    </div>
-                  </button>
-
-                  {/* Break Block Button */}
-                  <button
-                    onClick={() => handleCreateBlock('break')}
-                    className="px-4 py-2 rounded-lg border-2 border-cyan-500/50 bg-cyan-600/10 hover:bg-cyan-600/20 hover:border-cyan-500 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                      <span className="text-lg">☕</span>
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-bold text-white">+Break Block</div>
-                      <div className="text-xs text-purple-300">Add break</div>
-                    </div>
-                  </button>
-                </div>
-
-                {/* Unplaced Blocks (Inline) */}
-                {scheduleBlocks.filter(b => b.zone === null).length > 0 && (
-                  <div className="flex items-center gap-2 border-l border-white/20 pl-4">
-                    <span className="text-xs text-purple-300 font-medium whitespace-nowrap">Unplaced:</span>
-                    <div className="flex gap-2 overflow-x-auto">
-                      {scheduleBlocks.filter(b => b.zone === null).map(block => (
-                        <div key={block.id} className="flex-shrink-0 w-48">
-                          <ScheduleBlockCard
-                            block={block}
-                            inZone={false}
-                            onEdit={handleEditBlock}
-                            onDelete={handleDeleteBlock}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* V4: Schedule Table */}
             <ScheduleTable
@@ -1623,10 +1598,10 @@ export default function SchedulePage() {
             />
 
             {/* Stats and Actions Section (inline below schedule) */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="grid grid-cols-3 gap-3 mt-4">
               {/* Stats Panel */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-                <h3 className="text-sm font-bold text-white mb-3">Statistics</h3>
+              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+                <h3 className="text-xs font-bold text-white mb-2">Statistics</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-white/70">Unscheduled:</span>
@@ -1650,8 +1625,8 @@ export default function SchedulePage() {
               </div>
 
               {/* Conflicts Summary Panel */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-                <h3 className="text-sm font-bold text-white mb-3 flex items-center justify-between">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+                <h3 className="text-xs font-bold text-white mb-2 flex items-center justify-between">
                   <span>Conflicts</span>
                   {conflictsData && conflictsData.summary.total > 0 && (
                     <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
@@ -1671,7 +1646,7 @@ export default function SchedulePage() {
               </div>
 
               {/* Actions Panel */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
                 <button className="w-full px-3 py-2 text-xs rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all">
                   💾 Save
                 </button>
