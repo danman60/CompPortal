@@ -20,6 +20,7 @@ interface DayTabsProps {
   tenantId: string;
   onResetDay?: () => void;
   onResetAll?: () => void;
+  onStartTimeUpdated?: () => void;
 }
 
 /**
@@ -40,6 +41,7 @@ export function DayTabs({
   tenantId,
   onResetDay,
   onResetAll,
+  onStartTimeUpdated,
 }: DayTabsProps) {
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [editedTime, setEditedTime] = useState<string>('');
@@ -48,7 +50,8 @@ export function DayTabs({
     onSuccess: () => {
       toast.success('Start time updated successfully');
       setEditingDay(null);
-      // Note: Parent component should refetch routines to see updated times
+      // Trigger parent component to refetch routines and schedule table
+      onStartTimeUpdated?.();
     },
     onError: (error) => {
       toast.error(`Failed to update start time: ${error.message}`);

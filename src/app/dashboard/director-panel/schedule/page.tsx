@@ -1511,6 +1511,10 @@ export default function SchedulePage() {
               tenantId={TEST_TENANT_ID}
               onResetDay={() => setShowResetConfirm('day')}
               onResetAll={() => setShowResetConfirm('all')}
+              onStartTimeUpdated={() => {
+                refetch(); // Refetch all routines
+                refetchRoutinesByDay(); // Refetch schedule table
+              }}
             />
 
             {/* V4: Schedule Table */}
