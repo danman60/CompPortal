@@ -18,6 +18,8 @@ interface DayTabsProps {
   onDayChange: (date: string) => void;
   competitionId: string;
   tenantId: string;
+  onResetDay?: () => void;
+  onResetAll?: () => void;
 }
 
 /**
@@ -36,6 +38,8 @@ export function DayTabs({
   onDayChange,
   competitionId,
   tenantId,
+  onResetDay,
+  onResetAll,
 }: DayTabsProps) {
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [editedTime, setEditedTime] = useState<string>('');
@@ -80,26 +84,29 @@ export function DayTabs({
   };
 
   return (
-    <div className="mb-6 border-b border-gray-200 bg-white rounded-t-lg">
-      <div className="flex gap-2 overflow-x-auto px-4 pt-4">
-        {days.map((day) => {
-          const isActive = activeDay === day.date;
-          const isEditing = editingDay === day.date;
-          const dateObj = parseISO(day.date);
+    <div className="mb-6">
+      {/* Container with reset buttons inline */}
+      <div className="flex items-center justify-between gap-4 mb-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+        {/* Day Tabs */}
+        <div className="flex gap-2 overflow-x-auto flex-1">
+          {days.map((day) => {
+            const isActive = activeDay === day.date;
+            const isEditing = editingDay === day.date;
+            const dateObj = parseISO(day.date);
 
-          return (
-            <div
-              key={day.date}
-              className={`
-                flex-shrink-0 min-w-[240px] px-4 py-3 rounded-t-lg border-b-2 cursor-pointer transition-all
-                ${
-                  isActive
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-blue-600 shadow-lg'
-                    : 'bg-gray-50 text-gray-700 border-transparent hover:bg-gray-100'
-                }
-              `}
-              onClick={() => !isEditing && onDayChange(day.date)}
-            >
+            return (
+              <div
+                key={day.date}
+                className={`
+                  flex-shrink-0 min-w-[200px] px-4 py-3 rounded-lg cursor-pointer transition-all
+                  ${
+                    isActive
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-2 border-purple-400 shadow-lg'
+                      : 'bg-white/10 text-white/80 border-2 border-white/20 hover:bg-white/20 hover:border-white/30'
+                  }
+                `}
+                onClick={() => !isEditing && onDayChange(day.date)}
+              >
               {/* Day Label */}
               <div className="font-semibold text-sm mb-2">
                 {format(dateObj, 'EEEE, MMMM d')}
@@ -115,7 +122,7 @@ export function DayTabs({
                         type="time"
                         value={editedTime}
                         onChange={(e) => setEditedTime(e.target.value)}
-                        className="px-2 py-1 border border-gray-300 rounded text-gray-900 text-xs w-24"
+                        className="px-2 py-1 border border-white/30 bg-black/20 rounded text-white text-xs w-24 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         onClick={(e) => e.stopPropagation()}
                       />
                       <button
@@ -168,7 +175,7 @@ export function DayTabs({
                     ${
                       isActive
                         ? 'bg-white/20 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                        : 'bg-purple-600/50 text-white'
                     }
                   `}
                 >
@@ -179,6 +186,29 @@ export function DayTabs({
           );
         })}
       </div>
+
+      {/* Reset Buttons */}
+      {(onResetDay || onResetAll) && (
+        <div className="flex items-center gap-2">
+          {onResetDay && (
+            <button
+              onClick={onResetDay}
+              className="px-4 py-2 text-sm font-medium text-red-300 bg-red-900/30 border border-red-500/50 rounded-lg hover:bg-red-900/50 hover:border-red-500 transition-colors"
+            >
+              🔄 Reset This Day
+            </button>
+          )}
+          {onResetAll && (
+            <button
+              onClick={onResetAll}
+              className="px-4 py-2 text-sm font-medium text-red-200 bg-red-900/40 border border-red-500/60 rounded-lg hover:bg-red-900/60 hover:border-red-500 transition-colors"
+            >
+              🗑️ Reset Entire Schedule
+            </button>
+          )}
+        </div>
+      )}
+    </div>
     </div>
   );
 }

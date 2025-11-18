@@ -882,72 +882,82 @@ export default function SchedulePage() {
             console.log('[V4 Schedule] Total Routines:', routineIds.length);
             console.log('[V4 Schedule] Routine IDs:', routineIds);
 
-            // Schedule all selected routines sequentially with auto-assigned times
-            // The backend scheduleRoutine will calculate next available slot automatically
-            let currentTime = '08:00:00'; // Starting time
-            routineIds.forEach((routineId, index) => {
-              const routine = routines?.find(r => r.id === routineId);
-              if (routine) {
-                console.log(`[V4 Schedule] Routine #${index + 1}/${routineIds.length}:`, {
-                  routineId,
-                  title: routine.title,
-                  duration: routine.duration || 3,
-                  classification: routine.classificationName,
-                  studio: routine.studioName,
-                  scheduledDate: date,
-                  scheduledTime: currentTime,
-                  entryNumber: 0, // Auto-assigned by backend
-                });
+            // Find the highest entry_number from all scheduled routines to avoid conflicts
+            const scheduledRoutines = routines?.filter(r => r.isScheduled && r.entryNumber !== null) || [];
+            const maxEntryNumber = scheduledRoutines.length > 0
+              ? Math.max(...scheduledRoutines.map(r => r.entryNumber!))
+              : 99; // Start at 99, first routine will be 100
 
-                // Each routine gets a basic time slot calculation
-                // Backend will handle actual slot assignment and entry numbers
-                scheduleMutation.mutate(
-                  {
+            let entryNumberCounter = maxEntryNumber + 1;
+            console.log('[V4 Schedule] Starting entry number:', entryNumberCounter);
+
+            // Schedule all selected routines sequentially to avoid race conditions
+            (async () => {
+              let currentTime = '08:00:00'; // Starting time
+
+              for (let index = 0; index < routineIds.length; index++) {
+                const routineId = routineIds[index];
+                const routine = routines?.find(r => r.id === routineId);
+
+                if (routine) {
+                  console.log(`[V4 Schedule] Routine #${index + 1}/${routineIds.length}:`, {
                     routineId,
-                    tenantId: TEST_TENANT_ID,
-                    performanceDate: date,
-                    performanceTime: currentTime,
-                    entryNumber: 0, // Let backend auto-assign
-                  },
-                  {
-                    onSuccess: (data) => {
-                      console.log(`[V4 Schedule] ✅ SUCCESS - Routine scheduled:`, {
-                        routineId,
-                        title: routine.title,
-                        entryNumber: data.routine.entry_number,
-                        date: data.routine.performance_date,
-                        time: data.routine.performance_time,
-                      });
-                    },
-                    onError: (error) => {
-                      console.error(`[V4 Schedule] ❌ ERROR - Failed to schedule routine:`, {
-                        routineId,
-                        title: routine.title,
-                        error: error.message,
-                      });
-                    },
+                    title: routine.title,
+                    duration: routine.duration || 3,
+                    classification: routine.classificationName,
+                    studio: routine.studioName,
+                    scheduledDate: date,
+                    scheduledTime: currentTime,
+                    entryNumber: entryNumberCounter,
+                  });
+
+                  try {
+                    const data = await scheduleMutation.mutateAsync({
+                      routineId,
+                      tenantId: TEST_TENANT_ID,
+                      performanceDate: date,
+                      performanceTime: currentTime,
+                      entryNumber: entryNumberCounter,
+                    });
+
+                    console.log(`[V4 Schedule] ✅ SUCCESS - Routine scheduled:`, {
+                      routineId,
+                      title: routine.title,
+                      entryNumber: data.routine.entry_number,
+                      date: data.routine.performance_date,
+                      time: data.routine.performance_time,
+                    });
+
+                    // Increment entry number for next routine
+                    entryNumberCounter++;
+                  } catch (error) {
+                    console.error(`[V4 Schedule] ❌ ERROR - Failed to schedule routine:`, {
+                      routineId,
+                      title: routine.title,
+                      error: error instanceof Error ? error.message : 'Unknown error',
+                    });
                   }
-                );
 
-                // Increment time for next routine (rough estimate)
-                const [hours, minutes] = currentTime.split(':').map(Number);
-                const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
-                const newHours = Math.floor(totalMinutes / 60);
-                const newMinutes = totalMinutes % 60;
-                currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
-              } else {
-                console.warn(`[V4 Schedule] ⚠️ WARNING - Routine not found:`, { routineId });
+                  // Increment time for next routine
+                  const [hours, minutes] = currentTime.split(':').map(Number);
+                  const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
+                  const newHours = Math.floor(totalMinutes / 60);
+                  const newMinutes = totalMinutes % 60;
+                  currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
+                } else {
+                  console.warn(`[V4 Schedule] ⚠️ WARNING - Routine not found:`, { routineId });
+                }
               }
-            });
 
-            console.log('[V4 Schedule] ========== SCHEDULING SESSION END ==========');
+              console.log('[V4 Schedule] ========== SCHEDULING SESSION END ==========');
 
-            if (isBulkDrag) {
-              toast.success(`Scheduling ${routineIds.length} routines to ${date}...`);
-              // Clear selection after bulk drag
-              setSelectedRoutineIds(new Set());
-              setLastClickedRoutineId(null);
-            }
+              if (isBulkDrag) {
+                toast.success(`✅ Scheduled ${routineIds.length} routines to ${date}`);
+                // Clear selection after bulk drag
+                setSelectedRoutineIds(new Set());
+                setLastClickedRoutineId(null);
+              }
+            })(); // Close async IIFE
           }
         } else {
           // V4: Reordering within the same day
@@ -1476,23 +1486,7 @@ export default function SchedulePage() {
 
           {/* RIGHT PANEL: Schedule Table (V4 Redesign - 67%) */}
           <div className="col-span-2 space-y-6">
-            {/* Reset Schedule Buttons */}
-            <div className="flex items-center justify-end gap-3 px-4">
-              <button
-                onClick={() => setShowResetConfirm('day')}
-                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-300 rounded-lg hover:bg-red-100 transition-colors"
-              >
-                Reset This Day
-              </button>
-              <button
-                onClick={() => setShowResetConfirm('all')}
-                className="px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-400 rounded-lg hover:bg-red-200 transition-colors"
-              >
-                Reset Entire Schedule
-              </button>
-            </div>
-
-            {/* V4: Day Tabs */}
+            {/* V4: Day Tabs with inline reset buttons */}
             <DayTabs
               days={competitionDays.map(day => ({
                 ...day,
@@ -1504,6 +1498,8 @@ export default function SchedulePage() {
               onDayChange={setSelectedDate}
               competitionId={TEST_COMPETITION_ID}
               tenantId={TEST_TENANT_ID}
+              onResetDay={() => setShowResetConfirm('day')}
+              onResetAll={() => setShowResetConfirm('all')}
             />
 
             {/* V4: Schedule Table */}

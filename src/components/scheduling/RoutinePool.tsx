@@ -223,16 +223,46 @@ export function RoutinePool({
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-      {/* Header */}
+      {/* Header - Compact with controls inline */}
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-white">
-            Unscheduled Routines
-          </h2>
+        <div className="flex items-center justify-between mb-3 bg-white/5 border border-white/10 rounded-lg p-3">
+          {/* Left: Title + Count */}
           <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-white">
+              Unscheduled Routines
+            </h2>
             <span className="text-sm font-medium text-white bg-purple-600 px-3 py-1 rounded-full">
               {routines.length}
             </span>
+          </div>
+
+          {/* Right: Bulk Selection + View Toggle */}
+          <div className="flex items-center gap-3">
+            {/* Bulk Selection Controls (merged from below) */}
+            {routines.length > 0 && onSelectAll && onDeselectAll && (
+              <>
+                <span className="text-sm text-white/70">
+                  {selectedRoutineIds.size > 0 ? `${selectedRoutineIds.size} selected` : '0 selected'}
+                </span>
+                <button
+                  onClick={onSelectAll}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                  title="Select all filtered routines"
+                >
+                  ✓ Select All
+                </button>
+                {selectedRoutineIds.size > 0 && (
+                  <button
+                    onClick={onDeselectAll}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
+                    title="Clear selection"
+                  >
+                    Clear
+                  </button>
+                )}
+              </>
+            )}
+
             {/* View Toggle */}
             <div className="flex items-center bg-white/10 border border-white/20 rounded-lg overflow-hidden">
               <button
@@ -373,35 +403,6 @@ export function RoutinePool({
           </div>
         )}
 
-        {/* Bulk Selection Controls */}
-        {routines.length > 0 && onSelectAll && onDeselectAll && (
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3">
-            <div className="flex-1 flex items-center gap-2 text-sm text-white/80">
-              <span className="font-medium">{selectedRoutineIds.size} selected</span>
-              {selectedRoutineIds.size > 0 && (
-                <span className="text-white/50">of {routines.length}</span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={onSelectAll}
-                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
-                title="Select all filtered routines"
-              >
-                ✓ Select All
-              </button>
-              {selectedRoutineIds.size > 0 && (
-                <button
-                  onClick={onDeselectAll}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
-                  title="Clear selection"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Loading State - Skeleton Loaders */}
