@@ -438,34 +438,34 @@ export function RoutinePool({
       {displayMode === 'table' && routines.length > 0 && !isLoading && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
-            <table className="w-full" style={{ tableLayout: 'fixed' }}>
+            <table className="w-full" style={{ minWidth: '900px' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
                   <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
                     ✓
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '25%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '180px' }}>
                     Routine
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '8%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '60px' }}>
                     Studio
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '12%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '100px' }}>
                     Classification
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '8%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
                     Size
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '9%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
                     Routine Age
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '12%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
                     Overalls Age
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '14%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '120px' }}>
                     Category
                   </th>
-                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '10%' }}>
+                  <th className="px-1.5 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
                     Duration
                   </th>
                 </tr>
