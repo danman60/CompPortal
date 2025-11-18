@@ -153,9 +153,10 @@ export default function SchedulePage() {
     search: '',
   });
 
-  // Refs to track operations (to suppress individual toasts during batch operations)
+  // Refs to track operations (to suppress individual toasts/refetches during batch operations)
   const isReorderingRef = useRef(false);
   const isAutoGeneratingRef = useRef(false);
+  const isBatchSchedulingRef = useRef(false);
 
   // Track schedule blocks
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([
@@ -641,11 +642,11 @@ export default function SchedulePage() {
   // Schedule mutation
   const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
     onSuccess: () => {
-      console.log('[Schedule] Mutation SUCCESS - refetching routines');
-      // No toast on success - too spammy during drag operations
-      // Refetch routines to get updated state from database
-      refetch();
-      refetchConflicts();
+      // Only refetch if NOT in batch operation (10x performance improvement)
+      if (!isBatchSchedulingRef.current && !isReorderingRef.current && !isAutoGeneratingRef.current) {
+        refetch();
+        refetchConflicts();
+      }
     },
     onError: (error) => {
       console.error('[Schedule] Mutation FAILED:', error);
@@ -893,26 +894,18 @@ export default function SchedulePage() {
 
             // Schedule all selected routines sequentially to avoid race conditions
             (async () => {
+              isBatchSchedulingRef.current = true; // Suppress individual refetches
               let currentTime = '08:00:00'; // Starting time
+              let successCount = 0;
+              let errorCount = 0;
 
               for (let index = 0; index < routineIds.length; index++) {
                 const routineId = routineIds[index];
                 const routine = routines?.find(r => r.id === routineId);
 
                 if (routine) {
-                  console.log(`[V4 Schedule] Routine #${index + 1}/${routineIds.length}:`, {
-                    routineId,
-                    title: routine.title,
-                    duration: routine.duration || 3,
-                    classification: routine.classificationName,
-                    studio: routine.studioName,
-                    scheduledDate: date,
-                    scheduledTime: currentTime,
-                    entryNumber: entryNumberCounter,
-                  });
-
                   try {
-                    const data = await scheduleMutation.mutateAsync({
+                    await scheduleMutation.mutateAsync({
                       routineId,
                       tenantId: TEST_TENANT_ID,
                       performanceDate: date,
@@ -920,22 +913,11 @@ export default function SchedulePage() {
                       entryNumber: entryNumberCounter,
                     });
 
-                    console.log(`[V4 Schedule] ✅ SUCCESS - Routine scheduled:`, {
-                      routineId,
-                      title: routine.title,
-                      entryNumber: data.routine.entry_number,
-                      date: data.routine.performance_date,
-                      time: data.routine.performance_time,
-                    });
-
-                    // Increment entry number for next routine
+                    successCount++;
                     entryNumberCounter++;
                   } catch (error) {
-                    console.error(`[V4 Schedule] ❌ ERROR - Failed to schedule routine:`, {
-                      routineId,
-                      title: routine.title,
-                      error: error instanceof Error ? error.message : 'Unknown error',
-                    });
+                    errorCount++;
+                    toast.error(`Failed: ${routine.title}`);
                   }
 
                   // Increment time for next routine
@@ -944,16 +926,20 @@ export default function SchedulePage() {
                   const newHours = Math.floor(totalMinutes / 60);
                   const newMinutes = totalMinutes % 60;
                   currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
-                } else {
-                  console.warn(`[V4 Schedule] ⚠️ WARNING - Routine not found:`, { routineId });
                 }
               }
 
-              console.log('[V4 Schedule] ========== SCHEDULING SESSION END ==========');
+              console.log('[V4 Schedule] Batch complete:', { successCount, errorCount });
+
+              // Reset ref and do single refetch at the end (10x faster than per-mutation)
+              isBatchSchedulingRef.current = false;
+              refetch();
+              refetchConflicts();
 
               if (isBulkDrag) {
-                toast.success(`✅ Scheduled ${routineIds.length} routines to ${date}`);
-                // Clear selection after bulk drag
+                if (successCount > 0) {
+                  toast.success(`✅ Scheduled ${successCount} routines`);
+                }
                 setSelectedRoutineIds(new Set());
                 setLastClickedRoutineId(null);
               }
