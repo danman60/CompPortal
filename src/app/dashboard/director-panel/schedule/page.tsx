@@ -662,6 +662,22 @@ export default function SchedulePage() {
     },
   });
 
+  // Batch reorder mutation (V4 redesign)
+  const batchReorderMutation = trpc.scheduling.batchReorderRoutines.useMutation({
+    onSuccess: (result) => {
+      console.log('[V4 Reorder] Batch reorder SUCCESS:', result.updatedCount, 'routines');
+      toast.success('Routines reordered successfully');
+      refetch();
+      refetchConflicts();
+      refetchRoutinesByDay();
+    },
+    onError: (error) => {
+      console.error('[V4 Reorder] Batch reorder FAILED:', error);
+      toast.error(`Failed to reorder routines: ${error.message}`);
+      refetch();
+    },
+  });
+
   // Schedule Block mutations
   const createBlockMutation = trpc.scheduling.createScheduleBlock.useMutation({
     onSuccess: (newBlock) => {
@@ -917,21 +933,14 @@ export default function SchedulePage() {
                 const routine = routines?.find(r => r.id === routineId);
                 if (!routine) return Promise.resolve(null);
 
-                // Calculate time for this routine
-                const routineTime = (() => {
-                  let time = dayStartTime;
-                  for (let i = 0; i < index; i++) {
-                    const prevRoutine = routines?.find(r => r.id === routineIds[i]);
-                    if (prevRoutine) {
-                      const [hours, minutes] = time.split(':').map(Number);
-                      const totalMinutes = hours * 60 + minutes + (prevRoutine.duration || 3);
-                      const newHours = Math.floor(totalMinutes / 60);
-                      const newMinutes = totalMinutes % 60;
-                      time = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
-                    }
-                  }
-                  return time;
-                })();
+                // Calculate time incrementally (O(1) per routine instead of O(n))
+                const routineTime = currentTime;
+                const duration = routine.duration || 3;
+                const [hours, minutes] = currentTime.split(':').map(Number);
+                const totalMinutes = hours * 60 + minutes + duration;
+                const newHours = Math.floor(totalMinutes / 60);
+                const newMinutes = totalMinutes % 60;
+                currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
 
                 return scheduleMutation.mutateAsync({
                   routineId,
@@ -1004,80 +1013,52 @@ export default function SchedulePage() {
               // Reorder the array
               const reorderedRoutines = arrayMove(sameDayRoutines, oldIndex, newIndex);
 
-              console.log('[V4 Reorder] Updating entry numbers:', {
+              // Get the day config to find start time
+              const dayConfig = competitionDays.find(d => d.date === dragDate);
+              const dayStartTime = dayConfig?.startTime || '08:00:00';
+
+              console.log('[V4 Reorder] Batch reorder:', {
                 oldIndex,
                 newIndex,
                 routineCount: reorderedRoutines.length,
                 baseEntryNumber,
+                dayStartTime,
               });
 
-              // Two-phase update to prevent unique constraint violations
-              // Phase 1: Move to temporary numbers, Phase 2: Move to final numbers
+              // Calculate new entry numbers AND performance times for all routines
+              let currentTime = dayStartTime;
+              const routineUpdates = reorderedRoutines.map((routine, index) => {
+                const newEntryNumber = baseEntryNumber + index;
+                const performanceTime = currentTime;
+
+                // Calculate next time (current + duration)
+                const duration = routine.duration || 3;
+                const [hours, minutes] = currentTime.split(':').map(Number);
+                const totalMinutes = hours * 60 + minutes + duration;
+                const newHours = Math.floor(totalMinutes / 60);
+                const newMinutes = totalMinutes % 60;
+                currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
+
+                console.log(`[V4 Reorder] ${routine.title}: #${newEntryNumber} @ ${performanceTime}`);
+
+                return {
+                  routineId: routine.id,
+                  entryNumber: newEntryNumber,
+                  performanceTime,
+                };
+              });
+
+              // Use batch endpoint to update all routines atomically
               (async () => {
                 try {
-                  // Set reordering flag to suppress individual toasts
-                  isReorderingRef.current = true;
-
-                  // Identify routines that need updating
-                  const routinesToUpdate = reorderedRoutines.filter(
-                    (routine, index) => routine.entryNumber !== baseEntryNumber + index
-                  );
-
-                  if (routinesToUpdate.length === 0) {
-                    console.log('[V4 Reorder] No updates needed');
-                    isReorderingRef.current = false;
-                    return;
-                  }
-
-                  console.log(`[V4 Reorder] Phase 1: Moving ${routinesToUpdate.length} routines to temporary numbers`);
-
-                  // Phase 1: Move to temporary entry numbers (10000+)
-                  const tempUpdates = routinesToUpdate.map((routine) => {
-                    const tempNumber = 10000 + (routine.entryNumber || 0);
-                    console.log(`[V4 Reorder] Phase 1: ${routine.title} #${routine.entryNumber} → temp #${tempNumber}`);
-
-                    return scheduleMutation.mutateAsync({
-                      routineId: routine.id,
-                      tenantId: TEST_TENANT_ID,
-                      performanceDate: new Date(routine.scheduledDay!).toISOString().split('T')[0],
-                      performanceTime: routine.scheduledTime
-                        ? new Date(routine.scheduledTime).toTimeString().split(' ')[0]
-                        : '08:00:00',
-                      entryNumber: tempNumber,
-                    });
+                  await batchReorderMutation.mutateAsync({
+                    tenantId: TEST_TENANT_ID,
+                    competitionId: TEST_COMPETITION_ID,
+                    date: dragDate,
+                    routines: routineUpdates,
                   });
-
-                  await Promise.all(tempUpdates);
-                  console.log('[V4 Reorder] Phase 1 complete');
-
-                  console.log(`[V4 Reorder] Phase 2: Moving ${reorderedRoutines.length} routines to final numbers`);
-
-                  // Phase 2: Move ALL routines to final entry numbers
-                  const finalUpdates = reorderedRoutines.map((routine, index) => {
-                    const newEntryNumber = baseEntryNumber + index;
-                    console.log(`[V4 Reorder] Phase 2: ${routine.title} → final #${newEntryNumber}`);
-
-                    return scheduleMutation.mutateAsync({
-                      routineId: routine.id,
-                      tenantId: TEST_TENANT_ID,
-                      performanceDate: new Date(routine.scheduledDay!).toISOString().split('T')[0],
-                      performanceTime: routine.scheduledTime
-                        ? new Date(routine.scheduledTime).toTimeString().split(' ')[0]
-                        : '08:00:00',
-                      entryNumber: newEntryNumber,
-                    });
-                  });
-
-                  await Promise.all(finalUpdates);
-                  console.log('[V4 Reorder] Phase 2 complete');
-
-                  // Reset reordering flag and show single success toast
-                  isReorderingRef.current = false;
-                  toast.success('Routines reordered successfully');
                 } catch (error) {
-                  console.error('[V4 Reorder] Error during reorder:', error);
-                  // Reset reordering flag on error
-                  isReorderingRef.current = false;
+                  console.error('[V4 Reorder] Error during batch reorder:', error);
                   toast.error('Failed to reorder routines');
                 }
               })();

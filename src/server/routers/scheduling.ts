@@ -2673,6 +2673,60 @@ export const schedulingRouter = router({
       };
     }),
 
+  // Batch reorder routines for a day (V4 redesign) - single transaction
+  batchReorderRoutines: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      date: z.string(), // ISO date: "2026-04-11"
+      routines: z.array(z.object({
+        routineId: z.string().uuid(),
+        entryNumber: z.number(),
+        performanceTime: z.string(), // HH:mm:ss format
+      })),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      console.log('[batchReorderRoutines] === START ===');
+      console.log('[batchReorderRoutines] Reordering', input.routines.length, 'routines');
+
+      const { tenantId, competitionId, date, routines } = input;
+
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      try {
+        // Use Prisma transaction to update all routines atomically
+        const updates = await prisma.$transaction(
+          routines.map(({ routineId, entryNumber, performanceTime }) => {
+            // Parse time as UTC to avoid timezone conversion bugs
+            const [hours, minutes, seconds] = performanceTime.split(':').map(Number);
+            const performanceTimeUTC = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
+
+            return prisma.competition_entries.update({
+              where: {
+                id: routineId,
+                tenant_id: tenantId,
+              },
+              data: {
+                entry_number: entryNumber,
+                performance_time: performanceTimeUTC,
+                updated_at: new Date(),
+              },
+            });
+          })
+        );
+
+        console.log('[batchReorderRoutines] SUCCESS: Updated', updates.length, 'routines');
+
+        return { success: true, updatedCount: updates.length };
+      } catch (error) {
+        console.error('[batchReorderRoutines] ERROR:', error);
+        throw error;
+      }
+    }),
+
   // Update day start time - recalculates all routine times for that day (V4 redesign)
   updateDayStartTime: publicProcedure
     .input(z.object({
