@@ -108,8 +108,11 @@ export default function SchedulePage() {
     .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
     .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-  // Prepare routine data for DragDropProvider
-  const allRoutinesData = (routines || []).map(r => ({
+  // Prepare routine data for DragDropProvider (only unscheduled + scheduled for this day)
+  const allRoutinesData = [
+    ...unscheduledRoutines,
+    ...scheduledRoutines,
+  ].map(r => ({
     id: r.id,
     title: r.title,
     duration: r.duration,
@@ -210,8 +213,8 @@ export default function SchedulePage() {
         onDropError={handleDropError}
       >
         <div className="flex h-[calc(100vh-200px)]">
-          {/* Left Panel - Unscheduled Routines */}
-          <div className="w-1/2 border-r border-purple-500/20 flex flex-col">
+          {/* Left Panel - Unscheduled Routines (1/3 width) */}
+          <div className="w-1/3 border-r border-purple-500/20 flex flex-col">
             <div className="px-6 py-3 bg-purple-800/30 border-b border-purple-500/20">
               <h2 className="text-lg font-semibold text-white">
                 Unscheduled Routines ({unscheduledRoutines.length})
@@ -241,8 +244,8 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          {/* Right Panel - Scheduled Routines */}
-          <div className="w-1/2 flex flex-col">
+          {/* Right Panel - Scheduled Routines (2/3 width) */}
+          <div className="w-2/3 flex flex-col">
             <div className="px-6 py-3 bg-indigo-800/30 border-b border-indigo-500/20">
               <h2 className="text-lg font-semibold text-white">
                 {new Date(selectedDate).toLocaleDateString('en-US', {

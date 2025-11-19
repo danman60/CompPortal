@@ -128,6 +128,13 @@ export function DragDropProvider({
 
     // Determine drop operation type
     const targetRoutineId = over.id as string;
+
+    // Ignore drops onto non-routine elements (like table containers)
+    if (targetRoutineId.startsWith('schedule-table-') || targetRoutineId.startsWith('routine-pool-')) {
+      console.log('[DragDropProvider] Drop onto container ignored:', targetRoutineId);
+      return;
+    }
+
     const targetRoutine = routines.find(r => r.id === targetRoutineId);
 
     if (!targetRoutine) {
