@@ -46,6 +46,27 @@ export default function SchedulePage() {
     tenantId: TEST_TENANT_ID,
   });
 
+  // Reset mutations
+  const resetDay = trpc.scheduling.resetDay.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Unscheduled ${data.count} routines`);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reset day: ${error.message}`);
+    },
+  });
+
+  const resetCompetition = trpc.scheduling.resetCompetition.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Unscheduled ${data.count} routines`);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reset competition: ${error.message}`);
+    },
+  });
+
   // Compute filter options from routines (memoized for performance)
   const classifications = useMemo(() =>
     routines
@@ -160,7 +181,11 @@ export default function SchedulePage() {
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
               onClick={() => {
                 if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
-                  toast('Reset day feature coming soon');
+                  resetDay.mutate({
+                    tenantId: TEST_TENANT_ID,
+                    competitionId: TEST_COMPETITION_ID,
+                    date: selectedDate,
+                  });
                 }
               }}
             >
@@ -170,7 +195,10 @@ export default function SchedulePage() {
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
               onClick={() => {
                 if (confirm('Reset ALL days? This will unschedule all routines for the entire competition.')) {
-                  toast('Reset all feature coming soon');
+                  resetCompetition.mutate({
+                    tenantId: TEST_TENANT_ID,
+                    competitionId: TEST_COMPETITION_ID,
+                  });
                 }
               }}
             >

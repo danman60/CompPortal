@@ -3077,4 +3077,78 @@ export const schedulingRouter = router({
       return { success: true, updatedCount: updates.length };
     }),
 
+  // Reset schedule for a specific day (Schedule Page Rebuild Phase 4)
+  // Unschedule all routines scheduled for the given date
+  resetDay: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      date: z.string(), // "2026-04-09"
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      const result = await prisma.competition_entries.updateMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          performance_date: new Date(input.date),
+          is_scheduled: true,
+        },
+        data: {
+          is_scheduled: false,
+          performance_date: null,
+          performance_time: null,
+          entry_number: null,
+          updated_at: new Date(),
+        },
+      });
+
+      console.log('[resetDay] Unscheduled', result.count, 'routines for', input.date);
+
+      return {
+        success: true,
+        count: result.count,
+      };
+    }),
+
+  // Reset schedule for entire competition (Schedule Page Rebuild Phase 4)
+  // Unschedule ALL routines in the competition
+  resetCompetition: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      const result = await prisma.competition_entries.updateMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          is_scheduled: true,
+        },
+        data: {
+          is_scheduled: false,
+          performance_date: null,
+          performance_time: null,
+          entry_number: null,
+          updated_at: new Date(),
+        },
+      });
+
+      console.log('[resetCompetition] Unscheduled', result.count, 'routines');
+
+      return {
+        success: true,
+        count: result.count,
+      };
+    }),
+
 });
