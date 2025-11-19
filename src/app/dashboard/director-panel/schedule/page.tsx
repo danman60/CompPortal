@@ -277,6 +277,12 @@ export default function SchedulePage() {
     ...draftSchedule,
   ];
 
+  // Filter unscheduled routines for display (exclude draft scheduled routines)
+  const unscheduledRoutinesFiltered = useMemo(() => {
+    const draftIds = new Set(draftSchedule.map(d => d.id));
+    return unscheduledRoutines.filter(r => !draftIds.has(r.id));
+  }, [unscheduledRoutines, draftSchedule]);
+
   // Competition dates for day tabs
   const competitionDates = [
     { date: '2026-04-09', routineCount: 0, startTime: '08:00:00' },
@@ -388,7 +394,7 @@ export default function SchedulePage() {
           {/* Left Panel - Unscheduled Routines (33%) - Sticky */}
           <div className="col-span-1 space-y-4 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
             <RoutinePool
-              routines={unscheduledRoutines as any}
+              routines={unscheduledRoutinesFiltered as any}
               isLoading={isLoading}
               viewMode="cd"
               classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
@@ -400,7 +406,7 @@ export default function SchedulePage() {
               filters={filters}
               onFiltersChange={setFilters}
               totalRoutines={routines?.length || 0}
-              filteredRoutines={unscheduledRoutines.length}
+              filteredRoutines={unscheduledRoutinesFiltered.length}
             />
 
             {/* Schedule Block Templates */}
