@@ -240,79 +240,51 @@ export default function SchedulePage() {
         onDropSuccess={handleDropSuccess}
         onDropError={handleDropError}
       >
-        <div className="flex h-[calc(100vh-200px)]">
-          {/* Left Panel - Unscheduled Routines (1/3 width) */}
-          <div className="w-1/3 border-r border-purple-500/20 flex flex-col">
-            <div className="px-6 py-3 bg-purple-800/30 border-b border-purple-500/20">
-              <h2 className="text-lg font-semibold text-white">
-                Unscheduled Routines ({unscheduledRoutines.length})
-              </h2>
-              <p className="text-sm text-purple-200 mt-1">
-                Drag routines to the schedule →
-              </p>
-            </div>
-            <div className="flex-1 overflow-auto custom-scrollbar">
-              <div className="p-6">
-                <RoutinePool
-                  routines={unscheduledRoutines as any}
-                  isLoading={isLoading}
-                  viewMode="cd"
-                  classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
-                  ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
-                  genres={categories.map(c => ({ id: c.id, label: c.name }))}
-                  groupSizes={groupSizes.map(gs => ({ id: gs.id, label: gs.name }))}
-                  studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
-                  routineAges={routineAges.map(ra => ({ id: ra.id, label: ra.name }))}
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  totalRoutines={routines?.length || 0}
-                  filteredRoutines={unscheduledRoutines.length}
-                />
-              </div>
-            </div>
+        <div className="grid grid-cols-3 gap-2 px-6">
+          {/* Left Panel - Unscheduled Routines (33%) */}
+          <div className="col-span-1 space-y-4">
+            <RoutinePool
+              routines={unscheduledRoutines as any}
+              isLoading={isLoading}
+              viewMode="cd"
+              classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
+              ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
+              genres={categories.map(c => ({ id: c.id, label: c.name }))}
+              groupSizes={groupSizes.map(gs => ({ id: gs.id, label: gs.name }))}
+              studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
+              routineAges={routineAges.map(ra => ({ id: ra.id, label: ra.name }))}
+              filters={filters}
+              onFiltersChange={setFilters}
+              totalRoutines={routines?.length || 0}
+              filteredRoutines={unscheduledRoutines.length}
+            />
           </div>
 
-          {/* Right Panel - Scheduled Routines (2/3 width) */}
-          <div className="w-2/3 flex flex-col">
-            <div className="px-6 py-3 bg-indigo-800/30 border-b border-indigo-500/20">
-              <h2 className="text-lg font-semibold text-white">
-                {new Date(selectedDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </h2>
-              <p className="text-sm text-indigo-200 mt-1">
-                {scheduledRoutines?.length || 0} routines scheduled
-              </p>
-            </div>
-            <div className="flex-1 overflow-auto custom-scrollbar">
-              {scheduledRoutines && scheduledRoutines.length > 0 ? (
-                <div className="p-6">
-                  <ScheduleTable
-                    routines={scheduledRoutines as any}
-                    allRoutines={(routines || []).map(r => ({
-                      id: r.id,
-                      entrySizeName: r.entrySizeName,
-                      ageGroupName: r.ageGroupName,
-                      classificationName: r.classificationName,
-                      isScheduled: r.isScheduled,
-                    }))}
-                    selectedDate={selectedDate}
-                    viewMode="cd"
-                    conflicts={[]}
-                  />
+          {/* Right Panel - Scheduled Routines (67%) */}
+          <div className="col-span-2 space-y-4">
+            {scheduledRoutines && scheduledRoutines.length > 0 ? (
+              <ScheduleTable
+                routines={scheduledRoutines as any}
+                allRoutines={(routines || []).map(r => ({
+                  id: r.id,
+                  entrySizeName: r.entrySizeName,
+                  ageGroupName: r.ageGroupName,
+                  classificationName: r.classificationName,
+                  isScheduled: r.isScheduled,
+                }))}
+                selectedDate={selectedDate}
+                viewMode="cd"
+                conflicts={[]}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-[400px]">
+                <div className="text-center text-indigo-300">
+                  <div className="text-4xl mb-2">📅</div>
+                  <p className="font-medium">No routines scheduled for this day</p>
+                  <p className="text-sm mt-2">Drag routines from the left panel</p>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-indigo-300">
-                    <div className="text-4xl mb-2">📅</div>
-                    <p className="font-medium">No routines scheduled for this day</p>
-                    <p className="text-sm mt-2">Drag routines from the left panel</p>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </DragDropProvider>

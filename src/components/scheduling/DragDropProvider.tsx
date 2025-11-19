@@ -18,6 +18,7 @@ import {
   DragStartEvent,
   DragEndEvent,
   DragOverEvent,
+  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
@@ -25,6 +26,7 @@ import {
 } from '@dnd-kit/core';
 import { DropIndicator } from './DropIndicator';
 import { useOptimisticScheduling } from '@/hooks/useOptimisticScheduling';
+import { RoutineCard } from './RoutineCard';
 
 interface RoutineData {
   id: string;
@@ -65,6 +67,9 @@ export function DragDropProvider({
   const [showDropIndicator, setShowDropIndicator] = useState(false);
 
   const { scheduleRoutines, calculateTimes } = useOptimisticScheduling();
+
+  // Get the actively dragged routine
+  const activeRoutine = activeId ? routines.find(r => r.id === activeId) : null;
 
   // Configure sensors for drag interaction
   const sensors = useSensors(
@@ -266,6 +271,45 @@ export function DragDropProvider({
     >
       {children}
       <DropIndicator top={dropIndicatorTop} visible={showDropIndicator} />
+      <DragOverlay>
+        {activeRoutine ? (
+          <div className="opacity-90 rotate-2 scale-105">
+            <RoutineCard
+              routine={{
+                ...activeRoutine,
+                studioId: '',
+                studioName: '',
+                studioCode: '',
+                classificationId: '',
+                classificationName: '',
+                categoryId: '',
+                categoryName: '',
+                ageGroupId: '',
+                ageGroupName: '',
+                entrySizeId: '',
+                entrySizeName: '',
+                routineAge: null,
+                participants: [],
+                isScheduled: activeRoutine.isScheduled,
+                scheduleZone: null,
+                scheduledTime: null,
+                scheduledDay: null,
+                scheduledDateString: null,
+                scheduledTimeString: activeRoutine.performanceTime,
+                entryNumber: activeRoutine.entryNumber,
+              }}
+              viewMode="cd"
+              inZone={false}
+              isDraggingAnything={true}
+              hasConflict={false}
+              hasNotes={false}
+              hasAgeChange={false}
+              isLastRoutine={false}
+              isSelected={false}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }
