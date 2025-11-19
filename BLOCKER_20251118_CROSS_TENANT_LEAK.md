@@ -1,7 +1,7 @@
 # 🚨 BLOCKER: Cross-Tenant Data Leak - Rivertown Dance Academy
 
 **Severity:** P0 CRITICAL
-**Status:** ACTIVE INCIDENT
+**Status:** RESOLVED ✅
 **Reported:** 2025-11-18 (EST)
 **Reporter:** User
 
@@ -50,10 +50,46 @@ Rivertown Dance Academy (studio) is able to see dancers from other studios outsi
 - [ ] Review all queries for tenant isolation
 - [ ] Run cross-tenant verification queries
 
-## Resolution Plan
+## Root Cause Identified
 
-TBD - Awaiting investigation results
+Conditional tenant filtering pattern allowed queries without tenant_id:
+```typescript
+// VULNERABLE:
+if (ctx.tenantId) { where.tenant_id = ctx.tenantId }
+...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {})
+```
+
+If ctx.tenantId was undefined, NO filter applied = cross-tenant leak.
+
+## Evidence of Cross-Tenant Leak
+
+Found 6 studios visible on BOTH EMPWR and Glow tenants:
+1. CASSIAHS DANCE COMPANY
+2. DANCEOLOGY
+3. DANCESATIONS
+4. DANCETASTIC
+5. FEVER
+6. JDANSE
+
+PLUS: 2 Rivertown duplicates on EMPWR only.
+
+## Security Fixes Applied
+
+**Files Modified:**
+- `src/server/routers/dancer.ts` - 5 procedures (getAll, create, update, delete, archive)
+- `src/server/routers/reservation.ts` - 2 locations (getAll)
+- `src/server/routers/competition.ts` - 4 locations (getTenantSettings)
+
+**Pattern Fixed:**
+All routers now throw `TRPCError({ code: 'FORBIDDEN' })` if non-super-admin missing tenant context.
+
+## Deployment
+
+- Build: ✅ PASSED
+- Commit: c04b159
+- Deployed: 2025-11-18
+- Status: Security patch live on production
 
 ---
 
-**DO NOT PROCEED WITH ANY WORK UNTIL THIS IS RESOLVED**
+**✅ BLOCKER RESOLVED - Emergency security patch deployed**
