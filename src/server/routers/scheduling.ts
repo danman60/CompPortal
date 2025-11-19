@@ -477,9 +477,8 @@ export const schedulingRouter = router({
           displayStudioName = `Studio ${studioCode}`;
         }
 
-        // FIX: Combine date and time, treating TIME field as EST (UTC-5)
-        // PostgreSQL TIME has no timezone - Prisma returns it as Date with time component
-        // The TIME value represents EST time, but we need to store as UTC for proper display
+        // FIX: Combine date and time - treat TIME as local EST time
+        // PostgreSQL TIME has no timezone - represents EST time directly
         let scheduledTime = null;
         if (routine.performance_date && routine.performance_time) {
           // Extract time components from the TIME field
@@ -487,21 +486,21 @@ export const schedulingRouter = router({
           const minutes = routine.performance_time.getUTCMinutes();
           const seconds = routine.performance_time.getUTCSeconds();
 
-          // Add 5 hours to convert EST to UTC (EST is UTC-5)
-          // If stored time is 08:00 EST, we need 13:00 UTC to display correctly
-          const utcHours = hours + 5;
+          // Create an EST datetime string and parse it
+          const dateStr = routine.performance_date.toISOString().split('T')[0]; // YYYY-MM-DD
+          const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; // HH:MM:SS
 
-          // Create a new Date based on performance_date and set the UTC time
-          const combined = new Date(routine.performance_date);
-          combined.setUTCHours(utcHours, minutes, seconds, 0);
-
-          scheduledTime = combined;
+          // Parse as EST by creating a date-time string and explicitly treating it as EST
+          // This creates a UTC timestamp that represents the EST time
+          scheduledTime = new Date(`${dateStr}T${timeStr}-05:00`); // -05:00 = EST offset
 
           // Debug logging for entry #100
           if (routine.entry_number === 100) {
-            console.log('[DEBUG #100] Original hours (EST):', hours);
-            console.log('[DEBUG #100] UTC hours (EST+5):', utcHours);
+            console.log('[DEBUG #100] Date:', dateStr);
+            console.log('[DEBUG #100] Time:', timeStr);
+            console.log('[DEBUG #100] Combined:', `${dateStr}T${timeStr}-05:00`);
             console.log('[DEBUG #100] scheduledTime ISO:', scheduledTime.toISOString());
+            console.log('[DEBUG #100] scheduledTime local:', scheduledTime.toString());
           }
         }
 
