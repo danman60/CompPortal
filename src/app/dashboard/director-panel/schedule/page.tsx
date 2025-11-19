@@ -1,1276 +1,216 @@
 'use client';
 
 /**
- * Phase 2 Scheduling Interface
+ * Schedule Page - Rebuild Version (Phase 4)
  *
- * Features:
- * - Left panel: Unscheduled routines pool with filters
- * - Middle panel: Visual schedule builder (timeline/calendar view)
- * - Right panel: Conflict warnings and schedule stats
- * - Drag-and-drop scheduling
- * - Real-time conflict detection
- * - Studio code masking (A, B, C, etc.)
+ * Clean implementation using new components:
+ * - DragDropProvider for drag-and-drop
+ * - RoutineTable for unscheduled routines
+ * - ScheduleTable for scheduled routines
+ * - Day tabs for date selection
+ *
+ * Spec: SCHEDULE_PAGE_REBUILD_SPEC.md
+ * Old version archived: page.old.tsx
  */
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import ExcelJS from 'exceljs';
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDraggable,
-} from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
-
-// Session 55 Components
-import { HotelAttritionBanner } from '@/components/HotelAttritionBanner';
-import { AgeChangeWarning } from '@/components/AgeChangeWarning';
-import { ScheduleBlockCard, DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
-import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
-import { ConflictOverrideModal } from '@/components/ConflictOverrideModal';
-import { CDNoteModal } from '@/components/CDNoteModal';
-
-// Session 56 Components
-import { ScheduleToolbar, ScheduleStatus, ViewMode } from '@/components/ScheduleToolbar';
-import { RoutinePool } from '@/components/scheduling/RoutinePool';
-import { ScheduleZone as ScheduleZoneType, ScheduleBlock as ScheduleBlockType } from '@/components/scheduling/ScheduleGrid';
-
-// V4 Components (Schedule Redesign)
-import { DayTabs } from '@/components/scheduling/DayTabs';
+import { DragDropProvider } from '@/components/scheduling/DragDropProvider';
+import { RoutineTable, RoutineTableRow } from '@/components/scheduling/RoutineTable';
 import { ScheduleTable } from '@/components/scheduling/ScheduleTable';
+import { DayTabs } from '@/components/scheduling/DayTabs';
 
-// TEST tenant ID
+// TEST tenant ID (will be replaced with real tenant context)
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
 const TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
 
-interface Routine {
-  id: string;
-  title: string;
-  studioId: string;
-  studioName: string;
-  studioCode: string;
-  classificationId: string;
-  classificationName: string;
-  categoryId: string;
-  categoryName: string;
-  ageGroupId: string;
-  ageGroupName: string;
-  entrySizeId: string;
-  entrySizeName: string;
-  duration: number;
-  routineAge: number | null; // Final selected age for routine
-  participants: Array<{
-    dancerId: string;
-    dancerName: string;
-    dancerAge: number | null;
-  }>;
-  isScheduled: boolean;
-  scheduleZone: string | null; // Zone ID: saturday-am, saturday-pm, etc.
-  scheduledTime?: Date | null;
-  scheduledDay?: Date | null;
-  scheduledDateString?: string | null; // YYYY-MM-DD format from backend
-  scheduledTimeString?: string | null; // HH:MM:SS format from backend
-  entryNumber?: number | null;
-}
-
-// Use imported types from ScheduleGrid
-type ScheduleZone = ScheduleZoneType;
-type ScheduleBlock = ScheduleBlockType;
-
 export default function SchedulePage() {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // Selected date state
+  const [selectedDate, setSelectedDate] = useState<string>('2026-04-11');
 
-  // Track which zone each routine is in
-  const [routineZones, setRoutineZones] = useState<Record<string, ScheduleZone>>({});
-
-  // Conflict override state
-  const [overrideConflictId, setOverrideConflictId] = useState<string | null>(null);
-  const [overrideReason, setOverrideReason] = useState('');
-
-  // Studio request state
-  const [showRequestForm, setShowRequestForm] = useState<string | null>(null); // routine ID
-  const [requestContent, setRequestContent] = useState('');
-
-  // CD Request Management
-  const [showRequestsPanel, setShowRequestsPanel] = useState(false);
-
-  // Panel collapse state
-  const [isTrophyPanelCollapsed, setIsTrophyPanelCollapsed] = useState(false);
-
-  // Age warning dismiss state
-  const [ageWarningDismissed, setAgeWarningDismissed] = useState(false);
-
-  // Undo/Redo state
-  const [history, setHistory] = useState<Array<Record<string, ScheduleZone>>>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-
-  // CD Notes state
-  const [showCDNoteModal, setShowCDNoteModal] = useState(false);
-  const [cdNoteRoutineId, setCDNoteRoutineId] = useState<string | null>(null);
-  const [cdNoteRoutineTitle, setCDNoteRoutineTitle] = useState<string>('');
-
-  // NEW: Day selector state
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-
-  // V4: Selected date state (ISO string format)
-  const [selectedDate, setSelectedDate] = useState<string>('2026-04-11'); // Default to first day
-
-  // Bulk selection state
-  const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
-  const [lastClickedRoutineId, setLastClickedRoutineId] = useState<string | null>(null);
-
-  // NEW: Schedule block modal state
-  const [showBlockModal, setShowBlockModal] = useState(false);
-  const [blockModalMode, setBlockModalMode] = useState<'create' | 'edit'>('create');
-  const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
-
-  // Reset schedule confirmation dialog state
-  const [showResetConfirm, setShowResetConfirm] = useState<'day' | 'all' | null>(null);
-
-  // View mode state (needs to be before queries that use it)
-  const [viewMode, setViewMode] = useState<ViewMode>('cd');
-
-  // Filter state (Session 56, Updated Session 64 with groupSizes)
-  const [filters, setFilters] = useState<{
-    classifications: string[];
-    ageGroups: string[];
-    genres: string[];
-    groupSizes: string[];
-    studios: string[];
-    routineAges: string[];
-    search: string;
-  }>({
-    classifications: [],
-    ageGroups: [],
-    genres: [],
-    groupSizes: [],
-    studios: [],
-    routineAges: [],
-    search: '',
-  });
-
-  // Refs to track operations (to suppress individual toasts/refetches during batch operations)
-  const isReorderingRef = useRef(false);
-  const isAutoGeneratingRef = useRef(false);
-  const isBatchSchedulingRef = useRef(false);
-
-  // Track schedule blocks
-  const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([
-    {
-      id: 'award-template',
-      type: 'award',
-      title: '🏆 Award Block',
-      duration: 30,
-      zone: null,
-    },
-    {
-      id: 'break-template',
-      type: 'break',
-      title: '☕ Break Block',
-      duration: 15,
-      zone: null,
-    },
-  ]);
-
-  // Fetch routines (search handled by backend, other filters client-side)
-  // View mode filtering will be added to getRoutines procedure
-  const TEST_STUDIO_ID = '00000000-0000-0000-0000-000000000001';
-
-  const { data: routines, isLoading, error, refetch } = trpc.scheduling.getRoutines.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
-    searchQuery: filters.search || undefined, // Backend search for performance
-    viewMode: viewMode,
-    studioId: viewMode === 'studio' ? TEST_STUDIO_ID : undefined,
-    // Other filters (classification, age, genre, studio) handled client-side for multi-select
-  });
-
-  // Fetch Trophy Helper
-  const { data: trophyHelper } = trpc.scheduling.getTrophyHelper.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-  });
-
-  // Fetch Conflicts
-  const { data: conflictsData, refetch: refetchConflicts } = trpc.scheduling.detectConflicts.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-  });
-
-  // NEW: Fetch Hotel Attrition Warning
-  const { data: hotelWarningData } = trpc.scheduling.getHotelAttritionWarning.useQuery({
+  // Fetch all routines
+  const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
     tenantId: TEST_TENANT_ID,
   });
 
-  // NEW: Fetch Age Changes (Session 58 - Fixed: Converted to query)
-  const { data: ageChangesData } = trpc.scheduling.detectAgeChanges.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
-  });
+  // Filter routines into unscheduled and scheduled for the selected day
+  const unscheduledRoutines: RoutineTableRow[] = (routines || [])
+    .filter(r => !r.isScheduled)
+    .map(r => ({
+      id: r.id,
+      title: r.title,
+      studioCode: r.studioCode,
+      classificationName: r.classificationName,
+      entrySizeName: r.entrySizeName,
+      routineAge: r.routineAge,
+      ageGroupName: r.ageGroupName,
+      categoryName: r.categoryName,
+      duration: r.duration,
+    }));
 
-  // Fetch Studio Requests (for CD)
-  const { data: studioRequests, refetch: refetchRequests } = trpc.scheduling.getStudioRequests.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
-  });
+  // Filter scheduled routines for the selected day
+  const scheduledRoutines = (routines || [])
+    .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
+    .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-  // Fetch Competition Sessions with Time Slots (for Timeline Grid)
-  const { data: sessions } = trpc.scheduling.getCompetitionSessions.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
-  });
+  // Prepare routine data for DragDropProvider
+  const allRoutinesData = (routines || []).map(r => ({
+    id: r.id,
+    title: r.title,
+    duration: r.duration,
+    isScheduled: r.isScheduled,
+    entryNumber: r.entryNumber,
+    performanceTime: r.scheduledTimeString,
+  }));
 
-  // V4: Fetch routines for selected day
-  const { data: routinesByDay, refetch: refetchRoutinesByDay } = trpc.scheduling.getRoutinesByDay.useQuery({
-    tenantId: TEST_TENANT_ID,
-    competitionId: TEST_COMPETITION_ID,
-    date: selectedDate,
-  });
+  const handleDropSuccess = () => {
+    toast.success('Routine scheduled successfully');
+    refetch();
+  };
 
-  // V4: Competition days configuration
-  const competitionDays = [
+  const handleDropError = (error: Error) => {
+    toast.error(`Failed to schedule routine: ${error.message}`);
+  };
+
+  // Competition dates for day tabs
+  const competitionDates = [
     { date: '2026-04-09', routineCount: 0, startTime: '08:00:00' },
     { date: '2026-04-10', routineCount: 0, startTime: '08:00:00' },
-    { date: '2026-04-11', routineCount: 0, startTime: '08:00:00' },
+    { date: '2026-04-11', routineCount: scheduledRoutines?.length || 0, startTime: '08:00:00' },
     { date: '2026-04-12', routineCount: 0, startTime: '08:00:00' },
   ];
 
-  // State Machine mutations
-  const finalizeMutation = trpc.scheduling.finalizeSchedule.useMutation({
-    onSuccess: () => {
-      toast.success('🔒 Schedule finalized! Entry numbers are now locked.');
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Cannot finalize: ${error.message}`);
-    },
-  });
-
-  const publishMutation = trpc.scheduling.publishSchedule.useMutation({
-    onSuccess: () => {
-      toast.success('✅ Schedule published! Studio names are now revealed.');
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Cannot publish: ${error.message}`);
-    },
-  });
-
-  const unlockMutation = trpc.scheduling.unlockSchedule.useMutation({
-    onSuccess: () => {
-      toast.success('🔓 Schedule unlocked! You can now make changes.');
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Cannot unlock: ${error.message}`);
-    },
-  });
-
-  // Studio Request mutations
-  const addRequestMutation = trpc.scheduling.addStudioRequest.useMutation({
-    onSuccess: () => {
-      toast.success('📝 Request submitted successfully!');
-      setShowRequestForm(null);
-      setRequestContent('');
-      refetchRequests();
-    },
-    onError: (error) => {
-      toast.error(`Failed to submit request: ${error.message}`);
-    },
-  });
-
-  const updateRequestMutation = trpc.scheduling.updateRequestStatus.useMutation({
-    onSuccess: () => {
-      toast.success('✓ Request status updated!');
-      refetchRequests();
-    },
-    onError: (error) => {
-      toast.error(`Failed to update request: ${error.message}`);
-    },
-  });
-
-  // CD Note mutations
-  const addCDNoteMutation = trpc.scheduling.addCDNote.useMutation({
-    onSuccess: () => {
-      toast.success('✅ Private note saved successfully!');
-      setShowCDNoteModal(false);
-      setCDNoteRoutineId(null);
-      setCDNoteRoutineTitle('');
-      // Refetch routines to update note indicators
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to save note: ${error.message}`);
-    },
-  });
-
-  // Timeline Grid - Schedule routine to time slot
-  const scheduleToTimeSlotMutation = trpc.scheduling.scheduleRoutineToTimeSlot.useMutation({
-    onSuccess: () => {
-      toast.success('✅ Routine scheduled successfully!');
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to schedule: ${error.message}`);
-    },
-  });
-
-  // Conflict override mutation
-  const overrideConflictMutation = trpc.scheduling.overrideConflict.useMutation({
-    onSuccess: () => {
-      toast.success('✅ Conflict override saved successfully!');
-      setOverrideConflictId(null);
-      setOverrideReason('');
-      refetchConflicts();
-    },
-    onError: (error) => {
-      toast.error(`Failed to override conflict: ${error.message}`);
-    },
-  });
-
-  // Export mutations
-  const exportPDFMutation = trpc.scheduling.exportSchedulePDF.useMutation({
-    onSuccess: (data) => {
-      // Generate PDF client-side
-      const doc = new jsPDF();
-
-      // Add title
-      doc.setFontSize(16);
-      doc.text(data.competition.name, 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Schedule Export - ${new Date().toLocaleDateString()}`, 14, 22);
-
-      // Prepare table data
-      const tableData = data.routines.map((r: any) => [
-        r.scheduledDateString ? new Date(r.scheduledDateString).toLocaleDateString() : 'Unscheduled',
-        r.zone?.replace('-', ' ').toUpperCase() || '',
-        r.scheduledTime?.toLocaleTimeString() || '',
-        r.title,
-        viewMode === 'judge' ? r.studioCode : r.studioName,
-        `${r.duration} min`,
-      ]);
-
-      // Add table
-      autoTable(doc, {
-        startY: 28,
-        head: [['Day', 'Session', 'Time', 'Routine', 'Studio', 'Duration']],
-        body: tableData,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [99, 102, 241] },
-      });
-
-      // Save PDF
-      doc.save(`schedule-${data.competition.name.replace(/\s+/g, '-')}.pdf`);
-      toast.success('📄 PDF exported successfully!');
-    },
-    onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
-    },
-  });
-
-  const exportExcelMutation = trpc.scheduling.exportScheduleExcel.useMutation({
-    onSuccess: async (data) => {
-      // Generate Excel client-side
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Schedule');
-
-      // Add headers
-      worksheet.columns = [
-        { header: 'Day', key: 'day', width: 15 },
-        { header: 'Session', key: 'session', width: 15 },
-        { header: 'Time', key: 'time', width: 12 },
-        { header: 'Routine', key: 'routine', width: 30 },
-        { header: 'Studio', key: 'studio', width: 20 },
-        { header: 'Classification', key: 'classification', width: 15 },
-        { header: 'Category', key: 'category', width: 15 },
-        { header: 'Age Group', key: 'ageGroup', width: 15 },
-        { header: 'Duration', key: 'duration', width: 10 },
-      ];
-
-      // Style header row
-      worksheet.getRow(1).font = { bold: true };
-      worksheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF6366F1' },
-      };
-
-      // Add data
-      data.routines.forEach((r: any) => {
-        worksheet.addRow(r);
-      });
-
-      // Generate buffer and download
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `schedule-${data.competition.name.replace(/\s+/g, '-')}.xlsx`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-
-      toast.success('📊 Excel exported successfully!');
-    },
-    onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
-    },
-  });
-
-  // Mock competition status (in production, fetch from database)
-  const [scheduleStatus, setScheduleStatus] = useState<ScheduleStatus>('draft');
-  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
-
-  // Auto-Generate Draft Schedule
-  const handleAutoGenerate = async () => {
-    if (unscheduledRoutines.length === 0) {
-      toast.error('No unscheduled routines to schedule');
-      return;
-    }
-
-    if (!confirm(`Auto-generate schedule for ${unscheduledRoutines.length} routines across Thursday-Sunday?`)) {
-      return;
-    }
-
-    setIsAutoGenerating(true);
-    isAutoGeneratingRef.current = true; // Suppress individual toasts during batch operation
-    console.log('[Auto-Generate] ========== STARTING AUTO-GENERATION ==========');
-    console.log('[Auto-Generate] Unscheduled routines:', unscheduledRoutines.length);
-
-    try {
-      // Competition days: Thursday-Sunday (April 9-12, 2026)
-      const competitionDateStrings = [
-        '2026-04-09', // Thursday
-        '2026-04-10', // Friday
-        '2026-04-11', // Saturday
-        '2026-04-12', // Sunday
-      ];
-
-      // Distribute routines evenly across days
-      const routinesPerDay = Math.ceil(unscheduledRoutines.length / competitionDateStrings.length);
-
-      // Backend will auto-assign entry numbers sequentially (starting from max+1)
-      // No hardcoded counter needed - prevents collision with existing scheduled routines
-
-      for (let dayIndex = 0; dayIndex < competitionDateStrings.length; dayIndex++) {
-        const date = competitionDateStrings[dayIndex];
-        const dayRoutines = unscheduledRoutines.slice(
-          dayIndex * routinesPerDay,
-          (dayIndex + 1) * routinesPerDay
-        );
-
-        console.log(`[Auto-Generate] Day ${dayIndex + 1} (${date}): Scheduling ${dayRoutines.length} routines`);
-
-        // Find the day's editable start time from the top-level competitionDays config
-        const dayConfig = [...competitionDays].find((d: any) => d.date === date);
-        const dayStartTime = dayConfig?.startTime || '08:00:00';
-        let currentTime = dayStartTime; // Use day's editable start time
-        console.log(`[Auto-Generate] Using day start time: ${dayStartTime}`);
-        for (const routine of dayRoutines) {
-          console.log(`[Auto-Generate] Scheduling: ${routine.title} at ${currentTime}`);
-
-          await scheduleMutation.mutateAsync({
-            routineId: routine.id,
-            tenantId: TEST_TENANT_ID,
-            performanceDate: date,
-            performanceTime: currentTime,
-            entryNumber: 0, // Let backend auto-assign to avoid collisions
-          });
-
-          // Increment time for next routine
-          const [hours, minutes] = currentTime.split(':').map(Number);
-          const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
-          const newHours = Math.floor(totalMinutes / 60);
-          const newMinutes = totalMinutes % 60;
-          currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
-        }
-      }
-
-      console.log('[Auto-Generate] ========== AUTO-GENERATION COMPLETE ==========');
-      toast.success(`✅ Auto-generated schedule for ${unscheduledRoutines.length} routines!`);
-    } catch (error) {
-      console.error('[Auto-Generate] ERROR:', error);
-      toast.error(`Auto-generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsAutoGenerating(false);
-      isAutoGeneratingRef.current = false; // Re-enable individual toasts
-    }
-  };
-
-  const handleFinalize = () => {
-    if (confirm('Lock entry numbers? This will prevent automatic renumbering.')) {
-      finalizeMutation.mutate({
-        competitionId: TEST_COMPETITION_ID,
-        tenantId: TEST_TENANT_ID,
-        userId: '00000000-0000-0000-0000-000000000001', // Test user
-      });
-      setScheduleStatus('finalized');
-    }
-  };
-
-  const handlePublish = () => {
-    if (confirm('Publish schedule? This will reveal studio names and lock all changes.')) {
-      publishMutation.mutate({
-        competitionId: TEST_COMPETITION_ID,
-        tenantId: TEST_TENANT_ID,
-        userId: '00000000-0000-0000-0000-000000000001',
-      });
-      setScheduleStatus('published');
-    }
-  };
-
-  const handleAddCDNote = (routineId: string, routineTitle: string) => {
-    setCDNoteRoutineId(routineId);
-    setCDNoteRoutineTitle(routineTitle);
-    setShowCDNoteModal(true);
-  };
-
-  const handleSubmitCDNote = (content: string) => {
-    if (cdNoteRoutineId) {
-      addCDNoteMutation.mutate({
-        routineId: cdNoteRoutineId,
-        tenantId: TEST_TENANT_ID,
-        content: content,
-        authorId: 'cd-user-id', // In production, get from auth context
-      });
-    }
-  };
-
-  const handleUnlock = () => {
-    if (confirm('Unlock schedule? This will allow changes and enable auto-renumbering again.')) {
-      unlockMutation.mutate({
-        competitionId: TEST_COMPETITION_ID,
-        tenantId: TEST_TENANT_ID,
-      });
-      setScheduleStatus('draft');
-    }
-  };
-
-  const handleSubmitRequest = (routineId: string) => {
-    if (!requestContent.trim()) {
-      alert('Please enter a request message');
-      return;
-    }
-
-    addRequestMutation.mutate({
-      routineId,
-      tenantId: TEST_TENANT_ID,
-      content: requestContent,
-      authorId: '00000000-0000-0000-0000-000000000001', // Test user
-    });
-  };
-
-  const handleUpdateRequestStatus = (noteId: string, status: 'completed' | 'ignored') => {
-    if (confirm(`Mark this request as ${status}?`)) {
-      updateRequestMutation.mutate({ noteId, status });
-    }
-  };
-
-  // Bulk selection handlers
-  const handleToggleRoutineSelection = (routineId: string, shiftKey: boolean) => {
-    setSelectedRoutineIds(prev => {
-      const newSet = new Set(prev);
-
-      // Shift+click range selection
-      if (shiftKey && lastClickedRoutineId && unscheduledRoutines.length > 0) {
-        const lastIndex = unscheduledRoutines.findIndex(r => r.id === lastClickedRoutineId);
-        const currentIndex = unscheduledRoutines.findIndex(r => r.id === routineId);
-
-        if (lastIndex !== -1 && currentIndex !== -1) {
-          const start = Math.min(lastIndex, currentIndex);
-          const end = Math.max(lastIndex, currentIndex);
-
-          // Select all routines in range
-          for (let i = start; i <= end; i++) {
-            newSet.add(unscheduledRoutines[i].id);
-          }
-          setLastClickedRoutineId(routineId);
-          return newSet;
-        }
-      }
-
-      // Normal click - toggle single routine
-      if (newSet.has(routineId)) {
-        newSet.delete(routineId);
-      } else {
-        newSet.add(routineId);
-      }
-
-      setLastClickedRoutineId(routineId);
-      return newSet;
-    });
-  };
-
-  const handleSelectAll = () => {
-    const allIds = new Set(unscheduledRoutines.map(r => r.id));
-    setSelectedRoutineIds(allIds);
-    toast.success(`Selected ${allIds.size} routines`);
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedRoutineIds(new Set());
-    setLastClickedRoutineId(null);
-    toast.success('Cleared selection');
-  };
-
-  // Initialize routine zones from database on data load
-  useEffect(() => {
-    if (!routines) return;
-
-    const initialZones: Record<string, ScheduleZone> = {};
-    routines.forEach(routine => {
-      // V4: Use isScheduled flag to exclude from unscheduled pool
-      // Scheduled routines (isScheduled=true) should NOT be in routineZones
-      // This prevents them from appearing in UR even if scheduleZone is null
-      if (routine.scheduleZone) {
-        initialZones[routine.id] = routine.scheduleZone as ScheduleZone;
-      }
-      // Note: routines with isScheduled=true are excluded from UR via
-      // routinesByZone filter at line 1163 (skips if routine.isScheduled=true)
-    });
-
-    setRoutineZones(initialZones);
-  }, [routines]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
-
-  // Schedule mutation
-  const scheduleMutation = trpc.scheduling.scheduleRoutine.useMutation({
-    onSuccess: () => {
-      // Only refetch if NOT in batch operation (10x performance improvement)
-      if (!isBatchSchedulingRef.current && !isReorderingRef.current && !isAutoGeneratingRef.current) {
-        refetch();
-        refetchConflicts();
-      }
-    },
-    onError: (error) => {
-      console.error('[Schedule] Mutation FAILED:', error);
-      toast.error(`Failed to schedule routine: ${error.message}`);
-      // Revert the optimistic update by refetching from database
-      refetch();
-    },
-  });
-
-  // Batch reorder mutation (V4 redesign)
-  const batchReorderMutation = trpc.scheduling.batchReorderRoutines.useMutation({
-    onSuccess: (result) => {
-      console.log('[V4 Reorder] Batch reorder SUCCESS:', result.updatedCount, 'routines');
-      toast.success('Routines reordered successfully');
-      refetch();
-      refetchConflicts();
-      refetchRoutinesByDay();
-    },
-    onError: (error) => {
-      console.error('[V4 Reorder] Batch reorder FAILED:', error);
-      toast.error(`Failed to reorder routines: ${error.message}`);
-      refetch();
-    },
-  });
-
-  // Schedule Block mutations
-  const createBlockMutation = trpc.scheduling.createScheduleBlock.useMutation({
-    onSuccess: (newBlock) => {
-      toast.success(`✅ ${newBlock.block_type === 'award' ? '🏆 Award' : '☕ Break'} block created!`);
-      // Add new block to local state
-      setScheduleBlocks(prev => [...prev, {
-        id: newBlock.id,
-        type: newBlock.block_type as 'award' | 'break',
-        title: newBlock.title,
-        duration: newBlock.duration_minutes,
-        zone: null,
-      }]);
-      setShowBlockModal(false);
-    },
-    onError: (error) => {
-      toast.error(`Failed to create block: ${error.message}`);
-    },
-  });
-
-  // Reset schedule mutations
-  const resetDayMutation = trpc.scheduling.resetScheduleForDay.useMutation({
-    onSuccess: (result) => {
-      toast.success(`Reset ${result.count} routine${result.count !== 1 ? 's' : ''} for this day`);
-      refetch();
-      refetchConflicts();
-      refetchRoutinesByDay(); // Update schedule table immediately
-    },
-    onError: (error) => {
-      toast.error(`Failed to reset schedule: ${error.message}`);
-    },
-  });
-
-  const resetAllMutation = trpc.scheduling.resetScheduleForCompetition.useMutation({
-    onSuccess: (result) => {
-      toast.success(`Reset ${result.count} routine${result.count !== 1 ? 's' : ''} for entire competition`);
-      refetch();
-      refetchConflicts();
-      refetchRoutinesByDay(); // Update schedule table immediately
-    },
-    onError: (error) => {
-      toast.error(`Failed to reset schedule: ${error.message}`);
-    },
-  });
-
-  // Handlers for schedule blocks
-  const handleCreateBlock = (type: 'award' | 'break') => {
-    setBlockModalMode('create');
-    setEditingBlock(null);
-    setShowBlockModal(true);
-  };
-
-  const handleEditBlock = (blockId: string) => {
-    const block = scheduleBlocks.find(b => b.id === blockId);
-    if (block) {
-      setEditingBlock(block);
-      setBlockModalMode('edit');
-      setShowBlockModal(true);
-    }
-  };
-
-  const handleDeleteBlock = (blockId: string) => {
-    setScheduleBlocks(prev => prev.filter(b => b.id !== blockId));
-    toast.success('🗑️ Block deleted');
-  };
-
-  const handleSaveBlock = (block: { type: 'award' | 'break'; title: string; duration: number }) => {
-    if (blockModalMode === 'edit' && editingBlock) {
-      // Update existing block
-      setScheduleBlocks(prev => prev.map(b =>
-        b.id === editingBlock.id
-          ? { ...b, type: block.type, title: block.title, duration: block.duration }
-          : b
-      ));
-      toast.success('💾 Block updated!');
-      setShowBlockModal(false);
-    } else {
-      // Create new block via mutation
-      createBlockMutation.mutate({
-        competitionId: TEST_COMPETITION_ID,
-        tenantId: TEST_TENANT_ID,
-        blockType: block.type,
-        title: block.title,
-        durationMinutes: block.duration,
-      });
-    }
-  };
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  // Save state to history for undo/redo
-  const saveToHistory = (newState: Record<string, ScheduleZone>) => {
-    // Remove future history if we're not at the end
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(newState);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  };
-
-  // Undo function
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const previousState = history[historyIndex - 1];
-      setRoutineZones(previousState);
-      setHistoryIndex(historyIndex - 1);
-      toast.success('↶ Undo successful');
-    } else {
-      toast.error('Nothing to undo');
-    }
-  };
-
-  // Redo function
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const nextState = history[historyIndex + 1];
-      setRoutineZones(nextState);
-      setHistoryIndex(historyIndex + 1);
-      toast.success('↷ Redo successful');
-    } else {
-      toast.error('Nothing to redo');
-    }
-  };
-
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-        e.preventDefault();
-        handleRedo();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [historyIndex, history]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over) {
-      const activeId = active.id as string;
-      const targetZone = over.id as ScheduleZone;
-
-      // Check if dragging a block
-      if (activeId.startsWith('block-')) {
-        const blockId = activeId.replace('block-', '');
-        const block = scheduleBlocks.find(b => b.id === blockId);
-
-        if (block) {
-          // Create a new instance of the block in the target zone
-          const newBlock: ScheduleBlock = {
-            id: `${block.type}-${Date.now()}`,
-            type: block.type,
-            title: block.type === 'award' ? 'Award Ceremony' : 'Break',
-            duration: block.duration,
-            zone: targetZone,
-          };
-
-          setScheduleBlocks(prev => [...prev, newBlock]);
-
-          console.log(`[Schedule] Block placed:`, { block: newBlock, zone: targetZone });
-          alert(`${block.type === 'award' ? '🏆 Award' : '☕ Break'} block added to ${targetZone}`);
-        }
-      } else {
-        // Dragging a routine - check if bulk drag (multiple selected)
-        const isBulkDrag = selectedRoutineIds.has(activeId) && selectedRoutineIds.size > 1;
-        const routineIds = isBulkDrag ? Array.from(selectedRoutineIds) : [activeId];
-
-        console.log('[Schedule] Drag ended:', {
-          routineId: activeId,
-          targetZone,
-          isBulkDrag,
-          count: routineIds.length
-        });
-
-        // Check if dropping to a time slot (Timeline Grid) vs zone (old ScheduleGrid)
-        if (typeof targetZone === 'string' && targetZone.startsWith('slot-')) {
-          // Timeline Grid: Time-slot based scheduling
-          const slotData = over?.data?.current?.slot;
-
-          if (slotData && sessions && sessions.length > 0) {
-            // Find the session that matches this slot's date
-            const session = sessions.find((s: any) => {
-              const sessionDate = new Date(s.sessionDate).toISOString().split('T')[0];
-              return sessionDate === slotData.date;
-            });
-
-            if (session) {
-              console.log('[Timeline] Scheduling to time slot:', {
-                slotData,
-                sessionId: session.id,
-                count: routineIds.length
-              });
-
-              // Schedule all selected routines
-              routineIds.forEach((routineId, index) => {
-                scheduleToTimeSlotMutation.mutate({
-                  routineId,
-                  tenantId: TEST_TENANT_ID,
-                  sessionId: session.id,
-                  targetDate: slotData.date,
-                  targetTime: slotData.time,
-                });
-              });
-
-              if (isBulkDrag) {
-                toast.success(`Scheduled ${routineIds.length} routines to ${slotData.time}`);
-                // Clear selection after bulk drag
-                setSelectedRoutineIds(new Set());
-                setLastClickedRoutineId(null);
-              }
-            } else {
-              toast.error('Could not find session for this time slot');
-            }
-          }
-        } else if (typeof targetZone === 'string' && targetZone.startsWith('schedule-table-')) {
-          // V4: Day-based scheduling (from ScheduleTable droppable)
-          const date = over?.data?.current?.date;
-
-          if (date) {
-            console.log('[V4 Schedule] ========== SCHEDULING SESSION START ==========');
-            console.log('[V4 Schedule] Target Date:', date);
-            console.log('[V4 Schedule] Total Routines:', routineIds.length);
-            console.log('[V4 Schedule] Routine IDs:', routineIds);
-
-            // Find the highest entry_number from all scheduled routines to avoid conflicts
-            const scheduledRoutines = routines?.filter(r => r.isScheduled && r.entryNumber !== null) || [];
-            const maxEntryNumber = scheduledRoutines.length > 0
-              ? Math.max(...scheduledRoutines.map(r => r.entryNumber!))
-              : 99; // Start at 99, first routine will be 100
-
-            let entryNumberCounter = maxEntryNumber + 1;
-            console.log('[V4 Schedule] Starting entry number:', entryNumberCounter);
-
-            // Find the day's editable start time from competitionDays
-            const dayConfig = competitionDays.find(d => d.date === date);
-            const dayStartTime = dayConfig?.startTime || '08:00:00';
-            console.log('[V4 Schedule] Using day start time:', dayStartTime);
-
-            // Schedule all selected routines in parallel for instant response
-            (async () => {
-              isBatchSchedulingRef.current = true; // Suppress individual refetches
-              let currentTime = dayStartTime; // Use day's editable start time
-              let successCount = 0;
-              let errorCount = 0;
-
-              // Create all mutation promises in parallel (instant response)
-              const mutationPromises = routineIds.map((routineId, index) => {
-                const routine = routines?.find(r => r.id === routineId);
-                if (!routine) return Promise.resolve(null);
-
-                // Calculate time incrementally (O(1) per routine instead of O(n))
-                const routineTime = currentTime;
-                const duration = routine.duration || 3;
-                const [hours, minutes] = currentTime.split(':').map(Number);
-                const totalMinutes = hours * 60 + minutes + duration;
-                const newHours = Math.floor(totalMinutes / 60);
-                const newMinutes = totalMinutes % 60;
-                currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
-
-                return scheduleMutation.mutateAsync({
-                  routineId,
-                  tenantId: TEST_TENANT_ID,
-                  performanceDate: date,
-                  performanceTime: routineTime,
-                  entryNumber: entryNumberCounter + index,
-                }).then(() => {
-                  successCount++;
-                  return true;
-                }).catch((error) => {
-                  errorCount++;
-                  toast.error(`Failed: ${routine.title}`);
-                  return false;
-                });
-              });
-
-              // Execute all mutations in parallel
-              await Promise.all(mutationPromises);
-
-              console.log('[V4 Schedule] Batch complete:', { successCount, errorCount });
-
-              // Reset ref and do single refetch at the end (10x faster than per-mutation)
-              isBatchSchedulingRef.current = false;
-              await refetch();
-              await refetchConflicts();
-              await refetchRoutinesByDay(); // Refetch schedule table for selected day
-
-              if (isBulkDrag) {
-                if (successCount > 0) {
-                  toast.success(`✅ Scheduled ${successCount} routines`);
-                }
-                setSelectedRoutineIds(new Set());
-                setLastClickedRoutineId(null);
-              }
-            })(); // Close async IIFE
-          }
-        } else {
-          // V4: Reordering within the same day
-          // Detect if we're dragging a routine over another routine (not a droppable zone)
-          const draggedRoutine = routines?.find(r => r.id === activeId);
-          const targetRoutine = routines?.find(r => r.id === over?.id);
-
-          if (draggedRoutine && targetRoutine && draggedRoutine.scheduledDateString && targetRoutine.scheduledDateString) {
-            // Check if both routines are on the same day
-            const dragDate = draggedRoutine.scheduledDateString; // Already YYYY-MM-DD format
-            const targetDate = targetRoutine.scheduledDateString; // Already YYYY-MM-DD format
-
-            if (dragDate === targetDate && routines) {
-            console.log('[V4 Reorder] Reordering routine within schedule table');
-
-            // Get all routines for the same day, sorted by entry number
-            const sameDayRoutines = routines
-              .filter(r => {
-                if (!r.scheduledDateString || !draggedRoutine.scheduledDateString) return false;
-                return r.scheduledDateString === draggedRoutine.scheduledDateString; // Already YYYY-MM-DD format
-              })
-              .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
-
-            // Find old and new positions
-            const oldIndex = sameDayRoutines.findIndex(r => r.id === activeId);
-            const newIndex = sameDayRoutines.findIndex(r => r.id === over.id);
-
-            if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-              // Get the base entry number from the first routine BEFORE reordering
-              const baseEntryNumber = sameDayRoutines[0].entryNumber || 100;
-
-              // Reorder the array
-              const reorderedRoutines = arrayMove(sameDayRoutines, oldIndex, newIndex);
-
-              // Get the day config to find start time
-              const dayConfig = competitionDays.find(d => d.date === dragDate);
-              const dayStartTime = dayConfig?.startTime || '08:00:00';
-
-              console.log('[V4 Reorder] Batch reorder:', {
-                oldIndex,
-                newIndex,
-                routineCount: reorderedRoutines.length,
-                baseEntryNumber,
-                dayStartTime,
-              });
-
-              // Calculate new entry numbers AND performance times for all routines
-              let currentTime = dayStartTime;
-              const routineUpdates = reorderedRoutines.map((routine, index) => {
-                const newEntryNumber = baseEntryNumber + index;
-                const performanceTime = currentTime;
-
-                // Calculate next time (current + duration)
-                const duration = routine.duration || 3;
-                const [hours, minutes] = currentTime.split(':').map(Number);
-                const totalMinutes = hours * 60 + minutes + duration;
-                const newHours = Math.floor(totalMinutes / 60);
-                const newMinutes = totalMinutes % 60;
-                currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:00`;
-
-                console.log(`[V4 Reorder] ${routine.title}: #${newEntryNumber} @ ${performanceTime}`);
-
-                return {
-                  routineId: routine.id,
-                  entryNumber: newEntryNumber,
-                  performanceTime,
-                };
-              });
-
-              // Use batch endpoint to update all routines atomically
-              (async () => {
-                try {
-                  await batchReorderMutation.mutateAsync({
-                    tenantId: TEST_TENANT_ID,
-                    competitionId: TEST_COMPETITION_ID,
-                    date: dragDate,
-                    routines: routineUpdates,
-                  });
-                } catch (error) {
-                  console.error('[V4 Reorder] Error during batch reorder:', error);
-                  toast.error('Failed to reorder routines');
-                }
-              })();
-            }
-            }
-          } else {
-            // Dragging between different days or zones - not supported for reordering
-            console.log('[V4 Reorder] Cannot reorder between different days');
-          }
-        }
-      }
-    }
-
-    setActiveId(null);
-  };
-
-  // Get unique classifications from routines (memoized for performance)
-  const classifications = useMemo(() =>
-    routines
-      ? Array.from(new Set(routines.map(r => ({ id: r.classificationId, name: r.classificationName }))))
-          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      : []
-  , [routines]);
-
-  // Get unique categories from routines (memoized for performance)
-  const categories = useMemo(() =>
-    routines
-      ? Array.from(new Set(routines.map(r => ({ id: r.categoryId, name: r.categoryName }))))
-          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      : []
-  , [routines]);
-
-  // Get unique age groups from routines (memoized for performance)
-  const ageGroups = useMemo(() =>
-    routines
-      ? Array.from(new Set(routines.map(r => ({ id: r.ageGroupId, name: r.ageGroupName }))))
-          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      : []
-  , [routines]);
-
-  // Get unique routine ages from stored routine_age field (memoized for performance)
-  const routineAges = useMemo(() =>
-    routines
-      ? Array.from(new Set(
-          routines
-            .map(r => r.routineAge)
-            .filter((age): age is number => age !== null && age > 0)
-        ))
-          .sort((a, b) => a - b)
-          .map(age => ({ id: age.toString(), name: `${age} years` }))
-      : []
-  , [routines]);
-
-  // Get unique studios from routines (memoized for performance)
-  const studios = useMemo(() =>
-    routines
-      ? Array.from(new Set(routines.map(r => ({ id: r.studioId, name: r.studioName, code: r.studioCode }))))
-          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      : []
-  , [routines]);
-
-  // Get unique group sizes from routines (memoized for performance)
-  const groupSizes = useMemo(() =>
-    routines
-      ? Array.from(new Set(routines.map(r => ({ id: r.entrySizeId, name: r.entrySizeName }))))
-          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      : []
-  , [routines]);
-
-  // Group routines by zone (memoized for performance)
-  const routinesByZone = useMemo(() => {
-    console.log('[routinesByZone] Total routines from API:', routines?.length || 0);
-    const scheduledCount = routines?.filter(r => r.isScheduled).length || 0;
-    const unscheduledCount = routines?.filter(r => !r.isScheduled).length || 0;
-    console.log('[routinesByZone] Scheduled:', scheduledCount, 'Unscheduled:', unscheduledCount);
-
-    return (routines || []).reduce((acc, routine) => {
-      // V4: Skip scheduled routines from being assigned to any zone
-      // This prevents them from appearing in 'unscheduled' zone (UR)
-      // Scheduled routines are managed by ScheduleTable/DayTabs, not RoutinePool
-      if (routine.isScheduled) {
-        return acc; // Skip scheduling to any zone
-      }
-
-      const zone = routineZones[routine.id] || 'unscheduled';
-      if (!acc[zone]) acc[zone] = [];
-      acc[zone].push(routine);
-      return acc;
-    }, {} as Record<ScheduleZone, Routine[]>);
-  }, [routines, routineZones]);
-
-  // Apply client-side filters to unscheduled routines (memoized for performance)
-  const unscheduledRoutines = useMemo(() => {
-    const allUnscheduled = routinesByZone['unscheduled'] || [];
-    return allUnscheduled.filter(routine => {
-      // Classification filter
-      if (filters.classifications.length > 0 && !filters.classifications.includes(routine.classificationId)) {
-        return false;
-      }
-
-      // Age group filter
-      if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(routine.ageGroupId)) {
-        return false;
-      }
-
-      // Genre filter
-      if (filters.genres.length > 0 && !filters.genres.includes(routine.categoryId)) {
-        return false;
-      }
-
-      // Group size filter (Session 64)
-      if (filters.groupSizes.length > 0 && !filters.groupSizes.includes(routine.entrySizeId)) {
-        return false;
-      }
-
-      // Studio filter
-      if (filters.studios.length > 0 && !filters.studios.includes(routine.studioId)) {
-        return false;
-      }
-
-      // Routine age filter
-      if (filters.routineAges.length > 0) {
-        if (!routine.routineAge || !filters.routineAges.includes(routine.routineAge.toString())) {
-          return false;
-        }
-      }
-
-      // Search filter (already handled by backend query, but add client-side for consistency)
-      if (filters.search && !routine.title.toLowerCase().includes(filters.search.toLowerCase())) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [routinesByZone, filters]);
-
-  const saturdayAM = routinesByZone['saturday-am'] || [];
-  const saturdayPM = routinesByZone['saturday-pm'] || [];
-  const sundayAM = routinesByZone['sunday-am'] || [];
-  const sundayPM = routinesByZone['sunday-pm'] || [];
-
-  // Group blocks by zone
-  const blocksByZone = scheduleBlocks.reduce((acc, block) => {
-    if (block.zone) {
-      if (!acc[block.zone]) acc[block.zone] = [];
-      acc[block.zone].push(block);
-    }
-    return acc;
-  }, {} as Record<ScheduleZone, ScheduleBlock[]>);
-
-  const saturdayAMBlocks = blocksByZone['saturday-am'] || [];
-  const saturdayPMBlocks = blocksByZone['saturday-pm'] || [];
-  const sundayAMBlocks = blocksByZone['sunday-am'] || [];
-  const sundayPMBlocks = blocksByZone['sunday-pm'] || [];
-
-  const activeRoutine = routines?.find(r => r.id === activeId);
-  const activeBlock = activeId?.startsWith('block-')
-    ? scheduleBlocks.find(b => `block-${b.id}` === activeId)
-    : null;
-
-  // V4: Count scheduled routines (routines with performance_date set)
-  const scheduledCount = routines?.filter(r => r.isScheduled).length || 0;
-
-  // Prepare visual indicator data (Session 58)
-  const conflictsForUI = (conflictsData?.conflicts || []).map((c: any) => ({
-    id: `${c.routine1Id}-${c.routine2Id}-${c.dancerId}`,
-    dancerId: c.dancerId,
-    dancerName: c.dancerName,
-    routine1Id: c.routine1Id,
-    routine1Number: c.routine1Number || 0,
-    routine1Title: c.routine1Title || '',
-    routine2Id: c.routine2Id,
-    routine2Number: c.routine2Number || 0,
-    routine2Title: c.routine2Title || '',
-    routinesBetween: c.routinesBetween || 0,
-    severity: c.severity as 'critical' | 'error' | 'warning',
-    message: c.message || `${c.dancerName} has ${c.routinesBetween} routines between (need 6 minimum)`,
-  }));
-
-  const trophyHelperForUI = (trophyHelper || []).map((t: any) => ({
-    routineId: t.lastRoutineId || t.last_routine_id,
-    overallCategory: t.overallCategory || t.overall_category,
-  })).filter((t: any) => t.routineId); // Filter out entries without routine ID
-
-  const ageChangesForUI = (ageChangesData?.routines || [])
-    .filter((r: any) => r.ageChanges && r.ageChanges.length > 0)
-    .map((r: any) => r.id)
-    .filter(Boolean);
-
-  const routineNotesForUI = (studioRequests || []).reduce((acc: Record<string, boolean>, req: any) => {
-    if (req.routine_id) {
-      acc[req.routine_id] = true;
-    }
-    return acc;
-  }, {} as Record<string, boolean>);
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Schedule Builder</h1>
+            <p className="text-sm text-purple-100 mt-1">
+              Test Competition Spring 2026 • April 9-12, 2026
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+            >
+              🔄 Refresh
+            </button>
+            <button
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              onClick={() => toast('Export feature coming soon')}
+            >
+              📥 Export
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Day Tabs */}
+      <div className="px-6 py-4 bg-purple-900/30 border-b border-purple-500/20">
+        <DayTabs
+          days={competitionDates}
+          activeDay={selectedDate}
+          onDayChange={(date) => setSelectedDate(date)}
+          competitionId={TEST_COMPETITION_ID}
+          tenantId={TEST_TENANT_ID}
+        />
+      </div>
+
+      {/* Main Content - Two Panel Layout */}
+      <DragDropProvider
+        routines={allRoutinesData}
+        selectedDate={selectedDate}
+        competitionId={TEST_COMPETITION_ID}
+        tenantId={TEST_TENANT_ID}
+        onDropSuccess={handleDropSuccess}
+        onDropError={handleDropError}
+      >
+        <div className="flex h-[calc(100vh-200px)]">
+          {/* Left Panel - Unscheduled Routines */}
+          <div className="w-1/2 border-r border-purple-500/20 flex flex-col">
+            <div className="px-6 py-3 bg-purple-800/30 border-b border-purple-500/20">
+              <h2 className="text-lg font-semibold text-white">
+                Unscheduled Routines ({unscheduledRoutines.length})
+              </h2>
+              <p className="text-sm text-purple-200 mt-1">
+                Drag routines to the schedule →
+              </p>
+            </div>
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-white">Loading routines...</div>
+                </div>
+              ) : unscheduledRoutines.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-purple-300">
+                    <div className="text-4xl mb-2">🎉</div>
+                    <p className="font-medium">All routines scheduled!</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6">
+                  <RoutineTable routines={unscheduledRoutines} isLoading={isLoading} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Panel - Scheduled Routines */}
+          <div className="w-1/2 flex flex-col">
+            <div className="px-6 py-3 bg-indigo-800/30 border-b border-indigo-500/20">
+              <h2 className="text-lg font-semibold text-white">
+                {new Date(selectedDate).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </h2>
+              <p className="text-sm text-indigo-200 mt-1">
+                {scheduledRoutines?.length || 0} routines scheduled
+              </p>
+            </div>
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              {scheduledRoutines && scheduledRoutines.length > 0 ? (
+                <div className="p-6">
+                  <ScheduleTable
+                    routines={scheduledRoutines as any}
+                    allRoutines={(routines || []).map(r => ({
+                      id: r.id,
+                      entrySizeName: r.entrySizeName,
+                      ageGroupName: r.ageGroupName,
+                      classificationName: r.classificationName,
+                      isScheduled: r.isScheduled,
+                    }))}
+                    selectedDate={selectedDate}
+                    viewMode="cd"
+                    conflicts={[]}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-indigo-300">
+                    <div className="text-4xl mb-2">📅</div>
+                    <p className="font-medium">No routines scheduled for this day</p>
+                    <p className="text-sm mt-2">Drag routines from the left panel</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </DragDropProvider>
+
+      {/* Custom scrollbar styles */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
+          height: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: rgba(255, 255, 255, 0.05);
@@ -1288,552 +228,6 @@ export default function SchedulePage() {
           scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
         }
       `}</style>
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
-        {/* Schedule Toolbar (Session 56) */}
-        <ScheduleToolbar
-          status={scheduleStatus}
-          competitionName="Test Competition Spring 2026"
-          competitionDates="April 9-12, 2026"
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onSaveDraft={() => toast('💾 Changes are saved automatically')}
-          onFinalize={handleFinalize}
-          onPublish={handlePublish}
-          onExport={() => {
-            // Show export options
-            const exportType = prompt('Export as PDF or Excel? (Type "pdf" or "excel")');
-            if (exportType === 'pdf') {
-              exportPDFMutation.mutate({
-                competitionId: TEST_COMPETITION_ID,
-                tenantId: TEST_TENANT_ID,
-                viewMode,
-              });
-            } else if (exportType === 'excel') {
-              exportExcelMutation.mutate({
-                competitionId: TEST_COMPETITION_ID,
-                tenantId: TEST_TENANT_ID,
-                viewMode,
-              });
-            }
-          }}
-          // Auto-Generate
-          onAutoGenerate={handleAutoGenerate}
-          // Undo/Redo
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          canUndo={historyIndex > 0}
-          canRedo={historyIndex < history.length - 1}
-          // Studio Requests
-          onViewRequests={() => setShowRequestsPanel(!showRequestsPanel)}
-          requestsCount={studioRequests?.length || 0}
-          // Loading states
-          isFinalizing={finalizeMutation.isPending}
-          isPublishing={publishMutation.isPending}
-          isAutoGenerating={isAutoGenerating}
-          // Stats
-          totalRoutines={routines?.length || 0}
-          scheduledRoutines={scheduledCount}
-          unscheduledRoutines={(routines?.length || 0) - scheduledCount}
-        />
-
-        <div className="p-2">
-
-        {/* CD Requests Management Panel (Collapsible) */}
-        {showRequestsPanel && (
-          <div className="mb-4 bg-indigo-900/30 backdrop-blur-sm rounded-xl border border-indigo-500/30 p-4 shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-white">Studio Scheduling Requests</h2>
-              <button
-                onClick={() => setShowRequestsPanel(false)}
-                className="text-white/60 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            {studioRequests && studioRequests.length > 0 ? (
-              <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {studioRequests.map((request: any) => (
-                  <div
-                    key={request.id}
-                    className={`border-2 rounded-lg p-4 ${
-                      request.status === 'pending'
-                        ? 'border-indigo-500/50 bg-indigo-900/30'
-                        : request.status === 'completed'
-                        ? 'border-green-500/50 bg-green-900/30'
-                        : 'border-gray-500/50 bg-gray-900/30'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="font-bold text-white text-sm mb-1">
-                          {request.routine?.title || 'Routine'}
-                        </div>
-                        <div className="text-xs text-gray-300">
-                          Studio: {request.routine?.studioName || 'Unknown'}
-                        </div>
-                      </div>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          request.status === 'pending'
-                            ? 'bg-yellow-500 text-black'
-                            : request.status === 'completed'
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-500 text-white'
-                        }`}
-                      >
-                        {request.status}
-                      </span>
-                    </div>
-                    <div className="text-sm text-white/90 mb-3">{request.content}</div>
-                    {request.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUpdateRequestStatus(request.id, 'completed')}
-                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
-                        >
-                          ✓ Mark Complete
-                        </button>
-                        <button
-                          onClick={() => handleUpdateRequestStatus(request.id, 'ignored')}
-                          className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
-                        >
-                          ✕ Ignore
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-5xl mb-3">📋</div>
-                <p className="text-indigo-200 text-sm">No studio requests yet</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Age Change Warnings */}
-        {!ageWarningDismissed && ageChangesData && ageChangesData.routines && ageChangesData.routines.length > 0 && (
-          <div className="relative mb-4 bg-yellow-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/50 p-3 shadow-lg">
-            <button
-              onClick={() => setAgeWarningDismissed(true)}
-              className="absolute top-3 right-3 text-yellow-300/60 hover:text-yellow-300 transition-colors"
-            >
-              ✕
-            </button>
-            <div className="flex items-start gap-3">
-              <span className="text-3xl flex-shrink-0">⚠️</span>
-              <div className="flex-1">
-                <h3 className="font-bold text-yellow-300 text-base mb-1">Dancer Age Changes Detected</h3>
-                <p className="text-yellow-200 text-xs mb-2">
-                  {ageChangesData.routines.length} routine{ageChangesData.routines.length !== 1 ? 's have' : ' has'} dancers whose ages have changed since scheduling.
-                  This may affect age group categories.
-                </p>
-                <div className="space-y-2">
-                  {ageChangesData.routines.slice(0, 5).map((routine: any) => (
-                    <div key={routine.id} className="text-xs text-yellow-100 bg-yellow-900/20 rounded p-2">
-                      🎭 {routine.title} - {routine.ageChanges?.length || 0} dancer{(routine.ageChanges?.length || 0) !== 1 ? 's' : ''}
-                    </div>
-                  ))}
-                  {ageChangesData.routines.length > 5 && (
-                    <div className="text-xs text-yellow-300 italic">
-                      +{ageChangesData.routines.length - 5} more routine{ageChangesData.routines.length - 5 !== 1 ? 's' : ''}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Hotel Attrition Warning */}
-        {hotelWarningData && (
-          <HotelAttritionBanner
-            hasWarning={hotelWarningData.hasWarning}
-            message={hotelWarningData.message}
-            dayDistribution={hotelWarningData.dayDistribution || []}
-            totalEmeraldRoutines={hotelWarningData.totalEmeraldRoutines || 0}
-          />
-        )}
-
-        {/* Main 2-Panel Layout (V4: 33% left, 67% right) */}
-        <div className="grid grid-cols-3 gap-2">
-
-          {/* LEFT PANEL: Unscheduled Routines Pool (33%) - Sticky */}
-          <div className="col-span-1 space-y-4 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
-            {/* Unscheduled Routines Pool (Session 56, Filters integrated Session 64) */}
-            <RoutinePool
-              routines={unscheduledRoutines}
-              isLoading={isLoading}
-              error={error}
-              viewMode={viewMode}
-              isDraggingAnything={activeId !== null}
-              onRequestClick={(id) => setShowRequestForm(id)}
-              onNoteClick={handleAddCDNote}
-              conflicts={conflictsForUI}
-              trophyHelper={trophyHelperForUI}
-              ageChanges={ageChangesForUI}
-              routineNotes={routineNotesForUI}
-              selectedRoutineIds={selectedRoutineIds}
-              onToggleSelection={handleToggleRoutineSelection}
-              onSelectAll={handleSelectAll}
-              onDeselectAll={handleDeselectAll}
-              classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
-              ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
-              genres={categories.map(c => ({ id: c.id, label: c.name }))}
-              groupSizes={groupSizes.map(gs => ({ id: gs.id, label: gs.name }))}
-              studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
-              routineAges={routineAges.map(ra => ({ id: ra.id, label: ra.name }))}
-              filters={filters}
-              onFiltersChange={setFilters}
-              totalRoutines={routines?.length || 0}
-              filteredRoutines={unscheduledRoutines.length}
-            />
-
-          </div>
-
-          {/* RIGHT PANEL: Schedule Table (V4 Redesign - 67%) */}
-          <div className="col-span-2 space-y-4">
-            {/* V4: Day Tabs with inline block creation and reset buttons */}
-            <DayTabs
-              days={competitionDays.map(day => {
-                // Get all routines for this day
-                const dayRoutines = (routines || []).filter((r: any) =>
-                  r.isScheduled && r.scheduledDateString && r.scheduledDateString === day.date
-                );
-
-                // Calculate end time based on last routine
-                let endTime: string | undefined = undefined;
-                if (dayRoutines.length > 0) {
-                  // Find routine with latest scheduled time
-                  const sortedRoutines = [...dayRoutines].sort((a, b) => {
-                    if (!a.scheduledTimeString || !b.scheduledTimeString) return 0;
-                    // Compare times as strings (HH:MM:SS format sorts correctly)
-                    return b.scheduledTimeString.localeCompare(a.scheduledTimeString);
-                  });
-                  const lastRoutine = sortedRoutines[0];
-
-                  if (lastRoutine.scheduledTimeString) {
-                    const [hours, minutes, seconds] = lastRoutine.scheduledTimeString.split(':').map(Number);
-                    const duration = lastRoutine.duration || 3;
-
-                    // Add duration to get end time
-                    const totalMinutes = hours * 60 + minutes + duration;
-                    const endHours = Math.floor(totalMinutes / 60);
-                    const endMinutes = totalMinutes % 60;
-                    endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                  }
-                }
-
-                return {
-                  ...day,
-                  routineCount: dayRoutines.length,
-                  endTime,
-                };
-              })}
-              activeDay={selectedDate}
-              onDayChange={setSelectedDate}
-              competitionId={TEST_COMPETITION_ID}
-              tenantId={TEST_TENANT_ID}
-              onResetDay={() => setShowResetConfirm('day')}
-              onResetAll={() => setShowResetConfirm('all')}
-              onStartTimeUpdated={() => {
-                refetch(); // Refetch all routines
-                refetchRoutinesByDay(); // Refetch schedule table
-              }}
-              onCreateBlock={handleCreateBlock}
-            />
-
-
-            {/* V4: Schedule Table */}
-            <ScheduleTable
-              routines={(routinesByDay || []).map((r: any) => ({
-                id: r.id,
-                title: r.title,
-                studioId: r.studio_id,
-                studioName: r.studios?.name || 'Unknown Studio',
-                studioCode: r.studios?.studio_code || '?',
-                classificationId: r.classification_id || '',
-                classificationName: r.classifications?.name || 'Unknown',
-                categoryId: r.category_id || '',
-                categoryName: r.dance_categories?.name || 'Unknown',
-                ageGroupId: r.age_group_id || '',
-                ageGroupName: r.age_groups?.name || 'Unknown',
-                entrySizeId: r.entry_size_category_id || '',
-                entrySizeName: r.entry_size_categories?.name || 'Unknown',
-                duration: r.routine_length_minutes || 3,
-                participants: (r.entry_participants || []).map((p: any) => ({
-                  dancerId: p.dancer_id,
-                  dancerName: p.dancer_name,
-                })),
-                entryNumber: r.entryNumber || r.entry_number,
-                scheduledDateString: r.scheduledDateString,
-                scheduledTimeString: r.scheduledTimeString,
-                routineAge: r.routineAge,
-              }))}
-              allRoutines={(routines || []).map((r: any) => ({
-                id: r.id,
-                entrySizeName: r.entry_size_categories?.name || 'Unknown',
-                ageGroupName: r.age_groups?.name || 'Unknown',
-                classificationName: r.classifications?.name || 'Unknown',
-                isScheduled: r.isScheduled,
-              }))}
-              selectedDate={selectedDate}
-              viewMode={viewMode}
-              conflicts={conflictsForUI}
-              onRoutineClick={(id) => console.log('Routine clicked:', id)}
-            />
-
-            {/* Stats and Actions Section (inline below schedule) */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              {/* Stats Panel */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-                <h3 className="text-xs font-bold text-white mb-2">Statistics</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/70">Unscheduled:</span>
-                    <span className="text-amber-300 font-bold">{(routines?.length || 0) - scheduledCount}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/70">Scheduled:</span>
-                    <span className="text-emerald-300 font-bold">{scheduledCount}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/70">Total:</span>
-                    <span className="text-blue-300 font-bold">{routines?.length || 0}</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all"
-                      style={{ width: `${routines?.length ? (scheduledCount / routines.length) * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conflicts Summary Panel */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-                <h3 className="text-xs font-bold text-white mb-2 flex items-center justify-between">
-                  <span>Conflicts</span>
-                  {conflictsData && conflictsData.summary.total > 0 && (
-                    <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">
-                      {conflictsData.summary.total}
-                    </span>
-                  )}
-                </h3>
-                <div className="text-center py-3">
-                  {conflictsData && conflictsData.conflicts.length > 0 ? (
-                    <div className="text-xs text-red-300">
-                      {conflictsData.summary.critical || 0} critical, {conflictsData.summary.errors || 0} errors
-                    </div>
-                  ) : (
-                    <div className="text-xs text-emerald-300">No conflicts</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions Panel */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-                <button className="w-full px-3 py-2 text-xs rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all">
-                  💾 Save
-                </button>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        </div>
-      </div>
-
-      {/* Studio Request Form Modal */}
-      {showRequestForm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl border border-purple-500/50 p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">Submit Scheduling Request</h3>
-            <p className="text-purple-200 text-sm mb-4">
-              Add a note or request for the Competition Director regarding this routine's scheduling.
-            </p>
-            <textarea
-              value={requestContent}
-              onChange={(e) => setRequestContent(e.target.value)}
-              placeholder="Enter your request or note..."
-              className="w-full px-4 py-3 bg-purple-950/50 border border-purple-500/50 rounded-lg text-white placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none h-32"
-            />
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => handleSubmitRequest(showRequestForm)}
-                disabled={addRequestMutation.isPending}
-                className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                {addRequestMutation.isPending ? 'Submitting...' : '📝 Submit Request'}
-              </button>
-              <button
-                onClick={() => {
-                  setShowRequestForm(null);
-                  setRequestContent('');
-                }}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Conflict Override Modal */}
-      {overrideConflictId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-red-900 to-orange-900 rounded-xl border border-red-500/50 p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">⚠️ Override Conflict</h3>
-            <div className="bg-red-950/50 border border-red-500/30 rounded-lg p-4 mb-4">
-              <p className="text-red-200 text-sm mb-2">
-                <strong>Warning:</strong> You are about to override a critical scheduling conflict.
-              </p>
-              <p className="text-red-300 text-xs">
-                This dancer will have less than 6 routines between performances. Please provide a justification.
-              </p>
-            </div>
-            <textarea
-              value={overrideReason}
-              onChange={(e) => setOverrideReason(e.target.value)}
-              placeholder="Enter reason for override (required)..."
-              className="w-full px-4 py-3 bg-red-950/50 border border-red-500/50 rounded-lg text-white placeholder-red-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none h-32"
-            />
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => {
-                  if (!overrideReason.trim()) {
-                    alert('Please provide a reason for the override');
-                    return;
-                  }
-                  if (overrideReason.length < 10) {
-                    alert('Reason must be at least 10 characters');
-                    return;
-                  }
-                  overrideConflictMutation.mutate({
-                    conflictId: overrideConflictId,
-                    reason: overrideReason,
-                    userId: '00000000-0000-0000-0000-000000000001', // Test user
-                    tenantId: TEST_TENANT_ID,
-                  });
-                }}
-                disabled={overrideConflictMutation.isPending}
-                className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                {overrideConflictMutation.isPending ? 'Saving...' : '⚙️ Confirm Override'}
-              </button>
-              <button
-                onClick={() => {
-                  setOverrideConflictId(null);
-                  setOverrideReason('');
-                }}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Drag Overlay */}
-      <DragOverlay>
-        {activeRoutine && (
-          <div className="border-2 border-purple-400 rounded-lg p-4 bg-purple-800/90 backdrop-blur-sm shadow-xl">
-            <div className="font-bold text-white mb-1">{activeRoutine.title}</div>
-            <div className="text-sm text-purple-200">
-              <div>Studio: <span className="font-medium text-purple-300">{activeRoutine.studioCode}</span></div>
-            </div>
-          </div>
-        )}
-        {activeBlock && (
-          <div className={`
-            border-2 rounded-lg p-3 backdrop-blur-sm shadow-xl
-            ${activeBlock.type === 'award'
-              ? 'border-yellow-400 bg-yellow-900/90'
-              : 'border-gray-400 bg-gray-900/90'}
-          `}>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{activeBlock.type === 'award' ? '🏆' : '☕'}</span>
-              <div className="flex-1">
-                <div className="font-bold text-white text-sm">{activeBlock.title}</div>
-                <div className="text-xs text-gray-300">{activeBlock.duration} minutes</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </DragOverlay>
-
-      {/* Schedule Block Modal */}
-      <ScheduleBlockModal
-        isOpen={showBlockModal}
-        onClose={() => setShowBlockModal(false)}
-        onSave={handleSaveBlock}
-        competitionId={TEST_COMPETITION_ID}
-        tenantId={TEST_TENANT_ID}
-        initialBlock={editingBlock}
-        mode={blockModalMode}
-      />
-
-      {/* CD Note Modal */}
-      <CDNoteModal
-        isOpen={showCDNoteModal}
-        onClose={() => setShowCDNoteModal(false)}
-        routineId={cdNoteRoutineId || ''}
-        routineTitle={cdNoteRoutineTitle}
-        onSubmit={handleSubmitCDNote}
-        isSubmitting={addCDNoteMutation.isPending}
-      />
-
-      {/* Reset Schedule Confirmation Dialog */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border-2 border-red-500">
-            <h3 className="text-xl font-bold text-red-700 mb-4">
-              ⚠️ {showResetConfirm === 'day' ? 'Reset This Day' : 'Reset Entire Schedule'}
-            </h3>
-            <p className="text-gray-700 mb-6">
-              {showResetConfirm === 'day'
-                ? `This will remove ALL scheduled routines for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. All routines will return to the unscheduled pool.`
-                : 'This will remove ALL scheduled routines for the ENTIRE competition. All routines will return to the unscheduled pool.'}
-            </p>
-            <p className="text-sm text-red-600 font-semibold mb-6">
-              This action cannot be undone!
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowResetConfirm(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (showResetConfirm === 'day') {
-                    resetDayMutation.mutate({
-                      tenantId: TEST_TENANT_ID,
-                      competitionId: TEST_COMPETITION_ID,
-                      performanceDate: selectedDate,
-                    });
-                  } else {
-                    resetAllMutation.mutate({
-                      tenantId: TEST_TENANT_ID,
-                      competitionId: TEST_COMPETITION_ID,
-                    });
-                  }
-                  setShowResetConfirm(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Reset Schedule
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </DndContext>
+    </div>
   );
 }
