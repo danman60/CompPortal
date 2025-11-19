@@ -151,9 +151,19 @@ export function DragDropProvider({
       console.log('[DragDropProvider] Drop onto empty schedule container');
 
       if (!draggedRoutine.isScheduled) {
-        // Add first routine to schedule
-        const newSchedule = calculateSchedule([draggedRoutine]);
-        onScheduleChange(newSchedule);
+        // Get existing scheduled routines
+        const scheduledForDay = routines
+          .filter(r => r.isScheduled && r.performanceTime)
+          .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+        // Add to end of schedule
+        const newSchedule = [...scheduledForDay, draggedRoutine];
+        const recalculated = calculateSchedule(
+          newSchedule,
+          scheduledForDay[0]?.performanceTime || '08:00:00',
+          scheduledForDay[0]?.entryNumber || 100
+        );
+        onScheduleChange(recalculated);
       }
       return;
     }

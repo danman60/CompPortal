@@ -286,9 +286,25 @@ export const schedulingRouter = router({
       }
 
       // Draft state architecture: Save complete final state in one atomic transaction
-      // No need for three-phase logic since we're setting final desired state, not swapping
+      // Two-phase approach to avoid unique constraint violations:
+      // 1. Clear entry numbers for all routines we're about to schedule
+      // 2. Set new entry numbers and times
       const updates = await prisma.$transaction(async (tx) => {
-        // Update all routines with their final entry numbers and performance times
+        const routineIds = input.routines.map(r => r.routineId);
+
+        // Phase 1: Clear entry numbers to break constraint
+        await tx.competition_entries.updateMany({
+          where: {
+            id: { in: routineIds },
+            tenant_id: input.tenantId,
+          },
+          data: {
+            entry_number: null,
+            is_scheduled: false,
+          },
+        });
+
+        // Phase 2: Update all routines with their final entry numbers and performance times
         const finalUpdates = await Promise.all(
           input.routines.map(({ routineId, entryNumber, performanceTime }) =>
             tx.competition_entries.update({

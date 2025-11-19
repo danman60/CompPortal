@@ -261,15 +261,19 @@ export default function SchedulePage() {
   }, [draftSchedule, routines, selectedDate]);
 
   // Prepare routine data for DragDropProvider (unscheduled + draft schedule)
+  // IMPORTANT: Exclude routines from unscheduled pool if they're in the draft schedule
+  const draftRoutineIds = new Set(draftSchedule.map(d => d.id));
   const allRoutinesData = [
-    ...unscheduledRoutines.map(r => ({
-      id: r.id,
-      title: r.title,
-      duration: r.duration,
-      isScheduled: false,
-      entryNumber: null,
-      performanceTime: null,
-    })),
+    ...unscheduledRoutines
+      .filter(r => !draftRoutineIds.has(r.id)) // Don't show in unscheduled if in draft
+      .map(r => ({
+        id: r.id,
+        title: r.title,
+        duration: r.duration,
+        isScheduled: false,
+        entryNumber: null,
+        performanceTime: null,
+      })),
     ...draftSchedule,
   ];
 
