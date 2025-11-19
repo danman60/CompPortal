@@ -190,6 +190,8 @@ export default function SchedulePage() {
 
   // Handle schedule changes from drag-drop
   const handleScheduleChange = (newSchedule: RoutineData[]) => {
+    console.log('[SchedulePage] handleScheduleChange called with', newSchedule.length, 'routines');
+    console.log('[SchedulePage] New schedule:', newSchedule);
     setDraftSchedule(newSchedule);
   };
 
@@ -236,14 +238,27 @@ export default function SchedulePage() {
     .filter(r => !r.isScheduled);
 
   // Use draft schedule for display (not server data)
-  const scheduledRoutines = draftSchedule.length > 0
-    ? draftSchedule.map(draft => {
-        const full = routines?.find(r => r.id === draft.id);
-        return full ? { ...full, entryNumber: draft.entryNumber, scheduledTimeString: draft.performanceTime } : null;
-      }).filter(Boolean)
-    : (routines || [])
-        .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
-        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+  const scheduledRoutines = useMemo(() => {
+    console.log('[SchedulePage] Computing scheduledRoutines. draftSchedule.length:', draftSchedule.length);
+
+    const result = draftSchedule.length > 0
+      ? draftSchedule
+          .map(draft => {
+            const full = routines?.find(r => r.id === draft.id);
+            if (!full) {
+              console.warn('[SchedulePage] Could not find full routine for draft ID:', draft.id);
+              return null;
+            }
+            return { ...full, entryNumber: draft.entryNumber, scheduledTimeString: draft.performanceTime };
+          })
+          .filter((r): r is NonNullable<typeof r> => r !== null)
+      : (routines || [])
+          .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
+          .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+    console.log('[SchedulePage] scheduledRoutines computed:', result.length, 'routines');
+    return result;
+  }, [draftSchedule, routines, selectedDate]);
 
   // Prepare routine data for DragDropProvider (unscheduled + draft schedule)
   const allRoutinesData = [
