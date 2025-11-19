@@ -478,12 +478,28 @@ export const schedulingRouter = router({
         }
 
         // FIX: Combine date and time, treating TIME field as local EST time (not UTC)
+        // PostgreSQL TIME has no timezone - must explicitly set EST offset to prevent UTC interpretation
         let scheduledTime = null;
         if (routine.performance_date && routine.performance_time) {
           const dateStr = routine.performance_date.toISOString().split('T')[0];
           const timeStr = routine.performance_time.toISOString().split('T')[1].split('.')[0];
-          // Append EST timezone offset to prevent UTC interpretation
+
+          // Debug logging for entry #100
+          if (routine.entry_number === 100) {
+            console.log('[DEBUG #100] performance_date:', routine.performance_date);
+            console.log('[DEBUG #100] performance_time:', routine.performance_time);
+            console.log('[DEBUG #100] dateStr:', dateStr);
+            console.log('[DEBUG #100] timeStr:', timeStr);
+            console.log('[DEBUG #100] Combined string:', `${dateStr}T${timeStr}-05:00`);
+          }
+
+          // Append EST timezone offset (-05:00) to prevent UTC interpretation
           scheduledTime = new Date(`${dateStr}T${timeStr}-05:00`);
+
+          if (routine.entry_number === 100) {
+            console.log('[DEBUG #100] scheduledTime result:', scheduledTime);
+            console.log('[DEBUG #100] scheduledTime ISO:', scheduledTime.toISOString());
+          }
         }
 
         return {
