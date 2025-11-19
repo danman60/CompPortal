@@ -266,6 +266,130 @@ export const schedulingRouter = router({
       return updated;
     }),
 
+  // Unified scheduling mutation (Rebuild Spec Section 5)
+  // Handles 1-600 routines identically with atomic transaction
+  schedule: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      date: z.string(), // "2026-04-09"
+      routines: z.array(z.object({
+        routineId: z.string().uuid(),
+        entryNumber: z.number(),
+        performanceTime: z.string(), // "08:00:00"
+      })),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      // Atomic transaction: Update ALL routines at once
+      const updates = await prisma.$transaction(
+        input.routines.map(({ routineId, entryNumber, performanceTime }) =>
+          prisma.competition_entries.update({
+            where: {
+              id: routineId,
+              tenant_id: input.tenantId,
+            },
+            data: {
+              performance_date: new Date(input.date),
+              performance_time: timeStringToDateTime(performanceTime),
+              entry_number: entryNumber,
+              is_scheduled: true,
+              updated_at: new Date(),
+            },
+          })
+        )
+      );
+
+      return {
+        success: true,
+        count: updates.length,
+        routines: updates.map(r => ({
+          id: r.id,
+          entryNumber: r.entry_number,
+          performanceTime: r.performance_time ? dateTimeToTimeString(r.performance_time) : null,
+          isScheduled: r.is_scheduled,
+        })),
+      };
+    }),
+
+  // Time calculation endpoint (Rebuild Spec Section 6)
+  // Returns calculated times WITHOUT saving to database
+  // Frontend can preview times, then call schedule() to save
+  calculateScheduleTimes: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      date: z.string(), // "2026-04-09"
+      routineIds: z.array(z.string().uuid()),
+      startTime: z.string(), // "08:00:00"
+      startingEntryNumber: z.number().optional(), // Optional, defaults to max+1
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      // Fetch routines with durations
+      const routines = await prisma.competition_entries.findMany({
+        where: {
+          id: { in: input.routineIds },
+          tenant_id: input.tenantId,
+        },
+        select: {
+          id: true,
+          routine_length_minutes: true,
+        },
+        orderBy: { id: 'asc' }, // Maintain order
+      });
+
+      // Get starting entry number if not provided
+      let currentEntryNumber: number;
+      if (input.startingEntryNumber) {
+        currentEntryNumber = input.startingEntryNumber;
+      } else {
+        const maxEntry = await prisma.competition_entries.findFirst({
+          where: {
+            competition_id: input.competitionId,
+            tenant_id: input.tenantId,
+            entry_number: { not: null },
+          },
+          orderBy: { entry_number: 'desc' },
+          select: { entry_number: true },
+        });
+        currentEntryNumber = maxEntry?.entry_number ? maxEntry.entry_number + 1 : 100;
+      }
+
+      // Calculate times sequentially
+      let currentTime = input.startTime; // "08:00:00"
+
+      const schedule = input.routineIds.map(routineId => {
+        const routine = routines.find(r => r.id === routineId);
+        if (!routine) {
+          throw new Error(`Routine ${routineId} not found`);
+        }
+
+        const result = {
+          routineId: routine.id,
+          performanceTime: currentTime,
+          entryNumber: currentEntryNumber,
+        };
+
+        // Increment time for next routine
+        const duration = routine.routine_length_minutes || 3;
+        currentTime = addMinutesToTimeString(currentTime, duration);
+        currentEntryNumber++;
+
+        return result;
+      });
+
+      return { schedule };
+    }),
+
   getScheduleByTimeSlots: publicProcedure
     .input(z.object({
       competitionId: z.string().uuid(),
