@@ -285,24 +285,47 @@ export const schedulingRouter = router({
         throw new Error('Tenant ID mismatch');
       }
 
-      // Atomic transaction: Update ALL routines at once
-      const updates = await prisma.$transaction(
-        input.routines.map(({ routineId, entryNumber, performanceTime }) =>
-          prisma.competition_entries.update({
-            where: {
-              id: routineId,
-              tenant_id: input.tenantId,
-            },
-            data: {
-              performance_date: new Date(input.date),
-              performance_time: timeStringToDateTime(performanceTime),
-              entry_number: entryNumber,
-              is_scheduled: true,
-              updated_at: new Date(),
-            },
-          })
-        )
-      );
+      // Two-phase atomic transaction to avoid unique constraint violations:
+      // Phase 1: Set all routines to temporary entry numbers (100000+)
+      // Phase 2: Set all routines to their final entry numbers
+      const updates = await prisma.$transaction(async (tx) => {
+        // Phase 1: Temporarily set entry numbers to avoid conflicts (100000 + index)
+        await Promise.all(
+          input.routines.map(({ routineId }, index) =>
+            tx.competition_entries.update({
+              where: {
+                id: routineId,
+                tenant_id: input.tenantId,
+              },
+              data: {
+                entry_number: 100000 + index,
+                updated_at: new Date(),
+              },
+            })
+          )
+        );
+
+        // Phase 2: Set final entry numbers and times
+        const finalUpdates = await Promise.all(
+          input.routines.map(({ routineId, entryNumber, performanceTime }) =>
+            tx.competition_entries.update({
+              where: {
+                id: routineId,
+                tenant_id: input.tenantId,
+              },
+              data: {
+                performance_date: new Date(input.date),
+                performance_time: timeStringToDateTime(performanceTime),
+                entry_number: entryNumber,
+                is_scheduled: true,
+                updated_at: new Date(),
+              },
+            })
+          )
+        );
+
+        return finalUpdates;
+      });
 
       return {
         success: true,
