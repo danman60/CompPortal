@@ -90,6 +90,36 @@ All routers now throw `TRPCError({ code: 'FORBIDDEN' })` if non-super-admin miss
 - Deployed: 2025-11-18
 - Status: Security patch live on production
 
+## Follow-Up: Signup Trigger Fix
+
+**Issue:** Laura from Rivertown (hello@rda.dance) created account on Nov 18 with NULL role, causing cross-tenant leak.
+
+**Root Cause Chain:**
+1. Nov 13: Migration set `role=NULL` during signup (to prevent orphaned accounts from having studio_director role)
+2. Nov 18: Laura self-signup (no claim code) → role=NULL
+3. Laura never claimed studio → role stayed NULL forever
+4. NULL role + vulnerable routers → cross-tenant data leak
+
+**Perfect Storm:**
+```
+Nov 13 "Fix": role=NULL during signup
++ Nov 18: Laura self-signup → role stays NULL
++ Vulnerable routers: if (ctx.tenantId) { ... }
+= CROSS-TENANT DATA LEAK
+```
+
+**Signup Trigger Fix Applied:**
+- Migration: `20251119024049_fix_signup_set_default_role.sql`
+- Applied: 2025-11-19 02:40 EST
+- Changes:
+  - Updated `handle_new_user()` to set default `role='studio_director'` for all signups
+  - Backfilled 1 existing user with NULL role (Laura) to 'studio_director'
+- Verification:
+  - Laura's role: ✅ 'studio_director'
+  - Laura's studio: ✅ Assigned to RDA6M (RIVERTOWN DANCE ACADEMY, St. Catharines)
+  - No remaining NULL roles: ✅ Confirmed 0 users with NULL role
+  - Duplicate studio ABL8C: ✅ Deleted and refunded 5 spaces
+
 ---
 
-**✅ BLOCKER RESOLVED - Emergency security patch deployed**
+**✅ BLOCKER FULLY RESOLVED - All security patches deployed + signup flow fixed**
