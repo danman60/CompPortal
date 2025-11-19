@@ -481,34 +481,30 @@ export const schedulingRouter = router({
         // PostgreSQL TIME has no timezone - represents EST time directly
         let scheduledTime = null;
         if (routine.performance_date && routine.performance_time) {
-          // Debug logging for entry #100 - RAW VALUES FROM PRISMA
-          if (routine.entry_number === 100) {
-            console.error('[DEBUG #100] RAW performance_date from Prisma:', routine.performance_date);
-            console.error('[DEBUG #100] RAW performance_date type:', typeof routine.performance_date);
-            console.error('[DEBUG #100] RAW performance_time from Prisma:', routine.performance_time);
-            console.error('[DEBUG #100] RAW performance_time type:', typeof routine.performance_time);
-          }
+          // Extract date components (use local getters, not UTC)
+          // This avoids timezone issues with toISOString()
+          const year = routine.performance_date.getFullYear();
+          const month = String(routine.performance_date.getMonth() + 1).padStart(2, '0');
+          const day = String(routine.performance_date.getDate()).padStart(2, '0');
+          const dateStr = `${year}-${month}-${day}`; // YYYY-MM-DD
 
-          // Extract time components from the TIME field
+          // Extract time components from the TIME field (use UTC getters)
+          // TIME field comes as 1970-01-01 + time, so UTC getters work correctly
           const hours = routine.performance_time.getUTCHours();
           const minutes = routine.performance_time.getUTCMinutes();
           const seconds = routine.performance_time.getUTCSeconds();
-
-          // Create an EST datetime string and parse it
-          const dateStr = routine.performance_date.toISOString().split('T')[0]; // YYYY-MM-DD
           const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; // HH:MM:SS
 
-          // Parse as EST by creating a date-time string and explicitly treating it as EST
+          // Combine date + time with EST offset
           // This creates a UTC timestamp that represents the EST time
           scheduledTime = new Date(`${dateStr}T${timeStr}-05:00`); // -05:00 = EST offset
 
-          // Debug logging for entry #100 - AFTER TRANSFORMATION
+          // Debug logging for entry #100
           if (routine.entry_number === 100) {
-            console.error('[DEBUG #100] Extracted dateStr:', dateStr);
-            console.error('[DEBUG #100] Extracted timeStr:', timeStr);
-            console.error('[DEBUG #100] Combined:', `${dateStr}T${timeStr}-05:00`);
-            console.error('[DEBUG #100] scheduledTime ISO:', scheduledTime.toISOString());
-            console.error('[DEBUG #100] scheduledTime local:', scheduledTime.toString());
+            console.error('[DEBUG #100] Date extracted:', dateStr);
+            console.error('[DEBUG #100] Time extracted:', timeStr);
+            console.error('[DEBUG #100] Combined string:', `${dateStr}T${timeStr}-05:00`);
+            console.error('[DEBUG #100] Result ISO:', scheduledTime.toISOString());
           }
         }
 
