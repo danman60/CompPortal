@@ -140,25 +140,33 @@ export function DragDropProvider({
       console.log('[DragDropProvider] UR → SR: Scheduling routine');
 
       try {
-        // Step 1: Calculate times for the new routine
-        // Insert at position of target routine (will shift subsequent routines)
-        const insertionIndex = routines
-          .filter(r => r.isScheduled)
-          .findIndex(r => r.id === targetRoutineId);
+        // Get all currently scheduled routines for this day, sorted by entry number
+        const scheduledForDay = routines
+          .filter(r => r.isScheduled && r.performanceTime) // Only routines with times (on this day)
+          .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-        const startTime = targetRoutine.performanceTime || '08:00:00';
-        const startingEntryNumber = targetRoutine.entryNumber || 100;
+        // Find insertion index (insert before target)
+        const insertionIndex = scheduledForDay.findIndex(r => r.id === targetRoutineId);
+
+        // Insert the dragged routine at the target position
+        const newSchedule = [...scheduledForDay];
+        newSchedule.splice(insertionIndex, 0, draggedRoutine);
+
+        // Recalculate times for ALL routines starting from the first one
+        const firstRoutine = scheduledForDay[0];
+        const startTime = firstRoutine?.performanceTime || '08:00:00';
+        const startingEntryNumber = firstRoutine?.entryNumber || 100;
 
         const timesResult = await calculateTimes.mutateAsync({
           tenantId,
           competitionId,
           date: selectedDate,
-          routineIds: [draggedRoutineId],
+          routineIds: newSchedule.map(r => r.id),
           startTime,
           startingEntryNumber,
         });
 
-        // Step 2: Schedule the routine
+        // Schedule ALL routines with new entry numbers
         await scheduleRoutines.mutateAsync({
           tenantId,
           competitionId,

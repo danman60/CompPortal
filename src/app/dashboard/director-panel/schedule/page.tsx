@@ -102,9 +102,35 @@ export default function SchedulePage() {
             </button>
             <button
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-              onClick={() => toast('Export feature coming soon')}
+              onClick={() => {
+                if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
+                  toast('Reset day feature coming soon');
+                }
+              }}
             >
-              📥 Export
+              🗑️ Reset Day
+            </button>
+            <button
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              onClick={() => {
+                if (confirm('Reset ALL days? This will unschedule all routines for the entire competition.')) {
+                  toast('Reset all feature coming soon');
+                }
+              }}
+            >
+              🗑️ Reset All
+            </button>
+            <button
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              onClick={() => toast('Export PDF feature coming soon')}
+            >
+              📥 Export PDF
+            </button>
+            <button
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              onClick={() => toast('Export Excel feature coming soon')}
+            >
+              📥 Export Excel
             </button>
           </div>
         </div>
