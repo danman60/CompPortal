@@ -483,6 +483,13 @@ export function ScheduleTable({
                 const conflictSpan = getConflictSpan(routine.id);
 
                 // Format time - explicitly use EST timezone
+                // DEBUG: Log raw value for entry #100
+                if (routine.entryNumber === 100 && routine.scheduledTime) {
+                  console.error('[ScheduleTable #100] RAW scheduledTime:', routine.scheduledTime);
+                  console.error('[ScheduleTable #100] As Date:', new Date(routine.scheduledTime));
+                  console.error('[ScheduleTable #100] ISO:', new Date(routine.scheduledTime).toISOString());
+                }
+
                 const performanceTime = routine.scheduledTime
                   ? new Date(routine.scheduledTime).toLocaleTimeString('en-US', {
                       hour: '2-digit',
