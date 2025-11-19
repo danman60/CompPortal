@@ -131,18 +131,55 @@ export function DragDropProvider({
     });
 
     // Determine drop operation type
-    const targetRoutineId = over.id as string;
+    const targetId = over.id as string;
 
-    // Ignore drops onto non-routine elements (like table containers)
-    if (targetRoutineId.startsWith('schedule-table-') || targetRoutineId.startsWith('routine-pool-')) {
-      console.log('[DragDropProvider] Drop onto container ignored:', targetRoutineId);
+    // Case: Dropping onto empty schedule container
+    if (targetId.startsWith('schedule-table-')) {
+      console.log('[DragDropProvider] Drop onto empty schedule container');
+
+      if (!draggedRoutine.isScheduled) {
+        // Scheduling first routine of the day
+        try {
+          const timesResult = await calculateTimes.mutateAsync({
+            tenantId,
+            competitionId,
+            date: selectedDate,
+            routineIds: [draggedRoutineId],
+            startTime: '08:00:00',
+            startingEntryNumber: 100,
+          });
+
+          await scheduleRoutines.mutateAsync({
+            tenantId,
+            competitionId,
+            date: selectedDate,
+            routines: timesResult.schedule.map(s => ({
+              routineId: s.routineId,
+              entryNumber: s.entryNumber,
+              performanceTime: s.performanceTime,
+            })),
+          });
+
+          console.log('[DragDropProvider] First routine scheduled successfully');
+          onDropSuccess?.();
+        } catch (error) {
+          console.error('[DragDropProvider] Failed to schedule first routine:', error);
+          onDropError?.(error as Error);
+        }
+      }
       return;
     }
 
-    const targetRoutine = routines.find(r => r.id === targetRoutineId);
+    // Ignore drops onto routine pool
+    if (targetId.startsWith('routine-pool-')) {
+      console.log('[DragDropProvider] Drop onto routine pool ignored');
+      return;
+    }
+
+    const targetRoutine = routines.find(r => r.id === targetId);
 
     if (!targetRoutine) {
-      console.error('[DragDropProvider] Target routine not found:', targetRoutineId);
+      console.error('[DragDropProvider] Target routine not found:', targetId);
       return;
     }
 
@@ -157,7 +194,7 @@ export function DragDropProvider({
           .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
         // Find insertion index (insert before target)
-        const insertionIndex = scheduledForDay.findIndex(r => r.id === targetRoutineId);
+        const insertionIndex = scheduledForDay.findIndex(r => r.id === targetId);
 
         // Insert the dragged routine at the target position
         const newSchedule = [...scheduledForDay];
@@ -209,7 +246,7 @@ export function DragDropProvider({
 
         // Find indices
         const fromIndex = scheduledRoutines.findIndex(r => r.id === draggedRoutineId);
-        const toIndex = scheduledRoutines.findIndex(r => r.id === targetRoutineId);
+        const toIndex = scheduledRoutines.findIndex(r => r.id === targetId);
 
         if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
           console.log('[DragDropProvider] No reorder needed');

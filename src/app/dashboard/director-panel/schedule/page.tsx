@@ -238,17 +238,18 @@ export default function SchedulePage() {
       </div>
 
       {/* Main Content - Two Panel Layout */}
-      <DragDropProvider
-        routines={allRoutinesData}
-        selectedDate={selectedDate}
-        competitionId={TEST_COMPETITION_ID}
-        tenantId={TEST_TENANT_ID}
-        onDropSuccess={handleDropSuccess}
-        onDropError={handleDropError}
-      >
-        <div className="grid grid-cols-3 gap-2 px-6">
-          {/* Left Panel - Unscheduled Routines (33%) */}
-          <div className="col-span-1 space-y-4">
+      <div className="px-6">
+        <DragDropProvider
+          routines={allRoutinesData}
+          selectedDate={selectedDate}
+          competitionId={TEST_COMPETITION_ID}
+          tenantId={TEST_TENANT_ID}
+          onDropSuccess={handleDropSuccess}
+          onDropError={handleDropError}
+        >
+          <div className="grid grid-cols-3 gap-2">
+          {/* Left Panel - Unscheduled Routines (33%) - Sticky */}
+          <div className="col-span-1 space-y-4 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
             <RoutinePool
               routines={unscheduledRoutines as any}
               isLoading={isLoading}
@@ -316,8 +317,9 @@ export default function SchedulePage() {
               </div>
             )}
           </div>
-        </div>
-      </DragDropProvider>
+          </div>
+        </DragDropProvider>
+      </div>
 
       {/* Schedule Block Modal */}
       <ScheduleBlockModal
