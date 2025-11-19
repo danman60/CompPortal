@@ -19,6 +19,11 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     enabled: !studioId, // Only fetch all studios if not locked to one
   });
 
+  // Fetch invitation data for CD/SA (only if viewing all studios)
+  const { data: invitationData } = trpc.studioInvitations.getStudiosForCD.useQuery(undefined, {
+    enabled: isCompetitionDirector && !studioId,
+  });
+
   // Fetch competitions for CD dropdown (only if CD and no locked studio)
   const { data: competitionsData } = trpc.competition.getAll.useQuery({}, {
     enabled: isCompetitionDirector && !studioId,
@@ -31,10 +36,13 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     { enabled: !!studioId }
   );
 
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'unclaimed' | 'claimed' | 'invited'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'eventDate'>('name'); // Default to alphabetical
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [expandedStudioId, setExpandedStudioId] = useState<string | null>(null);
+  const [selectedStudios, setSelectedStudios] = useState<Set<string>>(new Set());
+  const [sendingInvites, setSendingInvites] = useState(false);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
     isOpen: boolean;
     studioId: string;
@@ -110,6 +118,24 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     },
     onError: (error) => {
       toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
+  // Send Invitations mutation (CD feature)
+  const sendInvitationsMutation = trpc.studioInvitations.sendInvitations.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Sent ${result.sent} invitation(s)`);
+      if (result.failed > 0) {
+        toast.error(`Failed to send ${result.failed} invitation(s)`);
+      }
+      setSelectedStudios(new Set());
+      setSendingInvites(false);
+      // Refetch studios list
+      window.location.reload();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+      setSendingInvites(false);
     },
   });
 
@@ -190,6 +216,57 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
   const confirmDeleteStudio = () => {
     if (!deleteConfirmModal) return;
     deleteStudioMutation.mutate({ id: deleteConfirmModal.studioId });
+  };
+
+  // CD Feature: Bulk invitation sending handlers
+  const handleToggleStudio = (studioIdToToggle: string) => {
+    const newSelected = new Set(selectedStudios);
+    if (newSelected.has(studioIdToToggle)) {
+      newSelected.delete(studioIdToToggle);
+    } else {
+      newSelected.add(studioIdToToggle);
+    }
+    setSelectedStudios(newSelected);
+  };
+
+  const handleSelectAllUnclaimed = () => {
+    // Get unclaimed studios from invitation data
+    if (!invitationData?.studios) return;
+    const unclaimedIds = invitationData.studios
+      .filter((s) => !s.isClaimed)
+      .map((s) => s.id);
+    setSelectedStudios(new Set(unclaimedIds));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedStudios(new Set());
+  };
+
+  const handleSendInvitations = async () => {
+    if (selectedStudios.size === 0) {
+      toast.error('Please select at least one studio');
+      return;
+    }
+
+    const confirmed = confirm(
+      `Send invitations to ${selectedStudios.size} studio(s)?\n\nThis will email them with their claim link.`
+    );
+    if (!confirmed) return;
+
+    setSendingInvites(true);
+    await sendInvitationsMutation.mutateAsync({
+      studioIds: Array.from(selectedStudios),
+    });
+  };
+
+  const handleResendInvitation = async (studioIdToResend: string, studioName: string) => {
+    const confirmed = confirm(`Re-send invitation to "${studioName}"?`);
+    if (!confirmed) return;
+
+    setSendingInvites(true);
+    await sendInvitationsMutation.mutateAsync({
+      studioIds: [studioIdToResend],
+    });
   };
 
   // Initialize edit data when studio data is loaded
@@ -633,9 +710,43 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
 
   // Competition Director Mode - View all studios
   const studios = data?.studios || [];
-  const filteredStudios = studios.filter((studio) => {
+
+  // Merge invitation data with studio data
+  const studiosWithInvitations = studios.map((studio) => {
+    const invitationInfo = invitationData?.studios.find((inv) => inv.id === studio.id);
+    return {
+      ...studio,
+      // Invitation data
+      isClaimed: invitationInfo?.isClaimed || false,
+      wasInvited: invitationInfo?.wasInvited || false,
+      invitedAt: invitationInfo?.invitedAt || null,
+      hasCompletedOnboarding: invitationInfo?.hasCompletedOnboarding || false,
+      ownerName: invitationInfo?.ownerName || null,
+      earliestEvent: invitationInfo?.earliestEvent || null,
+    };
+  });
+
+  // Filter studios
+  const filteredStudios = studiosWithInvitations.filter((studio) => {
     if (filter === 'all') return true;
-    return studio.status === filter;
+    if (filter === 'pending' || filter === 'approved') return studio.status === filter;
+    if (filter === 'unclaimed') return !studio.isClaimed;
+    if (filter === 'claimed') return studio.isClaimed;
+    if (filter === 'invited') return studio.wasInvited;
+    return true;
+  });
+
+  // Sort studios
+  const sortedStudios = [...filteredStudios].sort((a, b) => {
+    if (sortBy === 'name') {
+      return a.name.localeCompare(b.name);
+    } else if (sortBy === 'eventDate') {
+      if (!a.earliestEvent && !b.earliestEvent) return 0;
+      if (!a.earliestEvent) return 1;
+      if (!b.earliestEvent) return -1;
+      return a.earliestEvent.getTime() - b.earliestEvent.getTime();
+    }
+    return 0;
   });
 
   return (
@@ -663,60 +774,197 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-            filter === 'all'
-              ? 'bg-purple-500 text-white'
-              : 'bg-white/10 text-gray-300 hover:bg-white/20'
-          }`}
-        >
-          All
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-            filter === 'all'
-              ? 'bg-white/30 text-white'
-              : 'bg-purple-500 text-white'
-          }`}>
-            {studios.length}
-          </span>
-        </button>
-        <button
-          onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-            filter === 'pending'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-white/10 text-gray-300 hover:bg-white/20'
-          }`}
-        >
-          Pending
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-            filter === 'pending'
-              ? 'bg-white/30 text-white'
-              : 'bg-yellow-500 text-black'
-          }`}>
-            {studios.filter((s) => s.status === 'pending').length}
-          </span>
-        </button>
-        <button
-          onClick={() => setFilter('approved')}
-          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-            filter === 'approved'
-              ? 'bg-green-500 text-white'
-              : 'bg-white/10 text-gray-300 hover:bg-white/20'
-          }`}
-        >
-          Approved
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-            filter === 'approved'
-              ? 'bg-white/30 text-white'
-              : 'bg-green-500 text-black'
-          }`}>
-            {studios.filter((s) => s.status === 'approved').length}
-          </span>
-        </button>
-      </div>
+      {/* Filter Tabs & Sort Controls - CD feature */}
+      {isCompetitionDirector && (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 mb-6">
+          {/* Filter Tabs */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm ${
+                filter === 'all'
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              All
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                filter === 'all'
+                  ? 'bg-white/30 text-white'
+                  : 'bg-purple-500 text-white'
+              }`}>
+                {studiosWithInvitations.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setFilter('unclaimed')}
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm ${
+                filter === 'unclaimed'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              Unclaimed
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                filter === 'unclaimed'
+                  ? 'bg-white/30 text-white'
+                  : 'bg-orange-500 text-black'
+              }`}>
+                {studiosWithInvitations.filter((s) => !s.isClaimed).length}
+              </span>
+            </button>
+            <button
+              onClick={() => setFilter('invited')}
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm ${
+                filter === 'invited'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              Invited
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                filter === 'invited'
+                  ? 'bg-white/30 text-white'
+                  : 'bg-blue-500 text-white'
+              }`}>
+                {studiosWithInvitations.filter((s) => s.wasInvited).length}
+              </span>
+            </button>
+            <button
+              onClick={() => setFilter('approved')}
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm ${
+                filter === 'approved'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              Approved
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                filter === 'approved'
+                  ? 'bg-white/30 text-white'
+                  : 'bg-green-500 text-black'
+              }`}>
+                {studiosWithInvitations.filter((s) => s.status === 'approved').length}
+              </span>
+            </button>
+          </div>
+
+          {/* Sort & Bulk Actions */}
+          <div className="flex flex-wrap gap-2 items-center pt-4 border-t border-white/10">
+            <span className="text-sm text-gray-400 mr-2">Sort:</span>
+            <button
+              onClick={() => setSortBy('name')}
+              className={`px-3 py-1 rounded text-sm transition-all ${
+                sortBy === 'name'
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              Studio Name {sortBy === 'name' && '↑'}
+            </button>
+            <button
+              onClick={() => setSortBy('eventDate')}
+              className={`px-3 py-1 rounded text-sm transition-all ${
+                sortBy === 'eventDate'
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              Event Date {sortBy === 'eventDate' && '↑'}
+            </button>
+
+            <div className="flex-1"></div>
+
+            {/* Bulk Actions */}
+            <button
+              onClick={handleSelectAllUnclaimed}
+              className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/20 rounded text-sm text-white transition-colors"
+            >
+              Select All Unclaimed
+            </button>
+            <button
+              onClick={handleDeselectAll}
+              className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/20 rounded text-sm text-white transition-colors"
+            >
+              Deselect All
+            </button>
+            <button
+              onClick={handleSendInvitations}
+              disabled={sendingInvites || selectedStudios.size === 0}
+              className="px-4 py-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {sendingInvites ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Sending...</span>
+                </>
+              ) : (
+                <>
+                  <span>📧</span>
+                  <span>Send ({selectedStudios.size})</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Simple Filter Tabs for non-CD */}
+      {!isCompetitionDirector && (
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+              filter === 'all'
+                ? 'bg-purple-500 text-white'
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            All
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'all'
+                ? 'bg-white/30 text-white'
+                : 'bg-purple-500 text-white'
+            }`}>
+              {studios.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setFilter('pending')}
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+              filter === 'pending'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Pending
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'pending'
+                ? 'bg-white/30 text-white'
+                : 'bg-yellow-500 text-black'
+            }`}>
+              {studios.filter((s) => s.status === 'pending').length}
+            </span>
+          </button>
+          <button
+            onClick={() => setFilter('approved')}
+            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+              filter === 'approved'
+                ? 'bg-green-500 text-white'
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Approved
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              filter === 'approved'
+                ? 'bg-white/30 text-white'
+                : 'bg-green-500 text-black'
+            }`}>
+              {studios.filter((s) => s.status === 'approved').length}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Data Refresh Indicator */}
       {dataUpdatedAt && (
@@ -731,7 +979,7 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
       )}
 
       {/* Studios Grid */}
-      {filteredStudios.length === 0 ? (
+      {sortedStudios.length === 0 ? (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
           <div className="text-6xl mb-4">🏢</div>
           <h3 className="text-xl font-semibold text-white mb-2">No studios found</h3>
@@ -751,18 +999,58 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStudios.map((studio) => {
+          {sortedStudios.map((studio) => {
             const isExpanded = expandedStudioId === studio.id;
+            const isSelected = selectedStudios.has(studio.id);
 
             return (
               <div
                 key={studio.id}
-                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all cursor-pointer"
-                onClick={() => setExpandedStudioId(isExpanded ? null : studio.id)}
+                className={`bg-white/10 backdrop-blur-md rounded-xl border p-6 hover:bg-white/20 transition-all ${
+                  isSelected ? 'border-purple-400 bg-purple-500/10' : 'border-white/20'
+                }`}
               >
-                {/* Header with Studio Code */}
+                {/* Header with Checkbox (CD only for unclaimed) and Studio Code */}
                 <div className="flex justify-between items-start mb-4">
-                  <div></div>
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox for unclaimed studios (CD only) */}
+                    {isCompetitionDirector && !studio.isClaimed && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleToggleStudio(studio.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-5 h-5 mt-1 rounded border-gray-300 cursor-pointer"
+                      />
+                    )}
+                    {/* Invitation Status Badges (CD only) */}
+                    {isCompetitionDirector && (
+                      <div className="flex flex-col gap-1">
+                        {studio.isClaimed ? (
+                          <span className="bg-green-500/20 text-green-300 px-2 py-0.5 rounded text-xs font-semibold border border-green-400/30 whitespace-nowrap">
+                            ✓ Claimed
+                          </span>
+                        ) : (
+                          <span className="bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded text-xs font-semibold border border-orange-400/30 whitespace-nowrap">
+                            ⚠ Unclaimed
+                          </span>
+                        )}
+                        {studio.wasInvited && (
+                          <span className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded text-xs font-semibold border border-blue-400/30 whitespace-nowrap">
+                            📧 Invited
+                          </span>
+                        )}
+                        {studio.hasCompletedOnboarding && (
+                          <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded text-xs font-semibold border border-purple-400/30 whitespace-nowrap">
+                            ✓ Onboarded
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {studio.code && (
                     <button
                       onClick={(e) => {
@@ -778,7 +1066,12 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
                 </div>
 
                 {/* Studio Name */}
-                <h3 className="text-xl font-bold text-white mb-2">{studio.name}</h3>
+                <h3
+                  className="text-xl font-bold text-white mb-2 cursor-pointer"
+                  onClick={() => setExpandedStudioId(isExpanded ? null : studio.id)}
+                >
+                  {studio.name}
+                </h3>
 
                 {/* Location */}
                 <div className="flex items-center gap-2 text-gray-300 text-sm mb-4">
@@ -852,15 +1145,40 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
                       </div>
                     )}
 
-                    {/* CD Feature: Delete Studio Button */}
+                    {/* CD Feature: Invitation & Actions */}
                     {isCompetitionDirector && (
-                      <div className="pt-3 border-t border-white/10">
+                      <div className="pt-3 border-t border-white/10 space-y-3">
+                        {/* Invitation Info */}
+                        {studio.invitedAt && (
+                          <div className="text-xs text-gray-400">
+                            Invited {formatDistanceToNow(new Date(studio.invitedAt), { addSuffix: true })}
+                          </div>
+                        )}
+                        {studio.ownerName && (
+                          <div className="text-xs text-gray-400">
+                            Owner: {studio.ownerName}
+                          </div>
+                        )}
+                        {/* Re-send Invitation Button (Mobile-Friendly) */}
+                        {!studio.isClaimed && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleResendInvitation(studio.id, studio.name);
+                            }}
+                            disabled={sendingInvites}
+                            className="w-full min-h-[44px] px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg transition-all border border-blue-400/30 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            📧 {studio.wasInvited ? 'Re-send' : 'Send'} Invitation
+                          </button>
+                        )}
+                        {/* Delete Studio Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteStudio(studio);
                           }}
-                          className="w-full px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-all border border-red-400/30 text-sm font-medium"
+                          className="w-full min-h-[44px] px-4 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-all border border-red-400/30 text-sm font-medium"
                         >
                           Delete Studio
                         </button>

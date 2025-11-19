@@ -109,8 +109,14 @@ export const reservationRouter = router({
 
       const where: any = {};
 
-      // Tenant isolation (required for all non-super-admins)
-      if (!isSuperAdmin(ctx.userRole) && ctx.tenantId) {
+      // Tenant isolation (MANDATORY for all non-super-admins)
+      if (!isSuperAdmin(ctx.userRole)) {
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
         where.tenant_id = ctx.tenantId;
       }
 
@@ -190,7 +196,7 @@ export const reservationRouter = router({
         prisma.reservations.count({ where }),
         prisma.competitions.findMany({
           where: {
-            ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+            ...(isSuperAdmin(ctx.userRole) ? {} : { tenant_id: ctx.tenantId! }), // FIXED: Mandatory tenant filter for non-super-admins
             status: { in: ['upcoming', 'registration_open', 'in_progress'] }, // Show open competitions for reservation creation
           },
           select: {

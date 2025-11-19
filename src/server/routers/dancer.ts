@@ -56,8 +56,14 @@ export const dancerRouter = router({
 
       const where: any = {};
 
-      // Tenant isolation (required for all non-super-admins)
-      if (!isSuperAdmin(ctx.userRole) && ctx.tenantId) {
+      // Tenant isolation (MANDATORY for all non-super-admins)
+      if (!isSuperAdmin(ctx.userRole)) {
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
         where.tenant_id = ctx.tenantId;
       }
 
@@ -372,6 +378,16 @@ export const dancerRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { date_of_birth, ...data } = input;
 
+      // MANDATORY: Ensure tenantId exists for non-super-admins
+      if (!isSuperAdmin(ctx.userRole)) {
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+      }
+
       // Studio directors can only create dancers for their own studio
       if (isStudioDirector(ctx.userRole)) {
         // If ctx.studioId is not available (due to tRPC context gap),
@@ -383,7 +399,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId!,
             },
             select: { id: true },
           });
@@ -520,6 +536,14 @@ export const dancerRouter = router({
 
       // Studio directors can only update dancers from their own studio
       if (isStudioDirector(ctx.userRole)) {
+        // MANDATORY: Tenant validation for studio directors
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+
         // If ctx.studioId is not available (due to tRPC context gap),
         // fetch it from the database using user ID
         let userStudioId = ctx.studioId;
@@ -529,7 +553,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId, // FIXED: No longer conditional
             },
             select: { id: true },
           });
@@ -589,6 +613,14 @@ export const dancerRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Studio directors can only delete dancers from their own studio
       if (isStudioDirector(ctx.userRole)) {
+        // MANDATORY: Tenant validation for studio directors
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+
         // If ctx.studioId is not available (due to tRPC context gap),
         // fetch it from the database using user ID
         let userStudioId = ctx.studioId;
@@ -598,7 +630,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId, // FIXED: No longer conditional
             },
             select: { id: true },
           });
@@ -649,6 +681,14 @@ export const dancerRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Studio directors can only archive dancers from their own studio
       if (isStudioDirector(ctx.userRole)) {
+        // MANDATORY: Tenant validation for studio directors
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+
         // If ctx.studioId is not available (due to tRPC context gap),
         // fetch it from the database using user ID
         let userStudioId = ctx.studioId;
@@ -658,7 +698,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId, // FIXED: No longer conditional
             },
             select: { id: true },
           });
