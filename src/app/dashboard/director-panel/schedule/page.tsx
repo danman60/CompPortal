@@ -13,11 +13,11 @@
  * Old version archived: page.old.tsx
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import { DragDropProvider } from '@/components/scheduling/DragDropProvider';
-import { RoutineTable, RoutineTableRow } from '@/components/scheduling/RoutineTable';
+import { RoutinePool, FilterState } from '@/components/scheduling/RoutinePool';
 import { ScheduleTable } from '@/components/scheduling/ScheduleTable';
 import { DayTabs } from '@/components/scheduling/DayTabs';
 
@@ -29,26 +29,79 @@ export default function SchedulePage() {
   // Selected date state
   const [selectedDate, setSelectedDate] = useState<string>('2026-04-11');
 
+  // Filter state
+  const [filters, setFilters] = useState<FilterState>({
+    classifications: [],
+    ageGroups: [],
+    genres: [],
+    groupSizes: [],
+    studios: [],
+    routineAges: [],
+    search: '',
+  });
+
   // Fetch all routines
   const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
     tenantId: TEST_TENANT_ID,
   });
 
+  // Compute filter options from routines (memoized for performance)
+  const classifications = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.classificationId, name: r.classificationName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
+
+  const ageGroups = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.ageGroupId, name: r.ageGroupName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
+
+  const categories = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.categoryId, name: r.categoryName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
+
+  const groupSizes = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.entrySizeId, name: r.entrySizeName }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
+
+  const studios = useMemo(() =>
+    routines
+      ? Array.from(new Set(routines.map(r => ({ id: r.studioId, name: r.studioName, code: r.studioCode }))))
+          .filter((value, index, self) => self.findIndex(t => t.id === value.id) === index)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+  , [routines]);
+
+  const routineAges = useMemo(() =>
+    routines
+      ? Array.from(new Set(
+          routines
+            .map(r => r.routineAge)
+            .filter((age): age is number => age !== null && age > 0)
+        ))
+          .sort((a, b) => a - b)
+          .map(age => ({ id: age.toString(), name: `${age} years` }))
+      : []
+  , [routines]);
+
   // Filter routines into unscheduled and scheduled for the selected day
-  const unscheduledRoutines: RoutineTableRow[] = (routines || [])
-    .filter(r => !r.isScheduled)
-    .map(r => ({
-      id: r.id,
-      title: r.title,
-      studioCode: r.studioCode,
-      classificationName: r.classificationName,
-      entrySizeName: r.entrySizeName,
-      routineAge: r.routineAge,
-      ageGroupName: r.ageGroupName,
-      categoryName: r.categoryName,
-      duration: r.duration,
-    }));
+  const unscheduledRoutines = (routines || [])
+    .filter(r => !r.isScheduled);
 
   // Filter scheduled routines for the selected day
   const scheduledRoutines = (routines || [])
@@ -168,22 +221,23 @@ export default function SchedulePage() {
               </p>
             </div>
             <div className="flex-1 overflow-auto custom-scrollbar">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-white">Loading routines...</div>
-                </div>
-              ) : unscheduledRoutines.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-purple-300">
-                    <div className="text-4xl mb-2">🎉</div>
-                    <p className="font-medium">All routines scheduled!</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-6">
-                  <RoutineTable routines={unscheduledRoutines} isLoading={isLoading} />
-                </div>
-              )}
+              <div className="p-6">
+                <RoutinePool
+                  routines={unscheduledRoutines as any}
+                  isLoading={isLoading}
+                  viewMode="cd"
+                  classifications={classifications.map(c => ({ id: c.id, label: c.name }))}
+                  ageGroups={ageGroups.map(ag => ({ id: ag.id, label: ag.name }))}
+                  genres={categories.map(c => ({ id: c.id, label: c.name }))}
+                  groupSizes={groupSizes.map(gs => ({ id: gs.id, label: gs.name }))}
+                  studios={studios.map(s => ({ id: s.id, label: `${s.code} - ${s.name}` }))}
+                  routineAges={routineAges.map(ra => ({ id: ra.id, label: ra.name }))}
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  totalRoutines={routines?.length || 0}
+                  filteredRoutines={unscheduledRoutines.length}
+                />
+              </div>
             </div>
           </div>
 
