@@ -477,6 +477,15 @@ export const schedulingRouter = router({
           displayStudioName = `Studio ${studioCode}`;
         }
 
+        // FIX: Combine date and time, treating TIME field as local EST time (not UTC)
+        let scheduledTime = null;
+        if (routine.performance_date && routine.performance_time) {
+          const dateStr = routine.performance_date.toISOString().split('T')[0];
+          const timeStr = routine.performance_time.toISOString().split('T')[1].split('.')[0];
+          // Append EST timezone offset to prevent UTC interpretation
+          scheduledTime = new Date(`${dateStr}T${timeStr}-05:00`);
+        }
+
         return {
           id: routine.id,
           title: routine.title,
@@ -496,7 +505,7 @@ export const schedulingRouter = router({
           participants: [], // PERFORMANCE: Empty array - participants fetched separately by detectConflicts
           isScheduled: routine.performance_date !== null, // V4: Check date instead of zone
           scheduleZone: null, // V4: Deprecated zone field
-          scheduledTime: routine.performance_time,
+          scheduledTime: scheduledTime,
           scheduledDay: routine.performance_date,
           entryNumber: routine.entry_number, // V4: Sequential entry number
         };
