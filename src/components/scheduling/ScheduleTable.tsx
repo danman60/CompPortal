@@ -482,12 +482,13 @@ export function ScheduleTable({
                 const isFirstInConflict = isFirstInConflictGroup(routine.id);
                 const conflictSpan = getConflictSpan(routine.id);
 
-                // Format time
+                // Format time - explicitly use EST timezone
                 const performanceTime = routine.scheduledTime
                   ? new Date(routine.scheduledTime).toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
                       hour12: true,
+                      timeZone: 'America/New_York', // Force EST display
                     })
                   : 'TBD';
 
