@@ -585,10 +585,9 @@ export const schedulingRouter = router({
           console.log('[scheduleRoutine] Assigned entry number:', finalEntryNumber);
         }
 
-        // Parse time as UTC to avoid timezone conversion bugs
-        const [hours, minutes, seconds] = input.performanceTime.split(':').map(Number);
-        const performanceTimeUTC = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
-
+        // FIX: Store time as-is (EST) - don't convert to UTC
+        // Frontend sends "08:00:00" meaning 8 AM EST
+        // Database TIME field has no timezone, represents EST directly
         const updated = await prisma.competition_entries.update({
           where: {
             id: input.routineId,
@@ -597,7 +596,7 @@ export const schedulingRouter = router({
           data: {
             schedule_zone: null, // Clear old zone-based data
             performance_date: new Date(input.performanceDate), // Convert string to Date for UPDATE
-            performance_time: performanceTimeUTC, // Use UTC to avoid timezone bugs
+            performance_time: input.performanceTime, // Store time string directly as EST
             entry_number: finalEntryNumber,
             is_scheduled: true,
           },
