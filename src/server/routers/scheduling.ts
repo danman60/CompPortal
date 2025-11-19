@@ -16,6 +16,64 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import icalGenerator from 'ical-generator';
 
+// ============================================================================
+// TIME CONVERSION HELPERS (Rebuild Spec Section 3)
+// ============================================================================
+// These helpers standardize time format conversion between:
+// - Frontend: "HH:MM:SS" strings (e.g., "08:00:00")
+// - Database: PostgreSQL TIME fields stored as DateTime objects
+//
+// Contract:
+// 1. Frontend always sends/receives "HH:MM:SS" strings
+// 2. Backend converts to/from DateTime only for database operations
+// 3. No timezone math - use UTC getters for consistency
+// ============================================================================
+
+export type TimeString = string; // Format: "HH:MM:SS" (e.g., "08:00:00")
+export type DateString = string; // Format: "YYYY-MM-DD" (e.g., "2026-04-09")
+
+/**
+ * Convert TimeString to Prisma DateTime (for saving to TIME fields)
+ * @param timeString Format: "HH:MM:SS" (e.g., "08:00:00")
+ * @returns Date object with dummy date 1970-01-01 + time
+ * @example timeStringToDateTime("08:00:00") → Date("1970-01-01T08:00:00Z")
+ */
+export function timeStringToDateTime(timeString: TimeString): Date {
+  return new Date(`1970-01-01T${timeString}Z`);
+}
+
+/**
+ * Convert Prisma DateTime (from TIME fields) to TimeString
+ * @param dateTime Date object from Prisma TIME field
+ * @returns Format: "HH:MM:SS" (e.g., "08:00:00")
+ * @example dateTimeToTimeString(Date("1970-01-01T08:00:00Z")) → "08:00:00"
+ */
+export function dateTimeToTimeString(dateTime: Date): TimeString {
+  const hours = dateTime.getUTCHours().toString().padStart(2, '0');
+  const minutes = dateTime.getUTCMinutes().toString().padStart(2, '0');
+  const seconds = dateTime.getUTCSeconds().toString().padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+/**
+ * Add minutes to a TimeString
+ * @param timeString Format: "HH:MM:SS"
+ * @param minutes Number of minutes to add
+ * @returns New TimeString with added minutes
+ * @example addMinutesToTimeString("08:00:00", 3) → "08:03:00"
+ */
+export function addMinutesToTimeString(timeString: TimeString, minutes: number): TimeString {
+  const [hours, mins, secs] = timeString.split(':').map(Number);
+  const totalMinutes = hours * 60 + mins + minutes;
+  const newHours = Math.floor(totalMinutes / 60);
+  const newMinutes = totalMinutes % 60;
+  return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+// ============================================================================
+// LEGACY HELPERS (To be refactored to use TimeString helpers)
+// ============================================================================
+
 // Convert Prisma entry to SchedulingEntry
 function toSchedulingEntry(entry: any): SchedulingEntry {
   return {
@@ -199,7 +257,7 @@ export const schedulingRouter = router({
         data: {
           session_id: input.sessionId,
           performance_date: new Date(input.targetDate),
-          performance_time: new Date(`1970-01-01T${input.targetTime}`), // Convert time string to DateTime
+          performance_time: timeStringToDateTime(input.targetTime), // Convert TimeString to DateTime
           display_order: displayOrder,
           schedule_zone: null,
         },
@@ -489,12 +547,8 @@ export const schedulingRouter = router({
           const day = String(routine.performance_date.getDate()).padStart(2, '0');
           scheduledDateString = `${year}-${month}-${day}`; // YYYY-MM-DD
 
-          // Extract time components from the TIME field (use UTC getters)
-          // TIME field comes as 1970-01-01 + time, so UTC getters work correctly
-          const hours = routine.performance_time.getUTCHours();
-          const minutes = routine.performance_time.getUTCMinutes();
-          const seconds = routine.performance_time.getUTCSeconds();
-          scheduledTimeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; // HH:MM:SS
+          // Convert TIME field to TimeString using standardized helper
+          scheduledTimeString = dateTimeToTimeString(routine.performance_time);
 
           // Debug logging for entry #100
           if (routine.entry_number === 100) {
@@ -1525,9 +1579,9 @@ export const schedulingRouter = router({
         const entryNumber = nextEntryNumber++;
 
         // Extract time from Date object and convert to TIME field format
-        // TIME field requires DateTime with dummy date (same as scheduleRoutine)
+        // Convert Date → TimeString → DateTime for TIME field
         const timeString = entry.performanceTime ? entry.performanceTime.toTimeString().split(' ')[0] : null;
-        const performanceTime = timeString ? new Date(`1970-01-01T${timeString}`) : null;
+        const performanceTime = timeString ? timeStringToDateTime(timeString) : null;
 
         return prisma.competition_entries.update({
           where: { id: entry.id },
@@ -2763,9 +2817,8 @@ export const schedulingRouter = router({
         // Use Prisma transaction to update all routines atomically
         const updates = await prisma.$transaction(
           routines.map(({ routineId, entryNumber, performanceTime }) => {
-            // Convert time string to DateTime with dummy date for TIME field
-            // performanceTime is "08:00:00" format
-            const performanceTimeFormatted = new Date(`1970-01-01T${performanceTime}`);
+            // Convert TimeString to DateTime for TIME field
+            const performanceTimeFormatted = timeStringToDateTime(performanceTime);
 
             console.log('[batchReorderRoutines] Routine', routineId, ':', performanceTime, '→', performanceTimeFormatted);
 
