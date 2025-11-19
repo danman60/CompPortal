@@ -293,29 +293,19 @@ export default function SchedulePage() {
 
           {/* Right Panel - Scheduled Routines (67%) */}
           <div className="col-span-2 space-y-4">
-            {scheduledRoutines && scheduledRoutines.length > 0 ? (
-              <ScheduleTable
-                routines={scheduledRoutines as any}
-                allRoutines={(routines || []).map(r => ({
-                  id: r.id,
-                  entrySizeName: r.entrySizeName,
-                  ageGroupName: r.ageGroupName,
-                  classificationName: r.classificationName,
-                  isScheduled: r.isScheduled,
-                }))}
-                selectedDate={selectedDate}
-                viewMode="cd"
-                conflicts={[]}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-[400px]">
-                <div className="text-center text-indigo-300">
-                  <div className="text-4xl mb-2">📅</div>
-                  <p className="font-medium">No routines scheduled for this day</p>
-                  <p className="text-sm mt-2">Drag routines from the left panel</p>
-                </div>
-              </div>
-            )}
+            <ScheduleTable
+              routines={scheduledRoutines as any}
+              allRoutines={(routines || []).map(r => ({
+                id: r.id,
+                entrySizeName: r.entrySizeName,
+                ageGroupName: r.ageGroupName,
+                classificationName: r.classificationName,
+                isScheduled: r.isScheduled,
+              }))}
+              selectedDate={selectedDate}
+              viewMode="cd"
+              conflicts={[]}
+            />
           </div>
           </div>
         </DragDropProvider>

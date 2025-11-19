@@ -450,25 +450,25 @@ export function ScheduleTable({
         <table className="w-full" style={{ tableLayout: 'fixed', borderCollapse: 'collapse' }}>
           <thead>
             <tr className="bg-indigo-600/20 border-b border-indigo-600/30">
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '60px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '50px' }}>
                 #
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '80px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '75px' }}>
                 Time
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '180px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '140px' }}>
                 Routine
               </th>
-              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '60px' }}>
-                Studio
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>
+                Std
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '100px' }}>
-                Classification
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '95px' }}>
+                Class
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '80px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '75px' }}>
                 Size
               </th>
-              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '60px' }}>
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '55px' }}>
                 Age
               </th>
             </tr>

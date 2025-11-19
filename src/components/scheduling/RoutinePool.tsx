@@ -460,36 +460,36 @@ export function RoutinePool({
       {/* TABLE VIEW */}
       {displayMode === 'table' && routines.length > 0 && !isLoading && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-          <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
-            <table className="w-full" style={{ minWidth: '900px' }}>
+          <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+            <table className="w-full" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '30px' }}>
                     ✓
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '180px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '100px' }}>
                     Routine
                   </th>
-                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
-                    Studio
+                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '35px' }}>
+                    Std
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '100px' }}>
-                    Classification
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
+                    Class
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '65px' }}>
                     Size
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
-                    Routine Age
+                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
+                    RA
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '90px' }}>
-                    Overalls Age
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '65px' }}>
+                    Age
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ minWidth: '120px' }}>
-                    Category
+                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '75px' }}>
+                    Genre
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
-                    Duration
+                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '60px' }}>
+                    Dur
                   </th>
                 </tr>
               </thead>
