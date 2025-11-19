@@ -25,7 +25,6 @@ import {
   closestCenter,
 } from '@dnd-kit/core';
 import { DropIndicator } from './DropIndicator';
-import { useOptimisticScheduling } from '@/hooks/useOptimisticScheduling';
 import { RoutineCard } from './RoutineCard';
 
 interface RoutineData {
@@ -43,30 +42,19 @@ interface DragDropProviderProps {
   routines: RoutineData[];
   /** Current selected date (ISO string "YYYY-MM-DD") */
   selectedDate: string;
-  /** Competition ID for mutations */
-  competitionId: string;
-  /** Tenant ID for mutations */
-  tenantId: string;
-  /** Callback when drop succeeds */
-  onDropSuccess?: () => void;
-  /** Callback when drop fails */
-  onDropError?: (error: Error) => void;
+  /** Callback when schedule order changes (draft state) */
+  onScheduleChange: (newSchedule: RoutineData[]) => void;
 }
 
 export function DragDropProvider({
   children,
   routines,
   selectedDate,
-  competitionId,
-  tenantId,
-  onDropSuccess,
-  onDropError,
+  onScheduleChange,
 }: DragDropProviderProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropIndicatorTop, setDropIndicatorTop] = useState<number>(0);
   const [showDropIndicator, setShowDropIndicator] = useState(false);
-
-  const { scheduleRoutines, calculateTimes } = useOptimisticScheduling();
 
   // Get the actively dragged routine
   const activeRoutine = activeId ? routines.find(r => r.id === activeId) : null;
@@ -105,7 +93,33 @@ export function DragDropProvider({
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  // Helper: Calculate entry numbers and times client-side
+  const calculateSchedule = (routineList: RoutineData[], startTime = '08:00:00', startingEntry = 100) => {
+    let currentTime = startTime;
+    let currentEntry = startingEntry;
+
+    return routineList.map(routine => {
+      const scheduledRoutine = {
+        ...routine,
+        entryNumber: currentEntry,
+        performanceTime: currentTime,
+        isScheduled: true,
+      };
+
+      // Calculate next time (add duration + 5min buffer)
+      const [hours, minutes, seconds] = currentTime.split(':').map(Number);
+      const totalMinutes = hours * 60 + minutes + (routine.duration || 3) + 5;
+      const nextHours = Math.floor(totalMinutes / 60);
+      const nextMinutes = totalMinutes % 60;
+      currentTime = `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}:00`;
+
+      currentEntry++;
+
+      return scheduledRoutine;
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     setActiveId(null);
@@ -130,7 +144,6 @@ export function DragDropProvider({
       isScheduled: draggedRoutine.isScheduled,
     });
 
-    // Determine drop operation type
     const targetId = over.id as string;
 
     // Case: Dropping onto empty schedule container
@@ -138,34 +151,9 @@ export function DragDropProvider({
       console.log('[DragDropProvider] Drop onto empty schedule container');
 
       if (!draggedRoutine.isScheduled) {
-        // Scheduling first routine of the day
-        try {
-          const timesResult = await calculateTimes.mutateAsync({
-            tenantId,
-            competitionId,
-            date: selectedDate,
-            routineIds: [draggedRoutineId],
-            startTime: '08:00:00',
-            startingEntryNumber: 100,
-          });
-
-          await scheduleRoutines.mutateAsync({
-            tenantId,
-            competitionId,
-            date: selectedDate,
-            routines: timesResult.schedule.map(s => ({
-              routineId: s.routineId,
-              entryNumber: s.entryNumber,
-              performanceTime: s.performanceTime,
-            })),
-          });
-
-          console.log('[DragDropProvider] First routine scheduled successfully');
-          onDropSuccess?.();
-        } catch (error) {
-          console.error('[DragDropProvider] Failed to schedule first routine:', error);
-          onDropError?.(error as Error);
-        }
+        // Add first routine to schedule
+        const newSchedule = calculateSchedule([draggedRoutine]);
+        onScheduleChange(newSchedule);
       }
       return;
     }
@@ -185,110 +173,62 @@ export function DragDropProvider({
 
     // Case 1: Dragging unscheduled routine (UR) to scheduled area (SR)
     if (!draggedRoutine.isScheduled && targetRoutine.isScheduled) {
-      console.log('[DragDropProvider] UR → SR: Scheduling routine');
+      console.log('[DragDropProvider] UR → SR: Adding to schedule');
 
-      try {
-        // Get all currently scheduled routines for this day, sorted by entry number
-        const scheduledForDay = routines
-          .filter(r => r.isScheduled && r.performanceTime) // Only routines with times (on this day)
-          .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+      // Get all currently scheduled routines for this day
+      const scheduledForDay = routines
+        .filter(r => r.isScheduled && r.performanceTime)
+        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-        // Find insertion index (insert before target)
-        const insertionIndex = scheduledForDay.findIndex(r => r.id === targetId);
+      // Find insertion index (insert before target)
+      const insertionIndex = scheduledForDay.findIndex(r => r.id === targetId);
 
-        // Insert the dragged routine at the target position
-        const newSchedule = [...scheduledForDay];
-        newSchedule.splice(insertionIndex, 0, draggedRoutine);
+      // Insert the dragged routine at the target position
+      const newSchedule = [...scheduledForDay];
+      newSchedule.splice(insertionIndex, 0, draggedRoutine);
 
-        // Recalculate times for ALL routines starting from the first one
-        const firstRoutine = scheduledForDay[0];
-        const startTime = firstRoutine?.performanceTime || '08:00:00';
-        const startingEntryNumber = firstRoutine?.entryNumber || 100;
+      // Recalculate times and entry numbers
+      const firstRoutine = scheduledForDay[0];
+      const recalculated = calculateSchedule(
+        newSchedule,
+        firstRoutine?.performanceTime || '08:00:00',
+        firstRoutine?.entryNumber || 100
+      );
 
-        const timesResult = await calculateTimes.mutateAsync({
-          tenantId,
-          competitionId,
-          date: selectedDate,
-          routineIds: newSchedule.map(r => r.id),
-          startTime,
-          startingEntryNumber,
-        });
-
-        // Schedule ALL routines with new entry numbers
-        await scheduleRoutines.mutateAsync({
-          tenantId,
-          competitionId,
-          date: selectedDate,
-          routines: timesResult.schedule.map(s => ({
-            routineId: s.routineId,
-            entryNumber: s.entryNumber,
-            performanceTime: s.performanceTime,
-          })),
-        });
-
-        console.log('[DragDropProvider] UR → SR successful');
-        onDropSuccess?.();
-      } catch (error) {
-        console.error('[DragDropProvider] UR → SR failed:', error);
-        onDropError?.(error as Error);
-      }
+      onScheduleChange(recalculated);
     }
 
     // Case 2: Reordering within scheduled routines (SR)
     else if (draggedRoutine.isScheduled && targetRoutine.isScheduled) {
-      console.log('[DragDropProvider] SR reorder: Moving routine');
+      console.log('[DragDropProvider] SR reorder: Reordering schedule');
 
-      try {
-        // Get all scheduled routines sorted by entry number
-        const scheduledRoutines = routines
-          .filter(r => r.isScheduled)
-          .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+      // Get all scheduled routines
+      const scheduledRoutines = routines
+        .filter(r => r.isScheduled)
+        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-        // Find indices
-        const fromIndex = scheduledRoutines.findIndex(r => r.id === draggedRoutineId);
-        const toIndex = scheduledRoutines.findIndex(r => r.id === targetId);
+      // Find indices
+      const fromIndex = scheduledRoutines.findIndex(r => r.id === draggedRoutineId);
+      const toIndex = scheduledRoutines.findIndex(r => r.id === targetId);
 
-        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-          console.log('[DragDropProvider] No reorder needed');
-          return;
-        }
-
-        // Reorder array
-        const reordered = [...scheduledRoutines];
-        const [removed] = reordered.splice(fromIndex, 1);
-        reordered.splice(toIndex, 0, removed);
-
-        // Recalculate times for all affected routines
-        const startTime = reordered[0].performanceTime || '08:00:00';
-        const startingEntryNumber = reordered[0].entryNumber || 100;
-
-        const timesResult = await calculateTimes.mutateAsync({
-          tenantId,
-          competitionId,
-          date: selectedDate,
-          routineIds: reordered.map(r => r.id),
-          startTime,
-          startingEntryNumber,
-        });
-
-        // Schedule all routines with new times
-        await scheduleRoutines.mutateAsync({
-          tenantId,
-          competitionId,
-          date: selectedDate,
-          routines: timesResult.schedule.map(s => ({
-            routineId: s.routineId,
-            entryNumber: s.entryNumber,
-            performanceTime: s.performanceTime,
-          })),
-        });
-
-        console.log('[DragDropProvider] SR reorder successful');
-        onDropSuccess?.();
-      } catch (error) {
-        console.error('[DragDropProvider] SR reorder failed:', error);
-        onDropError?.(error as Error);
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        console.log('[DragDropProvider] No reorder needed');
+        return;
       }
+
+      // Reorder array
+      const reordered = [...scheduledRoutines];
+      const [removed] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, removed);
+
+      // Recalculate times and entry numbers
+      const recalculated = calculateSchedule(
+        reordered,
+        reordered[0].performanceTime || '08:00:00',
+        reordered[0].entryNumber || 100
+      );
+
+      onScheduleChange(recalculated);
     }
 
     // Case 3: Other combinations (e.g., SR → UR to unschedule)
