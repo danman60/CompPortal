@@ -132,9 +132,9 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Title with indicators */}
-      <td className="px-1 py-2 text-xs font-medium text-white align-middle">
+      <td className="px-1 py-2 text-xs font-medium text-white align-middle w-32">
         <div className="flex items-center gap-1 min-w-0">
-          <span className="truncate max-w-[120px]" title={routine.title}>{routine.title}</span>
+          <span className="truncate" title={routine.title}>{routine.title}</span>
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
             {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
@@ -145,31 +145,31 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       </td>
 
       {/* Studio */}
-      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-10 text-center">{studioDisplay}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-8 text-center">{studioDisplay}</td>
 
       {/* Classification */}
-      <td className="px-1 py-2 align-middle">
-        <span className={`inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold truncate max-w-full ${getClassificationColor(routine.classificationName)}`}>
+      <td className="px-1 py-2 align-middle w-24">
+        <span className={`inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold truncate ${getClassificationColor(routine.classificationName)}`}>
           {routine.classificationName}
         </span>
       </td>
 
       {/* Size */}
-      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.entrySizeName}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-16">{routine.entrySizeName}</td>
 
-      {/* Routine Age (stored routine_age field) */}
-      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">
+      {/* Routine Age */}
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-12 text-center">
         {routine.routineAge ?? '-'}
       </td>
 
       {/* Overalls Age (Age Group) */}
-      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.ageGroupName}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-16">{routine.ageGroupName}</td>
 
       {/* Category */}
-      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">{routine.categoryName}</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-20">{routine.categoryName}</td>
 
       {/* Duration */}
-      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap">⏱️ {routine.duration} min</td>
+      <td className="px-1 py-2 text-xs text-white/80 align-middle whitespace-nowrap w-20">⏱️ {routine.duration} min</td>
     </tr>
   );
 }

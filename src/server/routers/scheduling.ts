@@ -199,7 +199,7 @@ export const schedulingRouter = router({
         data: {
           session_id: input.sessionId,
           performance_date: new Date(input.targetDate),
-          performance_time: input.targetTime,
+          performance_time: new Date(`1970-01-01T${input.targetTime}`), // Convert time string to DateTime
           display_order: displayOrder,
           schedule_zone: null,
         },
@@ -587,6 +587,7 @@ export const schedulingRouter = router({
         // FIX: Store time as-is (EST) - don't convert to UTC
         // Frontend sends "08:00:00" meaning 8 AM EST
         // Database TIME field has no timezone, represents EST directly
+        // Convert time string to DateTime object for Prisma (TIME field requires DateTime type)
         const updated = await prisma.competition_entries.update({
           where: {
             id: input.routineId,
@@ -595,7 +596,7 @@ export const schedulingRouter = router({
           data: {
             schedule_zone: null, // Clear old zone-based data
             performance_date: new Date(input.performanceDate), // Convert string to Date for UPDATE
-            performance_time: input.performanceTime, // Store time string directly as EST
+            performance_time: new Date(`1970-01-01T${input.performanceTime}`), // Convert time string to DateTime
             entry_number: finalEntryNumber,
             is_scheduled: true,
           },
@@ -1522,11 +1523,17 @@ export const schedulingRouter = router({
       // Update database with entry numbers
       const updates = scheduledEntries.map(entry => {
         const entryNumber = nextEntryNumber++;
+
+        // Extract time from Date object and convert to TIME field format
+        // TIME field requires DateTime with dummy date (same as scheduleRoutine)
+        const timeString = entry.performanceTime ? entry.performanceTime.toTimeString().split(' ')[0] : null;
+        const performanceTime = timeString ? new Date(`1970-01-01T${timeString}`) : null;
+
         return prisma.competition_entries.update({
           where: { id: entry.id },
           data: {
             session_id: entry.sessionId,
-            performance_time: entry.performanceTime,
+            performance_time: performanceTime,
             running_order: entry.runningOrder,
             entry_number: entryNumber,
             updated_at: new Date(),
@@ -2756,12 +2763,11 @@ export const schedulingRouter = router({
         // Use Prisma transaction to update all routines atomically
         const updates = await prisma.$transaction(
           routines.map(({ routineId, entryNumber, performanceTime }) => {
-            // Combine the date parameter with the performanceTime to create proper timestamp
-            // date is "2026-04-11", performanceTime is "08:00:00"
-            const dateTimeString = `${date}T${performanceTime}`;
-            const performanceTimeLocal = new Date(dateTimeString);
+            // Convert time string to DateTime with dummy date for TIME field
+            // performanceTime is "08:00:00" format
+            const performanceTimeFormatted = new Date(`1970-01-01T${performanceTime}`);
 
-            console.log('[batchReorderRoutines] Routine', routineId, ':', dateTimeString, '→', performanceTimeLocal);
+            console.log('[batchReorderRoutines] Routine', routineId, ':', performanceTime, '→', performanceTimeFormatted);
 
             return prisma.competition_entries.update({
               where: {
@@ -2770,7 +2776,7 @@ export const schedulingRouter = router({
               },
               data: {
                 entry_number: entryNumber,
-                performance_time: performanceTimeLocal,
+                performance_time: performanceTimeFormatted,
                 updated_at: new Date(),
               },
             });
