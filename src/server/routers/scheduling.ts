@@ -477,27 +477,28 @@ export const schedulingRouter = router({
           displayStudioName = `Studio ${studioCode}`;
         }
 
-        // FIX: Combine date and time, treating TIME field as local EST time (not UTC)
-        // PostgreSQL TIME has no timezone - must explicitly set EST offset to prevent UTC interpretation
+        // FIX: Combine date and time, treating TIME field as local EST time
+        // PostgreSQL TIME has no timezone - Prisma returns it as Date with time component in UTC
+        // We need to extract time components and apply them to the performance_date
         let scheduledTime = null;
         if (routine.performance_date && routine.performance_time) {
-          const dateStr = routine.performance_date.toISOString().split('T')[0];
-          const timeStr = routine.performance_time.toISOString().split('T')[1].split('.')[0];
+          // Extract time components from the TIME field (hours, minutes, seconds)
+          const hours = routine.performance_time.getUTCHours();
+          const minutes = routine.performance_time.getUTCMinutes();
+          const seconds = routine.performance_time.getUTCSeconds();
+
+          // Create a new Date based on performance_date and set the time components
+          // This creates a Date in UTC with the correct date and time values
+          const combined = new Date(routine.performance_date);
+          combined.setUTCHours(hours, minutes, seconds, 0);
+
+          scheduledTime = combined;
 
           // Debug logging for entry #100
           if (routine.entry_number === 100) {
+            console.log('[DEBUG #100] performance_time UTC hours:', hours);
             console.log('[DEBUG #100] performance_date:', routine.performance_date);
-            console.log('[DEBUG #100] performance_time:', routine.performance_time);
-            console.log('[DEBUG #100] dateStr:', dateStr);
-            console.log('[DEBUG #100] timeStr:', timeStr);
-            console.log('[DEBUG #100] Combined string:', `${dateStr}T${timeStr}-05:00`);
-          }
-
-          // Append EST timezone offset (-05:00) to prevent UTC interpretation
-          scheduledTime = new Date(`${dateStr}T${timeStr}-05:00`);
-
-          if (routine.entry_number === 100) {
-            console.log('[DEBUG #100] scheduledTime result:', scheduledTime);
+            console.log('[DEBUG #100] scheduledTime:', scheduledTime);
             console.log('[DEBUG #100] scheduledTime ISO:', scheduledTime.toISOString());
           }
         }
