@@ -481,6 +481,14 @@ export const schedulingRouter = router({
         // PostgreSQL TIME has no timezone - represents EST time directly
         let scheduledTime = null;
         if (routine.performance_date && routine.performance_time) {
+          // Debug logging for entry #100 - RAW VALUES FROM PRISMA
+          if (routine.entry_number === 100) {
+            console.error('[DEBUG #100] RAW performance_date from Prisma:', routine.performance_date);
+            console.error('[DEBUG #100] RAW performance_date type:', typeof routine.performance_date);
+            console.error('[DEBUG #100] RAW performance_time from Prisma:', routine.performance_time);
+            console.error('[DEBUG #100] RAW performance_time type:', typeof routine.performance_time);
+          }
+
           // Extract time components from the TIME field
           const hours = routine.performance_time.getUTCHours();
           const minutes = routine.performance_time.getUTCMinutes();
@@ -494,13 +502,13 @@ export const schedulingRouter = router({
           // This creates a UTC timestamp that represents the EST time
           scheduledTime = new Date(`${dateStr}T${timeStr}-05:00`); // -05:00 = EST offset
 
-          // Debug logging for entry #100
+          // Debug logging for entry #100 - AFTER TRANSFORMATION
           if (routine.entry_number === 100) {
-            console.log('[DEBUG #100] Date:', dateStr);
-            console.log('[DEBUG #100] Time:', timeStr);
-            console.log('[DEBUG #100] Combined:', `${dateStr}T${timeStr}-05:00`);
-            console.log('[DEBUG #100] scheduledTime ISO:', scheduledTime.toISOString());
-            console.log('[DEBUG #100] scheduledTime local:', scheduledTime.toString());
+            console.error('[DEBUG #100] Extracted dateStr:', dateStr);
+            console.error('[DEBUG #100] Extracted timeStr:', timeStr);
+            console.error('[DEBUG #100] Combined:', `${dateStr}T${timeStr}-05:00`);
+            console.error('[DEBUG #100] scheduledTime ISO:', scheduledTime.toISOString());
+            console.error('[DEBUG #100] scheduledTime local:', scheduledTime.toString());
           }
         }
 
