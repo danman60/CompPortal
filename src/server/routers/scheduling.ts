@@ -756,7 +756,7 @@ export const schedulingRouter = router({
       date: z.string(), // ISO date
     }))
     .query(async ({ input, ctx }) => {
-      return await prisma.competition_entries.findMany({
+      const entries = await prisma.competition_entries.findMany({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
@@ -780,6 +780,32 @@ export const schedulingRouter = router({
             },
           },
         },
+      });
+
+      // Transform entries to include string-based date/time fields (same as getRoutines)
+      return entries.map(entry => {
+        // FIX: Return date and time as STRINGS to avoid tRPC/Prisma serialization issues
+        let scheduledDateString: string | null = null;
+        let scheduledTimeString: string | null = null;
+
+        if (entry.performance_date && entry.performance_time) {
+          const year = entry.performance_date.getFullYear();
+          const month = String(entry.performance_date.getMonth() + 1).padStart(2, '0');
+          const day = String(entry.performance_date.getDate()).padStart(2, '0');
+          scheduledDateString = `${year}-${month}-${day}`; // YYYY-MM-DD
+
+          const hours = entry.performance_time.getUTCHours();
+          const minutes = entry.performance_time.getUTCMinutes();
+          const seconds = entry.performance_time.getUTCSeconds();
+          scheduledTimeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; // HH:MM:SS
+        }
+
+        return {
+          ...entry,
+          scheduledDateString,
+          scheduledTimeString,
+          routineAge: entry.routine_age,
+        };
       });
     }),
 
