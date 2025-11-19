@@ -25,16 +25,17 @@ export function DropIndicator({ top, visible }: DropIndicatorProps) {
     <div
       className="drop-indicator"
       style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, transparent, #8b5cf6 20%, #8b5cf6 80%, transparent)',
-        boxShadow: '0 0 10px rgba(139, 92, 246, 0.8)',
-        zIndex: 50,
-        transition: 'top 0.15s ease-out',
+        position: 'fixed',
+        left: '33%', // Start after left panel (UR)
+        right: '1rem', // Account for padding
+        height: '4px',
+        background: 'linear-gradient(90deg, transparent, #a78bfa 10%, #8b5cf6 50%, #a78bfa 90%, transparent)',
+        boxShadow: '0 0 12px rgba(139, 92, 246, 1), 0 0 6px rgba(167, 139, 250, 0.8)',
+        zIndex: 9999,
+        transition: 'top 0.1s ease-out',
         pointerEvents: 'none',
         top: `${top}px`,
+        borderRadius: '2px',
       }}
     />
   );

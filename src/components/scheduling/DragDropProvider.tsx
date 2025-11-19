@@ -89,18 +89,17 @@ export function DragDropProvider({
   const handleDragOver = (event: DragOverEvent) => {
     const { over } = event;
 
-    if (over) {
+    if (over && !String(over.id).startsWith('schedule-table-') && !String(over.id).startsWith('routine-pool-')) {
       // Calculate drop indicator position based on over element
-      // In a real implementation, this would use over.rect to position between rows
-      // For now, we'll show a placeholder position
       setShowDropIndicator(true);
 
-      // TODO: Calculate actual Y position based on drop target row
-      // const overElement = document.querySelector(`[data-routine-id="${over.id}"]`);
-      // if (overElement) {
-      //   const rect = overElement.getBoundingClientRect();
-      //   setDropIndicatorTop(rect.top);
-      // }
+      // Find the element for the routine we're hovering over
+      const overElement = document.querySelector(`[data-routine-id="${over.id}"]`);
+      if (overElement) {
+        const rect = overElement.getBoundingClientRect();
+        // Position the line at the top of the hovered row
+        setDropIndicatorTop(rect.top + window.scrollY);
+      }
     } else {
       setShowDropIndicator(false);
     }

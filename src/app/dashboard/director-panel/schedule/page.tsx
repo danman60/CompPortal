@@ -20,6 +20,8 @@ import { DragDropProvider } from '@/components/scheduling/DragDropProvider';
 import { RoutinePool, FilterState } from '@/components/scheduling/RoutinePool';
 import { ScheduleTable } from '@/components/scheduling/ScheduleTable';
 import { DayTabs } from '@/components/scheduling/DayTabs';
+import { DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
+import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 
 // TEST tenant ID (will be replaced with real tenant context)
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -39,6 +41,10 @@ export default function SchedulePage() {
     routineAges: [],
     search: '',
   });
+
+  // Schedule block modal state
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockType, setBlockType] = useState<'award' | 'break'>('award');
 
   // Fetch all routines
   const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
@@ -258,6 +264,30 @@ export default function SchedulePage() {
               totalRoutines={routines?.length || 0}
               filteredRoutines={unscheduledRoutines.length}
             />
+
+            {/* Schedule Block Templates */}
+            <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/20">
+              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                <span>📋</span>
+                <span>Schedule Blocks</span>
+              </h3>
+              <div className="space-y-2">
+                <DraggableBlockTemplate
+                  type="award"
+                  onClick={() => {
+                    setBlockType('award');
+                    setShowBlockModal(true);
+                  }}
+                />
+                <DraggableBlockTemplate
+                  type="break"
+                  onClick={() => {
+                    setBlockType('break');
+                    setShowBlockModal(true);
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Right Panel - Scheduled Routines (67%) */}
@@ -288,6 +318,19 @@ export default function SchedulePage() {
           </div>
         </div>
       </DragDropProvider>
+
+      {/* Schedule Block Modal */}
+      <ScheduleBlockModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        onSave={(block) => {
+          toast.success(`${block.type === 'award' ? '🏆' : '☕'} Block created: ${block.title}`);
+          refetch();
+        }}
+        competitionId={TEST_COMPETITION_ID}
+        tenantId={TEST_TENANT_ID}
+        mode="create"
+      />
 
       {/* Custom scrollbar styles */}
       <style jsx global>{`
