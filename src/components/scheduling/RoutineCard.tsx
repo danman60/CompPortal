@@ -41,8 +41,11 @@ export interface Routine {
   }>;
   isScheduled: boolean;
   scheduleZone: string | null;
-  scheduledTime: Date | null;
-  scheduledDay: Date | null;
+  scheduledTime?: Date | null;
+  scheduledDay?: Date | null;
+  scheduledDateString?: string | null; // YYYY-MM-DD format from backend
+  scheduledTimeString?: string | null; // HH:MM:SS format from backend
+  entryNumber?: number | null;
 }
 
 interface RoutineCardProps {

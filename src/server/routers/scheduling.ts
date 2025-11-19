@@ -477,34 +477,29 @@ export const schedulingRouter = router({
           displayStudioName = `Studio ${studioCode}`;
         }
 
-        // FIX: Combine date and time - treat TIME as local EST time
-        // PostgreSQL TIME has no timezone - represents EST time directly
-        let scheduledTime = null;
+        // FIX: Return date and time as STRINGS to avoid tRPC/Prisma serialization issues
+        // Don't create Date objects - let frontend handle date construction
+        let scheduledDateString: string | null = null;
+        let scheduledTimeString: string | null = null;
+
         if (routine.performance_date && routine.performance_time) {
           // Extract date components (use local getters, not UTC)
-          // This avoids timezone issues with toISOString()
           const year = routine.performance_date.getFullYear();
           const month = String(routine.performance_date.getMonth() + 1).padStart(2, '0');
           const day = String(routine.performance_date.getDate()).padStart(2, '0');
-          const dateStr = `${year}-${month}-${day}`; // YYYY-MM-DD
+          scheduledDateString = `${year}-${month}-${day}`; // YYYY-MM-DD
 
           // Extract time components from the TIME field (use UTC getters)
           // TIME field comes as 1970-01-01 + time, so UTC getters work correctly
           const hours = routine.performance_time.getUTCHours();
           const minutes = routine.performance_time.getUTCMinutes();
           const seconds = routine.performance_time.getUTCSeconds();
-          const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; // HH:MM:SS
-
-          // Combine date + time with EST offset
-          // This creates a UTC timestamp that represents the EST time
-          scheduledTime = new Date(`${dateStr}T${timeStr}-05:00`); // -05:00 = EST offset
+          scheduledTimeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; // HH:MM:SS
 
           // Debug logging for entry #100
           if (routine.entry_number === 100) {
-            console.error('[DEBUG #100] Date extracted:', dateStr);
-            console.error('[DEBUG #100] Time extracted:', timeStr);
-            console.error('[DEBUG #100] Combined string:', `${dateStr}T${timeStr}-05:00`);
-            console.error('[DEBUG #100] Result ISO:', scheduledTime.toISOString());
+            console.error('[DEBUG #100] Date string:', scheduledDateString);
+            console.error('[DEBUG #100] Time string:', scheduledTimeString);
           }
         }
 
@@ -527,8 +522,8 @@ export const schedulingRouter = router({
           participants: [], // PERFORMANCE: Empty array - participants fetched separately by detectConflicts
           isScheduled: routine.performance_date !== null, // V4: Check date instead of zone
           scheduleZone: null, // V4: Deprecated zone field
-          scheduledTime: scheduledTime,
-          scheduledDay: routine.performance_date,
+          scheduledDateString: scheduledDateString, // YYYY-MM-DD string (null if not scheduled)
+          scheduledTimeString: scheduledTimeString, // HH:MM:SS string (null if not scheduled)
           entryNumber: routine.entry_number, // V4: Sequential entry number
         };
       });

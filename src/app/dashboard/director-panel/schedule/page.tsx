@@ -75,8 +75,11 @@ interface Routine {
   }>;
   isScheduled: boolean;
   scheduleZone: string | null; // Zone ID: saturday-am, saturday-pm, etc.
-  scheduledTime: Date | null;
-  scheduledDay: Date | null;
+  scheduledTime?: Date | null;
+  scheduledDay?: Date | null;
+  scheduledDateString?: string | null; // YYYY-MM-DD format from backend
+  scheduledTimeString?: string | null; // HH:MM:SS format from backend
+  entryNumber?: number | null;
 }
 
 // Use imported types from ScheduleGrid
@@ -347,7 +350,7 @@ export default function SchedulePage() {
 
       // Prepare table data
       const tableData = data.routines.map((r: any) => [
-        r.scheduledDay?.toLocaleDateString() || 'Unscheduled',
+        r.scheduledDateString ? new Date(r.scheduledDateString).toLocaleDateString() : 'Unscheduled',
         r.zone?.replace('-', ' ').toUpperCase() || '',
         r.scheduledTime?.toLocaleTimeString() || '',
         r.title,
@@ -984,10 +987,10 @@ export default function SchedulePage() {
           const draggedRoutine = routines?.find(r => r.id === activeId);
           const targetRoutine = routines?.find(r => r.id === over?.id);
 
-          if (draggedRoutine && targetRoutine && draggedRoutine.scheduledDay && targetRoutine.scheduledDay) {
+          if (draggedRoutine && targetRoutine && draggedRoutine.scheduledDateString && targetRoutine.scheduledDateString) {
             // Check if both routines are on the same day
-            const dragDate = new Date(draggedRoutine.scheduledDay).toISOString().split('T')[0];
-            const targetDate = new Date(targetRoutine.scheduledDay).toISOString().split('T')[0];
+            const dragDate = draggedRoutine.scheduledDateString; // Already YYYY-MM-DD format
+            const targetDate = targetRoutine.scheduledDateString; // Already YYYY-MM-DD format
 
             if (dragDate === targetDate && routines) {
             console.log('[V4 Reorder] Reordering routine within schedule table');
@@ -995,10 +998,8 @@ export default function SchedulePage() {
             // Get all routines for the same day, sorted by entry number
             const sameDayRoutines = routines
               .filter(r => {
-                if (!r.scheduledDay || !draggedRoutine.scheduledDay) return false;
-                const rDate = new Date(r.scheduledDay).toISOString().split('T')[0];
-                const dragDate = new Date(draggedRoutine.scheduledDay).toISOString().split('T')[0];
-                return rDate === dragDate;
+                if (!r.scheduledDateString || !draggedRoutine.scheduledDateString) return false;
+                return r.scheduledDateString === draggedRoutine.scheduledDateString; // Already YYYY-MM-DD format
               })
               .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
@@ -1500,7 +1501,7 @@ export default function SchedulePage() {
               days={competitionDays.map(day => {
                 // Get all routines for this day
                 const dayRoutines = (routines || []).filter((r: any) =>
-                  r.isScheduled && r.scheduledDay && new Date(r.scheduledDay).toISOString().split('T')[0] === day.date
+                  r.isScheduled && r.scheduledDateString && r.scheduledDateString === day.date
                 );
 
                 // Calculate end time based on last routine
@@ -1508,18 +1509,21 @@ export default function SchedulePage() {
                 if (dayRoutines.length > 0) {
                   // Find routine with latest scheduled time
                   const sortedRoutines = [...dayRoutines].sort((a, b) => {
-                    if (!a.scheduledTime || !b.scheduledTime) return 0;
-                    return new Date(b.scheduledTime).getTime() - new Date(a.scheduledTime).getTime();
+                    if (!a.scheduledTimeString || !b.scheduledTimeString) return 0;
+                    // Compare times as strings (HH:MM:SS format sorts correctly)
+                    return b.scheduledTimeString.localeCompare(a.scheduledTimeString);
                   });
                   const lastRoutine = sortedRoutines[0];
 
-                  if (lastRoutine.scheduledTime) {
-                    const lastTime = new Date(lastRoutine.scheduledTime);
+                  if (lastRoutine.scheduledTimeString) {
+                    const [hours, minutes, seconds] = lastRoutine.scheduledTimeString.split(':').map(Number);
                     const duration = lastRoutine.duration || 3;
 
                     // Add duration to get end time
-                    const endTimeDate = new Date(lastTime.getTime() + duration * 60000);
-                    endTime = endTimeDate.toTimeString().substring(0, 8); // HH:mm:ss format
+                    const totalMinutes = hours * 60 + minutes + duration;
+                    const endHours = Math.floor(totalMinutes / 60);
+                    const endMinutes = totalMinutes % 60;
+                    endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                   }
                 }
 
@@ -1564,9 +1568,10 @@ export default function SchedulePage() {
                   dancerId: p.dancer_id,
                   dancerName: p.dancer_name,
                 })),
-                entryNumber: r.entry_number,
-                scheduledTime: r.performance_time,
-                scheduledDay: r.performance_date,
+                entryNumber: r.entryNumber || r.entry_number,
+                scheduledDateString: r.scheduledDateString,
+                scheduledTimeString: r.scheduledTimeString,
+                routineAge: r.routineAge,
               }))}
               allRoutines={(routines || []).map((r: any) => ({
                 id: r.id,

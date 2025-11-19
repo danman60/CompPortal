@@ -63,6 +63,8 @@ interface Routine {
   entryNumber?: number;
   scheduledTime?: Date | null;
   scheduledDay?: Date | null;
+  scheduledDateString?: string | null; // YYYY-MM-DD format from backend
+  scheduledTimeString?: string | null; // HH:MM:SS format from backend
   routineAge?: number | null;
 }
 
@@ -482,21 +484,16 @@ export function ScheduleTable({
                 const isFirstInConflict = isFirstInConflictGroup(routine.id);
                 const conflictSpan = getConflictSpan(routine.id);
 
-                // Format time - explicitly use EST timezone
-                // DEBUG: Log raw value for entry #100
-                if (routine.entryNumber === 100 && routine.scheduledTime) {
-                  console.error('[ScheduleTable #100] RAW scheduledTime:', routine.scheduledTime);
-                  console.error('[ScheduleTable #100] As Date:', new Date(routine.scheduledTime));
-                  console.error('[ScheduleTable #100] ISO:', new Date(routine.scheduledTime).toISOString());
-                }
-
-                const performanceTime = routine.scheduledTime
-                  ? new Date(routine.scheduledTime).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true,
-                      timeZone: 'America/New_York', // Force EST display
-                    })
+                // Format time - use string from backend (no Date conversion)
+                // FIX: scheduledTimeString is "HH:MM:SS" in 24-hour format from backend
+                const performanceTime = routine.scheduledTimeString
+                  ? (() => {
+                      const [hours24, minutes] = routine.scheduledTimeString.split(':');
+                      const hour24 = parseInt(hours24, 10);
+                      const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+                      const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                      return `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
+                    })()
                   : 'TBD';
 
                 // Classification color
