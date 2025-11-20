@@ -525,7 +525,7 @@ export default function CDStudioInvitationsPage() {
                               }}
                               placeholder="studio@email.com"
                               autoFocus
-                              className="w-full sm:w-auto flex-1 px-3 py-2 min-h-[44px] bg-white/10 border border-purple-400 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              className="w-full px-3 py-2 min-h-[44px] bg-white/10 border border-purple-400 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 overflow-x-auto"
                             />
                             <div className="flex gap-2 w-full sm:w-auto">
                               <button
@@ -545,17 +545,18 @@ export default function CDStudioInvitationsPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="text-sm text-gray-300">
+                          <div
+                            onClick={() => handleEmailDoubleClick(studio.id, studio.email)}
+                            className="flex items-center gap-2 mb-2 cursor-pointer group min-h-[44px] py-2 px-3 -mx-3 rounded hover:bg-white/10 transition-colors"
+                            title="Click to edit email"
+                          >
+                            <div className="text-sm text-gray-300 group-hover:text-white flex-1">
                               {studio.email || '(no email)'}
                             </div>
-                            <button
-                              onClick={() => handleEmailDoubleClick(studio.id, studio.email)}
-                              className="min-h-[44px] min-w-[44px] px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-gray-300 hover:text-white text-xs transition-colors"
-                              title="Edit email"
-                            >
-                              ✏️
-                            </button>
+                            <div className="text-gray-400 group-hover:text-white text-sm flex items-center gap-1">
+                              <span className="hidden sm:inline">Edit</span>
+                              <span>✏️</span>
+                            </div>
                           </div>
                         )}
                       </div>
