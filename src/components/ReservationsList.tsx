@@ -742,7 +742,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
           ) : null}
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {filteredReservations.map((reservation) => {
             const capacityPercentage = getCapacityPercentage(
               reservation.spaces_requested,
@@ -752,7 +752,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             return (
               <div
                 key={reservation.id}
-                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all"
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col"
               >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Left: Studio & Competition Info */}
