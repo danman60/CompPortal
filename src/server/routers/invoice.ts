@@ -503,6 +503,20 @@ export const invoiceRouter = router({
         entryGroupMap.set(`${group.studio_id}-${group.competition_id}`, group);
       });
 
+      // DEBUG: Log data for troubleshooting
+      console.log('[getAllInvoices] Data Summary:', {
+        entryGroupsCount: entryGroups.length,
+        invoicesCount: invoices.length,
+        studiosCount: studios.length,
+        competitionsCount: competitions.length,
+        studioIds,
+        competitionIds,
+        allCombinationsCount: new Set([
+          ...entryGroups.map(g => `${g.studio_id}-${g.competition_id}`),
+          ...invoices.map(inv => `${inv.studio_id}-${inv.competition_id}`)
+        ]).size,
+      });
+
       // Get all unique studio+competition combinations from BOTH invoices and entries
       const allCombinations = new Set<string>();
       entryGroups.forEach(group => allCombinations.add(`${group.studio_id}-${group.competition_id}`));
