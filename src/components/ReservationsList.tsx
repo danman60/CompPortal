@@ -796,7 +796,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                 key={reservation.id}
                 className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`grid grid-cols-1 gap-6 ${isStudioDirector ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   {/* Left: Studio & Competition Info */}
                   <div>
                     <div className="flex items-center justify-between mb-4">
