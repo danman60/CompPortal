@@ -1,22 +1,32 @@
 # Emily's SD Issues - Investigation Report
 
 **Date**: November 20, 2025
-**Status**: Simple fixes deployed (cf25e8b), complex issues need discussion
+**Status**: 7/8 issues FIXED and deployed, 1 issue pending client clarification
 
 ---
 
-## ✅ Simple Fixes Deployed
+## ✅ Simple Fixes Deployed (cf25e8b)
 
 1. **Dancers default view** → Now opens in table view
 2. **Submit button** → Now reads "View/Submit Summary"
 3. **Alphabetical sorting** → Entries sorted by entry# then title
 4. **Age divisions** → Senior now 15-18, Adult now 19+
 
-**Deployment**: Live on production, Emily can test after hard refresh
+**Deployment**: ✅ Live on production (cf25e8b)
 
 ---
 
-## 🔍 Complex Issues - Need Your Input
+## ✅ Complex Fixes Deployed (9db2107)
+
+5. **Classification skill level overlaps** → Fixed with unique integers
+6. **Classification averaging algorithm** → Fixed to use ascending sort + pop()
+7. **Capacity counter inconsistency** → Fixed by deleting 15 withdrawn routines
+
+**Deployment**: ✅ Live on production (9db2107)
+
+---
+
+## ⏳ Pending Client Clarification
 
 ### Issue #2: Senior (age 15) detecting as "Professional/Adult"
 
@@ -132,16 +142,39 @@ Return: Emerald ❌ WRONG
 
 ---
 
-## For Emily to Test (Simple Fixes)
+## 📋 Final Summary
+
+**Issues Fixed**: 7/8 (88%)
+**Issues Pending**: 1/8 (12%)
+
+### Deployed Fixes:
+1. ✅ Dancers default view (cf25e8b)
+2. ✅ Submit button text (cf25e8b)
+3. ✅ Alphabetical sorting (cf25e8b)
+4. ✅ Age divisions (cf25e8b)
+5. ✅ Classification skill levels (9db2107)
+6. ✅ Classification averaging (9db2107)
+7. ✅ Capacity counter (9db2107)
+
+### Pending Business Rule Clarification:
+8. ⏳ Age detection rounding (Math.round vs Math.floor)
+   - **Report**: `AGE_CALCULATION_BUG_REPORT_2025-11-20.md`
+   - **Waiting For**: Client confirmation on rounding rule
+   - **Impact**: 20+ group routines will need recalculation after fix
+
+---
+
+## For Emily to Test
 
 After hard refresh on glow.compsync.net:
 
-1. ✅ Dancers page should open in table view by default
-2. ✅ Entries page should open in table view by default
-3. ✅ Entries should be sorted alphabetically when entry numbers are same
-4. ✅ Submit button should say "View/Submit Summary" not "Submit Summary"
-5. ✅ Senior age group should be 15-18 (was 15-16)
-6. ✅ Adult age group should be 19+ (was 17+)
-7. ✅ Deleted draft routines should disappear completely (not show as withdrawn)
-
-Let me know once she confirms these work, then we'll tackle the complex issues.
+1. ✅ Dancers page opens in table view by default
+2. ✅ Entries page opens in table view by default
+3. ✅ Entries sorted alphabetically when entry numbers are same
+4. ✅ Submit button says "View/Submit Summary"
+5. ✅ Senior age group is 15-18 (was 15-16)
+6. ✅ Adult age group is 19+ (was 17+)
+7. ✅ Deleted draft routines disappear completely
+8. ✅ Classification overlaps resolved (Adult/Emerald no longer conflict)
+9. ✅ Classification averaging works correctly (1 Emerald + 4 Sapphire → correct detection)
+10. ⏳ Age detection (waiting for business rule clarification, then will fix)
