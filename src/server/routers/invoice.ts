@@ -587,12 +587,13 @@ export const invoiceRouter = router({
       studioId: z.string().uuid(),
       competitionId: z.string().uuid(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { studioId, competitionId } = input;
 
       // Find the invoice for this studio/competition
       const invoice = await prisma.invoices.findFirst({
         where: {
+          tenant_id: ctx.tenantId!,
           studio_id: studioId,
           competition_id: competitionId,
         },
@@ -606,8 +607,11 @@ export const invoiceRouter = router({
       }
 
       // Get studio and competition details with tenant subdomain
-      const studio = await prisma.studios.findUnique({
-        where: { id: studioId },
+      const studio = await prisma.studios.findFirst({
+        where: {
+          id: studioId,
+          tenant_id: ctx.tenantId!,
+        },
         select: {
           owner_id: true,
           name: true,
@@ -620,8 +624,11 @@ export const invoiceRouter = router({
         },
       });
 
-      const competition = await prisma.competitions.findUnique({
-        where: { id: competitionId },
+      const competition = await prisma.competitions.findFirst({
+        where: {
+          id: competitionId,
+          tenant_id: ctx.tenantId!,
+        },
         select: {
           name: true,
           year: true,
