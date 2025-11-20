@@ -28,7 +28,19 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
   const [selectedStudio, setSelectedStudio] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'studio-alpha' | 'spaces-desc' | 'competition-alpha'>('studio-alpha');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [tableSortColumn, setTableSortColumn] = useState<'studio' | 'competition' | 'status' | 'requested' | 'confirmed' | 'created'>('studio');
+  const [tableSortDirection, setTableSortDirection] = useState<'asc' | 'desc'>('asc');
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Handle table column sorting
+  const handleTableSort = (column: typeof tableSortColumn) => {
+    if (tableSortColumn === column) {
+      setTableSortDirection(tableSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setTableSortColumn(column);
+      setTableSortDirection('asc');
+    }
+  };
   const [rejectModalData, setRejectModalData] = useState<{ id: string; studioName: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isManualReservationModalOpen, setIsManualReservationModalOpen] = useState(false);
@@ -460,6 +472,36 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
       }
       return 0;
     });
+
+  // Apply table sorting (separate from grid sorting)
+  const sortedFilteredReservations = viewMode === 'table'
+    ? [...filteredReservations].sort((a, b) => {
+        let comparison = 0;
+
+        switch (tableSortColumn) {
+          case 'studio':
+            comparison = ((a as any).studios?.name || '').localeCompare((b as any).studios?.name || '');
+            break;
+          case 'competition':
+            comparison = ((a as any).competitions?.name || '').localeCompare((b as any).competitions?.name || '');
+            break;
+          case 'status':
+            comparison = (a.status || '').localeCompare(b.status || '');
+            break;
+          case 'requested':
+            comparison = (a.spaces_requested || 0) - (b.spaces_requested || 0);
+            break;
+          case 'confirmed':
+            comparison = (a.spaces_confirmed || 0) - (b.spaces_confirmed || 0);
+            break;
+          case 'created':
+            comparison = ((a as any)._count?.competition_entries || 0) - ((b as any)._count?.competition_entries || 0);
+            break;
+        }
+
+        return tableSortDirection === 'asc' ? comparison : -comparison;
+      })
+    : filteredReservations;
 
   // Calculate capacity percentage
   const getCapacityPercentage = (requested: number, confirmed: number) => {
@@ -1132,19 +1174,61 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/20">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Studio</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Competition</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Status</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Requested</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Confirmed</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Created</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('studio')}>
+                    <div className="flex items-center gap-1">
+                      Studio
+                      {tableSortColumn === 'studio' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('competition')}>
+                    <div className="flex items-center gap-1">
+                      Competition
+                      {tableSortColumn === 'competition' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('status')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Status
+                      {tableSortColumn === 'status' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('requested')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Requested
+                      {tableSortColumn === 'requested' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('confirmed')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Confirmed
+                      {tableSortColumn === 'confirmed' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('created')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Created
+                      {tableSortColumn === 'created' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
                   {!isStudioDirector && (
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Actions</th>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
-                {filteredReservations.map((reservation) => {
+                {sortedFilteredReservations.map((reservation) => {
                   const entriesCount = (reservation as any)._count?.competition_entries || 0;
                   return (
                     <tr key={reservation.id} className="hover:bg-white/5 transition-colors">
