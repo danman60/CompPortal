@@ -29,7 +29,7 @@ export function useEntriesFilters(
   reservations: Reservation[]
 ) {
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
 
   // Filter to all post-approval reservations (Phase1 spec:61)
   // Show approved, adjusted, summarized, invoiced, and closed

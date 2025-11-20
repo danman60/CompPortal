@@ -743,7 +743,6 @@ export const entryRouter = router({
                 role: true,
               },
               orderBy: { display_order: 'asc' },
-              take: 4, // Only fetch first 4 participants for list view
             },
             classification_exception_requests: {
               select: {
@@ -1742,14 +1741,11 @@ export const entryRouter = router({
       const isDraftStatus = entry.status === 'draft';
       const isReservationOpen = !entry.reservations?.is_closed;
 
-      // Allow SDs to soft-delete their own draft routines if reservation is open
+      // Allow SDs to hard-delete their own draft routines if reservation is open
       if (isSDBelongsToStudio && isDraftStatus && isReservationOpen) {
-        await prisma.competition_entries.update({
+        // Hard delete: permanently remove entry
+        await prisma.competition_entries.delete({
           where: { id: input.id },
-          data: {
-            status: 'withdrawn',
-            updated_at: new Date()
-          },
         });
 
         // Log activity
@@ -1758,7 +1754,7 @@ export const entryRouter = router({
             userId: ctx.userId,
             tenantId: ctx.tenantId!,
             studioId: entry.studio_id,
-            action: 'entry.soft_delete',
+            action: 'entry.hard_delete',
             entityType: 'entry',
             entityId: input.id,
             details: {
@@ -1777,7 +1773,7 @@ export const entryRouter = router({
 
         return {
           success: true,
-          message: 'Draft routine deleted successfully',
+          message: 'Draft routine permanently deleted',
           entry: {
             id: entry.id,
             title: entry.title,

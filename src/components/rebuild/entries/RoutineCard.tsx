@@ -139,9 +139,11 @@ export function RoutineCard({ entry, onDelete, reservationClosed = false }: Rout
 
       {entry.entry_participants && entry.entry_participants.length > 0 && (
         <div className="mb-4">
-          <div className="text-sm text-white/60 mb-2">Dancers:</div>
+          <div className="text-sm text-white/60 mb-2">
+            Dancers ({entry.entry_participants.length}):
+          </div>
           <div className="flex flex-wrap gap-2">
-            {entry.entry_participants.map((p, idx) => (
+            {entry.entry_participants.slice(0, 4).map((p, idx) => (
               <span
                 key={idx}
                 className="px-2 py-1 bg-white/5 rounded text-sm text-white/80"
@@ -149,6 +151,11 @@ export function RoutineCard({ entry, onDelete, reservationClosed = false }: Rout
                 {p.dancer_name}
               </span>
             ))}
+            {entry.entry_participants.length > 4 && (
+              <span className="px-2 py-1 bg-purple-500/20 border border-purple-400/50 rounded text-sm text-purple-300 font-semibold">
+                +{entry.entry_participants.length - 4} more
+              </span>
+            )}
           </div>
         </div>
       )}
