@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import AllInvoicesList from '@/components/AllInvoicesList';
 
+// Force client-side rendering to avoid SSR window errors
+export const dynamic = 'force-dynamic';
+
 export default function AllInvoicesPage() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
