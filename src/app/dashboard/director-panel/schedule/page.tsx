@@ -58,6 +58,31 @@ export default function SchedulePage() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockType, setBlockType] = useState<'award' | 'break'>('award');
 
+  // Selection state
+  const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
+
+  // Selection handlers
+  const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
+    setSelectedRoutineIds(prev => {
+      const next = new Set(prev);
+      if (next.has(routineId)) {
+        next.delete(routineId);
+      } else {
+        next.add(routineId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const allIds = new Set(unscheduledRoutinesFiltered.map(r => r.id));
+    setSelectedRoutineIds(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedRoutineIds(new Set());
+  };
+
   // Fetch all routines
   const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
@@ -435,6 +460,10 @@ export default function SchedulePage() {
               onFiltersChange={setFilters}
               totalRoutines={routines?.length || 0}
               filteredRoutines={unscheduledRoutinesFiltered.length}
+              selectedRoutineIds={selectedRoutineIds}
+              onToggleSelection={handleToggleSelection}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
             />
           </div>
 
