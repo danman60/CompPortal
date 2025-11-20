@@ -5,7 +5,7 @@ import { Badge } from '@/components/rebuild/ui/Badge';
 import { Button } from '@/components/rebuild/ui/Button';
 
 /**
- * Get last action text based on reservation status
+ * Get last action text based on reservation status and invoice status
  */
 function getLastAction(reservation: Reservation): string {
   if (reservation.invoicePaid) {
@@ -14,7 +14,8 @@ function getLastAction(reservation: Reservation): string {
 
   switch (reservation.status) {
     case 'invoiced':
-      return 'Invoice Sent';
+      // Check invoice status: DRAFT = created but not sent, SENT = sent to studio
+      return reservation.invoiceStatus === 'DRAFT' ? 'Invoice Created' : 'Invoice Sent';
     case 'summarized':
       return 'Summary Sent';
     case 'approved':
@@ -38,6 +39,7 @@ interface Reservation {
   entryCount?: number;
   status?: string | null;
   invoiceId?: string | null;
+  invoiceStatus?: string | null;
   invoicePaid?: boolean;
   invoiceAmount?: number;
   lastActionDate?: string;
@@ -120,8 +122,9 @@ export function ReservationTable({
               const isSummarized = reservation.status === 'summarized';
               const isInvoiced = reservation.status === 'invoiced';
               const hasDraftInvoice = reservation.invoiceId && reservation.invoiceStatus === 'DRAFT';
+              const hasSentInvoice = reservation.invoiceId && reservation.invoiceStatus === 'SENT';
               const needsInvoice = isSummarized && !reservation.invoiceId;
-              const canMarkPaid = isInvoiced && reservation.invoiceId && !reservation.invoicePaid;
+              const canMarkPaid = isInvoiced && hasSentInvoice && !reservation.invoicePaid;
               const isPaid = reservation.invoicePaid === true;
 
               return (
@@ -188,31 +191,49 @@ export function ReservationTable({
                         </Button>
                       )}
                       {hasDraftInvoice && (
-                        <Button
-                          onClick={() => onSendInvoice(reservation.invoiceId!)}
-                          variant="primary"
-                          className="text-sm px-3 py-1"
-                        >
-                          Send Invoice
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => window.open(`/dashboard/invoices/${reservation.invoiceId}`, '_blank')}
+                            variant="secondary"
+                            className="text-sm px-3 py-1"
+                          >
+                            View Invoice
+                          </Button>
+                          <Button
+                            onClick={() => onSendInvoice(reservation.invoiceId!)}
+                            variant="primary"
+                            className="text-sm px-3 py-1"
+                          >
+                            Send Invoice
+                          </Button>
+                        </>
                       )}
-                      {canMarkPaid && (
-                        <Button
-                          onClick={() => onMarkAsPaid(
-                            reservation.invoiceId!,
-                            reservation.studioId || '',
-                            reservation.competitionId || ''
-                          )}
-                          variant="primary"
-                          className="text-sm px-3 py-1"
-                        >
-                          Mark as Paid
-                        </Button>
+                      {hasSentInvoice && !reservation.invoicePaid && (
+                        <>
+                          <Button
+                            onClick={() => window.open(`/dashboard/invoices/${reservation.invoiceId}`, '_blank')}
+                            variant="secondary"
+                            className="text-sm px-3 py-1"
+                          >
+                            View Invoice
+                          </Button>
+                          <Button
+                            onClick={() => onMarkAsPaid(
+                              reservation.invoiceId!,
+                              reservation.studioId || '',
+                              reservation.competitionId || ''
+                            )}
+                            variant="primary"
+                            className="text-sm px-3 py-1"
+                          >
+                            Mark as Paid
+                          </Button>
+                        </>
                       )}
                       {isPaid && (
                         <span className="text-green-400 text-sm font-semibold">✓ Complete!</span>
                       )}
-                      {!isPending && !needsInvoice && !canMarkPaid && !isPaid && (
+                      {!isPending && !needsInvoice && !hasDraftInvoice && !hasSentInvoice && !isPaid && (
                         <span className="text-gray-500 text-sm">—</span>
                       )}
                     </div>
