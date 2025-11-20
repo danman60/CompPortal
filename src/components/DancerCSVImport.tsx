@@ -54,6 +54,25 @@ function parseFlexibleDate(dateStr: string): string | null {
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
+  // Try "Month DD YYYY" or "Month D YYYY" (e.g., "July 21 2009", "January 4 2017")
+  const monthNames: Record<string, string> = {
+    january: '01', february: '02', march: '03', april: '04',
+    may: '05', june: '06', july: '07', august: '08',
+    september: '09', october: '10', november: '11', december: '12',
+    jan: '01', feb: '02', mar: '03', apr: '04',
+    jun: '06', jul: '07', aug: '08', sep: '09',
+    sept: '09', oct: '10', nov: '11', dec: '12'
+  };
+
+  const monthNameFormat = trimmed.match(/^([a-zA-Z]+)\s+(\d{1,2})\s+(\d{4})$/);
+  if (monthNameFormat) {
+    const [, monthName, day, year] = monthNameFormat;
+    const month = monthNames[monthName.toLowerCase()];
+    if (month) {
+      return `${year}-${month}-${day.padStart(2, '0')}`;
+    }
+  }
+
   return null;
 }
 
