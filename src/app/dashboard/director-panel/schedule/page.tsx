@@ -442,6 +442,8 @@ export default function SchedulePage() {
           routines={allRoutinesData}
           selectedDate={selectedDate}
           onScheduleChange={handleScheduleChange}
+          selectedRoutineIds={selectedRoutineIds}
+          onClearSelection={handleDeselectAll}
         >
           <div className="grid grid-cols-3 gap-2">
           {/* Left Panel - Unscheduled Routines (33%) - Sticky */}

@@ -44,6 +44,10 @@ interface DragDropProviderProps {
   selectedDate: string;
   /** Callback when schedule order changes (draft state) */
   onScheduleChange: (newSchedule: RoutineData[]) => void;
+  /** Set of selected routine IDs (for multi-select drag) */
+  selectedRoutineIds?: Set<string>;
+  /** Callback to clear selection after successful drag */
+  onClearSelection?: () => void;
 }
 
 export function DragDropProvider({
@@ -51,6 +55,8 @@ export function DragDropProvider({
   routines,
   selectedDate,
   onScheduleChange,
+  selectedRoutineIds = new Set(),
+  onClearSelection,
 }: DragDropProviderProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropIndicatorTop, setDropIndicatorTop] = useState<number>(0);
@@ -144,10 +150,18 @@ export function DragDropProvider({
       return;
     }
 
+    // Multi-select logic: if dragged routine is selected, drag all selected routines
+    const isMultiDrag = selectedRoutineIds.has(draggedRoutineId) && selectedRoutineIds.size > 1;
+    const routinesToDrag = isMultiDrag
+      ? routines.filter(r => selectedRoutineIds.has(r.id))
+      : [draggedRoutine];
+
     console.log('[DragDropProvider] Drag ended:', {
       draggedRoutineId,
       targetId: over.id,
       isScheduled: draggedRoutine.isScheduled,
+      isMultiDrag,
+      count: routinesToDrag.length,
     });
 
     const targetId = over.id as string;
@@ -162,14 +176,19 @@ export function DragDropProvider({
           .filter(r => r.isScheduled && r.performanceTime)
           .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-        // Add to end of schedule
-        const newSchedule = [...scheduledForDay, draggedRoutine];
+        // Add to end of schedule (single or multiple routines)
+        const newSchedule = [...scheduledForDay, ...routinesToDrag];
         const recalculated = calculateSchedule(
           newSchedule,
           scheduledForDay[0]?.performanceTime || '08:00:00',
           scheduledForDay[0]?.entryNumber || 100
         );
         onScheduleChange(recalculated);
+
+        // Clear selection after successful multi-drag
+        if (isMultiDrag && onClearSelection) {
+          onClearSelection();
+        }
       }
       return;
     }
@@ -199,9 +218,9 @@ export function DragDropProvider({
       // Find insertion index (insert before target)
       const insertionIndex = scheduledForDay.findIndex(r => r.id === targetId);
 
-      // Insert the dragged routine at the target position
+      // Insert the dragged routine(s) at the target position
       const newSchedule = [...scheduledForDay];
-      newSchedule.splice(insertionIndex, 0, draggedRoutine);
+      newSchedule.splice(insertionIndex, 0, ...routinesToDrag);
 
       // Recalculate times and entry numbers
       const firstRoutine = scheduledForDay[0];
@@ -212,6 +231,11 @@ export function DragDropProvider({
       );
 
       onScheduleChange(recalculated);
+
+      // Clear selection after successful multi-drag
+      if (isMultiDrag && onClearSelection) {
+        onClearSelection();
+      }
     }
 
     // Case 2: Reordering within scheduled routines (SR)
