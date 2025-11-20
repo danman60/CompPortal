@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Badge } from '@/components/rebuild/ui/Badge';
 import { Button } from '@/components/rebuild/ui/Button';
 
@@ -70,6 +71,8 @@ export function ReservationTable({
   onMarkAsPaid,
 }: ReservationTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [sortColumn, setSortColumn] = useState<'studio' | 'competition' | 'requested' | 'routines' | 'status' | 'lastAction'>('studio');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {
@@ -83,13 +86,50 @@ export function ReservationTable({
     });
   };
 
+  const handleSort = (column: typeof sortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   };
 
-  if (reservations.length === 0) {
+  // Sort reservations
+  const sortedReservations = [...reservations].sort((a, b) => {
+    let comparison = 0;
+
+    switch (sortColumn) {
+      case 'studio':
+        comparison = (a.studioName || '').localeCompare(b.studioName || '');
+        break;
+      case 'competition':
+        comparison = (a.competitionName || '').localeCompare(b.competitionName || '');
+        break;
+      case 'requested':
+        comparison = (a.spacesRequested || 0) - (b.spacesRequested || 0);
+        break;
+      case 'routines':
+        comparison = (a.entryCount || 0) - (b.entryCount || 0);
+        break;
+      case 'status':
+        comparison = (a.status || '').localeCompare(b.status || '');
+        break;
+      case 'lastAction':
+        comparison = new Date(a.lastActionDate || 0).getTime() - new Date(b.lastActionDate || 0).getTime();
+        break;
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  if (sortedReservations.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-16 text-center">
         <div className="text-6xl mb-4">📭</div>
@@ -106,17 +146,59 @@ export function ReservationTable({
           <thead className="bg-black/30">
             <tr>
               <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase w-10"></th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Studio</th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Competition</th>
-              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Requested</th>
-              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Routines</th>
-              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Status</th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Last Action</th>
+              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('studio')}>
+                <div className="flex items-center gap-1">
+                  Studio
+                  {sortColumn === 'studio' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('competition')}>
+                <div className="flex items-center gap-1">
+                  Competition
+                  {sortColumn === 'competition' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('requested')}>
+                <div className="flex items-center justify-center gap-1">
+                  Requested
+                  {sortColumn === 'requested' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('routines')}>
+                <div className="flex items-center justify-center gap-1">
+                  Routines
+                  {sortColumn === 'routines' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('status')}>
+                <div className="flex items-center justify-center gap-1">
+                  Status
+                  {sortColumn === 'status' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('lastAction')}>
+                <div className="flex items-center gap-1">
+                  Last Action
+                  {sortColumn === 'lastAction' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
               <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reservation) => {
+            {sortedReservations.map((reservation) => {
               const isExpanded = expandedRows.has(reservation.id);
               const isPending = reservation.status === 'pending';
               const isSummarized = reservation.status === 'summarized';
@@ -192,13 +274,14 @@ export function ReservationTable({
                       )}
                       {hasDraftInvoice && (
                         <>
-                          <Button
-                            onClick={() => window.open(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`, '_blank')}
-                            variant="secondary"
-                            className="text-sm px-3 py-1"
-                          >
-                            View Invoice
-                          </Button>
+                          <Link href={`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`}>
+                            <Button
+                              variant="secondary"
+                              className="text-sm px-3 py-1"
+                            >
+                              View Invoice
+                            </Button>
+                          </Link>
                           <Button
                             onClick={() => onSendInvoice(reservation.invoiceId!)}
                             variant="primary"
@@ -210,13 +293,14 @@ export function ReservationTable({
                       )}
                       {hasSentInvoice && !reservation.invoicePaid && (
                         <>
-                          <Button
-                            onClick={() => window.open(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`, '_blank')}
-                            variant="secondary"
-                            className="text-sm px-3 py-1"
-                          >
-                            View Invoice
-                          </Button>
+                          <Link href={`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`}>
+                            <Button
+                              variant="secondary"
+                              className="text-sm px-3 py-1"
+                            >
+                              View Invoice
+                            </Button>
+                          </Link>
                           <Button
                             onClick={() => onMarkAsPaid(
                               reservation.invoiceId!,
