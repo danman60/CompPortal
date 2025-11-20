@@ -754,6 +754,7 @@ export const entryRouter = router({
           },
           orderBy: [
             { entry_number: 'asc' },
+            { title: 'asc' },
           ],
           take: limit,
           skip: offset,

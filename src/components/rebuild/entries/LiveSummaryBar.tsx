@@ -124,7 +124,7 @@ export function LiveSummaryBar({
                   variant="primary"
                   className="text-lg px-6 py-3"
                 >
-                  📤 Submit Summary
+                  📤 View/Submit Summary
                 </Button>
               )}
             </div>

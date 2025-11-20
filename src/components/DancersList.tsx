@@ -16,7 +16,7 @@ import { calculateAge } from '@/lib/ageGroupCalculator';
 export default function DancersList() {
   const { data, isLoading, error, refetch, dataUpdatedAt } = trpc.dancer.getAll.useQuery({ limit: 1000 });
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedDancers, setSelectedDancers] = useState<Set<string>>(new Set());
   const [timeAgo, setTimeAgo] = useState<string>('');
 
