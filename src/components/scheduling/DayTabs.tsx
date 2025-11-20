@@ -91,10 +91,10 @@ export function DayTabs({
 
   return (
     <div className="mb-4">
-      {/* Container with reset buttons inline */}
-      <div className="flex items-center justify-between gap-3 mb-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
-        {/* Day Tabs */}
-        <div className="flex gap-2 overflow-x-auto flex-1">
+      {/* Day Tabs + Buttons Row */}
+      <div className="flex items-start gap-3 mb-3">
+        {/* Day Tabs with compact background */}
+        <div className="flex gap-2 overflow-x-auto bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
           {days.map((day) => {
             const isActive = activeDay === day.date;
             const isEditing = editingDay === day.date;
@@ -192,53 +192,48 @@ export function DayTabs({
             </div>
           );
         })}
-      </div>
+        </div>
 
-      {/* Block Creation + Reset Buttons */}
-      <div className="flex items-center gap-2">
-        {/* Block Buttons (Compact) */}
-        {onCreateBlock && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => onCreateBlock('award')}
-              className="px-2 py-1 text-xs font-medium text-amber-300 bg-amber-900/30 border border-amber-500/50 rounded-lg hover:bg-amber-900/50 hover:border-amber-500 transition-colors whitespace-nowrap"
-              title="Add award ceremony block"
-            >
-              🏆 +Award
-            </button>
-            <button
-              onClick={() => onCreateBlock('break')}
-              className="px-2 py-1 text-xs font-medium text-cyan-300 bg-cyan-900/30 border border-cyan-500/50 rounded-lg hover:bg-cyan-900/50 hover:border-cyan-500 transition-colors whitespace-nowrap"
-              title="Add break block"
-            >
-              ☕ +Break
-            </button>
-          </div>
-        )}
+        {/* Block Creation + Reset Buttons beside day tabs */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Block Buttons (Compact) */}
+          {onCreateBlock && (
+            <>
+              <button
+                onClick={() => onCreateBlock('award')}
+                className="px-3 py-2 text-xs font-medium text-amber-300 bg-amber-900/30 border border-amber-500/50 rounded-lg hover:bg-amber-900/50 hover:border-amber-500 transition-colors whitespace-nowrap"
+                title="Add award ceremony block"
+              >
+                🏆 +Award
+              </button>
+              <button
+                onClick={() => onCreateBlock('break')}
+                className="px-3 py-2 text-xs font-medium text-cyan-300 bg-cyan-900/30 border border-cyan-500/50 rounded-lg hover:bg-cyan-900/50 hover:border-cyan-500 transition-colors whitespace-nowrap"
+              >
+                ☕ +Break
+              </button>
+            </>
+          )}
 
-        {/* Reset Buttons */}
-        {(onResetDay || onResetAll) && (
-          <div className="flex items-center gap-2 ml-auto">
-            {onResetDay && (
-              <button
-                onClick={onResetDay}
-                className="px-3 py-1.5 text-xs font-medium text-red-300 bg-red-900/30 border border-red-500/50 rounded-lg hover:bg-red-900/50 hover:border-red-500 transition-colors"
-              >
-                🔄 Reset This Day
-              </button>
-            )}
-            {onResetAll && (
-              <button
-                onClick={onResetAll}
-                className="px-3 py-1.5 text-xs font-medium text-red-200 bg-red-900/40 border border-red-500/60 rounded-lg hover:bg-red-900/60 hover:border-red-500 transition-colors"
-              >
-                🗑️ Reset Entire Schedule
-              </button>
-            )}
-          </div>
-        )}
+          {/* Reset Buttons */}
+          {onResetDay && (
+            <button
+              onClick={onResetDay}
+              className="px-3 py-2 text-xs font-medium text-red-300 bg-red-900/30 border border-red-500/50 rounded-lg hover:bg-red-900/50 hover:border-red-500 transition-colors whitespace-nowrap"
+            >
+              🔄 Reset Day
+            </button>
+          )}
+          {onResetAll && (
+            <button
+              onClick={onResetAll}
+              className="px-3 py-2 text-xs font-medium text-red-200 bg-red-900/40 border border-red-500/60 rounded-lg hover:bg-red-900/60 hover:border-red-500 transition-colors whitespace-nowrap"
+            >
+              🗑️ Reset All
+            </button>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }

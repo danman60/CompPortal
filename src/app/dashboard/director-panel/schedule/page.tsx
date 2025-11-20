@@ -372,17 +372,6 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {/* Day Tabs */}
-      <div className="px-6 py-4 bg-purple-900/30 border-b border-purple-500/20">
-        <DayTabs
-          days={competitionDates}
-          activeDay={selectedDate}
-          onDayChange={(date) => setSelectedDate(date)}
-          competitionId={TEST_COMPETITION_ID}
-          tenantId={TEST_TENANT_ID}
-        />
-      </div>
-
       {/* Main Content - Two Panel Layout */}
       <div className="px-6">
         <DragDropProvider
@@ -408,34 +397,42 @@ export default function SchedulePage() {
               totalRoutines={routines?.length || 0}
               filteredRoutines={unscheduledRoutinesFiltered.length}
             />
-
-            {/* Schedule Block Templates */}
-            <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/20">
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <span>📋</span>
-                <span>Schedule Blocks</span>
-              </h3>
-              <div className="space-y-2">
-                <DraggableBlockTemplate
-                  type="award"
-                  onClick={() => {
-                    setBlockType('award');
-                    setShowBlockModal(true);
-                  }}
-                />
-                <DraggableBlockTemplate
-                  type="break"
-                  onClick={() => {
-                    setBlockType('break');
-                    setShowBlockModal(true);
-                  }}
-                />
-              </div>
-            </div>
           </div>
 
           {/* Right Panel - Scheduled Routines (67%) */}
           <div className="col-span-2 space-y-4">
+            {/* Day Tabs + Schedule Block Buttons */}
+            <div className="py-2">
+              <DayTabs
+                days={competitionDates}
+                activeDay={selectedDate}
+                onDayChange={(date) => setSelectedDate(date)}
+                competitionId={TEST_COMPETITION_ID}
+                tenantId={TEST_TENANT_ID}
+                onCreateBlock={(type) => {
+                  setBlockType(type);
+                  setShowBlockModal(true);
+                }}
+                onResetDay={() => {
+                  if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
+                    resetDay.mutate({
+                      tenantId: TEST_TENANT_ID,
+                      competitionId: TEST_COMPETITION_ID,
+                      date: selectedDate,
+                    });
+                  }
+                }}
+                onResetAll={() => {
+                  if (confirm('Reset ALL days? This will unschedule all routines for the entire competition.')) {
+                    resetCompetition.mutate({
+                      tenantId: TEST_TENANT_ID,
+                      competitionId: TEST_COMPETITION_ID,
+                    });
+                  }
+                }}
+              />
+            </div>
+
             <ScheduleTable
               routines={scheduledRoutines as any}
               allRoutines={(routines || []).map(r => ({

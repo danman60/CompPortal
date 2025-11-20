@@ -581,6 +581,18 @@ function FilterDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggleOpen]);
 
+  const [buttonRect, setButtonRect] = React.useState<DOMRect | null>(null);
+
+  // Update button position when dropdown opens
+  React.useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const button = dropdownRef.current.querySelector('button');
+      if (button) {
+        setButtonRect(button.getBoundingClientRect());
+      }
+    }
+  }, [isOpen]);
+
   return (
     <div ref={dropdownRef} className="relative flex-shrink-0">
       <button
@@ -594,8 +606,14 @@ function FilterDropdown({
         {label}{selectedCount > 0 && ` (${selectedCount})`} ▼
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 mt-1 bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto">
+      {isOpen && buttonRect && (
+        <div
+          className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto"
+          style={{
+            top: `${buttonRect.bottom + 4}px`,
+            left: `${buttonRect.left}px`,
+          }}
+        >
           {options.map((option) => (
             <button
               key={option.id}
