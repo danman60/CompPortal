@@ -14,7 +14,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
-  isCompetitionDirector?: boolean; // If true, show Edit Spaces and Add Deposit buttons
+  isCompetitionDirector?: boolean; // If true, show Edit Spaces and Edit Deposit buttons
 }
 
 export default function ReservationsList({ isStudioDirector = false, isCompetitionDirector = false }: ReservationsListProps) {
@@ -54,7 +54,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     reason: string;
   } | null>(null);
 
-  // Add Deposit modal state (CD feature)
+  // Edit Deposit modal state (CD feature)
   const [depositModal, setDepositModal] = useState<{
     isOpen: boolean;
     reservationId: string;
@@ -218,7 +218,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     },
   });
 
-  // Add Deposit mutation (CD feature)
+  // Edit Deposit mutation (CD feature)
   const recordDepositMutation = trpc.reservation.recordDeposit.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
@@ -347,14 +347,14 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     });
   };
 
-  // CD Feature: Add Deposit handler
+  // CD Feature: Edit Deposit handler
   const handleRecordDeposit = (reservation: any) => {
     setDepositModal({
       isOpen: true,
       reservationId: reservation.id,
       studioName: reservation.studios?.name || '',
       competitionName: reservation.competitions?.name || '',
-      depositAmount: '',
+      depositAmount: reservation.deposit_amount ? String(reservation.deposit_amount) : '',
       paymentMethod: 'etransfer',
       paymentDate: new Date().toISOString().split('T')[0],
       notes: '',
@@ -1097,7 +1097,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                           </div>
                         </div>
 
-                        {/* CD Feature: Edit Spaces & Add Deposit buttons */}
+                        {/* CD Feature: Edit Spaces & Edit Deposit buttons */}
                         {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
                           <div className="space-y-3">
                             <button
@@ -1106,12 +1106,15 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                             >
                               ✏️ Edit Spaces
                             </button>
-                            <button
-                              onClick={() => handleRecordDeposit(reservation)}
-                              className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
-                            >
-                              💰 Add Deposit
-                            </button>
+                            {/* Hide Edit Deposit button if invoice has been SENT */}
+                            {(!reservation.invoices || reservation.invoices.length === 0 || reservation.invoices[0]?.status !== 'SENT') && (
+                              <button
+                                onClick={() => handleRecordDeposit(reservation)}
+                                className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                              >
+                                ✏️ Edit Deposit
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1201,12 +1204,15 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                               >
                                 Edit
                               </button>
-                              <button
-                                onClick={() => handleRecordDeposit(reservation)}
-                                className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 text-sm font-semibold rounded transition-all"
-                              >
-                                Deposit
-                              </button>
+                              {/* Hide Edit Deposit button if invoice has been SENT */}
+                              {(!reservation.invoices || reservation.invoices.length === 0 || reservation.invoices[0]?.status !== 'SENT') && (
+                                <button
+                                  onClick={() => handleRecordDeposit(reservation)}
+                                  className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 text-sm font-semibold rounded transition-all"
+                                >
+                                  Edit Deposit
+                                </button>
+                              )}
                             </div>
                           ) : (
                             <div className="text-gray-400 text-sm text-center">-</div>
@@ -1453,14 +1459,14 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
         </div>
       )}
 
-      {/* Add Deposit Modal (CD Feature) */}
+      {/* Edit Deposit Modal (CD Feature) */}
       {depositModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">💰 Add Deposit</h3>
+            <h3 className="text-xl font-bold text-white mb-4">✏️ Edit Deposit</h3>
 
             <p className="text-gray-300 mb-4">
-              Adding deposit for <span className="font-semibold text-white">{depositModal.studioName}</span>
+              Editing deposit for <span className="font-semibold text-white">{depositModal.studioName}</span>
             </p>
 
             <div className="bg-white/5 rounded-lg p-4 mb-4 space-y-2">
@@ -1561,7 +1567,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                 disabled={!depositModal.depositAmount || recordDepositMutation.isPending}
                 className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-green-500/50 disabled:to-green-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
               >
-                {recordDepositMutation.isPending ? '⚙️ Adding...' : '✅ Add Deposit'}
+                {recordDepositMutation.isPending ? '⚙️ Saving...' : '✅ Save Deposit'}
               </button>
             </div>
           </div>

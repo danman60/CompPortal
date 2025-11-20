@@ -181,6 +181,16 @@ export const reservationRouter = router({
                 name: true,
               },
             },
+            invoices: {
+              select: {
+                id: true,
+                status: true,
+              },
+              orderBy: {
+                created_at: 'desc',
+              },
+              take: 1,
+            },
             _count: {
               select: {
                 competition_entries: true,

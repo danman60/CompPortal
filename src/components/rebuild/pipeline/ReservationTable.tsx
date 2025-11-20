@@ -193,7 +193,7 @@ export function ReservationTable({
                       {hasDraftInvoice && (
                         <>
                           <Button
-                            onClick={() => window.open(`/dashboard/invoices/${reservation.invoiceId}`, '_blank')}
+                            onClick={() => window.open(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`, '_blank')}
                             variant="secondary"
                             className="text-sm px-3 py-1"
                           >
@@ -211,7 +211,7 @@ export function ReservationTable({
                       {hasSentInvoice && !reservation.invoicePaid && (
                         <>
                           <Button
-                            onClick={() => window.open(`/dashboard/invoices/${reservation.invoiceId}`, '_blank')}
+                            onClick={() => window.open(`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`, '_blank')}
                             variant="secondary"
                             className="text-sm px-3 py-1"
                           >
