@@ -490,17 +490,17 @@ export const invoiceRouter = router({
       const competitionMap = new Map(competitions.map(c => [c.id, c]));
       const reservationMap = new Map<string, typeof reservations[0]>();
       reservations.forEach(r => {
-        reservationMap.set(`${r.studio_id}-${r.competition_id}`, r);
+        reservationMap.set(`${r.studio_id}::${r.competition_id}`, r);
       });
       const invoiceMap = new Map<string, typeof invoices[0]>();
       invoices.forEach(inv => {
-        invoiceMap.set(`${inv.studio_id}-${inv.competition_id}`, inv);
+        invoiceMap.set(`${inv.studio_id}::${inv.competition_id}`, inv);
       });
 
       // Create entry group map for fast lookup
       const entryGroupMap = new Map<string, typeof entryGroups[0]>();
       entryGroups.forEach(group => {
-        entryGroupMap.set(`${group.studio_id}-${group.competition_id}`, group);
+        entryGroupMap.set(`${group.studio_id}::${group.competition_id}`, group);
       });
 
       // DEBUG: Log data for troubleshooting
@@ -512,20 +512,20 @@ export const invoiceRouter = router({
         studioIds,
         competitionIds,
         allCombinationsCount: new Set([
-          ...entryGroups.map(g => `${g.studio_id}-${g.competition_id}`),
-          ...invoices.map(inv => `${inv.studio_id}-${inv.competition_id}`)
+          ...entryGroups.map(g => `${g.studio_id}::${g.competition_id}`),
+          ...invoices.map(inv => `${inv.studio_id}::${inv.competition_id}`)
         ]).size,
       });
 
       // Get all unique studio+competition combinations from BOTH invoices and entries
       const allCombinations = new Set<string>();
-      entryGroups.forEach(group => allCombinations.add(`${group.studio_id}-${group.competition_id}`));
-      invoices.forEach(inv => allCombinations.add(`${inv.studio_id}-${inv.competition_id}`));
+      entryGroups.forEach(group => allCombinations.add(`${group.studio_id}::${group.competition_id}`));
+      invoices.forEach(inv => allCombinations.add(`${inv.studio_id}::${inv.competition_id}`));
 
       // Build invoices from all combinations (entries + invoices)
       const summaries = Array.from(allCombinations)
         .map((key) => {
-          const [studio_id, competition_id] = key.split('-');
+          const [studio_id, competition_id] = key.split('::');
           const group = entryGroupMap.get(key);
           const studio = studioMap.get(studio_id!);
           const competition = competitionMap.get(competition_id!);
