@@ -101,17 +101,19 @@ export function AutoCalculatedSection({
       return dancerClassifications[0];
     }
 
-    // Non-Solo: AVERAGE classification (like age calculation)
+    // Non-Solo: AVERAGE classification (like age calculation - round down)
     const totalSkillLevel = dancerClassifications.reduce(
       (sum, cls) => sum + (cls.skill_level ?? 0),
       0
     );
     const avgSkillLevel = Math.floor(totalSkillLevel / dancerClassifications.length);
 
-    // Find classification closest to average (round down)
+    // Find classification with skill_level closest to average without going over
+    // Sort by skill level ascending, filter to <= average, take the highest
     const avgClassification = classifications
       .filter(c => (c.skill_level ?? 0) <= avgSkillLevel)
-      .sort((a, b) => (b.skill_level ?? 0) - (a.skill_level ?? 0))[0];
+      .sort((a, b) => (a.skill_level ?? 0) - (b.skill_level ?? 0))
+      .pop(); // Take last (highest skill within range)
 
     return avgClassification || dancerClassifications[0];
   }, [selectedDancers, classifications]);
