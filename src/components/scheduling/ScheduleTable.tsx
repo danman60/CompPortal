@@ -165,13 +165,8 @@ function SortableRoutineRow({
         {performanceTime}
       </td>
 
-      {/* Duration - 40px */}
-      <td className="px-1 py-1 text-xs text-white/80 text-center whitespace-nowrap" style={{ width: '40px' }}>
-        {routine.duration}m
-      </td>
-
-      {/* Routine Title - 120px */}
-      <td className="px-1 py-1 text-xs font-medium text-white" style={{ width: '120px' }}>
+      {/* Routine Title - 100px */}
+      <td className="px-1 py-1 text-xs font-medium text-white" style={{ width: '100px' }}>
         <div className="flex items-center gap-1 truncate-cell">
           <span className="truncate" title={routine.title}>{routine.title}</span>
           {isLastInOveralls && (
@@ -185,8 +180,8 @@ function SortableRoutineRow({
         </div>
       </td>
 
-      {/* Studio - 40px */}
-      <td className="px-1 py-1 text-xs text-white/80 text-center" style={{ width: '40px' }}>
+      {/* Studio - 35px */}
+      <td className="px-1 py-1 text-xs text-white/80 text-center" style={{ width: '35px' }}>
         {studioDisplay}
       </td>
 
@@ -199,14 +194,19 @@ function SortableRoutineRow({
         </span>
       </td>
 
-      {/* Size - 60px */}
-      <td className="px-1 py-1 text-xs text-white/80" style={{ width: '60px' }}>
+      {/* Size - 65px */}
+      <td className="px-1 py-1 text-xs text-white/80" style={{ width: '65px' }}>
         <div className="truncate-cell">{routine.entrySizeName}</div>
       </td>
 
       {/* Routine Age - 40px */}
       <td className="px-1 py-1 text-xs text-white/80 text-center" style={{ width: '40px' }}>
         {routine.routineAge ?? '-'}
+      </td>
+
+      {/* Duration - 60px */}
+      <td className="px-1 py-1 text-xs text-white/80 text-center whitespace-nowrap" style={{ width: '60px' }}>
+        {routine.duration}m
       </td>
 
       {/* Conflict indicator */}
@@ -461,23 +461,23 @@ export function ScheduleTable({
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '65px' }}>
                 Time
               </th>
-              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '40px' }}>
-                Dur
-              </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '120px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '100px' }}>
                 Routine
               </th>
-              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '40px' }}>
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '35px' }}>
                 Std
               </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '80px' }}>
                 Class
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '60px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '65px' }}>
                 Size
               </th>
               <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '40px' }}>
                 Age
+              </th>
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '60px' }}>
+                Dur
               </th>
             </tr>
           </thead>

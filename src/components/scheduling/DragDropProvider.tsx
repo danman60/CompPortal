@@ -85,8 +85,8 @@ export function DragDropProvider({
       const overElement = document.querySelector(`[data-routine-id="${over.id}"]`);
       if (overElement) {
         const rect = overElement.getBoundingClientRect();
-        // Position the line at the top of the hovered row
-        setDropIndicatorTop(rect.top + window.scrollY);
+        // Position the line at the top of the hovered row (viewport-relative for position:fixed)
+        setDropIndicatorTop(rect.top);
       }
     } else {
       setShowDropIndicator(false);
@@ -106,9 +106,9 @@ export function DragDropProvider({
         isScheduled: true,
       };
 
-      // Calculate next time (add duration + 5min buffer)
+      // Calculate next time (add duration, NO buffer per spec)
       const [hours, minutes, seconds] = currentTime.split(':').map(Number);
-      const totalMinutes = hours * 60 + minutes + (routine.duration || 3) + 5;
+      const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
       const nextHours = Math.floor(totalMinutes / 60);
       const nextMinutes = totalMinutes % 60;
       currentTime = `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}:00`;

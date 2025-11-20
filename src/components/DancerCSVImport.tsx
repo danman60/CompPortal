@@ -130,12 +130,30 @@ export default function DancerCSVImport() {
 
     if (data.length < 2) return []; // Need header + at least 1 row
 
-    const headers = data[0].map((h: any) => String(h || '').trim()).filter((h: string) => h !== '');
-    const { mapping } = mapCSVHeaders(headers, DANCER_CSV_FIELDS, 0.5); // Lower threshold for max fuzziness
+    // Find the header row by detecting which row has the most valid field matches
+    // This handles Excel files with title rows (e.g., "GLOW DANCERS" before actual headers)
+    let headerRowIndex = 0;
+    let bestMapping: Record<string, string> = {};
+    let bestMatchCount = 0;
+
+    for (let i = 0; i < Math.min(5, data.length); i++) {
+      const candidateHeaders = data[i].map((h: any) => String(h || '').trim()).filter((h: string) => h !== '');
+      const { mapping } = mapCSVHeaders(candidateHeaders, DANCER_CSV_FIELDS, 0.5);
+      const matchCount = Object.keys(mapping).length;
+
+      if (matchCount > bestMatchCount) {
+        headerRowIndex = i;
+        bestMapping = mapping;
+        bestMatchCount = matchCount;
+      }
+    }
+
+    const headers = data[headerRowIndex].map((h: any) => String(h || '').trim()).filter((h: string) => h !== '');
+    const mapping = bestMapping;
 
     const parsed: ParsedDancer[] = [];
 
-    for (let i = 1; i < data.length; i++) {
+    for (let i = headerRowIndex + 1; i < data.length; i++) {
       const row = data[i];
       if (!row || row.length === 0) continue;
 
