@@ -579,7 +579,7 @@ export const invoiceRouter = router({
             } : null,
           };
         })
-        .filter((inv): inv is NonNullable<typeof inv> => inv !== null)
+        .filter((inv): inv is NonNullable<typeof inv> => inv !== null && inv.hasInvoice)
         .sort((a, b) => {
           // Sort by year descending first
           const yearDiff = (b.competitionYear || 0) - (a.competitionYear || 0);
