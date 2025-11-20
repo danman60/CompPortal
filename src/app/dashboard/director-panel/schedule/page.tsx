@@ -66,10 +66,10 @@ export default function SchedulePage() {
 
   // Schedule mutation (save draft to database)
   const scheduleMutation = trpc.scheduling.schedule.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Schedule saved successfully');
-      refetch();
-      setDraftSchedule([]); // Clear draft after save
+      await refetch(); // Wait for refetch to complete before clearing draft
+      setDraftSchedule([]); // Clear draft after new data loads
     },
     onError: (error) => {
       toast.error(`Failed to save schedule: ${error.message}`);
@@ -277,11 +277,50 @@ export default function SchedulePage() {
     ...draftSchedule,
   ];
 
-  // Filter unscheduled routines for display (exclude draft scheduled routines)
+  // Filter unscheduled routines for display (exclude draft scheduled routines + apply filters)
   const unscheduledRoutinesFiltered = useMemo(() => {
     const draftIds = new Set(draftSchedule.map(d => d.id));
-    return unscheduledRoutines.filter(r => !draftIds.has(r.id));
-  }, [unscheduledRoutines, draftSchedule]);
+
+    return unscheduledRoutines.filter(r => {
+      // Exclude draft scheduled
+      if (draftIds.has(r.id)) return false;
+
+      // Apply classification filter
+      if (filters.classifications.length > 0 && !filters.classifications.includes(r.classificationId)) {
+        return false;
+      }
+
+      // Apply age group filter
+      if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(r.ageGroupId)) {
+        return false;
+      }
+
+      // Apply genre (category) filter
+      if (filters.genres.length > 0 && !filters.genres.includes(r.categoryId)) {
+        return false;
+      }
+
+      // Apply group size (entry size) filter
+      if (filters.groupSizes.length > 0 && !filters.groupSizes.includes(r.entrySizeId)) {
+        return false;
+      }
+
+      // Apply studio filter
+      if (filters.studios.length > 0 && !filters.studios.includes(r.studioId)) {
+        return false;
+      }
+
+      // Apply routine age filter (if routineAge is not null)
+      if (filters.routineAges.length > 0 && r.routineAge) {
+        const ageStr = String(r.routineAge);
+        if (!filters.routineAges.includes(ageStr)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [unscheduledRoutines, draftSchedule, filters]);
 
   // Competition dates for day tabs
   const competitionDates = [

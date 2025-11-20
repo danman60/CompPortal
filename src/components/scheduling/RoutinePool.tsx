@@ -307,7 +307,7 @@ export function RoutinePool({
             {/* Classification Filter */}
             {classifications.length > 0 && (
               <FilterDropdown
-                label="Classification"
+                label="Class"
                 options={classifications}
                 selectedIds={filters.classifications}
                 onToggle={(id) => {
@@ -464,8 +464,22 @@ export function RoutinePool({
             <table className="w-full" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '30px' }}>
-                    ✓
+                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '30px' }}>
+                    {onSelectAll && onDeselectAll && (
+                      <input
+                        type="checkbox"
+                        checked={selectedRoutineIds.size > 0 && selectedRoutineIds.size === routines.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            onSelectAll();
+                          } else {
+                            onDeselectAll();
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                        title="Select all"
+                      />
+                    )}
                   </th>
                   <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '100px' }}>
                     Routine

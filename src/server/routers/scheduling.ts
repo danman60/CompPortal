@@ -1392,7 +1392,6 @@ export const schedulingRouter = router({
       blockType: z.enum(['award', 'break']),
       title: z.string(),
       durationMinutes: z.number(),
-      metadata: z.any().optional(),
     }))
     .mutation(async ({ input }) => {
       const block = await prisma.schedule_blocks.create({
@@ -1402,7 +1401,6 @@ export const schedulingRouter = router({
           block_type: input.blockType,
           title: input.title,
           duration_minutes: input.durationMinutes,
-          metadata: input.metadata || {},
         },
       });
 
