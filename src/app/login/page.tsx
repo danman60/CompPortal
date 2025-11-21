@@ -116,12 +116,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-gray-300 text-sm">
-            Don't have an account?{' '}
-            <Link href="/signup" className="text-purple-400 hover:text-purple-300">
-              Sign up
-            </Link>
-          </div>
+          {/* Signup disabled - studios must use claim links from Competition Directors */}
         </div>
 
         <div className="mt-4 text-center space-y-2">

@@ -50,6 +50,7 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
     hasActiveReservations: boolean;
     reservationCount: number;
     entryCount: number;
+    confirmText: string;
   } | null>(null);
   const [editData, setEditData] = useState({
     name: '',
@@ -210,11 +211,16 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
       hasActiveReservations,
       reservationCount: studio._count?.reservations || 0,
       entryCount: studio._count?.competition_entries || 0,
+      confirmText: '',
     });
   };
 
   const confirmDeleteStudio = () => {
     if (!deleteConfirmModal) return;
+    if (deleteConfirmModal.confirmText !== deleteConfirmModal.studioName) {
+      toast.error('Studio name does not match');
+      return;
+    }
     deleteStudioMutation.mutate({ id: deleteConfirmModal.studioId });
   };
 
@@ -1393,18 +1399,18 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
       {deleteConfirmModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-white mb-2">Delete Studio</h3>
+            <h3 className="text-2xl font-bold text-white mb-2">⚠️ Permanent Studio Deletion</h3>
             <p className="text-gray-400 mb-6">
-              Are you sure you want to delete <span className="text-white font-semibold">{deleteConfirmModal.studioName}</span>?
+              This will <span className="text-red-400 font-semibold">permanently delete</span> <span className="text-white font-semibold">{deleteConfirmModal.studioName}</span> and all associated data.
             </p>
 
             {/* Warning if has active data */}
             {(deleteConfirmModal.hasActiveReservations || deleteConfirmModal.entryCount > 0) && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
                 <div className="flex items-start gap-2">
                   <span className="text-yellow-500 text-xl">⚠</span>
                   <div>
-                    <p className="text-yellow-400 font-semibold mb-2">This studio has active data:</p>
+                    <p className="text-yellow-400 font-semibold mb-2">This studio has active data that will be deleted:</p>
                     <ul className="text-yellow-300 text-sm space-y-1">
                       {deleteConfirmModal.reservationCount > 0 && (
                         <li>{deleteConfirmModal.reservationCount} reservation(s) - spaces will be refunded</li>
@@ -1412,25 +1418,48 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
                       {deleteConfirmModal.entryCount > 0 && (
                         <li>{deleteConfirmModal.entryCount} competition entry(ies)</li>
                       )}
+                      <li>All dancers and their data</li>
                     </ul>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-2">
-                <span className="text-blue-400 text-xl">ℹ</span>
-                <div className="text-blue-300 text-sm">
-                  <p className="font-semibold mb-1">This is a soft delete:</p>
+                <span className="text-red-400 text-xl">🚨</span>
+                <div className="text-red-300 text-sm">
+                  <p className="font-semibold mb-1">This is a HARD DELETE:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>Studio marked as deleted (not permanently removed)</li>
-                    <li>All approved reservation spaces refunded to competition</li>
-                    <li>All reservations cancelled</li>
-                    <li>Changes logged in activity log</li>
+                    <li>Studio permanently removed from database</li>
+                    <li>All dancers deleted</li>
+                    <li>All competition entries deleted</li>
+                    <li>All reservations deleted</li>
+                    <li>Approved spaces refunded to competition</li>
+                    <li className="font-semibold">THIS CANNOT BE UNDONE</li>
                   </ul>
                 </div>
               </div>
+            </div>
+
+            {/* Confirmation Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Type the studio name to confirm: <span className="text-white font-mono">{deleteConfirmModal.studioName}</span>
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmModal.confirmText}
+                onChange={(e) =>
+                  setDeleteConfirmModal({
+                    ...deleteConfirmModal,
+                    confirmText: e.target.value,
+                  })
+                }
+                placeholder="Type studio name here"
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                autoFocus
+              />
             </div>
 
             {/* Action Buttons */}
@@ -1443,10 +1472,10 @@ export default function StudiosList({ studioId, isCompetitionDirector = false }:
               </button>
               <button
                 onClick={confirmDeleteStudio}
-                disabled={deleteStudioMutation.isPending}
-                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-red-500/50 disabled:to-red-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
+                disabled={deleteStudioMutation.isPending || deleteConfirmModal.confirmText !== deleteConfirmModal.studioName}
+                className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-red-500/50 disabled:to-red-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {deleteStudioMutation.isPending ? 'Deleting...' : 'Delete Studio'}
+                {deleteStudioMutation.isPending ? 'Deleting...' : 'Permanently Delete Studio'}
               </button>
             </div>
           </div>

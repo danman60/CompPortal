@@ -809,28 +809,7 @@ export const studioRouter = router({
       let totalRefunded = 0;
 
       await prisma.$transaction(async (tx) => {
-        // Soft delete: mark studio as deleted
-        await tx.studios.update({
-          where: { id: input.id },
-          data: {
-            status: 'deleted',
-            updated_at: new Date(),
-          },
-        });
-
-        // Cancel active reservations and refund spaces
-        await tx.reservations.updateMany({
-          where: {
-            studio_id: input.id,
-            status: { in: ['pending', 'approved'] },
-          },
-          data: {
-            status: 'cancelled',
-            internal_notes: 'Studio deleted - spaces refunded to competition',
-          },
-        });
-
-        // Refund approved reservation spaces back to competitions
+        // Refund approved reservation spaces back to competitions BEFORE deleting
         for (const reservation of studio.reservations) {
           const spacesToRefund = reservation.spaces_confirmed || 0;
           if (spacesToRefund > 0) {
@@ -851,7 +830,7 @@ export const studioRouter = router({
                 competition_id: reservation.competition_id,
                 reservation_id: reservation.id,
                 change_amount: spacesToRefund, // Positive = refund
-                reason: 'reservation_cancellation',
+                reason: 'studio_hard_delete',
                 created_by: ctx.userId,
               },
             });
@@ -859,6 +838,27 @@ export const studioRouter = router({
             totalRefunded += spacesToRefund;
           }
         }
+
+        // Hard delete: CASCADE delete all related records
+        // Delete competition entries (references studio_id)
+        await tx.competition_entries.deleteMany({
+          where: { studio_id: input.id },
+        });
+
+        // Delete dancers (references studio_id)
+        await tx.dancers.deleteMany({
+          where: { studio_id: input.id },
+        });
+
+        // Delete reservations (references studio_id)
+        await tx.reservations.deleteMany({
+          where: { studio_id: input.id },
+        });
+
+        // Finally, hard delete the studio itself
+        await tx.studios.delete({
+          where: { id: input.id },
+        });
       });
 
       // Activity logging (non-blocking)
