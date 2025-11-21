@@ -25,7 +25,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ViewMode } from '@/components/ScheduleToolbar';
-import { TrophyTooltip } from './TrophyTooltip';
 
 interface ScheduleTableProps {
   routines: Routine[];
@@ -172,16 +171,15 @@ function SortableRoutineRow({
           <span className="truncate" title={routine.title}>{routine.title}</span>
         </div>
 
-        {/* Trophy positioned absolute, OUTSIDE document flow to prevent layout shift */}
+        {/* Trophy - simple tooltip */}
         {isLastInOveralls && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10 pointer-events-auto">
-            <TrophyTooltip
-              routineId={routine.id}
-              entrySizeName={routine.entrySizeName}
-              ageGroupName={routine.ageGroupName}
-              classificationName={routine.classificationName}
-            />
-          </div>
+          <span
+            className="absolute right-1 top-1/2 -translate-y-1/2 text-yellow-400 cursor-help text-xs"
+            title={`Last routine for ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}
+            style={{ pointerEvents: 'auto' }}
+          >
+            🏆
+          </span>
         )}
       </td>
 
