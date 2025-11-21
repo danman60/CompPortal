@@ -25,6 +25,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ViewMode } from '@/components/ScheduleToolbar';
+import { TrophyTooltip } from './TrophyTooltip';
 
 interface ScheduleTableProps {
   routines: Routine[];
@@ -166,18 +167,22 @@ function SortableRoutineRow({
       </td>
 
       {/* Routine Title - 100px */}
-      <td className="px-1 py-1 text-xs font-medium text-white" style={{ width: '100px' }}>
-        <div className="flex items-center gap-1 truncate-cell">
+      <td className="px-1 py-1 text-xs font-medium text-white relative" style={{ width: '100px' }}>
+        <div className="truncate-cell">
           <span className="truncate" title={routine.title}>{routine.title}</span>
-          {isLastInOveralls && (
-            <span
-              className="text-yellow-400 text-sm cursor-help flex-shrink-0"
-              title={`Last routine for ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}
-            >
-              🏆
-            </span>
-          )}
         </div>
+
+        {/* Trophy positioned absolute, OUTSIDE document flow to prevent layout shift */}
+        {isLastInOveralls && (
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10 pointer-events-auto">
+            <TrophyTooltip
+              routineId={routine.id}
+              entrySizeName={routine.entrySizeName}
+              ageGroupName={routine.ageGroupName}
+              classificationName={routine.classificationName}
+            />
+          </div>
+        )}
       </td>
 
       {/* Studio - 35px */}
