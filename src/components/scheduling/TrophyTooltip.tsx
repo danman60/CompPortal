@@ -44,7 +44,8 @@ export function TrophyTooltip({
   return (
     <>
       <span
-        className="text-yellow-400 text-sm cursor-help"
+        className="text-yellow-400 text-sm cursor-help inline-block"
+        style={{ width: '16px', height: '16px', lineHeight: '16px' }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
