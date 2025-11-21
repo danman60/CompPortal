@@ -118,7 +118,7 @@ serve(async (req) => {
     // 1. Validate tenant exists (CRITICAL for multi-tenant security)
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from('tenants')
-      .select('id, name, subdomain, primary_color, secondary_color')
+      .select('id, name, subdomain, branding')
       .eq('id', tenant_id)
       .single();
 
@@ -174,8 +174,9 @@ serve(async (req) => {
     console.log('Reset link generated for:', email);
 
     // 4. Get tenant branding for email
-    const primaryColor = tenant.primary_color || '#8b5cf6'; // purple-500
-    const secondaryColor = tenant.secondary_color || '#ec4899'; // pink-500
+    const branding = (tenant.branding as any) || {};
+    const primaryColor = branding.primaryColor || '#8b5cf6'; // purple-500
+    const secondaryColor = branding.secondaryColor || '#ec4899'; // pink-500
 
     // 5. Send password reset email via Mailgun
     const emailHtml = generatePasswordResetEmail({
