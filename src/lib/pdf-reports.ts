@@ -987,19 +987,19 @@ export function generateInvoicePDF(invoice: {
     doc.text('E-Transfer:', 15, yPos);
     doc.setFont('helvetica', 'normal');
     doc.text('empwrdance@gmail.com', 50, yPos);
-    yPos += 8;
+    yPos += 10;
 
     // Cheque
     doc.setFont('helvetica', 'bold');
     doc.text('Cheque:', 15, yPos);
     doc.setFont('helvetica', 'normal');
-    yPos += 8;
+    yPos += 10;
     doc.text('EMPWR Dance Experience', 20, yPos);
-    yPos += 6;
+    yPos += 8;
     doc.text('Attn: Emily Einsmann', 20, yPos);
-    yPos += 6;
+    yPos += 8;
     doc.text('69 Albert St', 20, yPos);
-    yPos += 6;
+    yPos += 8;
     doc.text('Uxbridge, ON L9P 1E5', 20, yPos);
     yPos += 15; // Extra spacing after payment instructions
   } else {
