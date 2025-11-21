@@ -104,9 +104,19 @@ serve(async (req) => {
     }
 
     // Create Supabase admin client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    console.log('Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseKey,
+      urlLength: supabaseUrl?.length || 0,
+      keyLength: supabaseKey?.length || 0,
+    });
+
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      supabaseUrl!,
+      supabaseKey!,
       {
         auth: {
           autoRefreshToken: false,
@@ -163,9 +173,16 @@ serve(async (req) => {
     });
 
     if (tokenError || !tokenData.properties?.action_link) {
-      console.error('Token generation failed:', tokenError);
+      console.error('Token generation failed:', {
+        error: tokenError,
+        errorMessage: tokenError?.message,
+        errorCode: tokenError?.code,
+        hasTokenData: !!tokenData,
+        hasProperties: !!tokenData?.properties,
+        hasActionLink: !!tokenData?.properties?.action_link,
+      });
       return new Response(
-        JSON.stringify({ error: 'Failed to generate reset link' }),
+        JSON.stringify({ error: 'Failed to generate reset link', details: tokenError?.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
