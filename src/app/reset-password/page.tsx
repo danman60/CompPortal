@@ -19,35 +19,51 @@ export default function ResetPasswordPage() {
   // Check for recovery token in URL (from email link)
   useEffect(() => {
     const handleRecovery = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hash = window.location.hash;
+      console.log('=== Password Reset Debug ===');
+      console.log('Full hash:', hash);
+
+      if (!hash) {
+        console.log('No hash parameters found');
+        return;
+      }
+
+      const hashParams = new URLSearchParams(hash.substring(1));
       const type = hashParams.get('type');
       const access_token = hashParams.get('access_token');
       const refresh_token = hashParams.get('refresh_token');
 
+      console.log('Parsed params:', { type, hasAccessToken: !!access_token, hasRefreshToken: !!refresh_token });
+
       if (type === 'recovery' && access_token) {
+        console.log('Recovery tokens found, exchanging for session...');
         try {
           // Exchange tokens for session
-          const { error } = await supabase.auth.setSession({
+          const { data, error } = await supabase.auth.setSession({
             access_token,
             refresh_token: refresh_token || '',
           });
 
           if (error) {
-            console.error('Failed to set session:', error);
+            console.error('Session exchange failed:', error);
             toast.error('Invalid or expired reset link');
             return;
           }
 
+          console.log('Session established successfully:', data.session?.user?.email);
           setMode('update');
+          toast.success('Ready to update password');
         } catch (err) {
           console.error('Recovery error:', err);
           toast.error('Failed to process reset link');
         }
+      } else {
+        console.log('Not a recovery link - staying in request mode');
       }
     };
 
     handleRecovery();
-  }, [supabase]);
+  }, []); // Run only on mount
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
