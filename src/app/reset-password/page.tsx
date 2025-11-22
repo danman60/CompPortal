@@ -18,13 +18,36 @@ export default function ResetPasswordPage() {
 
   // Check for recovery token in URL (from email link)
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
+    const handleRecovery = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const type = hashParams.get('type');
+      const access_token = hashParams.get('access_token');
+      const refresh_token = hashParams.get('refresh_token');
 
-    if (type === 'recovery') {
-      setMode('update');
-    }
-  }, []);
+      if (type === 'recovery' && access_token) {
+        try {
+          // Exchange tokens for session
+          const { error } = await supabase.auth.setSession({
+            access_token,
+            refresh_token: refresh_token || '',
+          });
+
+          if (error) {
+            console.error('Failed to set session:', error);
+            toast.error('Invalid or expired reset link');
+            return;
+          }
+
+          setMode('update');
+        } catch (err) {
+          console.error('Recovery error:', err);
+          toast.error('Failed to process reset link');
+        }
+      }
+    };
+
+    handleRecovery();
+  }, [supabase]);
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
