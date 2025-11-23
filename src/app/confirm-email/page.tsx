@@ -140,17 +140,17 @@ export default function ConfirmEmailPage() {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => router.push('/signup')}
-                  className="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                >
-                  Try signing up again
-                </button>
-                <button
                   onClick={() => router.push('/login')}
-                  className="w-full px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                  className="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                 >
                   Go to login
                 </button>
+                <a
+                  href="mailto:techsupport@compsync.net"
+                  className="block w-full px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-center"
+                >
+                  Contact support
+                </a>
               </div>
             </div>
           )}
