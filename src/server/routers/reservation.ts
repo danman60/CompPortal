@@ -448,34 +448,8 @@ export const reservationRouter = router({
         }
       }
 
-      // Check competition capacity
-      const competition = await prisma.competitions.findUnique({
-        where: { id: input.competition_id },
-        select: {
-          id: true,
-          name: true,
-          venue_capacity: true,
-          _count: {
-            select: {
-              competition_entries: true,
-            },
-          },
-        },
-      });
-
-      if (!competition) {
-        throw new Error('Competition not found');
-      }
-
-      const currentEntries = competition._count.competition_entries;
-      const capacity = competition.venue_capacity || 0;
-
-      if (capacity > 0 && currentEntries + input.spaces_requested > capacity) {
-        const available = capacity - currentEntries;
-        throw new Error(
-          `Not enough space available. Requested: ${input.spaces_requested}, Available: ${available}`
-        );
-      }
+      // 🆕 SOFT LIMIT: Removed hard venue_capacity check
+      // Studios can request any amount - CDs can approve beyond capacity
 
       // 🔐 BUSINESS RULE VALIDATIONS (Wave 2.2)
       // Validate reservation capacity against competition limits
@@ -706,7 +680,10 @@ export const reservationRouter = router({
 
       // Reserve capacity atomically (includes status update to prevent double-processing)
       // Matches Phase 1 spec lines 442-499 (approval process)
+      // 🆕 SOFT LIMIT: Capacity can go negative, returns warning if exceeded
       const spacesConfirmed = input.spacesConfirmed || 0;
+      let capacityWarning: string | undefined;
+
       if (spacesConfirmed > 0) {
         try {
           const competitionId = (await prisma.reservations.findUnique({
@@ -715,12 +692,28 @@ export const reservationRouter = router({
           }))!.competition_id;
 
           // ⚡ ATOMIC: CapacityService.reserve() now handles both capacity + status update
-          await capacityService.reserve(
+          const result = await capacityService.reserve(
             competitionId,
             spacesConfirmed,
             reservationId,
             ctx.userId
           );
+
+          // 🆕 Generate warning if capacity exceeded
+          if (result.exceededBy > 0) {
+            capacityWarning = `⚠️ Capacity exceeded by ${result.exceededBy} spaces (Available: ${result.availableBefore}, Approved: ${spacesConfirmed}, New Available: ${result.availableAfter})`;
+
+            // Log warning for audit trail
+            logger.warn('CD approved reservation beyond capacity', {
+              reservationId,
+              competitionId,
+              exceededBy: result.exceededBy,
+              availableBefore: result.availableBefore,
+              approvedSpaces: spacesConfirmed,
+              availableAfter: result.availableAfter,
+              userId: ctx.userId,
+            });
+          }
         } catch (capacityError) {
           // If capacity reservation fails, don't proceed with approval
           throw new Error(
@@ -850,7 +843,11 @@ export const reservationRouter = router({
         console.log('[EMAIL DEBUG] No studio email found');
       }
 
-      return reservation;
+      // 🆕 Return warning if capacity exceeded
+      return {
+        ...reservation,
+        ...(capacityWarning && { capacityWarning }),
+      };
     }),
 
   // Reject a reservation
@@ -1230,7 +1227,8 @@ export const reservationRouter = router({
         throw new Error('Unauthorized: Only competition directors can create manual reservations');
       }
 
-      // Verify competition exists and has capacity
+      // Verify competition exists
+      // 🆕 SOFT LIMIT: Removed hard capacity check - CDs can allocate beyond capacity
       const competition = await prisma.competitions.findUnique({
         where: { id: input.competitionId },
         select: {
@@ -1243,11 +1241,6 @@ export const reservationRouter = router({
 
       if (!competition) {
         throw new Error('Competition not found');
-      }
-
-      const availableTokens = competition.available_reservation_tokens ?? 600;
-      if (input.spacesAllocated > availableTokens) {
-        throw new Error(`Insufficient capacity. Available: ${availableTokens}, Requested: ${input.spacesAllocated}`);
       }
 
       // Verify studio exists
@@ -1574,15 +1567,33 @@ export const reservationRouter = router({
       }
 
       // Perform capacity adjustment based on delta
+      // 🆕 SOFT LIMIT: Capacity can go negative, track if exceeded
+      let capacityWarning: string | undefined;
+
       if (delta > 0) {
-        // Increasing spaces - reserve additional capacity
-        await capacityService.reserve(
+        // Increasing spaces - reserve additional capacity (can go negative)
+        const result = await capacityService.reserve(
           reservation.competition_id,
           delta,
           input.reservationId,
           ctx.userId!,
           'cd_adjustment_increase'
         );
+
+        // Generate warning if capacity exceeded
+        if (result.exceededBy > 0) {
+          capacityWarning = `⚠️ Capacity exceeded by ${result.exceededBy} spaces (Available: ${result.availableBefore}, Increase: ${delta}, New Available: ${result.availableAfter})`;
+
+          logger.warn('CD adjustment increased beyond capacity', {
+            reservationId: input.reservationId,
+            competitionId: reservation.competition_id,
+            exceededBy: result.exceededBy,
+            availableBefore: result.availableBefore,
+            delta,
+            availableAfter: result.availableAfter,
+            userId: ctx.userId,
+          });
+        }
       } else {
         // Decreasing spaces - refund capacity
         await capacityService.refund(
@@ -1633,6 +1644,8 @@ export const reservationRouter = router({
         message: delta > 0
           ? `Increased reservation by ${delta} spaces`
           : `Decreased reservation by ${Math.abs(delta)} spaces`,
+        // 🆕 Include warning if capacity exceeded
+        ...(capacityWarning && { capacityWarning }),
       };
     }),
 
@@ -1693,42 +1706,33 @@ export const reservationRouter = router({
         });
       }
 
-      // Calculate competition utilization
-      const totalTokens = reservation.competitions.total_reservation_tokens || 0;
-      const availableTokens = reservation.competitions.available_reservation_tokens || 0;
-      const usedTokens = totalTokens - availableTokens;
-      const utilizationPercent = totalTokens > 0 ? (usedTokens / totalTokens) * 100 : 0;
-
-      // Check 90% threshold
-      if (utilizationPercent >= 90) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `This competition is nearly full (${utilizationPercent.toFixed(1)}% capacity). Contact the Competition Director to request more spaces.`,
-        });
-      }
-
-      // Check if enough capacity is available
-      const maxAllowedIncrease = Math.min(input.requestedIncrease, availableTokens);
-
-      if (maxAllowedIncrease === 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'No additional spaces available for this competition. Contact the Competition Director.',
-        });
-      }
-
-      const actualIncrease = maxAllowedIncrease;
+      // 🆕 SOFT LIMIT: Removed 90% threshold and availability checks
+      // Studios can request increases beyond capacity (soft limit applies)
       const currentSpaces = reservation.spaces_confirmed || 0;
+      const actualIncrease = input.requestedIncrease;
       const newSpaces = currentSpaces + actualIncrease;
 
-      // Use capacity service for atomic reservation
-      await capacityService.reserve(
+      // Use capacity service for atomic reservation (can go negative)
+      const result = await capacityService.reserve(
         reservation.competition_id,
         actualIncrease,
         input.reservationId,
         ctx.userId!,
         'cd_adjustment_increase' // Reuse existing reason (treated as SD self-adjustment)
       );
+
+      // Log warning if capacity exceeded
+      if (result.exceededBy > 0) {
+        logger.warn('SD requested space increase beyond capacity', {
+          reservationId: input.reservationId,
+          competitionId: reservation.competition_id,
+          exceededBy: result.exceededBy,
+          availableBefore: result.availableBefore,
+          requestedIncrease: actualIncrease,
+          availableAfter: result.availableAfter,
+          userId: ctx.userId,
+        });
+      }
 
       // Update reservation spaces_confirmed
       const updatedReservation = await prisma.reservations.update({
@@ -1758,7 +1762,9 @@ export const reservationRouter = router({
           studio_name: reservation.studios.name,
           competition_name: reservation.competitions.name,
           requested_by_role: 'studio_director',
-          competition_utilization: `${utilizationPercent.toFixed(1)}%`,
+          // 🆕 No longer tracking utilization % (soft limit allows over-booking)
+          exceeded_capacity: result.exceededBy > 0,
+          exceeded_by: result.exceededBy,
         },
       });
 
@@ -1767,11 +1773,11 @@ export const reservationRouter = router({
         previousSpaces: currentSpaces,
         newSpaces,
         increase: actualIncrease,
-        requestedIncrease: input.requestedIncrease,
-        partialIncrease: actualIncrease < input.requestedIncrease,
-        message: actualIncrease < input.requestedIncrease
-          ? `Increased reservation by ${actualIncrease} spaces (${input.requestedIncrease - actualIncrease} spaces not available)`
-          : `Your reservation was increased to ${newSpaces} spaces!`,
+        message: `Your reservation was increased to ${newSpaces} spaces!`,
+        // 🆕 Include warning if capacity exceeded
+        ...(result.exceededBy > 0 && {
+          capacityWarning: `⚠️ Competition capacity exceeded by ${result.exceededBy} spaces. Contact Competition Director if needed.`,
+        }),
       };
     }),
 
