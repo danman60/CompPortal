@@ -46,9 +46,9 @@ export default function ClaimPage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
       if (!authUser) {
-        // Not authenticated → redirect to login with return URL
-        // Signup is disabled - users must use invitation links or existing accounts
-        router.push(`/login?returnUrl=${encodeURIComponent(`/claim?code=${code}`)}`);
+        // Not authenticated → redirect to signup with return URL
+        // Signup page validates claim code and shows form only with valid invitation
+        router.push(`/signup?returnUrl=${encodeURIComponent(`/claim?code=${code}`)}`);
         return;
       }
 
