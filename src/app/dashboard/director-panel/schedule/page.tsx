@@ -190,6 +190,12 @@ export default function SchedulePage() {
       : []
   , [routines]);
 
+  // Clear draft when selectedDate changes (ensures correct day filtering)
+  useEffect(() => {
+    console.log('[SchedulePage] selectedDate changed to:', selectedDate);
+    setDraftSchedule([]); // Clear draft to force reload from server
+  }, [selectedDate]);
+
   // Initialize draft from server data when it changes
   useEffect(() => {
     if (routines && draftSchedule.length === 0) {

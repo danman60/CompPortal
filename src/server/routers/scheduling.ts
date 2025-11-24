@@ -1460,10 +1460,15 @@ export const schedulingRouter = router({
       roundedTime.setSeconds(0);
       roundedTime.setMilliseconds(0);
 
+      // Extract date-only part for schedule_day (YYYY-MM-DD at midnight)
+      const scheduleDay = new Date(roundedTime);
+      scheduleDay.setHours(0, 0, 0, 0);
+
       const updated = await prisma.schedule_blocks.update({
         where: { id: input.blockId },
         data: {
           scheduled_time: roundedTime,
+          schedule_day: scheduleDay, // Set the day field for date filtering
           sort_order: input.displayOrder,
           updated_at: new Date(),
         },
