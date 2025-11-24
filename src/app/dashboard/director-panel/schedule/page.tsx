@@ -92,6 +92,13 @@ export default function SchedulePage() {
     tenantId: TEST_TENANT_ID,
   });
 
+  // Fetch schedule blocks for selected date
+  const { data: scheduleBlocks, refetch: refetchBlocks } = trpc.scheduling.getScheduleBlocks.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+    date: selectedDate,
+  });
+
   // Schedule mutation (save draft to database)
   const scheduleMutation = trpc.scheduling.schedule.useMutation({
     onSuccess: async () => {
@@ -126,6 +133,9 @@ export default function SchedulePage() {
       toast.error(`Failed to reset competition: ${error.message}`);
     },
   });
+
+  // Place schedule block mutation
+  const placeBlock = trpc.scheduling.placeScheduleBlock.useMutation();
 
   // Compute filter options from routines (memoized for performance)
   const classifications = useMemo(() =>
@@ -522,6 +532,7 @@ export default function SchedulePage() {
               conflicts={[]}
               selectedRoutineIds={selectedScheduledIds}
               onSelectionChange={setSelectedScheduledIds}
+              scheduleBlocks={scheduleBlocks}
             />
           </div>
           </div>
@@ -532,9 +543,67 @@ export default function SchedulePage() {
       <ScheduleBlockModal
         isOpen={showBlockModal}
         onClose={() => setShowBlockModal(false)}
-        onSave={(block) => {
-          toast.success(`${block.type === 'award' ? '🏆' : '☕'} Block created: ${block.title}`);
-          refetch();
+        onSave={async (block) => {
+          if (!block.blockId || !block.placement) {
+            toast.error('Missing block ID or placement data');
+            return;
+          }
+
+          try {
+            // Calculate targetTime and displayOrder based on placement type
+            let targetTime: Date;
+            let displayOrder: number;
+
+            if (block.placement.type === 'by_time' && block.placement.time) {
+              // By time: Use provided time with selected date
+              const [hours, minutes] = block.placement.time.split(':').map(Number);
+              targetTime = new Date(selectedDate);
+              targetTime.setHours(hours, minutes, 0, 0);
+
+              // Find display order: count routines before this time + 1
+              const routinesBeforeTime = (scheduledRoutines || []).filter(r => {
+                if (!r.scheduledTimeString) return false;
+                const [rHours, rMinutes] = r.scheduledTimeString.split(':').map(Number);
+                return rHours < hours || (rHours === hours && rMinutes < minutes);
+              });
+              displayOrder = routinesBeforeTime.length + 1;
+            } else if (block.placement.type === 'after_routine' && block.placement.routineNumber) {
+              // After routine: Find routine by entry number
+              const targetRoutine = (scheduledRoutines || []).find(
+                r => r.entryNumber === block.placement?.routineNumber
+              );
+
+              if (!targetRoutine || !targetRoutine.scheduledTimeString) {
+                toast.error(`Routine #${block.placement?.routineNumber} not found or not scheduled`);
+                return;
+              }
+
+              // Calculate time: routine's time + duration
+              const [hours, minutes] = targetRoutine.scheduledTimeString.split(':').map(Number);
+              targetTime = new Date(selectedDate);
+              targetTime.setHours(hours, minutes, 0, 0);
+              targetTime.setMinutes(targetTime.getMinutes() + (targetRoutine.duration || 0));
+
+              // Display order: routine's entry number + 1
+              displayOrder = (targetRoutine.entryNumber || 0) + 1;
+            } else {
+              toast.error('Invalid placement configuration');
+              return;
+            }
+
+            // Call placeScheduleBlock mutation
+            await placeBlock.mutateAsync({
+              blockId: block.blockId,
+              targetTime,
+              displayOrder,
+            });
+
+            toast.success(`${block.type === 'award' ? '🏆' : '☕'} Block placed: ${block.title}`);
+            refetch();
+            refetchBlocks();
+          } catch (error: any) {
+            toast.error(`Failed to place block: ${error.message}`);
+          }
         }}
         competitionId={TEST_COMPETITION_ID}
         tenantId={TEST_TENANT_ID}

@@ -41,6 +41,14 @@ interface ScheduleTableProps {
   onRoutineClick?: (routineId: string) => void;
   selectedRoutineIds?: Set<string>;
   onSelectionChange?: (selectedIds: Set<string>) => void;
+  scheduleBlocks?: Array<{
+    id: string;
+    block_type: string;
+    title: string;
+    duration_minutes: number;
+    scheduled_time: Date | null;
+    sort_order: number | null;
+  }>;
 }
 
 interface Routine {
@@ -85,6 +93,82 @@ interface OverallsCategory {
   groupSize: string;
   ageGroup: string;
   classification: string;
+}
+
+// Schedule Block Row Component (Sortable)
+function SortableBlockRow({
+  block,
+  showCheckbox,
+}: {
+  block: {
+    id: string;
+    block_type: string;
+    title: string;
+    duration_minutes: number;
+    scheduled_time: Date | null;
+  };
+  showCheckbox?: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `block-${block.id}`, // Prefix to avoid ID collision with routines
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const bgColor = block.block_type === 'award'
+    ? 'bg-gradient-to-r from-amber-900/30 to-yellow-900/30'
+    : 'bg-gradient-to-r from-cyan-900/30 to-blue-900/30';
+
+  const icon = block.block_type === 'award' ? '🏆' : '☕';
+  const borderColor = block.block_type === 'award' ? 'border-amber-500/50' : 'border-cyan-500/50';
+
+  // Format time if available
+  const displayTime = block.scheduled_time
+    ? (() => {
+        const date = new Date(block.scheduled_time);
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        return `${String(hour12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
+      })()
+    : 'TBD';
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
+    >
+      {showCheckbox && <td className="px-1 py-1" style={{ width: '32px' }}></td>}
+      <td className="px-1 py-1 text-xs font-mono font-bold text-white" style={{ width: '45px' }}>
+        {icon}
+      </td>
+      <td className="px-1 py-1 text-xs font-mono text-white/90" style={{ width: '65px' }}>
+        {displayTime}
+      </td>
+      <td colSpan={5} className="px-1 py-1">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{icon}</span>
+          <span className="text-sm font-semibold text-white">{block.title}</span>
+          <span className="text-xs text-white/60 ml-2">({block.duration_minutes} min)</span>
+        </div>
+      </td>
+    </tr>
+  );
 }
 
 // Sortable Row Component
@@ -273,6 +357,7 @@ export function ScheduleTable({
   onRoutineClick,
   selectedRoutineIds = new Set(),
   onSelectionChange,
+  scheduleBlocks = [],
 }: ScheduleTableProps) {
   const lastClickedIndexRef = useRef<number | null>(null);
 
@@ -280,6 +365,34 @@ export function ScheduleTable({
   const sortedRoutines = useMemo(() => {
     return [...routines].sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
   }, [routines]);
+
+  // Combine routines and blocks into chronological order
+  const scheduleItems = useMemo(() => {
+    const items: Array<{ type: 'routine' | 'block'; data: any; order: number }> = [];
+
+    // Add routines
+    sortedRoutines.forEach((routine, index) => {
+      items.push({
+        type: 'routine',
+        data: routine,
+        order: routine.entryNumber || index,
+      });
+    });
+
+    // Add blocks
+    scheduleBlocks.forEach(block => {
+      if (block.sort_order !== null) {
+        items.push({
+          type: 'block',
+          data: block,
+          order: block.sort_order,
+        });
+      }
+    });
+
+    // Sort by order
+    return items.sort((a, b) => a.order - b.order);
+  }, [sortedRoutines, scheduleBlocks]);
 
   // Handle checkbox change with shift-click support
   const handleCheckboxChange = (routineId: string, index: number, event: React.MouseEvent) => {
@@ -550,11 +663,28 @@ export function ScheduleTable({
             </tr>
           </thead>
           <SortableContext
-            items={sortedRoutines.map(r => r.id)}
+            items={[
+              ...sortedRoutines.map(r => r.id),
+              ...scheduleBlocks.map(b => `block-${b.id}`),
+            ]}
             strategy={verticalListSortingStrategy}
           >
             <tbody>
-              {sortedRoutines.map((routine, index) => {
+              {scheduleItems.map((item, index) => {
+                if (item.type === 'block') {
+                  // Render schedule block
+                  return (
+                    <SortableBlockRow
+                      key={`block-${item.data.id}`}
+                      block={item.data}
+                      showCheckbox={!!onSelectionChange}
+                    />
+                  );
+                }
+
+                // Render routine
+                const routine = item.data;
+                const routineIndex = sortedRoutines.findIndex(r => r.id === routine.id);
                 const isLastInOveralls = lastRoutineIds.has(routine.id);
                 const conflict = getRoutineConflict(routine.id);
                 const isFirstInConflict = isFirstInConflictGroup(routine.id);
@@ -582,7 +712,7 @@ export function ScheduleTable({
                   <SortableRoutineRow
                     key={routine.id}
                     routine={routine}
-                    index={index}
+                    index={routineIndex}
                     isLastInOveralls={isLastInOveralls}
                     conflict={conflict}
                     isFirstInConflict={!!isFirstInConflict}
@@ -591,9 +721,9 @@ export function ScheduleTable({
                     classificationColor={classificationColor}
                     studioDisplay={studioDisplay}
                     viewMode={viewMode}
-                    sessionNumber={getSessionNumber(index)}
-                    isLastInSession={isLastInSession(index)}
-                    sessionBlock={getSessionBlock(index)}
+                    sessionNumber={getSessionNumber(routineIndex)}
+                    isLastInSession={isLastInSession(routineIndex)}
+                    sessionBlock={getSessionBlock(routineIndex)}
                     onRoutineClick={onRoutineClick}
                     isSelected={selectedRoutineIds.has(routine.id)}
                     onCheckboxChange={handleCheckboxChange}

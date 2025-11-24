@@ -26,6 +26,7 @@ interface ScheduleBlockModalProps {
       routineNumber?: number;
       time?: string; // HH:MM format
     };
+    blockId?: string; // ID of created block (for placement)
   }) => void;
   competitionId: string;
   tenantId: string;
@@ -77,27 +78,25 @@ export function ScheduleBlockModal({
   }, [isOpen, initialBlock, preselectedType]);
 
   const createBlock = trpc.scheduling.createScheduleBlock.useMutation({
-    onSuccess: () => {
-      handleSaveSuccess();
+    onSuccess: (data) => {
+      // Pass blockId to parent along with other data
+      onSave({
+        type: blockType,
+        title: title.trim() || getDefaultTitle(),
+        duration,
+        placement: {
+          type: placementType,
+          routineNumber: placementType === 'after_routine' && routineNumber !== '' ? routineNumber : undefined,
+          time: placementType === 'by_time' ? timeValue : undefined,
+        },
+        blockId: data.id, // Include the created block ID
+      });
+      handleClose();
     },
     onError: (err) => {
       setError(err.message);
     },
   });
-
-  const handleSaveSuccess = () => {
-    onSave({
-      type: blockType,
-      title: title.trim() || getDefaultTitle(),
-      duration,
-      placement: {
-        type: placementType,
-        routineNumber: placementType === 'after_routine' && routineNumber !== '' ? routineNumber : undefined,
-        time: placementType === 'by_time' ? timeValue : undefined,
-      },
-    });
-    handleClose();
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,15 +108,31 @@ export function ScheduleBlockModal({
       return;
     }
 
+    // Validate placement
+    if (placementType === 'after_routine' && routineNumber === '') {
+      setError('Please enter a routine number for placement');
+      return;
+    }
+
     const finalTitle = title.trim() || getDefaultTitle();
 
     // If editing, just return the data (parent handles update)
     if (mode === 'edit') {
-      handleSaveSuccess();
+      onSave({
+        type: blockType,
+        title: finalTitle,
+        duration,
+        placement: {
+          type: placementType,
+          routineNumber: placementType === 'after_routine' && routineNumber !== '' ? routineNumber : undefined,
+          time: placementType === 'by_time' ? timeValue : undefined,
+        },
+      });
+      handleClose();
       return;
     }
 
-    // If creating, call backend mutation
+    // If creating, call backend mutation (onSuccess will call onSave)
     createBlock.mutate({
       competitionId,
       tenantId,
