@@ -1,34 +1,70 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-07 (Phase 2 Scheduler Discovery)
+**Last Updated:** 2025-11-24 (Phase 2 Scheduler Bug Fixes)
 
 ---
 
-## Current Status: ✅ PRODUCTION STABLE - Post-Launch Enhancements
+## Current Status: ✅ PHASE 2 SCHEDULER - Bug Fixes Complete
 
 **Milestone Achievement:**
 - ✅ Routine creation launched Nov 8, 2025 - LIVE
 - ✅ Production stable - Both EMPWR and Glow tenants operational
-- ✅ All P0 bugs resolved (BUG #4, BUG #5)
-- ✅ Recent enhancements: Sortable entries, feedback system, account recovery
+- ✅ Phase 2 Scheduler active on tester branch
+- ✅ Critical scheduling bugs resolved
 
-**Recent Features (Nov 7, 2025):**
-- ✅ Sortable columns on entries table view (b53f109)
-- ✅ User feedback system with SA admin panel (5b861d6)
-- ✅ Feedback widget positioning fixed (d7d556e)
-- ✅ Dark mode account recovery page with email tracking (e06b68a)
-- ✅ Simplified dancer invoice PDF generator (f286629)
+**Recent Fixes (Nov 24, 2025):**
+- ✅ Trophy helper UI removed, logic preserved (ac7a8b0)
+- ✅ Scheduling reorder bug fixed - sequential updates (058c2eb)
+- ✅ Filter dropdown UX improvements (058c2eb)
+- ✅ Reset All now clears draft + database (058c2eb)
 
-**Production Health:**
-- ✅ Build passing (76/76 pages)
-- ✅ Both tenants operational
-- ✅ Entry creation system fully functional
-- ✅ CSV import working
-- ✅ Invoice workflow operational
+**Build Status:**
+- ✅ Build passing (89/89 pages, 45s compile)
+- ✅ Tester branch deployed
+- ✅ All type checks passing
 
 ---
 
 ## Recent Sessions
+
+### Session: Phase 2 Scheduler Bug Fixes (Nov 24, 2025)
+**Status:** ✅ COMPLETE - 4 critical bugs fixed
+**Branch:** tester
+**Commits:** ac7a8b0, 058c2eb
+
+**BUGS FIXED:**
+
+1. **Trophy Helper Layout Breaking Table** ✅
+   - Removed all UI elements (emoji, border, background, footer counter)
+   - Preserved calculation logic (`lastRoutineIds`, category tracking)
+   - Ready for fresh implementation
+
+2. **Reorder Scheduling Unique Constraint Error** ✅
+   - Issue: `Promise.all()` parallel updates caused duplicate `entry_number`
+   - Fix: Sequential updates with `for` loop (scheduling.ts:311-326)
+   - Prevents: "Unique constraint failed on (competition_id, entry_number, entry_suffix)"
+
+3. **Filter Dropdown UX Issues** ✅
+   - Fixed: Dropdown positioning (absolute vs fixed)
+   - Fixed: Clicking option now closes dropdown (RoutinePool.tsx:635)
+   - Fixed: "Select All" one-shot behavior (RoutinePool.tsx:255)
+
+4. **Reset All Only Cleared Saved Routines** ✅
+   - Issue: Draft state persisted after reset
+   - Fix: Added `setDraftSchedule([])` to both reset mutations
+   - Now clears: Database + local draft state
+
+**FILES MODIFIED:**
+- `src/components/scheduling/ScheduleTable.tsx` - Trophy helper removal
+- `src/server/routers/scheduling.ts` - Sequential entry_number updates
+- `src/components/scheduling/RoutinePool.tsx` - Filter dropdown fixes
+- `src/app/dashboard/director-panel/schedule/page.tsx` - Reset draft state
+
+**BUILD:** ✅ 89/89 pages, 45s compile time
+
+---
+
+## Recent Sessions (Historical)
 
 ### Session 38: Phase 2 Scheduler Discovery + LLM Exploration (Nov 7, 2025)
 **Status:** ✅ COMPLETE - Existing scheduler found, plans documented

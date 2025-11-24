@@ -1,166 +1,114 @@
-# Current Work - Phase 2 Planning
+# Current Work - Phase 2 Scheduler Bug Fixes
 
-**Session:** November 7, 2025 (Session 38 - Scheduler Discovery)
-**Status:** ✅ COMPLETE - Existing scheduler found, planning docs created
-**Build:** b53f109
-**Previous Session:** November 7, 2025 (Session 37 - Post-sprint cleanup)
-
----
-
-## 🎯 Current Status: Post-Sprint Cleanup Complete
-
-### Documentation Organized
-- ✅ Archived 30+ completed markdown files
-- ✅ Created organized archive structure with subdirectories
-- ✅ Root directory cleaned - only active trackers remain
-- ✅ PROJECT_STATUS.md updated with latest state
-- ✅ Archive plan documented for future reference
-
-### Recent Features Deployed (Nov 7)
-- ✅ Sortable columns on entries table (b53f109)
-- ✅ User feedback system with SA admin panel (5b861d6)
-- ✅ Feedback widget positioning fixed (d7d556e)
-- ✅ Account recovery page with dark mode (e06b68a)
-- ✅ Dancer invoice PDF generator (f286629)
+**Date:** November 24, 2025
+**Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
+**Branch:** tester
+**Status:** ✅ Session Complete
 
 ---
 
-## 📊 Production Status
+## Session Summary
 
-### EMPWR Tenant: ✅ OPERATIONAL
-- **URL:** https://empwr.compsync.net
-- **Build:** b53f109 (deployed)
-- **Status:** Stable, routine creation active
+Fixed 4 critical bugs in Phase 2 scheduler:
+1. Trophy helper breaking table layout
+2. Reorder scheduling unique constraint error
+3. Filter dropdown UX issues
+4. Reset All not clearing draft state
 
-### Glow Tenant: ✅ OPERATIONAL
-- **URL:** https://glow.compsync.net
-- **Build:** b53f109 (deployed)
-- **Status:** Stable, routine creation active
+**Commits:**
+- `ac7a8b0` - Trophy helper UI removal
+- `058c2eb` - Scheduling bugs (reorder, filters, reset)
+
+**Build:** ✅ 89/89 pages, 45s compile
 
 ---
 
-## 📁 Archive Structure Created
+## Work Completed
 
+### 1. Trophy Helper Removal ✅
+**Commit:** ac7a8b0
+
+**Problem:** Trophy helper UI (gold border, emoji, tooltip) was breaking table layout after 10+ attempts to fix.
+
+**Solution:**
+- Removed all visual indicators (border, background, emoji, footer counter)
+- Preserved business logic (`lastRoutineIds` calculation)
+- Ready for fresh implementation approach
+
+**Files:**
+- `src/components/scheduling/ScheduleTable.tsx`
+
+### 2. Scheduling Reorder Bug ✅
+**Commit:** 058c2eb
+
+**Problem:**
 ```
-CompPortal/docs/archive/
-├── test-reports-nov2025/      # All Nov 2025 test reports (11 files)
-├── sessions-nov2025/          # Session summaries (4 files)
-├── blockers/                  # Resolved blockers (5 files)
-├── implementations/           # Implementation docs (4 files)
-├── test-protocols/            # Test suite definitions (3 files)
-├── onboarding/               # Setup guides (2 files)
-├── planning/                 # Pre-release planning (1 file)
-├── investigations/           # Investigation reports (2 files)
-└── design/                   # Design proposals (3 files)
+Unique constraint failed on the fields:
+(`competition_id`,`entry_number`,`COALESCE(entry_suffix`,`''::character varying)`)
 ```
 
-**Total Archived:** 35+ files
-**Root Directory:** Clean - only active protocols and trackers
+**Root Cause:** `Promise.all()` executing parallel updates caused multiple routines to temporarily have same `entry_number`.
+
+**Solution:** Sequential updates with `for` loop instead of parallel `Promise.all()`.
+
+**Files:**
+- `src/server/routers/scheduling.ts:311-326`
+
+### 3. Filter Dropdown UX Fixes ✅
+**Commit:** 058c2eb
+
+**Problems:**
+1. Dropdown positioning jumped to weird places
+2. Selecting option didn't close dropdown
+3. "Select All" persisted as toggle instead of one-shot
+
+**Solutions:**
+1. Changed from `position: fixed` (calculated coords) to `position: absolute top-full left-0`
+2. Added `onToggleOpen()` call after option selection
+3. Only show "Select All" when `selectedRoutineIds.size < routines.length`
+
+**Files:**
+- `src/components/scheduling/RoutinePool.tsx:614,635,255`
+
+### 4. Reset All Draft State ✅
+**Commit:** 058c2eb
+
+**Problem:** "Reset All" and "Reset Day" only cleared database, not local draft state.
+
+**Solution:** Added `setDraftSchedule([])` to both mutation success callbacks.
+
+**Files:**
+- `src/app/dashboard/director-panel/schedule/page.tsx:108,119`
 
 ---
 
-## 🔑 Active Files in Root
+## Next Steps
 
-**Development Protocols:**
-- `CLAUDE.md` - Development instructions
-- `ANTI_PATTERNS.md` - Anti-pattern guidelines
-- `DEBUGGING.md` - Debug protocols
-- `DEVTEAM_PROTOCOL.md` - Batch fix workflow
+**Trophy Helper Redesign:**
+- Business logic intact and ready
+- Need to design new UI approach that doesn't break table layout
+- Questions documented in planning notes
 
-**Trackers:**
-- `PROJECT_STATUS.md` - Current project state
-- `CURRENT_WORK.md` - This file
-
----
-
-## 🔑 Active Files in CompPortal
-
-**Configuration:**
-- `PROJECT.md` - Project config
-- `README.md` - Project readme
-- `QUICKSTART.md` - Getting started
-
-**Active Trackers:**
-- `PROJECT_STATUS.md` - Current state
-- `CURRENT_WORK.md` - Session tracker
-- `KNOWN_ISSUES.md` - Issue tracker
-- `ROUTINE_CREATION_LAUNCH.md` - Launch checklist
-- `PROCESS_IMPROVEMENTS.md` - Improvement tracking
-- `BASELINE_METRICS_NOV4.md` - Current metrics
-- `NEXT_SESSION_PRIORITIES.md` - Priority queue
-
-**Development Tools:**
-- `GOTCHAS.md` - Common issues reference
-- `DEBUGGING.md` - Debug workflow
+**Phase 2 Scheduler:**
+- Continue development on tester branch
+- Test fixes on production URL after deployment
 
 ---
 
-## 🎯 System Health
+## Technical Notes
 
-**Build Status:** ✅ Passing (76/76 pages)
-**Production:** ✅ Both tenants stable
-**Recent Work:** ✅ All features deployed and working
+**Unique Constraint Pattern:**
+When updating fields with unique constraints in batch:
+- ❌ Don't use `Promise.all()` (parallel)
+- ✅ Use sequential `for` loop
+- ✅ Or use two-phase update (clear first, then set)
 
-**All P0 Bugs:** ✅ Resolved
-**Documentation:** ✅ Organized and current
-**Codebase:** ✅ Clean and maintainable
-
----
-
-## 📈 Next Steps
-
-### Current Phase
-- System in post-sprint pause
-- Ready for next feature work
-- Production monitoring ongoing
-
-### Staging Environment Setup (Planned)
-- ✅ Test tenant created in database (tenant_id: `00000000-0000-0000-0000-000000000003`)
-- ⏳ Middleware enhancement for `ALLOWED_TENANTS` environment variable
-- ⏳ Git branch setup (staging branch)
-- ⏳ Vercel configuration (env vars + custom domain)
-- ⏳ DNS configuration for testtenant.compsync.net
-- **See:** `TestingDomainSetup.md` for complete plan
-
-### Phase 2 Scheduler Discovery (Session Nov 7, 2025)
-- ✅ Discovered existing scheduler implementation (~60% complete!)
-- ✅ Backend complete: scheduling.ts router (1,104 lines) + scheduling.ts lib (319 lines)
-- ✅ Frontend components exist: SchedulingManager, SessionCard, UnscheduledEntries, ConflictPanel
-- ✅ Database schema ready: competition_sessions, entry numbering, schedule locking
-- ⏳ Missing: Drag-and-drop UI, advanced rules, feedback system, session management UI
-- ⏳ Optional: AI-powered draft generation with DeepSeek ($0.45/year)
-- **Revised timeline:** 3-4 weeks to production (not 5-7 weeks from scratch)
-- **See:** `SchedulerFeaturePlan.md` for complete analysis
-- **See:** `PHASE2_LLM_EXPLORATION.md` for AI scheduling benefits
-
-### Phase 2 Spec Questions (11 Outstanding)
-- Documented in MASTER_BUSINESS_LOGIC.md (lines 84-153)
-- Critical needs: Routine numbering scheme, session creation workflow, feedback mechanics
-- **Action:** Schedule 2-3 hour Phase 2 spec session when ready
-
-### Potential Next Work
-- Monitor feedback system submissions
-- Address any user-reported issues
-- Performance optimizations if needed
+**Draft State Pattern:**
+When resetting schedules:
+- ✅ Clear database AND local state
+- ✅ Call `refetch()` after clearing draft
+- ✅ Prevents stale UI after reset operations
 
 ---
 
-## 🧪 Test Credentials
-
-**Super Admin:**
-- Email: `danieljohnabrahamson@gmail.com`
-- Password: `123456`
-
-**Competition Directors:**
-- **EMPWR:** `empwrdance@gmail.com` / `1CompSyncLogin!`
-- **Glow:** `stefanoalyessia@gmail.com` / `1CompSyncLogin!`
-
-**Studio Director (Test):**
-- Email: `djamusic@gmail.com`
-- Password: `123456`
-
----
-
-**Last Updated:** November 7, 2025
-**Status:** ✅ COMPLETE - Post-sprint cleanup finished, ready for next work
-**Next Action:** Await user direction for next feature/fix priorities
+**Last Updated:** November 24, 2025
