@@ -58,10 +58,13 @@ export default function SchedulePage() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockType, setBlockType] = useState<'award' | 'break'>('award');
 
-  // Selection state
+  // Selection state (unscheduled routines)
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
 
-  // Selection handlers
+  // Selection state (scheduled routines)
+  const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
+
+  // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
     setSelectedRoutineIds(prev => {
       const next = new Set(prev);
@@ -517,6 +520,8 @@ export default function SchedulePage() {
               selectedDate={selectedDate}
               viewMode="cd"
               conflicts={[]}
+              selectedRoutineIds={selectedScheduledIds}
+              onSelectionChange={setSelectedScheduledIds}
             />
           </div>
           </div>

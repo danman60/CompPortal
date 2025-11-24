@@ -16,7 +16,7 @@
  * - Dancer names display (first 2 names + "+X more" if needed)
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -39,6 +39,8 @@ interface ScheduleTableProps {
   viewMode: ViewMode;
   conflicts: Conflict[];
   onRoutineClick?: (routineId: string) => void;
+  selectedRoutineIds?: Set<string>;
+  onSelectionChange?: (selectedIds: Set<string>) => void;
 }
 
 interface Routine {
@@ -101,6 +103,9 @@ function SortableRoutineRow({
   isLastInSession,
   sessionBlock,
   onRoutineClick,
+  isSelected,
+  onCheckboxChange,
+  showCheckbox,
 }: {
   routine: Routine;
   index: number;
@@ -116,6 +121,9 @@ function SortableRoutineRow({
   isLastInSession: boolean;
   sessionBlock: any;
   onRoutineClick?: (routineId: string) => void;
+  isSelected?: boolean;
+  onCheckboxChange?: (routineId: string, index: number, event: React.MouseEvent) => void;
+  showCheckbox?: boolean;
 }) {
   const {
     attributes,
@@ -150,6 +158,24 @@ function SortableRoutineRow({
         `}
         onClick={() => onRoutineClick?.(routine.id)}
       >
+      {/* Checkbox - 32px */}
+      {showCheckbox && (
+        <td className="px-1 py-1 text-center" style={{ width: '32px' }}>
+          <input
+            type="checkbox"
+            checked={isSelected || false}
+            onChange={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCheckboxChange?.(routine.id, index, e);
+            }}
+            className="w-4 h-4 rounded border-white/30 bg-white/10 checked:bg-purple-600 cursor-pointer"
+          />
+        </td>
+      )}
+
       {/* Entry Number - 45px */}
       <td className="px-1 py-1 text-xs font-mono font-bold text-white whitespace-nowrap" style={{ width: '45px' }}>
         #{routine.entryNumber || '?'}
@@ -245,11 +271,56 @@ export function ScheduleTable({
   viewMode,
   conflicts,
   onRoutineClick,
+  selectedRoutineIds = new Set(),
+  onSelectionChange,
 }: ScheduleTableProps) {
+  const lastClickedIndexRef = useRef<number | null>(null);
+
   // Sort routines by entry_number
   const sortedRoutines = useMemo(() => {
     return [...routines].sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
   }, [routines]);
+
+  // Handle checkbox change with shift-click support
+  const handleCheckboxChange = (routineId: string, index: number, event: React.MouseEvent) => {
+    if (!onSelectionChange) return;
+
+    const newSelection = new Set(selectedRoutineIds);
+
+    // Shift-click: select range
+    if (event.shiftKey && lastClickedIndexRef.current !== null) {
+      const start = Math.min(lastClickedIndexRef.current, index);
+      const end = Math.max(lastClickedIndexRef.current, index);
+
+      // Add all routines in range
+      for (let i = start; i <= end; i++) {
+        newSelection.add(sortedRoutines[i].id);
+      }
+    } else {
+      // Normal click: toggle single routine
+      if (newSelection.has(routineId)) {
+        newSelection.delete(routineId);
+      } else {
+        newSelection.add(routineId);
+      }
+    }
+
+    lastClickedIndexRef.current = index;
+    onSelectionChange(newSelection);
+  };
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (!onSelectionChange) return;
+
+    if (selectedRoutineIds.size === sortedRoutines.length) {
+      // Deselect all
+      onSelectionChange(new Set());
+    } else {
+      // Select all
+      onSelectionChange(new Set(sortedRoutines.map(r => r.id)));
+    }
+  };
 
   // Calculate routines to show trophy helper (when ≤5 unscheduled remain in category)
   const lastRoutineIds = useMemo(() => {
@@ -442,6 +513,16 @@ export function ScheduleTable({
         <table className="w-full" style={{ tableLayout: 'fixed', borderCollapse: 'collapse' }}>
           <thead>
             <tr className="bg-indigo-600/20 border-b border-indigo-600/30">
+              {onSelectionChange && (
+                <th className="px-1 py-1 text-center" style={{ width: '32px' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedRoutineIds.size === sortedRoutines.length && sortedRoutines.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded border-white/30 bg-white/10 checked:bg-purple-600 cursor-pointer"
+                  />
+                </th>
+              )}
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>
                 #
               </th>
@@ -514,6 +595,9 @@ export function ScheduleTable({
                     isLastInSession={isLastInSession(index)}
                     sessionBlock={getSessionBlock(index)}
                     onRoutineClick={onRoutineClick}
+                    isSelected={selectedRoutineIds.has(routine.id)}
+                    onCheckboxChange={handleCheckboxChange}
+                    showCheckbox={!!onSelectionChange}
                   />
                 );
               })}
