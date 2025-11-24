@@ -582,6 +582,17 @@ function FilterDropdown({
 }) {
   const selectedCount = selectedIds.length;
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [buttonRect, setButtonRect] = React.useState<DOMRect | null>(null);
+
+  // Calculate button position when dropdown opens
+  React.useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const button = dropdownRef.current.querySelector('button');
+      if (button) {
+        setButtonRect(button.getBoundingClientRect());
+      }
+    }
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -610,9 +621,13 @@ function FilterDropdown({
         {label}{selectedCount > 0 && ` (${selectedCount})`} ▼
       </button>
 
-      {isOpen && (
+      {isOpen && buttonRect && (
         <div
-          className="absolute top-full left-0 mt-1 z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-full max-h-[300px] overflow-y-auto custom-scrollbar"
+          className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar"
+          style={{
+            top: `${buttonRect.bottom + 4}px`,
+            left: `${buttonRect.left}px`,
+          }}
         >
           {options.map((option) => (
             <button
