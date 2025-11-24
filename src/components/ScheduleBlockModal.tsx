@@ -31,6 +31,7 @@ interface ScheduleBlockModalProps {
     duration: number;
   } | null;
   mode?: 'create' | 'edit';
+  preselectedType?: 'award' | 'break';
 }
 
 const DURATION_OPTIONS = [15, 30, 45, 60];
@@ -43,9 +44,10 @@ export function ScheduleBlockModal({
   tenantId,
   initialBlock = null,
   mode = 'create',
+  preselectedType,
 }: ScheduleBlockModalProps) {
   const [blockType, setBlockType] = useState<'award' | 'break'>(
-    initialBlock?.type || 'award'
+    preselectedType || initialBlock?.type || 'award'
   );
   const [title, setTitle] = useState(initialBlock?.title || '');
   const [duration, setDuration] = useState(initialBlock?.duration || 30);
@@ -54,12 +56,12 @@ export function ScheduleBlockModal({
   // Reset form when modal opens with new initial data
   useEffect(() => {
     if (isOpen) {
-      setBlockType(initialBlock?.type || 'award');
+      setBlockType(preselectedType || initialBlock?.type || 'award');
       setTitle(initialBlock?.title || '');
       setDuration(initialBlock?.duration || 30);
       setError('');
     }
-  }, [isOpen, initialBlock]);
+  }, [isOpen, initialBlock, preselectedType]);
 
   const createBlock = trpc.scheduling.createScheduleBlock.useMutation({
     onSuccess: () => {
@@ -155,40 +157,42 @@ export function ScheduleBlockModal({
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Block Type Selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-purple-300 mb-3">
-              Block Type
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setBlockType('award')}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  blockType === 'award'
-                    ? 'bg-amber-600/20 border-amber-500 shadow-lg'
-                    : 'bg-white/5 border-white/20 hover:border-amber-500/50'
-                }`}
-              >
-                <div className="text-3xl mb-2">🏆</div>
-                <div className="text-sm font-medium text-white">Award</div>
-                <div className="text-xs text-gray-400 mt-1">Ceremony</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setBlockType('break')}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  blockType === 'break'
-                    ? 'bg-cyan-600/20 border-cyan-500 shadow-lg'
-                    : 'bg-white/5 border-white/20 hover:border-cyan-500/50'
-                }`}
-              >
-                <div className="text-3xl mb-2">☕</div>
-                <div className="text-sm font-medium text-white">Break</div>
-                <div className="text-xs text-gray-400 mt-1">Scheduled</div>
-              </button>
+          {/* Block Type Selector - Only show if not preselected */}
+          {!preselectedType && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-purple-300 mb-3">
+                Block Type
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBlockType('award')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    blockType === 'award'
+                      ? 'bg-amber-600/20 border-amber-500 shadow-lg'
+                      : 'bg-white/5 border-white/20 hover:border-amber-500/50'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">🏆</div>
+                  <div className="text-sm font-medium text-white">Award</div>
+                  <div className="text-xs text-gray-400 mt-1">Ceremony</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBlockType('break')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    blockType === 'break'
+                      ? 'bg-cyan-600/20 border-cyan-500 shadow-lg'
+                      : 'bg-white/5 border-white/20 hover:border-cyan-500/50'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">☕</div>
+                  <div className="text-sm font-medium text-white">Break</div>
+                  <div className="text-xs text-gray-400 mt-1">Scheduled</div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Title Input */}
           <div className="mb-6">

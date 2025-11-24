@@ -534,6 +534,7 @@ export default function SchedulePage() {
         competitionId={TEST_COMPETITION_ID}
         tenantId={TEST_TENANT_ID}
         mode="create"
+        preselectedType={blockType}
       />
 
       {/* Custom scrollbar styles */}

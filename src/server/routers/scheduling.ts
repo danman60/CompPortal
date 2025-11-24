@@ -1428,8 +1428,8 @@ export const schedulingRouter = router({
       const updated = await prisma.schedule_blocks.update({
         where: { id: input.blockId },
         data: {
-          scheduled_start_time: roundedTime,
-          display_order: input.displayOrder,
+          scheduled_time: roundedTime,
+          sort_order: input.displayOrder,
           updated_at: new Date(),
         },
       });

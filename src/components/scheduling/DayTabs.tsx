@@ -194,45 +194,26 @@ export function DayTabs({
         })}
         </div>
 
-        {/* Block Creation + Reset Buttons beside day tabs */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Block Buttons (Compact) */}
-          {onCreateBlock && (
-            <>
-              <button
-                onClick={() => onCreateBlock('award')}
-                className="px-3 py-2 text-xs font-medium text-amber-300 bg-amber-900/30 border border-amber-500/50 rounded-lg hover:bg-amber-900/50 hover:border-amber-500 transition-colors whitespace-nowrap"
-                title="Add award ceremony block"
-              >
-                🏆 +Award
-              </button>
-              <button
-                onClick={() => onCreateBlock('break')}
-                className="px-3 py-2 text-xs font-medium text-cyan-300 bg-cyan-900/30 border border-cyan-500/50 rounded-lg hover:bg-cyan-900/50 hover:border-cyan-500 transition-colors whitespace-nowrap"
-              >
-                ☕ +Break
-              </button>
-            </>
-          )}
-
-          {/* Reset Buttons */}
-          {onResetDay && (
+        {/* Block Creation Buttons beside day tabs */}
+        {onCreateBlock && (
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              onClick={onResetDay}
-              className="px-3 py-2 text-xs font-medium text-red-300 bg-red-900/30 border border-red-500/50 rounded-lg hover:bg-red-900/50 hover:border-red-500 transition-colors whitespace-nowrap"
+              onClick={() => onCreateBlock('award')}
+              className="flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all bg-amber-900/30 text-amber-300 border-2 border-amber-500/50 hover:bg-amber-900/50 hover:border-amber-500"
+              title="Add award ceremony block"
             >
-              🔄 Reset Day
+              <div className="font-semibold text-xs mb-1">🏆 +Award</div>
+              <div className="text-xs text-amber-200/80">Add ceremony block</div>
             </button>
-          )}
-          {onResetAll && (
             <button
-              onClick={onResetAll}
-              className="px-3 py-2 text-xs font-medium text-red-200 bg-red-900/40 border border-red-500/60 rounded-lg hover:bg-red-900/60 hover:border-red-500 transition-colors whitespace-nowrap"
+              onClick={() => onCreateBlock('break')}
+              className="flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all bg-cyan-900/30 text-cyan-300 border-2 border-cyan-500/50 hover:bg-cyan-900/50 hover:border-cyan-500"
             >
-              🗑️ Reset All
+              <div className="font-semibold text-xs mb-1">☕ +Break</div>
+              <div className="text-xs text-cyan-200/80">Add break block</div>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

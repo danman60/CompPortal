@@ -252,7 +252,7 @@ export function RoutinePool({
                 <span className="text-xs text-white/70">
                   {selectedRoutineIds.size > 0 ? `${selectedRoutineIds.size} selected` : '0 selected'}
                 </span>
-                {selectedRoutineIds.size < routines.length && (
+                {selectedRoutineIds.size === 0 && (
                   <button
                     onClick={onSelectAll}
                     className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
@@ -625,7 +625,7 @@ function FilterDropdown({
         <div
           className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar"
           style={{
-            top: `${buttonRect.bottom + 4}px`,
+            top: `${buttonRect.top}px`,
             left: `${buttonRect.left}px`,
           }}
         >
