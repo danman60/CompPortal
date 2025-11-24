@@ -146,15 +146,10 @@ function SortableRoutineRow({
         {...listeners}
         className={`
           border-b border-white/10 hover:bg-white/5 transition-colors cursor-move relative
-          ${isLastInOveralls ? 'bg-yellow-500/10' : sessionBg}
+          ${sessionBg}
         `}
         onClick={() => onRoutineClick?.(routine.id)}
       >
-      {/* Gold border for trophy helper */}
-      {isLastInOveralls && (
-        <td className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-yellow-600" />
-      )}
-
       {/* Entry Number - 45px */}
       <td className="px-1 py-1 text-xs font-mono font-bold text-white whitespace-nowrap" style={{ width: '45px' }}>
         #{routine.entryNumber || '?'}
@@ -170,17 +165,6 @@ function SortableRoutineRow({
         <div className="truncate-cell">
           <span className="truncate" title={routine.title}>{routine.title}</span>
         </div>
-
-        {/* Trophy - simple tooltip */}
-        {isLastInOveralls && (
-          <span
-            className="absolute right-1 top-1/2 -translate-y-1/2 text-yellow-400 cursor-help text-xs"
-            title={`Last routine for ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}
-            style={{ pointerEvents: 'auto' }}
-          >
-            🏆
-          </span>
-        )}
       </td>
 
       {/* Studio - 35px */}
@@ -547,11 +531,6 @@ export function ScheduleTable({
           {conflicts.length > 0 && (
             <div className="text-red-400">
               ⚠️ <span className="font-semibold">{conflicts.length}</span> conflict{conflicts.length !== 1 ? 's' : ''}
-            </div>
-          )}
-          {lastRoutineIds.size > 0 && (
-            <div className="text-yellow-400">
-              🏆 <span className="font-semibold">{lastRoutineIds.size}</span> award{lastRoutineIds.size !== 1 ? 's' : ''}
             </div>
           )}
         </div>
