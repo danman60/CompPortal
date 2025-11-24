@@ -1399,11 +1399,11 @@ export const schedulingRouter = router({
         tenant_id: input.tenantId,
       };
 
-      // Filter by date if provided
+      // Filter by date if provided (parse in local timezone to match saved data)
       if (input.date) {
-        const dayStart = new Date(input.date);
-        const dayEnd = new Date(input.date);
-        dayEnd.setDate(dayEnd.getDate() + 1);
+        const [year, month, day] = input.date.split('-').map(Number);
+        const dayStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+        const dayEnd = new Date(year, month - 1, day + 1, 0, 0, 0, 0);
 
         where.scheduled_time = {
           gte: dayStart,
