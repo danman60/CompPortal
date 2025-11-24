@@ -247,28 +247,78 @@ export function DragDropProvider({
         .filter(r => r.isScheduled)
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-      // Find indices
-      const fromIndex = scheduledRoutines.findIndex(r => r.id === draggedRoutineId);
+      // Find target insertion index
       const toIndex = scheduledRoutines.findIndex(r => r.id === targetId);
 
-      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-        console.log('[DragDropProvider] No reorder needed');
+      if (toIndex === -1) {
+        console.log('[DragDropProvider] Target routine not found in schedule');
         return;
       }
 
-      // Reorder array
-      const reordered = [...scheduledRoutines];
-      const [removed] = reordered.splice(fromIndex, 1);
-      reordered.splice(toIndex, 0, removed);
+      if (isMultiDrag) {
+        // Multi-drag reorder: Remove all selected routines, then insert at target
+        console.log('[DragDropProvider] Multi-drag reorder:', routinesToDrag.length, 'routines');
 
-      // Recalculate times and entry numbers
-      const recalculated = calculateSchedule(
-        reordered,
-        reordered[0].performanceTime || '08:00:00',
-        reordered[0].entryNumber || 100
-      );
+        // Get IDs of routines being moved
+        const draggedIds = new Set(routinesToDrag.map(r => r.id));
 
-      onScheduleChange(recalculated);
+        // Check if target is one of the selected routines (no-op)
+        if (draggedIds.has(targetId)) {
+          console.log('[DragDropProvider] Target is in selection, no reorder needed');
+          return;
+        }
+
+        // Remove all selected routines from schedule
+        const withoutDragged = scheduledRoutines.filter(r => !draggedIds.has(r.id));
+
+        // Find new insertion index (may have shifted after removing selected routines)
+        const newToIndex = withoutDragged.findIndex(r => r.id === targetId);
+
+        if (newToIndex === -1) {
+          console.error('[DragDropProvider] Target lost after removing dragged routines');
+          return;
+        }
+
+        // Insert all selected routines at target position (in their original relative order)
+        const reordered = [...withoutDragged];
+        reordered.splice(newToIndex, 0, ...routinesToDrag);
+
+        // Recalculate times and entry numbers
+        const recalculated = calculateSchedule(
+          reordered,
+          reordered[0].performanceTime || '08:00:00',
+          reordered[0].entryNumber || 100
+        );
+
+        onScheduleChange(recalculated);
+
+        // Clear selection after successful multi-drag
+        if (onClearSelection) {
+          onClearSelection();
+        }
+      } else {
+        // Single routine reorder (original logic)
+        const fromIndex = scheduledRoutines.findIndex(r => r.id === draggedRoutineId);
+
+        if (fromIndex === -1 || fromIndex === toIndex) {
+          console.log('[DragDropProvider] No reorder needed');
+          return;
+        }
+
+        // Reorder array
+        const reordered = [...scheduledRoutines];
+        const [removed] = reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex, 0, removed);
+
+        // Recalculate times and entry numbers
+        const recalculated = calculateSchedule(
+          reordered,
+          reordered[0].performanceTime || '08:00:00',
+          reordered[0].entryNumber || 100
+        );
+
+        onScheduleChange(recalculated);
+      }
     }
 
     // Case 3: Other combinations (e.g., SR → UR to unschedule)
