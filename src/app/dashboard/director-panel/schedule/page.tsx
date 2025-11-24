@@ -105,6 +105,7 @@ export default function SchedulePage() {
   const resetDay = trpc.scheduling.resetDay.useMutation({
     onSuccess: (data) => {
       toast.success(`Unscheduled ${data.count} routines`);
+      setDraftSchedule([]); // Clear local draft state
       refetch();
     },
     onError: (error) => {
@@ -115,6 +116,7 @@ export default function SchedulePage() {
   const resetCompetition = trpc.scheduling.resetCompetition.useMutation({
     onSuccess: (data) => {
       toast.success(`Unscheduled ${data.count} routines`);
+      setDraftSchedule([]); // Clear local draft state
       refetch();
     },
     onError: (error) => {

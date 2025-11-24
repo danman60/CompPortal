@@ -252,13 +252,15 @@ export function RoutinePool({
                 <span className="text-xs text-white/70">
                   {selectedRoutineIds.size > 0 ? `${selectedRoutineIds.size} selected` : '0 selected'}
                 </span>
-                <button
-                  onClick={onSelectAll}
-                  className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
-                  title="Select all filtered routines"
-                >
-                  ✓ Select All
-                </button>
+                {selectedRoutineIds.size < routines.length && (
+                  <button
+                    onClick={onSelectAll}
+                    className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                    title="Select all filtered routines"
+                  >
+                    ✓ Select All
+                  </button>
+                )}
                 {selectedRoutineIds.size > 0 && (
                   <button
                     onClick={onDeselectAll}
@@ -595,18 +597,6 @@ function FilterDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggleOpen]);
 
-  const [buttonRect, setButtonRect] = React.useState<DOMRect | null>(null);
-
-  // Update button position when dropdown opens
-  React.useEffect(() => {
-    if (isOpen && dropdownRef.current) {
-      const button = dropdownRef.current.querySelector('button');
-      if (button) {
-        setButtonRect(button.getBoundingClientRect());
-      }
-    }
-  }, [isOpen]);
-
   return (
     <div ref={dropdownRef} className="relative flex-shrink-0">
       <button
@@ -620,18 +610,17 @@ function FilterDropdown({
         {label}{selectedCount > 0 && ` (${selectedCount})`} ▼
       </button>
 
-      {isOpen && buttonRect && (
+      {isOpen && (
         <div
-          className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto"
-          style={{
-            top: `${buttonRect.bottom + 4}px`,
-            left: `${buttonRect.left}px`,
-          }}
+          className="absolute top-full left-0 mt-1 z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-full max-h-[300px] overflow-y-auto custom-scrollbar"
         >
           {options.map((option) => (
             <button
               key={option.id}
-              onClick={() => onToggle(option.id)}
+              onClick={() => {
+                onToggle(option.id);
+                onToggleOpen(); // Close dropdown after selection
+              }}
               className={`w-full px-3 py-2 text-left text-sm transition-colors ${
                 selectedIds.includes(option.id)
                   ? 'bg-purple-600 text-white'
