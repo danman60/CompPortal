@@ -1387,6 +1387,41 @@ export const schedulingRouter = router({
     }),
 
   // Create schedule block (award or break)
+  getScheduleBlocks: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+      date: z.string().optional(), // YYYY-MM-DD format, if provided only return blocks for that day
+    }))
+    .query(async ({ input }) => {
+      const where: any = {
+        competition_id: input.competitionId,
+        tenant_id: input.tenantId,
+      };
+
+      // Filter by date if provided
+      if (input.date) {
+        const dayStart = new Date(input.date);
+        const dayEnd = new Date(input.date);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+
+        where.scheduled_time = {
+          gte: dayStart,
+          lt: dayEnd,
+        };
+      }
+
+      const blocks = await prisma.schedule_blocks.findMany({
+        where,
+        orderBy: [
+          { schedule_day: 'asc' },
+          { sort_order: 'asc' },
+        ],
+      });
+
+      return blocks;
+    }),
+
   createScheduleBlock: publicProcedure
     .input(z.object({
       competitionId: z.string().uuid(),

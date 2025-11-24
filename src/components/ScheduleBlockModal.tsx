@@ -21,6 +21,11 @@ interface ScheduleBlockModalProps {
     type: 'award' | 'break';
     title: string;
     duration: number;
+    placement?: {
+      type: 'after_routine' | 'by_time';
+      routineNumber?: number;
+      time?: string; // HH:MM format
+    };
   }) => void;
   competitionId: string;
   tenantId: string;
@@ -53,6 +58,11 @@ export function ScheduleBlockModal({
   const [duration, setDuration] = useState(initialBlock?.duration || 30);
   const [error, setError] = useState('');
 
+  // Placement options
+  const [placementType, setPlacementType] = useState<'after_routine' | 'by_time'>('after_routine');
+  const [routineNumber, setRoutineNumber] = useState<number | ''>('');
+  const [timeValue, setTimeValue] = useState<string>('09:00');
+
   // Reset form when modal opens with new initial data
   useEffect(() => {
     if (isOpen) {
@@ -60,6 +70,9 @@ export function ScheduleBlockModal({
       setTitle(initialBlock?.title || '');
       setDuration(initialBlock?.duration || 30);
       setError('');
+      setPlacementType('after_routine');
+      setRoutineNumber('');
+      setTimeValue('09:00');
     }
   }, [isOpen, initialBlock, preselectedType]);
 
@@ -77,6 +90,11 @@ export function ScheduleBlockModal({
       type: blockType,
       title: title.trim() || getDefaultTitle(),
       duration,
+      placement: {
+        type: placementType,
+        routineNumber: placementType === 'after_routine' && routineNumber !== '' ? routineNumber : undefined,
+        time: placementType === 'by_time' ? timeValue : undefined,
+      },
     });
     handleClose();
   };
@@ -255,6 +273,82 @@ export function ScheduleBlockModal({
                 <span>Block start times auto-round to nearest 5-minute increment</span>
               </div>
             </div>
+          </div>
+
+          {/* Placement Options */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-purple-300 mb-3">
+              Placement
+            </label>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                type="button"
+                onClick={() => setPlacementType('after_routine')}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  placementType === 'after_routine'
+                    ? 'bg-purple-600/30 border-purple-500 shadow-lg'
+                    : 'bg-white/5 border-white/20 hover:border-purple-500/50'
+                }`}
+              >
+                <div className="text-2xl mb-2">#️⃣</div>
+                <div className="text-sm font-medium text-white">After Routine</div>
+                <div className="text-xs text-gray-400 mt-1">Enter routine number</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlacementType('by_time')}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  placementType === 'by_time'
+                    ? 'bg-cyan-600/30 border-cyan-500 shadow-lg'
+                    : 'bg-white/5 border-white/20 hover:border-cyan-500/50'
+                }`}
+              >
+                <div className="text-2xl mb-2">🕐</div>
+                <div className="text-sm font-medium text-white">By Time</div>
+                <div className="text-xs text-gray-400 mt-1">Enter specific time</div>
+              </button>
+            </div>
+
+            {/* After Routine Input */}
+            {placementType === 'after_routine' && (
+              <div>
+                <label htmlFor="routineNumber" className="text-xs text-gray-400 mb-1 block">
+                  Routine number to place after:
+                </label>
+                <input
+                  type="number"
+                  id="routineNumber"
+                  value={routineNumber}
+                  onChange={(e) => setRoutineNumber(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  min={1}
+                  placeholder="e.g., 42"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                />
+                <div className="text-xs text-purple-300 mt-2">
+                  💡 Block will be inserted after this routine in the schedule
+                </div>
+              </div>
+            )}
+
+            {/* By Time Input */}
+            {placementType === 'by_time' && (
+              <div>
+                <label htmlFor="timeValue" className="text-xs text-gray-400 mb-1 block">
+                  Time to place block (HH:MM format):
+                </label>
+                <input
+                  type="time"
+                  id="timeValue"
+                  value={timeValue}
+                  onChange={(e) => setTimeValue(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                />
+                <div className="text-xs text-cyan-300 mt-2 flex items-center gap-1">
+                  <span>⏰</span>
+                  <span>Times auto-round to nearest 5-minute increment</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Error Message */}
