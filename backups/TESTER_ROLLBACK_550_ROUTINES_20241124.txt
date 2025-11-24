@@ -1,0 +1,70 @@
+========================================
+TESTER TENANT DATA REDUCTION - ROLLBACK INFO
+Date: November 24, 2025
+Tenant: tester (00000000-0000-0000-0000-000000000003)
+========================================
+
+OPERATION: Reduced routines from 600 to 50 (deleted 550)
+
+KEPT 50 ROUTINE IDs:
+f4e6c8d3-cea6-495d-9e0f-5f49c3293265
+fcb7e270-5efa-41aa-a054-70a60dc160f0
+221378c8-f931-4b99-9693-37ee24186fd6
+349cedc3-6e3f-4b60-8609-a5c9a155f532
+30c6061b-6c4d-44bd-926c-76d0f5791580
+fa426f5f-dcd0-415d-9333-c97c4593785e
+c330c2eb-6d26-4160-b64e-83c9e48bbb81
+83591500-0218-4a52-8ae2-eca8fd0a9475
+95d82b3a-978b-4100-be1f-7cd0f846538c
+0aeea8ef-6fd9-42a6-b339-d7f53f060284
+828e6636-8b17-4edc-8cbf-6780c70a0695
+ca655364-3d75-42f5-9342-88dfef5c4212
+babc5db2-a633-41c1-965c-cfaa2b54723f
+edbd08ef-307d-4af3-a04b-d4c480b2e927
+ba772548-cfd4-4bf2-8af5-5e684a56daa9
+76f43b2c-f58a-4581-afea-08f91d7f20e5
+dfaec395-cfb9-4d0e-b1e8-78adfd3b7483
+bf1a6132-de8f-4d0c-a049-932586da0b47
+de0acb76-d1ff-488c-8dc6-9257f6f19e83
+c5cff4d8-c544-4d4b-b305-68e52126509e
+88bed858-9773-4015-961e-8503d582ad03
+b88cf189-e15f-41ee-a6a7-18b1173d629b
+9426eef2-46a2-436f-b787-27e138efec8e
+acb707d3-8d47-4e07-a27a-d91c919fa004
+54e4a6ea-ae4d-429e-bbe7-ac53f42d26dc
+51337ae5-a47f-4685-8d85-3dc133a07872
+99f0abe7-c39a-40f8-8374-eafa178da44c
+d12a4a9a-5c1e-41d3-b61d-1a3fa3a869f6
+8c91358b-8177-410d-9cf7-192992cdc5b4
+fe5f5bc9-dcd4-41e3-87f9-3f2963c3d6c5
+dddc9d1a-c5ae-4d4f-b3c0-9f7cda437b7c
+1d04260f-73aa-4643-8afd-d9e5e7b40858
+b8a74c6f-5fbd-4932-9bac-6bddb8e35211
+6267af73-c3e2-45ad-aacf-b31b36fa0f93
+bd583367-78ca-41ef-b0a1-e7c02088a0b3
+afe9f674-8e34-41b8-ac16-bc468ccb01ae
+b0c2a4ca-3578-40c1-bcc2-0aba998297b1
+f3128df3-19e3-40a6-af4f-173c67781ce1
+9890f155-0029-4132-8823-db3220f96887
+6170b39b-6e27-4b94-b902-bac88869da2c
+da44285b-963b-49d0-9285-13a6dc514f27
+6fcb291a-2bbd-4eca-9a5a-2992333648cd
+cf72f887-0718-4235-8ca1-d60226d98337
+0ff44c91-296b-45b8-ae20-2fd1f96f1cbb
+299c8909-7e19-4237-99ce-9d3459ddccd0
+da20fc6b-143c-4ae7-9853-95bfc98c61e1
+10f678a1-39e2-4758-bc59-d4d4220e646e
+8655743c-9716-40ca-b661-bbb59fafeaf5
+62fb35d2-7f9b-4c45-8ef1-bad8844970e3
+e90fb022-cfdc-46fe-8ccb-ba4ee9d119c7
+
+ROLLBACK: To restore the 550 deleted routines, export from production backup using:
+
+SELECT * FROM competition_entries
+WHERE tenant_id = '00000000-0000-0000-0000-000000000003'
+AND id NOT IN (
+  -- paste the 50 IDs above as comma-separated quoted strings
+);
+
+NOTE: Full data restore requires restoring from November 24 pre-reduction backup
+========================================

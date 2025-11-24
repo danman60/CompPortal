@@ -561,10 +561,10 @@ export default function SchedulePage() {
             let displayOrder: number;
 
             if (block.placement.type === 'by_time' && block.placement.time) {
-              // By time: Use provided time with selected date
+              // By time: Use provided time with selected date (parse in local timezone)
               const [hours, minutes] = block.placement.time.split(':').map(Number);
-              targetTime = new Date(selectedDate);
-              targetTime.setHours(hours, minutes, 0, 0);
+              const [year, month, day] = selectedDate.split('-').map(Number);
+              targetTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
               // Find display order: count routines before this time + 1
               const routinesBeforeTime = (scheduledRoutines || []).filter(r => {
@@ -584,10 +584,10 @@ export default function SchedulePage() {
                 return;
               }
 
-              // Calculate time: routine's time + duration
+              // Calculate time: routine's time + duration (parse in local timezone)
               const [hours, minutes] = targetRoutine.scheduledTimeString.split(':').map(Number);
-              targetTime = new Date(selectedDate);
-              targetTime.setHours(hours, minutes, 0, 0);
+              const [year, month, day] = selectedDate.split('-').map(Number);
+              targetTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
               targetTime.setMinutes(targetTime.getMinutes() + (targetRoutine.duration || 0));
 
               // Display order: routine's entry number + 1
