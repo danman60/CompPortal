@@ -596,7 +596,8 @@ export function ScheduleTable({
     data: { date: selectedDate },
   });
 
-  if (sortedRoutines.length === 0) {
+  // Show empty state only if BOTH routines and blocks are empty
+  if (sortedRoutines.length === 0 && scheduleBlocks.length === 0) {
     return (
       <div
         ref={setNodeRef}
