@@ -99,6 +99,11 @@ export default function SchedulePage() {
     tenantId: TEST_TENANT_ID,
   });
 
+  // Fetch competition details for PDF branding
+  const { data: competition } = trpc.competition.getById.useQuery({
+    id: TEST_COMPETITION_ID,
+  });
+
   // Fetch schedule blocks for selected date
   const { data: scheduleBlocks, refetch: refetchBlocks } = trpc.scheduling.getScheduleBlocks.useQuery({
     competitionId: TEST_COMPETITION_ID,
@@ -178,12 +183,14 @@ export default function SchedulePage() {
       // Create PDF
       const doc = new jsPDF();
 
-      // Add title
-      doc.setFontSize(16);
-      doc.text('Competition Schedule', 14, 15);
+      // Add competition branding
+      doc.setFontSize(18);
+      doc.text(competition?.name || 'Competition Schedule', 14, 15);
+      doc.setFontSize(12);
+      doc.text('Performance Schedule', 14, 23);
       doc.setFontSize(10);
-      doc.text(`Date: ${selectedDate}`, 14, 22);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 27);
+      doc.text(`Date: ${selectedDate}`, 14, 30);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 35);
 
       // Merge routines and blocks into single sorted array
       const scheduleItems: Array<{ type: 'routine' | 'block'; data: any }> = [];
@@ -231,15 +238,15 @@ export default function SchedulePage() {
           // Block row
           const block = item.data;
           const time = block.scheduled_time ? block.scheduled_time.toTimeString().split(' ')[0].substring(0, 5) : '';
-          const icon = block.type === 'award' ? '🏆' : '☕';
-          const label = block.type === 'award' ? 'AWARD CEREMONY' : `${block.duration_minutes || 30} MINUTE BREAK`;
+          const icon = block.block_type === 'award' ? '🏆' : '☕';
+          const label = block.block_type === 'award' ? 'AWARD CEREMONY' : `${block.duration_minutes || 30} MINUTE BREAK`;
           return ['', time, `${icon} ${label}`, '', '', '', `${block.duration_minutes || 30} min`];
         }
       });
 
       // Add table
       autoTable(doc, {
-        startY: 32,
+        startY: 40,
         head: [['#', 'Time', 'Routine', 'Studio', 'Classification', 'Category', 'Duration']],
         body: tableData,
         styles: { fontSize: 8 },
