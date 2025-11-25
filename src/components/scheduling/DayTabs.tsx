@@ -196,10 +196,10 @@ export function DayTabs({
 
         {/* Block Creation Buttons beside day tabs */}
         {onCreateBlock && (
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-stretch gap-2 flex-shrink-0">
             <button
               onClick={() => onCreateBlock('award')}
-              className="flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all bg-amber-900/30 text-amber-300 border-2 border-amber-500/50 hover:bg-amber-900/50 hover:border-amber-500"
+              className="flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all bg-amber-900/30 text-amber-300 border-2 border-amber-500/50 hover:bg-amber-900/50 hover:border-amber-500 flex flex-col justify-center"
               title="Add award ceremony block"
             >
               <div className="font-semibold text-xs mb-1">🏆 +Award</div>
@@ -207,7 +207,7 @@ export function DayTabs({
             </button>
             <button
               onClick={() => onCreateBlock('break')}
-              className="flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all bg-cyan-900/30 text-cyan-300 border-2 border-cyan-500/50 hover:bg-cyan-900/50 hover:border-cyan-500"
+              className="flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all bg-cyan-900/30 text-cyan-300 border-2 border-cyan-500/50 hover:bg-cyan-900/50 hover:border-cyan-500 flex flex-col justify-center"
             >
               <div className="font-semibold text-xs mb-1">☕ +Break</div>
               <div className="text-xs text-cyan-200/80">Add break block</div>

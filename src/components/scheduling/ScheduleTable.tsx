@@ -49,6 +49,7 @@ interface ScheduleTableProps {
     scheduled_time: Date | null;
     sort_order: number | null;
   }>;
+  onDeleteBlock?: (blockId: string) => void;
 }
 
 interface Routine {
@@ -99,6 +100,7 @@ interface OverallsCategory {
 function SortableBlockRow({
   block,
   showCheckbox,
+  onDelete,
 }: {
   block: {
     id: string;
@@ -108,6 +110,7 @@ function SortableBlockRow({
     scheduled_time: Date | null;
   };
   showCheckbox?: boolean;
+  onDelete?: (blockId: string) => void;
 }) {
   const {
     attributes,
@@ -161,10 +164,24 @@ function SortableBlockRow({
         {displayTime}
       </td>
       <td colSpan={5} className="px-1 py-1">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{icon}</span>
-          <span className="text-sm font-semibold text-white">{block.title}</span>
-          <span className="text-xs text-white/60 ml-2">({block.duration_minutes} min)</span>
+        <div className="flex items-center gap-2 justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{icon}</span>
+            <span className="text-sm font-semibold text-white">{block.title}</span>
+            <span className="text-xs text-white/60 ml-2">({block.duration_minutes} min)</span>
+          </div>
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(block.id);
+              }}
+              className="px-2 py-1 text-xs font-bold text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded transition-colors"
+              title="Delete block"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </td>
     </tr>
@@ -358,6 +375,7 @@ export function ScheduleTable({
   selectedRoutineIds = new Set(),
   onSelectionChange,
   scheduleBlocks = [],
+  onDeleteBlock,
 }: ScheduleTableProps) {
   const lastClickedIndexRef = useRef<number | null>(null);
 
@@ -679,6 +697,7 @@ export function ScheduleTable({
                       key={`block-${item.data.id}`}
                       block={item.data}
                       showCheckbox={!!onSelectionChange}
+                      onDelete={onDeleteBlock}
                     />
                   );
                 }

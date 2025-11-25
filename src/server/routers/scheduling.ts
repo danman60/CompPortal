@@ -1480,6 +1480,18 @@ export const schedulingRouter = router({
       return updated;
     }),
 
+  deleteScheduleBlock: publicProcedure
+    .input(z.object({
+      blockId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      await prisma.schedule_blocks.delete({
+        where: { id: input.blockId },
+      });
+
+      return { success: true };
+    }),
+
   // Update block position (for drag-and-drop reordering)
   updateBlockPosition: publicProcedure
     .input(z.object({

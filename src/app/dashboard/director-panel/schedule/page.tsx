@@ -149,8 +149,13 @@ export default function SchedulePage() {
 
   // Unschedule specific routines mutation
   const unscheduleRoutines = trpc.scheduling.unscheduleRoutines.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       toast.success(`Unscheduled ${data.count} routine(s)`);
+
+      // Remove unscheduled routines from draft state
+      const unscheduledIds = new Set(variables.routineIds);
+      setDraftSchedule(prev => prev.filter(r => !unscheduledIds.has(r.id)));
+
       setSelectedScheduledIds(new Set()); // Clear selection
       refetch(); // Refetch routines
     },
@@ -162,11 +167,44 @@ export default function SchedulePage() {
   // Place schedule block mutation
   const placeBlock = trpc.scheduling.placeScheduleBlock.useMutation();
 
+  // Delete schedule block mutation
+  const deleteBlock = trpc.scheduling.deleteScheduleBlock.useMutation({
+    onSuccess: () => {
+      toast.success('Schedule block deleted');
+      refetchBlocks(); // Refetch blocks after deletion
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete block: ${error.message}`);
+    },
+  });
+
   // PDF Export function
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!routines) {
       toast.error('No data to export');
       return;
+    }
+
+    // Auto-save draft changes before exporting
+    if (draftSchedule.length > 0) {
+      try {
+        toast.loading('Saving schedule before export...', { id: 'pdf-save' });
+        await scheduleMutation.mutateAsync({
+          tenantId: TEST_TENANT_ID,
+          competitionId: TEST_COMPETITION_ID,
+          date: selectedDate,
+          routines: draftSchedule.map(r => ({
+            routineId: r.id,
+            entryNumber: r.entryNumber || 100,
+            performanceTime: r.performanceTime || '08:00:00',
+          })),
+        });
+        await refetch(); // Refetch to get latest data
+        toast.success('Schedule saved', { id: 'pdf-save' });
+      } catch (error: any) {
+        toast.error(`Failed to save schedule: ${error.message}`, { id: 'pdf-save' });
+        return;
+      }
     }
 
     // Get scheduled routines for selected date
@@ -348,6 +386,30 @@ export default function SchedulePage() {
       setDraftSchedule(serverScheduled);
     }
   }, [routines, selectedDate, draftSchedule.length]);
+
+  // 5-minute autosave with safety checks
+  useEffect(() => {
+    const autosaveInterval = setInterval(() => {
+      // Safety checks before autosaving
+      if (!hasUnsavedChanges) return; // No unsaved changes
+      if (draftSchedule.length === 0) return; // No draft to save
+      if (scheduleMutation.isPending) return; // Save already in progress
+
+      console.log('[Autosave] Saving schedule...');
+      scheduleMutation.mutate({
+        tenantId: TEST_TENANT_ID,
+        competitionId: TEST_COMPETITION_ID,
+        date: selectedDate,
+        routines: draftSchedule.map(r => ({
+          routineId: r.id,
+          entryNumber: r.entryNumber || 100,
+          performanceTime: r.performanceTime || '08:00:00',
+        })),
+      });
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(autosaveInterval);
+  }, [hasUnsavedChanges, draftSchedule, scheduleMutation, selectedDate]);
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
@@ -715,6 +777,11 @@ export default function SchedulePage() {
               selectedRoutineIds={selectedScheduledIds}
               onSelectionChange={setSelectedScheduledIds}
               scheduleBlocks={scheduleBlocks}
+              onDeleteBlock={(blockId) => {
+                if (confirm('Delete this schedule block?')) {
+                  deleteBlock.mutate({ blockId });
+                }
+              }}
             />
           </div>
           </div>
