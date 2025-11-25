@@ -2334,6 +2334,13 @@ ${input.comments}
         });
       }
 
+      // Delete existing summary so SD can resubmit
+      await prisma.summaries.deleteMany({
+        where: {
+          reservation_id: input.reservationId,
+        },
+      });
+
       // Update reservation status back to approved and reopen it
       const updated = await prisma.reservations.update({
         where: { id: input.reservationId },
