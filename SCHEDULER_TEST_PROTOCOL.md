@@ -51,8 +51,8 @@
 ---
 
 ### 2. ⏳ Drag/Drop to Move Blocks
-**Status:** FIXED - Awaiting deployment
-**Last Fix:** Commit b7cc38b (exclude active element from collision detection)
+**Status:** FIXED - Awaiting deployment verification
+**Last Fix:** Commit b2e1a7d (filter container elements from collision detection)
 **Actions:**
 - Drag award block to new position
 - Drag break block to new position
@@ -63,12 +63,13 @@
 - All subsequent blocks/routines recalculate times
 - No console errors
 
-**Last Result:** ❌ FAIL - Block still dropping on itself (collision detection still picks self)
-**Root Cause:** Collision detection algorithms include the active dragging element in their results
+**Last Result:** ⏳ FIXED - Awaiting deployment
+**Issue 1:** Self-drops - blocks dropping on themselves ✅ RESOLVED (commit b7cc38b)
+**Issue 2:** Container collision - collision detection finding schedule-table container instead of routine rows ✅ RESOLVED (commit b2e1a7d)
 **Fix Applied:**
-- Filter activeId from ALL collision detection results (DragDropProvider.tsx:589-611)
-- Added filterActive helper that excludes dragging element from pointerWithin, rectIntersection, and closestCenter
-**Next:** Verify on tester.compsync.net after deployment (commit b7cc38b)
+- Commit b7cc38b: Filter activeId from collision results (DragDropProvider.tsx:589-617)
+- Commit b2e1a7d: Filter container IDs (schedule-table-*, routine-pool-*) from collision results (DragDropProvider.tsx:593-600)
+**Next:** Verify on tester.compsync.net after deployment (commit b2e1a7d)
 
 ---
 
@@ -202,14 +203,24 @@
 
 ## Recent Fixes
 
-### Session 56 - Active Element Exclusion Fix (Commit b7cc38b) - LATEST
-**Issue:** Block drag still detecting self-drop despite custom collision detection
-**Root Cause:** Collision detection algorithms (pointerWithin, rectIntersection, closestCenter) include the active dragging element in their results
+### Session 56 - Container Filter Fix (Commit b2e1a7d) - LATEST
+**Issue:** After fixing self-drops, collision detection now finds schedule table container instead of routine rows beneath
+**Root Cause:** ScheduleTable creates droppable container with ID `schedule-table-${date}`. After excluding active element, collision detection stops at container level
 **Fix:**
-- Filter activeId from ALL collision detection results (DragDropProvider.tsx:589-611)
+- Filter container IDs (schedule-table-*, routine-pool-*) from collision results (DragDropProvider.tsx:593-600)
+- Renamed filterActive to filterInvalid for clarity
+- Now collision detection penetrates through containers to find routine rows
+**Status:** ✅ Committed and pushed (b2e1a7d)
+**Verification:** ⏳ Awaiting deployment to tester.compsync.net
+
+### Session 56 - Active Element Exclusion Fix (Commit b7cc38b)
+**Issue:** Block drag detecting self-drop despite custom collision detection
+**Root Cause:** Collision detection algorithms include the active dragging element in their results
+**Fix:**
+- Filter activeId from ALL collision detection results (DragDropProvider.tsx:589-617)
 - Added filterActive helper that removes dragging element from all three collision strategies
 **Status:** ✅ Committed and pushed
-**Verification:** ⏳ Awaiting deployment to tester.compsync.net
+**Result:** ✅ Self-drops eliminated, but revealed container collision issue
 
 ### Session 56 - Block Drag Collision Detection Fix (Commit 08b36f6) - SUPERSEDED by b7cc38b
 **Issue:** Dragging block onto routine caused self-drop detection ("Invalid block drop target")
@@ -322,17 +333,20 @@ https://tester.compsync.net/dashboard/director-panel/schedule
 ---
 
 **Last Session:** 56 (2025-11-25)
-**Next Action:** Manual testing required - verify Test #2 (Block Drag) on tester.compsync.net after deployment
+**Next Action:** Manual testing required - verify Test #2 (Block Drag) on tester.compsync.net after deployment of b2e1a7d
 **Latest Commits:**
-- b7cc38b (exclude active element from collision detection - LATEST)
-- 08b36f6 (block drag collision detection fix - pointerWithin strategy - SUPERSEDED)
-- fb288bb (debug logging for block drag)
+- b2e1a7d (filter container elements from collision detection - LATEST)
+- ab3cad3 (update protocol with b7cc38b status)
+- b7cc38b (exclude active element from collision detection)
+- 08b36f6 (block drag collision detection fix - SUPERSEDED)
 - 046b56c (save schedule - clear ALL entry_numbers, FINAL FIX)
 - 04fee82 (routine→block drag fix)
 - 311dd4e (block drag ID prefix)
 - 50fb7bc (remove Excel button)
-**Status:** Active element exclusion fix (commit b7cc38b) - awaiting deployment to tester.compsync.net
+**Status:** Container filter fix (commit b2e1a7d) - awaiting deployment to tester.compsync.net
 **Discovery:** Test #4 (PDF export) not implemented - shows "coming soon" toast
-**Fixes Applied Today:**
-- Test #3 (Save Schedule) - ✅ WORKING
-- Test #2 (Block Drag) - ⏳ FIXED (b7cc38b), awaiting deployment verification
+**Session 56 Summary:**
+- Test #3 (Save Schedule) - ✅ PASS (verified working)
+- Test #2 (Block Drag) - ⏳ FIXED (b2e1a7d), requires deployment verification
+  - Fixed Issue 1: Self-drops (commit b7cc38b)
+  - Fixed Issue 2: Container collision (commit b2e1a7d)
