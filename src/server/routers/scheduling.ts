@@ -3231,4 +3231,41 @@ export const schedulingRouter = router({
       };
     }),
 
+  // Unschedule specific routines
+  unscheduleRoutines: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      routineIds: z.array(z.string().uuid()),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      const result = await prisma.competition_entries.updateMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          id: { in: input.routineIds },
+          is_scheduled: true,
+        },
+        data: {
+          is_scheduled: false,
+          performance_date: null,
+          performance_time: null,
+          entry_number: null,
+          updated_at: new Date(),
+        },
+      });
+
+      console.log('[unscheduleRoutines] Unscheduled', result.count, 'routines');
+
+      return {
+        success: true,
+        count: result.count,
+      };
+    }),
+
 });

@@ -132,12 +132,25 @@ export default function SchedulePage() {
 
   const resetCompetition = trpc.scheduling.resetCompetition.useMutation({
     onSuccess: (data) => {
-      toast.success(`Unscheduled ${data.count} routines`);
+      toast.success(`Unscheduled ${data.count} routines and deleted ${data.blocksDeleted || 0} blocks`);
       setDraftSchedule([]); // Clear local draft state
-      refetch();
+      refetch(); // Refetch routines
+      refetchBlocks(); // Refetch schedule blocks
     },
     onError: (error) => {
       toast.error(`Failed to reset competition: ${error.message}`);
+    },
+  });
+
+  // Unschedule specific routines mutation
+  const unscheduleRoutines = trpc.scheduling.unscheduleRoutines.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Unscheduled ${data.count} routine(s)`);
+      setSelectedScheduledIds(new Set()); // Clear selection
+      refetch(); // Refetch routines
+    },
+    onError: (error) => {
+      toast.error(`Failed to unschedule routines: ${error.message}`);
     },
   });
 
@@ -570,6 +583,22 @@ export default function SchedulePage() {
             >
               🗑️ Reset Day
             </button>
+            {selectedScheduledIds.size > 0 && (
+              <button
+                className="px-4 py-2 bg-orange-500/80 hover:bg-orange-600 text-white rounded-lg transition-colors"
+                onClick={() => {
+                  if (confirm(`Unschedule ${selectedScheduledIds.size} selected routine(s)?`)) {
+                    unscheduleRoutines.mutate({
+                      tenantId: TEST_TENANT_ID,
+                      competitionId: TEST_COMPETITION_ID,
+                      routineIds: Array.from(selectedScheduledIds),
+                    });
+                  }
+                }}
+              >
+                ↩️ Unschedule ({selectedScheduledIds.size})
+              </button>
+            )}
             <button
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
               onClick={() => {
