@@ -44,9 +44,25 @@ export default function RoutineSummaries() {
     return true;
   });
 
-  const handleCreateInvoice = (summary: any) => {
-    // Navigate to invoice creation in reservation pipeline
-    router.push(`/dashboard/reservation-pipeline?reservation=${summary.reservation_id}`);
+  // Create invoice mutation (same as Pipeline)
+  const createInvoiceMutation = trpc.invoice.createFromReservation.useMutation({
+    onSuccess: async () => {
+      toast.success('Invoice created successfully!');
+      await refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to create invoice: ${error.message}`);
+    },
+  });
+
+  const handleCreateInvoice = async (summary: any) => {
+    try {
+      await createInvoiceMutation.mutateAsync({ reservationId: summary.reservation_id });
+      // Redirect to invoice detail page
+      router.push(`/dashboard/invoices/${summary.studio_id}/${summary.competition_id}`);
+    } catch (error) {
+      // Error already handled by mutation onError
+    }
   };
 
   return (
@@ -193,9 +209,10 @@ export default function RoutineSummaries() {
                               e.stopPropagation();
                               handleCreateInvoice(summary);
                             }}
-                            className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg"
+                            disabled={createInvoiceMutation.isPending}
+                            className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Create Invoice
+                            {createInvoiceMutation.isPending ? 'Creating...' : 'Create Invoice'}
                           </button>
                         ) : (
                           <Link

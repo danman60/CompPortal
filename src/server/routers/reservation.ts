@@ -2334,11 +2334,12 @@ ${input.comments}
         });
       }
 
-      // Update reservation status back to approved
+      // Update reservation status back to approved and reopen it
       const updated = await prisma.reservations.update({
         where: { id: input.reservationId },
         data: {
           status: 'approved',
+          is_closed: false,
           updated_at: new Date(),
         },
         include: {
