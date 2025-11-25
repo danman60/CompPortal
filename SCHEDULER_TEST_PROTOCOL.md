@@ -52,7 +52,7 @@
 
 ### 2. ⏳ Drag/Drop to Move Blocks
 **Status:** FIXED - Needs verification
-**Last Fix:** Commit 311dd4e (stripped "block-" prefix)
+**Last Fix:** Commit 08b36f6 (improved collision detection + self-drop handling)
 **Actions:**
 - Drag award block to new position
 - Drag break block to new position
@@ -63,9 +63,12 @@
 - All subsequent blocks/routines recalculate times
 - No console errors
 
-**Last Result:** ❌ FAIL - "Dragged block not found" error
-**Fix Applied:** Strip "block-" prefix before lookups (DragDropProvider.tsx:191-257)
-**Next:** Verify on tester.compsync.net
+**Last Result:** ❌ FAIL - Block dropped on itself (collision detection issue)
+**Root Cause:** useSortable makes blocks both draggable AND droppable, causing collision detection to pick block itself as drop target
+**Fix Applied:**
+- Custom collision detection (pointerWithin → rectIntersection → closestCenter) (DragDropProvider.tsx:589-604)
+- Handle self-drops gracefully as cancelled drag (lines 213-217)
+**Next:** Verify on tester.compsync.net after deployment
 
 ---
 
@@ -199,6 +202,15 @@
 
 ## Recent Fixes
 
+### Session 56 - Block Drag Collision Detection Fix (Commit 08b36f6)
+**Issue:** Dragging block onto routine caused self-drop detection ("Invalid block drop target")
+**Root Cause:** useSortable makes blocks both draggable AND droppable. closestCenter collision detection picked block itself instead of routine below it
+**Fix:**
+- Custom collision detection: pointerWithin → rectIntersection → closestCenter (DragDropProvider.tsx:589-604)
+- Treat self-drops as cancelled drag instead of error (lines 213-217)
+**Status:** ✅ Committed and pushed
+**Verification:** ⏳ Needs manual test on tester.compsync.net
+
 ### Session 56 - Routine Drag onto Block Fix (Commit 04fee82)
 **Issue:** Dragging routine onto block position caused "Target routine not found: block-xxx" error
 **Root Cause:** Code tried to find routine with block's ID when dropping routine onto block
@@ -301,14 +313,16 @@ https://tester.compsync.net/dashboard/director-panel/schedule
 ---
 
 **Last Session:** 56 (2025-11-25)
-**Next Action:** Manual testing required - verify Test #3 (Save Schedule) on tester.compsync.net
+**Next Action:** Manual testing required - verify Test #2 (Block Drag) on tester.compsync.net
 **Latest Commits:**
+- 08b36f6 (block drag collision detection fix - pointerWithin strategy)
+- fb288bb (debug logging for block drag)
 - 046b56c (save schedule - clear ALL entry_numbers, FINAL FIX)
-- 6a6c81e (save schedule - OR clause attempt #2, didn't work)
-- 30b6ed7 (save schedule - OR clause attempt #1, didn't work)
 - 04fee82 (routine→block drag fix)
 - 311dd4e (block drag ID prefix)
 - 50fb7bc (remove Excel button)
-**Status:** Save Schedule fix RE-DONE (commit 046b56c) - awaiting manual verification
+**Status:** Block Drag collision detection improved (commit 08b36f6) - awaiting manual verification
 **Discovery:** Test #4 (PDF export) not implemented - shows "coming soon" toast
-**Bug Found:** Orphaned data in DB (20 routines with entry_number but NULL performance_date)
+**Fixes Applied Today:**
+- Test #3 (Save Schedule) - ✅ WORKING
+- Test #2 (Block Drag) - ⏳ FIXED, needs verification
