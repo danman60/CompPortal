@@ -151,9 +151,9 @@ export function useEntryFormV2({
       return agesAtEvent[0];
     }
 
-    // Group: Average age, round to nearest (0.5+ rounds up)
+    // Group: Average age, always round down (Math.floor)
     const avgAge = agesAtEvent.reduce((sum, age) => sum + age, 0) / agesAtEvent.length;
-    return Math.round(avgAge);
+    return Math.floor(avgAge);
   }, [form.selectedDancers, eventStartDate, calculateAgeAtEvent]);
 
   /**
