@@ -2303,7 +2303,7 @@ ${input.comments}
         include: {
           invoices: {
             where: {
-              status: { in: ['draft', 'sent', 'pending'] },
+              status: { in: ['DRAFT', 'SENT', 'PENDING'] },
             },
           },
         },
@@ -2325,10 +2325,10 @@ ${input.comments}
         await prisma.invoices.updateMany({
           where: {
             reservation_id: input.reservationId,
-            status: { in: ['draft', 'sent', 'pending'] },
+            status: { in: ['DRAFT', 'SENT', 'PENDING'] },
           },
           data: {
-            status: 'void',
+            status: 'VOID',
             updated_at: new Date(),
           },
         });

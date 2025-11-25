@@ -7,7 +7,7 @@
  * Created: Wave 1.1 (Status Guards)
  */
 
-type ReservationStatus = 'pending' | 'approved' | 'rejected';
+type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'summarized';
 type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'UNPAID';
 
 /**

@@ -277,8 +277,8 @@ export function ReservationTable({
                       {isSummarized && (
                         <Button
                           onClick={() => onReopenSummary(reservation.id, reservation.studioName || 'Studio')}
-                          variant="warning"
-                          className="text-sm px-3 py-1"
+                          variant="secondary"
+                          className="text-sm px-3 py-1 bg-orange-500 hover:bg-orange-600 border-orange-500"
                         >
                           Reopen Summary
                         </Button>
