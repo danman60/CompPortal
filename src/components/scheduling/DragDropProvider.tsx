@@ -36,14 +36,27 @@ interface RoutineData {
   performanceTime?: string | null; // TimeString format "HH:MM:SS"
 }
 
+interface ScheduleBlockData {
+  id: string;
+  block_type: string; // 'award' | 'break' from database
+  title: string;
+  duration_minutes: number;
+  scheduled_time: Date | null;
+  sort_order: number | null;
+}
+
 interface DragDropProviderProps {
   children: ReactNode;
   /** All routines (both scheduled and unscheduled) */
   routines: RoutineData[];
+  /** Schedule blocks for current day */
+  scheduleBlocks?: ScheduleBlockData[];
   /** Current selected date (ISO string "YYYY-MM-DD") */
   selectedDate: string;
   /** Callback when schedule order changes (draft state) */
   onScheduleChange: (newSchedule: RoutineData[]) => void;
+  /** Callback when blocks are reordered */
+  onBlockReorder?: (reorderedBlocks: ScheduleBlockData[]) => void;
   /** Set of selected routine IDs (for multi-select drag from unscheduled pool) */
   selectedRoutineIds?: Set<string>;
   /** Set of selected routine IDs (for multi-select drag from scheduled routines) */
@@ -57,8 +70,10 @@ interface DragDropProviderProps {
 export function DragDropProvider({
   children,
   routines,
+  scheduleBlocks = [],
   selectedDate,
   onScheduleChange,
+  onBlockReorder,
   selectedRoutineIds = new Set(),
   selectedScheduledIds = new Set(),
   onClearSelection,
@@ -111,6 +126,147 @@ export function DragDropProvider({
     }
   };
 
+  // Helper: Recalculate block times with cascading (blocks + routines interleaved)
+  const recalculateBlockTimes = (blocks: ScheduleBlockData[], routines: RoutineData[]) => {
+    // Combine blocks and routines into single timeline
+    const timeline: Array<{type: 'block' | 'routine', data: any, time: Date}> = [];
+
+    // Add blocks (skip null scheduled_time)
+    blocks.forEach(block => {
+      if (block.scheduled_time) {
+        timeline.push({
+          type: 'block',
+          data: block,
+          time: new Date(block.scheduled_time),
+        });
+      }
+    });
+
+    // Add scheduled routines
+    routines.filter(r => r.isScheduled && r.performanceTime).forEach(routine => {
+      const [hours, minutes] = routine.performanceTime!.split(':').map(Number);
+      const date = new Date(routine.performanceTime!);
+      date.setHours(hours, minutes, 0, 0);
+      timeline.push({
+        type: 'routine',
+        data: routine,
+        time: date,
+      });
+    });
+
+    // Sort by time
+    timeline.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+    // Recalculate times based on order
+    const recalculatedBlocks: ScheduleBlockData[] = [];
+    let currentTime = timeline[0]?.time || new Date();
+
+    timeline.forEach((item, index) => {
+      if (item.type === 'block') {
+        const block = item.data as ScheduleBlockData;
+        recalculatedBlocks.push({
+          ...block,
+          scheduled_time: new Date(currentTime),
+          sort_order: index,
+        });
+        // Add block duration to current time
+        currentTime = new Date(currentTime.getTime() + block.duration_minutes * 60 * 1000);
+      } else {
+        // Routine - add routine duration
+        const routine = item.data as RoutineData;
+        currentTime = new Date(currentTime.getTime() + (routine.duration || 3) * 60 * 1000);
+      }
+    });
+
+    return recalculatedBlocks;
+  };
+
+  // Helper: Handle block drag and reorder
+  const handleBlockDrag = (draggedBlockId: string, targetId: string) => {
+    if (!onBlockReorder) {
+      console.warn('[DragDropProvider] No onBlockReorder callback provided');
+      return;
+    }
+
+    const draggedBlock = scheduleBlocks.find(b => b.id === draggedBlockId);
+    if (!draggedBlock) {
+      console.error('[DragDropProvider] Dragged block not found:', draggedBlockId);
+      return;
+    }
+
+    // If dropped on another block, reorder
+    if (targetId.startsWith('block-')) {
+      const targetBlock = scheduleBlocks.find(b => b.id === targetId);
+      if (!targetBlock || targetBlock.id === draggedBlockId) {
+        console.log('[DragDropProvider] Invalid block drop target');
+        return;
+      }
+
+      console.log('[DragDropProvider] Reordering blocks:', {
+        draggedBlock: draggedBlock.title,
+        targetBlock: targetBlock.title,
+      });
+
+      // Get current block order (sorted by time)
+      const sortedBlocks = [...scheduleBlocks]
+        .filter(b => b.scheduled_time) // Filter out blocks without times
+        .sort((a, b) =>
+          new Date(a.scheduled_time!).getTime() - new Date(b.scheduled_time!).getTime()
+        );
+
+      // Find positions
+      const fromIndex = sortedBlocks.findIndex(b => b.id === draggedBlockId);
+      const toIndex = sortedBlocks.findIndex(b => b.id === targetId);
+
+      if (fromIndex === -1 || toIndex === -1) {
+        console.error('[DragDropProvider] Could not find block indices');
+        return;
+      }
+
+      // Reorder
+      const reordered = [...sortedBlocks];
+      const [removed] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, removed);
+
+      // Recalculate times with cascade
+      const recalculated = recalculateBlockTimes(reordered, routines);
+
+      console.log('[DragDropProvider] Block reorder complete, cascading times');
+      onBlockReorder(recalculated);
+    }
+    // If dropped on routine, insert before that routine
+    else if (!targetId.startsWith('schedule-table-') && !targetId.startsWith('routine-pool-')) {
+      const targetRoutine = routines.find(r => r.id === targetId);
+      if (!targetRoutine || !targetRoutine.isScheduled) {
+        console.log('[DragDropProvider] Invalid routine drop target for block');
+        return;
+      }
+
+      console.log('[DragDropProvider] Inserting block before routine:', targetRoutine.title);
+
+      // Get target routine time
+      const [hours, minutes] = targetRoutine.performanceTime!.split(':').map(Number);
+      const targetTime = new Date();
+      targetTime.setHours(hours, minutes, 0, 0);
+
+      // Remove block from current position
+      const otherBlocks = scheduleBlocks.filter(b => b.id !== draggedBlockId);
+
+      // Create updated block with new time
+      const updatedBlock = {
+        ...draggedBlock,
+        scheduled_time: targetTime,
+      };
+
+      // Combine and recalculate
+      const allBlocks = [...otherBlocks, updatedBlock];
+      const recalculated = recalculateBlockTimes(allBlocks, routines);
+
+      console.log('[DragDropProvider] Block inserted, cascading times');
+      onBlockReorder(recalculated);
+    }
+  };
+
   // Helper: Calculate entry numbers and times client-side
   const calculateSchedule = (routineList: RoutineData[], startTime = '08:00:00', startingEntry = 100) => {
     let currentTime = startTime;
@@ -148,13 +304,23 @@ export function DragDropProvider({
       return;
     }
 
-    const draggedRoutineId = active.id as string;
-    const draggedRoutine = routines.find(r => r.id === draggedRoutineId);
+    const draggedId = active.id as string;
 
-    if (!draggedRoutine) {
-      console.error('[DragDropProvider] Dragged routine not found:', draggedRoutineId);
+    // Check if dragging a schedule block
+    if (draggedId.startsWith('block-')) {
+      handleBlockDrag(draggedId, over.id as string);
       return;
     }
+
+    // Otherwise, dragging a routine
+    const draggedRoutine = routines.find(r => r.id === draggedId);
+
+    if (!draggedRoutine) {
+      console.error('[DragDropProvider] Dragged routine not found:', draggedId);
+      return;
+    }
+
+    const draggedRoutineId = draggedId;
 
     // Multi-select logic: check appropriate selection state based on routine status
     // For scheduled routines: check selectedScheduledIds

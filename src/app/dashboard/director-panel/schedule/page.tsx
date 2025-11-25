@@ -246,6 +246,33 @@ export default function SchedulePage() {
     setDraftSchedule(newSchedule);
   };
 
+  // Handle block reordering from drag-drop (saves immediately)
+  const handleBlockReorder = async (reorderedBlocks: any[]) => {
+    console.log('[SchedulePage] Block reorder triggered, updating', reorderedBlocks.length, 'blocks');
+
+    try {
+      await Promise.all(
+        reorderedBlocks.map(block =>
+          fetch('/api/trpc/scheduling.updateBlockPosition', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              blockId: block.id,
+              scheduledTime: block.scheduled_time.toISOString(),
+              sortOrder: block.sort_order,
+            }),
+          })
+        )
+      );
+
+      toast.success('Schedule blocks reordered');
+      refetchBlocks();
+    } catch (error) {
+      console.error('[SchedulePage] Failed to reorder blocks:', error);
+      toast.error('Failed to reorder blocks');
+    }
+  };
+
   // Save draft schedule to database
   const handleSaveSchedule = () => {
     if (draftSchedule.length === 0) {
@@ -466,8 +493,10 @@ export default function SchedulePage() {
       <div className="px-6">
         <DragDropProvider
           routines={allRoutinesData}
+          scheduleBlocks={scheduleBlocks || []}
           selectedDate={selectedDate}
           onScheduleChange={handleScheduleChange}
+          onBlockReorder={handleBlockReorder}
           selectedRoutineIds={selectedRoutineIds}
           selectedScheduledIds={selectedScheduledIds}
           onClearSelection={handleDeselectAll}

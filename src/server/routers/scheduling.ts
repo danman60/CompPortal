@@ -1477,6 +1477,33 @@ export const schedulingRouter = router({
       return updated;
     }),
 
+  // Update block position (for drag-and-drop reordering)
+  updateBlockPosition: publicProcedure
+    .input(z.object({
+      blockId: z.string().uuid(),
+      scheduledTime: z.string(), // ISO string
+      sortOrder: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const scheduledTime = new Date(input.scheduledTime);
+
+      // Extract date-only part for schedule_day
+      const scheduleDay = new Date(scheduledTime);
+      scheduleDay.setHours(0, 0, 0, 0);
+
+      const updated = await prisma.schedule_blocks.update({
+        where: { id: input.blockId },
+        data: {
+          scheduled_time: scheduledTime,
+          schedule_day: scheduleDay,
+          sort_order: input.sortOrder,
+          updated_at: new Date(),
+        },
+      });
+
+      return updated;
+    }),
+
   // Add studio request/note to routine
   addStudioRequest: publicProcedure
     .input(z.object({
