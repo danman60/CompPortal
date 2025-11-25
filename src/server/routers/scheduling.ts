@@ -292,10 +292,12 @@ export const schedulingRouter = router({
       const updates = await prisma.$transaction(async (tx) => {
         const routineIds = input.routines.map(r => r.routineId);
 
-        // Phase 1: Clear entry numbers to break constraint
+        // Phase 1: Clear ALL entry numbers for this competition+date to break constraint
+        // This includes both new routines AND existing scheduled routines on this day
         await tx.competition_entries.updateMany({
           where: {
-            id: { in: routineIds },
+            competition_id: input.competitionId,
+            performance_date: new Date(input.date),
             tenant_id: input.tenantId,
           },
           data: {
