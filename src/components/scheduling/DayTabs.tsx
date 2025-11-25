@@ -92,7 +92,7 @@ export function DayTabs({
   return (
     <div className="mb-4">
       {/* Day Tabs + Buttons Row */}
-      <div className="flex items-start gap-3 mb-3">
+      <div className="flex items-stretch gap-3 mb-3">
         {/* Day Tabs with compact background */}
         <div className="flex gap-2 overflow-x-auto bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
           {days.map((day) => {
