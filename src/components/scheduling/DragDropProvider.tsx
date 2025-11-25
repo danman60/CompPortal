@@ -379,6 +379,64 @@ export function DragDropProvider({
       return;
     }
 
+    // Handle drops onto blocks (insert routine before the block)
+    if (targetId.startsWith('block-')) {
+      const actualBlockId = targetId.replace('block-', '');
+      const targetBlock = scheduleBlocks.find(b => b.id === actualBlockId);
+
+      if (!targetBlock || !targetBlock.scheduled_time) {
+        console.error('[DragDropProvider] Target block not found or has no time:', targetId);
+        return;
+      }
+
+      console.log('[DragDropProvider] Inserting routine(s) before block:', targetBlock.title);
+
+      // Get all currently scheduled routines for this day
+      const scheduledForDay = routines
+        .filter(r => r.isScheduled && r.performanceTime)
+        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+      // Parse block time to find insertion point
+      const blockDate = new Date(targetBlock.scheduled_time);
+      const blockHours = blockDate.getHours();
+      const blockMinutes = blockDate.getMinutes();
+      const blockTime = blockHours * 60 + blockMinutes;
+
+      // Find last routine before this block (by time)
+      let insertionIndex = scheduledForDay.findIndex(r => {
+        if (!r.performanceTime) return false;
+        const [hours, minutes] = r.performanceTime.split(':').map(Number);
+        const routineTime = hours * 60 + minutes;
+        return routineTime >= blockTime;
+      });
+
+      // If no routine found after block, insert at end
+      if (insertionIndex === -1) {
+        insertionIndex = scheduledForDay.length;
+      }
+
+      // Insert the dragged routine(s) at the target position
+      const newSchedule = [...scheduledForDay];
+      newSchedule.splice(insertionIndex, 0, ...routinesToDrag);
+
+      // Recalculate times and entry numbers
+      const firstRoutine = scheduledForDay[0];
+      const recalculated = calculateSchedule(
+        newSchedule,
+        firstRoutine?.performanceTime || '08:00:00',
+        firstRoutine?.entryNumber || 100
+      );
+
+      onScheduleChange(recalculated);
+
+      // Clear selection after successful multi-drag
+      if (isMultiDrag) {
+        const clearFn = draggedRoutine.isScheduled ? onClearScheduledSelection : onClearSelection;
+        if (clearFn) clearFn();
+      }
+      return;
+    }
+
     const targetRoutine = routines.find(r => r.id === targetId);
 
     if (!targetRoutine) {
