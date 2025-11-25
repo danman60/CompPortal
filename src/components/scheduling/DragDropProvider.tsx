@@ -585,22 +585,29 @@ export function DragDropProvider({
   };
 
   // Custom collision detection: prefer pointerWithin, then rectIntersection, then closestCenter
-  // This helps detect drops on routines when dragging blocks
+  // IMPORTANT: Exclude the active dragging element from valid drop targets
   const customCollisionDetection = (args: any) => {
+    const activeId = args.active?.id;
+
+    // Helper to filter out the active element from collision results
+    const filterActive = (collisions: any[]) => {
+      return collisions.filter((collision: any) => collision.id !== activeId);
+    };
+
     // First try pointerWithin - most accurate for where user intends to drop
-    const pointerCollisions = pointerWithin(args);
+    const pointerCollisions = filterActive(pointerWithin(args));
     if (pointerCollisions.length > 0) {
       return pointerCollisions;
     }
 
     // Then try rectangle intersection
-    const intersectionCollisions = rectIntersection(args);
+    const intersectionCollisions = filterActive(rectIntersection(args));
     if (intersectionCollisions.length > 0) {
       return intersectionCollisions;
     }
 
-    // Fallback to closest center
-    return closestCenter(args);
+    // Fallback to closest center (but exclude active element)
+    return filterActive(closestCenter(args));
   };
 
   return (
