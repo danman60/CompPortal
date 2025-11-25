@@ -2313,10 +2313,10 @@ ${input.comments}
         throw new Error('Reservation not found');
       }
 
-      // Guard: Only allow reopening from 'summarized' status
+      // Guard: Only allow reopening from 'summarized' or 'invoiced' status
       guardReservationStatus(
-        reservation.status as 'pending' | 'approved' | 'rejected' | 'summarized',
-        ['summarized'],
+        reservation.status as 'pending' | 'approved' | 'rejected' | 'summarized' | 'invoiced',
+        ['summarized', 'invoiced'],
         'reopen summary'
       );
 
