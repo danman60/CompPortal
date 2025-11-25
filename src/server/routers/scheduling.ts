@@ -3249,7 +3249,6 @@ export const schedulingRouter = router({
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
           id: { in: input.routineIds },
-          is_scheduled: true,
         },
         data: {
           is_scheduled: false,
