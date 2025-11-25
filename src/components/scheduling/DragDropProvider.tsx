@@ -23,6 +23,8 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
 } from '@dnd-kit/core';
 import { DropIndicator } from './DropIndicator';
 import { RoutineCard } from './RoutineCard';
@@ -209,8 +211,16 @@ export function DragDropProvider({
     // If dropped on another block, reorder
     if (targetId.startsWith('block-')) {
       const targetBlock = scheduleBlocks.find(b => b.id === actualTargetId);
-      if (!targetBlock || targetBlock.id === actualDraggedId) {
-        console.log('[DragDropProvider] Invalid block drop target - same block or not found');
+
+      // If dropped on itself, treat as cancelled drag (no-op)
+      if (targetBlock && targetBlock.id === actualDraggedId) {
+        console.log('[DragDropProvider] Block dropped on itself - no action taken');
+        return;
+      }
+
+      // If target block not found, error
+      if (!targetBlock) {
+        console.error('[DragDropProvider] Target block not found:', targetId);
         return;
       }
 
@@ -574,10 +584,29 @@ export function DragDropProvider({
     }
   };
 
+  // Custom collision detection: prefer pointerWithin, then rectIntersection, then closestCenter
+  // This helps detect drops on routines when dragging blocks
+  const customCollisionDetection = (args: any) => {
+    // First try pointerWithin - most accurate for where user intends to drop
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+
+    // Then try rectangle intersection
+    const intersectionCollisions = rectIntersection(args);
+    if (intersectionCollisions.length > 0) {
+      return intersectionCollisions;
+    }
+
+    // Fallback to closest center
+    return closestCenter(args);
+  };
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
