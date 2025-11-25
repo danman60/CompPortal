@@ -1007,6 +1007,17 @@ export function generateInvoicePDF(invoice: {
   }
 
   console.log('[PDF] Adding footer text at yPos:', yPos);
+
+  // Check if there's enough space for thank you message (need ~20mm for 2 lines + footer space)
+  const pageHeight = doc.internal.pageSize.height;
+  const footerReservedSpace = 20; // Reserve 20mm for footer area
+
+  if (yPos > pageHeight - footerReservedSpace) {
+    console.log('[PDF] Not enough space for thank you message, adding new page');
+    doc.addPage();
+    yPos = 20; // Start at top of new page
+  }
+
   yPos += 5; // Extra space before thank you message
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(9);
@@ -1015,8 +1026,14 @@ export function generateInvoicePDF(invoice: {
   yPos += 7; // Increase spacing between thank you messages
   doc.text('For questions about this invoice, please contact the competition organizers.', 15, yPos, { maxWidth: 180 });
 
-  console.log('[PDF] Calling addFooter with:', { pageNum: 1, totalPages: 1, tenantName: invoice.competition.name });
-  addFooter(doc, 1, 1, invoice.competition.name);
+  // Get total number of pages and add footer to ALL pages
+  const totalPages = doc.getNumberOfPages();
+  console.log('[PDF] Total pages:', totalPages);
+
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addFooter(doc, i, totalPages, invoice.competition.name);
+  }
 
   console.log('[PDF] PDF generation complete');
   return doc.output('blob');
