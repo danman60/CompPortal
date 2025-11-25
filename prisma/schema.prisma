@@ -551,7 +551,6 @@ model capacity_ledger {
   reservations   reservations? @relation(fields: [reservation_id], references: [id], onUpdate: NoAction)
   tenants        tenants       @relation(fields: [tenant_id], references: [id], onUpdate: NoAction, map: "fk_capacity_ledger_tenant")
 
-  @@unique([reservation_id, reason], map: "capacity_ledger_reservation_reason_unique")
   @@index([competition_id, created_at(sort: Desc)], map: "idx_capacity_ledger_competition")
   @@index([reservation_id], map: "idx_capacity_ledger_reservation")
   @@index([tenant_id], map: "idx_capacity_ledger_tenant")
