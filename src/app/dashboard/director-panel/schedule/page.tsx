@@ -86,6 +86,11 @@ export default function SchedulePage() {
     setSelectedRoutineIds(new Set());
   };
 
+  // Selection handlers (scheduled)
+  const handleDeselectAllScheduled = () => {
+    setSelectedScheduledIds(new Set());
+  };
+
   // Fetch all routines
   const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
@@ -464,7 +469,9 @@ export default function SchedulePage() {
           selectedDate={selectedDate}
           onScheduleChange={handleScheduleChange}
           selectedRoutineIds={selectedRoutineIds}
+          selectedScheduledIds={selectedScheduledIds}
           onClearSelection={handleDeselectAll}
+          onClearScheduledSelection={handleDeselectAllScheduled}
         >
           <div className="grid grid-cols-3 gap-2">
           {/* Left Panel - Unscheduled Routines (33%) - Sticky */}

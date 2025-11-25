@@ -44,10 +44,14 @@ interface DragDropProviderProps {
   selectedDate: string;
   /** Callback when schedule order changes (draft state) */
   onScheduleChange: (newSchedule: RoutineData[]) => void;
-  /** Set of selected routine IDs (for multi-select drag) */
+  /** Set of selected routine IDs (for multi-select drag from unscheduled pool) */
   selectedRoutineIds?: Set<string>;
+  /** Set of selected routine IDs (for multi-select drag from scheduled routines) */
+  selectedScheduledIds?: Set<string>;
   /** Callback to clear selection after successful drag */
   onClearSelection?: () => void;
+  /** Callback to clear scheduled selection after successful drag */
+  onClearScheduledSelection?: () => void;
 }
 
 export function DragDropProvider({
@@ -56,7 +60,9 @@ export function DragDropProvider({
   selectedDate,
   onScheduleChange,
   selectedRoutineIds = new Set(),
+  selectedScheduledIds = new Set(),
   onClearSelection,
+  onClearScheduledSelection,
 }: DragDropProviderProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropIndicatorTop, setDropIndicatorTop] = useState<number>(0);
@@ -150,10 +156,13 @@ export function DragDropProvider({
       return;
     }
 
-    // Multi-select logic: if dragged routine is selected, drag all selected routines
-    const isMultiDrag = selectedRoutineIds.has(draggedRoutineId) && selectedRoutineIds.size > 1;
+    // Multi-select logic: check appropriate selection state based on routine status
+    // For scheduled routines: check selectedScheduledIds
+    // For unscheduled routines: check selectedRoutineIds
+    const relevantSelection = draggedRoutine.isScheduled ? selectedScheduledIds : selectedRoutineIds;
+    const isMultiDrag = relevantSelection.has(draggedRoutineId) && relevantSelection.size > 1;
     const routinesToDrag = isMultiDrag
-      ? routines.filter(r => selectedRoutineIds.has(r.id))
+      ? routines.filter(r => relevantSelection.has(r.id))
       : [draggedRoutine];
 
     console.log('[DragDropProvider] Drag ended:', {
@@ -185,9 +194,10 @@ export function DragDropProvider({
         );
         onScheduleChange(recalculated);
 
-        // Clear selection after successful multi-drag
-        if (isMultiDrag && onClearSelection) {
-          onClearSelection();
+        // Clear selection after successful multi-drag (use appropriate callback)
+        if (isMultiDrag) {
+          const clearFn = draggedRoutine.isScheduled ? onClearScheduledSelection : onClearSelection;
+          if (clearFn) clearFn();
         }
       }
       return;
@@ -232,9 +242,10 @@ export function DragDropProvider({
 
       onScheduleChange(recalculated);
 
-      // Clear selection after successful multi-drag
-      if (isMultiDrag && onClearSelection) {
-        onClearSelection();
+      // Clear selection after successful multi-drag (use appropriate callback)
+      if (isMultiDrag) {
+        const clearFn = draggedRoutine.isScheduled ? onClearScheduledSelection : onClearSelection;
+        if (clearFn) clearFn();
       }
     }
 
@@ -292,9 +303,9 @@ export function DragDropProvider({
 
         onScheduleChange(recalculated);
 
-        // Clear selection after successful multi-drag
-        if (onClearSelection) {
-          onClearSelection();
+        // Clear selection after successful multi-drag (always scheduled routines in this case)
+        if (onClearScheduledSelection) {
+          onClearScheduledSelection();
         }
       } else {
         // Single routine reorder (original logic)
