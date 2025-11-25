@@ -192,6 +192,14 @@ export function DragDropProvider({
     const actualDraggedId = draggedBlockId.replace('block-', '');
     const actualTargetId = targetId.replace('block-', '');
 
+    console.log('[DragDropProvider] Block drag:', {
+      draggedBlockId,
+      targetId,
+      actualDraggedId,
+      actualTargetId,
+      targetStartsWithBlock: targetId.startsWith('block-'),
+    });
+
     const draggedBlock = scheduleBlocks.find(b => b.id === actualDraggedId);
     if (!draggedBlock) {
       console.error('[DragDropProvider] Dragged block not found:', draggedBlockId, 'actual ID:', actualDraggedId);
@@ -202,7 +210,7 @@ export function DragDropProvider({
     if (targetId.startsWith('block-')) {
       const targetBlock = scheduleBlocks.find(b => b.id === actualTargetId);
       if (!targetBlock || targetBlock.id === actualDraggedId) {
-        console.log('[DragDropProvider] Invalid block drop target');
+        console.log('[DragDropProvider] Invalid block drop target - same block or not found');
         return;
       }
 
