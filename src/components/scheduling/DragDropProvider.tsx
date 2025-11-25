@@ -585,29 +585,35 @@ export function DragDropProvider({
   };
 
   // Custom collision detection: prefer pointerWithin, then rectIntersection, then closestCenter
-  // IMPORTANT: Exclude the active dragging element from valid drop targets
+  // IMPORTANT: Exclude the active dragging element AND container elements from valid drop targets
   const customCollisionDetection = (args: any) => {
     const activeId = args.active?.id;
 
-    // Helper to filter out the active element from collision results
-    const filterActive = (collisions: any[]) => {
-      return collisions.filter((collision: any) => collision.id !== activeId);
+    // Helper to filter out invalid drop targets
+    const filterInvalid = (collisions: any[]) => {
+      return collisions.filter((collision: any) => {
+        const id = collision.id as string;
+        // Exclude: active element, table containers, routine pool containers
+        return id !== activeId
+          && !id.startsWith('schedule-table-')
+          && !id.startsWith('routine-pool-');
+      });
     };
 
     // First try pointerWithin - most accurate for where user intends to drop
-    const pointerCollisions = filterActive(pointerWithin(args));
+    const pointerCollisions = filterInvalid(pointerWithin(args));
     if (pointerCollisions.length > 0) {
       return pointerCollisions;
     }
 
     // Then try rectangle intersection
-    const intersectionCollisions = filterActive(rectIntersection(args));
+    const intersectionCollisions = filterInvalid(rectIntersection(args));
     if (intersectionCollisions.length > 0) {
       return intersectionCollisions;
     }
 
-    // Fallback to closest center (but exclude active element)
-    return filterActive(closestCenter(args));
+    // Fallback to closest center (but exclude invalid targets)
+    return filterInvalid(closestCenter(args));
   };
 
   return (
