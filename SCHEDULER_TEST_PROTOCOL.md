@@ -51,8 +51,8 @@
 ---
 
 ### 2. ⏳ Drag/Drop to Move Blocks
-**Status:** FIXED - Needs verification
-**Last Fix:** Commit 08b36f6 (improved collision detection + self-drop handling)
+**Status:** FIXED - Awaiting deployment
+**Last Fix:** Commit b7cc38b (exclude active element from collision detection)
 **Actions:**
 - Drag award block to new position
 - Drag break block to new position
@@ -63,12 +63,12 @@
 - All subsequent blocks/routines recalculate times
 - No console errors
 
-**Last Result:** ❌ FAIL - Block dropped on itself (collision detection issue)
-**Root Cause:** useSortable makes blocks both draggable AND droppable, causing collision detection to pick block itself as drop target
+**Last Result:** ❌ FAIL - Block still dropping on itself (collision detection still picks self)
+**Root Cause:** Collision detection algorithms include the active dragging element in their results
 **Fix Applied:**
-- Custom collision detection (pointerWithin → rectIntersection → closestCenter) (DragDropProvider.tsx:589-604)
-- Handle self-drops gracefully as cancelled drag (lines 213-217)
-**Next:** Verify on tester.compsync.net after deployment
+- Filter activeId from ALL collision detection results (DragDropProvider.tsx:589-611)
+- Added filterActive helper that excludes dragging element from pointerWithin, rectIntersection, and closestCenter
+**Next:** Verify on tester.compsync.net after deployment (commit b7cc38b)
 
 ---
 
@@ -202,7 +202,16 @@
 
 ## Recent Fixes
 
-### Session 56 - Block Drag Collision Detection Fix (Commit 08b36f6)
+### Session 56 - Active Element Exclusion Fix (Commit b7cc38b) - LATEST
+**Issue:** Block drag still detecting self-drop despite custom collision detection
+**Root Cause:** Collision detection algorithms (pointerWithin, rectIntersection, closestCenter) include the active dragging element in their results
+**Fix:**
+- Filter activeId from ALL collision detection results (DragDropProvider.tsx:589-611)
+- Added filterActive helper that removes dragging element from all three collision strategies
+**Status:** ✅ Committed and pushed
+**Verification:** ⏳ Awaiting deployment to tester.compsync.net
+
+### Session 56 - Block Drag Collision Detection Fix (Commit 08b36f6) - SUPERSEDED by b7cc38b
 **Issue:** Dragging block onto routine caused self-drop detection ("Invalid block drop target")
 **Root Cause:** useSortable makes blocks both draggable AND droppable. closestCenter collision detection picked block itself instead of routine below it
 **Fix:**
@@ -313,16 +322,17 @@ https://tester.compsync.net/dashboard/director-panel/schedule
 ---
 
 **Last Session:** 56 (2025-11-25)
-**Next Action:** Manual testing required - verify Test #2 (Block Drag) on tester.compsync.net
+**Next Action:** Manual testing required - verify Test #2 (Block Drag) on tester.compsync.net after deployment
 **Latest Commits:**
-- 08b36f6 (block drag collision detection fix - pointerWithin strategy)
+- b7cc38b (exclude active element from collision detection - LATEST)
+- 08b36f6 (block drag collision detection fix - pointerWithin strategy - SUPERSEDED)
 - fb288bb (debug logging for block drag)
 - 046b56c (save schedule - clear ALL entry_numbers, FINAL FIX)
 - 04fee82 (routine→block drag fix)
 - 311dd4e (block drag ID prefix)
 - 50fb7bc (remove Excel button)
-**Status:** Block Drag collision detection improved (commit 08b36f6) - awaiting manual verification
+**Status:** Active element exclusion fix (commit b7cc38b) - awaiting deployment to tester.compsync.net
 **Discovery:** Test #4 (PDF export) not implemented - shows "coming soon" toast
 **Fixes Applied Today:**
 - Test #3 (Save Schedule) - ✅ WORKING
-- Test #2 (Block Drag) - ⏳ FIXED, needs verification
+- Test #2 (Block Drag) - ⏳ FIXED (b7cc38b), awaiting deployment verification
