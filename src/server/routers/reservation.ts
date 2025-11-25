@@ -2283,4 +2283,83 @@ ${input.comments}
           : `Studio "${input.studioName}" created with ${input.preApprovedSpaces} pre-approved spaces. Warning: Invitation email failed to send - please resend from Studio Invitations page.`,
       };
     }),
+
+  // Reopen a summarized reservation to allow SD to make changes
+  reopenSummary: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Only CDs and Super Admins can reopen summaries
+      if (isStudioDirector(ctx.userRole)) {
+        throw new Error('Studio directors cannot reopen summaries');
+      }
+
+      // Get reservation with invoice info
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          invoices: {
+            where: {
+              status: { in: ['draft', 'sent', 'pending'] },
+            },
+          },
+        },
+      });
+
+      if (!reservation) {
+        throw new Error('Reservation not found');
+      }
+
+      // Guard: Only allow reopening from 'summarized' status
+      guardReservationStatus(
+        reservation.status as 'pending' | 'approved' | 'rejected' | 'summarized',
+        ['summarized'],
+        'reopen summary'
+      );
+
+      // Void any existing invoices
+      if (reservation.invoices && reservation.invoices.length > 0) {
+        await prisma.invoices.updateMany({
+          where: {
+            reservation_id: input.reservationId,
+            status: { in: ['draft', 'sent', 'pending'] },
+          },
+          data: {
+            status: 'void',
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      // Update reservation status back to approved
+      const updated = await prisma.reservations.update({
+        where: { id: input.reservationId },
+        data: {
+          status: 'approved',
+          updated_at: new Date(),
+        },
+        include: {
+          studios: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      logger.info('Summary reopened by CD', {
+        reservationId: input.reservationId,
+        studioName: updated.studios?.name,
+        userId: ctx.userId,
+        invoicesVoided: reservation.invoices?.length || 0,
+      });
+
+      return {
+        success: true,
+        message: `Summary reopened. ${reservation.invoices?.length || 0} invoice(s) voided. Studio can now edit entries.`,
+      };
+    }),
 });

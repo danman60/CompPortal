@@ -13,6 +13,7 @@ import { EventFilterDropdown } from './EventFilterDropdown';
 import { ReservationTable } from './ReservationTable';
 import { ApprovalModal } from './ApprovalModal';
 import { RejectModal } from './RejectModal';
+import toast from 'react-hot-toast';
 
 type PipelineStatus = 'all' | 'pending' | 'approved' | 'summary_in' | 'invoiced' | 'paid';
 
@@ -211,6 +212,28 @@ export function PipelinePageContainer() {
     await sendInvoiceMutation.mutateAsync({ invoiceId });
   };
 
+  // Reopen summary mutation
+  const reopenSummaryMutation = trpc.reservation.reopenSummary.useMutation({
+    onSuccess: async () => {
+      await refetch();
+      await refetchCompetitions();
+    },
+  });
+
+  const handleReopenSummary = async (reservationId: string, studioName: string) => {
+    if (!confirm(`Reopen summary for ${studioName}?\n\nThis will:\n• Void any existing invoices\n• Allow studio to edit entries again\n• Require re-submitting summary`)) {
+      return;
+    }
+
+    try {
+      const result = await reopenSummaryMutation.mutateAsync({ reservationId });
+      toast.success(result.message);
+    } catch (error) {
+      console.error('Failed to reopen summary:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reopen summary');
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6 flex items-center justify-center">
@@ -256,6 +279,7 @@ export function PipelinePageContainer() {
           onCreateInvoice={handleCreateInvoice}
           onSendInvoice={handleSendInvoice}
           onMarkAsPaid={handleMarkAsPaid}
+          onReopenSummary={handleReopenSummary}
         />
 
         {approvalModal.isOpen && (

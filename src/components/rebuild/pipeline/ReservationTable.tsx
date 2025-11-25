@@ -56,6 +56,7 @@ interface ReservationTableProps {
   onCreateInvoice: (reservationId: string) => Promise<void>;
   onSendInvoice: (invoiceId: string) => Promise<void>;
   onMarkAsPaid: (invoiceId: string, studioId: string, competitionId: string) => Promise<void>;
+  onReopenSummary: (reservationId: string, studioName: string) => Promise<void>;
 }
 
 /**
@@ -69,6 +70,7 @@ export function ReservationTable({
   onCreateInvoice,
   onSendInvoice,
   onMarkAsPaid,
+  onReopenSummary,
 }: ReservationTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<'studio' | 'competition' | 'requested' | 'routines' | 'status' | 'lastAction'>('studio');
@@ -270,6 +272,15 @@ export function ReservationTable({
                           className="text-sm px-3 py-1"
                         >
                           Create Invoice
+                        </Button>
+                      )}
+                      {isSummarized && (
+                        <Button
+                          onClick={() => onReopenSummary(reservation.id, reservation.studioName || 'Studio')}
+                          variant="warning"
+                          className="text-sm px-3 py-1"
+                        >
+                          Reopen Summary
                         </Button>
                       )}
                       {hasDraftInvoice && (

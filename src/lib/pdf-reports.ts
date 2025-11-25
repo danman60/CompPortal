@@ -715,10 +715,10 @@ export function generateInvoicePDF(invoice: {
   doc.text(`Date: ${formatPDFDate(invoice.invoiceDate, true)}`, 15, yPos);
   yPos += 15;
 
-  // Total amount in top right
+  // Invoice total in top right
   doc.setFontSize(10);
   doc.setTextColor(COLORS.textLight);
-  doc.text('Total Amount', 200, 40, { align: 'right' });
+  doc.text('Invoice Total', 200, 40, { align: 'right' });
   doc.setFontSize(20);
   doc.setTextColor(COLORS.success);
   doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, 200, 48, { align: 'right' });
@@ -893,44 +893,14 @@ export function generateInvoicePDF(invoice: {
   doc.text(`$${invoice.summary.subtotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 6;
 
-  // Late fees (if applicable)
-  const totalLateFees = invoice.lineItems.reduce((sum, item) => sum + item.lateFee, 0);
-  if (totalLateFees > 0) {
-    doc.setTextColor(COLORS.textLight);
-    doc.text('Late Fees', totalsX, yPos);
-    doc.setTextColor(COLORS.text);
-    doc.text(`$${totalLateFees.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
-    yPos += 6;
-  }
-
   // Discount (if applicable)
   const creditAmount = invoice.summary.creditAmount || 0;
-  console.log('[PDF] Credit/Discount check:', {
-    creditAmount,
-    creditReason: invoice.summary.creditReason,
-    fullSummary: invoice.summary
-  });
   if (creditAmount > 0) {
-    console.log('[PDF] Adding discount to PDF');
     doc.setTextColor(COLORS.success);
     const discountLabel = invoice.summary.creditReason || 'Discount';
     doc.text(discountLabel, totalsX, yPos);
     doc.text(`-$${creditAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
     yPos += 6;
-  } else {
-    console.log('[PDF] No discount to add (creditAmount is 0 or undefined)');
-  }
-
-  // Deposit (if applicable)
-  const depositAmount = (invoice.summary as any).depositAmount || 0;
-  if (depositAmount > 0) {
-    console.log('[PDF] Adding deposit to PDF');
-    doc.setTextColor(255, 193, 7); // Yellow color for deposit
-    doc.text('LESS Deposit', totalsX, yPos);
-    doc.text(`-$${depositAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
-    yPos += 6;
-  } else {
-    console.log('[PDF] No deposit to subtract (depositAmount is 0 or undefined)');
   }
 
   // Tax (if applicable)
@@ -942,17 +912,7 @@ export function generateInvoicePDF(invoice: {
     yPos += 6;
   }
 
-  // Total (highlighted) - Recalculate to include deposit
-  const pdfTotal = Math.max(0, invoice.summary.subtotal - creditAmount - depositAmount + invoice.summary.taxAmount);
-  console.log('[PDF] Total calculation:', {
-    subtotal: invoice.summary.subtotal,
-    creditAmount,
-    depositAmount,
-    taxAmount: invoice.summary.taxAmount,
-    calculatedTotal: pdfTotal,
-    originalTotal: invoice.summary.totalAmount
-  });
-
+  // Invoice Total (use backend-calculated value)
   doc.setDrawColor(COLORS.success);
   doc.setLineWidth(0.5);
   doc.line(totalsX, yPos, totalsX + totalsWidth, yPos);
@@ -960,11 +920,32 @@ export function generateInvoicePDF(invoice: {
 
   doc.setFontSize(12);
   doc.setTextColor(COLORS.text);
-  doc.text('TOTAL', totalsX, yPos);
+  doc.text('INVOICE TOTAL', totalsX, yPos);
   doc.setFontSize(14);
   doc.setTextColor(COLORS.success);
-  doc.text(`$${pdfTotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+  doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 10;
+
+  // Deposit (if applicable) - shown separately as payment, not deducted from invoice
+  const depositAmount = (invoice.summary as any).depositAmount || 0;
+  if (depositAmount > 0) {
+    doc.setFontSize(10);
+    doc.setTextColor(COLORS.textLight);
+    doc.text('LESS: Deposit Paid', totalsX, yPos);
+    doc.setTextColor(255, 193, 7); // Yellow
+    doc.text(`-$${depositAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+
+    // Balance Due
+    const balanceDue = Math.max(0, invoice.summary.totalAmount - depositAmount);
+    doc.setFontSize(12);
+    doc.setTextColor(COLORS.text);
+    doc.text('BALANCE DUE', totalsX, yPos);
+    doc.setFontSize(14);
+    doc.setTextColor(balanceDue > 0 ? COLORS.text : COLORS.success);
+    doc.text(`$${balanceDue.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 10;
+  }
 
   // Payment Instructions Footer (EMPWR tenant only)
   const EMPWR_TENANT_ID = '00000000-0000-0000-0000-000000000001';

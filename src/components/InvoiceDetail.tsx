@@ -153,6 +153,31 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     },
   });
 
+  const reopenSummaryMutation = trpc.reservation.reopenSummary.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to reopen summary: ${error.message}`);
+    },
+  });
+
+  const handleReopenSummary = () => {
+    if (!invoice?.reservation?.id) {
+      toast.error('No reservation found for this invoice');
+      return;
+    }
+
+    if (!confirm('Void this invoice and reopen summary?\n\nThis will:\n• Mark this invoice as VOID\n• Allow studio to edit entries again\n• Require studio to resubmit summary\n• Require you to regenerate invoice\n\nContinue?')) {
+      return;
+    }
+
+    reopenSummaryMutation.mutate({
+      reservationId: invoice.reservation.id,
+    });
+  };
+
   // Line items come from the invoice (either DB or generated)
   const displayLineItems = invoice?.lineItems || [];
 
@@ -608,6 +633,22 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 <span>Invoice Paid - {dbInvoice.paidAt ? formatDate(dbInvoice.paidAt, true) : 'Recently'}</span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Reopen Summary Button (Competition Directors only, not for paid invoices) */}
+        {dbInvoice && isCompetitionDirector && (dbInvoice.status === 'DRAFT' || dbInvoice.status === 'SENT') && invoice?.reservation?.id && (
+          <div className="mt-4">
+            <button
+              onClick={handleReopenSummary}
+              disabled={reopenSummaryMutation.isPending}
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
+            >
+              {reopenSummaryMutation.isPending ? '🔄 Reopening...' : '🔄 Void Invoice & Reopen Summary'}
+            </button>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Use this if studio needs to make changes after submitting summary. Invoice will be voided and studio can edit entries.
+            </p>
           </div>
         )}
 
