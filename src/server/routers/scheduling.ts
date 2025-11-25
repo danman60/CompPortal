@@ -3214,9 +3214,20 @@ export const schedulingRouter = router({
 
       console.log('[resetCompetition] Unscheduled', result.count, 'routines');
 
+      // Also delete all schedule blocks for the competition
+      const blocksResult = await prisma.schedule_blocks.deleteMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+      });
+
+      console.log('[resetCompetition] Deleted', blocksResult.count, 'schedule blocks');
+
       return {
         success: true,
         count: result.count,
+        blocksDeleted: blocksResult.count,
       };
     }),
 
