@@ -387,6 +387,26 @@ export default function SchedulePage() {
     }
   }, [routines, selectedDate, draftSchedule.length]);
 
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (!routines) return false;
+    const serverScheduled = routines
+      .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
+      .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+    // Compare draft with server state
+    if (draftSchedule.length !== serverScheduled.length) return true;
+
+    return draftSchedule.some((draft, index) => {
+      const server = serverScheduled[index];
+      return (
+        draft.id !== server.id ||
+        draft.entryNumber !== server.entryNumber ||
+        draft.performanceTime !== server.scheduledTimeString
+      );
+    });
+  }, [draftSchedule, routines, selectedDate]);
+
   // 5-minute autosave with safety checks
   useEffect(() => {
     const autosaveInterval = setInterval(() => {
@@ -410,26 +430,6 @@ export default function SchedulePage() {
 
     return () => clearInterval(autosaveInterval);
   }, [hasUnsavedChanges, draftSchedule, scheduleMutation, selectedDate]);
-
-  // Check if there are unsaved changes
-  const hasUnsavedChanges = useMemo(() => {
-    if (!routines) return false;
-    const serverScheduled = routines
-      .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
-      .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
-
-    // Compare draft with server state
-    if (draftSchedule.length !== serverScheduled.length) return true;
-
-    return draftSchedule.some((draft, index) => {
-      const server = serverScheduled[index];
-      return (
-        draft.id !== server.id ||
-        draft.entryNumber !== server.entryNumber ||
-        draft.performanceTime !== server.scheduledTimeString
-      );
-    });
-  }, [draftSchedule, routines, selectedDate]);
 
   // Handle schedule changes from drag-drop
   const handleScheduleChange = (newSchedule: RoutineData[]) => {
