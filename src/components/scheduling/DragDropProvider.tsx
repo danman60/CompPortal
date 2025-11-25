@@ -188,16 +188,20 @@ export function DragDropProvider({
       return;
     }
 
-    const draggedBlock = scheduleBlocks.find(b => b.id === draggedBlockId);
+    // Strip "block-" prefix to get actual database ID
+    const actualDraggedId = draggedBlockId.replace('block-', '');
+    const actualTargetId = targetId.replace('block-', '');
+
+    const draggedBlock = scheduleBlocks.find(b => b.id === actualDraggedId);
     if (!draggedBlock) {
-      console.error('[DragDropProvider] Dragged block not found:', draggedBlockId);
+      console.error('[DragDropProvider] Dragged block not found:', draggedBlockId, 'actual ID:', actualDraggedId);
       return;
     }
 
     // If dropped on another block, reorder
     if (targetId.startsWith('block-')) {
-      const targetBlock = scheduleBlocks.find(b => b.id === targetId);
-      if (!targetBlock || targetBlock.id === draggedBlockId) {
+      const targetBlock = scheduleBlocks.find(b => b.id === actualTargetId);
+      if (!targetBlock || targetBlock.id === actualDraggedId) {
         console.log('[DragDropProvider] Invalid block drop target');
         return;
       }
@@ -215,8 +219,8 @@ export function DragDropProvider({
         );
 
       // Find positions
-      const fromIndex = sortedBlocks.findIndex(b => b.id === draggedBlockId);
-      const toIndex = sortedBlocks.findIndex(b => b.id === targetId);
+      const fromIndex = sortedBlocks.findIndex(b => b.id === actualDraggedId);
+      const toIndex = sortedBlocks.findIndex(b => b.id === actualTargetId);
 
       if (fromIndex === -1 || toIndex === -1) {
         console.error('[DragDropProvider] Could not find block indices');
@@ -250,7 +254,7 @@ export function DragDropProvider({
       targetTime.setHours(hours, minutes, 0, 0);
 
       // Remove block from current position
-      const otherBlocks = scheduleBlocks.filter(b => b.id !== draggedBlockId);
+      const otherBlocks = scheduleBlocks.filter(b => b.id !== actualDraggedId);
 
       // Create updated block with new time
       const updatedBlock = {

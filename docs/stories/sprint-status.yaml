@@ -1,0 +1,225 @@
+# Phase 2 Scheduling Sprint Status
+# BMAD-style story tracking for CompPortal
+# Generated: 2025-11-25
+
+project:
+  name: CompPortal Phase 2 Scheduling
+  phase: Phase 2 (Scheduling)
+  branch: tester
+  target_date: 2025-12-26
+  status: in_progress
+  completion: 60%
+
+epics:
+  - id: EPIC_PHASE2_SCHEDULING
+    name: Phase 2 Scheduling System Rebuild
+    description: Complete drag-and-drop scheduling interface for competition directors
+    status: in_progress
+    started: 2025-11-19
+    target: 2025-12-26
+    stories:
+      - STORY_070_BACKEND_COMPLETE
+      - STORY_071_FRONTEND_TABLES
+      - STORY_072_DRAG_DROP_PROVIDER
+      - STORY_073_OPTIMISTIC_SCHEDULING
+      - STORY_074_PAGE_WIRING
+      - STORY_075_E2E_TESTING
+    completion: 60%
+    commits:
+      - 76de947 # Time helpers
+      - cecbdd3 # Schedule mutation
+      - c3d9e4e # Calculate times
+      - 08afc11 # Tables update
+
+stories:
+  - id: STORY_070_BACKEND_COMPLETE
+    name: "Backend API: Time helpers + mutations"
+    epic: EPIC_PHASE2_SCHEDULING
+    status: complete
+    started: 2025-11-19
+    completed: 2025-11-19
+    commits:
+      - 76de947
+      - cecbdd3
+      - c3d9e4e
+    story_points: 8
+    assignee: Developer (Claude)
+    description: |
+      Phase 1-3 of rebuild: Time conversion helpers, unified schedule mutation,
+      calculateScheduleTimes backend logic. All backend API complete.
+    implementation:
+      - src/server/routers/scheduling.ts (+195 lines)
+      - timeStringToDateTime, dateTimeToTimeString, addMinutesToTimeString
+      - Unified schedule mutation (handles 1-600 routines, atomic transactions)
+      - calculateScheduleTimes mutation (backend-only time calculation)
+    testing:
+      - Build passed
+      - Type check passed
+      - Unit tests: N/A (integration testing via frontend)
+
+  - id: STORY_071_FRONTEND_TABLES
+    name: "Frontend: RoutineTable + ScheduleTable with fixed columns"
+    epic: EPIC_PHASE2_SCHEDULING
+    status: complete
+    started: 2025-11-19
+    completed: 2025-11-19
+    commits:
+      - 08afc11
+    story_points: 5
+    assignee: Developer (Claude)
+    description: |
+      Phase 4.1-4.2: Created new RoutineTable component, updated ScheduleTable
+      with fixed pixel column widths for consistent layout.
+    implementation:
+      - src/components/scheduling/RoutineTable.tsx (new, 226 lines)
+      - src/components/scheduling/ScheduleTable.tsx (29 lines changed)
+      - Fixed column widths: # (45px), Time (65px), Routine (100px), etc.
+    testing:
+      - Build passed
+      - Visual verification: Pending manual testing on tester.compsync.net
+
+  - id: STORY_072_DRAG_DROP_PROVIDER
+    name: "Frontend: DragDropProvider component"
+    epic: EPIC_PHASE2_SCHEDULING
+    status: pending
+    story_points: 8
+    assignee: Developer (Claude)
+    priority: high
+    blocked: false
+    description: |
+      Phase 4.3: Create DragDropProvider component to handle drag-and-drop logic
+      for moving routines between Unscheduled Routines and Schedule tables.
+    requirements:
+      - Wrap both RoutineTable and ScheduleTable
+      - Handle drag from UR → SR (schedule routine)
+      - Handle drag within SR (reorder routine)
+      - Show drop indicator (visual feedback)
+      - Call calculateScheduleTimes mutation on drop
+      - Handle multi-select drag (drag multiple routines at once)
+    acceptance_criteria:
+      - Drag single routine from UR → SR works
+      - Drag updates performance time via backend mutation
+      - Entry number auto-assigns
+      - Drop indicator shows during drag
+      - Multi-select: Shift+click to select, drag all together
+    files_to_create:
+      - src/components/scheduling/DragDropProvider.tsx
+    dependencies:
+      - STORY_070_BACKEND_COMPLETE (complete)
+      - STORY_071_FRONTEND_TABLES (complete)
+
+  - id: STORY_073_OPTIMISTIC_SCHEDULING
+    name: "Frontend: useOptimisticScheduling hook"
+    epic: EPIC_PHASE2_SCHEDULING
+    status: pending
+    story_points: 5
+    assignee: Developer (Claude)
+    priority: high
+    blocked: false
+    description: |
+      Phase 4.4: Create React Query hook for optimistic UI updates during
+      drag-and-drop operations. Show immediate feedback, revert on error.
+    requirements:
+      - Use React Query's optimistic updates
+      - Update UI immediately on drag
+      - Call backend mutation in background
+      - Revert changes if mutation fails
+      - Show toast on success/error
+    acceptance_criteria:
+      - Drag feels instant (no lag waiting for backend)
+      - Failed mutations revert state + show error toast
+      - Success shows green toast
+      - State stays consistent between UI and database
+    files_to_create:
+      - src/hooks/useOptimisticScheduling.ts
+    dependencies:
+      - STORY_072_DRAG_DROP_PROVIDER (pending)
+
+  - id: STORY_074_PAGE_WIRING
+    name: "Frontend: Wire up main schedule page"
+    epic: EPIC_PHASE2_SCHEDULING
+    status: pending
+    story_points: 3
+    assignee: Developer (Claude)
+    priority: high
+    blocked: false
+    description: |
+      Phase 4.5: Connect all components in main schedule page. Use new
+      DragDropProvider, RoutineTable, ScheduleTable with optimistic hook.
+    requirements:
+      - Replace old SchedulingManager with new components
+      - Wire DragDropProvider to wrap tables
+      - Connect useOptimisticScheduling hook
+      - Maintain existing toolbar (date picker, view mode, filters)
+      - Keep schedule blocks (awards/breaks) functionality
+    acceptance_criteria:
+      - Page loads without errors
+      - Drag-and-drop works end-to-end
+      - All existing features still work (blocks, conflicts, etc.)
+      - Build passes
+      - Type check passes
+    files_to_modify:
+      - src/app/dashboard/director-panel/schedule/page.tsx
+    dependencies:
+      - STORY_072_DRAG_DROP_PROVIDER (pending)
+      - STORY_073_OPTIMISTIC_SCHEDULING (pending)
+
+  - id: STORY_075_E2E_TESTING
+    name: "E2E Testing: 600 routines + multi-user scenarios"
+    epic: EPIC_PHASE2_SCHEDULING
+    status: pending
+    story_points: 5
+    assignee: Test Architect (Claude)
+    priority: medium
+    blocked: false
+    description: |
+      Comprehensive end-to-end testing of scheduler with realistic data volume
+      (600 routines) and multi-user concurrent editing scenarios.
+    requirements:
+      - Test with 600 routines (production scale)
+      - Performance verification (drag lag, load time)
+      - Multi-user: 2 CDs editing same schedule simultaneously
+      - Conflict detection working correctly
+      - Schedule blocks (awards/breaks) persist
+      - Data integrity: No orphaned routines or corrupt state
+    test_cases:
+      - Single routine drag (UR → SR)
+      - Multi-select drag (5 routines at once)
+      - Reorder within SR
+      - Switch days (verify day isolation)
+      - Place award block after routine
+      - Place break block after routine
+      - Drag award/break block to reorder
+      - Save schedule + verify database state
+      - Concurrent editing: 2 CDs drag different routines
+      - Concurrent editing: 2 CDs drag same routine (race condition)
+    testing_platform:
+      - Manual: tester.compsync.net
+      - Automated: Playwright MCP (if token limits allow)
+    dependencies:
+      - STORY_074_PAGE_WIRING (pending)
+
+# Sprint Metadata
+sprint:
+  number: 1
+  name: "Phase 2 Scheduling Completion"
+  started: 2025-11-19
+  target_end: 2025-12-26
+  velocity: 34 # Total story points
+  completed_points: 13 # STORY_070 (8) + STORY_071 (5)
+  remaining_points: 21 # 8 + 5 + 3 + 5
+  burn_down:
+    - date: 2025-11-19
+      remaining: 34
+    - date: 2025-11-20
+      remaining: 21 # Completed 13 points (backend + tables)
+    - date: 2025-11-25
+      remaining: 21 # No progress (exploration/planning)
+
+# Notes
+notes:
+  - "Backend 100% complete (Session 70)"
+  - "Frontend 40% complete (RoutineTable + ScheduleTable done)"
+  - "Remaining: DragDropProvider, optimistic hook, page wiring, E2E testing"
+  - "Target: December 26, 2025 for Phase 2 production launch"
+  - "Using BMAD methodology starting Session 56 (November 25, 2025)"
