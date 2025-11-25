@@ -479,12 +479,6 @@ export default function SchedulePage() {
             >
               📥 Export PDF
             </button>
-            <button
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-              onClick={() => toast('Export Excel feature coming soon')}
-            >
-              📥 Export Excel
-            </button>
           </div>
         </div>
       </div>
