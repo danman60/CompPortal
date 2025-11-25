@@ -69,10 +69,9 @@
 
 ---
 
-### 3. ❌ Save Schedule Successfully
-**Status:** FAILING
-**Error:** `Unique constraint failed on (competition_id, entry_number, entry_suffix)`
-**Last Test:** Session 56
+### 3. ⏳ Save Schedule Successfully
+**Status:** FIXED - Needs verification
+**Last Fix:** Commit 30b6ed7 (clear ALL routines on date)
 **Actions:**
 - Add/drag multiple routines to schedule
 - Click "Save Schedule" button
@@ -84,9 +83,9 @@
 - No console errors
 
 **Last Result:** ❌ FAIL - Unique constraint error
-**Known Issue:** Parallel updates causing duplicate entry_number
-**Fix Required:** Sequential entry_number updates (supposedly fixed in 058c2eb, but still broken)
-**Next:** Investigate scheduling.ts save mutation
+**Fix Applied:** Clear ALL routines on date (not just new routines) in scheduling.ts:295-307
+**Root Cause:** Phase 1 only cleared entry_numbers for NEW routines, leaving old entry_numbers intact
+**Next:** Verify on tester.compsync.net
 
 ---
 
@@ -185,20 +184,22 @@
 
 ## Current Blockers
 
-### Blocker #1: Save Schedule Unique Constraint
-**Error:** `Unique constraint failed on (competition_id, entry_number, entry_suffix)`
-**Impact:** Cannot save schedules, blocking all downstream tests
-**Priority:** P0 - MUST FIX FIRST
-**Root Cause:** Unknown (supposedly fixed in 058c2eb, but still happening)
-**Investigation Needed:**
-- Find save schedule mutation in scheduling.ts
-- Check if using sequential updates or Promise.all
-- Verify entry_number assignment logic
-- Check for race conditions
+**None** - All blockers resolved.
+
+**Previously Resolved:**
+- ~~Save Schedule Unique Constraint~~ → Fixed in commit 30b6ed7 (needs verification)
 
 ---
 
 ## Recent Fixes
+
+### Session 56 - Save Schedule Unique Constraint Fix (Commit 30b6ed7)
+**Issue:** Unique constraint error on save schedule
+**Root Cause:** Phase 1 only cleared entry_numbers for NEW routines, leaving old entry_numbers intact causing conflicts
+**Fix:** Changed where clause to clear ALL routines on that competition+date (not just new routines)
+**Files:** src/server/routers/scheduling.ts:295-307
+**Status:** ✅ Committed and pushed
+**Verification:** ⏳ Needs manual test on tester.compsync.net
 
 ### Session 56 - Block Drag ID Fix (Commit 311dd4e)
 **Issue:** Dragged block not found error
@@ -216,15 +217,15 @@
 |------|--------|-----------|--------|
 | 1. Add blocks | ✅ PASS | Session 56 | Working |
 | 2. Drag blocks | ⏳ PENDING | Session 56 | Fixed, needs verify |
-| 3. Save Schedule | ❌ FAIL | Session 56 | Unique constraint error |
-| 4. Export PDF | ⏳ NOT TESTED | - | Blocked by #3 |
+| 3. Save Schedule | ⏳ PENDING | Session 56 | Fixed, needs verify |
+| 4. Export PDF | ⏳ NOT TESTED | - | - |
 | 5. Switch days | ⏳ NOT TESTED | - | - |
-| 6. Add routines with blocks | ⏳ NOT TESTED | - | Blocked by #3 |
+| 6. Add routines with blocks | ⏳ NOT TESTED | - | - |
 | 7. No duplicates | ⏳ NOT TESTED | - | Needs clarification |
 | 8. Remove Excel button | ⏳ NOT DONE | - | - |
 
 **Pass Rate:** 1/8 (12.5%)
-**Next Focus:** Fix Save Schedule unique constraint error (Blocker #1)
+**Next Focus:** Verify Test #2 and #3 on tester.compsync.net
 
 ---
 
@@ -265,10 +266,10 @@ https://tester.compsync.net/dashboard/director-panel/schedule
 - ⏳ = Not tested yet
 - 🚫 = Blocked by another test
 
-**Current Priority:** Fix Save Schedule unique constraint error
+**Current Priority:** Verify fixes on tester.compsync.net (Test #2, #3)
 
 ---
 
 **Last Session:** 56 (2025-11-25)
-**Next Action:** Investigate and fix scheduling.ts save mutation (unique constraint error)
-**Commit:** 311dd4e (block drag ID fix)
+**Next Action:** Verify Test #2 (drag blocks) and Test #3 (save schedule) on tester.compsync.net
+**Latest Commits:** 311dd4e (block drag ID fix), 30b6ed7 (save schedule unique constraint fix)
