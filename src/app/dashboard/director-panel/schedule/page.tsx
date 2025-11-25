@@ -22,6 +22,8 @@ import { ScheduleTable } from '@/components/scheduling/ScheduleTable';
 import { DayTabs } from '@/components/scheduling/DayTabs';
 import { DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // TEST tenant ID (will be replaced with real tenant context)
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -141,6 +143,114 @@ export default function SchedulePage() {
 
   // Place schedule block mutation
   const placeBlock = trpc.scheduling.placeScheduleBlock.useMutation();
+
+  // PDF Export function
+  const handleExportPDF = () => {
+    if (!routines) {
+      toast.error('No data to export');
+      return;
+    }
+
+    // Get scheduled routines for selected date
+    const scheduled = routines
+      .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
+      .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+    if (scheduled.length === 0) {
+      toast.error('No routines scheduled for this day');
+      return;
+    }
+
+    try {
+      // Create PDF
+      const doc = new jsPDF();
+
+      // Add title
+      doc.setFontSize(16);
+      doc.text('Competition Schedule', 14, 15);
+      doc.setFontSize(10);
+      doc.text(`Date: ${selectedDate}`, 14, 22);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 27);
+
+      // Merge routines and blocks into single sorted array
+      const scheduleItems: Array<{ type: 'routine' | 'block'; data: any }> = [];
+
+      // Add routines
+      scheduled.forEach(r => {
+        scheduleItems.push({
+          type: 'routine',
+          data: r,
+        });
+      });
+
+      // Add blocks
+      if (scheduleBlocks) {
+        scheduleBlocks.forEach(block => {
+          scheduleItems.push({
+            type: 'block',
+            data: block,
+          });
+        });
+      }
+
+      // Sort by time (routines use scheduledTimeString, blocks use scheduled_time)
+      scheduleItems.sort((a, b) => {
+        const timeA = a.type === 'routine' ? a.data.scheduledTimeString : a.data.scheduled_time?.toTimeString().split(' ')[0];
+        const timeB = b.type === 'routine' ? b.data.scheduledTimeString : b.data.scheduled_time?.toTimeString().split(' ')[0];
+        if (!timeA || !timeB) return 0;
+        return timeA.localeCompare(timeB);
+      });
+
+      // Prepare table data
+      const tableData = scheduleItems.map(item => {
+        if (item.type === 'routine') {
+          const r = item.data;
+          return [
+            `#${r.entryNumber || ''}`,
+            r.scheduledTimeString || '',
+            r.title,
+            r.studioName || '',
+            r.classificationName || '',
+            r.categoryName || '',
+            `${r.duration} min`,
+          ];
+        } else {
+          // Block row
+          const block = item.data;
+          const time = block.scheduled_time ? block.scheduled_time.toTimeString().split(' ')[0].substring(0, 5) : '';
+          const icon = block.type === 'award' ? '🏆' : '☕';
+          const label = block.type === 'award' ? 'AWARD CEREMONY' : `${block.duration_minutes || 30} MINUTE BREAK`;
+          return ['', time, `${icon} ${label}`, '', '', '', `${block.duration_minutes || 30} min`];
+        }
+      });
+
+      // Add table
+      autoTable(doc, {
+        startY: 32,
+        head: [['#', 'Time', 'Routine', 'Studio', 'Classification', 'Category', 'Duration']],
+        body: tableData,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [99, 102, 241] },
+        columnStyles: {
+          0: { cellWidth: 15 }, // #
+          1: { cellWidth: 20 }, // Time
+          2: { cellWidth: 50 }, // Routine
+          3: { cellWidth: 35 }, // Studio
+          4: { cellWidth: 25 }, // Classification
+          5: { cellWidth: 25 }, // Category
+          6: { cellWidth: 20 }, // Duration
+        },
+      });
+
+      // Save PDF
+      const filename = `schedule-${selectedDate}.pdf`;
+      doc.save(filename);
+      toast.success(`📄 PDF exported: ${filename}`);
+    } catch (error) {
+      console.error('[PDF Export] Error:', error);
+      toast.error(`Failed to export PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
   // Compute filter options from routines (memoized for performance)
   const classifications = useMemo(() =>
@@ -475,7 +585,7 @@ export default function SchedulePage() {
             </button>
             <button
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-              onClick={() => toast('Export PDF feature coming soon')}
+              onClick={handleExportPDF}
             >
               📥 Export PDF
             </button>
