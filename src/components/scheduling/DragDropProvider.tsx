@@ -593,9 +593,9 @@ export function DragDropProvider({
     const filterInvalid = (collisions: any[]) => {
       return collisions.filter((collision: any) => {
         const id = collision.id as string;
-        // Exclude: active element, table containers, routine pool containers
+        // Exclude: active element, routine pool containers
+        // NOTE: schedule-table-* is a VALID drop target for empty schedules
         return id !== activeId
-          && !id.startsWith('schedule-table-')
           && !id.startsWith('routine-pool-');
       });
     };
