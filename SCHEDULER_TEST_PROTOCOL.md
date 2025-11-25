@@ -183,21 +183,37 @@
 
 ---
 
-### 7. ⏳ No Duplicates Across Days
-**Status:** NOT TESTED
+### 7. ✅ No Duplicates Across Days
+**Status:** PASS - Duplicate prevention works by design (Session 56)
+**User Requirement:** "no each routine should only exist once strictly per competition" (Option B)
 **Actions:**
-- Add routine A to Friday
-- Attempt to add routine A to Saturday
-- Verify prevented OR allowed (clarify expected behavior)
+- Add routine A to Friday ✅
+- Verify routine A not available to schedule on Saturday ✅
+- Confirm routine removed from unscheduled pool ✅
 
 **Expected:**
-- Clarify: Should same routine be on multiple days? Or prevent?
-- If prevented: Show error toast
-- If allowed: Routine appears on both days
+- Same routine cannot be scheduled on multiple days
+- Once scheduled, routine removed from unscheduled pool
+- No error toast needed - physically prevented by UI
 
-**Last Result:** NOT TESTED
-**Question:** What is expected behavior? Same routine on multiple days allowed?
-**Next:** Clarify with user, then test
+**Last Result:** ✅ PASS - Automated test successful (Session 56)
+**Test Steps:**
+1. Eclipse 157 scheduled on Friday at #100 08:00 AM
+2. Switched to Saturday (Phoenix Rising 88 scheduled)
+3. Unscheduled pool shows 48 routines (not 49)
+4. Eclipse 157 NOT available in unscheduled pool
+5. Cannot drag Eclipse 157 to Saturday (not in pool)
+
+**How It Works:**
+- System prevents duplicates by design
+- Scheduled routines automatically removed from unscheduled pool
+- Once routine is scheduled on ANY day, it cannot be scheduled on another day
+- Matches user requirement (Option B) perfectly
+
+**Test Evidence:**
+- Friday schedule: Eclipse 157 at #100 08:00 AM
+- Unscheduled pool: 48 routines (Eclipse 157 removed)
+- Screenshot: .playwright-mcp/test7-duplicate-prevention-pass.png
 
 ---
 
@@ -308,13 +324,13 @@
 | 4. Export PDF | 🚫 NOT IMPLEMENTED | Session 56 | Feature not built |
 | 5. Switch days | ✅ PASS | Session 56 | Working (automated test) |
 | 6. Add routines with blocks | ✅ PASS | Session 56 | Working (automated test) |
-| 7. No duplicates | ⏳ NOT TESTED | - | Needs clarification |
+| 7. No duplicates | ✅ PASS | Session 56 | Working (by design) |
 | 8. Remove Excel button | ✅ COMPLETE | Session 56 | Button removed |
 
-**Pass Rate:** 7/8 (87.5%) - 7 verified working, 1 not implemented, 0 not tested
-**Completed:** Tests #1, #2, #3, #5, #6, #8 all passing
-**Blocked:** Test #4 (PDF export) - feature not implemented yet
-**Next Focus:** Test #7 (duplicate prevention) - requires clarification on expected behavior
+**Pass Rate:** 7/7 (100%) - All testable features passing
+**Completed:** Tests #1, #2, #3, #5, #6, #7, #8 all verified working
+**Not Implemented:** Test #4 (PDF export) - feature not built yet
+**Next Focus:** Implement PDF export functionality (Test #4)
 
 ---
 
