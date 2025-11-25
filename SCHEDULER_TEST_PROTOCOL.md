@@ -89,8 +89,8 @@
 
 ---
 
-### 4. ⏳ Export PDF Successfully
-**Status:** NOT TESTED
+### 4. 🚫 Export PDF Successfully
+**Status:** NOT IMPLEMENTED
 **Actions:**
 - Click "Export PDF" button
 - Verify PDF downloads
@@ -101,8 +101,8 @@
 - Contains schedule with correct times
 - Shows blocks (awards/breaks)
 
-**Last Result:** NOT TESTED
-**Next:** Test after Save Schedule fix
+**Last Result:** ❌ NOT IMPLEMENTED - Shows "Export PDF feature coming soon" toast + 400 error
+**Next:** Implement PDF export functionality (future work)
 
 ---
 
@@ -195,6 +195,14 @@
 
 ## Recent Fixes
 
+### Session 56 - Routine Drag onto Block Fix (Commit 04fee82)
+**Issue:** Dragging routine onto block position caused "Target routine not found: block-xxx" error
+**Root Cause:** Code tried to find routine with block's ID when dropping routine onto block
+**Fix:** Added handler for routine→block drops, inserts routine before block based on block's scheduled time
+**Files:** src/components/scheduling/DragDropProvider.tsx:382-435
+**Status:** ✅ Committed and pushed
+**Verification:** ⏳ Needs manual test on tester.compsync.net
+
 ### Session 56 - Remove Excel Export Button (Commit 50fb7bc)
 **Issue:** Excel export button should be removed, keep PDF only
 **Fix:** Removed Excel export button from toolbar
@@ -227,15 +235,16 @@
 | 1. Add blocks | ✅ PASS | Session 56 | Working |
 | 2. Drag blocks | ⏳ PENDING | Session 56 | Fixed, needs verify |
 | 3. Save Schedule | ⏳ PENDING | Session 56 | Fixed, needs verify |
-| 4. Export PDF | ⏳ NOT TESTED | - | - |
+| 4. Export PDF | 🚫 NOT IMPLEMENTED | Session 56 | Feature not built |
 | 5. Switch days | ⏳ NOT TESTED | - | - |
-| 6. Add routines with blocks | ⏳ NOT TESTED | - | - |
+| 6. Add routines with blocks | ⏳ PENDING | Session 56 | Fixed, needs verify |
 | 7. No duplicates | ⏳ NOT TESTED | - | Needs clarification |
 | 8. Remove Excel button | ✅ COMPLETE | Session 56 | Button removed |
 
-**Pass Rate:** 2/8 (25%) - 1 verified, 1 complete
-**Pending Verification:** Tests #2, #3, #8 need visual check
-**Next Focus:** All remaining tests require manual testing/clarification
+**Pass Rate:** 2/8 (25%) - 1 verified, 1 complete, 1 not implemented
+**Pending Verification:** Tests #2, #3, #6 need manual testing
+**Blocked:** Test #4 (PDF export) - feature not implemented yet
+**Next Focus:** Manual testing required for drag/save functionality
 
 ---
 
@@ -281,6 +290,11 @@ https://tester.compsync.net/dashboard/director-panel/schedule
 ---
 
 **Last Session:** 56 (2025-11-25)
-**Next Action:** Manual testing required - verify Tests #2, #3, #8 on tester.compsync.net
-**Latest Commits:** 311dd4e (block drag), 30b6ed7 (save schedule), 50fb7bc (remove Excel button)
+**Next Action:** Manual testing required - verify Tests #2, #3, #6 on tester.compsync.net
+**Latest Commits:**
+- 04fee82 (routine→block drag fix)
+- 311dd4e (block drag ID prefix)
+- 30b6ed7 (save schedule unique constraint)
+- 50fb7bc (remove Excel button)
 **Status:** All code fixes complete - awaiting manual verification
+**Discovery:** Test #4 (PDF export) not implemented - shows "coming soon" toast
