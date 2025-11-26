@@ -246,6 +246,44 @@ function SortableRoutineRow({
   // Session background colors (alternating faded colors)
   const sessionBg = sessionNumber % 2 === 0 ? 'bg-purple-500/5' : 'bg-blue-500/5';
 
+  // Glow System: Red (conflict) > Gold (trophy) > Blue (SD request)
+  const [dismissedGlows, setDismissedGlows] = useState<Set<string>>(new Set());
+
+  const hasConflict = !!conflict;
+  const hasTrophy = isLastInOveralls;
+  const hasSDRequest = false; // TODO: Add SD feedback/request detection from backend
+
+  const glowKey = `${routine.id}`;
+  const isConflictDismissed = dismissedGlows.has(`${glowKey}-conflict`);
+  const isTrophyDismissed = dismissedGlows.has(`${glowKey}-trophy`);
+  const isSDRequestDismissed = dismissedGlows.has(`${glowKey}-sd-request`);
+
+  // Priority: Red (conflict) > Gold (trophy) > Blue (SD request)
+  let glowClasses = '';
+  let glowTooltip = '';
+  let glowType: 'conflict' | 'trophy' | 'sd-request' | null = null;
+
+  if (hasConflict && !isConflictDismissed) {
+    glowClasses = 'outline outline-2 outline-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.6)]';
+    glowTooltip = `⚠️ Conflict: ${conflict.conflict.dancerName} - ${conflict.conflict.routinesBetween} routines between (need 6 min) - Click to dismiss`;
+    glowType = 'conflict';
+  } else if (hasTrophy && !isTrophyDismissed) {
+    glowClasses = 'outline outline-2 outline-yellow-400/80 shadow-[0_0_15px_rgba(250,204,21,0.6)]';
+    glowTooltip = `🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards! - Click to dismiss`;
+    glowType = 'trophy';
+  } else if (hasSDRequest && !isSDRequestDismissed) {
+    glowClasses = 'outline outline-2 outline-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.6)]';
+    glowTooltip = `📋 Studio Director requested changes - Click to dismiss`;
+    glowType = 'sd-request';
+  }
+
+  const handleGlowClick = (e: React.MouseEvent) => {
+    if (glowType) {
+      e.stopPropagation();
+      setDismissedGlows(prev => new Set(prev).add(`${glowKey}-${glowType}`));
+    }
+  };
+
   return (
     <>
       <tr
@@ -256,8 +294,16 @@ function SortableRoutineRow({
         className={`
           border-b border-white/10 hover:bg-white/5 transition-colors cursor-move relative
           ${sessionBg}
+          ${glowClasses}
         `}
-        onClick={() => onRoutineClick?.(routine.id)}
+        title={glowTooltip || undefined}
+        onClick={(e) => {
+          if (glowType) {
+            handleGlowClick(e);
+          } else {
+            onRoutineClick?.(routine.id);
+          }
+        }}
       >
       {/* Checkbox - 32px */}
       {showCheckbox && (
@@ -342,21 +388,11 @@ function SortableRoutineRow({
       {isLastInSession && (
         <tr className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20">
           <td colSpan={7} className="px-1 py-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <span className="text-xs font-bold text-purple-300">
-                  End of Session {sessionNumber}
-                </span>
-              </div>
-              {sessionBlock?.suggestAward && (
-                <div className="flex items-center gap-1 bg-amber-600/20 border border-amber-500/50 px-2 py-1 rounded-lg">
-                  <span className="text-sm">🏆</span>
-                  <span className="text-xs font-medium text-amber-300">
-                    Suggested Award Ceremony Location
-                  </span>
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+              <span className="text-xs font-bold text-purple-300">
+                End of Session {sessionNumber}
+              </span>
             </div>
           </td>
         </tr>
