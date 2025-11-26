@@ -288,8 +288,8 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Helper Icons - 50px */}
-      <td className="px-1 py-1 text-center" style={{ width: '50px' }}>
+      {/* Helper Icons - 35px */}
+      <td className="px-1 py-1 text-center" style={{ width: '35px' }}>
         <div className="flex items-center justify-center gap-0.5">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
@@ -699,7 +699,7 @@ export function ScheduleTable({
                   />
                 </th>
               )}
-              <th className="px-1 py-1 text-center text-xs font-semibold text-white/60" style={{ width: '50px' }} title="Helper Icons">
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white/60" style={{ width: '35px' }} title="Helper Icons">
                 <span className="text-[10px]">🏆📋⚠️</span>
               </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>

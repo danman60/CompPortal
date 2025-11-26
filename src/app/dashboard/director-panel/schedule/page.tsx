@@ -125,10 +125,10 @@ export default function SchedulePage() {
 
   // Reset mutations
   const resetDay = trpc.scheduling.resetDay.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines`);
-      setDraftSchedule([]); // Clear local draft state
-      refetch();
+      await refetch(); // Wait for refetch to complete
+      setDraftSchedule([]); // Clear local draft state AFTER refetch
     },
     onError: (error) => {
       toast.error(`Failed to reset day: ${error.message}`);
@@ -136,11 +136,10 @@ export default function SchedulePage() {
   });
 
   const resetCompetition = trpc.scheduling.resetCompetition.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines and deleted ${data.blocksDeleted || 0} blocks`);
-      setDraftSchedule([]); // Clear local draft state
-      refetch(); // Refetch routines
-      refetchBlocks(); // Refetch schedule blocks
+      await Promise.all([refetch(), refetchBlocks()]); // Wait for refetch to complete
+      setDraftSchedule([]); // Clear local draft state AFTER refetch
     },
     onError: (error) => {
       toast.error(`Failed to reset competition: ${error.message}`);
@@ -149,15 +148,16 @@ export default function SchedulePage() {
 
   // Unschedule specific routines mutation
   const unscheduleRoutines = trpc.scheduling.unscheduleRoutines.useMutation({
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       toast.success(`Unscheduled ${data.count} routine(s)`);
 
-      // Remove unscheduled routines from draft state
+      await refetch(); // Wait for refetch to complete
+
+      // Remove unscheduled routines from draft state AFTER refetch
       const unscheduledIds = new Set(variables.routineIds);
       setDraftSchedule(prev => prev.filter(r => !unscheduledIds.has(r.id)));
 
       setSelectedScheduledIds(new Set()); // Clear selection
-      refetch(); // Refetch routines
     },
     onError: (error) => {
       toast.error(`Failed to unschedule routines: ${error.message}`);
