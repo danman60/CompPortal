@@ -1,31 +1,106 @@
 # Current Work - Phase 2 Scheduler UI Polish
 
-**Date:** November 26, 2025 (Session 57 Extended)
+**Date:** November 26, 2025 (Session 58)
 **Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
 **Branch:** tester
-**Status:** ✅ Session Complete - Glow System + Type Safety
+**Status:** ✅ Session Complete - Icon-Based Helper System
 
 ---
 
 ## Session Summary
 
-Implemented complete glow notification system for schedule table:
-1. ✅ UI Layout Fix - Button heights now match day card heights
-2. ✅ Glow System - Red (conflict) / Gold (trophy) / Blue (SD request)
-3. ✅ Click-to-dismiss functionality with state management
-4. ✅ Tooltip explanations on hover
-5. ✅ Type safety improvements with proper typing
-6. ✅ Null safety with optional chaining and fallbacks
-7. ✅ Verified on production (tester.compsync.net)
+Replaced glow notification system with icon-based helper system:
+1. ✅ Icon Column - Trophy/Note/Conflict icons in dedicated column
+2. ✅ Click-to-Dismiss - Individual icon dismissal functionality
+3. ✅ Hover Tooltips - Detailed information on hover
+4. ✅ Reset Button - "Reset Helper Icons" button in table footer
+5. ✅ Layout Optimization - Shortened Routine column 100px → 75px
+6. ✅ Removed Glows - All glow effects removed from RoutineCard
 
 **Commits:**
-- `b7c7d4f` - Match Award/Break button heights to day cards
-- `d2b138e` - Session 57 tracker update
-- `6987e7c` - Complete glow system (red/gold/blue)
-- `51faa48` - Final tracker documentation
-- `da79d47` - Type safety and null checks
+- `784535e` - Icon-based helper system (replaces glows)
 
-**Build:** ✅ 89/89 pages, 50s compile
+**Build:** ✅ 89/89 pages, 46s compile
+
+---
+
+## Work Completed (Session 58)
+
+### Icon-Based Helper System ✅
+**Commit:** 784535e
+
+**Issue:** Glow system not visible/obvious enough, glows stepping on each other during drag/drop.
+
+**User Requirement:** Replace glows with icon-based system in dedicated column.
+
+**Implementation:**
+
+**Icon Column** (ScheduleTable.tsx:291-331):
+```typescript
+<td className="px-1 py-1 text-center" style={{ width: '50px' }}>
+  <div className="flex items-center justify-center gap-0.5">
+    {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
+      <button onClick={...} title="🏆 Last Routine of...">🏆</button>
+    )}
+    {hasSDRequest && !dismissedIcons.has(`${routine.id}-note`) && (
+      <button onClick={...} title="📋 Studio Director requested...">📋</button>
+    )}
+    {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
+      <button onClick={...} title="⚠️ Conflict: {dancerName}...">⚠️</button>
+    )}
+  </div>
+</td>
+```
+
+**Features:**
+- Trophy icon (🏆): Last routine in category - ready for awards
+- Note icon (📋): Studio Director requested changes
+- Conflict icon (⚠️): Dancer conflict detected
+- Click-to-dismiss: Individual icon dismissal per routine
+- Hover tooltips: Detailed info (dancer name, conflict count, note text)
+- Reset button: Appears in footer when icons dismissed, shows count
+
+**State Management** (ScheduleTable.tsx:424):
+```typescript
+const [dismissedIcons, setDismissedIcons] = useState<Set<string>>(new Set());
+```
+- Tracks dismissed icons using keys like `${routineId}-trophy`
+- Persists during session, resets on page reload
+
+**Reset Button** (ScheduleTable.tsx:819-827):
+```typescript
+{dismissedIcons.size > 0 && (
+  <button onClick={() => setDismissedIcons(new Set())}>
+    🔄 Reset Helper Icons ({dismissedIcons.size})
+  </button>
+)}
+```
+
+**Layout Optimization:**
+- Routine column shortened from 100px to 75px
+- Icon column added at 50px
+- Net increase: Only 25px total table width
+
+**Glows Removed:**
+- RoutineCard.tsx: Removed hasSDRequest check (line 118)
+- RoutineCard.tsx: Removed blue glow border styling (line 129)
+- RoutineCard.tsx: Removed blue background tint (line 138)
+- RoutineCard.tsx: Reverted border widths to border-2 (lines 120-124)
+
+**Files Modified:**
+- `src/components/scheduling/ScheduleTable.tsx` (lines 291-331, 424, 819-827)
+- `src/components/scheduling/RoutineCard.tsx` (lines 117-136)
+
+**Verification:**
+- ✅ Build passed: 89/89 pages, 46s compile
+- ⏳ Awaiting deployment to tester.compsync.net
+
+**Technical Details:**
+- Icons clickable with stopPropagation to prevent row selection
+- Title attribute for browser-native tooltips (accessible)
+- Hover scale effect (scale-110) for visual feedback
+- Conditional rendering based on dismissedIcons set
+- Reset button only shows when icons dismissed (count > 0)
 
 ---
 
