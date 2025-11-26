@@ -615,6 +615,9 @@ export const schedulingRouter = router({
           entry_number: true, // V4: Sequential entry number
           routine_length_minutes: true, // V4: Routine duration
           created_at: true,
+          has_studio_requests: true, // SD notes flag for blue glow
+          scheduling_notes: true, // SD notes text for tooltip
+
           studios: {
             select: {
               id: true,

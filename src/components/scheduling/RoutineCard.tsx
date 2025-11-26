@@ -46,6 +46,8 @@ export interface Routine {
   scheduledDateString?: string | null; // YYYY-MM-DD format from backend
   scheduledTimeString?: string | null; // HH:MM:SS format from backend
   entryNumber?: number | null;
+  has_studio_requests?: boolean | null; // SD notes flag for blue glow
+  scheduling_notes?: string | null; // SD notes text for tooltip
 }
 
 interface RoutineCardProps {

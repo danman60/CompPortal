@@ -77,6 +77,8 @@ interface Routine {
   scheduledDateString?: string | null; // YYYY-MM-DD format from backend
   scheduledTimeString?: string | null; // HH:MM:SS format from backend
   routineAge?: number | null;
+  has_studio_requests?: boolean | null; // SD notes flag for blue glow
+  scheduling_notes?: string | null; // SD notes text for tooltip
 }
 
 interface Conflict {
@@ -251,7 +253,7 @@ function SortableRoutineRow({
 
   const hasConflict = !!conflict;
   const hasTrophy = isLastInOveralls;
-  const hasSDRequest = false; // TODO: Add SD feedback/request detection from backend
+  const hasSDRequest = !!(routine.has_studio_requests ?? false); // SD notes flag from backend
 
   const glowKey = `${routine.id}`;
   const isConflictDismissed = dismissedGlows.has(`${glowKey}-conflict`);
@@ -274,8 +276,9 @@ function SortableRoutineRow({
     glowTooltip = `🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards! - Click to dismiss`;
     glowType = 'trophy';
   } else if (hasSDRequest && !isSDRequestDismissed) {
+    const sdNotes = routine.scheduling_notes || 'Studio Director requested changes';
     glowClasses = 'outline outline-2 outline-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.6)]';
-    glowTooltip = `📋 Studio Director requested changes - Click to dismiss`;
+    glowTooltip = `📋 ${sdNotes} - Click to dismiss`;
     glowType = 'sd-request';
   }
 
