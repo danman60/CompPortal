@@ -7,7 +7,25 @@
 
 ---
 
-## Session Summary
+## Session Summary (Session 59)
+
+Fixed missing conflict and SD notes icons:
+1. ✅ Icon Legend Tooltip - Added hover tooltip explaining 🏆📋⚠️ icons
+2. ✅ Test Data - Added 25 SD notes + 9 conflicts to TEST tenant
+3. ✅ Backend Fix - Added missing fields to tRPC query return mapping
+4. ✅ Schema Fix - Added conflicts_with_entry_ids to Prisma schema
+
+**Root Cause:** Backend selected `has_studio_requests`/`scheduling_notes` from DB but didn't include them in return object. Conflict fields (`conflict_count`, `conflicts_with_entry_ids`) weren't selected at all.
+
+**Commits:**
+- `ace2826` - Icon legend tooltip on column header
+- `10e0b66` - Backend fix: conflict/notes fields now properly returned
+
+**Build:** ✅ 89/89 pages
+
+---
+
+## Previous Session (Session 58)
 
 Fixed critical Reset All bug and narrowed icon column:
 1. ✅ Reset All Bug - Fixed race condition preventing UI refresh
