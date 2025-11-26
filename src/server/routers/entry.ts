@@ -141,7 +141,7 @@ export const entryRouter = router({
 
       // Only count entries for THIS reservation (matches submitSummary at line 171)
       const entries = await prisma.competition_entries.findMany({
-        where: { reservation_id: reservation.id, status: { not: 'cancelled' } },
+        where: { reservation_id: reservation.id, status: { notIn: ['cancelled', 'withdrawn'] } },
         select: { total_fee: true },
       });
 
@@ -670,6 +670,9 @@ export const entryRouter = router({
 
       if (status) {
         where.status = status;
+      } else {
+        // Hide withdrawn entries from SD view (soft delete)
+        where.status = { notIn: ['withdrawn'] };
       }
 
       const [entries, total] = await Promise.all([
@@ -1872,7 +1875,7 @@ export const entryRouter = router({
       }
 
       const where: any = {
-        status: { not: 'cancelled' },
+        status: { notIn: ['cancelled', 'withdrawn'] },
       };
 
       // Tenant filtering

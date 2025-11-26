@@ -767,7 +767,7 @@ export const invoiceRouter = router({
       const entries = await prisma.competition_entries.findMany({
         where: {
           reservation_id: reservationId,
-          status: { not: 'cancelled' }, // Exclude only cancelled entries
+          status: { notIn: ['cancelled', 'withdrawn'] }, // Exclude cancelled and withdrawn entries
         },
         include: {
           dance_categories: true,
