@@ -699,7 +699,15 @@ export function ScheduleTable({
                   />
                 </th>
               )}
-              <th className="px-1 py-1 text-center text-xs font-semibold text-white/60" style={{ width: '35px' }} title="Helper Icons">
+              <th
+                className="px-1 py-1 text-center text-xs font-semibold text-white/60 cursor-help"
+                style={{ width: '35px' }}
+                title="Helper Icons Legend:
+🏆 Trophy = Last routine in category (award ceremony ready)
+📋 Note = Studio Director requested changes
+⚠️ Conflict = Dancer scheduling conflict detected
+Click icon to dismiss"
+              >
                 <span className="text-[10px]">🏆📋⚠️</span>
               </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>
