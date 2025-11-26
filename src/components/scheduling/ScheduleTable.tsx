@@ -209,6 +209,8 @@ function SortableRoutineRow({
   isSelected,
   onCheckboxChange,
   showCheckbox,
+  dismissedIcons,
+  onDismissIcon,
 }: {
   routine: Routine;
   index: number;
@@ -227,6 +229,8 @@ function SortableRoutineRow({
   isSelected?: boolean;
   onCheckboxChange?: (routineId: string, index: number, event: React.MouseEvent) => void;
   showCheckbox?: boolean;
+  dismissedIcons: Set<string>;
+  onDismissIcon: (key: string) => void;
 }) {
   const {
     attributes,
@@ -248,46 +252,10 @@ function SortableRoutineRow({
   // Session background colors (alternating faded colors)
   const sessionBg = sessionNumber % 2 === 0 ? 'bg-purple-500/5' : 'bg-blue-500/5';
 
-  // Glow System: Red (conflict) > Gold (trophy) > Blue (SD request)
-  const [dismissedGlows, setDismissedGlows] = useState<Set<string>>(new Set());
-
+  // Helper icon detection
   const hasConflict = !!conflict;
   const hasTrophy = isLastInOveralls;
-  const hasSDRequest = !!(routine.has_studio_requests ?? false); // SD notes flag from backend
-
-  const glowKey = `${routine.id}`;
-  const isConflictDismissed = dismissedGlows.has(`${glowKey}-conflict`);
-  const isTrophyDismissed = dismissedGlows.has(`${glowKey}-trophy`);
-  const isSDRequestDismissed = dismissedGlows.has(`${glowKey}-sd-request`);
-
-  // Priority: Red (conflict) > Gold (trophy) > Blue (SD request)
-  let glowClasses = '';
-  let glowTooltip = '';
-  let glowType: 'conflict' | 'trophy' | 'sd-request' | null = null;
-
-  if (hasConflict && !isConflictDismissed) {
-    const dancerName = conflict?.conflict?.dancerName || 'Unknown';
-    const routinesBetween = conflict?.conflict?.routinesBetween ?? 0;
-    glowClasses = 'outline outline-4 outline-red-500 shadow-[0_0_25px_rgba(239,68,68,1),0_0_40px_rgba(239,68,68,0.6)] bg-red-950/30';
-    glowTooltip = `⚠️ Conflict: ${dancerName} - ${routinesBetween} routines between (need 6 min) - Click to dismiss`;
-    glowType = 'conflict';
-  } else if (hasTrophy && !isTrophyDismissed) {
-    glowClasses = 'outline outline-4 outline-yellow-400 shadow-[0_0_25px_rgba(250,204,21,1),0_0_40px_rgba(250,204,21,0.6)] bg-yellow-950/30';
-    glowTooltip = `🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards! - Click to dismiss`;
-    glowType = 'trophy';
-  } else if (hasSDRequest && !isSDRequestDismissed) {
-    const sdNotes = routine.scheduling_notes || 'Studio Director requested changes';
-    glowClasses = 'outline outline-4 outline-blue-500 shadow-[0_0_25px_rgba(59,130,246,1),0_0_40px_rgba(59,130,246,0.6)] bg-blue-950/30';
-    glowTooltip = `📋 ${sdNotes} - Click to dismiss`;
-    glowType = 'sd-request';
-  }
-
-  const handleGlowClick = (e: React.MouseEvent) => {
-    if (glowType) {
-      e.stopPropagation();
-      setDismissedGlows(prev => new Set(prev).add(`${glowKey}-${glowType}`));
-    }
-  };
+  const hasSDRequest = !!(routine.has_studio_requests ?? false);
 
   return (
     <>
@@ -299,16 +267,8 @@ function SortableRoutineRow({
         className={`
           border-b border-white/10 hover:bg-white/5 transition-colors cursor-move relative
           ${sessionBg}
-          ${glowClasses}
         `}
-        title={glowTooltip || undefined}
-        onClick={(e) => {
-          if (glowType) {
-            handleGlowClick(e);
-          } else {
-            onRoutineClick?.(routine.id);
-          }
-        }}
+        onClick={() => onRoutineClick?.(routine.id)}
       >
       {/* Checkbox - 32px */}
       {showCheckbox && (
@@ -328,6 +288,48 @@ function SortableRoutineRow({
         </td>
       )}
 
+      {/* Helper Icons - 50px */}
+      <td className="px-1 py-1 text-center" style={{ width: '50px' }}>
+        <div className="flex items-center justify-center gap-0.5">
+          {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismissIcon(`${routine.id}-trophy`);
+              }}
+              title={`🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards!`}
+              className="text-sm hover:scale-110 transition-transform"
+            >
+              🏆
+            </button>
+          )}
+          {hasSDRequest && !dismissedIcons.has(`${routine.id}-note`) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismissIcon(`${routine.id}-note`);
+              }}
+              title={`📋 ${routine.scheduling_notes || 'Studio Director requested changes'}`}
+              className="text-sm hover:scale-110 transition-transform"
+            >
+              📋
+            </button>
+          )}
+          {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismissIcon(`${routine.id}-conflict`);
+              }}
+              title={`⚠️ Conflict: ${conflict?.conflict?.dancerName || 'Unknown'} - ${conflict?.conflict?.routinesBetween ?? 0} routines between (need 6 min)`}
+              className="text-sm hover:scale-110 transition-transform"
+            >
+              ⚠️
+            </button>
+          )}
+        </div>
+      </td>
+
       {/* Entry Number - 45px */}
       <td className="px-1 py-1 text-xs font-mono font-bold text-white whitespace-nowrap" style={{ width: '45px' }}>
         #{routine.entryNumber || '?'}
@@ -338,8 +340,8 @@ function SortableRoutineRow({
         {performanceTime}
       </td>
 
-      {/* Routine Title - 100px */}
-      <td className="px-1 py-1 text-xs font-medium text-white relative" style={{ width: '100px' }}>
+      {/* Routine Title - 75px */}
+      <td className="px-1 py-1 text-xs font-medium text-white relative" style={{ width: '75px' }}>
         <div className="truncate-cell">
           <span className="truncate" title={routine.title}>{routine.title}</span>
         </div>
@@ -419,6 +421,7 @@ export function ScheduleTable({
   onDeleteBlock,
 }: ScheduleTableProps) {
   const lastClickedIndexRef = useRef<number | null>(null);
+  const [dismissedIcons, setDismissedIcons] = useState<Set<string>>(new Set());
 
   // Sort routines by entry_number
   const sortedRoutines = useMemo(() => {
@@ -696,13 +699,16 @@ export function ScheduleTable({
                   />
                 </th>
               )}
+              <th className="px-1 py-1 text-center text-xs font-semibold text-white/60" style={{ width: '50px' }} title="Helper Icons">
+                <span className="text-[10px]">🏆📋⚠️</span>
+              </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>
                 #
               </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '65px' }}>
                 Time
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '100px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '75px' }}>
                 Routine
               </th>
               <th className="px-1 py-1 text-center text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '35px' }}>
@@ -789,6 +795,8 @@ export function ScheduleTable({
                     isSelected={selectedRoutineIds.has(routine.id)}
                     onCheckboxChange={handleCheckboxChange}
                     showCheckbox={!!onSelectionChange}
+                    dismissedIcons={dismissedIcons}
+                    onDismissIcon={(key) => setDismissedIcons(prev => new Set(prev).add(key))}
                   />
                 );
               })}
@@ -807,6 +815,15 @@ export function ScheduleTable({
             <div className="text-red-400">
               ⚠️ <span className="font-semibold">{conflicts.length}</span> conflict{conflicts.length !== 1 ? 's' : ''}
             </div>
+          )}
+          {dismissedIcons.size > 0 && (
+            <button
+              onClick={() => setDismissedIcons(new Set())}
+              className="px-2 py-1 bg-purple-600/50 hover:bg-purple-600/70 text-white rounded text-xs font-medium transition-colors"
+              title="Show all hidden helper icons"
+            >
+              🔄 Reset Helper Icons ({dismissedIcons.size})
+            </button>
           )}
         </div>
       </div>
