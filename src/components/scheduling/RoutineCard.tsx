@@ -114,15 +114,19 @@ export function RoutineCard({
     return 'bg-gray-500/20 border-gray-500/40 text-gray-300';
   };
 
+  // Check for SD requests (blue glow)
+  const hasSDRequest = !!(routine.has_studio_requests ?? false);
+
   // Get border styling based on indicators
   const getBorderStyle = () => {
-    // Priority: Last Routine > Conflict > Age Change > Default
-    if (isLastRoutine) return 'border-2 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.4)]'; // Gold border for trophy helper
+    // Priority: Last Routine > Conflict > SD Request > Age Change > Default
+    if (isLastRoutine) return 'border-4 border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,1),0_0_40px_rgba(250,204,21,0.6)]'; // Gold border for trophy helper
     if (hasConflict) {
-      if (conflictSeverity === 'critical') return 'border-2 border-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]';
-      if (conflictSeverity === 'error') return 'border-2 border-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.4)]';
-      return 'border-2 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.3)]';
+      if (conflictSeverity === 'critical') return 'border-4 border-red-500 shadow-[0_0_25px_rgba(239,68,68,1),0_0_40px_rgba(239,68,68,0.6)]';
+      if (conflictSeverity === 'error') return 'border-4 border-orange-500 shadow-[0_0_25px_rgba(249,115,22,1),0_0_40px_rgba(249,115,22,0.6)]';
+      return 'border-4 border-yellow-500 shadow-[0_0_25px_rgba(234,179,8,1),0_0_40px_rgba(234,179,8,0.6)]';
     }
+    if (hasSDRequest) return 'border-4 border-blue-500 shadow-[0_0_25px_rgba(59,130,246,1),0_0_40px_rgba(59,130,246,0.6)]'; // Blue glow for SD requests
     if (hasAgeChange) return 'border-2 border-yellow-400/70';
     if (inZone) return 'border-2 border-green-400/50';
     return 'border border-white/25';
@@ -131,6 +135,7 @@ export function RoutineCard({
   // Get background styling
   const getBackgroundStyle = () => {
     if (hasAgeChange) return 'bg-yellow-900/30'; // Yellow background for age changes
+    if (hasSDRequest) return 'bg-blue-950/30'; // Blue tint for SD requests
     if (inZone) return 'bg-white/15';
     return 'bg-white/15';
   };

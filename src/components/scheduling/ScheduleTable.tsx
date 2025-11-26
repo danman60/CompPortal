@@ -268,16 +268,16 @@ function SortableRoutineRow({
   if (hasConflict && !isConflictDismissed) {
     const dancerName = conflict?.conflict?.dancerName || 'Unknown';
     const routinesBetween = conflict?.conflict?.routinesBetween ?? 0;
-    glowClasses = 'outline outline-2 outline-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.6)]';
+    glowClasses = 'outline outline-4 outline-red-500 shadow-[0_0_25px_rgba(239,68,68,1),0_0_40px_rgba(239,68,68,0.6)] bg-red-950/30';
     glowTooltip = `⚠️ Conflict: ${dancerName} - ${routinesBetween} routines between (need 6 min) - Click to dismiss`;
     glowType = 'conflict';
   } else if (hasTrophy && !isTrophyDismissed) {
-    glowClasses = 'outline outline-2 outline-yellow-400/80 shadow-[0_0_15px_rgba(250,204,21,0.6)]';
+    glowClasses = 'outline outline-4 outline-yellow-400 shadow-[0_0_25px_rgba(250,204,21,1),0_0_40px_rgba(250,204,21,0.6)] bg-yellow-950/30';
     glowTooltip = `🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards! - Click to dismiss`;
     glowType = 'trophy';
   } else if (hasSDRequest && !isSDRequestDismissed) {
     const sdNotes = routine.scheduling_notes || 'Studio Director requested changes';
-    glowClasses = 'outline outline-2 outline-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.6)]';
+    glowClasses = 'outline outline-4 outline-blue-500 shadow-[0_0_25px_rgba(59,130,246,1),0_0_40px_rgba(59,130,246,0.6)] bg-blue-950/30';
     glowTooltip = `📋 ${sdNotes} - Click to dismiss`;
     glowType = 'sd-request';
   }
