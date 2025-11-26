@@ -617,6 +617,8 @@ export const schedulingRouter = router({
           created_at: true,
           has_studio_requests: true, // SD notes flag for blue glow
           scheduling_notes: true, // SD notes text for tooltip
+          conflict_count: true, // Number of conflicts for this routine
+          conflicts_with_entry_ids: true, // Array of conflicting entry IDs
 
           studios: {
             select: {
@@ -733,6 +735,10 @@ export const schedulingRouter = router({
           scheduledDateString: scheduledDateString, // YYYY-MM-DD string (null if not scheduled)
           scheduledTimeString: scheduledTimeString, // HH:MM:SS string (null if not scheduled)
           entryNumber: routine.entry_number, // V4: Sequential entry number
+          has_studio_requests: routine.has_studio_requests ?? false, // SD notes flag
+          scheduling_notes: routine.scheduling_notes ?? null, // SD notes text
+          conflict_count: routine.conflict_count ?? 0, // Number of conflicts
+          conflicts_with_entry_ids: routine.conflicts_with_entry_ids ?? [], // Conflicting entry IDs
         };
       });
     }),
