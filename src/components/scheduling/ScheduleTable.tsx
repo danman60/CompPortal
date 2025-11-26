@@ -79,6 +79,8 @@ interface Routine {
   routineAge?: number | null;
   has_studio_requests?: boolean | null; // SD notes flag for blue glow
   scheduling_notes?: string | null; // SD notes text for tooltip
+  conflict_count?: number | null; // Number of conflicts for this routine
+  conflicts_with_entry_ids?: string[] | null; // Array of conflicting entry IDs
 }
 
 interface Conflict {
@@ -253,7 +255,7 @@ function SortableRoutineRow({
   const sessionBg = sessionNumber % 2 === 0 ? 'bg-purple-500/5' : 'bg-blue-500/5';
 
   // Helper icon detection
-  const hasConflict = !!conflict;
+  const hasConflict = !!(routine.conflict_count && routine.conflict_count > 0);
   const hasTrophy = isLastInOveralls;
   const hasSDRequest = !!(routine.has_studio_requests ?? false);
 
@@ -321,7 +323,7 @@ function SortableRoutineRow({
                 e.stopPropagation();
                 onDismissIcon(`${routine.id}-conflict`);
               }}
-              title={`⚠️ Conflict: ${conflict?.conflict?.dancerName || 'Unknown'} - ${conflict?.conflict?.routinesBetween ?? 0} routines between (need 6 min)`}
+              title={`⚠️ Conflict: ${routine.conflict_count ?? 0} dancer conflict${(routine.conflict_count ?? 0) > 1 ? 's' : ''} detected`}
               className="text-sm hover:scale-110 transition-transform"
             >
               ⚠️
