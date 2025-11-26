@@ -3,20 +3,25 @@
 **Date:** November 25, 2025 (Session 57)
 **Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
 **Branch:** tester
-**Status:** ✅ Session Complete - UI Layout Fix
+**Status:** ✅ Session Complete - Glow System Implementation
 
 ---
 
 ## Session Summary
 
-Fixed DayTabs layout to align Award/Break buttons with day cards:
+Implemented complete glow notification system for schedule table:
 1. ✅ UI Layout Fix - Button heights now match day card heights
-2. ✅ Verified on production (tester.compsync.net)
+2. ✅ Glow System - Red (conflict) / Gold (trophy) / Blue (SD request)
+3. ✅ Click-to-dismiss functionality with state management
+4. ✅ Tooltip explanations on hover
+5. ✅ Verified on production (tester.compsync.net)
 
 **Commits:**
 - `b7c7d4f` - Match Award/Break button heights to day cards
+- `d2b138e` - Session 57 tracker update
+- `6987e7c` - Complete glow system (red/gold/blue)
 
-**Build:** ✅ 89/89 pages, 52s compile
+**Build:** ✅ 89/89 pages, 46s compile
 
 ---
 
@@ -60,6 +65,94 @@ Completed testing protocol for Phase 2 scheduler and implemented PDF export:
 - Flexbox alignment change: `items-start` → `items-stretch`
 - Result: All flex children (day tabs + buttons) stretch to fill container height
 - No changes to button styling needed - layout handled by parent container
+
+### 2. Glow System Implementation ✅
+**Commit:** 6987e7c
+
+**Feature:** Complete 3-color glow notification system for schedule table routines.
+
+**Requirements:**
+- Red glow: Conflict detection (dancers within conflict range)
+- Gold glow: Trophy helper (last routine in category)
+- Blue glow: SD request (placeholder for studio feedback)
+- Priority system: Red > Gold > Blue (only one glow shown per routine)
+- Click-to-dismiss functionality (manual override)
+- Tooltip explanations on hover
+
+**Implementation:**
+
+**State Management** (ScheduleTable.tsx:249-256):
+```typescript
+const [dismissedGlows, setDismissedGlows] = useState<Set<string>>(new Set());
+```
+- Tracks dismissed glows per routine per type using keys like `${routineId}-conflict`
+- Persists during session, resets on page reload
+
+**Glow Detection Logic** (ScheduleTable.tsx:257-266):
+- `hasConflict`: Uses existing conflict detection from backend
+- `hasTrophy`: Uses existing `isLastInOveralls` calculation
+- `hasSDRequest`: Placeholder (false) - awaiting backend integration
+
+**Priority-Based Selection** (ScheduleTable.tsx:268-285):
+```typescript
+if (hasConflict && !isConflictDismissed) {
+  glowClasses = 'outline outline-2 outline-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.6)]';
+  glowTooltip = `⚠️ Conflict: ${conflict.dancerName}...`;
+  glowType = 'conflict';
+} else if (hasTrophy && !isTrophyDismissed) {
+  glowClasses = 'outline outline-2 outline-yellow-400/80 shadow-[0_0_15px_rgba(250,204,21,0.6)]';
+  glowTooltip = `🏆 Last Routine of ${category}... - Click to dismiss`;
+  glowType = 'trophy';
+} else if (hasSDRequest && !isSDRequestDismissed) {
+  glowClasses = 'outline outline-2 outline-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.6)]';
+  glowTooltip = `📋 Studio Director requested changes - Click to dismiss`;
+  glowType = 'sd-request';
+}
+```
+
+**Click Handler** (ScheduleTable.tsx:287-292):
+```typescript
+const handleGlowClick = (e: React.MouseEvent) => {
+  if (glowType) {
+    e.stopPropagation();
+    setDismissedGlows(prev => new Set(prev).add(`${glowKey}-${glowType}`));
+  }
+};
+```
+
+**TR Element Integration** (ScheduleTable.tsx:294-306):
+- Applies `glowClasses` to table row via className
+- Sets `title` attribute for browser tooltip
+- Intercepts clicks to dismiss glow instead of selecting routine
+
+**Session Boundary Badge Removal** (DayTabs.tsx:356-361):
+- Removed "Suggested Award Ceremony Location" badge
+- Replaced with simple session indicator
+
+**Files Modified:**
+- `src/components/scheduling/ScheduleTable.tsx` (lines 249-306)
+- `src/components/scheduling/DayTabs.tsx` (lines 356-361)
+
+**Verification:**
+- ✅ Deployed to tester.compsync.net (commit 6987e7c)
+- ✅ Screenshot captured: `.playwright-mcp/glow-system-deployed-6987e7c.png`
+- ✅ Screenshot captured: `.playwright-mcp/glow-tooltip-hover-test.png`
+- ✅ Visual verification: Gold glows visible on routines #115, #116
+- ✅ Table layout intact (no collapse)
+- ✅ No console errors
+
+**Technical Details:**
+- CSS outline for visual effect (no layout impact, prevents table collapse)
+- box-shadow for glow effect using rgba colors with transparency
+- HTML title attribute for tooltips (browser native, accessible)
+- React useState for dismissal tracking (session-scoped)
+- Priority-based conditional rendering ensures only one glow per routine
+
+**Design Decisions:**
+- **Why outline instead of border**: Outline doesn't affect layout calculations
+- **Why CSS instead of icons**: Inline icons caused table collapse (see BLOCKER_TROPHY_HELPER.md)
+- **Why title attribute instead of custom tooltip**: Simpler, accessible, no layout risk
+- **Why session-scoped dismissal**: User can refresh to restore glows if needed
 
 ---
 
