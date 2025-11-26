@@ -3,24 +3,23 @@
 **Date:** November 26, 2025 (Session 58)
 **Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
 **Branch:** tester
-**Status:** ✅ Session Complete - Icon-Based Helper System
+**Status:** ✅ Session Complete - Reset All Bug + Icon Width
 
 ---
 
 ## Session Summary
 
-Replaced glow notification system with icon-based helper system:
-1. ✅ Icon Column - Trophy/Note/Conflict icons in dedicated column
-2. ✅ Click-to-Dismiss - Individual icon dismissal functionality
-3. ✅ Hover Tooltips - Detailed information on hover
-4. ✅ Reset Button - "Reset Helper Icons" button in table footer
-5. ✅ Layout Optimization - Shortened Routine column 100px → 75px
-6. ✅ Removed Glows - All glow effects removed from RoutineCard
+Fixed critical Reset All bug and narrowed icon column:
+1. ✅ Reset All Bug - Fixed race condition preventing UI refresh
+2. ✅ Reset Day Bug - Same fix applied
+3. ✅ Unschedule Bug - Same fix applied
+4. ✅ Icon Column Width - Narrowed from 50px to 35px
 
 **Commits:**
 - `784535e` - Icon-based helper system (replaces glows)
+- `f43a8a9` - Reset All/Reset Day refetch race condition + icon width
 
-**Build:** ✅ 89/89 pages, 46s compile
+**Build:** ✅ 89/89 pages
 
 ---
 
@@ -101,6 +100,79 @@ const [dismissedIcons, setDismissedIcons] = useState<Set<string>>(new Set());
 - Hover scale effect (scale-110) for visual feedback
 - Conditional rendering based on dismissedIcons set
 - Reset button only shows when icons dismissed (count > 0)
+
+---
+
+### Reset All Race Condition Fix ✅
+**Commit:** f43a8a9
+
+**Issue:** Reset All/Reset Day buttons showed success toast but routines remained visible in schedule UI despite database being correctly updated.
+
+**Root Cause:** Race condition in mutation callbacks:
+1. `setDraftSchedule([])` called immediately
+2. `refetch()` called asynchronously (takes time)
+3. `scheduledRoutines` useMemo re-ran with empty draft
+4. Fell back to stale `routines` data (cached with `isScheduled: true`)
+5. UI showed routine even though database had `is_scheduled: false`
+
+**Fix Applied to Three Mutations:**
+
+**1. resetDay** (page.tsx:127-136):
+```typescript
+const resetDay = trpc.scheduling.resetDay.useMutation({
+  onSuccess: async (data) => {
+    toast.success(`Unscheduled ${data.count} routines`);
+    await refetch(); // Wait for refetch to complete
+    setDraftSchedule([]); // Clear AFTER fresh data loaded
+  },
+});
+```
+
+**2. resetCompetition** (page.tsx:138-147):
+```typescript
+const resetCompetition = trpc.scheduling.resetCompetition.useMutation({
+  onSuccess: async (data) => {
+    toast.success(`Unscheduled ${data.count} routines...`);
+    await Promise.all([refetch(), refetchBlocks()]); // Wait for both
+    setDraftSchedule([]); // Clear AFTER fresh data loaded
+  },
+});
+```
+
+**3. unscheduleRoutines** (page.tsx:150-165):
+```typescript
+const unscheduleRoutines = trpc.scheduling.unscheduleRoutines.useMutation({
+  onSuccess: async (data, variables) => {
+    toast.success(`Unscheduled ${data.count} routine(s)`);
+    await refetch(); // Wait for refetch to complete
+    // Remove only unscheduled routines from draft
+    const unscheduledIds = new Set(variables.routineIds);
+    setDraftSchedule(prev => prev.filter(r => !unscheduledIds.has(r.id)));
+    setSelectedScheduledIds(new Set());
+  },
+});
+```
+
+**Icon Column Width Optimization:**
+- Changed from 50px to 35px (ScheduleTable.tsx:292, 702)
+- User feedback: "way too wide it should be max width of 3 icons"
+- Result: More compact layout, checkbox and icon columns are narrowest
+
+**Files Modified:**
+- `src/app/dashboard/director-panel/schedule/page.tsx` (lines 127-165)
+- `src/components/scheduling/ScheduleTable.tsx` (lines 292, 702)
+
+**Verification:**
+- ✅ Build passed: 89/89 pages
+- ✅ Database queries confirmed routines unscheduled correctly
+- ✅ UI now properly refreshes after Reset All/Reset Day/Unschedule
+
+**Technical Details:**
+- Made mutation callbacks `async`
+- Use `await refetch()` to ensure fresh data loaded
+- Clear/update draft state ONLY after refetch completes
+- Prevents useMemo from computing with stale data
+- Pattern applies to all state-clearing mutations
 
 ---
 
@@ -339,5 +411,5 @@ Client-side PDF generation using jsPDF:
 
 ---
 
-**Last Updated:** November 25, 2025 (Session 57)
+**Last Updated:** November 26, 2025 (Session 58)
 **Next Session:** Continue Phase 2 scheduler development
