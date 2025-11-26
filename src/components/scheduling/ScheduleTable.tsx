@@ -211,7 +211,7 @@ function SortableRoutineRow({
   routine: Routine;
   index: number;
   isLastInOveralls: boolean;
-  conflict: any;
+  conflict: { routineIds: string[]; conflict: Conflict } | undefined;
   isFirstInConflict: boolean;
   conflictSpan: number;
   performanceTime: string;
@@ -264,8 +264,10 @@ function SortableRoutineRow({
   let glowType: 'conflict' | 'trophy' | 'sd-request' | null = null;
 
   if (hasConflict && !isConflictDismissed) {
+    const dancerName = conflict?.conflict?.dancerName || 'Unknown';
+    const routinesBetween = conflict?.conflict?.routinesBetween ?? 0;
     glowClasses = 'outline outline-2 outline-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.6)]';
-    glowTooltip = `⚠️ Conflict: ${conflict.conflict.dancerName} - ${conflict.conflict.routinesBetween} routines between (need 6 min) - Click to dismiss`;
+    glowTooltip = `⚠️ Conflict: ${dancerName} - ${routinesBetween} routines between (need 6 min) - Click to dismiss`;
     glowType = 'conflict';
   } else if (hasTrophy && !isTrophyDismissed) {
     glowClasses = 'outline outline-2 outline-yellow-400/80 shadow-[0_0_15px_rgba(250,204,21,0.6)]';
