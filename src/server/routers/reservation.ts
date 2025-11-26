@@ -672,10 +672,11 @@ export const reservationRouter = router({
         throw new Error('Reservation not found');
       }
 
+      // Allow CDs to approve pending reservations OR update spaces on approved ones
       guardReservationStatus(
         existingReservation.status as 'pending' | 'approved' | 'rejected',
-        ['pending'],
-        'approve reservation'
+        ['pending', 'approved'],
+        'approve or update reservation'
       );
 
       // Reserve capacity atomically (includes status update to prevent double-processing)
