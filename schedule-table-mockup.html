@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Table Redesign Options</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      text-align: center;
+      opacity: 0.9;
+      margin-bottom: 40px;
+      font-size: 16px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .option-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .option-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .option-title {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .option-tag {
+      background: rgba(255, 215, 0, 0.3);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 215, 0, 0.5);
+    }
+
+    .option-description {
+      margin-bottom: 20px;
+      opacity: 0.9;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .pros {
+      background: rgba(76, 175, 80, 0.2);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 3px solid #4CAF50;
+    }
+
+    .pros-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .pros ul {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    /* Table Styles */
+    .table-wrapper {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th {
+      background: rgba(99, 102, 241, 0.3);
+      padding: 10px 8px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(99, 102, 241, 0.4);
+    }
+
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .checkbox-col {
+      width: 28px;
+      text-align: center;
+    }
+
+    .icon-col {
+      width: 35px;
+      text-align: center;
+    }
+
+    .icon-col-compact {
+      width: 26px;
+      text-align: center;
+    }
+
+    .entry-col {
+      width: 45px;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .entry-col-compact {
+      width: 38px;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .time-col {
+      width: 65px;
+      font-family: 'Courier New', monospace;
+      opacity: 0.9;
+    }
+
+    .time-col-compact {
+      width: 52px;
+      font-family: 'Courier New', monospace;
+      opacity: 0.9;
+      font-size: 11px;
+    }
+
+    .routine-col {
+      width: 75px;
+      font-weight: 500;
+    }
+
+    /* Icon Styles */
+    .emoji-icon {
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-block;
+      transition: transform 0.15s;
+    }
+
+    .emoji-icon:hover {
+      transform: scale(1.15);
+    }
+
+    .emoji-icon-small {
+      font-size: 12px;
+    }
+
+    /* Badge Styles */
+    .badge-container {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .badge {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.15s;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .badge:hover {
+      transform: scale(1.3);
+    }
+
+    .badge-gold {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+    }
+
+    .badge-blue {
+      background: linear-gradient(135deg, #4FC3F7, #2196F3);
+    }
+
+    .badge-red {
+      background: linear-gradient(135deg, #FF6B6B, #EE5A6F);
+    }
+
+    /* Entry Number with Overlay Badge */
+    .entry-with-badge {
+      position: relative;
+    }
+
+    .overlay-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Pill Badges */
+    .pill-badges {
+      display: flex;
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .pill-badge:hover {
+      transform: scale(1.05);
+    }
+
+    .pill-gold {
+      background: rgba(255, 215, 0, 0.25);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      color: #FFD700;
+    }
+
+    .pill-blue {
+      background: rgba(33, 150, 243, 0.25);
+      border: 1px solid rgba(33, 150, 243, 0.4);
+      color: #4FC3F7;
+    }
+
+    .pill-red {
+      background: rgba(255, 107, 107, 0.25);
+      border: 1px solid rgba(255, 107, 107, 0.4);
+      color: #FF6B6B;
+    }
+
+    .current-label {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .recommended-label {
+      background: rgba(34, 197, 94, 0.3);
+      border-color: rgba(34, 197, 94, 0.5);
+    }
+
+    /* Time variations */
+    .time-minimal {
+      font-size: 11px;
+      letter-spacing: -0.3px;
+    }
+
+    .time-with-period {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+    }
+
+    .time-number {
+      font-weight: 600;
+    }
+
+    .time-period {
+      font-size: 9px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎭 Schedule Table Redesign Options</h1>
+  <p class="subtitle">Choose the best layout for icon columns + time display</p>
+
+  <div class="options-grid">
+    <!-- CURRENT STATE -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-title">Current Design</div>
+        <div class="option-tag current-label">CURRENT</div>
+      </div>
+      <div class="option-description">
+        Emoji icons in 35px column, time in 65px column. Functional but uses 100px+ for small icons.
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-col">☑</th>
+              <th class="icon-col">🏆📋⚠️</th>
+              <th class="entry-col">#</th>
+              <th class="time-col">Time</th>
+              <th class="routine-col">Routine</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col">
+                <span class="emoji-icon">🏆</span>
+              </td>
+              <td class="entry-col">100</td>
+              <td class="time-col">8:00 AM</td>
+              <td class="routine-col">Jazz Solo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col">
+                <span class="emoji-icon">📋</span>
+                <span class="emoji-icon">⚠️</span>
+              </td>
+              <td class="entry-col">101</td>
+              <td class="time-col">8:05 AM</td>
+              <td class="routine-col">Tap Duo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col">
+                <span class="emoji-icon">🏆</span>
+                <span class="emoji-icon">📋</span>
+              </td>
+              <td class="entry-col">102</td>
+              <td class="time-col">8:10 AM</td>
+              <td class="routine-col">Hip Hop Group</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col"></td>
+              <td class="entry-col">103</td>
+              <td class="time-col">8:15 AM</td>
+              <td class="routine-col">Contemporary</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPTION 1: Compact Badge System -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-title">Option 1: Compact Badges</div>
+        <div class="option-tag recommended-label">⭐ RECOMMENDED</div>
+      </div>
+      <div class="option-description">
+        Replace emoji with tiny colored dot badges. Modern, professional, saves 15px+ total width.
+      </div>
+      <div class="pros">
+        <div class="pros-title">✅ Benefits:</div>
+        <ul>
+          <li>Sleek, minimal design</li>
+          <li>Icon column: 35px → 26px (-9px)</li>
+          <li>Time column: 65px → 52px (-13px)</li>
+          <li>Total space saved: 22px</li>
+          <li>Multiple badges stack beautifully</li>
+          <li>Hover tooltips preserved</li>
+        </ul>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-col">☑</th>
+              <th class="icon-col-compact">●</th>
+              <th class="entry-col-compact">#</th>
+              <th class="time-col-compact">Time</th>
+              <th class="routine-col">Routine</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col-compact">
+                <div class="badge-container">
+                  <span class="badge badge-gold" title="🏆 Trophy"></span>
+                </div>
+              </td>
+              <td class="entry-col-compact">100</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:00</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Jazz Solo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col-compact">
+                <div class="badge-container">
+                  <span class="badge badge-blue" title="📋 SD Note"></span>
+                  <span class="badge badge-red" title="⚠️ Conflict"></span>
+                </div>
+              </td>
+              <td class="entry-col-compact">101</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:05</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Tap Duo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col-compact">
+                <div class="badge-container">
+                  <span class="badge badge-gold" title="🏆 Trophy"></span>
+                  <span class="badge badge-blue" title="📋 SD Note"></span>
+                </div>
+              </td>
+              <td class="entry-col-compact">102</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:10</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Hip Hop Group</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="icon-col-compact"></td>
+              <td class="entry-col-compact">103</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:15</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Contemporary</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPTION 2: Overlay Badges on Entry Number -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-title">Option 2: Overlay Badges</div>
+      </div>
+      <div class="option-description">
+        Remove icon column entirely. Show badges as corner dots on the entry number cell. Maximum space efficiency.
+      </div>
+      <div class="pros">
+        <div class="pros-title">✅ Benefits:</div>
+        <ul>
+          <li>Most compact design</li>
+          <li>Removes entire icon column (-26px)</li>
+          <li>Time column: 65px → 52px (-13px)</li>
+          <li>Total space saved: 39px</li>
+          <li>Cleaner visual hierarchy</li>
+          <li>Entry number remains scannable</li>
+        </ul>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-col">☑</th>
+              <th class="entry-col-compact">#</th>
+              <th class="time-col-compact">Time</th>
+              <th class="routine-col">Routine</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="entry-col-compact">
+                <div class="entry-with-badge">
+                  100
+                  <span class="overlay-badge badge-gold" title="🏆 Trophy"></span>
+                </div>
+              </td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:00</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Jazz Solo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="entry-col-compact">
+                <div class="entry-with-badge">
+                  101
+                  <span class="overlay-badge badge-blue" title="📋 SD Note" style="right: 2px;"></span>
+                  <span class="overlay-badge badge-red" title="⚠️ Conflict" style="right: 10px;"></span>
+                </div>
+              </td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:05</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Tap Duo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="entry-col-compact">
+                <div class="entry-with-badge">
+                  102
+                  <span class="overlay-badge badge-gold" title="🏆 Trophy" style="right: 2px;"></span>
+                  <span class="overlay-badge badge-blue" title="📋 SD Note" style="right: 10px;"></span>
+                </div>
+              </td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:10</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Hip Hop Group</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td class="entry-col-compact">103</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:15</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Contemporary</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPTION 3: Pill Badges -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-title">Option 3: Pill Badges</div>
+      </div>
+      <div class="option-description">
+        Replace emoji with small pill-shaped badges with labels. More descriptive but takes slightly more space.
+      </div>
+      <div class="pros">
+        <div class="pros-title">✅ Benefits:</div>
+        <ul>
+          <li>Most readable/descriptive</li>
+          <li>No tooltip needed for meaning</li>
+          <li>Icon column: 35px → 55px (+20px for clarity)</li>
+          <li>Time column: 65px → 52px (-13px)</li>
+          <li>Good for users unfamiliar with emoji</li>
+        </ul>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-col">☑</th>
+              <th style="width: 55px; text-align: center;">Status</th>
+              <th class="entry-col-compact">#</th>
+              <th class="time-col-compact">Time</th>
+              <th class="routine-col">Routine</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="padding: 6px 4px;">
+                <div class="pill-badges">
+                  <span class="pill-badge pill-gold">🏆</span>
+                </div>
+              </td>
+              <td class="entry-col-compact">100</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:00</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Jazz Solo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="padding: 6px 4px;">
+                <div class="pill-badges">
+                  <span class="pill-badge pill-blue">📋</span>
+                  <span class="pill-badge pill-red">⚠️</span>
+                </div>
+              </td>
+              <td class="entry-col-compact">101</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:05</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Tap Duo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="padding: 6px 4px;">
+                <div class="pill-badges">
+                  <span class="pill-badge pill-gold">🏆</span>
+                  <span class="pill-badge pill-blue">📋</span>
+                </div>
+              </td>
+              <td class="entry-col-compact">102</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:10</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Hip Hop Group</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="padding: 6px 4px;"></td>
+              <td class="entry-col-compact">103</td>
+              <td class="time-col-compact">
+                <div class="time-with-period">
+                  <span class="time-number">8:15</span><span class="time-period">AM</span>
+                </div>
+              </td>
+              <td class="routine-col">Contemporary</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPTION 4: Tighter Current Style -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-title">Option 4: Tighter Current</div>
+      </div>
+      <div class="option-description">
+        Keep emoji icons but optimize spacing. Minimal code change, moderate improvement.
+      </div>
+      <div class="pros">
+        <div class="pros-title">✅ Benefits:</div>
+        <ul>
+          <li>Quickest to implement</li>
+          <li>Keeps familiar emoji style</li>
+          <li>Icon column: 35px → 28px (-7px)</li>
+          <li>Entry: 45px → 38px (-7px)</li>
+          <li>Time column: 65px → 54px (-11px)</li>
+          <li>Total space saved: 25px</li>
+        </ul>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-col">☑</th>
+              <th style="width: 28px; text-align: center;">🏆📋⚠️</th>
+              <th class="entry-col-compact">#</th>
+              <th style="width: 54px;">Time</th>
+              <th class="routine-col">Routine</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="width: 28px; text-align: center;">
+                <span class="emoji-icon emoji-icon-small">🏆</span>
+              </td>
+              <td class="entry-col-compact">100</td>
+              <td style="width: 54px; font-family: monospace; font-size: 11px;">8:00 AM</td>
+              <td class="routine-col">Jazz Solo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="width: 28px; text-align: center; padding: 6px 2px;">
+                <div style="display: flex; flex-direction: column; gap: 2px; align-items: center;">
+                  <span class="emoji-icon emoji-icon-small">📋</span>
+                  <span class="emoji-icon emoji-icon-small">⚠️</span>
+                </div>
+              </td>
+              <td class="entry-col-compact">101</td>
+              <td style="width: 54px; font-family: monospace; font-size: 11px;">8:05 AM</td>
+              <td class="routine-col">Tap Duo</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="width: 28px; text-align: center; padding: 6px 2px;">
+                <div style="display: flex; flex-direction: column; gap: 2px; align-items: center;">
+                  <span class="emoji-icon emoji-icon-small">🏆</span>
+                  <span class="emoji-icon emoji-icon-small">📋</span>
+                </div>
+              </td>
+              <td class="entry-col-compact">102</td>
+              <td style="width: 54px; font-family: monospace; font-size: 11px;">8:10 AM</td>
+              <td class="routine-col">Hip Hop Group</td>
+            </tr>
+            <tr>
+              <td class="checkbox-col"><input type="checkbox"></td>
+              <td style="width: 28px;"></td>
+              <td class="entry-col-compact">103</td>
+              <td style="width: 54px; font-family: monospace; font-size: 11px;">8:15 AM</td>
+              <td class="routine-col">Contemporary</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 40px; opacity: 0.8; font-size: 14px;">
+    <p><strong>Space Comparison:</strong></p>
+    <p>Current: ~142px for checkbox+icons+#+time</p>
+    <p>Option 1 (Badges): ~120px (-22px saved)</p>
+    <p>Option 2 (Overlay): ~106px (-36px saved)</p>
+    <p>Option 3 (Pills): ~149px (+7px wider but clearer)</p>
+    <p>Option 4 (Tighter): ~117px (-25px saved)</p>
+  </div>
+</body>
+</html>

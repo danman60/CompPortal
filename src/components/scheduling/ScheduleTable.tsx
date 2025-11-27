@@ -173,11 +173,14 @@ function SortableBlockRow({
       className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
     >
       {showCheckbox && <td className="px-1 py-1" style={{ width: '32px' }}></td>}
-      <td className="px-1 py-1 text-xs font-mono font-bold text-white" style={{ width: '45px' }}>
+      <td className="px-1 py-1" style={{ width: '55px' }}></td>
+      <td className="px-1 py-1 text-xs font-mono font-bold text-white" style={{ width: '38px' }}>
         {icon}
       </td>
-      <td className="px-1 py-1 text-xs font-mono text-white/90" style={{ width: '65px' }}>
-        {displayTime}
+      <td className="px-1 py-1 text-xs font-mono text-white/90" style={{ width: '52px' }}>
+        <div className="flex items-baseline gap-0.5">
+          <span className="font-semibold" style={{ fontSize: '11px' }}>{displayTime}</span>
+        </div>
       </td>
       <td colSpan={5} className="px-1 py-1">
         <div className="flex items-center gap-2 justify-between">
@@ -234,7 +237,7 @@ function SortableRoutineRow({
   conflict: { routineIds: string[]; conflict: Conflict } | undefined;
   isFirstInConflict: boolean;
   conflictSpan: number;
-  performanceTime: string;
+  performanceTime: { time: string; period: string };
   classificationColor: string;
   studioDisplay: string;
   viewMode: ViewMode;
@@ -346,9 +349,9 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Helper Icons - 35px */}
-      <td className="px-1 py-1 text-center" style={{ width: '35px' }}>
-        <div className="flex items-center justify-center gap-0.5">
+      {/* Pill Badge Status - 55px */}
+      <td className="px-1 py-1" style={{ width: '55px' }}>
+        <div className="flex flex-col gap-1 items-center">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
               onClick={(e) => {
@@ -356,7 +359,12 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-trophy`);
               }}
               title={`🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards!`}
-              className="text-sm hover:scale-110 transition-transform"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-transform hover:scale-105 whitespace-nowrap"
+              style={{
+                background: 'rgba(255, 215, 0, 0.25)',
+                border: '1px solid rgba(255, 215, 0, 0.4)',
+                color: '#FFD700'
+              }}
             >
               🏆
             </button>
@@ -368,7 +376,12 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-note`);
               }}
               title={`📋 ${routine.scheduling_notes || 'Studio Director requested changes'}`}
-              className="text-sm hover:scale-110 transition-transform"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-transform hover:scale-105 whitespace-nowrap"
+              style={{
+                background: 'rgba(33, 150, 243, 0.25)',
+                border: '1px solid rgba(33, 150, 243, 0.4)',
+                color: '#4FC3F7'
+              }}
             >
               📋
             </button>
@@ -380,7 +393,12 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-conflict`);
               }}
               title={getConflictTooltip()}
-              className="text-sm hover:scale-110 transition-transform"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-transform hover:scale-105 whitespace-nowrap"
+              style={{
+                background: 'rgba(255, 107, 107, 0.25)',
+                border: '1px solid rgba(255, 107, 107, 0.4)',
+                color: '#FF6B6B'
+              }}
             >
               ⚠️
             </button>
@@ -388,14 +406,19 @@ function SortableRoutineRow({
         </div>
       </td>
 
-      {/* Entry Number - 45px */}
-      <td className="px-1 py-1 text-xs font-mono font-bold text-white whitespace-nowrap" style={{ width: '45px' }}>
+      {/* Entry Number - 38px */}
+      <td className="px-1 py-1 text-xs font-mono font-bold text-white whitespace-nowrap" style={{ width: '38px' }}>
         #{routine.entryNumber || '?'}
       </td>
 
-      {/* Time - 65px */}
-      <td className="px-1 py-1 text-xs font-mono text-white/90 whitespace-nowrap" style={{ width: '65px' }}>
-        {performanceTime}
+      {/* Time - 52px (compact with split AM/PM) */}
+      <td className="px-1 py-1 text-xs font-mono text-white/90 whitespace-nowrap" style={{ width: '52px' }}>
+        <div className="flex items-baseline gap-0.5">
+          <span className="font-semibold" style={{ fontSize: '11px' }}>{performanceTime.time}</span>
+          {performanceTime.period && (
+            <span style={{ fontSize: '9px', opacity: 0.7 }}>{performanceTime.period}</span>
+          )}
+        </div>
       </td>
 
       {/* Routine Title - 75px */}
@@ -760,19 +783,19 @@ export function ScheduleTable({
               )}
               <th
                 className="px-1 py-1 text-center text-xs font-semibold text-white/60 cursor-help"
-                style={{ width: '35px' }}
+                style={{ width: '55px' }}
                 title="Helper Icons Legend:
 🏆 Trophy = Last routine in category (award ceremony ready)
 📋 Note = Studio Director requested changes
 ⚠️ Conflict = Dancer scheduling conflict detected
-Click icon to dismiss"
+Click badge to dismiss"
               >
-                <span className="text-[10px]">🏆📋⚠️</span>
+                <span className="text-[10px]">Status</span>
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '38px' }}>
                 #
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '65px' }}>
+              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '52px' }}>
                 Time
               </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '75px' }}>
@@ -824,17 +847,16 @@ Click icon to dismiss"
                 const isFirstInConflict = isFirstInConflictGroup(routine.id);
                 const conflictSpan = getConflictSpan(routine.id);
 
-                // Format time - use string from backend (no Date conversion)
-                // FIX: scheduledTimeString is "HH:MM:SS" in 24-hour format from backend
+                // Format time - split into number and period for compact display
                 const performanceTime = routine.scheduledTimeString
                   ? (() => {
                       const [hours24, minutes] = routine.scheduledTimeString.split(':');
                       const hour24 = parseInt(hours24, 10);
                       const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
                       const ampm = hour24 >= 12 ? 'PM' : 'AM';
-                      return `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
+                      return { time: `${hour12}:${minutes}`, period: ampm };
                     })()
-                  : 'TBD';
+                  : { time: 'TBD', period: '' };
 
                 // Classification color
                 const classificationColor = getClassificationColor(routine.classificationName);
