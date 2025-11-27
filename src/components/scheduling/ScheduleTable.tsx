@@ -38,6 +38,19 @@ interface ScheduleTableProps {
   selectedDate: string; // ISO date
   viewMode: ViewMode;
   conflicts: Conflict[];
+  conflictsByRoutineId?: Map<string, Array<{
+    dancerId: string;
+    dancerName: string;
+    routine1Id: string;
+    routine1Number: number;
+    routine1Title: string;
+    routine2Id: string;
+    routine2Number: number;
+    routine2Title: string;
+    routinesBetween: number;
+    severity: 'critical' | 'error' | 'warning';
+    message: string;
+  }>>;
   onRoutineClick?: (routineId: string) => void;
   selectedRoutineIds?: Set<string>;
   onSelectionChange?: (selectedIds: Set<string>) => void;
@@ -79,8 +92,6 @@ interface Routine {
   routineAge?: number | null;
   has_studio_requests?: boolean | null; // SD notes flag for blue glow
   scheduling_notes?: string | null; // SD notes text for tooltip
-  conflict_count?: number | null; // Number of conflicts for this routine
-  conflicts_with_entry_ids?: string[] | null; // Array of conflicting entry IDs
   dancer_names?: string[] | null; // Array of dancer names in this routine
 }
 
@@ -215,6 +226,7 @@ function SortableRoutineRow({
   dismissedIcons,
   onDismissIcon,
   scheduledRoutines,
+  conflicts,
 }: {
   routine: Routine;
   index: number;
@@ -236,6 +248,19 @@ function SortableRoutineRow({
   dismissedIcons: Set<string>;
   onDismissIcon: (key: string) => void;
   scheduledRoutines: Routine[];
+  conflicts?: Array<{
+    dancerId: string;
+    dancerName: string;
+    routine1Id: string;
+    routine1Number: number;
+    routine1Title: string;
+    routine2Id: string;
+    routine2Number: number;
+    routine2Title: string;
+    routinesBetween: number;
+    severity: 'critical' | 'error' | 'warning';
+    message: string;
+  }>;
 }) {
   const {
     attributes,
@@ -257,34 +282,34 @@ function SortableRoutineRow({
   // Session background colors (alternating faded colors)
   const sessionBg = sessionNumber % 2 === 0 ? 'bg-purple-500/5' : 'bg-blue-500/5';
 
-  // Helper icon detection
-  const hasConflict = !!(routine.conflict_count && routine.conflict_count > 0);
+  // Helper icon detection (using dynamic conflicts)
+  const hasConflict = conflicts && conflicts.length > 0;
+  const conflictSeverity = conflicts?.[0]?.severity || 'warning';
   const hasTrophy = isLastInOveralls;
   const hasSDRequest = !!(routine.has_studio_requests ?? false);
 
-  // Generate detailed conflict tooltip
+  // Generate detailed conflict tooltip from dynamic data
   const getConflictTooltip = () => {
-    if (!hasConflict) return '';
+    if (!conflicts || conflicts.length === 0) return '';
 
-    let tooltip = `⚠️ Conflict: ${routine.conflict_count ?? 0} conflict${(routine.conflict_count ?? 0) > 1 ? 's' : ''} detected`;
+    const conflict = conflicts[0]; // Show first conflict
+    const isRoutine1 = conflict.routine1Id === routine.id;
+    const conflictingRoutineNumber = isRoutine1 ? conflict.routine2Number : conflict.routine1Number;
+    const conflictingRoutineTitle = isRoutine1 ? conflict.routine2Title : conflict.routine1Title;
 
-    // Show dancers in this routine
+    let tooltip = `⚠️ Conflict: ${conflict.dancerName}`;
+    tooltip += `\n${conflict.routinesBetween} routine${conflict.routinesBetween !== 1 ? 's' : ''} between performances`;
+    tooltip += `\n(need 6+ for costume changes)`;
+    tooltip += `\n\nConflicts with:`;
+    tooltip += `\n• #${conflictingRoutineNumber} ${conflictingRoutineTitle}`;
+
     if (routine.dancer_names && routine.dancer_names.length > 0) {
-      tooltip += `\nDancers: ${routine.dancer_names.join(', ')}`;
+      tooltip += `\n\nDancers in this routine:`;
+      tooltip += `\n${routine.dancer_names.join(', ')}`;
     }
 
-    // Look up conflicting routines
-    if (routine.conflicts_with_entry_ids && routine.conflicts_with_entry_ids.length > 0) {
-      const conflictingRoutines = scheduledRoutines.filter(r =>
-        routine.conflicts_with_entry_ids?.includes(r.id)
-      );
-
-      if (conflictingRoutines.length > 0) {
-        tooltip += '\n\nConflicts with:';
-        conflictingRoutines.forEach(r => {
-          tooltip += `\n• #${r.entryNumber} ${r.title}`;
-        });
-      }
+    if (conflicts.length > 1) {
+      tooltip += `\n\n+${conflicts.length - 1} more conflict${conflicts.length - 1 !== 1 ? 's' : ''}`;
     }
 
     return tooltip;
@@ -447,6 +472,7 @@ export function ScheduleTable({
   selectedDate,
   viewMode,
   conflicts,
+  conflictsByRoutineId,
   onRoutineClick,
   selectedRoutineIds = new Set(),
   onSelectionChange,
@@ -839,6 +865,7 @@ Click icon to dismiss"
                     dismissedIcons={dismissedIcons}
                     onDismissIcon={(key) => setDismissedIcons(prev => new Set(prev).add(key))}
                     scheduledRoutines={sortedRoutines}
+                    conflicts={conflictsByRoutineId?.get(routine.id) || []}
                   />
                 );
               })}

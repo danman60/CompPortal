@@ -111,6 +111,18 @@ export default function SchedulePage() {
     date: selectedDate,
   });
 
+  // Fetch dynamic conflicts based on current schedule
+  const { data: conflictsData } = trpc.scheduling.detectConflicts.useQuery(
+    {
+      competitionId: competition?.id || ''
+    },
+    {
+      enabled: !!competition?.id,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+    }
+  );
+
   // Schedule mutation (save draft to database)
   const scheduleMutation = trpc.scheduling.schedule.useMutation({
     onSuccess: async () => {
@@ -362,6 +374,29 @@ export default function SchedulePage() {
           .map(age => ({ id: age.toString(), name: `${age} years` }))
       : []
   , [routines]);
+
+  // Build map of routineId -> conflicts for that routine
+  const conflictsByRoutineId = useMemo(() => {
+    if (!conflictsData?.conflicts) return new Map();
+
+    const map = new Map<string, Array<typeof conflictsData.conflicts[0]>>();
+
+    for (const conflict of conflictsData.conflicts) {
+      // Add to routine1
+      if (!map.has(conflict.routine1Id)) {
+        map.set(conflict.routine1Id, []);
+      }
+      map.get(conflict.routine1Id)!.push(conflict);
+
+      // Add to routine2
+      if (!map.has(conflict.routine2Id)) {
+        map.set(conflict.routine2Id, []);
+      }
+      map.get(conflict.routine2Id)!.push(conflict);
+    }
+
+    return map;
+  }, [conflictsData]);
 
   // Clear draft when selectedDate changes (ensures correct day filtering)
   useEffect(() => {
@@ -774,6 +809,7 @@ export default function SchedulePage() {
               selectedDate={selectedDate}
               viewMode="cd"
               conflicts={[]}
+              conflictsByRoutineId={conflictsByRoutineId}
               selectedRoutineIds={selectedScheduledIds}
               onSelectionChange={setSelectedScheduledIds}
               scheduleBlocks={scheduleBlocks}
