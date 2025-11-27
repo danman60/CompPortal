@@ -763,18 +763,20 @@ export default function SchedulePage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Schedule Builder</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-white">Schedule Builder</h1>
+              {/* Version History Link - Inline */}
+              <button
+                onClick={() => setShowVersionHistory(!showVersionHistory)}
+                className="text-xs text-purple-200 hover:text-white flex items-center gap-1"
+              >
+                <History className="h-3 w-3" />
+                {showVersionHistory ? 'Hide' : 'View'} Version History
+              </button>
+            </div>
             <p className="text-sm text-purple-100 mt-1">
               Test Competition Spring 2026 • April 9-12, 2026
             </p>
-            {/* Version History Link */}
-            <button
-              onClick={() => setShowVersionHistory(!showVersionHistory)}
-              className="mt-2 text-xs text-purple-200 hover:text-white flex items-center gap-1"
-            >
-              <History className="h-3 w-3" />
-              {showVersionHistory ? 'Hide' : 'View'} Version History
-            </button>
           </div>
           <div className="flex gap-3 items-center">
             {/* Send to Studios Button */}
@@ -1040,10 +1042,32 @@ export default function SchedulePage() {
         onClose={() => setShowSendModal(false)}
         competitionId={TEST_COMPETITION_ID}
         tenantId={TEST_TENANT_ID}
-        currentVersion={currentVersion?.versionNumber || 1}
+        currentVersion={currentVersion?.versionNumber || 0}
         onSuccess={() => {
           refetchVersion();
           refetchHistory();
+        }}
+        onSaveBeforeSend={async () => {
+          if (draftSchedule.length > 0) {
+            await new Promise<void>((resolve, reject) => {
+              scheduleMutation.mutate(
+                {
+                  tenantId: TEST_TENANT_ID,
+                  competitionId: TEST_COMPETITION_ID,
+                  date: selectedDate,
+                  routines: draftSchedule.map(r => ({
+                    routineId: r.id,
+                    entryNumber: r.entryNumber || 100,
+                    performanceTime: r.performanceTime || '08:00:00',
+                  })),
+                },
+                {
+                  onSuccess: () => resolve(),
+                  onError: (error) => reject(error),
+                }
+              );
+            });
+          }
         }}
       />
 
@@ -1065,43 +1089,49 @@ export default function SchedulePage() {
             </div>
           </div>
           <div className="p-4 space-y-3">
-            {versionHistory.map((version: any) => (
-              <div
-                key={version.version}
-                className={`p-3 rounded-lg border ${
-                  version.version === currentVersion?.versionNumber
-                    ? 'border-blue-300 bg-blue-50'
-                    : 'border-gray-200 bg-white'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-medium text-gray-900">
-                    Version {version.version}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    version.status === 'under_review'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : version.status === 'review_closed'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {version.status.replace(/_/g, ' ')}
-                  </span>
+            {versionHistory.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">
+                No versions yet. Click "Send Draft to Studios" to create version 0.
+              </p>
+            ) : (
+              versionHistory.map((version: any) => (
+                <div
+                  key={version.versionNumber}
+                  className={`p-3 rounded-lg border ${
+                    version.versionNumber === currentVersion?.versionNumber
+                      ? 'border-blue-300 bg-blue-50'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-medium text-gray-900">
+                      Version {version.versionNumber}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      version.status === 'under_review'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : version.status === 'review_closed'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {version.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>Created: {new Date(version.createdAt).toLocaleDateString()}</p>
+                    {version.sentAt && (
+                      <p>Sent: {new Date(version.sentAt).toLocaleDateString()}</p>
+                    )}
+                    {version.closedAt && (
+                      <p>Closed: {new Date(version.closedAt).toLocaleDateString()}</p>
+                    )}
+                    {version.notesCount > 0 && (
+                      <p className="text-blue-600">{version.notesCount} studio notes</p>
+                    )}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p>Created: {new Date(version.createdAt).toLocaleDateString()}</p>
-                  {version.sentAt && (
-                    <p>Sent: {new Date(version.sentAt).toLocaleDateString()}</p>
-                  )}
-                  {version.closedAt && (
-                    <p>Closed: {new Date(version.closedAt).toLocaleDateString()}</p>
-                  )}
-                  {version.notesCount > 0 && (
-                    <p className="text-blue-600">{version.notesCount} studio notes</p>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
