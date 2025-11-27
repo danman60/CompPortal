@@ -734,13 +734,22 @@ export default function SchedulePage() {
     });
   }, [unscheduledRoutines, draftSchedule, filters]);
 
-  // Competition dates for day tabs
-  const competitionDates = [
-    { date: '2026-04-09', routineCount: 0, startTime: '08:00:00' },
-    { date: '2026-04-10', routineCount: 0, startTime: '08:00:00' },
-    { date: '2026-04-11', routineCount: scheduledRoutines?.length || 0, startTime: '08:00:00' },
-    { date: '2026-04-12', routineCount: 0, startTime: '08:00:00' },
-  ];
+  // Competition dates for day tabs - show draft counts for selected day, saved counts for others
+  const competitionDates = useMemo(() => {
+    const dates = [
+      { date: '2026-04-09', startTime: '08:00:00' },
+      { date: '2026-04-10', startTime: '08:00:00' },
+      { date: '2026-04-11', startTime: '08:00:00' },
+      { date: '2026-04-12', startTime: '08:00:00' },
+    ];
+
+    return dates.map(d => ({
+      ...d,
+      routineCount: d.date === selectedDate
+        ? draftSchedule.length // Show draft count for selected day (immediate UI feedback)
+        : (routines || []).filter(r => r.isScheduled && r.scheduledDateString === d.date).length, // Saved count for other days
+    }));
+  }, [routines, selectedDate, draftSchedule]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">

@@ -359,13 +359,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-trophy`);
               }}
               title={`🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards!`}
-              className="inline-flex items-center justify-center w-3.5 h-1.5 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-4 h-2 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #FFD700, #FFA500)',
                 border: '1px solid rgba(255, 215, 0, 0.6)'
               }}
             >
-              <span className="text-[7px]">🏆</span>
+              <span className="text-[8px]">🏆</span>
             </button>
           )}
           {hasSDRequest && !dismissedIcons.has(`${routine.id}-note`) && (
@@ -375,13 +375,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-note`);
               }}
               title={`📋 ${routine.scheduling_notes || 'Studio Director requested changes'}`}
-              className="inline-flex items-center justify-center w-3.5 h-1.5 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-4 h-2 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #4FC3F7, #2196F3)',
                 border: '1px solid rgba(33, 150, 243, 0.6)'
               }}
             >
-              <span className="text-[7px]">📋</span>
+              <span className="text-[8px]">📋</span>
             </button>
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
@@ -391,7 +391,7 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-conflict`);
               }}
               title={getConflictTooltip()}
-              className="inline-flex items-center justify-center w-3.5 h-1.5 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-4 h-2 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                 border: '1px solid rgba(255, 107, 107, 0.6)'

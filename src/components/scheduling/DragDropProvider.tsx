@@ -290,9 +290,16 @@ export function DragDropProvider({
   };
 
   // Helper: Calculate entry numbers and times client-side
-  const calculateSchedule = (routineList: RoutineData[], startTime = '08:00:00', startingEntry = 100) => {
+  // Entry numbers are GLOBAL across entire competition (not per-day)
+  const calculateSchedule = (routineList: RoutineData[], startTime = '08:00:00') => {
+    // Find max entry number across ALL routines (all days) to continue sequence
+    const maxEntry = Math.max(
+      99, // Start at 100 if no routines exist
+      ...routines.filter(r => r.entryNumber != null).map(r => r.entryNumber!)
+    );
+
     let currentTime = startTime;
-    let currentEntry = startingEntry;
+    let currentEntry = maxEntry + 1; // Continue from highest existing entry number
 
     return routineList.map(routine => {
       const scheduledRoutine = {
@@ -377,8 +384,7 @@ export function DragDropProvider({
         const newSchedule = [...scheduledForDay, ...routinesToDrag];
         const recalculated = calculateSchedule(
           newSchedule,
-          scheduledForDay[0]?.performanceTime || '08:00:00',
-          100 // Always start from 100, recalculate all entry numbers
+          scheduledForDay[0]?.performanceTime || '08:00:00'
         );
         onScheduleChange(recalculated);
 
