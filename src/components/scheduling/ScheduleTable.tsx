@@ -349,8 +349,8 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Landscape Badges - 36px */}
-      <td className="px-0 py-1" style={{ width: '36px' }}>
+      {/* Landscape Badges - 28px */}
+      <td className="px-0 py-1" style={{ width: '28px' }}>
         <div className="flex flex-row gap-0.5 items-center justify-center">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
@@ -359,7 +359,7 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-trophy`);
               }}
               title={`🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards!`}
-              className="inline-flex items-center justify-center w-4 h-2 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #FFD700, #FFA500)',
                 border: '1px solid rgba(255, 215, 0, 0.6)'
@@ -375,7 +375,7 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-note`);
               }}
               title={`📋 ${routine.scheduling_notes || 'Studio Director requested changes'}`}
-              className="inline-flex items-center justify-center w-4 h-2 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #4FC3F7, #2196F3)',
                 border: '1px solid rgba(33, 150, 243, 0.6)'
@@ -391,7 +391,7 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-conflict`);
               }}
               title={getConflictTooltip()}
-              className="inline-flex items-center justify-center w-4 h-2 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                 border: '1px solid rgba(255, 107, 107, 0.6)'
@@ -769,7 +769,7 @@ export function ScheduleTable({
           <thead>
             <tr className="bg-indigo-600/20 border-b border-indigo-600/30">
               {onSelectionChange && (
-                <th className="px-0.5 py-1 text-center" style={{ width: '18px' }}>
+                <th className="px-0.5 py-1 text-center" style={{ width: '14px' }}>
                   <input
                     type="checkbox"
                     checked={selectedRoutineIds.size === sortedRoutines.length && sortedRoutines.length > 0}
@@ -780,7 +780,7 @@ export function ScheduleTable({
               )}
               <th
                 className="px-0 py-1 text-center text-[11px] font-semibold text-white/60"
-                style={{ width: '36px' }}
+                style={{ width: '28px' }}
               >
                 <div
                   className="cursor-help"

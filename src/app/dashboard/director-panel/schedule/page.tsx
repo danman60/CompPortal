@@ -534,7 +534,8 @@ export default function SchedulePage() {
         [selectedDate]: serverScheduled
       }));
     }
-  }, [routines, selectedDate, draftsByDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routines, selectedDate]); // Don't include draftsByDate - it would cause infinite loops
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
