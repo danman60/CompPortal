@@ -172,8 +172,8 @@ function SortableBlockRow({
       {...listeners}
       className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
     >
-      {showCheckbox && <td className="px-0.5 py-1" style={{ width: '32px' }}></td>}
-      <td className="px-0.5 py-1" style={{ width: '32px' }}></td>
+      {showCheckbox && <td className="px-0.5 py-1" style={{ width: '24px' }}></td>}
+      <td className="px-0.5 py-1" style={{ width: '40px' }}></td>
       <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white" style={{ width: '30px' }}>
         {icon}
       </td>
@@ -331,9 +331,9 @@ function SortableRoutineRow({
         `}
         onClick={() => onRoutineClick?.(routine.id)}
       >
-      {/* Checkbox - 32px */}
+      {/* Checkbox - 24px */}
       {showCheckbox && (
-        <td className="px-1 py-1 text-center" style={{ width: '32px' }}>
+        <td className="px-0.5 py-1 text-center" style={{ width: '24px' }}>
           <input
             type="checkbox"
             checked={isSelected || false}
@@ -349,9 +349,9 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Compact Horizontal Badges - 32px */}
-      <td className="px-0.5 py-1" style={{ width: '32px' }}>
-        <div className="flex flex-row gap-0.5 items-center justify-center flex-wrap">
+      {/* Compact Horizontal Badges - 40px */}
+      <td className="px-0.5 py-1" style={{ width: '40px' }}>
+        <div className="flex flex-row gap-1 items-center justify-center">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
               onClick={(e) => {
@@ -769,7 +769,7 @@ export function ScheduleTable({
           <thead>
             <tr className="bg-indigo-600/20 border-b border-indigo-600/30">
               {onSelectionChange && (
-                <th className="px-1 py-1 text-center" style={{ width: '32px' }}>
+                <th className="px-0.5 py-1 text-center" style={{ width: '24px' }}>
                   <input
                     type="checkbox"
                     checked={selectedRoutineIds.size === sortedRoutines.length && sortedRoutines.length > 0}
@@ -780,7 +780,7 @@ export function ScheduleTable({
               )}
               <th
                 className="px-0.5 py-1 text-center text-[11px] font-semibold text-white/60"
-                style={{ width: '32px' }}
+                style={{ width: '40px' }}
               >
                 <div
                   className="cursor-help"
