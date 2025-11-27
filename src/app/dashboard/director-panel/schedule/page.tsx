@@ -163,7 +163,7 @@ export default function SchedulePage() {
     onSuccess: async (data, variables) => {
       toast.success(`Unscheduled ${data.count} routine(s)`);
 
-      await refetch(); // Wait for refetch to complete
+      await Promise.all([refetch(), refetchConflicts()]); // Refetch routines AND conflicts
 
       // Remove unscheduled routines from draft state AFTER refetch
       const unscheduledIds = new Set(variables.routineIds);
@@ -177,13 +177,21 @@ export default function SchedulePage() {
   });
 
   // Place schedule block mutation
-  const placeBlock = trpc.scheduling.placeScheduleBlock.useMutation();
+  const placeBlock = trpc.scheduling.placeScheduleBlock.useMutation({
+    onSuccess: async () => {
+      toast.success('Schedule block placed');
+      await Promise.all([refetchBlocks(), refetchConflicts()]); // Refetch blocks AND conflicts
+    },
+    onError: (error) => {
+      toast.error(`Failed to place block: ${error.message}`);
+    },
+  });
 
   // Delete schedule block mutation
   const deleteBlock = trpc.scheduling.deleteScheduleBlock.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Schedule block deleted');
-      refetchBlocks(); // Refetch blocks after deletion
+      await Promise.all([refetchBlocks(), refetchConflicts()]); // Refetch blocks AND conflicts
     },
     onError: (error) => {
       toast.error(`Failed to delete block: ${error.message}`);
