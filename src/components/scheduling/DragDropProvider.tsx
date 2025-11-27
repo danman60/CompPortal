@@ -67,6 +67,8 @@ interface DragDropProviderProps {
   onClearSelection?: () => void;
   /** Callback to clear scheduled selection after successful drag */
   onClearScheduledSelection?: () => void;
+  /** All drafts across all days (for calculating global entry numbers) */
+  allDraftsByDate?: Record<string, RoutineData[]>;
 }
 
 export function DragDropProvider({
@@ -80,6 +82,7 @@ export function DragDropProvider({
   selectedScheduledIds = new Set(),
   onClearSelection,
   onClearScheduledSelection,
+  allDraftsByDate = {},
 }: DragDropProviderProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropIndicatorTop, setDropIndicatorTop] = useState<number>(0);
@@ -292,10 +295,15 @@ export function DragDropProvider({
   // Helper: Calculate entry numbers and times client-side
   // Entry numbers are GLOBAL across entire competition (not per-day)
   const calculateSchedule = (routineList: RoutineData[], startTime = '08:00:00') => {
-    // Find max entry number across ALL routines (all days) to continue sequence
+    // Find max entry number across ALL routines (database + all drafts across all days)
     const maxEntry = Math.max(
       99, // Start at 100 if no routines exist
-      ...routines.filter(r => r.entryNumber != null).map(r => r.entryNumber!)
+      ...routines.filter(r => r.entryNumber != null).map(r => r.entryNumber!),
+      // Check all draft entries across all days
+      ...Object.values(allDraftsByDate)
+        .flat()
+        .filter(r => r.entryNumber != null)
+        .map(r => r.entryNumber!)
     );
 
     let currentTime = startTime;

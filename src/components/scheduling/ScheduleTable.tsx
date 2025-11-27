@@ -351,7 +351,7 @@ function SortableRoutineRow({
 
       {/* Landscape Badges - 28px */}
       <td className="px-0 py-1" style={{ width: '28px' }}>
-        <div className="flex flex-row gap-0.5 items-center justify-center">
+        <div className="flex flex-row gap-0.5 items-center justify-center min-h-[8px]">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
               onClick={(e) => {

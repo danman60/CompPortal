@@ -69,6 +69,7 @@ export default function SchedulePage() {
 
   // Selection state (unscheduled routines)
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
 
   // Selection state (scheduled routines)
   const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
@@ -79,15 +80,38 @@ export default function SchedulePage() {
 
   // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
-    setSelectedRoutineIds(prev => {
-      const next = new Set(prev);
-      if (next.has(routineId)) {
-        next.delete(routineId);
-      } else {
-        next.add(routineId);
-      }
-      return next;
-    });
+    // Get the current filtered routines array (defined later in useMemo)
+    const routines = unscheduledRoutinesFiltered;
+    const currentIndex = routines.findIndex(r => r.id === routineId);
+
+    if (currentIndex === -1) return;
+
+    if (shiftKey && lastClickedIndex !== null) {
+      // Shift+click: Select range from lastClickedIndex to currentIndex
+      const start = Math.min(lastClickedIndex, currentIndex);
+      const end = Math.max(lastClickedIndex, currentIndex);
+      const rangeIds = routines.slice(start, end + 1).map(r => r.id);
+
+      setSelectedRoutineIds(prev => {
+        const next = new Set(prev);
+        rangeIds.forEach(id => next.add(id));
+        return next;
+      });
+    } else {
+      // Normal click: Toggle selection
+      setSelectedRoutineIds(prev => {
+        const next = new Set(prev);
+        if (next.has(routineId)) {
+          next.delete(routineId);
+        } else {
+          next.add(routineId);
+        }
+        return next;
+      });
+    }
+
+    // Always update last clicked index
+    setLastClickedIndex(currentIndex);
   };
 
   const handleSelectAll = () => {
@@ -97,6 +121,7 @@ export default function SchedulePage() {
 
   const handleDeselectAll = () => {
     setSelectedRoutineIds(new Set());
+    setLastClickedIndex(null);
   };
 
   // Selection handlers (scheduled)
@@ -901,6 +926,7 @@ export default function SchedulePage() {
           selectedScheduledIds={selectedScheduledIds}
           onClearSelection={handleDeselectAll}
           onClearScheduledSelection={handleDeselectAllScheduled}
+          allDraftsByDate={draftsByDate}
         >
           <div className="grid grid-cols-3 gap-2">
           {/* Left Panel - Unscheduled Routines (33%) - Sticky */}
