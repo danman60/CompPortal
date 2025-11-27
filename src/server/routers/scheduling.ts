@@ -619,6 +619,7 @@ export const schedulingRouter = router({
           scheduling_notes: true, // SD notes text for tooltip
           conflict_count: true, // Number of conflicts for this routine
           conflicts_with_entry_ids: true, // Array of conflicting entry IDs
+          dancer_names: true, // Array of dancer names in this routine
 
           studios: {
             select: {
@@ -739,6 +740,7 @@ export const schedulingRouter = router({
           scheduling_notes: routine.scheduling_notes ?? null, // SD notes text
           conflict_count: routine.conflict_count ?? 0, // Number of conflicts
           conflicts_with_entry_ids: routine.conflicts_with_entry_ids ?? [], // Conflicting entry IDs
+          dancer_names: routine.dancer_names ?? [], // Array of dancer names in this routine
         };
       });
     }),

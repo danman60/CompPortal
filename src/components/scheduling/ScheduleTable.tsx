@@ -81,6 +81,7 @@ interface Routine {
   scheduling_notes?: string | null; // SD notes text for tooltip
   conflict_count?: number | null; // Number of conflicts for this routine
   conflicts_with_entry_ids?: string[] | null; // Array of conflicting entry IDs
+  dancer_names?: string[] | null; // Array of dancer names in this routine
 }
 
 interface Conflict {
@@ -213,6 +214,7 @@ function SortableRoutineRow({
   showCheckbox,
   dismissedIcons,
   onDismissIcon,
+  scheduledRoutines,
 }: {
   routine: Routine;
   index: number;
@@ -233,6 +235,7 @@ function SortableRoutineRow({
   showCheckbox?: boolean;
   dismissedIcons: Set<string>;
   onDismissIcon: (key: string) => void;
+  scheduledRoutines: Routine[];
 }) {
   const {
     attributes,
@@ -258,6 +261,34 @@ function SortableRoutineRow({
   const hasConflict = !!(routine.conflict_count && routine.conflict_count > 0);
   const hasTrophy = isLastInOveralls;
   const hasSDRequest = !!(routine.has_studio_requests ?? false);
+
+  // Generate detailed conflict tooltip
+  const getConflictTooltip = () => {
+    if (!hasConflict) return '';
+
+    let tooltip = `⚠️ Conflict: ${routine.conflict_count ?? 0} conflict${(routine.conflict_count ?? 0) > 1 ? 's' : ''} detected`;
+
+    // Show dancers in this routine
+    if (routine.dancer_names && routine.dancer_names.length > 0) {
+      tooltip += `\nDancers: ${routine.dancer_names.join(', ')}`;
+    }
+
+    // Look up conflicting routines
+    if (routine.conflicts_with_entry_ids && routine.conflicts_with_entry_ids.length > 0) {
+      const conflictingRoutines = scheduledRoutines.filter(r =>
+        routine.conflicts_with_entry_ids?.includes(r.id)
+      );
+
+      if (conflictingRoutines.length > 0) {
+        tooltip += '\n\nConflicts with:';
+        conflictingRoutines.forEach(r => {
+          tooltip += `\n• #${r.entryNumber} ${r.title}`;
+        });
+      }
+    }
+
+    return tooltip;
+  };
 
   return (
     <>
@@ -323,7 +354,7 @@ function SortableRoutineRow({
                 e.stopPropagation();
                 onDismissIcon(`${routine.id}-conflict`);
               }}
-              title={`⚠️ Conflict: ${routine.conflict_count ?? 0} dancer conflict${(routine.conflict_count ?? 0) > 1 ? 's' : ''} detected`}
+              title={getConflictTooltip()}
               className="text-sm hover:scale-110 transition-transform"
             >
               ⚠️
@@ -807,6 +838,7 @@ Click icon to dismiss"
                     showCheckbox={!!onSelectionChange}
                     dismissedIcons={dismissedIcons}
                     onDismissIcon={(key) => setDismissedIcons(prev => new Set(prev).add(key))}
+                    scheduledRoutines={sortedRoutines}
                   />
                 );
               })}
