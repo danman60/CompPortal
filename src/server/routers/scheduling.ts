@@ -3286,4 +3286,437 @@ export const schedulingRouter = router({
       };
     }),
 
+  // ============================================================================
+  // SCHEDULE REVIEW WORKFLOW PROCEDURES
+  // ============================================================================
+
+  // CD: Send schedule to Studio Directors for review
+  sendToStudios: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      feedbackWindowDays: z.number().min(1).max(30).default(7),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      console.log('[sendToStudios] Sending schedule for review', input);
+
+      // Get current version number or start at 0
+      const currentVersion = await prisma.schedule_versions.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+        orderBy: { version_number: 'desc' },
+      });
+
+      const newVersionNumber = (currentVersion?.version_number ?? -1) + 1;
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + input.feedbackWindowDays);
+
+      // Create new version
+      const newVersion = await prisma.schedule_versions.create({
+        data: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          version_number: newVersionNumber,
+          status: 'under_review',
+          sent_at: new Date(),
+          deadline,
+          sent_by_user_id: ctx.userId,
+          feedback_window_days: input.feedbackWindowDays,
+          routine_count: 0,
+          notes_count: 0,
+          responding_studios_count: 0,
+          total_studios_count: 0,
+        },
+      });
+
+      // Update statistics
+      await prisma.$executeRawUnsafe(
+        `SELECT update_version_statistics($1::uuid)`,
+        newVersion.id
+      );
+
+      // Get list of studios to notify
+      const studios = await prisma.studios.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_entries: {
+            some: {
+              competition_id: input.competitionId,
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+
+      console.log(`[sendToStudios] Notifying ${studios.length} studios`);
+
+      // TODO: Queue email notifications to studios
+
+      return {
+        versionId: newVersion.id,
+        versionNumber: newVersionNumber,
+        deadline: newVersion.deadline,
+        emailsSent: studios.length,
+      };
+    }),
+
+  // CD: Get current version info
+  getCurrentVersion: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      const currentVersion = await prisma.schedule_versions.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+        orderBy: { version_number: 'desc' },
+      });
+
+      if (!currentVersion) {
+        return {
+          versionNumber: 0,
+          status: 'draft' as const,
+          deadline: undefined,
+          daysRemaining: undefined,
+          respondingStudios: 0,
+          totalStudios: 0,
+          notesCount: 0,
+        };
+      }
+
+      // Auto-close if deadline passed
+      if (currentVersion.status === 'under_review' && currentVersion.deadline && currentVersion.deadline < new Date()) {
+        await prisma.schedule_versions.update({
+          where: { id: currentVersion.id },
+          data: {
+            status: 'review_closed',
+            closed_at: new Date(),
+          },
+        });
+        currentVersion.status = 'review_closed';
+      }
+
+      const daysRemaining = currentVersion.deadline
+        ? Math.ceil((currentVersion.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : undefined;
+
+      return {
+        versionNumber: currentVersion.version_number,
+        status: currentVersion.status as 'draft' | 'under_review' | 'review_closed',
+        deadline: currentVersion.deadline,
+        daysRemaining: daysRemaining && daysRemaining > 0 ? daysRemaining : 0,
+        respondingStudios: currentVersion.responding_studios_count ?? 0,
+        totalStudios: currentVersion.total_studios_count ?? 0,
+        notesCount: currentVersion.notes_count ?? 0,
+      };
+    }),
+
+  // CD: Get version history
+  getVersionHistory: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      const versions = await prisma.schedule_versions.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+        orderBy: { version_number: 'desc' },
+      });
+
+      return versions.map(v => ({
+        versionNumber: v.version_number,
+        status: v.status,
+        sentAt: v.sent_at,
+        deadline: v.deadline,
+        closedAt: v.closed_at,
+        respondingStudios: v.responding_studios_count ?? 0,
+        totalStudios: v.total_studios_count ?? 0,
+        notesCount: v.notes_count ?? 0,
+      }));
+    }),
+
+  // CD: Clear a Studio Director's note
+  clearStudioNote: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      entryId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      await prisma.competition_entries.update({
+        where: {
+          id: input.entryId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          scheduling_notes: null,
+          has_studio_requests: false,
+          sd_note_version: null,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  // SD: Get available schedules for a studio
+  getAvailableSchedules: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      studioId: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      // Get competitions where studio has entries
+      const competitions = await prisma.competitions.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_entries: {
+            some: {
+              studio_id: input.studioId,
+            },
+          },
+        },
+        include: {
+          competition_entries: {
+            where: {
+              studio_id: input.studioId,
+            },
+            select: {
+              id: true,
+              has_studio_requests: true,
+            },
+          },
+        },
+      });
+
+      const result = await Promise.all(
+        competitions.map(async (comp) => {
+          // Get latest version for this competition
+          const latestVersion = await prisma.schedule_versions.findFirst({
+            where: {
+              tenant_id: input.tenantId,
+              competition_id: comp.id,
+              status: { in: ['under_review', 'review_closed'] },
+            },
+            orderBy: { version_number: 'desc' },
+          });
+
+          const routineCount = comp.competition_entries.length;
+          const notesCount = comp.competition_entries.filter(e => e.has_studio_requests).length;
+
+          return {
+            competitionId: comp.id,
+            competitionName: comp.name,
+            competitionDates: {
+              start: comp.competition_start_date,
+              end: comp.competition_end_date,
+            },
+            hasSchedule: !!latestVersion,
+            version: latestVersion ? {
+              number: latestVersion.version_number,
+              status: latestVersion.status,
+              deadline: latestVersion.deadline,
+              daysRemaining: latestVersion.deadline
+                ? Math.ceil((latestVersion.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                : undefined,
+            } : undefined,
+            routineCount,
+            notesCount,
+          };
+        })
+      );
+
+      return result;
+    }),
+
+  // SD: Get studio's schedule view
+  getStudioSchedule: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      studioId: z.string().uuid(),
+      versionNumber: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      // Get requested version or latest published
+      let version;
+      if (input.versionNumber !== undefined) {
+        version = await prisma.schedule_versions.findFirst({
+          where: {
+            tenant_id: input.tenantId,
+            competition_id: input.competitionId,
+            version_number: input.versionNumber,
+          },
+        });
+      } else {
+        version = await prisma.schedule_versions.findFirst({
+          where: {
+            tenant_id: input.tenantId,
+            competition_id: input.competitionId,
+            status: { in: ['under_review', 'review_closed'] },
+          },
+          orderBy: { version_number: 'desc' },
+        });
+      }
+
+      if (!version) {
+        throw new Error('Schedule not available');
+      }
+
+      // Auto-close if deadline passed
+      if (version.status === 'under_review' && version.deadline && version.deadline < new Date()) {
+        await prisma.schedule_versions.update({
+          where: { id: version.id },
+          data: {
+            status: 'review_closed',
+            closed_at: new Date(),
+          },
+        });
+        version.status = 'review_closed';
+      }
+
+      // Get studio's scheduled routines
+      const routines = await prisma.competition_entries.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          studio_id: input.studioId,
+          performance_time: { not: null },
+        },
+        orderBy: [
+          { performance_date: 'asc' },
+          { entry_number: 'asc' },
+        ],
+        include: {
+          dance_categories: true,
+          age_groups: true,
+          classifications: true,
+          entry_size_categories: true,
+        },
+      });
+
+      // Get schedule blocks
+      const blocks = await prisma.schedule_blocks.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          scheduled_time: { not: null },
+        },
+        orderBy: { scheduled_time: 'asc' },
+      });
+
+      // Calculate gaps (simplified - just show time ranges)
+      const gaps: any[] = [];
+      // TODO: Calculate actual gaps between studio's routines
+
+      const daysRemaining = version.deadline
+        ? Math.ceil((version.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : undefined;
+
+      return {
+        version: {
+          number: version.version_number,
+          status: version.status,
+          deadline: version.deadline,
+          daysRemaining: daysRemaining && daysRemaining > 0 ? daysRemaining : 0,
+          canEditNotes: version.status === 'under_review' && (!version.deadline || version.deadline > new Date()),
+        },
+        routines: routines.map(r => ({
+          id: r.id,
+          entryNumber: r.entry_number,
+          title: r.title,
+          scheduledDay: r.performance_date,
+          performanceTime: r.performance_time?.toISOString().substring(11, 16) || '',
+          classification: r.classifications?.name || '',
+          category: r.dance_categories?.name || '',
+          ageGroup: r.age_groups?.name || '',
+          entrySize: r.entry_size_categories?.name || '',
+          duration: r.routine_length_minutes || 3,
+          hasNote: r.has_studio_requests || false,
+          noteText: r.scheduling_notes,
+        })),
+        blocks: blocks.map(b => ({
+          type: b.block_type as 'award' | 'break',
+          scheduledDay: b.schedule_day,
+          startTime: b.scheduled_time?.toISOString().substring(11, 16) || '',
+          duration: b.duration_minutes,
+        })),
+        gaps,
+      };
+    }),
+
+  // SD: Submit or update a studio note
+  submitStudioNote: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      entryId: z.string().uuid(),
+      noteText: z.string().max(500),
+      studioId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Verify studio owns this routine
+      const routine = await prisma.competition_entries.findFirst({
+        where: {
+          id: input.entryId,
+          tenant_id: input.tenantId,
+          studio_id: input.studioId,
+        },
+      });
+
+      if (!routine) {
+        throw new Error('Routine not found or access denied');
+      }
+
+      // Get current version
+      const currentVersion = await prisma.schedule_versions.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: routine.competition_id,
+          status: 'under_review',
+        },
+        orderBy: { version_number: 'desc' },
+      });
+
+      if (!currentVersion) {
+        throw new Error('No schedule available for review');
+      }
+
+      // Check deadline
+      if (currentVersion.deadline && currentVersion.deadline < new Date()) {
+        throw new Error('Review period has closed');
+      }
+
+      // Update routine with note
+      await prisma.competition_entries.update({
+        where: { id: input.entryId },
+        data: {
+          scheduling_notes: input.noteText || null,
+          has_studio_requests: !!input.noteText,
+          sd_note_version: input.noteText ? currentVersion.version_number : null,
+        },
+      });
+
+      // Update version statistics
+      await prisma.$executeRawUnsafe(
+        `SELECT update_version_statistics($1::uuid)`,
+        currentVersion.id
+      );
+
+      return {
+        success: true,
+        noteText: input.noteText,
+        submittedAt: new Date(),
+      };
+    }),
+
 });

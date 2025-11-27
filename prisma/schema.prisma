@@ -402,6 +402,7 @@ model users {
   studios_studios_owner_idTousers                       studios[]              @relation("studios_owner_idTousers")
   studios_studios_verified_byTousers                    studios[]              @relation("studios_verified_byTousers")
   user_profiles                                         user_profiles?
+  schedule_versions                                     schedule_versions[]
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -651,6 +652,9 @@ model competition_entries {
   routine_length_seconds                                                               Int?
   scheduling_notes                                                                     String?
   routine_age                                                                          Int?
+  version_created                                                                      Int?                               @default(0)
+  version_last_modified                                                                Int?                               @default(0)
+  sd_note_version                                                                      Int?
   awards                                                                               awards[]
   classification_exception_requests                                                    classification_exception_requests?
   age_groups                                                                           age_groups                         @relation(fields: [age_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -671,6 +675,7 @@ model competition_entries {
   rankings                                                                             rankings[]
   scores                                                                               scores[]
   summary_entries                                                                      summary_entries[]
+  schedule_version_snapshots                                                           schedule_version_snapshots[]
 
   @@index([age_group_id], map: "idx_competition_entries_age_group_id")
   @@index([category_id], map: "idx_competition_entries_category_id")
@@ -847,6 +852,7 @@ model competitions {
   reservations                      reservations[]
   title_rounds                      title_rounds[]
   vip_events                        vip_events[]
+  schedule_versions                 schedule_versions[]
 
   @@index([age_division_settings], map: "idx_competitions_age_settings", type: Gin)
   @@index([competition_start_date, competition_end_date], map: "idx_competitions_dates")
@@ -1541,6 +1547,8 @@ model tenants {
   user_feedback                     user_feedback[]
   vip_events                        vip_events[]
   schedule_conflict_overrides       schedule_conflict_overrides[]
+  schedule_versions                 schedule_versions[]
+  schedule_version_snapshots        schedule_version_snapshots[]
 
   @@index([age_division_settings], map: "idx_tenants_age_settings", type: Gin)
   @@index([entry_size_settings], map: "idx_tenants_entry_size_settings", type: Gin)
@@ -1944,5 +1952,58 @@ model schedule_conflict_overrides {
   tenants tenants @relation(fields: [tenant_id], references: [id])
 
   @@unique([dancer_id, routine_1_id, routine_2_id, tenant_id])
+  @@schema("public")
+}
+
+/// Schedule Review Workflow: Version management for multi-round schedule review
+model schedule_versions {
+  id                        String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                 String                        @db.Uuid
+  competition_id            String                        @db.Uuid
+  version_number            Int
+  status                    String                        @db.VarChar(50)
+  sent_at                   DateTime?                     @db.Timestamptz(6)
+  deadline                  DateTime?                     @db.Timestamptz(6)
+  closed_at                 DateTime?                     @db.Timestamptz(6)
+  sent_by_user_id           String?                       @db.Uuid
+  feedback_window_days      Int?
+  routine_count             Int?
+  notes_count               Int?
+  responding_studios_count  Int?
+  total_studios_count       Int?
+  created_at                DateTime?                     @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime?                     @default(now()) @db.Timestamptz(6)
+
+  competitions              competitions                  @relation(fields: [competition_id], references: [id], onDelete: Cascade)
+  tenants                   tenants                       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  users                     users?                        @relation(fields: [sent_by_user_id], references: [id])
+  schedule_version_snapshots schedule_version_snapshots[]
+
+  @@unique([tenant_id, competition_id, version_number])
+  @@index([competition_id], map: "idx_schedule_versions_competition")
+  @@index([status], map: "idx_schedule_versions_status")
+  @@index([deadline], map: "idx_schedule_versions_deadline")
+  @@schema("public")
+}
+
+/// Schedule Review Workflow: Snapshots of schedule state per version
+model schedule_version_snapshots {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id            String             @db.Uuid
+  version_id           String             @db.Uuid
+  entry_id             String             @db.Uuid
+  entry_number         Int?
+  scheduled_day        DateTime?          @db.Date
+  performance_time     DateTime?          @db.Time(6)
+  scheduling_notes     String?
+  has_studio_requests  Boolean?
+  created_at           DateTime?          @default(now()) @db.Timestamptz(6)
+
+  schedule_versions    schedule_versions  @relation(fields: [version_id], references: [id], onDelete: Cascade)
+  competition_entries  competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade)
+  tenants              tenants            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([version_id], map: "idx_snapshots_version")
+  @@index([entry_id], map: "idx_snapshots_entry")
   @@schema("public")
 }

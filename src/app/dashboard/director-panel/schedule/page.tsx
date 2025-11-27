@@ -8,6 +8,7 @@
  * - RoutineTable for unscheduled routines
  * - ScheduleTable for scheduled routines
  * - Day tabs for date selection
+ * - Version management for review workflow
  *
  * Spec: SCHEDULE_PAGE_REBUILD_SPEC.md
  * Old version archived: page.old.tsx
@@ -22,8 +23,11 @@ import { ScheduleTable } from '@/components/scheduling/ScheduleTable';
 import { DayTabs } from '@/components/scheduling/DayTabs';
 import { DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
+import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
+import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Mail, Clock, History } from 'lucide-react';
 
 // TEST tenant ID (will be replaced with real tenant context)
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -65,6 +69,10 @@ export default function SchedulePage() {
 
   // Selection state (scheduled routines)
   const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
+
+  // Version management state
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
@@ -122,6 +130,30 @@ export default function SchedulePage() {
       refetchOnWindowFocus: false,
     }
   );
+
+  // Fetch current version info
+  const { data: versionData, refetch: refetchVersion } = trpc.scheduling.getCurrentVersion.useQuery(
+    {
+      tenantId: TEST_TENANT_ID,
+      competitionId: TEST_COMPETITION_ID,
+    },
+    {
+      refetchInterval: 60000, // Refresh every minute to check deadline
+    }
+  );
+
+  // Fetch version history
+  const { data: versionHistory, refetch: refetchHistory } = trpc.scheduling.getVersionHistory.useQuery(
+    {
+      tenantId: TEST_TENANT_ID,
+      competitionId: TEST_COMPETITION_ID,
+    },
+    {
+      enabled: showVersionHistory,
+    }
+  );
+
+  const currentVersion = versionData;
 
   // Schedule mutation (save draft to database)
   const scheduleMutation = trpc.scheduling.schedule.useMutation({
@@ -714,14 +746,45 @@ export default function SchedulePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-4">
+        {/* Version Indicator */}
+        {versionData && (
+          <div className="mb-4">
+            <VersionIndicator
+              versionNumber={versionData.versionNumber}
+              status={versionData.status}
+              deadline={versionData.deadline ? new Date(versionData.deadline) : undefined}
+              daysRemaining={versionData.daysRemaining}
+              respondingStudios={versionData.respondingStudios}
+              totalStudios={versionData.totalStudios}
+              notesCount={versionData.notesCount}
+            />
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Schedule Builder</h1>
             <p className="text-sm text-purple-100 mt-1">
               Test Competition Spring 2026 • April 9-12, 2026
             </p>
+            {/* Version History Link */}
+            <button
+              onClick={() => setShowVersionHistory(!showVersionHistory)}
+              className="mt-2 text-xs text-purple-200 hover:text-white flex items-center gap-1"
+            >
+              <History className="h-3 w-3" />
+              {showVersionHistory ? 'Hide' : 'View'} Version History
+            </button>
           </div>
           <div className="flex gap-3 items-center">
+            {/* Send to Studios Button */}
+            <button
+              onClick={() => setShowSendModal(true)}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              Send Draft to Studios
+            </button>
             {hasUnsavedChanges && (
               <>
                 <button
@@ -970,6 +1033,78 @@ export default function SchedulePage() {
         mode="create"
         preselectedType={blockType}
       />
+
+      {/* Send to Studios Modal */}
+      <SendToStudiosModal
+        open={showSendModal}
+        onClose={() => setShowSendModal(false)}
+        competitionId={TEST_COMPETITION_ID}
+        tenantId={TEST_TENANT_ID}
+        currentVersion={currentVersion?.versionNumber || 1}
+        onSuccess={() => {
+          refetchVersion();
+          refetchHistory();
+        }}
+      />
+
+      {/* Version History Panel */}
+      {showVersionHistory && versionHistory && (
+        <div className="fixed right-4 top-20 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-40 max-h-[80vh] overflow-y-auto">
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <History className="h-5 w-5 text-gray-600" />
+                Version History
+              </h3>
+              <button
+                onClick={() => setShowVersionHistory(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            {versionHistory.map((version: any) => (
+              <div
+                key={version.version}
+                className={`p-3 rounded-lg border ${
+                  version.version === currentVersion?.versionNumber
+                    ? 'border-blue-300 bg-blue-50'
+                    : 'border-gray-200 bg-white'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-medium text-gray-900">
+                    Version {version.version}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    version.status === 'under_review'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : version.status === 'review_closed'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {version.status.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>Created: {new Date(version.createdAt).toLocaleDateString()}</p>
+                  {version.sentAt && (
+                    <p>Sent: {new Date(version.sentAt).toLocaleDateString()}</p>
+                  )}
+                  {version.closedAt && (
+                    <p>Closed: {new Date(version.closedAt).toLocaleDateString()}</p>
+                  )}
+                  {version.notesCount > 0 && (
+                    <p className="text-blue-600">{version.notesCount} studio notes</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Custom scrollbar styles */}
       <style jsx global>{`
