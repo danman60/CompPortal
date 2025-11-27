@@ -173,7 +173,7 @@ function SortableBlockRow({
       className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
     >
       {showCheckbox && <td className="px-0.5 py-1" style={{ width: '18px' }}></td>}
-      <td className="px-0.5 py-1" style={{ width: '30px' }}></td>
+      <td className="px-0 py-1" style={{ width: '36px' }}></td>
       <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white" style={{ width: '22px' }}>
         {icon}
       </td>
@@ -349,8 +349,8 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Landscape Badges - 30px */}
-      <td className="px-0.5 py-1" style={{ width: '30px' }}>
+      {/* Landscape Badges - 36px */}
+      <td className="px-0 py-1" style={{ width: '36px' }}>
         <div className="flex flex-row gap-0.5 items-center justify-center">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
@@ -779,8 +779,8 @@ export function ScheduleTable({
                 </th>
               )}
               <th
-                className="px-0.5 py-1 text-center text-[11px] font-semibold text-white/60"
-                style={{ width: '30px' }}
+                className="px-0 py-1 text-center text-[11px] font-semibold text-white/60"
+                style={{ width: '36px' }}
               >
                 <div
                   className="cursor-help"
