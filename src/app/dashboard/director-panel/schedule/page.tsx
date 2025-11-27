@@ -562,6 +562,47 @@ export default function SchedulePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routines, selectedDate]); // Don't include draftsByDate - it would cause infinite loops
 
+  // Renumber all drafts globally in chronological order whenever any day changes
+  useEffect(() => {
+    const dates = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12'];
+    let hasChanges = false;
+    let currentEntry = 100;
+    const renumbered: Record<string, RoutineData[]> = {};
+
+    // Process each day in chronological order
+    for (const date of dates) {
+      const dayDraft = draftsByDate[date] || [];
+      if (dayDraft.length === 0) continue;
+
+      const renumberedDay = dayDraft.map(routine => {
+        const newRoutine = { ...routine, entryNumber: currentEntry };
+        currentEntry++;
+
+        // Check if entry number changed
+        if (routine.entryNumber !== newRoutine.entryNumber) {
+          hasChanges = true;
+        }
+
+        return newRoutine;
+      });
+
+      renumbered[date] = renumberedDay;
+    }
+
+    // Only update if numbers actually changed
+    if (hasChanges) {
+      setDraftsByDate(prev => {
+        const updated = { ...prev };
+        for (const date of dates) {
+          if (renumbered[date]) {
+            updated[date] = renumbered[date];
+          }
+        }
+        return updated;
+      });
+    }
+  }, [draftsByDate]);
+
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
     if (!routines) return false;
