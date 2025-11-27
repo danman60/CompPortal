@@ -378,7 +378,7 @@ export function DragDropProvider({
         const recalculated = calculateSchedule(
           newSchedule,
           scheduledForDay[0]?.performanceTime || '08:00:00',
-          scheduledForDay[0]?.entryNumber || 100
+          100 // Always start from 100, recalculate all entry numbers
         );
         onScheduleChange(recalculated);
 
@@ -442,7 +442,7 @@ export function DragDropProvider({
       const recalculated = calculateSchedule(
         newSchedule,
         firstRoutine?.performanceTime || '08:00:00',
-        firstRoutine?.entryNumber || 100
+        100 // Always start from 100, recalculate all entry numbers
       );
 
       onScheduleChange(recalculated);
@@ -483,7 +483,7 @@ export function DragDropProvider({
       const recalculated = calculateSchedule(
         newSchedule,
         firstRoutine?.performanceTime || '08:00:00',
-        firstRoutine?.entryNumber || 100
+        100 // Always start from 100, recalculate all entry numbers
       );
 
       onScheduleChange(recalculated);
@@ -544,7 +544,7 @@ export function DragDropProvider({
         const recalculated = calculateSchedule(
           reordered,
           reordered[0].performanceTime || '08:00:00',
-          reordered[0].entryNumber || 100
+          100 // Always start from 100, recalculate all entry numbers
         );
 
         onScheduleChange(recalculated);
@@ -571,7 +571,7 @@ export function DragDropProvider({
         const recalculated = calculateSchedule(
           reordered,
           reordered[0].performanceTime || '08:00:00',
-          reordered[0].entryNumber || 100
+          100 // Always start from 100, recalculate all entry numbers
         );
 
         onScheduleChange(recalculated);

@@ -383,28 +383,95 @@ export default function SchedulePage() {
       : []
   , [routines]);
 
-  // Build map of routineId -> conflicts for that routine
+  // Build map of routineId -> conflicts for that routine (database + draft conflicts)
   const conflictsByRoutineId = useMemo(() => {
-    if (!conflictsData?.conflicts) return new Map();
+    const map = new Map<string, any[]>();
+    const MIN_ROUTINES_BETWEEN = 6;
 
-    const map = new Map<string, Array<typeof conflictsData.conflicts[0]>>();
+    // Add database conflicts (from saved schedule)
+    if (conflictsData?.conflicts) {
+      for (const conflict of conflictsData.conflicts) {
+        if (!map.has(conflict.routine1Id)) {
+          map.set(conflict.routine1Id, []);
+        }
+        map.get(conflict.routine1Id)!.push(conflict);
 
-    for (const conflict of conflictsData.conflicts) {
-      // Add to routine1
-      if (!map.has(conflict.routine1Id)) {
-        map.set(conflict.routine1Id, []);
+        if (!map.has(conflict.routine2Id)) {
+          map.set(conflict.routine2Id, []);
+        }
+        map.get(conflict.routine2Id)!.push(conflict);
       }
-      map.get(conflict.routine1Id)!.push(conflict);
+    }
 
-      // Add to routine2
-      if (!map.has(conflict.routine2Id)) {
-        map.set(conflict.routine2Id, []);
+    // Calculate draft conflicts (real-time based on draft positions)
+    if (draftSchedule.length > 0 && routines) {
+      const scheduledWithData = draftSchedule
+        .map(draft => {
+          const full = routines.find(r => r.id === draft.id);
+          if (!full) return null;
+          return {
+            id: full.id,
+            title: full.title,
+            entryNumber: draft.entryNumber || 0,
+            dancer_names: full.dancer_names || [],
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+        .sort((a, b) => a.entryNumber - b.entryNumber);
+
+      // Check each pair of routines
+      for (let i = 0; i < scheduledWithData.length; i++) {
+        for (let j = i + 1; j < scheduledWithData.length; j++) {
+          const routine1 = scheduledWithData[i];
+          const routine2 = scheduledWithData[j];
+
+          // Find shared dancers
+          const sharedDancers = routine1.dancer_names.filter(d =>
+            routine2.dancer_names.includes(d)
+          );
+
+          if (sharedDancers.length > 0) {
+            const routinesBetween = routine2.entryNumber - routine1.entryNumber - 1;
+
+            // Only flag if within critical range
+            if (routinesBetween < MIN_ROUTINES_BETWEEN) {
+              const severity =
+                routinesBetween === 0 ? 'critical' :
+                routinesBetween <= 3 ? 'error' : 'warning';
+
+              const conflict = {
+                dancerId: sharedDancers[0], // Use first shared dancer as ID
+                dancerName: sharedDancers.join(', '),
+                routine1Id: routine1.id,
+                routine1Number: routine1.entryNumber,
+                routine1Title: routine1.title,
+                routine2Id: routine2.id,
+                routine2Number: routine2.entryNumber,
+                routine2Title: routine2.title,
+                routinesBetween,
+                severity,
+                message: `${sharedDancers.join(', ')} has ${routinesBetween} routine${routinesBetween !== 1 ? 's' : ''} between performances (need ${MIN_ROUTINES_BETWEEN}+ for costume changes)`,
+                isDraft: true, // Mark as draft conflict
+              };
+
+              // Add to both routines
+              if (!map.has(routine1.id)) {
+                map.set(routine1.id, []);
+              }
+              map.get(routine1.id)!.push(conflict);
+
+              if (!map.has(routine2.id)) {
+                map.set(routine2.id, []);
+              }
+              map.get(routine2.id)!.push(conflict);
+            }
+          }
+        }
       }
-      map.get(conflict.routine2Id)!.push(conflict);
     }
 
     return map;
-  }, [conflictsData]);
+  }, [conflictsData, draftSchedule, routines]);
 
   // Clear draft when selectedDate changes (ensures correct day filtering)
   useEffect(() => {
