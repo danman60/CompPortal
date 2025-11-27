@@ -172,12 +172,12 @@ function SortableBlockRow({
       {...listeners}
       className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
     >
-      {showCheckbox && <td className="px-0.5 py-1" style={{ width: '24px' }}></td>}
-      <td className="px-0.5 py-1" style={{ width: '40px' }}></td>
-      <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white" style={{ width: '30px' }}>
+      {showCheckbox && <td className="px-0.5 py-1" style={{ width: '18px' }}></td>}
+      <td className="px-0.5 py-1" style={{ width: '30px' }}></td>
+      <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white" style={{ width: '22px' }}>
         {icon}
       </td>
-      <td className="px-0.5 py-1 font-mono text-white/90" style={{ width: '45px' }}>
+      <td className="px-0.5 py-1 font-mono text-white/90" style={{ width: '36px' }}>
         <div className="flex items-baseline gap-0.5">
           <span className="font-semibold text-[13px]">{displayTime}</span>
         </div>
@@ -331,9 +331,9 @@ function SortableRoutineRow({
         `}
         onClick={() => onRoutineClick?.(routine.id)}
       >
-      {/* Checkbox - 24px */}
+      {/* Checkbox - 18px */}
       {showCheckbox && (
-        <td className="px-0.5 py-1 text-center" style={{ width: '24px' }}>
+        <td className="px-0.5 py-1 text-center" style={{ width: '18px' }}>
           <input
             type="checkbox"
             checked={isSelected || false}
@@ -349,9 +349,9 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Compact Horizontal Badges - 40px */}
-      <td className="px-0.5 py-1" style={{ width: '40px' }}>
-        <div className="flex flex-row gap-1 items-center justify-center">
+      {/* Landscape Badges - 30px */}
+      <td className="px-0.5 py-1" style={{ width: '30px' }}>
+        <div className="flex flex-row gap-0.5 items-center justify-center">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
               onClick={(e) => {
@@ -359,13 +359,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-trophy`);
               }}
               title={`🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards!`}
-              className="inline-flex items-center justify-center w-3 h-3 rounded-full text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-3.5 h-1.5 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #FFD700, #FFA500)',
                 border: '1px solid rgba(255, 215, 0, 0.6)'
               }}
             >
-              <span className="text-[8px]">🏆</span>
+              <span className="text-[7px]">🏆</span>
             </button>
           )}
           {hasSDRequest && !dismissedIcons.has(`${routine.id}-note`) && (
@@ -375,13 +375,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-note`);
               }}
               title={`📋 ${routine.scheduling_notes || 'Studio Director requested changes'}`}
-              className="inline-flex items-center justify-center w-3 h-3 rounded-full text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-3.5 h-1.5 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #4FC3F7, #2196F3)',
                 border: '1px solid rgba(33, 150, 243, 0.6)'
               }}
             >
-              <span className="text-[8px]">📋</span>
+              <span className="text-[7px]">📋</span>
             </button>
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
@@ -391,7 +391,7 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-conflict`);
               }}
               title={getConflictTooltip()}
-              className="inline-flex items-center justify-center w-3 h-3 rounded-full text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-3.5 h-1.5 rounded text-[10px] transition-transform hover:scale-125"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                 border: '1px solid rgba(255, 107, 107, 0.6)'
@@ -403,13 +403,13 @@ function SortableRoutineRow({
         </div>
       </td>
 
-      {/* Entry Number - 30px */}
-      <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white whitespace-nowrap" style={{ width: '30px' }}>
+      {/* Entry Number - 22px */}
+      <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white whitespace-nowrap" style={{ width: '22px' }}>
         #{routine.entryNumber || '?'}
       </td>
 
-      {/* Time - 45px (compact with split AM/PM, larger font) */}
-      <td className="px-0.5 py-1 font-mono text-white/90 whitespace-nowrap" style={{ width: '45px' }}>
+      {/* Time - 36px (compact with split AM/PM, larger font) */}
+      <td className="px-0.5 py-1 font-mono text-white/90 whitespace-nowrap" style={{ width: '36px' }}>
         <div className="flex items-baseline gap-0.5">
           <span className="font-semibold text-[13px]">{performanceTime.time}</span>
           {performanceTime.period && (
@@ -769,7 +769,7 @@ export function ScheduleTable({
           <thead>
             <tr className="bg-indigo-600/20 border-b border-indigo-600/30">
               {onSelectionChange && (
-                <th className="px-0.5 py-1 text-center" style={{ width: '24px' }}>
+                <th className="px-0.5 py-1 text-center" style={{ width: '18px' }}>
                   <input
                     type="checkbox"
                     checked={selectedRoutineIds.size === sortedRoutines.length && sortedRoutines.length > 0}
@@ -780,7 +780,7 @@ export function ScheduleTable({
               )}
               <th
                 className="px-0.5 py-1 text-center text-[11px] font-semibold text-white/60"
-                style={{ width: '40px' }}
+                style={{ width: '30px' }}
               >
                 <div
                   className="cursor-help"
@@ -802,10 +802,10 @@ Click badge to dismiss"
                   </button>
                 )}
               </th>
-              <th className="px-0.5 py-1 text-left text-[13px] font-semibold text-white uppercase tracking-wider" style={{ width: '30px' }}>
+              <th className="px-0.5 py-1 text-left text-[13px] font-semibold text-white uppercase tracking-wider" style={{ width: '22px' }}>
                 #
               </th>
-              <th className="px-0.5 py-1 text-left text-[13px] font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>
+              <th className="px-0.5 py-1 text-left text-[13px] font-semibold text-white uppercase tracking-wider" style={{ width: '36px' }}>
                 Time
               </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '75px' }}>
