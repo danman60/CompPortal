@@ -54,6 +54,7 @@ interface ScheduleTableProps {
   onRoutineClick?: (routineId: string) => void;
   selectedRoutineIds?: Set<string>;
   onSelectionChange?: (selectedIds: Set<string>) => void;
+  onAutoFixConflict?: (routineId: string) => void;
   scheduleBlocks?: Array<{
     id: string;
     block_type: string;
@@ -228,6 +229,9 @@ function SortableRoutineRow({
   showCheckbox,
   dismissedIcons,
   onDismissIcon,
+  onAutoFixConflict,
+  hoveredConflict,
+  setHoveredConflict,
   scheduledRoutines,
   conflicts,
 }: {
@@ -250,6 +254,9 @@ function SortableRoutineRow({
   showCheckbox?: boolean;
   dismissedIcons: Set<string>;
   onDismissIcon: (key: string) => void;
+  onAutoFixConflict?: (routineId: string) => void;
+  hoveredConflict: string | null;
+  setHoveredConflict: (id: string | null) => void;
   scheduledRoutines: Routine[];
   conflicts?: Array<{
     dancerId: string;
@@ -385,20 +392,53 @@ function SortableRoutineRow({
             </button>
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDismissIcon(`${routine.id}-conflict`);
-              }}
-              title={getConflictTooltip()}
-              className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px] transition-transform hover:scale-125"
-              style={{
-                background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
-                border: '1px solid rgba(255, 107, 107, 0.6)'
-              }}
+            <div
+              className="relative group inline-flex items-center"
+              onMouseEnter={() => setHoveredConflict(routine.id)}
+              onMouseLeave={() => setHoveredConflict(null)}
             >
-              <span className="text-[8px]">⚠️</span>
-            </button>
+              <div
+                className="inline-flex items-center justify-center rounded text-[10px] transition-all"
+                style={{
+                  background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
+                  border: '1px solid rgba(255, 107, 107, 0.6)',
+                  width: hoveredConflict === routine.id ? 'auto' : '24px',
+                  height: hoveredConflict === routine.id ? 'auto' : '8px',
+                  padding: hoveredConflict === routine.id ? '2px 6px' : '0',
+                  gap: hoveredConflict === routine.id ? '4px' : '0'
+                }}
+                title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
+              >
+                {hoveredConflict === routine.id ? (
+                  <div className="flex items-center gap-1.5 text-white font-semibold">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAutoFixConflict?.(routine.id);
+                      }}
+                      className="flex items-center gap-0.5 hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
+                      title="Auto-fix: Move routine to nearest conflict-free position"
+                    >
+                      <span className="text-[9px]">🔧</span>
+                      <span className="text-[8px]">Fix</span>
+                    </button>
+                    <div className="w-px h-3 bg-white/30" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDismissIcon(`${routine.id}-conflict`);
+                      }}
+                      className="text-[10px] hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
+                      title="Dismiss warning (conflict remains)"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-[8px]">⚠️</span>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </td>
@@ -496,11 +536,13 @@ export function ScheduleTable({
   onRoutineClick,
   selectedRoutineIds = new Set(),
   onSelectionChange,
+  onAutoFixConflict,
   scheduleBlocks = [],
   onDeleteBlock,
 }: ScheduleTableProps) {
   const lastClickedIndexRef = useRef<number | null>(null);
   const [dismissedIcons, setDismissedIcons] = useState<Set<string>>(new Set());
+  const [hoveredConflict, setHoveredConflict] = useState<string | null>(null);
 
   // Sort routines by entry_number
   const sortedRoutines = useMemo(() => {
@@ -896,6 +938,9 @@ Click badge to dismiss"
                     showCheckbox={!!onSelectionChange}
                     dismissedIcons={dismissedIcons}
                     onDismissIcon={(key) => setDismissedIcons(prev => new Set(prev).add(key))}
+                    onAutoFixConflict={onAutoFixConflict}
+                    hoveredConflict={hoveredConflict}
+                    setHoveredConflict={setHoveredConflict}
                     scheduledRoutines={sortedRoutines}
                     conflicts={conflictsByRoutineId?.get(routine.id) || []}
                   />

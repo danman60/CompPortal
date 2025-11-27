@@ -25,9 +25,12 @@ import { DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
 import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Mail, Clock, History } from 'lucide-react';
+import { autoFixRoutineConflict, autoFixDayConflicts, autoFixWeekendConflicts } from '@/lib/conflictAutoFix';
 
 // TEST tenant ID (will be replaced with real tenant context)
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -77,6 +80,9 @@ export default function SchedulePage() {
   // Version management state
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
+
+  // Fix All conflicts modal state
+  const [showFixAllModal, setShowFixAllModal] = useState(false);
 
   // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
@@ -540,6 +546,19 @@ export default function SchedulePage() {
     return map;
   }, [conflictsData, draftSchedule, routines]);
 
+  // Count conflicts on current day
+  const dayConflictCount = useMemo(() => {
+    const daySchedule = draftsByDate[selectedDate] || [];
+    let count = 0;
+    for (const [routineId, conflicts] of conflictsByRoutineId?.entries() || []) {
+      if (daySchedule.some(r => r.id === routineId)) {
+        count += conflicts.length;
+      }
+    }
+    // Divide by 2 since each conflict is counted twice (once for each routine)
+    return Math.floor(count / 2);
+  }, [conflictsByRoutineId, draftsByDate, selectedDate]);
+
   // Initialize draft from server data when it changes or switching days
   useEffect(() => {
     if (routines && !draftsByDate[selectedDate]) {
@@ -682,6 +701,189 @@ export default function SchedulePage() {
       console.error('[SchedulePage] Failed to reorder blocks:', error);
       toast.error('Failed to reorder blocks');
     }
+  };
+
+  // Auto-fix conflict for a single routine
+  const handleAutoFixConflict = (routineId: string) => {
+    const daySchedule = draftsByDate[selectedDate] || [];
+
+    if (daySchedule.length === 0) {
+      toast.error('No schedule to fix');
+      return;
+    }
+
+    // Transform RoutineData to Routine with participants
+    const dayScheduleWithParticipants = daySchedule.map(draft => {
+      const full = routines?.find(r => r.id === draft.id);
+      return {
+        id: draft.id,
+        title: draft.title,
+        entryNumber: draft.entryNumber ?? undefined,
+        participants: (full?.dancer_names || []).map((name: string) => ({
+          dancerId: name, // Use name as ID for now
+          dancerName: name,
+        })),
+        scheduledDateString: selectedDate,
+      };
+    });
+
+    const { success, newSchedule, result } = autoFixRoutineConflict(routineId, dayScheduleWithParticipants);
+
+    if (success && newSchedule) {
+      // Map newSchedule back to RoutineData format
+      const updatedDraft = newSchedule.map((r, index) => ({
+        id: r.id,
+        title: r.title,
+        duration: daySchedule.find(d => d.id === r.id)?.duration || 0,
+        isScheduled: true,
+        entryNumber: r.entryNumber,
+        performanceTime: daySchedule.find(d => d.id === r.id)?.performanceTime,
+      }));
+
+      setDraftsByDate(prev => ({
+        ...prev,
+        [selectedDate]: updatedDraft
+      }));
+
+      const movedRoutine = result.movedRoutines[0];
+      if (movedRoutine) {
+        toast.success(
+          `Moved "${movedRoutine.routineTitle}" from position ${movedRoutine.fromPosition + 1} to ${movedRoutine.toPosition + 1} (${movedRoutine.distance} positions)`
+        );
+      }
+    } else {
+      const unresolvedReason = result.unresolvedConflicts[0]?.reason || 'Failed to auto-fix conflict';
+      toast.error(unresolvedReason);
+    }
+  };
+
+  // Auto-fix all conflicts on current day
+  const handleFixAllDay = () => {
+    const daySchedule = draftsByDate[selectedDate] || [];
+    const dayConflicts = Array.from(conflictsByRoutineId?.entries() || [])
+      .filter(([routineId]) => daySchedule.some(r => r.id === routineId))
+      .flatMap(([, conflicts]) => conflicts);
+
+    if (dayConflicts.length === 0) {
+      toast.error('No conflicts to fix on this day');
+      setShowFixAllModal(false);
+      return;
+    }
+
+    // Transform to Routine format with participants
+    const dayScheduleWithParticipants = daySchedule.map(draft => {
+      const full = routines?.find(r => r.id === draft.id);
+      return {
+        id: draft.id,
+        title: draft.title,
+        entryNumber: draft.entryNumber ?? undefined,
+        participants: (full?.dancer_names || []).map((name: string) => ({
+          dancerId: name,
+          dancerName: name,
+        })),
+        scheduledDateString: selectedDate,
+      };
+    });
+
+    const result = autoFixDayConflicts(dayScheduleWithParticipants, dayConflicts);
+
+    // Update draft with modified schedule (map back to RoutineData)
+    if (result.newSchedule) {
+      const updatedDraft = result.newSchedule.map((r) => ({
+        id: r.id,
+        title: r.title,
+        duration: daySchedule.find(d => d.id === r.id)?.duration || 0,
+        isScheduled: true,
+        entryNumber: r.entryNumber,
+        performanceTime: daySchedule.find(d => d.id === r.id)?.performanceTime,
+      }));
+
+      setDraftsByDate(prev => ({
+        ...prev,
+        [selectedDate]: updatedDraft
+      }));
+    }
+
+    // Show results
+    const totalMoved = result.movedRoutines.length;
+    const totalResolved = result.resolvedConflicts;
+    const totalUnresolved = result.unresolvedConflicts.length;
+
+    if (result.success) {
+      toast.success(`Fixed all conflicts! Moved ${totalMoved} routines, resolved ${totalResolved} conflicts.`);
+    } else {
+      toast.error(`Partially fixed: Moved ${totalMoved} routines, resolved ${totalResolved} conflicts. ${totalUnresolved} conflicts remain.`);
+    }
+
+    setShowFixAllModal(false);
+  };
+
+  // Auto-fix all conflicts across entire weekend
+  const handleFixAllWeekend = () => {
+    const conflictsByDate: Record<string, any[]> = {};
+
+    // Group conflicts by date
+    for (const [routineId, conflicts] of conflictsByRoutineId?.entries() || []) {
+      const routine = (routines || []).find(r => r.id === routineId);
+      const date = routine?.scheduledDateString;
+      if (date) {
+        if (!conflictsByDate[date]) conflictsByDate[date] = [];
+        conflictsByDate[date].push(...conflicts);
+      }
+    }
+
+    // Transform all days to Routine format
+    const scheduleByDateWithParticipants: Record<string, any[]> = {};
+    for (const [date, daySchedule] of Object.entries(draftsByDate)) {
+      scheduleByDateWithParticipants[date] = daySchedule.map(draft => {
+        const full = routines?.find(r => r.id === draft.id);
+        return {
+          id: draft.id,
+          title: draft.title,
+          entryNumber: draft.entryNumber ?? undefined,
+          participants: (full?.dancer_names || []).map((name: string) => ({
+            dancerId: name,
+            dancerName: name,
+          })),
+          scheduledDateString: date,
+        };
+      });
+    }
+
+    const results = autoFixWeekendConflicts(scheduleByDateWithParticipants, conflictsByDate);
+
+    // Update all days with fixed schedules
+    setDraftsByDate(prev => {
+      const updated = { ...prev };
+      for (const [date, result] of Object.entries(results)) {
+        if (result.newSchedule && result.movedRoutines.length > 0) {
+          // Map back to RoutineData format
+          updated[date] = result.newSchedule.map((r) => ({
+            id: r.id,
+            title: r.title,
+            duration: draftsByDate[date]?.find(d => d.id === r.id)?.duration || 0,
+            isScheduled: true,
+            entryNumber: r.entryNumber,
+            performanceTime: draftsByDate[date]?.find(d => d.id === r.id)?.performanceTime,
+          }));
+        }
+      }
+      return updated;
+    });
+
+    // Show summary
+    const totalDays = Object.keys(results).length;
+    const totalMoved = Object.values(results).reduce((sum, r) => sum + r.movedRoutines.length, 0);
+    const totalResolved = Object.values(results).reduce((sum, r) => sum + r.resolvedConflicts, 0);
+    const totalUnresolved = Object.values(results).reduce((sum, r) => sum + r.unresolvedConflicts.length, 0);
+
+    if (totalUnresolved === 0) {
+      toast.success(`Fixed all conflicts across ${totalDays} days! Moved ${totalMoved} routines, resolved ${totalResolved} conflicts.`);
+    } else {
+      toast.error(`Partially fixed ${totalDays} days: Moved ${totalMoved} routines, resolved ${totalResolved} conflicts. ${totalUnresolved} conflicts remain.`);
+    }
+
+    setShowFixAllModal(false);
   };
 
   // Save draft schedule to database
@@ -876,6 +1078,17 @@ export default function SchedulePage() {
               <Mail className="h-4 w-4" />
               Send Draft to Studios
             </button>
+            {/* Fix All Conflicts Button - Only show if conflicts exist */}
+            {dayConflictCount > 0 && (
+              <button
+                onClick={() => setShowFixAllModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+                title={`${dayConflictCount} conflict${dayConflictCount !== 1 ? 's' : ''} detected on this day`}
+              >
+                <span className="text-lg">🔧</span>
+                Fix All Conflicts ({dayConflictCount})
+              </button>
+            )}
             {hasUnsavedChanges && (
               <>
                 <button
@@ -1042,6 +1255,7 @@ export default function SchedulePage() {
               conflictsByRoutineId={conflictsByRoutineId}
               selectedRoutineIds={selectedScheduledIds}
               onSelectionChange={setSelectedScheduledIds}
+              onAutoFixConflict={handleAutoFixConflict}
               scheduleBlocks={scheduleBlocks}
               onDeleteBlock={(blockId) => {
                 if (confirm('Delete this schedule block?')) {
@@ -1160,6 +1374,77 @@ export default function SchedulePage() {
           }
         }}
       />
+
+      {/* Fix All Conflicts Modal */}
+      <Modal
+        isOpen={showFixAllModal}
+        onClose={() => setShowFixAllModal(false)}
+        title="Auto-Fix Conflicts"
+        description="Choose scope for automatic conflict resolution"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setShowFixAllModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-300">
+            Select which conflicts to automatically fix. The system will move routines the minimum distance necessary to resolve conflicts within the same competition day.
+          </p>
+
+          <div className="grid gap-3">
+            {/* Fix This Day */}
+            <button
+              onClick={handleFixAllDay}
+              className="p-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition-all text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <span className="text-xl">🔧</span>
+                    Fix This Day Only
+                  </div>
+                  <div className="text-sm text-white/80 mt-1">
+                    Resolve {dayConflictCount} conflict{dayConflictCount !== 1 ? 's' : ''} on {new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                <span className="text-2xl group-hover:scale-110 transition-transform">→</span>
+              </div>
+            </button>
+
+            {/* Fix Entire Weekend */}
+            <button
+              onClick={handleFixAllWeekend}
+              className="p-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-lg transition-all text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <span className="text-xl">🔧</span>
+                    Fix Entire Weekend
+                  </div>
+                  <div className="text-sm text-white/80 mt-1">
+                    Resolve conflicts across all competition days (Apr 9-12)
+                  </div>
+                </div>
+                <span className="text-2xl group-hover:scale-110 transition-transform">→</span>
+              </div>
+            </button>
+          </div>
+
+          <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-3">
+            <p className="text-xs text-blue-200">
+              <strong>Note:</strong> Routines will only be moved within their scheduled day. The system finds the nearest conflict-free position with minimum movement.
+            </p>
+          </div>
+        </div>
+      </Modal>
 
       {/* Version History Panel */}
       {showVersionHistory && versionHistory && (
