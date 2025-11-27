@@ -112,7 +112,7 @@ export default function SchedulePage() {
   });
 
   // Fetch dynamic conflicts based on current schedule
-  const { data: conflictsData } = trpc.scheduling.detectConflicts.useQuery(
+  const { data: conflictsData, refetch: refetchConflicts } = trpc.scheduling.detectConflicts.useQuery(
     {
       competitionId: competition?.id || ''
     },
@@ -127,7 +127,7 @@ export default function SchedulePage() {
   const scheduleMutation = trpc.scheduling.schedule.useMutation({
     onSuccess: async () => {
       toast.success('Schedule saved successfully');
-      await refetch(); // Wait for refetch to complete before clearing draft
+      await Promise.all([refetch(), refetchConflicts()]); // Refetch routines AND conflicts
       setDraftSchedule([]); // Clear draft after new data loads
     },
     onError: (error) => {
@@ -139,7 +139,7 @@ export default function SchedulePage() {
   const resetDay = trpc.scheduling.resetDay.useMutation({
     onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines`);
-      await refetch(); // Wait for refetch to complete
+      await Promise.all([refetch(), refetchConflicts()]); // Refetch routines AND conflicts
       setDraftSchedule([]); // Clear local draft state AFTER refetch
     },
     onError: (error) => {
@@ -150,7 +150,7 @@ export default function SchedulePage() {
   const resetCompetition = trpc.scheduling.resetCompetition.useMutation({
     onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines and deleted ${data.blocksDeleted || 0} blocks`);
-      await Promise.all([refetch(), refetchBlocks()]); // Wait for refetch to complete
+      await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Refetch all
       setDraftSchedule([]); // Clear local draft state AFTER refetch
     },
     onError: (error) => {
