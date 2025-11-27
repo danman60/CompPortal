@@ -172,14 +172,14 @@ function SortableBlockRow({
       {...listeners}
       className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
     >
-      {showCheckbox && <td className="px-1 py-1" style={{ width: '32px' }}></td>}
-      <td className="px-1 py-1" style={{ width: '55px' }}></td>
-      <td className="px-1 py-1 text-xs font-mono font-bold text-white" style={{ width: '38px' }}>
+      {showCheckbox && <td className="px-0.5 py-1" style={{ width: '32px' }}></td>}
+      <td className="px-0.5 py-1" style={{ width: '32px' }}></td>
+      <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white" style={{ width: '30px' }}>
         {icon}
       </td>
-      <td className="px-1 py-1 text-xs font-mono text-white/90" style={{ width: '52px' }}>
+      <td className="px-0.5 py-1 font-mono text-white/90" style={{ width: '45px' }}>
         <div className="flex items-baseline gap-0.5">
-          <span className="font-semibold" style={{ fontSize: '11px' }}>{displayTime}</span>
+          <span className="font-semibold text-[13px]">{displayTime}</span>
         </div>
       </td>
       <td colSpan={5} className="px-1 py-1">
@@ -349,9 +349,9 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Pill Badge Status - 55px */}
-      <td className="px-1 py-1" style={{ width: '55px' }}>
-        <div className="flex flex-col gap-1 items-center">
+      {/* Compact Horizontal Badges - 32px */}
+      <td className="px-0.5 py-1" style={{ width: '32px' }}>
+        <div className="flex flex-row gap-0.5 items-center justify-center flex-wrap">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
               onClick={(e) => {
@@ -359,14 +359,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-trophy`);
               }}
               title={`🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards!`}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-transform hover:scale-105 whitespace-nowrap"
+              className="inline-flex items-center justify-center w-3 h-3 rounded-full text-[10px] transition-transform hover:scale-125"
               style={{
-                background: 'rgba(255, 215, 0, 0.25)',
-                border: '1px solid rgba(255, 215, 0, 0.4)',
-                color: '#FFD700'
+                background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                border: '1px solid rgba(255, 215, 0, 0.6)'
               }}
             >
-              🏆
+              <span className="text-[8px]">🏆</span>
             </button>
           )}
           {hasSDRequest && !dismissedIcons.has(`${routine.id}-note`) && (
@@ -376,14 +375,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-note`);
               }}
               title={`📋 ${routine.scheduling_notes || 'Studio Director requested changes'}`}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-transform hover:scale-105 whitespace-nowrap"
+              className="inline-flex items-center justify-center w-3 h-3 rounded-full text-[10px] transition-transform hover:scale-125"
               style={{
-                background: 'rgba(33, 150, 243, 0.25)',
-                border: '1px solid rgba(33, 150, 243, 0.4)',
-                color: '#4FC3F7'
+                background: 'linear-gradient(135deg, #4FC3F7, #2196F3)',
+                border: '1px solid rgba(33, 150, 243, 0.6)'
               }}
             >
-              📋
+              <span className="text-[8px]">📋</span>
             </button>
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
@@ -393,30 +391,29 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-conflict`);
               }}
               title={getConflictTooltip()}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-transform hover:scale-105 whitespace-nowrap"
+              className="inline-flex items-center justify-center w-3 h-3 rounded-full text-[10px] transition-transform hover:scale-125"
               style={{
-                background: 'rgba(255, 107, 107, 0.25)',
-                border: '1px solid rgba(255, 107, 107, 0.4)',
-                color: '#FF6B6B'
+                background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
+                border: '1px solid rgba(255, 107, 107, 0.6)'
               }}
             >
-              ⚠️
+              <span className="text-[8px]">⚠️</span>
             </button>
           )}
         </div>
       </td>
 
-      {/* Entry Number - 38px */}
-      <td className="px-1 py-1 text-xs font-mono font-bold text-white whitespace-nowrap" style={{ width: '38px' }}>
+      {/* Entry Number - 30px */}
+      <td className="px-0.5 py-1 text-[13px] font-mono font-bold text-white whitespace-nowrap" style={{ width: '30px' }}>
         #{routine.entryNumber || '?'}
       </td>
 
-      {/* Time - 52px (compact with split AM/PM) */}
-      <td className="px-1 py-1 text-xs font-mono text-white/90 whitespace-nowrap" style={{ width: '52px' }}>
+      {/* Time - 45px (compact with split AM/PM, larger font) */}
+      <td className="px-0.5 py-1 font-mono text-white/90 whitespace-nowrap" style={{ width: '45px' }}>
         <div className="flex items-baseline gap-0.5">
-          <span className="font-semibold" style={{ fontSize: '11px' }}>{performanceTime.time}</span>
+          <span className="font-semibold text-[13px]">{performanceTime.time}</span>
           {performanceTime.period && (
-            <span style={{ fontSize: '9px', opacity: 0.7 }}>{performanceTime.period}</span>
+            <span className="text-[10px] opacity-70">{performanceTime.period}</span>
           )}
         </div>
       </td>
@@ -782,20 +779,33 @@ export function ScheduleTable({
                 </th>
               )}
               <th
-                className="px-1 py-1 text-center text-xs font-semibold text-white/60 cursor-help"
-                style={{ width: '55px' }}
-                title="Helper Icons Legend:
+                className="px-0.5 py-1 text-center text-[11px] font-semibold text-white/60"
+                style={{ width: '32px' }}
+              >
+                <div
+                  className="cursor-help"
+                  title="Helper Icons Legend:
 🏆 Trophy = Last routine in category (award ceremony ready)
 📋 Note = Studio Director requested changes
 ⚠️ Conflict = Dancer scheduling conflict detected
 Click badge to dismiss"
-              >
-                <span className="text-[10px]">Status</span>
+                >
+                  <span className="text-[9px]">●</span>
+                </div>
+                {dismissedIcons.size > 0 && (
+                  <button
+                    onClick={() => setDismissedIcons(new Set())}
+                    className="text-[9px] text-purple-400 hover:text-purple-300 mt-0.5 underline"
+                    title={`Unhide ${dismissedIcons.size} hidden badge${dismissedIcons.size !== 1 ? 's' : ''}`}
+                  >
+                    Unhide
+                  </button>
+                )}
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '38px' }}>
+              <th className="px-0.5 py-1 text-left text-[13px] font-semibold text-white uppercase tracking-wider" style={{ width: '30px' }}>
                 #
               </th>
-              <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '52px' }}>
+              <th className="px-0.5 py-1 text-left text-[13px] font-semibold text-white uppercase tracking-wider" style={{ width: '45px' }}>
                 Time
               </th>
               <th className="px-1 py-1 text-left text-xs font-semibold text-white uppercase tracking-wider" style={{ width: '75px' }}>
