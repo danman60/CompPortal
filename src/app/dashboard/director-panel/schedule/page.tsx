@@ -46,8 +46,11 @@ export default function SchedulePage() {
   // Selected date state
   const [selectedDate, setSelectedDate] = useState<string>('2026-04-11');
 
-  // Draft schedule state (local changes before save)
-  const [draftSchedule, setDraftSchedule] = useState<RoutineData[]>([]);
+  // Draft schedule state per day (local changes before save)
+  const [draftsByDate, setDraftsByDate] = useState<Record<string, RoutineData[]>>({});
+
+  // Current day's draft (computed from map)
+  const draftSchedule = draftsByDate[selectedDate] || [];
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -160,7 +163,7 @@ export default function SchedulePage() {
     onSuccess: async () => {
       toast.success('Schedule saved successfully');
       await Promise.all([refetch(), refetchConflicts()]); // Refetch routines AND conflicts
-      setDraftSchedule([]); // Clear draft after new data loads
+      setDraftsByDate({}); // Clear ALL drafts after save
     },
     onError: (error) => {
       toast.error(`Failed to save schedule: ${error.message}`);
@@ -172,7 +175,11 @@ export default function SchedulePage() {
     onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines`);
       await Promise.all([refetch(), refetchConflicts()]); // Refetch routines AND conflicts
-      setDraftSchedule([]); // Clear local draft state AFTER refetch
+      setDraftsByDate(prev => {
+        const next = { ...prev };
+        delete next[selectedDate]; // Clear draft for current day only
+        return next;
+      });
     },
     onError: (error) => {
       toast.error(`Failed to reset day: ${error.message}`);
@@ -183,7 +190,7 @@ export default function SchedulePage() {
     onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines and deleted ${data.blocksDeleted || 0} blocks`);
       await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Refetch all
-      setDraftSchedule([]); // Clear local draft state AFTER refetch
+      setDraftsByDate({}); // Clear ALL drafts
     },
     onError: (error) => {
       toast.error(`Failed to reset competition: ${error.message}`);
@@ -199,7 +206,10 @@ export default function SchedulePage() {
 
       // Remove unscheduled routines from draft state AFTER refetch
       const unscheduledIds = new Set(variables.routineIds);
-      setDraftSchedule(prev => prev.filter(r => !unscheduledIds.has(r.id)));
+      setDraftsByDate(prev => ({
+        ...prev,
+        [selectedDate]: (prev[selectedDate] || []).filter(r => !unscheduledIds.has(r.id))
+      }));
 
       setSelectedScheduledIds(new Set()); // Clear selection
     },
@@ -505,15 +515,9 @@ export default function SchedulePage() {
     return map;
   }, [conflictsData, draftSchedule, routines]);
 
-  // Clear draft when selectedDate changes (ensures correct day filtering)
+  // Initialize draft from server data when it changes or switching days
   useEffect(() => {
-    console.log('[SchedulePage] selectedDate changed to:', selectedDate);
-    setDraftSchedule([]); // Clear draft to force reload from server
-  }, [selectedDate]);
-
-  // Initialize draft from server data when it changes
-  useEffect(() => {
-    if (routines && draftSchedule.length === 0) {
+    if (routines && !draftsByDate[selectedDate]) {
       const serverScheduled = routines
         .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
@@ -525,9 +529,12 @@ export default function SchedulePage() {
           entryNumber: r.entryNumber,
           performanceTime: r.scheduledTimeString,
         }));
-      setDraftSchedule(serverScheduled);
+      setDraftsByDate(prev => ({
+        ...prev,
+        [selectedDate]: serverScheduled
+      }));
     }
-  }, [routines, selectedDate, draftSchedule.length]);
+  }, [routines, selectedDate, draftsByDate]);
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
@@ -577,7 +584,10 @@ export default function SchedulePage() {
   const handleScheduleChange = (newSchedule: RoutineData[]) => {
     console.log('[SchedulePage] handleScheduleChange called with', newSchedule.length, 'routines');
     console.log('[SchedulePage] New schedule:', newSchedule);
-    setDraftSchedule(newSchedule);
+    setDraftsByDate(prev => ({
+      ...prev,
+      [selectedDate]: newSchedule
+    }));
   };
 
   // Handle block reordering from drag-drop (saves immediately)
@@ -640,7 +650,10 @@ export default function SchedulePage() {
           entryNumber: r.entryNumber,
           performanceTime: r.scheduledTimeString,
         }));
-      setDraftSchedule(serverScheduled);
+      setDraftsByDate(prev => ({
+        ...prev,
+        [selectedDate]: serverScheduled
+      }));
       toast.success('Changes discarded');
     }
   };
@@ -734,7 +747,7 @@ export default function SchedulePage() {
     });
   }, [unscheduledRoutines, draftSchedule, filters]);
 
-  // Competition dates for day tabs - show draft counts for selected day, saved counts for others
+  // Competition dates for day tabs - show draft counts (if exists), otherwise saved counts
   const competitionDates = useMemo(() => {
     const dates = [
       { date: '2026-04-09', startTime: '08:00:00' },
@@ -745,11 +758,11 @@ export default function SchedulePage() {
 
     return dates.map(d => ({
       ...d,
-      routineCount: d.date === selectedDate
-        ? draftSchedule.length // Show draft count for selected day (immediate UI feedback)
-        : (routines || []).filter(r => r.isScheduled && r.scheduledDateString === d.date).length, // Saved count for other days
+      routineCount: draftsByDate[d.date]
+        ? draftsByDate[d.date].length // Show draft count if it exists
+        : (routines || []).filter(r => r.isScheduled && r.scheduledDateString === d.date).length, // Otherwise show saved count
     }));
-  }, [routines, selectedDate, draftSchedule]);
+  }, [routines, draftsByDate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
