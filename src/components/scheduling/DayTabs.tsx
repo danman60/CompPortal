@@ -50,12 +50,6 @@ export function DayTabs({
   const [editedTime, setEditedTime] = useState<string>('');
 
   const updateDayStartTimeMutation = trpc.scheduling.updateDayStartTime.useMutation({
-    onSuccess: () => {
-      toast.success('Start time updated successfully');
-      setEditingDay(null);
-      // Trigger parent component to refetch routines and schedule table
-      onStartTimeUpdated?.();
-    },
     onError: (error) => {
       toast.error(`Failed to update start time: ${error.message}`);
     },
@@ -76,12 +70,24 @@ export function DayTabs({
     // Convert HH:mm to HH:mm:ss
     const fullTime = `${editedTime}:00`;
 
-    await updateDayStartTimeMutation.mutateAsync({
-      tenantId,
-      competitionId,
-      date: day.date,
-      newStartTime: fullTime,
-    });
+    try {
+      // Wait for mutation to complete
+      await updateDayStartTimeMutation.mutateAsync({
+        tenantId,
+        competitionId,
+        date: day.date,
+        newStartTime: fullTime,
+      });
+
+      // Wait for refetch to complete before closing edit mode
+      await onStartTimeUpdated?.();
+
+      toast.success('Start time updated successfully');
+      setEditingDay(null);
+    } catch (error) {
+      // Error already handled by mutation's onError
+      console.error('Failed to update start time:', error);
+    }
   };
 
   const handleCancelClick = () => {
