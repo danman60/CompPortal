@@ -47,7 +47,8 @@ export interface FixResult {
 }
 
 // Fixed spacing rule: 6 routines minimum between same dancer
-const REQUIRED_ROUTINES_BETWEEN = 6;
+// To have 6 routines BETWEEN, positions must be 7 apart (e.g., pos 1 and pos 8 = 6 routines between)
+const REQUIRED_ROUTINES_BETWEEN = 7;
 
 /**
  * Check if placing a routine at a specific position creates any conflicts
