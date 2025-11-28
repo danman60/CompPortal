@@ -913,22 +913,68 @@ export default function SchedulePage() {
   };
 
   // Save draft schedule to database
-  const handleSaveSchedule = () => {
-    if (draftSchedule.length === 0) {
-      toast.error('No schedule to save');
+  const handleSaveSchedule = async () => {
+    if (!routines) return;
+
+    // Find all dates with unsaved changes
+    const datesToSave: string[] = [];
+
+    for (const [date, dayDraft] of Object.entries(draftsByDate)) {
+      const serverScheduled = routines
+        .filter(r => r.isScheduled && r.scheduledDateString === date)
+        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+      // Compare draft with server state
+      const hasChanges =
+        dayDraft.length !== serverScheduled.length ||
+        dayDraft.some((draft, index) => {
+          const server = serverScheduled[index];
+          if (!server) return true;
+          return (
+            draft.id !== server.id ||
+            draft.entryNumber !== server.entryNumber ||
+            draft.performanceTime !== server.scheduledTimeString
+          );
+        });
+
+      if (hasChanges && dayDraft.length > 0) {
+        datesToSave.push(date);
+      }
+    }
+
+    if (datesToSave.length === 0) {
+      toast.error('No changes to save');
       return;
     }
 
-    scheduleMutation.mutate({
-      tenantId: TEST_TENANT_ID,
-      competitionId: TEST_COMPETITION_ID,
-      date: selectedDate,
-      routines: draftSchedule.map(r => ({
-        routineId: r.id,
-        entryNumber: r.entryNumber || 100,
-        performanceTime: r.performanceTime || '08:00:00',
-      })),
-    });
+    // Save all changed days sequentially
+    try {
+      for (const date of datesToSave) {
+        const dayDraft = draftsByDate[date] || [];
+        await new Promise<void>((resolve, reject) => {
+          scheduleMutation.mutate(
+            {
+              tenantId: TEST_TENANT_ID,
+              competitionId: TEST_COMPETITION_ID,
+              date,
+              routines: dayDraft.map(r => ({
+                routineId: r.id,
+                entryNumber: r.entryNumber || 100,
+                performanceTime: r.performanceTime || '08:00:00',
+              })),
+            },
+            {
+              onSuccess: () => resolve(),
+              onError: (error) => reject(error),
+            }
+          );
+        });
+      }
+
+      toast.success(`Saved schedule for ${datesToSave.length} day${datesToSave.length > 1 ? 's' : ''}`);
+    } catch (error) {
+      toast.error('Failed to save some days');
+    }
   };
 
   // Discard changes and revert to server state
