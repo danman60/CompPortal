@@ -466,7 +466,7 @@ export function RoutinePool({
       {/* TABLE VIEW */}
       {displayMode === 'table' && routines.length > 0 && !isLoading && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-          <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+          <div className="h-full overflow-y-auto custom-scrollbar">
             <table className="w-full" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr className="bg-white/10 border-b border-white/20">
@@ -536,7 +536,7 @@ export function RoutinePool({
 
       {/* CARDS VIEW */}
       {displayMode === 'cards' && routines.length > 0 && !isLoading && (
-        <div className="grid grid-cols-2 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="grid grid-cols-2 gap-2 h-full overflow-y-auto pr-2 custom-scrollbar">
           {routines.map((routine) => (
             <RoutineCard
               key={routine.id}
@@ -629,7 +629,7 @@ function FilterDropdown({
         <div
           className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar"
           style={{
-            top: `${buttonRect.top}px`,
+            top: `${buttonRect.bottom + 4}px`,
             left: `${buttonRect.left}px`,
           }}
         >

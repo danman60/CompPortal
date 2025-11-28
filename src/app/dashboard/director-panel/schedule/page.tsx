@@ -850,15 +850,24 @@ export default function SchedulePage() {
       }
     }
 
-    // Transform all days to Routine format
+    // Transform all days to Routine format (include ALL scheduled days, not just drafts)
     const scheduleByDateWithParticipants: Record<string, any[]> = {};
-    for (const [date, daySchedule] of Object.entries(draftsByDate)) {
-      scheduleByDateWithParticipants[date] = daySchedule.map(draft => {
-        const full = routines?.find(r => r.id === draft.id);
+
+    // Get all unique dates with scheduled routines (from drafts OR server data)
+    const allDates = new Set<string>();
+    Object.keys(draftsByDate).forEach(date => allDates.add(date));
+    (routines || []).filter(r => r.isScheduled && r.scheduledDateString).forEach(r => allDates.add(r.scheduledDateString!));
+
+    for (const date of allDates) {
+      // Use draft if available, otherwise use server data
+      const daySchedule = draftsByDate[date] || (routines || []).filter(r => r.isScheduled && r.scheduledDateString === date);
+
+      scheduleByDateWithParticipants[date] = daySchedule.map(routine => {
+        const full = routines?.find(r => r.id === routine.id);
         return {
-          id: draft.id,
-          title: draft.title,
-          entryNumber: draft.entryNumber ?? undefined,
+          id: routine.id,
+          title: routine.title || full?.title || '',
+          entryNumber: routine.entryNumber ?? full?.entryNumber ?? undefined,
           participants: (full?.dancer_names || []).map((name: string) => ({
             dancerId: name,
             dancerName: name,
@@ -1083,18 +1092,33 @@ export default function SchedulePage() {
   // Competition dates for day tabs - show draft counts (if exists), otherwise saved counts
   const competitionDates = useMemo(() => {
     const dates = [
-      { date: '2026-04-09', startTime: '08:00:00' },
-      { date: '2026-04-10', startTime: '08:00:00' },
-      { date: '2026-04-11', startTime: '08:00:00' },
-      { date: '2026-04-12', startTime: '08:00:00' },
+      { date: '2026-04-09' },
+      { date: '2026-04-10' },
+      { date: '2026-04-11' },
+      { date: '2026-04-12' },
     ];
 
-    return dates.map(d => ({
-      ...d,
-      routineCount: draftsByDate[d.date]
-        ? draftsByDate[d.date].length // Show draft count if it exists
-        : (routines || []).filter(r => r.isScheduled && r.scheduledDateString === d.date).length, // Otherwise show saved count
-    }));
+    return dates.map(d => {
+      // Find first scheduled routine for this date to get start time
+      const firstRoutine = (routines || [])
+        .filter(r => r.isScheduled && r.scheduledDateString === d.date)
+        .sort((a, b) => (a.entryNumber ?? 0) - (b.entryNumber ?? 0))[0];
+
+      // Extract start time from performance_time, default to '08:00:00'
+      const startTime = firstRoutine?.performanceTime
+        ? (typeof firstRoutine.performanceTime === 'string'
+            ? firstRoutine.performanceTime
+            : new Date(firstRoutine.performanceTime).toTimeString().slice(0, 8))
+        : '08:00:00';
+
+      return {
+        ...d,
+        startTime,
+        routineCount: draftsByDate[d.date]
+          ? draftsByDate[d.date].length // Show draft count if it exists
+          : (routines || []).filter(r => r.isScheduled && r.scheduledDateString === d.date).length, // Otherwise show saved count
+      };
+    });
   }, [routines, draftsByDate]);
 
   return (
@@ -1289,6 +1313,10 @@ export default function SchedulePage() {
                 onCreateBlock={(type) => {
                   setBlockType(type);
                   setShowBlockModal(true);
+                }}
+                onStartTimeUpdated={() => {
+                  // Refetch routines to get updated performance times
+                  refetch();
                 }}
                 onResetDay={() => {
                   if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
