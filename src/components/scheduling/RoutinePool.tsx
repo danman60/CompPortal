@@ -586,6 +586,19 @@ function FilterDropdown({
 }) {
   const selectedCount = selectedIds.length;
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 });
+
+  // Calculate dropdown position when it opens
+  React.useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+      });
+    }
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -604,6 +617,7 @@ function FilterDropdown({
   return (
     <div ref={dropdownRef} className="relative flex-shrink-0">
       <button
+        ref={buttonRef}
         onClick={onToggleOpen}
         className={`px-2 py-1 text-xs font-medium rounded border transition-colors whitespace-nowrap ${
           selectedCount > 0
@@ -616,7 +630,11 @@ function FilterDropdown({
 
       {isOpen && (
         <div
-          className="absolute z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar top-full mt-1 left-0"
+          className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+          }}
         >
           {options.map((option) => (
             <button
