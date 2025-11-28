@@ -664,7 +664,7 @@ export default function SchedulePage() {
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(autosaveInterval);
-  }, [hasUnsavedChanges, draftSchedule, scheduleMutation, selectedDate]);
+  }, [hasUnsavedChanges, draftSchedule, scheduleMutation]);
 
   // Handle schedule changes from drag-drop
   const handleScheduleChange = (newSchedule: RoutineData[]) => {

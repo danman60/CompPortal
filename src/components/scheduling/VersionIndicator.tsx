@@ -25,7 +25,7 @@ export function VersionIndicator({
     switch (status) {
       case 'draft':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-900/30 text-purple-200 border border-purple-500/30">
             <AlertCircle className="h-3 w-3" />
             Draft
           </span>
@@ -50,7 +50,7 @@ export function VersionIndicator({
   const getDaysRemainingDisplay = () => {
     if (status !== 'under_review' || !daysRemaining) return null;
 
-    const color = daysRemaining <= 1 ? 'text-red-600' : daysRemaining <= 3 ? 'text-yellow-600' : 'text-gray-600';
+    const color = daysRemaining <= 1 ? 'text-red-400' : daysRemaining <= 3 ? 'text-yellow-400' : 'text-purple-300';
 
     return (
       <span className={`inline-flex items-center gap-1 ${color} text-sm font-medium`}>
@@ -64,7 +64,7 @@ export function VersionIndicator({
     if (status === 'draft') return null;
 
     return (
-      <div className="flex items-center gap-4 text-sm text-gray-600">
+      <div className="flex items-center gap-4 text-sm text-purple-300">
         <span className="inline-flex items-center gap-1">
           <Users className="h-3.5 w-3.5" />
           {respondingStudios}/{totalStudios} studios responded
@@ -80,11 +80,11 @@ export function VersionIndicator({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+    <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 shadow-sm">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-purple-100">
               Version {versionNumber}
             </h3>
             {getStatusBadge()}
@@ -92,7 +92,7 @@ export function VersionIndicator({
           </div>
 
           {deadline && status === 'under_review' && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-purple-300">
               Feedback deadline: {deadline.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           )}
