@@ -1,13 +1,38 @@
 # Current Work - Schedule Review Workflow (Phase 1: Database)
 
-**Date:** November 26, 2025 (Session 59)
+**Date:** November 28, 2025 (Session 60)
 **Project:** CompPortal - Tester Branch (Schedule Review Workflow)
 **Branch:** tester
 **Status:** ⏳ In Progress - Phase 1 Database Schema
 
 ---
 
-## Session Summary (Session 59)
+## Session Summary (Session 60)
+
+Fixed critical multi-day schedule save bug:
+1. ✅ Multi-Day Save Bug - Fixed mutation callback clearing drafts prematurely
+2. ✅ Badge Row Height - Fixed visual jumping when dismissing badges
+3. ✅ Production Tested - Verified Thursday + Saturday routines persist correctly
+
+**Root Cause:** Global `onSuccess` callback in `scheduleMutation` was calling `setDraftsByDate({})` after EACH day saved, preventing subsequent days from saving.
+
+**Fix Applied:** Removed global mutation callbacks, handle success/error per-mutation in `handleSaveSchedule` sequential save loop.
+
+**Commits:**
+- `f9fb763` - Multi-day schedule save + badge row height fix
+
+**Build:** ✅ 89/89 pages
+
+**Testing:**
+- ✅ Scheduled 2 routines on Thursday (Velocity 252, Awakening 33)
+- ✅ Scheduled 2 routines on Saturday (Emerald 42, Cascade 30)
+- ✅ Toast: "Saved schedule for 2 days"
+- ✅ After reload: Both days persisted correctly
+- ✅ Unscheduled count: 41 → 37 (4 routines scheduled)
+
+---
+
+## Previous Session (Session 59)
 
 Fixed missing conflict and SD notes icons:
 1. ✅ Icon Legend Tooltip - Added hover tooltip explaining 🏆📋⚠️ icons
