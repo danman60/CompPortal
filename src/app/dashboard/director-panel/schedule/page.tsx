@@ -622,7 +622,7 @@ export default function SchedulePage() {
     }
   }, [draftsByDate]);
 
-  // Check if there are unsaved changes
+  // Check if there are unsaved changes on current day
   const hasUnsavedChanges = useMemo(() => {
     if (!routines) return false;
     const serverScheduled = routines
@@ -641,6 +641,32 @@ export default function SchedulePage() {
       );
     });
   }, [draftSchedule, routines, selectedDate]);
+
+  // Check if ANY day has unsaved changes (for persistent button)
+  const hasAnyUnsavedChanges = useMemo(() => {
+    if (!routines) return false;
+
+    // Check each date in draftsByDate
+    return Object.keys(draftsByDate).some(date => {
+      const dayDraft = draftsByDate[date] || [];
+      const serverScheduled = routines
+        .filter(r => r.isScheduled && r.scheduledDateString === date)
+        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+      // Compare draft with server state for this date
+      if (dayDraft.length !== serverScheduled.length) return true;
+
+      return dayDraft.some((draft, index) => {
+        const server = serverScheduled[index];
+        if (!server) return true;
+        return (
+          draft.id !== server.id ||
+          draft.entryNumber !== server.entryNumber ||
+          draft.performanceTime !== server.scheduledTimeString
+        );
+      });
+    });
+  }, [draftsByDate, routines]);
 
   // 5-minute autosave with safety checks
   useEffect(() => {
@@ -1089,7 +1115,7 @@ export default function SchedulePage() {
                 Fix All Conflicts ({dayConflictCount})
               </button>
             )}
-            {hasUnsavedChanges && (
+            {hasAnyUnsavedChanges && (
               <>
                 <button
                   onClick={handleSaveSchedule}
