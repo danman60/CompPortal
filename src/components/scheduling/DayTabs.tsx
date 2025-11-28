@@ -70,6 +70,13 @@ export function DayTabs({
     // Convert HH:mm to HH:mm:ss
     const fullTime = `${editedTime}:00`;
 
+    console.log('[DayTabs] Saving start time:', {
+      tenantId,
+      competitionId,
+      date: day.date,
+      newStartTime: fullTime,
+    });
+
     try {
       // Wait for mutation to complete
       await updateDayStartTimeMutation.mutateAsync({
@@ -84,9 +91,12 @@ export function DayTabs({
 
       toast.success('Start time updated successfully');
       setEditingDay(null);
-    } catch (error) {
-      // Error already handled by mutation's onError
-      console.error('Failed to update start time:', error);
+    } catch (error: any) {
+      // When using mutateAsync, onError doesn't fire - handle here instead
+      console.error('[DayTabs] Failed to update start time:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      toast.error(`Failed to update start time: ${errorMessage}`);
+      // Don't close edit mode on error - let user try again
     }
   };
 
