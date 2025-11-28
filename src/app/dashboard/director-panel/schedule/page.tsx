@@ -1310,9 +1310,9 @@ export default function SchedulePage() {
                   setBlockType(type);
                   setShowBlockModal(true);
                 }}
-                onStartTimeUpdated={() => {
-                  // Refetch routines to get updated performance times
-                  refetch();
+                onStartTimeUpdated={async () => {
+                  // Refetch routines AND conflicts to get updated performance times
+                  await Promise.all([refetch(), refetchConflicts()]);
                 }}
                 onResetDay={() => {
                   if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
