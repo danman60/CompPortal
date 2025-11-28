@@ -233,7 +233,7 @@ export function RoutinePool({
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
       {/* Unified Header Section */}
       <div className="mb-3 space-y-2">
-        {/* Title Row + View Toggle */}
+        {/* Title Row + View Toggle + Bulk Selection */}
         <div className="flex items-center justify-between pb-2 border-b border-white/10">
           {/* Left: Title + Count */}
           <div className="flex items-center gap-2">
@@ -243,67 +243,82 @@ export function RoutinePool({
             <span className="text-xs font-medium text-white bg-purple-600 px-2 py-0.5 rounded-full">
               {routines.length}
             </span>
+            {/* Bulk Selection Info */}
+            {routines.length > 0 && onSelectAll && onDeselectAll && selectedRoutineIds.size > 0 && (
+              <span className="text-xs text-white/70">
+                • {selectedRoutineIds.size} selected
+              </span>
+            )}
           </div>
 
-          {/* Right: View Toggle */}
-          <div className="flex items-center bg-white/10 border border-white/20 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setDisplayMode('table')}
-              className={`px-2 py-1 text-xs font-medium transition-colors ${
-                displayMode === 'table'
-                  ? 'bg-purple-600 text-white'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
-              }`}
-              title="Table view"
-            >
-              ⊞ Table
-            </button>
-            <button
-              onClick={() => setDisplayMode('cards')}
-              className={`px-2 py-1 text-xs font-medium transition-colors ${
-                displayMode === 'cards'
-                  ? 'bg-purple-600 text-white'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
-              }`}
-              title="Cards view"
-            >
-              ⊟ Cards
-            </button>
+          {/* Right: Bulk Actions + View Toggle */}
+          <div className="flex items-center gap-2">
+            {/* Bulk Selection Buttons */}
+            {routines.length > 0 && onSelectAll && onDeselectAll && (
+              <>
+                {selectedRoutineIds.size === 0 && (
+                  <button
+                    onClick={onSelectAll}
+                    className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                    title="Select all filtered routines"
+                  >
+                    ✓ Select All
+                  </button>
+                )}
+                {selectedRoutineIds.size > 0 && (
+                  <button
+                    onClick={onDeselectAll}
+                    className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
+                    title="Clear selection"
+                  >
+                    Clear
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* View Toggle */}
+            <div className="flex items-center bg-white/10 border border-white/20 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setDisplayMode('table')}
+                className={`px-2 py-1 text-xs font-medium transition-colors ${
+                  displayMode === 'table'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+                title="Table view"
+              >
+                ⊞ Table
+              </button>
+              <button
+                onClick={() => setDisplayMode('cards')}
+                className={`px-2 py-1 text-xs font-medium transition-colors ${
+                  displayMode === 'cards'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+                title="Cards view"
+              >
+                ⊟ Cards
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Bulk Selection Controls (if enabled) */}
-        {routines.length > 0 && onSelectAll && onDeselectAll && (
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs text-white/70">
-              {selectedRoutineIds.size > 0 ? `${selectedRoutineIds.size} selected` : '0 selected'}
-            </span>
-            <div className="flex gap-2">
-              {selectedRoutineIds.size === 0 && (
-                <button
-                  onClick={onSelectAll}
-                  className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
-                  title="Select all filtered routines"
-                >
-                  ✓ Select All
-                </button>
-              )}
-              {selectedRoutineIds.size > 0 && (
-                <button
-                  onClick={onDeselectAll}
-                  className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded transition-colors"
-                  title="Clear selection"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Filters Row */}
+        {/* Search + Filters */}
         {onFiltersChange && (
           <div className="space-y-2">
+            {/* Search Box (above filters) */}
+            <div>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+                placeholder="🔍 Search routines..."
+                className="w-full px-3 py-2 bg-black/20 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+            </div>
+
             {/* Filters on same line */}
             <div className="flex flex-nowrap items-center gap-1 overflow-x-auto custom-scrollbar py-1">
             {/* Classification Filter */}
@@ -418,17 +433,6 @@ export function RoutinePool({
                 ✕ Clear
               </button>
             )}
-            </div>
-
-            {/* Search Box (below filters) */}
-            <div className="pt-1">
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-                placeholder="🔍 Search routines..."
-                className="w-full px-3 py-2 bg-black/20 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
             </div>
           </div>
         )}
