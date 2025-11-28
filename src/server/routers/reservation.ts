@@ -2335,6 +2335,18 @@ ${input.comments}
         });
       }
 
+      // Reset all entries from 'submitted' back to 'draft' so SD can edit them
+      await prisma.competition_entries.updateMany({
+        where: {
+          reservation_id: input.reservationId,
+          status: 'submitted',
+        },
+        data: {
+          status: 'draft',
+          updated_at: new Date(),
+        },
+      });
+
       // Delete existing summary so SD can resubmit
       await prisma.summaries.deleteMany({
         where: {
