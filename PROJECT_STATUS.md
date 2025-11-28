@@ -1,32 +1,59 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-25 (Session 56 - Testing & PDF Export)
+**Last Updated:** 2025-11-28 (Session 71 - Multi-Day Save Backend Fix)
 
 ---
 
-## Current Status: ✅ PHASE 2 SCHEDULER - All Tests Complete, PDF Export Ready
+## Current Status: ✅ PHASE 2 SCHEDULER - Multi-Day Save Complete
 
 **Milestone Achievement:**
 - ✅ Routine creation launched Nov 8, 2025 - LIVE
 - ✅ Production stable - Both EMPWR and Glow tenants operational
 - ✅ Phase 2 Scheduler active on tester branch
-- ✅ All 8 scheduler tests addressed (7 passing, 1 implemented)
+- ✅ Multi-day schedule persistence complete
 - ✅ PDF export functionality complete
 
-**Recent Completions (Nov 25, 2025):**
-- ✅ Test #7 (Duplicate Prevention) - Verified working by design (381cd90)
-- ✅ Test #4 (PDF Export) - Implemented full functionality (6843f1c)
-- ✅ Protocol documentation updated (a4ac58e)
-- ✅ Pass rate: 8/8 (100%) - All tests addressed
+**Recent Completions (Nov 28, 2025):**
+- ✅ Multi-day schedule save backend fix (a1e3573)
+- ✅ SESSION_60 incomplete fix completed
+- ✅ Database persistence verified across multiple days
+- ✅ Sequential entry numbering working correctly
 
 **Build Status:**
-- ✅ Build passing (89/89 pages, 51s compile)
+- ✅ Build passing (89/89 pages)
 - ✅ Tester branch deployed
 - ✅ All type checks passing
 
 ---
 
 ## Recent Sessions
+
+### Session 71: Multi-Day Schedule Save Backend Fix (Nov 28, 2025)
+**Status:** ✅ COMPLETE - Critical backend bug fixed
+**Branch:** tester
+**Commit:** a1e3573
+
+**COMPLETED:**
+
+1. **Multi-Day Schedule Save Bug (CRITICAL)** ✅
+   - Root cause: Backend clearing ALL days before each save
+   - Fix: Only clear specific performance_date being saved (scheduling.ts:295-308)
+   - Result: Multi-day schedules persist correctly
+   - Verified: Thursday (4 routines) + Saturday (7 routines) both persisted
+
+**TEST VERIFICATION:**
+- Database query confirmed both days saved correctly
+- Sequential numbering works: Thursday #100-103, Saturday #104-110
+- Page reload confirmed data loads correctly
+- Toast shows "Saved schedule for 2 days"
+
+**FILES MODIFIED:**
+- `src/server/routers/scheduling.ts` (lines 295-308)
+
+**SESSION_60 COMPLETION:**
+- SESSION_60 fixed frontend draft state preservation
+- SESSION_71 completes the fix with backend database persistence
+- Combined: Multi-day schedules work end-to-end
 
 ### Session 56: Testing Complete & PDF Export (Nov 25, 2025)
 **Status:** ✅ COMPLETE - All 8 tests addressed
