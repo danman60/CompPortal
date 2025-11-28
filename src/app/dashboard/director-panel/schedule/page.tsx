@@ -1104,12 +1104,8 @@ export default function SchedulePage() {
         .filter(r => r.isScheduled && r.scheduledDateString === d.date)
         .sort((a, b) => (a.entryNumber ?? 0) - (b.entryNumber ?? 0))[0];
 
-      // Extract start time from performance_time, default to '08:00:00'
-      const startTime = firstRoutine?.performanceTime
-        ? (typeof firstRoutine.performanceTime === 'string'
-            ? firstRoutine.performanceTime
-            : new Date(firstRoutine.performanceTime).toTimeString().slice(0, 8))
-        : '08:00:00';
+      // Extract start time from scheduledTimeString, default to '08:00:00'
+      const startTime = firstRoutine?.scheduledTimeString || '08:00:00';
 
       return {
         ...d,
