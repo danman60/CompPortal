@@ -174,19 +174,23 @@ export function DayTabs({
                         {day.startTime.substring(0, 5)}
                         {day.endTime && ` - ${day.endTime.substring(0, 5)}`}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditClick(day);
-                        }}
-                        className={`${
-                          isActive
-                            ? 'text-white/80 hover:text-white'
-                            : 'text-white/60 hover:text-white/80'
-                        }`}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
+                      {/* Only show edit button when there are routines to update */}
+                      {day.routineCount > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(day);
+                          }}
+                          className={`${
+                            isActive
+                              ? 'text-white/80 hover:text-white'
+                              : 'text-white/60 hover:text-white/80'
+                          }`}
+                          title="Edit start time (recalculates all routine times)"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
