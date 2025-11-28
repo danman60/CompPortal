@@ -292,14 +292,14 @@ export const schedulingRouter = router({
       const updates = await prisma.$transaction(async (tx) => {
         const routineIds = input.routines.map(r => r.routineId);
 
-        // Phase 1: Clear ALL entry numbers for this competition
-        // CRITICAL: Must clear ALL entries, not just for this date
-        // Previous saves may have left orphaned entries with entry_number set but NULL performance_date
-        // Clearing only by date misses these orphans, causing unique constraint violations
+        // Phase 1: Clear entry numbers ONLY for this specific date
+        // CRITICAL: Only clear the date being saved to preserve other days in multi-day schedules
+        // This allows Thursday and Saturday to be saved independently without overwriting each other
         await tx.competition_entries.updateMany({
           where: {
             competition_id: input.competitionId,
             tenant_id: input.tenantId,
+            performance_date: new Date(input.date), // Only clear this date
           },
           data: {
             entry_number: null,
