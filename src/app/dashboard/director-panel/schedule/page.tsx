@@ -135,6 +135,9 @@ export default function SchedulePage() {
     setSelectedScheduledIds(new Set());
   };
 
+  // tRPC utils for cache invalidation
+  const utils = trpc.useUtils();
+
   // Fetch all routines
   const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: TEST_COMPETITION_ID,
@@ -1311,8 +1314,11 @@ export default function SchedulePage() {
                   setShowBlockModal(true);
                 }}
                 onStartTimeUpdated={async () => {
-                  // Refetch routines AND conflicts to get updated performance times
-                  await Promise.all([refetch(), refetchConflicts()]);
+                  // Invalidate cache to force fresh data fetch
+                  await Promise.all([
+                    utils.scheduling.getRoutines.invalidate(),
+                    utils.scheduling.detectConflicts.invalidate(),
+                  ]);
                 }}
                 onResetDay={() => {
                   if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
