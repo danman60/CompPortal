@@ -1530,6 +1530,7 @@ export default function SchedulePage() {
                 return {
                   ...day,
                   routineCount: dayRoutines.length,
+                  savedRoutineCount: dayRoutines.length, // For pencil visibility
                   endTime,
                 };
               })}

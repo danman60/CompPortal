@@ -8,7 +8,8 @@ import { toast } from 'react-hot-toast';
 
 interface CompetitionDay {
   date: string; // ISO date: "2026-04-11"
-  routineCount: number;
+  routineCount: number; // Total routines (includes drafts) - for display
+  savedRoutineCount: number; // Only saved routines - for pencil visibility
   startTime: string; // HH:mm:ss format: "08:00:00"
   endTime?: string; // HH:mm:ss format: "18:00:00" (calculated from last routine)
 }
@@ -174,8 +175,8 @@ export function DayTabs({
                         {day.startTime.substring(0, 5)}
                         {day.endTime && ` - ${day.endTime.substring(0, 5)}`}
                       </span>
-                      {/* Only show edit button when there are routines to update */}
-                      {day.routineCount > 0 && (
+                      {/* Only show edit button when there are SAVED routines to update */}
+                      {day.savedRoutineCount > 0 && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

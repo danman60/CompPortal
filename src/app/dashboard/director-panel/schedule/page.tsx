@@ -1110,12 +1110,18 @@ export default function SchedulePage() {
       // Extract start time from scheduledTimeString, default to '08:00:00'
       const startTime = firstRoutine?.scheduledTimeString || '08:00:00';
 
+      // Count saved routines (always from database, ignores drafts)
+      const savedRoutineCount = (routines || []).filter(
+        r => r.isScheduled && r.scheduledDateString === d.date
+      ).length;
+
       return {
         ...d,
         startTime,
         routineCount: draftsByDate[d.date]
           ? draftsByDate[d.date].length // Show draft count if it exists
-          : (routines || []).filter(r => r.isScheduled && r.scheduledDateString === d.date).length, // Otherwise show saved count
+          : savedRoutineCount, // Otherwise show saved count
+        savedRoutineCount, // Always show saved count for pencil visibility
       };
     });
   }, [routines, draftsByDate]);
