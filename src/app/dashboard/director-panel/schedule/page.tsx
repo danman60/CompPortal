@@ -1101,25 +1101,31 @@ export default function SchedulePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-4">
-        {/* Version Indicator */}
-        {versionData && (
-          <div className="mb-4">
-            <VersionIndicator
-              versionNumber={versionData.versionNumber}
-              status={versionData.status}
-              deadline={versionData.deadline ? new Date(versionData.deadline) : undefined}
-              daysRemaining={versionData.daysRemaining}
-              respondingStudios={versionData.respondingStudios}
-              totalStudios={versionData.totalStudios}
-              notesCount={versionData.notesCount}
-            />
-          </div>
-        )}
-
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold text-white">Schedule Builder</h1>
+
+              {/* Version Indicator - Inline */}
+              {versionData && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-white/90">
+                    Version {versionData.versionNumber}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                    versionData.status === 'draft'
+                      ? 'bg-purple-900/30 text-purple-200 border border-purple-500/30'
+                      : versionData.status === 'under_review'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                      : 'bg-green-100 text-green-700 border border-green-300'
+                  }`}>
+                    {versionData.status === 'draft' && '⚠️ Draft'}
+                    {versionData.status === 'under_review' && '⏱️ Under Review'}
+                    {versionData.status === 'review_closed' && '✅ Review Closed'}
+                  </span>
+                </div>
+              )}
+
               {/* Version History Link - Inline */}
               <button
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
