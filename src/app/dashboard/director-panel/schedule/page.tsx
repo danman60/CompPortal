@@ -190,16 +190,8 @@ export default function SchedulePage() {
   const currentVersion = versionData;
 
   // Schedule mutation (save draft to database)
-  const scheduleMutation = trpc.scheduling.schedule.useMutation({
-    onSuccess: async () => {
-      toast.success('Schedule saved successfully');
-      await Promise.all([refetch(), refetchConflicts()]); // Refetch routines AND conflicts
-      setDraftsByDate({}); // Clear ALL drafts after save
-    },
-    onError: (error) => {
-      toast.error(`Failed to save schedule: ${error.message}`);
-    },
-  });
+  // Note: onSuccess/onError handled in handleSaveSchedule for multi-day saves
+  const scheduleMutation = trpc.scheduling.schedule.useMutation();
 
   // Reset mutations
   const resetDay = trpc.scheduling.resetDay.useMutation({
