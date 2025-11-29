@@ -1,7 +1,20 @@
 # Known Issues
 
-**Last Updated:** November 4, 2025
+**Last Updated:** November 29, 2025
 **Purpose:** Track non-blocking issues and planned enhancements
+
+---
+
+## 🎯 Current Focus: Phase 2 Scheduler (Nov 2025)
+
+**Status:** Testing and refinement phase
+**Recent Work:** Sessions 74-76 resolved all blockers
+- ✅ Break block time cascade fixed (Session 74)
+- ✅ Save schedule HTTP 500 fixed (Session 75)
+- ✅ Trophy helper table layout confirmed working (Session 76)
+
+**Active Branch:** tester
+**Test Environment:** tester.compsync.net
 
 ---
 
@@ -83,7 +96,22 @@
 
 ---
 
-## 📋 Resolved Issues (Last 30 Days)
+## 📋 Resolved Issues (November 2025)
+
+### ✅ Break Block Time Cascade Failure
+**Resolved:** November 29, 2025 (Session 74)
+**Fix:** Dynamic time calculation based on previous routine end time
+**Commits:** 7a637f1
+
+### ✅ Save Schedule HTTP 500 Error
+**Resolved:** November 29, 2025 (Session 75)
+**Fix:** Use is_scheduled column instead of performance_date check
+**Commits:** b665527
+
+### ✅ Trophy Helper Table Layout Collapse
+**Resolved:** November 20, 2025 (Pre-Session 76)
+**Fix:** Redesigned as landscape pills in dedicated badges column
+**Commits:** da89c6c
 
 ### ✅ CSV Import .xls Format Not Supported
 **Resolved:** October 30, 2025 (Session 24)
@@ -94,21 +122,6 @@
 **Resolved:** October 30, 2025 (Session 24)
 **Fix:** Inline editing with validation in CSV import preview
 **Commits:** 6b81e91
-
-### ✅ Tenant ID Missing in Reservation Creation
-**Resolved:** November 3, 2025 (Session 27)
-**Fix:** Added tenant_id to testing suite reservation creation
-**Commits:** f5d8dfb
-
-### ✅ SA Account Had Wrong Role
-**Resolved:** November 3, 2025 (Session 27)
-**Fix:** Changed from studio_director to super_admin
-**Commits:** f5d8dfb
-
-### ✅ Test Account Email Alias Conflict
-**Resolved:** November 3, 2025 (Session 27)
-**Fix:** Migrated from daniel@streamstage.live to djamusic@gmail.com
-**Commits:** 3338d07
 
 ---
 
@@ -140,7 +153,7 @@
 ## 📊 Issue Statistics
 
 **Current Open Issues:** 6 (3 P2, 3 P3)
-**Resolved This Month:** 5
+**Resolved This Month:** 8
 **Average Resolution Time:** 2-3 days for P2, varies for P3
 
 **Priority Breakdown:**
@@ -151,4 +164,4 @@
 
 ---
 
-**Next Review:** November 11, 2025 (Post-launch review)
+**Next Review:** December 1, 2025 (Phase 2 testing complete)
