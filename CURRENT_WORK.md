@@ -1,34 +1,50 @@
-# Current Work - Schedule Review Workflow (Phase 1: Database)
+# Current Work - Phase 2 Scheduler Testing & Refinement
 
-**Date:** November 28, 2025 (Session 60)
-**Project:** CompPortal - Tester Branch (Schedule Review Workflow)
+**Date:** November 29, 2025 (Session 76)
+**Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
 **Branch:** tester
-**Status:** ⏳ In Progress - Phase 1 Database Schema
+**Status:** ✅ Active Development - Bug Fixes and Testing
 
 ---
 
-## Session Summary (Session 60)
+## Recent Sessions Summary
 
-Fixed critical multi-day schedule save bug:
-1. ✅ Multi-Day Save Bug - Fixed mutation callback clearing drafts prematurely
-2. ✅ Badge Row Height - Fixed visual jumping when dismissing badges
-3. ✅ Production Tested - Verified Thursday + Saturday routines persist correctly
+### Session 76: Trophy Helper Blocker Investigation (Nov 29, 2025)
+**Status:** ✅ BLOCKER ALREADY RESOLVED - No fix needed
 
-**Root Cause:** Global `onSuccess` callback in `scheduleMutation` was calling `setDraftsByDate({})` after EACH day saved, preventing subsequent days from saving.
-
-**Fix Applied:** Removed global mutation callbacks, handle success/error per-mutation in `handleSaveSchedule` sequential save loop.
+**Investigation:**
+- ✅ Confirmed trophy helper bug already fixed in build 3634271
+- ✅ Key fix: da89c6c "Redesign schedule table badges to landscape pills"
+- ✅ Production tested: 7 routines with trophy badges, layout intact
+- ✅ Traced 9 commits from problem to solution
 
 **Commits:**
-- `f9fb763` - Multi-day schedule save + badge row height fix
+- `bc0463f` - Session 76 documentation
+
+### Session 75: Save Schedule Blocker (Nov 29, 2025)
+**Status:** ✅ BLOCKER RESOLVED - Save Schedule now working
+
+**Fixes:**
+- ✅ Root cause: Backend checking `performance_date !== null` instead of `is_scheduled` column
+- ✅ Fix: Changed scheduling.ts:732 to check `routine.is_scheduled === true`
+- ✅ HTTP 500 error resolved - Save returns HTTP 200 success
+- ✅ All 10 test cases passed on tester.compsync.net
+
+**Commits:**
+- `b665527` - Use is_scheduled column for routine scheduled status
+
+### Session 74: Break Block Time Cascade (Nov 29, 2025)
+**Status:** ✅ FIX IMPLEMENTED - Dynamic time calculation
+
+**Fixes:**
+- ✅ Break/award blocks now calculate time from previous routine's end time
+- ✅ No database changes needed - pure client-side logic
+
+**Commits:**
+- `7a637f1` - Calculate block times dynamically based on schedule position
 
 **Build:** ✅ 89/89 pages
-
-**Testing:**
-- ✅ Scheduled 2 routines on Thursday (Velocity 252, Awakening 33)
-- ✅ Scheduled 2 routines on Saturday (Emerald 42, Cascade 30)
-- ✅ Toast: "Saved schedule for 2 days"
-- ✅ After reload: Both days persisted correctly
-- ✅ Unscheduled count: 41 → 37 (4 routines scheduled)
+**Current Build:** 3634271 (bc0463f on tester branch)
 
 ---
 
@@ -454,5 +470,26 @@ Client-side PDF generation using jsPDF:
 
 ---
 
-**Last Updated:** November 26, 2025 (Session 58)
-**Next Session:** Continue Phase 2 scheduler development
+**Last Updated:** November 29, 2025 (Session 76)
+**Next Session:** Continue Phase 2 scheduler testing and refinement
+
+---
+
+## Current Status
+
+**Phase 2 Scheduler Status:**
+- ✅ Multi-day schedule save working (Session 75)
+- ✅ Trophy helper badges working (Session 76)
+- ✅ Break/award block times calculating dynamically (Session 74)
+- ✅ Conflict detection system operational
+- ✅ PDF export implemented
+- ✅ Landscape badge system for icons (trophy, note, conflict)
+
+**All Known Blockers Resolved:**
+- No active BLOCKER_*.md files in root directory
+- All recent blockers (Sessions 73-76) resolved and archived
+
+**Next Steps:**
+- Continue testing Phase 2 scheduler features
+- Address any user-reported issues
+- Prepare for production deployment of Phase 2 features
