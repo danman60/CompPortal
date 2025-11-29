@@ -25,6 +25,7 @@ import { DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
 import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
+import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import jsPDF from 'jspdf';
@@ -74,6 +75,10 @@ export default function SchedulePage() {
   // Selection state (unscheduled routines)
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+
+  // Saving progress state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, currentDayName: '' });
 
   // Selection state (scheduled routines)
   const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
@@ -943,38 +948,62 @@ export default function SchedulePage() {
       return;
     }
 
-    // Save all changed days sequentially
+    // Show progress and save all changed days sequentially
+    setIsSaving(true);
+    const savedDays: string[] = [];
+    const failedDays: string[] = [];
+
     try {
-      for (const date of datesToSave) {
+      for (let i = 0; i < datesToSave.length; i++) {
+        const date = datesToSave[i];
         const dayDraft = draftsByDate[date] || [];
+
+        // Update progress
+        const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        setSaveProgress({
+          current: i + 1,
+          total: datesToSave.length,
+          currentDayName: dayName,
+        });
 
         // Filter out blocks - they're already saved via createScheduleBlock/placeScheduleBlock
         // Only send routines to the schedule mutation
         const routinesOnly = dayDraft.filter(item => !item.isBlock);
 
-        await new Promise<void>((resolve, reject) => {
-          scheduleMutation.mutate(
-            {
-              tenantId: TEST_TENANT_ID,
-              competitionId: TEST_COMPETITION_ID,
-              date,
-              routines: routinesOnly.map(r => ({
-                routineId: r.id,
-                entryNumber: r.entryNumber || 100,
-                performanceTime: r.performanceTime || '08:00:00',
-              })),
-            },
-            {
-              onSuccess: () => resolve(),
-              onError: (error) => reject(error),
-            }
-          );
-        });
+        try {
+          await new Promise<void>((resolve, reject) => {
+            scheduleMutation.mutate(
+              {
+                tenantId: TEST_TENANT_ID,
+                competitionId: TEST_COMPETITION_ID,
+                date,
+                routines: routinesOnly.map(r => ({
+                  routineId: r.id,
+                  entryNumber: r.entryNumber || 100,
+                  performanceTime: r.performanceTime || '08:00:00',
+                })),
+              },
+              {
+                onSuccess: () => resolve(),
+                onError: (error) => reject(error),
+              }
+            );
+          });
+          savedDays.push(dayName);
+        } catch (error) {
+          failedDays.push(dayName);
+        }
       }
 
-      toast.success(`Saved schedule for ${datesToSave.length} day${datesToSave.length > 1 ? 's' : ''}`);
-    } catch (error) {
-      toast.error('Failed to save some days');
+      // Show summary
+      if (failedDays.length === 0) {
+        toast.success(`✅ Successfully saved ${savedDays.length} day${savedDays.length > 1 ? 's' : ''}`);
+      } else {
+        toast.error(`⚠️ Saved ${savedDays.length} days, but ${failedDays.length} failed: ${failedDays.join(', ')}`);
+      }
+    } finally {
+      setIsSaving(false);
+      setSaveProgress({ current: 0, total: 0, currentDayName: '' });
     }
   };
 
@@ -1116,7 +1145,17 @@ export default function SchedulePage() {
   }, [routines, draftsByDate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
+    <>
+      {/* Saving Progress Overlay */}
+      {isSaving && (
+        <ScheduleSavingProgress
+          currentDay={saveProgress.current}
+          totalDays={saveProgress.total}
+          currentDayName={saveProgress.currentDayName}
+        />
+      )}
+
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -1651,5 +1690,6 @@ export default function SchedulePage() {
         }
       `}</style>
     </div>
+    </>
   );
 }
