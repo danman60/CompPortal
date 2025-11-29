@@ -1,6 +1,6 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-29 (Session 74 - Break Block Time Cascade Fixed)
+**Last Updated:** 2025-11-29 (Session 75 - Save Schedule Blocker RESOLVED)
 
 ---
 
@@ -27,6 +27,29 @@
 ---
 
 ## Recent Sessions
+
+### Session 75: Save Schedule Blocker - RESOLVED (Nov 29, 2025)
+**Status:** ✅ BLOCKER RESOLVED - Save Schedule now working
+**Branch:** tester
+**Build:** b665527
+
+**ISSUE RESOLVED:**
+- ✅ **Root cause identified** - Backend checking `performance_date !== null` instead of `is_scheduled` column
+- ✅ **Fix implemented** - Changed scheduling.ts:732 to check `routine.is_scheduled === true`
+- ✅ **HTTP 500 error resolved** - Save Schedule returns HTTP 200 success
+- ✅ **False "unsaved changes" fixed** - Only appears when user makes actual changes
+- ✅ **Database save verified** - Cleared Thursday schedule successfully (0 routines)
+- ✅ **All 10 test cases passed** - Tested on tester.compsync.net
+
+**TECHNICAL DETAILS:**
+- UI showed 40 routines instead of 3 (3 with is_scheduled=true + 37 with wrong flag)
+- Save mutation tried to update all 40 → HTTP 500 error
+- Fix: Add `is_scheduled: true` to Prisma select, check actual column
+- Result: Correctly returns 3 routines, save works with HTTP 200
+
+**FILES:**
+- `docs/archive/SESSION_75_COMPLETE.md` - Complete investigation and resolution
+- `docs/archive/blockers/BLOCKER_SAVE_SCHEDULE_RESOLVED.md` - Archived blocker
 
 ### Session 74: Break Block Time Cascade Fix - IMPLEMENTED (Nov 29, 2025)
 **Status:** ✅ FIX COMPLETE - Awaiting deployment verification
