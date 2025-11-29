@@ -98,6 +98,13 @@
 
 ## 📋 Resolved Issues (November 2025)
 
+### ✅ Day Start Time Not Cascading to Draft Routines (Session 77 Continuation)
+**Resolved:** November 29, 2025
+**Fix:** Implemented draft time recalculation in schedule page callback
+**Commits:** ca32ec3
+**Impact:** Day start time edit now works for both saved AND draft routines
+**Details:** `BLOCKER_DAY_START_TIME_20251129.md`
+
 ### ✅ Auto-Renumbering Causing False Unsaved Changes (Session 77)
 **Resolved:** November 29, 2025 (Session 77)
 **Fix:** Removed auto-renumbering useEffect that conflicted with database state
@@ -171,7 +178,7 @@
 ## 📊 Issue Statistics
 
 **Current Open Issues:** 6 (3 P2, 3 P3)
-**Resolved This Month:** 11 (Session 77 resolved 3 P0 blockers)
+**Resolved This Month:** 12 (Session 77 resolved 4 P0 blockers)
 **Average Resolution Time:** Same-day for P0, 2-3 days for P2, varies for P3
 
 **Priority Breakdown:**
