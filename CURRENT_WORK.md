@@ -1,13 +1,44 @@
 # Current Work - Phase 2 Scheduler Testing & Refinement
 
-**Date:** November 29, 2025 (Session 78)
+**Date:** November 29, 2025 (Session 71)
 **Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
 **Branch:** tester
-**Status:** ✅ COMPREHENSIVE TESTING COMPLETE - Production Ready
+**Status:** ✅ Session 71 Complete - Manual Testing Required
 
 ---
 
 ## Recent Sessions Summary
+
+### Session 71: Production-Scale Schedule Save Preparation (Nov 29, 2025)
+**Status:** ✅ ALL CODE COMPLETE - Manual testing required
+
+**COMPLETED:**
+- ✅ Backend transaction timeout increased to 120s
+- ✅ Saving progress bar with ballet animation implemented
+- ✅ Entry numbering issue fixed for 1000 routines
+- ✅ Time overflow bug fixed (% 24 wrapping)
+- ✅ snapshot_data column added to schedule_versions
+- ✅ Schedule snapshot creation on save implemented
+- ✅ **Conflict auto-fix performance time recalculation bug FIXED**
+
+**KEY BUG FIX (Commit 2889e3a):**
+After reordering routines to fix dancer conflicts, routines kept their old performance times, so conflicts remained unresolved. Fixed by implementing sequential time recalculation after reordering.
+
+**BLOCKED:**
+- ⚠️ Production-scale testing blocked by Playwright page size limits (769 routines = 235k tokens)
+- Manual testing required on tester.compsync.net
+
+**Files Modified:**
+- `src/app/dashboard/director-panel/schedule/page.tsx:807-834, 904-932`
+
+**Documentation:**
+- `docs/archive/SESSION_71_COMPLETE.md`
+
+**Next Steps:**
+1. User manual test: Schedule 769 routines on Saturday
+2. Verify conflict auto-fix recalculates times correctly
+3. Verify save completes within 120-second timeout
+4. Verify snapshot data saved as JSONB
 
 ### Session 78: Comprehensive Edge Case Testing (Nov 29, 2025)
 **Status:** ✅ COMPLETE - 7/8 tests passed (87.5% success rate)
