@@ -804,14 +804,34 @@ export default function SchedulePage() {
 
     // Update draft with modified schedule (map back to RoutineData)
     if (result.newSchedule) {
-      const updatedDraft = result.newSchedule.map((r) => ({
-        id: r.id,
-        title: r.title,
-        duration: daySchedule.find(d => d.id === r.id)?.duration || 0,
-        isScheduled: true,
-        entryNumber: r.entryNumber,
-        performanceTime: daySchedule.find(d => d.id === r.id)?.performanceTime,
-      }));
+      // Recalculate times sequentially based on new order
+      // Get the day's start time - default to 08:00
+      const dayStartTime = '08:00:00';
+      let currentTime = dayStartTime;
+
+      const updatedDraft = result.newSchedule.map((r, index) => {
+        const originalRoutine = daySchedule.find(d => d.id === r.id);
+        const duration = originalRoutine?.duration || 3; // Default 3 min
+
+        // Assign current time to this routine
+        const performanceTime = currentTime;
+
+        // Calculate next time (add duration)
+        const [hours, minutes, seconds] = currentTime.split(':').map(Number);
+        const totalMinutes = hours * 60 + minutes + duration;
+        const nextHours = Math.floor(totalMinutes / 60) % 24; // Wrap around after 24 hours
+        const nextMinutes = totalMinutes % 60;
+        currentTime = `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}:00`;
+
+        return {
+          id: r.id,
+          title: r.title,
+          duration: duration,
+          isScheduled: true,
+          entryNumber: r.entryNumber,
+          performanceTime: performanceTime,
+        };
+      });
 
       setDraftsByDate(prev => ({
         ...prev,
@@ -881,15 +901,34 @@ export default function SchedulePage() {
       const updated = { ...prev };
       for (const [date, result] of Object.entries(results)) {
         if (result.newSchedule && result.movedRoutines.length > 0) {
-          // Map back to RoutineData format
-          updated[date] = result.newSchedule.map((r) => ({
-            id: r.id,
-            title: r.title,
-            duration: draftsByDate[date]?.find(d => d.id === r.id)?.duration || 0,
-            isScheduled: true,
-            entryNumber: r.entryNumber,
-            performanceTime: draftsByDate[date]?.find(d => d.id === r.id)?.performanceTime,
-          }));
+          // Recalculate times sequentially based on new order
+          const dayStartTime = '08:00:00';
+          let currentTime = dayStartTime;
+
+          // Map back to RoutineData format with recalculated times
+          updated[date] = result.newSchedule.map((r) => {
+            const originalRoutine = draftsByDate[date]?.find(d => d.id === r.id);
+            const duration = originalRoutine?.duration || 3; // Default 3 min
+
+            // Assign current time to this routine
+            const performanceTime = currentTime;
+
+            // Calculate next time (add duration)
+            const [hours, minutes, seconds] = currentTime.split(':').map(Number);
+            const totalMinutes = hours * 60 + minutes + duration;
+            const nextHours = Math.floor(totalMinutes / 60) % 24; // Wrap around after 24 hours
+            const nextMinutes = totalMinutes % 60;
+            currentTime = `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}:00`;
+
+            return {
+              id: r.id,
+              title: r.title,
+              duration: duration,
+              isScheduled: true,
+              entryNumber: r.entryNumber,
+              performanceTime: performanceTime,
+            };
+          });
         }
       }
       return updated;
