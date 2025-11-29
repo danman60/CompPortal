@@ -320,7 +320,7 @@ export function DragDropProvider({
       // Calculate next time (add duration, NO buffer per spec)
       const [hours, minutes, seconds] = currentTime.split(':').map(Number);
       const totalMinutes = hours * 60 + minutes + (routine.duration || 3);
-      const nextHours = Math.floor(totalMinutes / 60);
+      const nextHours = Math.floor(totalMinutes / 60) % 24; // Wrap around after 24 hours
       const nextMinutes = totalMinutes % 60;
       currentTime = `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}:00`;
 
