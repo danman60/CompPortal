@@ -3220,7 +3220,7 @@ export const schedulingRouter = router({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
-          is_scheduled: true,
+          // No is_scheduled filter - clear ALL entries including orphaned dates
         },
         data: {
           is_scheduled: false,
