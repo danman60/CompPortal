@@ -1199,9 +1199,9 @@ export const invoiceRouter = router({
         ? (subtotal * input.discountPercentage) / 100
         : 0;
 
-      // Calculate new total: (subtotal - discount) * (1 + taxRate)
+      // Calculate new total: (subtotal - discount) * (1 + taxRate/100)
       const afterDiscount = subtotal - discountAmount;
-      const newTotal = afterDiscount * (1 + taxRate);
+      const newTotal = afterDiscount * (1 + taxRate / 100);
 
       // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
       const depositAmount = Number(invoice.deposit_amount || 0);
