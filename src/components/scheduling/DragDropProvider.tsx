@@ -383,10 +383,13 @@ export function DragDropProvider({
       console.log('[DragDropProvider] Drop onto empty schedule container');
 
       if (!draggedRoutine.isScheduled) {
-        // Get existing scheduled routines
-        const scheduledForDay = routines
-          .filter(r => r.isScheduled && r.performanceTime)
-          .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+        // Get existing scheduled routines from BOTH database AND current day's draft
+        const currentDraft = allDraftsByDate[selectedDate] || [];
+        const scheduledForDay = currentDraft.length > 0
+          ? currentDraft  // Use draft if exists (already has entry numbers)
+          : routines
+              .filter(r => r.isScheduled && r.performanceTime)
+              .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
         // Add to end of schedule (single or multiple routines)
         const newSchedule = [...scheduledForDay, ...routinesToDrag];
