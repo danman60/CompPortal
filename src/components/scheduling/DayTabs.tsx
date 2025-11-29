@@ -22,7 +22,7 @@ interface DayTabsProps {
   tenantId: string;
   onResetDay?: () => void;
   onResetAll?: () => void;
-  onStartTimeUpdated?: () => void;
+  onStartTimeUpdated?: (date: string, newStartTime: string) => void | Promise<void>;
   onCreateBlock?: (type: 'award' | 'break') => void;
 }
 
@@ -87,8 +87,8 @@ export function DayTabs({
         newStartTime: fullTime,
       });
 
-      // Wait for refetch to complete before closing edit mode
-      await onStartTimeUpdated?.();
+      // Notify parent of time change (for draft state recalculation)
+      await onStartTimeUpdated?.(day.date, fullTime);
 
       toast.success('Start time updated successfully');
       setEditingDay(null);

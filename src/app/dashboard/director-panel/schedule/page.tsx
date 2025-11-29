@@ -1308,8 +1308,30 @@ export default function SchedulePage() {
                   setBlockType(type);
                   setShowBlockModal(true);
                 }}
-                onStartTimeUpdated={async () => {
-                  // Invalidate cache to force fresh data fetch
+                onStartTimeUpdated={async (date: string, newStartTime: string) => {
+                  // Recalculate times for draft routines on this day
+                  const dayDraft = draftsByDate[date];
+                  if (dayDraft && dayDraft.length > 0) {
+                    // Parse new start time
+                    const [hours, minutes] = newStartTime.split(':').map(Number);
+                    let currentTime = new Date(1970, 0, 1, hours, minutes, 0);
+
+                    // Recalculate times sequentially
+                    const updatedDraft = dayDraft.map(routine => {
+                      const performanceTime = currentTime.toTimeString().slice(0, 8); // HH:mm:ss
+                      const duration = routine.duration || 3;
+                      currentTime = new Date(currentTime.getTime() + duration * 60000);
+                      return { ...routine, performanceTime };
+                    });
+
+                    // Update draft state
+                    setDraftsByDate(prev => ({
+                      ...prev,
+                      [date]: updatedDraft
+                    }));
+                  }
+
+                  // Invalidate cache to force fresh data fetch (for saved routines)
                   await Promise.all([
                     utils.scheduling.getRoutines.invalidate(),
                     utils.scheduling.detectConflicts.invalidate(),
