@@ -1,13 +1,64 @@
 # Current Work - Phase 2 Scheduler Testing & Refinement
 
-**Date:** November 29, 2025 (Session 76)
+**Date:** November 29, 2025 (Session 78)
 **Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
 **Branch:** tester
-**Status:** ✅ Active Development - Bug Fixes and Testing
+**Status:** ✅ COMPREHENSIVE TESTING COMPLETE - Production Ready
 
 ---
 
 ## Recent Sessions Summary
+
+### Session 78: Comprehensive Edge Case Testing (Nov 29, 2025)
+**Status:** ✅ COMPLETE - 7/8 tests passed (87.5% success rate)
+
+**COMPREHENSIVE TESTING:**
+- ✅ 8 edge cases executed systematically
+- ✅ 7 tests passed - Only 1 feature limitation (not a bug)
+- ✅ 0 bugs found - No blockers identified
+- ✅ Performance verified with 46 routines
+- ✅ Multi-day scheduling verified across all 4 days
+- ✅ Save/discard/reset operations all working
+- ✅ Data persistence verified
+
+**EDGE CASES TESTED:**
+1. ✅ Multiple Schedule Blocks - PASSED
+2. ✅ Performance with 46 Routines - PASSED (4 sub-tests)
+3. ⚠️ Cross-Day Drag & Drop - FEATURE LIMITATION (has workaround)
+4. ✅ Single Routine Unschedule - PASSED
+5. ✅ Multi-Select Unschedule - PASSED
+6. ✅ Reset Day - PASSED
+7. ✅ Reset All - PASSED
+8. ✅ Large Multi-Day Schedule with Save - PASSED
+
+**RECOMMENDATION:** ✅ Approved for Phase 2 production deployment
+
+**Files:**
+- `docs/archive/SESSION_78_EDGE_CASE_TESTING.md`
+
+### Session 77 Continuation: Day Start Time Fix (Nov 29, 2025)
+**Status:** ✅ BLOCKER RESOLVED - Feature verified working
+
+**Fixes:**
+- ✅ Day start time now recalculates draft routine times
+- ✅ Both saved AND draft routines supported
+- ✅ Time cascade working correctly (8:00→9:00 test passed)
+
+**Commits:**
+- `ca32ec3` - Implement draft time recalculation in schedule page
+
+### Session 77: Phase 2 Scheduler Blocker Resolutions (Nov 29, 2025)
+**Status:** ✅ ALL BLOCKERS RESOLVED
+
+**Fixes:**
+- ✅ Auto-renumbering causing false unsaved changes (ce7e72a)
+- ✅ Save Schedule HTTP 500 error (ce7e72a)
+- ✅ Discard Changes not working (d7c793e)
+
+**Commits:**
+- `ce7e72a` - Remove auto-renumbering useEffect (root cause fix)
+- `d7c793e` - Fix discard changes to clear all drafts and refetch
+- `deee47a` - Filter blocks before saving (partial fix)
 
 ### Session 76: Trophy Helper Blocker Investigation (Nov 29, 2025)
 **Status:** ✅ BLOCKER ALREADY RESOLVED - No fix needed
@@ -16,35 +67,12 @@
 - ✅ Confirmed trophy helper bug already fixed in build 3634271
 - ✅ Key fix: da89c6c "Redesign schedule table badges to landscape pills"
 - ✅ Production tested: 7 routines with trophy badges, layout intact
-- ✅ Traced 9 commits from problem to solution
 
 **Commits:**
 - `bc0463f` - Session 76 documentation
 
-### Session 75: Save Schedule Blocker (Nov 29, 2025)
-**Status:** ✅ BLOCKER RESOLVED - Save Schedule now working
-
-**Fixes:**
-- ✅ Root cause: Backend checking `performance_date !== null` instead of `is_scheduled` column
-- ✅ Fix: Changed scheduling.ts:732 to check `routine.is_scheduled === true`
-- ✅ HTTP 500 error resolved - Save returns HTTP 200 success
-- ✅ All 10 test cases passed on tester.compsync.net
-
-**Commits:**
-- `b665527` - Use is_scheduled column for routine scheduled status
-
-### Session 74: Break Block Time Cascade (Nov 29, 2025)
-**Status:** ✅ FIX IMPLEMENTED - Dynamic time calculation
-
-**Fixes:**
-- ✅ Break/award blocks now calculate time from previous routine's end time
-- ✅ No database changes needed - pure client-side logic
-
-**Commits:**
-- `7a637f1` - Calculate block times dynamically based on schedule position
-
 **Build:** ✅ 89/89 pages
-**Current Build:** 3634271 (bc0463f on tester branch)
+**Current Build:** v1.1.2 (903c947 on tester branch)
 
 ---
 
