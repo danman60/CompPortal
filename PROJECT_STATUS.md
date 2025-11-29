@@ -1,6 +1,6 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-29 (Session 73 - Day Start Time Blocker Resolved)
+**Last Updated:** 2025-11-29 (Session 74 - Break Block Time Cascade Fixed)
 
 ---
 
@@ -27,6 +27,31 @@
 ---
 
 ## Recent Sessions
+
+### Session 74: Break Block Time Cascade Fix - IMPLEMENTED (Nov 29, 2025)
+**Status:** ✅ FIX COMPLETE - Awaiting deployment verification
+**Branch:** tester
+**Build:** 7a637f1
+
+**ISSUE RESOLVED:**
+- ✅ **Root cause identified** - Static `scheduled_time` in database never recalculates
+- ✅ **Solution implemented** - Dynamic client-side calculation based on previous routine
+- ✅ **Build passed** - ScheduleTable.tsx updated with calculatedTime logic
+- ✅ **Break blocks** - Now calculate time as previous_routine.end_time
+- ✅ **Award blocks** - Same dynamic calculation applies
+
+**TECHNICAL DETAILS:**
+- Break block showed static 08:00 AM (wrong)
+- Should show 09:05 AM (after routine #101 ends at 09:01 + 4 min)
+- Fix: Calculate time during render from scheduleItems array
+- No database changes needed - pure client-side logic
+
+**FILES:**
+- `docs/archive/SESSION_74_COMPLETE.md` - Complete implementation report
+- `src/components/scheduling/ScheduleTable.tsx` - Dynamic time calculation (+28, -3 lines)
+- Screenshot: break-block-time-issue.png (before fix)
+
+**NEXT:** Verify deployment shows correct calculated times on tester.compsync.net
 
 ### Session 73: Day Start Time Blocker Investigation - RESOLVED (Nov 29, 2025)
 **Status:** ✅ BLOCKER RESOLVED - Downgraded to Medium Priority UX Bug
@@ -66,7 +91,7 @@
 
 **BLOCKERS FOUND:**
 - ~~❌ Day start time change returns 400 error~~ **✅ RESOLVED in Session 73** (UX issue only)
-- ⚠️ Break block time cascade doesn't work (times don't shift forward)
+- ~~⚠️ Break block time cascade doesn't work~~ **✅ FIXED in Session 74** (dynamic calculation)
 - ⏸️ Save schedule unclear (still shows "unsaved changes")
 
 **FILES:**
