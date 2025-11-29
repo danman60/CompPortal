@@ -2,9 +2,9 @@
 
 **Date:** November 29, 2025
 **Branch:** tester
-**Build:** 9c85710 (v1.1.2)
+**Build:** 9c85710 (v1.1.2) → ce7e72a (v1.1.2+fixes)
 **Environment:** tester.compsync.net/dashboard/director-panel/schedule
-**Status:** ⚠️ CRITICAL BLOCKERS FOUND - Testing incomplete
+**Status:** ✅ BLOCKERS RESOLVED - Ready for Phase 3 testing
 
 ---
 
@@ -269,6 +269,97 @@ Testing could not continue due to critical blockers found in Phase 2.
 
 ---
 
+## Blocker Resolution (Session 77 Continuation)
+
+**Date:** November 29, 2025
+**Builds:** deee47a, d7c793e, ce7e72a
+**Status:** ✅ ALL BLOCKERS RESOLVED
+
+### Root Cause Discovery
+
+**Investigation Process:**
+1. Initially attempted to filter blocks before saving (commit deee47a)
+2. Testing revealed HTTP 500 still occurring despite fix
+3. Investigated database entry numbering - found non-sequential numbers (100, 101, 102, 107, 108, 109...)
+4. Discovered auto-renumbering `useEffect` at lines 599-637 in schedule/page.tsx
+5. **Root Cause:** Auto-renumbering was:
+   - Loading routines with non-sequential numbers from database
+   - Immediately renumbering them sequentially (100, 101, 102, 103...)
+   - Creating draft state that differed from database
+   - Causing false "unsaved changes" indicator
+   - Causing HTTP 500 when trying to save conflicting renumbered values
+
+### Fixes Applied
+
+#### Fix #1: Filter Blocks Before Saving (Commit deee47a)
+**File:** `src/app/dashboard/director-panel/schedule/page.tsx`
+**Changes:**
+- Added `isBlock?: boolean` property to RoutineData interface
+- Modified `hasUnsavedChanges` to filter blocks before comparison
+- Modified `hasAnyUnsavedChanges` to filter blocks before comparison
+- Modified `handleSaveSchedule` to filter blocks before saving
+
+**Result:** Partial fix - addressed symptom, but HTTP 500 still occurred
+
+#### Fix #2: Discard Changes Refetch (Commit d7c793e)
+**File:** `src/app/dashboard/director-panel/schedule/page.tsx:1012-1020`
+**Changes:**
+- Modified `handleDiscardChanges` to clear ALL drafts with `setDraftsByDate({})`
+- Added `refetchBlocks()` to reload blocks from server
+- Added `refetch()` to reload routines from server
+
+**Result:** Discard functionality now working correctly
+
+#### Fix #3: Remove Auto-Renumbering (Commit ce7e72a) - **ROOT CAUSE FIX**
+**File:** `src/app/dashboard/director-panel/schedule/page.tsx:596-637`
+**Changes:**
+- Removed auto-renumbering `useEffect` entirely (40 lines deleted)
+- Entry numbers now preserved from database
+- Only updated during explicit user actions (drag/drop)
+
+**Result:** All three blockers resolved simultaneously
+
+### Verification Testing (Build ce7e72a)
+
+**Test 1: Clean Page Load**
+- ✅ Page loads without false "unsaved changes" indicator
+- ✅ NO "Save Schedule" or "Discard" buttons showing on clean load
+- ✅ Entry numbers preserved from database (#108, #109, #110, #111, #112, #113, #114)
+
+**Test 2: Save Functionality**
+- ✅ Dragged routine "Genesis 41" from unscheduled to Saturday
+- ✅ "Save Schedule" button appeared correctly (not on clean load)
+- ✅ Clicked save → "Saved schedule for 1 day" toast (HTTP 200!)
+- ✅ Page refreshed → clean state confirmed, NO false indicators
+- ✅ Changes persisted (Saturday now shows 8 routines, entry #122 at 8:28 AM)
+
+**Test 3: Discard Functionality**
+- ✅ Made changes to schedule
+- ✅ Clicked "Discard" button
+- ✅ Changes reverted, clean state restored
+- ✅ No false indicators remaining
+
+### Final Status
+
+**All Blockers RESOLVED:**
+- ✅ **Blocker #1:** Save Schedule HTTP 500 Error - FIXED (commit ce7e72a)
+- ✅ **Blocker #2:** Discard Changes Not Working - FIXED (commit d7c793e)
+- ✅ **Blocker #3:** False "Unsaved Changes" Indicator - FIXED (commit ce7e72a)
+
+**Evidence:**
+- `.playwright-mcp/.playwright-mcp/schedule-clean-state-ce7e72a.png` - Clean load, no false indicators
+- `.playwright-mcp/.playwright-mcp/save-success-ce7e72a.png` - HTTP 200 save success toast
+
+**Database State After Fixes:**
+- Friday (2026-04-10): 1 routine (entry #108)
+- Saturday (2026-04-11): 8 routines (entries #109-#114, #122)
+- Sunday (2026-04-12): 3 routines (entries #100, #101, #107, #113)
+- Unscheduled: 38 routines (down from 39)
+
+**Ready for Phase 3 Testing:** Save/discard functionality now working cleanly. Can proceed with comprehensive testing.
+
+---
+
 **Session Completed:** November 29, 2025
-**Build Tested:** 9c85710
+**Builds Tested:** 9c85710 (blockers found), ce7e72a (blockers resolved)
 **Test Environment:** tester.compsync.net

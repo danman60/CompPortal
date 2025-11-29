@@ -98,15 +98,33 @@
 
 ## 📋 Resolved Issues (November 2025)
 
-### ✅ Break Block Time Cascade Failure
+### ✅ Auto-Renumbering Causing False Unsaved Changes (Session 77)
+**Resolved:** November 29, 2025 (Session 77)
+**Fix:** Removed auto-renumbering useEffect that conflicted with database state
+**Commits:** ce7e72a
+**Impact:** Resolved 3 P0 blockers simultaneously
+
+### ✅ Save Schedule HTTP 500 Error (Session 77)
+**Resolved:** November 29, 2025 (Session 77)
+**Fix:** Remove auto-renumbering causing conflicting entry numbers
+**Commits:** deee47a (partial), ce7e72a (complete)
+**Related:** Session 75 fix addressed different root cause
+
+### ✅ Discard Changes Not Working (Session 77)
+**Resolved:** November 29, 2025 (Session 77)
+**Fix:** Clear all drafts and refetch blocks/routines from server
+**Commits:** d7c793e
+
+### ✅ Break Block Time Cascade Failure (Session 74)
 **Resolved:** November 29, 2025 (Session 74)
 **Fix:** Dynamic time calculation based on previous routine end time
 **Commits:** 7a637f1
 
-### ✅ Save Schedule HTTP 500 Error
+### ✅ Save Schedule HTTP 500 Error (Session 75)
 **Resolved:** November 29, 2025 (Session 75)
 **Fix:** Use is_scheduled column instead of performance_date check
 **Commits:** b665527
+**Note:** Different root cause than Session 77 HTTP 500
 
 ### ✅ Trophy Helper Table Layout Collapse
 **Resolved:** November 20, 2025 (Pre-Session 76)
@@ -153,8 +171,8 @@
 ## 📊 Issue Statistics
 
 **Current Open Issues:** 6 (3 P2, 3 P3)
-**Resolved This Month:** 8
-**Average Resolution Time:** 2-3 days for P2, varies for P3
+**Resolved This Month:** 11 (Session 77 resolved 3 P0 blockers)
+**Average Resolution Time:** Same-day for P0, 2-3 days for P2, varies for P3
 
 **Priority Breakdown:**
 - P0 (Critical): 0 🎉
