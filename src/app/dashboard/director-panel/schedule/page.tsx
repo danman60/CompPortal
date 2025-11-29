@@ -1067,7 +1067,10 @@ export default function SchedulePage() {
 
   // Filter unscheduled routines for display (exclude draft scheduled routines + apply filters)
   const unscheduledRoutinesFiltered = useMemo(() => {
-    const draftIds = new Set(draftSchedule.map(d => d.id));
+    // Collect routine IDs from ALL days (not just selected day) to prevent duplicates
+    const draftIds = new Set(
+      Object.values(draftsByDate).flatMap(dayDrafts => dayDrafts.map(d => d.id))
+    );
 
     return unscheduledRoutines.filter(r => {
       // Exclude draft scheduled
@@ -1108,7 +1111,7 @@ export default function SchedulePage() {
 
       return true;
     });
-  }, [unscheduledRoutines, draftSchedule, filters]);
+  }, [unscheduledRoutines, draftsByDate, filters]);
 
   // Competition dates for day tabs - show draft counts (if exists), otherwise saved counts
   const competitionDates = useMemo(() => {
