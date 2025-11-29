@@ -118,6 +118,7 @@ function SortableBlockRow({
   block,
   showCheckbox,
   onDelete,
+  calculatedTime,
 }: {
   block: {
     id: string;
@@ -128,6 +129,7 @@ function SortableBlockRow({
   };
   showCheckbox?: boolean;
   onDelete?: (blockId: string) => void;
+  calculatedTime?: string | null; // Dynamically calculated time from schedule position
 }) {
   const {
     attributes,
@@ -153,8 +155,8 @@ function SortableBlockRow({
   const icon = block.block_type === 'award' ? '🏆' : '☕';
   const borderColor = block.block_type === 'award' ? 'border-amber-500/50' : 'border-cyan-500/50';
 
-  // Format time if available
-  const displayTime = block.scheduled_time
+  // Use calculated time if available, otherwise fall back to static scheduled_time
+  const displayTime = calculatedTime || (block.scheduled_time
     ? (() => {
         const date = new Date(block.scheduled_time);
         const hours = date.getHours();
@@ -163,7 +165,7 @@ function SortableBlockRow({
         const ampm = hours >= 12 ? 'PM' : 'AM';
         return `${String(hour12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`;
       })()
-    : 'TBD';
+    : 'TBD');
 
   return (
     <tr
@@ -886,6 +888,28 @@ Click badge to dismiss"
             <tbody>
               {scheduleItems.map((item, index) => {
                 if (item.type === 'block') {
+                  // Calculate block time based on previous routine's end time
+                  let calculatedTime: string | null = null;
+
+                  if (index > 0 && scheduleItems[index - 1].type === 'routine') {
+                    const prevRoutine = scheduleItems[index - 1].data;
+                    if (prevRoutine.scheduledTimeString) {
+                      // Parse previous routine's time
+                      const [hours24, minutes] = prevRoutine.scheduledTimeString.split(':');
+                      const startMinutes = parseInt(hours24, 10) * 60 + parseInt(minutes, 10);
+
+                      // Add duration to get end time
+                      const endMinutes = startMinutes + (prevRoutine.duration || 0);
+                      const endHour24 = Math.floor(endMinutes / 60);
+                      const endMin = endMinutes % 60;
+
+                      // Format to 12-hour time
+                      const hour12 = endHour24 === 0 ? 12 : endHour24 > 12 ? endHour24 - 12 : endHour24;
+                      const ampm = endHour24 >= 12 ? 'PM' : 'AM';
+                      calculatedTime = `${String(hour12).padStart(2, '0')}:${String(endMin).padStart(2, '0')} ${ampm}`;
+                    }
+                  }
+
                   // Render schedule block
                   return (
                     <SortableBlockRow
@@ -893,6 +917,7 @@ Click badge to dismiss"
                       block={item.data}
                       showCheckbox={!!onSelectionChange}
                       onDelete={onDeleteBlock}
+                      calculatedTime={calculatedTime}
                     />
                   );
                 }
