@@ -785,17 +785,37 @@ export default function SchedulePage() {
       return;
     }
 
-    // Transform to Routine format with participants
+    // Build a map of routine ID → dancers from conflicts (use actual dancer IDs from conflicts)
+    const routineDancersMap = new Map<string, Array<{ dancerId: string; dancerName: string }>>();
+
+    // Extract dancers from conflicts (conflicts have the correct dancer UUIDs)
+    for (const conflict of dayConflicts) {
+      // Add dancers from routine1
+      if (!routineDancersMap.has(conflict.routine1Id)) {
+        routineDancersMap.set(conflict.routine1Id, []);
+      }
+      const dancers1 = routineDancersMap.get(conflict.routine1Id)!;
+      if (!dancers1.some(d => d.dancerId === conflict.dancerId)) {
+        dancers1.push({ dancerId: conflict.dancerId, dancerName: conflict.dancerName });
+      }
+
+      // Add dancers from routine2
+      if (!routineDancersMap.has(conflict.routine2Id)) {
+        routineDancersMap.set(conflict.routine2Id, []);
+      }
+      const dancers2 = routineDancersMap.get(conflict.routine2Id)!;
+      if (!dancers2.some(d => d.dancerId === conflict.dancerId)) {
+        dancers2.push({ dancerId: conflict.dancerId, dancerName: conflict.dancerName });
+      }
+    }
+
+    // Transform to Routine format with participants from conflicts
     const dayScheduleWithParticipants = daySchedule.map(draft => {
-      const full = routines?.find(r => r.id === draft.id);
       return {
         id: draft.id,
         title: draft.title,
         entryNumber: draft.entryNumber ?? undefined,
-        participants: (full?.dancer_names || []).map((name: string) => ({
-          dancerId: name,
-          dancerName: name,
-        })),
+        participants: routineDancersMap.get(draft.id) || [], // Use conflict-derived participants with real dancer IDs
         scheduledDateString: selectedDate,
       };
     });
@@ -867,6 +887,32 @@ export default function SchedulePage() {
       }
     }
 
+    // Build a map of routine ID → dancers from conflicts (use actual dancer IDs from conflicts)
+    const routineDancersMap = new Map<string, Array<{ dancerId: string; dancerName: string }>>();
+
+    // Extract dancers from all conflicts (conflicts have the correct dancer UUIDs)
+    for (const [date, dateConflicts] of Object.entries(conflictsByDate)) {
+      for (const conflict of dateConflicts) {
+        // Add dancers from routine1
+        if (!routineDancersMap.has(conflict.routine1Id)) {
+          routineDancersMap.set(conflict.routine1Id, []);
+        }
+        const dancers1 = routineDancersMap.get(conflict.routine1Id)!;
+        if (!dancers1.some(d => d.dancerId === conflict.dancerId)) {
+          dancers1.push({ dancerId: conflict.dancerId, dancerName: conflict.dancerName });
+        }
+
+        // Add dancers from routine2
+        if (!routineDancersMap.has(conflict.routine2Id)) {
+          routineDancersMap.set(conflict.routine2Id, []);
+        }
+        const dancers2 = routineDancersMap.get(conflict.routine2Id)!;
+        if (!dancers2.some(d => d.dancerId === conflict.dancerId)) {
+          dancers2.push({ dancerId: conflict.dancerId, dancerName: conflict.dancerName });
+        }
+      }
+    }
+
     // Transform all days to Routine format (include ALL scheduled days, not just drafts)
     const scheduleByDateWithParticipants: Record<string, any[]> = {};
 
@@ -885,10 +931,7 @@ export default function SchedulePage() {
           id: routine.id,
           title: routine.title || full?.title || '',
           entryNumber: routine.entryNumber ?? full?.entryNumber ?? undefined,
-          participants: (full?.dancer_names || []).map((name: string) => ({
-            dancerId: name,
-            dancerName: name,
-          })),
+          participants: routineDancersMap.get(routine.id) || [], // Use conflict-derived participants with real dancer IDs
           scheduledDateString: date,
         };
       });
