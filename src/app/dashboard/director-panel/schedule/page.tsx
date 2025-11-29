@@ -215,8 +215,8 @@ export default function SchedulePage() {
   const resetCompetition = trpc.scheduling.resetCompetition.useMutation({
     onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines and deleted ${data.blocksDeleted || 0} blocks`);
-      await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Refetch all
-      setDraftsByDate({}); // Clear ALL drafts
+      setDraftsByDate({}); // Clear ALL drafts FIRST (before refetch triggers useEffect)
+      await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Then refetch
     },
     onError: (error) => {
       toast.error(`Failed to reset competition: ${error.message}`);
