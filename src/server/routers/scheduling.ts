@@ -334,6 +334,65 @@ export const schedulingRouter = router({
         timeout: 120000, // 120 seconds transaction timeout (supports 500+ routines per day)
       });
 
+      // Create schedule version snapshot (CSV-style internal backup)
+      // This creates a complete snapshot of the schedule for backup/restore purposes
+      // Happens AFTER transaction to ensure data is persisted first
+
+      // Get current max version number for this competition
+      const maxVersion = await prisma.schedule_versions.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+        orderBy: { version_number: 'desc' },
+        select: { version_number: true },
+      });
+
+      const nextVersionNumber = (maxVersion?.version_number ?? 0) + 1;
+
+      // Fetch full routine data with related tables for complete snapshot
+      const routinesWithDetails = await prisma.competition_entries.findMany({
+        where: {
+          id: { in: input.routines.map(r => r.routineId) },
+          tenant_id: input.tenantId,
+        },
+        include: {
+          studios: { select: { name: true } },
+          classifications: { select: { name: true } },
+          dance_categories: { select: { name: true } },
+          age_groups: { select: { name: true } },
+        },
+        orderBy: { entry_number: 'asc' },
+      });
+
+      // Build snapshot data as JSON array
+      const snapshotData = routinesWithDetails.map(routine => ({
+        routineId: routine.id,
+        entryNumber: routine.entry_number,
+        performanceTime: routine.performance_time ? dateTimeToTimeString(routine.performance_time) : null,
+        performanceDate: routine.performance_date?.toISOString().split('T')[0] ?? null,
+        title: routine.title,
+        studioName: routine.studios.name,
+        duration: routine.routine_length_minutes,
+        classificationName: routine.classifications.name,
+        categoryName: routine.dance_categories.name,
+        ageGroupName: routine.age_groups.name,
+        dancerNames: routine.dancer_names,
+        isScheduled: routine.is_scheduled,
+      }));
+
+      // Create schedule version snapshot record
+      await prisma.schedule_versions.create({
+        data: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          version_number: nextVersionNumber,
+          status: 'draft', // Internal backup, not sent to studios
+          routine_count: routinesWithDetails.length,
+          snapshot_data: snapshotData,
+        },
+      });
+
       return {
         success: true,
         count: updates.length,
