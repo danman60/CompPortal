@@ -554,27 +554,45 @@ export default function SchedulePage() {
     return Math.floor(count / 2);
   }, [conflictsByRoutineId, draftsByDate, selectedDate]);
 
-  // Initialize draft from server data when it changes or switching days
+  // Initialize drafts for ALL days from server data (ensures renumbering has full context)
   useEffect(() => {
-    if (routines && !draftsByDate[selectedDate]) {
-      const serverScheduled = routines
-        .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
-        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
-        .map(r => ({
-          id: r.id,
-          title: r.title,
-          duration: r.duration,
-          isScheduled: r.isScheduled,
-          entryNumber: r.entryNumber,
-          performanceTime: r.scheduledTimeString,
-        }));
+    if (!routines) return;
+
+    const dates = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12'];
+    const allDrafts: Record<string, RoutineData[]> = {};
+    let hasNewDrafts = false;
+
+    // Load all days from database
+    for (const date of dates) {
+      if (!draftsByDate[date]) {
+        const serverScheduled = routines
+          .filter(r => r.isScheduled && r.scheduledDateString === date)
+          .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
+          .map(r => ({
+            id: r.id,
+            title: r.title,
+            duration: r.duration,
+            isScheduled: r.isScheduled,
+            entryNumber: r.entryNumber,
+            performanceTime: r.scheduledTimeString,
+          }));
+
+        if (serverScheduled.length > 0) {
+          allDrafts[date] = serverScheduled;
+          hasNewDrafts = true;
+        }
+      }
+    }
+
+    // Only update if we found new drafts to load
+    if (hasNewDrafts) {
       setDraftsByDate(prev => ({
         ...prev,
-        [selectedDate]: serverScheduled
+        ...allDrafts
       }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routines, selectedDate]); // Don't include draftsByDate - it would cause infinite loops
+  }, [routines]); // Only run when routines data changes, not on day selection
 
   // Renumber all drafts globally in chronological order whenever any day changes
   useEffect(() => {
