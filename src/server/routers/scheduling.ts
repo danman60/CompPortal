@@ -613,6 +613,7 @@ export const schedulingRouter = router({
           performance_time: true,
           performance_date: true,
           entry_number: true, // V4: Sequential entry number
+          is_scheduled: true, // V4: Scheduled flag (required for isScheduled field)
           routine_length_minutes: true, // V4: Routine duration
           created_at: true,
           has_studio_requests: true, // SD notes flag for blue glow
@@ -729,7 +730,7 @@ export const schedulingRouter = router({
           duration: routine.routine_length_minutes || 3, // Use actual routine length or default 3 min
           routineAge: routine.routine_age, // Final selected age for routine
           participants: [], // PERFORMANCE: Empty array - participants fetched separately by detectConflicts
-          isScheduled: routine.performance_date !== null, // V4: Check date instead of zone
+          isScheduled: routine.is_scheduled === true, // V4: Use actual is_scheduled column (not performance_date)
           scheduleZone: null, // V4: Deprecated zone field
           scheduledDateString: scheduledDateString, // YYYY-MM-DD string (null if not scheduled)
           scheduledTimeString: scheduledTimeString, // HH:MM:SS string (null if not scheduled)
