@@ -7,17 +7,64 @@
 
 ## 🎯 Current Focus: Phase 2 Scheduler (Nov 2025)
 
-**Status:** ✅ PRODUCTION-READY - Comprehensive testing complete
-**Recent Work:** Sessions 74-78 completed all testing and blocker resolution
+**Status:** 🔴 BLOCKED - Critical production blocker discovered (Session 79)
+**Recent Work:** Sessions 74-79 testing and blocker discovery
 - ✅ Break block time cascade fixed (Session 74)
 - ✅ Save schedule HTTP 500 fixed (Session 75)
 - ✅ Trophy helper table layout confirmed working (Session 76)
 - ✅ All Session 77 blockers resolved (auto-renumbering, discard, day start time)
 - ✅ Comprehensive edge case testing complete (Session 78: 7/8 passed)
+- 🔴 **Session 79: CRITICAL BLOCKER - 48-routine save limit discovered**
 
-**Active Branch:** tester (ready for merge to main)
-**Build:** v1.1.2 (3d43c87)
+**Active Branch:** tester (deployment BLOCKED)
+**Build:** v1.1.2 (4bd8870)
 **Test Environment:** tester.compsync.net
+
+---
+
+## 🔴 P0 - CRITICAL BLOCKERS (Production-Blocking)
+
+### 1. Backend Save Limit: 48 Routines Maximum (HTTP 500 at 49+)
+**Status:** ACTIVE - Production deployment BLOCKED
+**Severity:** P0 - EXTREME (System unusable for production)
+**Discovered:** November 29, 2025 (Session 79 - Expanded Testing)
+**Description:** Backend save operation fails with HTTP 500 when attempting to save 49+ routines. Threshold investigation confirmed exact limit of 48 routines maximum.
+**Impact:** **CATASTROPHIC** - Production requires 1000+ routines minimum (user confirmed). System can only handle 48 routines (4.8% of production requirement = 2000% capacity shortfall).
+**Location:**
+- tRPC endpoint: `/api/trpc/scheduling.schedule?batch=1`
+- Backend mutation: `scheduling.schedule` (likely batch size or transaction limit)
+**Evidence:**
+- ✅ 46 routines: Save successful (HTTP 200) - Session 78 baseline
+- ✅ 47 routines: Save successful (HTTP 200) - Threshold test
+- ✅ 48 routines: Save successful (HTTP 200) - **MAXIMUM WORKING**
+- ❌ 49 routines: Save failure (HTTP 500) - **BREAKING POINT**
+- ❌ 50 routines: Save failure (HTTP 500) - Initial stress test
+**UI Behavior:**
+- ✅ UI scheduling works perfectly (no limit, tested with 50 routines)
+- ✅ Drag & drop, entry numbering, time cascade all working
+- ✅ Trophy badges, conflict detection, all visual features working
+- ❌ Save button executes but backend rejects at 49+ routines
+- ❌ No data persisted to database
+- ❌ Toast: "Failed to save some days" (not informative to user)
+**Root Cause Hypotheses:**
+1. **Database batch size limit** (High) - Hardcoded limit in backend code
+2. **Database transaction size limit** (Medium) - PostgreSQL constraint
+3. **Query parameter limit** (Medium) - tRPC or HTTP parameter count limit
+4. **Backend timeout** (Low) - Would be HTTP 504, not 500
+**Investigation Required:**
+1. Backend code review: `scheduling.schedule` tRPC mutation for hardcoded limits
+2. Database review: Supabase/PostgreSQL batch insert limits, transaction size
+3. Infrastructure review: Vercel function timeout/memory limits
+4. Server logs: Find exact error message from backend
+**Cannot Proceed Until:**
+- [ ] Exact root cause identified
+- [ ] Backend limit removed/increased to support 1500+ routines
+- [ ] Tested with 1500 routines successfully
+- [ ] Verified multi-day save with large datasets
+**Documentation:**
+- Full analysis: `BLOCKER_48_ROUTINE_SAVE_LIMIT_20251129.md`
+- Session report: `docs/archive/SESSION_79_EXPANDED_TESTING_BLOCKER_DISCOVERY.md`
+**Tracked Since:** November 29, 2025
 
 ---
 

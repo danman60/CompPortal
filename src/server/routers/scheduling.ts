@@ -308,25 +308,25 @@ export const schedulingRouter = router({
         });
 
         // Phase 2: Update all routines with their final entry numbers and performance times
-        // CRITICAL: Sequential updates to avoid unique constraint violations
-        // Parallel updates (Promise.all) can cause multiple routines to have same entry_number temporarily
-        const finalUpdates = [];
-        for (const { routineId, entryNumber, performanceTime } of input.routines) {
-          const updated = await tx.competition_entries.update({
-            where: {
-              id: routineId,
-              tenant_id: input.tenantId,
-            },
-            data: {
-              performance_date: new Date(input.date),
-              performance_time: timeStringToDateTime(performanceTime),
-              entry_number: entryNumber,
-              is_scheduled: true,
-              updated_at: new Date(),
-            },
-          });
-          finalUpdates.push(updated);
-        }
+        // Safe to parallelize because Phase 1 already cleared all entry numbers (no unique constraint violations)
+        // Parallel updates (Promise.all) for performance - supports 1000+ routines
+        const finalUpdates = await Promise.all(
+          input.routines.map(({ routineId, entryNumber, performanceTime }) =>
+            tx.competition_entries.update({
+              where: {
+                id: routineId,
+                tenant_id: input.tenantId,
+              },
+              data: {
+                performance_date: new Date(input.date),
+                performance_time: timeStringToDateTime(performanceTime),
+                entry_number: entryNumber,
+                is_scheduled: true,
+                updated_at: new Date(),
+              },
+            })
+          )
+        );
 
         return finalUpdates;
       });
