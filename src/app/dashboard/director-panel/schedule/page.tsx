@@ -43,6 +43,7 @@ interface RoutineData {
   isScheduled: boolean;
   entryNumber?: number | null;
   performanceTime?: string | null;
+  isBlock?: boolean; // Flag for break/award blocks (saved separately)
 }
 
 export default function SchedulePage() {
@@ -942,14 +943,17 @@ export default function SchedulePage() {
     const datesToSave: string[] = [];
 
     for (const [date, dayDraft] of Object.entries(draftsByDate)) {
+      // Filter out blocks when comparing - blocks are saved separately
+      const routinesOnly = dayDraft.filter(item => !item.isBlock);
+
       const serverScheduled = routines
         .filter(r => r.isScheduled && r.scheduledDateString === date)
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-      // Compare draft with server state
+      // Compare draft with server state (routines only)
       const hasChanges =
-        dayDraft.length !== serverScheduled.length ||
-        dayDraft.some((draft, index) => {
+        routinesOnly.length !== serverScheduled.length ||
+        routinesOnly.some((draft, index) => {
           const server = serverScheduled[index];
           if (!server) return true;
           return (
@@ -959,7 +963,7 @@ export default function SchedulePage() {
           );
         });
 
-      if (hasChanges && dayDraft.length > 0) {
+      if (hasChanges && routinesOnly.length > 0) {
         datesToSave.push(date);
       }
     }
@@ -973,13 +977,18 @@ export default function SchedulePage() {
     try {
       for (const date of datesToSave) {
         const dayDraft = draftsByDate[date] || [];
+
+        // Filter out blocks - they're already saved via createScheduleBlock/placeScheduleBlock
+        // Only send routines to the schedule mutation
+        const routinesOnly = dayDraft.filter(item => !item.isBlock);
+
         await new Promise<void>((resolve, reject) => {
           scheduleMutation.mutate(
             {
               tenantId: TEST_TENANT_ID,
               competitionId: TEST_COMPETITION_ID,
               date,
-              routines: dayDraft.map(r => ({
+              routines: routinesOnly.map(r => ({
                 routineId: r.id,
                 entryNumber: r.entryNumber || 100,
                 performanceTime: r.performanceTime || '08:00:00',
