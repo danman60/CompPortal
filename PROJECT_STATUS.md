@@ -1,6 +1,6 @@
 # CompPortal Project Status
 
-**Last Updated:** 2025-11-28 (Session 71 - Multi-Day Save Backend Fix)
+**Last Updated:** 2025-11-29 (Session 73 - Day Start Time Blocker Resolved)
 
 ---
 
@@ -27,6 +27,56 @@
 ---
 
 ## Recent Sessions
+
+### Session 73: Day Start Time Blocker Investigation - RESOLVED (Nov 29, 2025)
+**Status:** ✅ BLOCKER RESOLVED - Downgraded to Medium Priority UX Bug
+**Branch:** tester
+**Build:** 21fc83f
+
+**BREAKTHROUGH DISCOVERY:**
+- ✅ **Mutation works correctly** - HTTP 200, database updates successfully
+- ✅ **Database verified** - Times changed from 08:00 to 09:00 ✅
+- ✅ **Root cause identified** - Frontend timing issue (UI closes before refetch)
+- ✅ **400 error explained** - Unrelated CORS OPTIONS request (misleading)
+
+**RESOLUTION:**
+- Feature is functional, just needs UX polish
+- Simple fix: Add 500ms delay for refetch completion
+- Severity: BLOCKER → Medium Priority UX Bug
+
+**TOOLS USED:**
+- Playwright MCP for live testing on production
+- Supabase MCP for database verification
+- Network request analysis
+
+**FILES:**
+- `docs/archive/SESSION_73_COMPLETE.md` - Complete investigation report
+- `BLOCKER_TIME_CHANGE.md` → Updated with final diagnosis (archive pending)
+
+### Session 72: Schedule Builder Test Cycle - Duplicate Prevention Verified (Nov 29, 2025)
+**Status:** ✅ CRITICAL TEST PASSED - Blockers documented
+**Branch:** tester
+**Build:** 188f36f
+
+**CRITICAL SUCCESS:**
+- ✅ **Duplicate Prevention VERIFIED** - Routines scheduled on one day do NOT appear in other days' pools
+- ✅ 12 routines scheduled across Thu/Fri/Sat/Sun (3 per day)
+- ✅ Break and award blocks tested
+- ✅ Test cycle 85% complete (11/13 tests executed)
+
+**BLOCKERS FOUND:**
+- ~~❌ Day start time change returns 400 error~~ **✅ RESOLVED in Session 73** (UX issue only)
+- ⚠️ Break block time cascade doesn't work (times don't shift forward)
+- ⏸️ Save schedule unclear (still shows "unsaved changes")
+
+**FILES:**
+- `docs/archive/SESSION_72_COMPLETE.md` - Full test results
+- `BLOCKER_TIME_CHANGE.md` - Detailed blocker documentation (resolved)
+- Screenshots: break-block-added.png, award-block-added.png
+
+**RECOMMENDATION:** Fix 2 blockers before production deployment. Core scheduling works, time management features need repair.
+
+---
 
 ### Session 71: Multi-Day Schedule Save Backend Fix (Nov 28, 2025)
 **Status:** ✅ COMPLETE - Critical backend bug fixed
