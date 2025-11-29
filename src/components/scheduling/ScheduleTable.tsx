@@ -397,47 +397,53 @@ function SortableRoutineRow({
               onMouseEnter={() => setHoveredConflict(routine.id)}
               onMouseLeave={() => setHoveredConflict(null)}
             >
+              {/* Default conflict icon */}
               <div
-                className="inline-flex items-center justify-center rounded text-[10px] transition-all"
+                className="inline-flex items-center justify-center rounded text-[10px]"
                 style={{
                   background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                   border: '1px solid rgba(255, 107, 107, 0.6)',
-                  width: hoveredConflict === routine.id ? 'auto' : '24px',
-                  height: hoveredConflict === routine.id ? 'auto' : '8px',
-                  padding: hoveredConflict === routine.id ? '2px 6px' : '0',
-                  gap: hoveredConflict === routine.id ? '4px' : '0'
+                  width: '24px',
+                  height: '8px',
                 }}
                 title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
               >
-                {hoveredConflict === routine.id ? (
-                  <div className="flex items-center gap-1.5 text-white font-semibold">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAutoFixConflict?.(routine.id);
-                      }}
-                      className="flex items-center gap-0.5 hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
-                      title="Auto-fix: Move routine to nearest conflict-free position"
-                    >
-                      <span className="text-[9px]">🔧</span>
-                      <span className="text-[8px]">Fix</span>
-                    </button>
-                    <div className="w-px h-3 bg-white/30" />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDismissIcon(`${routine.id}-conflict`);
-                      }}
-                      className="text-[10px] hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
-                      title="Dismiss warning (conflict remains)"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <span className="text-[8px]">⚠️</span>
-                )}
+                <span className="text-[8px]">⚠️</span>
               </div>
+
+              {/* Hover controls - absolute positioned to avoid squishing */}
+              {hoveredConflict === routine.id && (
+                <div
+                  className="absolute left-0 top-0 z-50 flex items-center gap-1.5 text-white font-semibold rounded px-2 py-1 shadow-lg whitespace-nowrap"
+                  style={{
+                    background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
+                    border: '1px solid rgba(255, 107, 107, 0.8)',
+                  }}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAutoFixConflict?.(routine.id);
+                    }}
+                    className="flex items-center gap-0.5 hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
+                    title="Auto-fix: Move routine to nearest conflict-free position"
+                  >
+                    <span className="text-[10px]">🔧</span>
+                    <span className="text-[9px] font-semibold">Fix</span>
+                  </button>
+                  <div className="w-px h-3 bg-white/30" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDismissIcon(`${routine.id}-conflict`);
+                    }}
+                    className="text-[11px] hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
+                    title="Dismiss warning (conflict remains)"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
