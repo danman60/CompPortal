@@ -639,14 +639,18 @@ export default function SchedulePage() {
   // Check if there are unsaved changes on current day
   const hasUnsavedChanges = useMemo(() => {
     if (!routines) return false;
+
+    // Filter out blocks from draft - they're saved separately
+    const draftRoutinesOnly = draftSchedule.filter(item => !item.isBlock);
+
     const serverScheduled = routines
       .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
       .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-    // Compare draft with server state
-    if (draftSchedule.length !== serverScheduled.length) return true;
+    // Compare draft routines with server state (blocks excluded)
+    if (draftRoutinesOnly.length !== serverScheduled.length) return true;
 
-    return draftSchedule.some((draft, index) => {
+    return draftRoutinesOnly.some((draft, index) => {
       const server = serverScheduled[index];
       return (
         draft.id !== server.id ||
@@ -663,14 +667,17 @@ export default function SchedulePage() {
     // Check each date in draftsByDate
     return Object.keys(draftsByDate).some(date => {
       const dayDraft = draftsByDate[date] || [];
+      // Filter out blocks - they're saved separately via createScheduleBlock/placeScheduleBlock
+      const dayDraftRoutinesOnly = dayDraft.filter(item => !item.isBlock);
+
       const serverScheduled = routines
         .filter(r => r.isScheduled && r.scheduledDateString === date)
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-      // Compare draft with server state for this date
-      if (dayDraft.length !== serverScheduled.length) return true;
+      // Compare draft routines with server state for this date (blocks excluded)
+      if (dayDraftRoutinesOnly.length !== serverScheduled.length) return true;
 
-      return dayDraft.some((draft, index) => {
+      return dayDraftRoutinesOnly.some((draft, index) => {
         const server = serverScheduled[index];
         if (!server) return true;
         return (
@@ -1010,24 +1017,13 @@ export default function SchedulePage() {
 
   // Discard changes and revert to server state
   const handleDiscardChanges = () => {
-    if (routines) {
-      const serverScheduled = routines
-        .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
-        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
-        .map(r => ({
-          id: r.id,
-          title: r.title,
-          duration: r.duration,
-          isScheduled: r.isScheduled,
-          entryNumber: r.entryNumber,
-          performanceTime: r.scheduledTimeString,
-        }));
-      setDraftsByDate(prev => ({
-        ...prev,
-        [selectedDate]: serverScheduled
-      }));
-      toast.success('Changes discarded');
-    }
+    // Clear ALL drafts to return to server state
+    setDraftsByDate({});
+    // Reload blocks from server
+    refetchBlocks();
+    // Reload routines from server
+    refetch();
+    toast.success('Changes discarded');
   };
 
   // Filter routines into unscheduled and scheduled for the selected day
