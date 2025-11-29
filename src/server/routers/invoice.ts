@@ -663,7 +663,8 @@ export const invoiceRouter = router({
       // Get actual invoice data
       const lineItems = (invoice.line_items as any) || [];
       const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
-      const totalAmount = Number(invoice.total || 0);
+      // Use amount_due (total - deposit) instead of raw total
+      const totalAmount = Number(invoice.amount_due || invoice.total || 0);
 
       // Build tenant-specific URL
       const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
@@ -993,7 +994,8 @@ export const invoiceRouter = router({
             // Get actual invoice data
             const lineItems = (updatedInvoice.line_items as any) || [];
             const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
-            const totalAmount = Number(updatedInvoice.total || 0);
+            // Use amount_due (total - deposit) instead of raw total
+            const totalAmount = Number(updatedInvoice.amount_due || updatedInvoice.total || 0);
 
             const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
             const emailData: InvoiceDeliveryData = {
@@ -1201,7 +1203,11 @@ export const invoiceRouter = router({
       const afterDiscount = subtotal - discountAmount;
       const newTotal = afterDiscount * (1 + taxRate);
 
-      // Update invoice with discount
+      // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
+      const depositAmount = Number(invoice.deposit_amount || 0);
+      const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
+
+      // Update invoice with discount AND amount_due
       await prisma.invoices.update({
         where: { id: input.invoiceId },
         data: {
@@ -1210,6 +1216,7 @@ export const invoiceRouter = router({
             ? `${input.discountPercentage}% studio discount`
             : null,
           total: newTotal,
+          amount_due: newAmountDue,
           updated_at: new Date(),
         },
       });
@@ -1265,12 +1272,23 @@ export const invoiceRouter = router({
       // Recalculate subtotal and total from line items
       const subtotal = input.lineItems.reduce((sum, item) => sum + item.total, 0);
 
+      // Apply tax and discount (if any) to get correct total
+      const creditAmount = Number(invoice.credit_amount || 0);
+      const taxRate = Number(invoice.tax_rate || 13) / 100;
+      const afterDiscount = subtotal - creditAmount;
+      const newTotal = Number((afterDiscount * (1 + taxRate)).toFixed(2));
+
+      // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
+      const depositAmount = Number(invoice.deposit_amount || 0);
+      const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
+
       await prisma.invoices.update({
         where: { id: input.invoiceId },
         data: {
           line_items: input.lineItems as any,
           subtotal,
-          total: subtotal,
+          total: newTotal,
+          amount_due: newAmountDue,
           updated_at: new Date(),
         },
       });
