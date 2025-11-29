@@ -329,6 +329,9 @@ export const schedulingRouter = router({
         );
 
         return finalUpdates;
+      }, {
+        maxWait: 30000, // 30 seconds max wait to start transaction
+        timeout: 30000, // 30 seconds transaction timeout (supports 1000+ routines)
       });
 
       return {
