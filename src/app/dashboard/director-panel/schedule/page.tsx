@@ -1367,7 +1367,10 @@ export default function SchedulePage() {
                 title={`${dayConflictCount} conflict${dayConflictCount !== 1 ? 's' : ''} detected on this day`}
               >
                 <span className="text-lg">🔧</span>
-                Fix All Conflicts ({dayConflictCount})
+                <span>Fix All Conflicts</span>
+                <span className="px-2 py-0.5 bg-white/20 rounded-md text-sm font-bold min-w-[2rem] text-center">
+                  {dayConflictCount}
+                </span>
               </button>
             )}
             {hasAnyUnsavedChanges && (
