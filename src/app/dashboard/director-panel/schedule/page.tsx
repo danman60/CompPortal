@@ -478,8 +478,9 @@ export default function SchedulePage() {
     }
 
     // Calculate draft conflicts (real-time based on draft positions)
-    if (draftSchedule.length > 0 && routines) {
-      const scheduledWithData = draftSchedule
+    const currentDraftSchedule = draftsByDate[selectedDate] || [];
+    if (currentDraftSchedule.length > 0 && routines) {
+      const scheduledWithData = currentDraftSchedule
         .map(draft => {
           const full = routines.find(r => r.id === draft.id);
           if (!full) return null;
@@ -545,7 +546,7 @@ export default function SchedulePage() {
     }
 
     return map;
-  }, [conflictsData, draftSchedule, routines]);
+  }, [conflictsData, draftsByDate, selectedDate, routines]);
 
   // Count conflicts on current day
   const dayConflictCount = useMemo(() => {
@@ -1060,31 +1061,25 @@ export default function SchedulePage() {
   const handleSaveSchedule = async () => {
     if (!routines) return;
 
-    // Get ALL dates with scheduled routines (from drafts OR server data)
-    // Save entire schedule state, not just changed days
-    const allDatesSet = new Set<string>();
+    // Always save all 4 competition days (for consistent progress display)
+    const ALL_COMPETITION_DATES = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12'];
 
-    // Add all dates from drafts
-    for (const [date, dayDraft] of Object.entries(draftsByDate)) {
+    // Check if any day has routines scheduled
+    const hasAnyRoutines = ALL_COMPETITION_DATES.some(date => {
+      const dayDraft = draftsByDate[date] || [];
       const routinesOnly = dayDraft.filter(item => !item.isBlock);
-      if (routinesOnly.length > 0) {
-        allDatesSet.add(date);
-      }
-    }
+      if (routinesOnly.length > 0) return true;
 
-    // Add all dates from server data (in case user hasn't modified them but they exist)
-    for (const routine of routines || []) {
-      if (routine.isScheduled && routine.scheduledDateString) {
-        allDatesSet.add(routine.scheduledDateString);
-      }
-    }
+      // Check server data
+      return (routines || []).some(r => r.isScheduled && r.scheduledDateString === date);
+    });
 
-    const datesToSave = Array.from(allDatesSet).sort();
-
-    if (datesToSave.length === 0) {
+    if (!hasAnyRoutines) {
       toast.error('No routines scheduled - nothing to save');
       return;
     }
+
+    const datesToSave = ALL_COMPETITION_DATES;
 
     // Show progress and save all days sequentially
     setIsSaving(true);
