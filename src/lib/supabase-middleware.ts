@@ -6,6 +6,20 @@ import { NextResponse, type NextRequest } from 'next/server';
  * Handles session refresh, authentication state, and multi-tenant context
  */
 export async function updateSession(request: NextRequest) {
+  // Handle OPTIONS requests (CORS preflight) immediately
+  // Avoid expensive database/auth queries for preflight requests
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Tenant-ID',
+        'Access-Control-Max-Age': '86400', // 24 hours
+      },
+    });
+  }
+
   // Extract subdomain from hostname FIRST
   const hostname = request.headers.get('host') || '';
   const subdomain = extractSubdomain(hostname);

@@ -29,6 +29,7 @@ import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Mail, Clock, History } from 'lucide-react';
@@ -93,6 +94,9 @@ export default function SchedulePage() {
 
   // Studio code assignment modal state
   const [showStudioCodeModal, setShowStudioCodeModal] = useState(false);
+
+  // Reset all confirmation modal state
+  const [showResetAllModal, setShowResetAllModal] = useState(false);
 
   // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
@@ -254,6 +258,18 @@ export default function SchedulePage() {
     },
     onError: (error) => {
       toast.error(`Failed to reset competition: ${error.message}`);
+    },
+  });
+
+  const resetAllDraftsAndVersions = trpc.scheduling.resetAllDraftsAndVersions.useMutation({
+    onSuccess: async (data) => {
+      toast.success(`Reset complete: ${data.versionsDeleted} versions, ${data.routinesUnscheduled} routines, ${data.blocksDeleted} blocks deleted`);
+      setDraftsByDate({}); // Clear ALL drafts FIRST
+      setShowResetAllModal(false); // Close modal
+      await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Refetch everything
+    },
+    onError: (error) => {
+      toast.error(`Failed to reset: ${error.message}`);
     },
   });
 
@@ -1469,15 +1485,8 @@ export default function SchedulePage() {
               </button>
             )}
             <button
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-              onClick={() => {
-                if (confirm('Reset ALL days? This will unschedule all routines for the entire competition.')) {
-                  resetCompetition.mutate({
-                    tenantId: TEST_TENANT_ID,
-                    competitionId: TEST_COMPETITION_ID,
-                  });
-                }
-              }}
+              className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors font-semibold"
+              onClick={() => setShowResetAllModal(true)}
             >
               🗑️ Reset All
             </button>
@@ -1809,6 +1818,20 @@ export default function SchedulePage() {
           </div>
         </div>
       </Modal>
+
+      {/* Reset All Confirmation Modal */}
+      <ResetAllConfirmationModal
+        isOpen={showResetAllModal}
+        onClose={() => setShowResetAllModal(false)}
+        onConfirm={() => {
+          resetAllDraftsAndVersions.mutate({
+            tenantId: TEST_TENANT_ID,
+            competitionId: TEST_COMPETITION_ID,
+            confirmation: 'RESET',
+          });
+        }}
+        isLoading={resetAllDraftsAndVersions.isPending}
+      />
 
       {/* Version History Panel */}
       {showVersionHistory && versionHistory && (

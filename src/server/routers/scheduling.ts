@@ -3904,4 +3904,70 @@ export const schedulingRouter = router({
       };
     }),
 
+  // Reset all drafts and versions for a competition (DESTRUCTIVE)
+  // Requires explicit confirmation from user
+  resetAllDraftsAndVersions: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      confirmation: z.string(), // Must be "RESET"
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      // Verify confirmation
+      if (input.confirmation !== 'RESET') {
+        throw new Error('Invalid confirmation. Type RESET to confirm.');
+      }
+
+      console.log('[resetAllDraftsAndVersions] Starting full reset for competition', input.competitionId);
+
+      // 1. Delete all schedule versions
+      const versionsResult = await prisma.schedule_versions.deleteMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+      });
+
+      console.log('[resetAllDraftsAndVersions] Deleted', versionsResult.count, 'versions');
+
+      // 2. Unschedule all routines (clear all drafts)
+      const routinesResult = await prisma.competition_entries.updateMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+        data: {
+          is_scheduled: false,
+          performance_date: null,
+          performance_time: null,
+          entry_number: null,
+          schedule_zone: null,
+        },
+      });
+
+      console.log('[resetAllDraftsAndVersions] Unscheduled', routinesResult.count, 'routines');
+
+      // 3. Delete all schedule blocks
+      const blocksResult = await prisma.schedule_blocks.deleteMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+      });
+
+      console.log('[resetAllDraftsAndVersions] Deleted', blocksResult.count, 'schedule blocks');
+
+      return {
+        success: true,
+        versionsDeleted: versionsResult.count,
+        routinesUnscheduled: routinesResult.count,
+        blocksDeleted: blocksResult.count,
+      };
+    }),
+
 });
