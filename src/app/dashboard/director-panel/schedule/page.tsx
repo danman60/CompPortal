@@ -865,9 +865,36 @@ export default function SchedulePage() {
     const totalUnresolved = result.unresolvedConflicts.length;
 
     if (result.success) {
-      toast.success(`Fixed all conflicts! Moved ${totalMoved} routines, resolved ${totalResolved} conflicts.`);
+      toast.success(`✅ Fixed all conflicts! Moved ${totalMoved} routine${totalMoved !== 1 ? 's' : ''}, resolved ${totalResolved} conflict${totalResolved !== 1 ? 's' : ''}.`);
+    } else if (totalResolved > 0) {
+      // Some conflicts resolved, but not all
+      const unresolvedList = result.unresolvedConflicts
+        .map(u => `• ${u.routineTitle}`)
+        .slice(0, 3) // Show max 3
+        .join('\n');
+
+      const moreCount = result.unresolvedConflicts.length - 3;
+      const moreText = moreCount > 0 ? `\n...and ${moreCount} more` : '';
+
+      toast.error(
+        `⚠️ Partially fixed: Moved ${totalMoved} routine${totalMoved !== 1 ? 's' : ''}, resolved ${totalResolved} conflict${totalResolved !== 1 ? 's' : ''}.\n\n` +
+        `${totalUnresolved} conflict${totalUnresolved !== 1 ? 's' : ''} could not be fixed on this day:\n${unresolvedList}${moreText}\n\n` +
+        `💡 Suggestion: Try moving ${totalUnresolved === 1 ? 'this routine' : 'these routines'} to a different day with fewer routines.`,
+        { duration: 8000 }
+      );
     } else {
-      toast.error(`Partially fixed: Moved ${totalMoved} routines, resolved ${totalResolved} conflicts. ${totalUnresolved} conflicts remain.`);
+      // No conflicts resolved
+      const unresolvedList = result.unresolvedConflicts
+        .map(u => `• ${u.routineTitle}`)
+        .slice(0, 5)
+        .join('\n');
+
+      toast.error(
+        `❌ Unable to auto-fix conflicts on this day:\n${unresolvedList}\n\n` +
+        `💡 This day is too densely scheduled (${daySchedule.length} routines). ` +
+        `Move some routines to a different day to create spacing.`,
+        { duration: 10000 }
+      );
     }
 
     setShowFixAllModal(false);
@@ -984,9 +1011,38 @@ export default function SchedulePage() {
     const totalUnresolved = Object.values(results).reduce((sum, r) => sum + r.unresolvedConflicts.length, 0);
 
     if (totalUnresolved === 0) {
-      toast.success(`Fixed all conflicts across ${totalDays} days! Moved ${totalMoved} routines, resolved ${totalResolved} conflicts.`);
+      toast.success(`✅ Fixed all conflicts across ${totalDays} day${totalDays !== 1 ? 's' : ''}! Moved ${totalMoved} routine${totalMoved !== 1 ? 's' : ''}, resolved ${totalResolved} conflict${totalResolved !== 1 ? 's' : ''}.`);
     } else {
-      toast.error(`Partially fixed ${totalDays} days: Moved ${totalMoved} routines, resolved ${totalResolved} conflicts. ${totalUnresolved} conflicts remain.`);
+      // Collect all unresolved conflicts across all days
+      const allUnresolved: Array<{ day: string; routine: string }> = [];
+      for (const [date, result] of Object.entries(results)) {
+        if (result.unresolvedConflicts.length > 0) {
+          const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+          for (const conflict of result.unresolvedConflicts) {
+            allUnresolved.push({ day: dayName, routine: conflict.routineTitle });
+          }
+        }
+      }
+
+      // Group by day
+      const unresolvedByDay = allUnresolved.reduce((acc, item) => {
+        if (!acc[item.day]) acc[item.day] = [];
+        acc[item.day].push(item.routine);
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      // Format message
+      const dayList = Object.entries(unresolvedByDay)
+        .map(([day, routines]) => `${day}: ${routines.slice(0, 2).join(', ')}${routines.length > 2 ? ` (+${routines.length - 2} more)` : ''}`)
+        .slice(0, 3)
+        .join('\n');
+
+      toast.error(
+        `⚠️ Partially fixed ${totalDays} day${totalDays !== 1 ? 's' : ''}: Moved ${totalMoved} routine${totalMoved !== 1 ? 's' : ''}, resolved ${totalResolved} conflict${totalResolved !== 1 ? 's' : ''}.\n\n` +
+        `${totalUnresolved} conflict${totalUnresolved !== 1 ? 's remain' : ' remains'}:\n${dayList}\n\n` +
+        `💡 Suggestion: Redistribute routines across days to reduce density and allow more spacing.`,
+        { duration: 10000 }
+      );
     }
 
     setShowFixAllModal(false);
