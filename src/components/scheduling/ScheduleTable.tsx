@@ -401,12 +401,10 @@ function SortableRoutineRow({
             >
               {/* Default conflict icon */}
               <div
-                className="inline-flex items-center justify-center rounded text-[10px]"
+                className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px]"
                 style={{
                   background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
-                  border: '1px solid rgba(255, 107, 107, 0.6)',
-                  width: '24px',
-                  height: '8px',
+                  border: '1px solid rgba(255, 107, 107, 0.6)'
                 }}
                 title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
               >
