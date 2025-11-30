@@ -59,6 +59,8 @@ interface DragDropProviderProps {
   onScheduleChange: (newSchedule: RoutineData[]) => void;
   /** Callback when blocks are reordered */
   onBlockReorder?: (reorderedBlocks: ScheduleBlockData[]) => void;
+  /** Callback when a new block template is dragged and dropped */
+  onCreateBlockAtPosition?: (blockType: 'award' | 'break', targetId: string) => void;
   /** Set of selected routine IDs (for multi-select drag from unscheduled pool) */
   selectedRoutineIds?: Set<string>;
   /** Set of selected routine IDs (for multi-select drag from scheduled routines) */
@@ -78,6 +80,7 @@ export function DragDropProvider({
   selectedDate,
   onScheduleChange,
   onBlockReorder,
+  onCreateBlockAtPosition,
   selectedRoutineIds = new Set(),
   selectedScheduledIds = new Set(),
   onClearSelection,
@@ -343,7 +346,33 @@ export function DragDropProvider({
 
     const draggedId = active.id as string;
 
-    // Check if dragging a schedule block
+    // Check if dragging a block template (new block from button)
+    if (draggedId.startsWith('block-template-')) {
+      console.log('[DragDropProvider] Block template dragged:', {
+        activeId: active.id,
+        activeData: active.data?.current,
+        targetId: over.id,
+      });
+
+      // Extract block type from drag data
+      const blockType = active.data?.current?.blockType as 'award' | 'break';
+
+      if (!blockType) {
+        console.error('[DragDropProvider] Block template missing blockType data');
+        return;
+      }
+
+      if (!onCreateBlockAtPosition) {
+        console.warn('[DragDropProvider] No onCreateBlockAtPosition callback provided');
+        return;
+      }
+
+      // Call parent callback to create block at the dropped position
+      onCreateBlockAtPosition(blockType, over.id as string);
+      return;
+    }
+
+    // Check if dragging a schedule block (existing block in schedule)
     if (draggedId.startsWith('block-')) {
       handleBlockDrag(draggedId, over.id as string);
       return;

@@ -219,6 +219,17 @@ export default function SchedulePage() {
   // Note: onSuccess/onError handled in handleSaveSchedule for multi-day saves
   const scheduleMutation = trpc.scheduling.schedule.useMutation();
 
+  // Create schedule block mutation
+  const createBlockMutation = trpc.scheduling.createScheduleBlock.useMutation({
+    onSuccess: () => {
+      toast.success('Block created successfully');
+      refetchBlocks();
+    },
+    onError: (error) => {
+      toast.error(`Failed to create block: ${error.message}`);
+    },
+  });
+
   // Reset mutations
   const resetDay = trpc.scheduling.resetDay.useMutation({
     onSuccess: async (data) => {
@@ -736,6 +747,22 @@ export default function SchedulePage() {
       console.error('[SchedulePage] Failed to reorder blocks:', error);
       toast.error('Failed to reorder blocks');
     }
+  };
+
+  // Handle creating a block at a specific position (via drag-and-drop)
+  const handleCreateBlockAtPosition = (blockType: 'award' | 'break', targetId: string) => {
+    console.log('[SchedulePage] Creating block via drag-drop:', { blockType, targetId });
+
+    // Create block with default values (30 min duration, default title)
+    const defaultTitle = blockType === 'award' ? 'Award Ceremony' : '30 Minute Break';
+
+    createBlockMutation.mutate({
+      competitionId: TEST_COMPETITION_ID,
+      tenantId: TEST_TENANT_ID,
+      blockType,
+      title: defaultTitle,
+      durationMinutes: 30,
+    });
   };
 
   // Auto-fix conflict for a single routine
@@ -1472,6 +1499,7 @@ export default function SchedulePage() {
           selectedDate={selectedDate}
           onScheduleChange={handleScheduleChange}
           onBlockReorder={handleBlockReorder}
+          onCreateBlockAtPosition={handleCreateBlockAtPosition}
           selectedRoutineIds={selectedRoutineIds}
           selectedScheduledIds={selectedScheduledIds}
           onClearSelection={handleDeselectAll}
