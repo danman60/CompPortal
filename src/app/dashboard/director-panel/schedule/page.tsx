@@ -24,6 +24,7 @@ import { DayTabs } from '@/components/scheduling/DayTabs';
 import { DraggableBlockTemplate } from '@/components/ScheduleBlockCard';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
+import { AssignStudioCodesModal } from '@/components/AssignStudioCodesModal';
 import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
@@ -89,6 +90,9 @@ export default function SchedulePage() {
 
   // Fix All conflicts modal state
   const [showFixAllModal, setShowFixAllModal] = useState(false);
+
+  // Studio code assignment modal state
+  const [showStudioCodeModal, setShowStudioCodeModal] = useState(false);
 
   // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
@@ -195,6 +199,19 @@ export default function SchedulePage() {
       enabled: showVersionHistory,
     }
   );
+
+  // Check for unassigned studio codes on mount
+  const { data: studioCodeData } = trpc.scheduling.getUnassignedStudioCodes.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+  });
+
+  // Auto-show modal if there are unassigned studios (only on mount)
+  useEffect(() => {
+    if (studioCodeData && studioCodeData.unassignedCount > 0 && !showStudioCodeModal) {
+      setShowStudioCodeModal(true);
+    }
+  }, [studioCodeData?.unassignedCount]); // Only depend on count, not modal state
 
   const currentVersion = versionData;
 
@@ -1680,6 +1697,17 @@ export default function SchedulePage() {
               );
             });
           }
+        }}
+      />
+
+      {/* Assign Studio Codes Modal */}
+      <AssignStudioCodesModal
+        isOpen={showStudioCodeModal}
+        onClose={() => setShowStudioCodeModal(false)}
+        competitionId={TEST_COMPETITION_ID}
+        tenantId={TEST_TENANT_ID}
+        onAssignComplete={() => {
+          refetch(); // Refresh routines to get updated studio codes
         }}
       />
 
