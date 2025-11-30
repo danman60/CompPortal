@@ -185,7 +185,7 @@ export function RoutineCard({
         {/* Conflict Badge */}
         {hasConflict && (
           <div
-            className={`px-2 py-1 rounded-md text-xs font-bold shadow-lg ${
+            className={`px-3 py-1.5 rounded-md text-sm font-bold shadow-lg min-w-[2.5rem] flex items-center justify-center ${
               conflictSeverity === 'critical'
                 ? 'bg-red-600/90 text-white'
                 : conflictSeverity === 'error'
