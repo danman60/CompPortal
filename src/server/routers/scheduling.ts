@@ -3904,7 +3904,7 @@ export const schedulingRouter = router({
       };
     }),
 
-  // Reset all drafts and versions for a competition (DESTRUCTIVE)
+  // Reset current schedule (clear UI) while preserving version history
   // Requires explicit confirmation from user
   resetAllDraftsAndVersions: publicProcedure
     .input(z.object({
@@ -3923,19 +3923,9 @@ export const schedulingRouter = router({
         throw new Error('Invalid confirmation. Type RESET to confirm.');
       }
 
-      console.log('[resetAllDraftsAndVersions] Starting full reset for competition', input.competitionId);
+      console.log('[resetAllDraftsAndVersions] Starting reset (preserving version history) for competition', input.competitionId);
 
-      // 1. Delete all schedule versions
-      const versionsResult = await prisma.schedule_versions.deleteMany({
-        where: {
-          tenant_id: input.tenantId,
-          competition_id: input.competitionId,
-        },
-      });
-
-      console.log('[resetAllDraftsAndVersions] Deleted', versionsResult.count, 'versions');
-
-      // 2. Unschedule all routines (clear all drafts)
+      // 1. Unschedule all routines (clears UI and drafts)
       const routinesResult = await prisma.competition_entries.updateMany({
         where: {
           tenant_id: input.tenantId,
@@ -3952,7 +3942,7 @@ export const schedulingRouter = router({
 
       console.log('[resetAllDraftsAndVersions] Unscheduled', routinesResult.count, 'routines');
 
-      // 3. Delete all schedule blocks
+      // 2. Delete all schedule blocks
       const blocksResult = await prisma.schedule_blocks.deleteMany({
         where: {
           tenant_id: input.tenantId,
@@ -3962,9 +3952,11 @@ export const schedulingRouter = router({
 
       console.log('[resetAllDraftsAndVersions] Deleted', blocksResult.count, 'schedule blocks');
 
+      // 3. Keep schedule_versions for history (do NOT delete)
+      // Users can browse previous versions via version history dropdown
+
       return {
         success: true,
-        versionsDeleted: versionsResult.count,
         routinesUnscheduled: routinesResult.count,
         blocksDeleted: blocksResult.count,
       };

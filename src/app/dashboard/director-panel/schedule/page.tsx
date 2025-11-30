@@ -263,7 +263,7 @@ export default function SchedulePage() {
 
   const resetAllDraftsAndVersions = trpc.scheduling.resetAllDraftsAndVersions.useMutation({
     onSuccess: async (data) => {
-      toast.success(`Reset complete: ${data.versionsDeleted} versions, ${data.routinesUnscheduled} routines, ${data.blocksDeleted} blocks deleted`);
+      toast.success(`Reset complete: ${data.routinesUnscheduled} routines unscheduled, ${data.blocksDeleted} blocks deleted (version history preserved)`);
       setDraftsByDate({}); // Clear ALL drafts FIRST
       setShowResetAllModal(false); // Close modal
       await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Refetch everything

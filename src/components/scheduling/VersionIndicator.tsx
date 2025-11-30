@@ -1,6 +1,13 @@
 'use client';
 
-import { Clock, CheckCircle, AlertCircle, Calendar, Users } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Clock, CheckCircle, AlertCircle, Calendar, Users, ChevronDown } from 'lucide-react';
+
+interface VersionHistory {
+  versionNumber: number;
+  createdAt: string | Date;
+  status: 'draft' | 'under_review' | 'review_closed';
+}
 
 interface VersionIndicatorProps {
   versionNumber: number;
@@ -10,6 +17,8 @@ interface VersionIndicatorProps {
   respondingStudios?: number;
   totalStudios?: number;
   notesCount?: number;
+  versions?: VersionHistory[]; // All versions for dropdown
+  onVersionSelect?: (versionNumber: number) => void; // Callback when version selected
 }
 
 export function VersionIndicator({
@@ -20,7 +29,23 @@ export function VersionIndicator({
   respondingStudios = 0,
   totalStudios = 0,
   notesCount = 0,
+  versions = [],
+  onVersionSelect,
 }: VersionIndicatorProps) {
+  const [showVersionDropdown, setShowVersionDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowVersionDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const getStatusBadge = () => {
     switch (status) {
       case 'draft':
@@ -84,9 +109,60 @@ export function VersionIndicator({
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-purple-100">
-              Version {versionNumber}
-            </h3>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => versions.length > 0 && setShowVersionDropdown(!showVersionDropdown)}
+                className={`flex items-center gap-2 text-lg font-semibold text-purple-100 ${
+                  versions.length > 0 ? 'hover:text-purple-200 cursor-pointer' : ''
+                }`}
+                disabled={versions.length === 0}
+              >
+                Version {versionNumber}
+                {versions.length > 0 && (
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showVersionDropdown ? 'rotate-180' : ''}`} />
+                )}
+              </button>
+
+              {/* Version Dropdown */}
+              {showVersionDropdown && versions.length > 0 && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-purple-500/30 rounded-lg shadow-xl z-50 overflow-hidden">
+                  <div className="p-2 border-b border-purple-500/30 bg-purple-900/30">
+                    <p className="text-xs font-medium text-purple-200">Version History</p>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {versions.map((v) => {
+                      const date = new Date(v.createdAt);
+                      const isCurrent = v.versionNumber === versionNumber;
+
+                      return (
+                        <button
+                          key={v.versionNumber}
+                          onClick={() => {
+                            onVersionSelect?.(v.versionNumber);
+                            setShowVersionDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-purple-900/30 transition-colors ${
+                            isCurrent ? 'bg-purple-900/50 border-l-2 border-purple-400' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`text-sm font-medium ${isCurrent ? 'text-purple-200' : 'text-gray-300'}`}>
+                              Version {v.versionNumber}
+                              {isCurrent && <span className="ml-2 text-xs text-purple-400">(current)</span>}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {' at '}
+                            {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             {getStatusBadge()}
             {getDaysRemainingDisplay()}
           </div>

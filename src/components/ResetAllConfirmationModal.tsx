@@ -46,18 +46,17 @@ export function ResetAllConfirmationModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="⚠️ Reset All Drafts & Versions">
       <div className="space-y-4">
         {/* Warning Message */}
-        <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-4">
-          <h3 className="text-red-400 font-bold text-sm mb-2">
-            ⚠️ DESTRUCTIVE ACTION - CANNOT BE UNDONE
+        <div className="bg-orange-900/30 border border-orange-500/50 rounded-lg p-4">
+          <h3 className="text-orange-400 font-bold text-sm mb-2">
+            ⚠️ RESET TO FRESH START
           </h3>
-          <p className="text-red-300 text-sm">
-            This will permanently delete:
+          <p className="text-orange-300 text-sm">
+            This will clear the current schedule:
           </p>
-          <ul className="list-disc list-inside text-red-300 text-sm mt-2 space-y-1">
-            <li>All schedule versions (draft & review)</li>
-            <li>All scheduled routines (all days)</li>
-            <li>All schedule blocks (awards/breaks)</li>
-            <li>All draft changes (unsaved work)</li>
+          <ul className="list-disc list-inside text-orange-300 text-sm mt-2 space-y-1">
+            <li>Unschedule all routines (all days)</li>
+            <li>Delete all schedule blocks (awards/breaks)</li>
+            <li>Clear all unsaved draft changes</li>
           </ul>
         </div>
 
@@ -67,12 +66,13 @@ export function ResetAllConfirmationModal({
             ✅ What Will Be Preserved
           </h3>
           <ul className="list-disc list-inside text-green-300 text-sm space-y-1">
+            <li>Version history (browse previous versions)</li>
             <li>All routines (entries) remain in database</li>
             <li>All dancers and studios remain</li>
             <li>Competition settings unchanged</li>
           </ul>
           <p className="text-green-300 text-sm mt-2">
-            You can re-schedule routines after reset.
+            You can re-schedule routines and view past versions after reset.
           </p>
         </div>
 
