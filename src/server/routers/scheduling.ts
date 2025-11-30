@@ -737,8 +737,10 @@ export const schedulingRouter = router({
 
       // Transform data based on view mode
       return routines.map(routine => {
-        // Fallback priority: reservation code > studio code > 'X'
-        const studioCode = routine.studios.reservations[0]?.studio_code || routine.studios.code || 'X';
+        // Fallback priority: reservation code > studio code > 'X' (unassigned)
+        const studioCode = routine.studios.reservations[0]?.studio_code ||
+                          routine.studios.code ||
+                          'X';
         const studioName = routine.studios.name;
 
         // View mode logic:
@@ -3779,6 +3781,126 @@ export const schedulingRouter = router({
         success: true,
         noteText: input.noteText,
         submittedAt: new Date(),
+      };
+    }),
+
+  // Get studios with unassigned codes (for modal)
+  getUnassignedStudioCodes: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      // Get all approved reservations for this competition
+      const reservations = await prisma.reservations.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          status: 'approved',
+        },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          approved_at: 'asc', // Order by approval time for sequential assignment
+        },
+      });
+
+      // Separate assigned and unassigned
+      const unassigned = reservations.filter(r => !r.studio_code);
+      const assigned = reservations.filter(r => r.studio_code);
+
+      return {
+        unassignedCount: unassigned.length,
+        totalCount: reservations.length,
+        unassigned: unassigned.map(r => ({
+          reservationId: r.id,
+          studioId: r.studio_id,
+          studioName: r.studios.name,
+          approvedAt: r.approved_at,
+        })),
+        assigned: assigned.map(r => ({
+          studioId: r.studio_id,
+          studioName: r.studios.name,
+          code: r.studio_code,
+        })),
+      };
+    }),
+
+  // Auto-assign studio codes based on approval order
+  autoAssignStudioCodes: publicProcedure
+    .input(z.object({
+      competitionId: z.string().uuid(),
+      tenantId: z.string().uuid(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Get all approved reservations ordered by approval time
+      const reservations = await prisma.reservations.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+          status: 'approved',
+        },
+        include: {
+          studios: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          approved_at: 'asc',
+        },
+      });
+
+      // Helper function to generate sequential letter codes (A-Z, AA-ZZ, AAA...)
+      function generateCode(index: number): string {
+        let code = '';
+        let num = index;
+
+        do {
+          code = String.fromCharCode(65 + (num % 26)) + code;
+          num = Math.floor(num / 26) - 1;
+        } while (num >= 0);
+
+        return code;
+      }
+
+      // Assign codes sequentially
+      const assignments: Array<{ reservationId: string; studioName: string; code: string }> = [];
+      let codeIndex = 0;
+
+      for (const reservation of reservations) {
+        // Skip if already has a code
+        if (reservation.studio_code) {
+          continue;
+        }
+
+        const code = generateCode(codeIndex);
+        codeIndex++;
+
+        // Update reservation with code
+        await prisma.reservations.update({
+          where: { id: reservation.id },
+          data: { studio_code: code },
+        });
+
+        assignments.push({
+          reservationId: reservation.id,
+          studioName: reservation.studios.name,
+          code,
+        });
+      }
+
+      return {
+        success: true,
+        assignedCount: assignments.length,
+        assignments,
       };
     }),
 
