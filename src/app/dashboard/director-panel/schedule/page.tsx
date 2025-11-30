@@ -1052,41 +1052,33 @@ export default function SchedulePage() {
   const handleSaveSchedule = async () => {
     if (!routines) return;
 
-    // Find all dates with unsaved changes
-    const datesToSave: string[] = [];
+    // Get ALL dates with scheduled routines (from drafts OR server data)
+    // Save entire schedule state, not just changed days
+    const allDatesSet = new Set<string>();
 
+    // Add all dates from drafts
     for (const [date, dayDraft] of Object.entries(draftsByDate)) {
-      // Filter out blocks when comparing - blocks are saved separately
       const routinesOnly = dayDraft.filter(item => !item.isBlock);
-
-      const serverScheduled = routines
-        .filter(r => r.isScheduled && r.scheduledDateString === date)
-        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
-
-      // Compare draft with server state (routines only)
-      const hasChanges =
-        routinesOnly.length !== serverScheduled.length ||
-        routinesOnly.some((draft, index) => {
-          const server = serverScheduled[index];
-          if (!server) return true;
-          return (
-            draft.id !== server.id ||
-            draft.entryNumber !== server.entryNumber ||
-            draft.performanceTime !== server.scheduledTimeString
-          );
-        });
-
-      if (hasChanges && routinesOnly.length > 0) {
-        datesToSave.push(date);
+      if (routinesOnly.length > 0) {
+        allDatesSet.add(date);
       }
     }
 
+    // Add all dates from server data (in case user hasn't modified them but they exist)
+    for (const routine of routines || []) {
+      if (routine.isScheduled && routine.scheduledDateString) {
+        allDatesSet.add(routine.scheduledDateString);
+      }
+    }
+
+    const datesToSave = Array.from(allDatesSet).sort();
+
     if (datesToSave.length === 0) {
-      toast.error('No changes to save');
+      toast.error('No routines scheduled - nothing to save');
       return;
     }
 
-    // Show progress and save all changed days sequentially
+    // Show progress and save all days sequentially
     setIsSaving(true);
     const savedDays: string[] = [];
     const failedDays: string[] = [];
@@ -1094,7 +1086,23 @@ export default function SchedulePage() {
     try {
       for (let i = 0; i < datesToSave.length; i++) {
         const date = datesToSave[i];
-        const dayDraft = draftsByDate[date] || [];
+
+        // Use draft if available, otherwise fallback to server data for this day
+        let daySchedule = draftsByDate[date];
+        if (!daySchedule || daySchedule.length === 0) {
+          // No draft for this day - use server data
+          daySchedule = (routines || [])
+            .filter(r => r.isScheduled && r.scheduledDateString === date)
+            .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
+            .map(r => ({
+              id: r.id,
+              title: r.title,
+              duration: r.duration || 3,
+              isScheduled: true,
+              entryNumber: r.entryNumber,
+              performanceTime: r.scheduledTimeString || '08:00:00',
+            }));
+        }
 
         // Update progress
         const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -1106,7 +1114,7 @@ export default function SchedulePage() {
 
         // Filter out blocks - they're already saved via createScheduleBlock/placeScheduleBlock
         // Only send routines to the schedule mutation
-        const routinesOnly = dayDraft.filter(item => !item.isBlock);
+        const routinesOnly = daySchedule.filter(item => !item.isBlock);
 
         try {
           await new Promise<void>((resolve, reject) => {
