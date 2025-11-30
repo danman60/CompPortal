@@ -557,7 +557,9 @@ export default function SchedulePage() {
       }
     }
     // Divide by 2 since each conflict is counted twice (once for each routine)
-    return Math.floor(count / 2);
+    const finalCount = Math.floor(count / 2);
+    console.log('[ConflictCount] Day:', selectedDate, 'Conflicts:', finalCount, 'Draft routines:', daySchedule.length);
+    return finalCount;
   }, [conflictsByRoutineId, draftsByDate, selectedDate]);
 
   // Initialize drafts for ALL days from server data (ensures renumbering has full context)
@@ -853,16 +855,22 @@ export default function SchedulePage() {
         };
       });
 
-      setDraftsByDate(prev => ({
-        ...prev,
-        [selectedDate]: updatedDraft
-      }));
+      setDraftsByDate(prev => {
+        const updated = {
+          ...prev,
+          [selectedDate]: updatedDraft
+        };
+        console.log('[AutoFix] Updated draft for', selectedDate, '- routines:', updatedDraft.length);
+        return updated;
+      });
     }
 
     // Show results
     const totalMoved = result.movedRoutines.length;
     const totalResolved = result.resolvedConflicts;
     const totalUnresolved = result.unresolvedConflicts.length;
+
+    console.log('[AutoFix] Results - Moved:', totalMoved, 'Resolved:', totalResolved, 'Unresolved:', totalUnresolved);
 
     if (result.success) {
       toast.success(`✅ Fixed all conflicts! Moved ${totalMoved} routine${totalMoved !== 1 ? 's' : ''}, resolved ${totalResolved} conflict${totalResolved !== 1 ? 's' : ''}.`);
