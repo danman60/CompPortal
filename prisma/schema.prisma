@@ -842,6 +842,7 @@ model competitions {
   competition_entries               competition_entries[]
   competition_locations             competition_locations[]
   competition_sessions              competition_sessions[]
+  day_start_times                   day_start_times[]
   tenants                           tenants                             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   documents                         documents[]
   elite_instructors                 elite_instructors[]
@@ -861,6 +862,24 @@ model competitions {
   @@index([status], map: "idx_competitions_status")
   @@index([tenant_id], map: "idx_competitions_tenant")
   @@index([year], map: "idx_competitions_year")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model day_start_times {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id      String       @db.Uuid
+  competition_id String       @db.Uuid
+  date           DateTime     @db.Date
+  start_time     DateTime     @default(dbgenerated("'08:00:00'::time")) @db.Time(6)
+  created_at     DateTime     @default(now()) @db.Timestamp(6)
+  updated_at     DateTime     @default(now()) @db.Timestamp(6)
+
+  tenants        tenants      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  competitions   competitions @relation(fields: [competition_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_id, competition_id, date], map: "day_start_times_tenant_id_competition_id_date_key")
+  @@index([competition_id, date], map: "idx_day_start_times_competition")
   @@schema("public")
 }
 
@@ -1525,6 +1544,7 @@ model tenants {
   competitions                      competitions[]
   dance_categories                  dance_categories[]
   dancers                           dancers[]
+  day_start_times                   day_start_times[]
   documents                         documents[]
   email_logs                        email_logs[]
   email_preferences                 email_preferences[]

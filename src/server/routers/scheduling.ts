@@ -3149,6 +3149,29 @@ export const schedulingRouter = router({
       }
     }),
 
+  // Get day start times for a competition
+  getDayStartTimes: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      // Verify tenant context
+      if (ctx.tenantId && ctx.tenantId !== input.tenantId) {
+        throw new Error('Tenant ID mismatch');
+      }
+
+      const startTimes = await prisma.day_start_times.findMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      return startTimes;
+    }),
+
   // Update day start time - recalculates all routine times for that day (V4 redesign)
   updateDayStartTime: publicProcedure
     .input(z.object({
@@ -3168,12 +3191,39 @@ export const schedulingRouter = router({
         throw new Error('Tenant ID mismatch');
       }
 
-      // Get all scheduled routines for this date, ordered by entry_number
+      // STEP 1: Store start time in day_start_times table (persists regardless of routines)
+      const parsedDate = new Date(date);
+      const [hours, minutes, seconds] = newStartTime.split(':').map(Number);
+      const timeValue = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
+
+      await prisma.day_start_times.upsert({
+        where: {
+          day_start_times_tenant_id_competition_id_date_key: {
+            tenant_id: tenantId,
+            competition_id: competitionId,
+            date: parsedDate,
+          },
+        },
+        create: {
+          tenant_id: tenantId,
+          competition_id: competitionId,
+          date: parsedDate,
+          start_time: timeValue,
+        },
+        update: {
+          start_time: timeValue,
+          updated_at: new Date(),
+        },
+      });
+
+      console.log('[updateDayStartTime] Stored start time:', newStartTime);
+
+      // STEP 2: Get all scheduled routines for this date, ordered by entry_number
       const routines = await prisma.competition_entries.findMany({
         where: {
           tenant_id: tenantId,
           competition_id: competitionId,
-          performance_date: new Date(date),
+          performance_date: parsedDate,
           is_scheduled: true,
         },
         orderBy: {
@@ -3189,17 +3239,14 @@ export const schedulingRouter = router({
       console.log('[updateDayStartTime] Found routines:', routines.length);
 
       if (routines.length === 0) {
-        console.log('[updateDayStartTime] No routines to update');
+        console.log('[updateDayStartTime] No routines to update (start time stored)');
         return { success: true, updatedCount: 0 };
       }
 
-      // Parse new start time (use UTC to avoid timezone bugs)
-      const [hours, minutes, seconds] = newStartTime.split(':').map(Number);
-      const baseTime = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds || 0));
-
+      // STEP 3: Recalculate all routine times sequentially
+      const baseTime = timeValue;
       console.log('[updateDayStartTime] Base time:', baseTime.toISOString());
 
-      // Recalculate times sequentially
       let currentTime = baseTime;
       const updates = [];
 

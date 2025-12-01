@@ -214,6 +214,12 @@ export default function SchedulePage() {
     tenantId: TEST_TENANT_ID,
   });
 
+  // Fetch stored day start times
+  const { data: dayStartTimes, refetch: refetchDayStartTimes } = trpc.scheduling.getDayStartTimes.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
+  });
+
   // Auto-show modal if there are unassigned studios (only on mount)
   useEffect(() => {
     if (studioCodeData && studioCodeData.unassignedCount > 0 && !showStudioCodeModal) {
@@ -1422,13 +1428,22 @@ export default function SchedulePage() {
     ];
 
     return dates.map(d => {
-      // Find first scheduled routine for this date to get start time
-      const firstRoutine = (routines || [])
-        .filter(r => r.isScheduled && r.scheduledDateString === d.date)
-        .sort((a, b) => (a.entryNumber ?? 0) - (b.entryNumber ?? 0))[0];
+      // Get stored start time for this date, default to '08:00:00'
+      const storedStartTime = dayStartTimes?.find(dst => {
+        const dstDate = new Date(dst.date);
+        const targetDate = new Date(d.date);
+        return dstDate.getTime() === targetDate.getTime();
+      });
 
-      // Extract start time from scheduledTimeString, default to '08:00:00'
-      const startTime = firstRoutine?.scheduledTimeString || '08:00:00';
+      // Extract HH:MM:SS from stored time, or use default
+      let startTime = '08:00:00';
+      if (storedStartTime?.start_time) {
+        const timeValue = new Date(storedStartTime.start_time);
+        const hours = String(timeValue.getUTCHours()).padStart(2, '0');
+        const minutes = String(timeValue.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(timeValue.getUTCSeconds()).padStart(2, '0');
+        startTime = `${hours}:${minutes}:${seconds}`;
+      }
 
       // Count saved routines (always from database, ignores drafts)
       const savedRoutineCount = (routines || []).filter(
@@ -1444,7 +1459,7 @@ export default function SchedulePage() {
         savedRoutineCount, // Always show saved count for pencil visibility
       };
     });
-  }, [routines, draftsByDate]);
+  }, [routines, draftsByDate, dayStartTimes]);
 
   return (
     <>
@@ -1657,8 +1672,14 @@ export default function SchedulePage() {
                 onStartTimeUpdated={async (date: string, newStartTime: string) => {
                   console.log('[onStartTimeUpdated] Day start time changed:', date, newStartTime);
 
-                  // Backend has already updated ALL routine times for this day
-                  // Force immediate refetch to get updated times from database
+                  // Backend has already:
+                  // 1. Stored start time in day_start_times table
+                  // 2. Updated ALL routine times for this day
+
+                  // Refetch day start times to update day card display
+                  await refetchDayStartTimes();
+
+                  // Force immediate refetch to get updated routine times from database
                   await refetch();
 
                   // Reload draft from database to sync with new times
@@ -1689,7 +1710,7 @@ export default function SchedulePage() {
                   // Invalidate conflicts
                   await utils.scheduling.detectConflicts.invalidate();
 
-                  console.log('[onStartTimeUpdated] Draft synced with database');
+                  console.log('[onStartTimeUpdated] Draft and day card synced with database');
                 }}
                 onResetDay={() => {
                   if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
