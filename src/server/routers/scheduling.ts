@@ -3908,7 +3908,8 @@ export const schedulingRouter = router({
       };
     }),
 
-  // Reset current schedule (clear UI) while preserving version history
+  // Nuclear reset - Deletes schedule + versions (DESTRUCTIVE)
+  // ⚠️ CRITICAL: Only touches schedule-based info, NEVER entries/reservations/dancers
   // Requires explicit confirmation from user
   resetAllDraftsAndVersions: publicProcedure
     .input(z.object({
@@ -3927,9 +3928,19 @@ export const schedulingRouter = router({
         throw new Error('Invalid confirmation. Type RESET to confirm.');
       }
 
-      console.log('[resetAllDraftsAndVersions] Starting reset (preserving version history) for competition', input.competitionId);
+      console.log('[resetAllDraftsAndVersions] Starting nuclear reset (DELETE ALL: schedule + versions) for competition', input.competitionId);
 
-      // 1. Unschedule all routines (clears UI and drafts)
+      // 1. Delete all schedule versions (DESTRUCTIVE - permanent history loss)
+      const versionsResult = await prisma.schedule_versions.deleteMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+      });
+
+      console.log('[resetAllDraftsAndVersions] Deleted', versionsResult.count, 'versions');
+
+      // 2. Unschedule all routines (clears schedule info only, preserves entry data)
       const routinesResult = await prisma.competition_entries.updateMany({
         where: {
           tenant_id: input.tenantId,
@@ -3946,7 +3957,7 @@ export const schedulingRouter = router({
 
       console.log('[resetAllDraftsAndVersions] Unscheduled', routinesResult.count, 'routines');
 
-      // 2. Delete all schedule blocks
+      // 3. Delete all schedule blocks
       const blocksResult = await prisma.schedule_blocks.deleteMany({
         where: {
           tenant_id: input.tenantId,
@@ -3956,11 +3967,9 @@ export const schedulingRouter = router({
 
       console.log('[resetAllDraftsAndVersions] Deleted', blocksResult.count, 'schedule blocks');
 
-      // 3. Keep schedule_versions for history (do NOT delete)
-      // Users can browse previous versions via version history dropdown
-
       return {
         success: true,
+        versionsDeleted: versionsResult.count,
         routinesUnscheduled: routinesResult.count,
         blocksDeleted: blocksResult.count,
       };

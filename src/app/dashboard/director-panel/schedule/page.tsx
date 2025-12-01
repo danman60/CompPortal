@@ -30,6 +30,7 @@ import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
+import { NuclearResetConfirmationModal } from '@/components/NuclearResetConfirmationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Mail, Clock, History } from 'lucide-react';
@@ -97,6 +98,9 @@ export default function SchedulePage() {
 
   // Reset all confirmation modal state
   const [showResetAllModal, setShowResetAllModal] = useState(false);
+
+  // Nuclear reset confirmation modal state
+  const [showNuclearResetModal, setShowNuclearResetModal] = useState(false);
 
   // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
@@ -261,15 +265,16 @@ export default function SchedulePage() {
     },
   });
 
+  // Nuclear reset mutation (database + drafts + versions)
   const resetAllDraftsAndVersions = trpc.scheduling.resetAllDraftsAndVersions.useMutation({
     onSuccess: async (data) => {
-      toast.success(`Reset complete: ${data.routinesUnscheduled} routines unscheduled, ${data.blocksDeleted} blocks deleted (version history preserved)`);
+      toast.success(`Nuclear reset complete: ${data.routinesUnscheduled} routines unscheduled, ${data.blocksDeleted} blocks deleted, ${data.versionsDeleted} versions deleted`);
       setDraftsByDate({}); // Clear ALL drafts FIRST
-      setShowResetAllModal(false); // Close modal
-      await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Refetch everything
+      setShowNuclearResetModal(false); // Close modal
+      await Promise.all([refetch(), refetchBlocks(), refetchConflicts(), refetchVersion()]); // Refetch everything including versions
     },
     onError: (error) => {
-      toast.error(`Failed to reset: ${error.message}`);
+      toast.error(`Failed to nuclear reset: ${error.message}`);
     },
   });
 
@@ -1569,10 +1574,18 @@ export default function SchedulePage() {
               </button>
             )}
             <button
-              className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors font-semibold"
+              className="px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white rounded-lg transition-colors font-semibold"
               onClick={() => setShowResetAllModal(true)}
+              title="Clear all drafts (UI only, keeps database)"
             >
-              🗑️ Reset All
+              🗑️ Reset All (UI)
+            </button>
+            <button
+              className="px-4 py-2 bg-red-800 hover:bg-red-700 text-white rounded-lg transition-colors font-semibold border-2 border-red-500"
+              onClick={() => setShowNuclearResetModal(true)}
+              title="⚠️ DESTRUCTIVE: Deletes schedule + versions from database"
+            >
+              ☢️ Nuclear Reset
             </button>
             <button
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
@@ -1903,10 +1916,23 @@ export default function SchedulePage() {
         </div>
       </Modal>
 
-      {/* Reset All Confirmation Modal */}
+      {/* Reset All Confirmation Modal (UI-only, draft clear) */}
       <ResetAllConfirmationModal
         isOpen={showResetAllModal}
         onClose={() => setShowResetAllModal(false)}
+        onConfirm={() => {
+          // Clear ALL drafts (UI state only, does NOT touch database)
+          setDraftsByDate({});
+          setShowResetAllModal(false);
+          toast.success('All drafts cleared (database unchanged)');
+        }}
+        isLoading={false}
+      />
+
+      {/* Nuclear Reset Confirmation Modal (DESTRUCTIVE - deletes DB + versions) */}
+      <NuclearResetConfirmationModal
+        isOpen={showNuclearResetModal}
+        onClose={() => setShowNuclearResetModal(false)}
         onConfirm={() => {
           resetAllDraftsAndVersions.mutate({
             tenantId: TEST_TENANT_ID,
