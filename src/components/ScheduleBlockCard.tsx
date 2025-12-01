@@ -60,6 +60,13 @@ export function ScheduleBlockCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onDoubleClick={(e) => {
+        // Double-click to edit (only when in schedule zone)
+        if (inZone && onEdit) {
+          e.stopPropagation();
+          onEdit(block.id);
+        }
+      }}
       className={`
         relative rounded-xl p-4 border-2 cursor-grab transition-all
         ${isDraggingThis || isDragging ? 'opacity-50 rotate-2 scale-105' : 'hover:translate-y-[-2px]'}
