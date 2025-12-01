@@ -913,15 +913,24 @@ export default function SchedulePage() {
         performanceTime: daySchedule.find(d => d.id === r.id)?.performanceTime,
       }));
 
-      setDraftsByDate(prev => ({
-        ...prev,
+      // Update current day's draft
+      const updatedDrafts = {
+        ...draftsByDate,
         [selectedDate]: updatedDraft
-      }));
+      };
+
+      // CRITICAL: Renumber ALL days globally after auto-fix (same as drag-drop)
+      const renumbered = renumberAllDays(updatedDrafts);
+      setDraftsByDate(renumbered);
 
       const movedRoutine = result.movedRoutines[0];
       if (movedRoutine) {
+        // Get the routine's NEW entry number after global renumbering
+        const movedRoutineInSchedule = renumbered[selectedDate]?.find(r => r.id === routineId);
+        const newEntryNumber = movedRoutineInSchedule?.entryNumber || '?';
+
         toast.success(
-          `Moved "${movedRoutine.routineTitle}" from position ${movedRoutine.fromPosition + 1} to ${movedRoutine.toPosition + 1} (${movedRoutine.distance} positions)`
+          `Auto-fix: Moved routine to position ${movedRoutine.toPosition + 1} → Entry #${newEntryNumber}`
         );
       }
     } else {
@@ -1011,14 +1020,17 @@ export default function SchedulePage() {
         };
       });
 
-      setDraftsByDate(prev => {
-        const updated = {
-          ...prev,
-          [selectedDate]: updatedDraft
-        };
-        console.log('[AutoFix] Updated draft for', selectedDate, '- routines:', updatedDraft.length);
-        return updated;
-      });
+      // Update current day's draft
+      const updatedDrafts = {
+        ...draftsByDate,
+        [selectedDate]: updatedDraft
+      };
+
+      // CRITICAL: Renumber ALL days globally after auto-fix (same as drag-drop and single auto-fix)
+      const renumbered = renumberAllDays(updatedDrafts);
+      setDraftsByDate(renumbered);
+
+      console.log('[AutoFixAll] Updated and renumbered all days - current day routines:', updatedDraft.length);
     }
 
     // Show results
