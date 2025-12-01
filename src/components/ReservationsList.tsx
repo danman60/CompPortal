@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ManualReservationModal from './ManualReservationModal';
+import MoveReservationModal from './MoveReservationModal';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { SkeletonList } from '@/components/Skeleton';
@@ -76,6 +77,16 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     paymentMethod: string;
     paymentDate: string;
     notes: string;
+  } | null>(null);
+
+  // Move Reservation modal state (CD feature)
+  const [moveReservationModal, setMoveReservationModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    currentCompetitionName: string;
+    currentCompetitionId: string;
+    spacesConfirmed: number;
   } | null>(null);
 
   // SD Request Space Increase modal state (SD feature)
@@ -370,6 +381,18 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
       paymentMethod: 'etransfer',
       paymentDate: new Date().toISOString().split('T')[0],
       notes: '',
+    });
+  };
+
+  // CD Feature: Move Reservation handler
+  const handleMoveReservation = (reservation: any) => {
+    setMoveReservationModal({
+      isOpen: true,
+      reservationId: reservation.id,
+      studioName: reservation.studios?.name || 'Unknown Studio',
+      currentCompetitionName: reservation.competitions?.name || 'Unknown Competition',
+      currentCompetitionId: reservation.competition_id,
+      spacesConfirmed: reservation.spaces_confirmed || 0,
     });
   };
 
@@ -1139,17 +1162,21 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                           </div>
                         </div>
 
-                        {/* CD Feature: Edit Spaces & Edit Deposit buttons */}
-                        {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
+                        {/* CD Feature: Edit Spaces, Edit Deposit, Move Reservation buttons */}
+                        {isCompetitionDirector && (
                           <div className="space-y-3">
-                            <button
-                              onClick={() => handleEditSpaces(reservation)}
-                              className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
-                            >
-                              ✏️ Edit Spaces
-                            </button>
-                            {/* Hide Edit Deposit button if invoice has been SENT */}
-                            {(!reservation.invoices || reservation.invoices.length === 0 || reservation.invoices[0]?.status !== 'SENT') && (
+                            {/* Edit Spaces - only for approved/summarized/invoiced */}
+                            {['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
+                              <button
+                                onClick={() => handleEditSpaces(reservation)}
+                                className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                              >
+                                ✏️ Edit Spaces
+                              </button>
+                            )}
+                            {/* Edit Deposit - only for approved/summarized/invoiced and invoice not SENT */}
+                            {['approved', 'summarized', 'invoiced'].includes(reservation.status || '') &&
+                              (!reservation.invoices || reservation.invoices.length === 0 || reservation.invoices[0]?.status !== 'SENT') && (
                               <button
                                 onClick={() => handleRecordDeposit(reservation)}
                                 className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
@@ -1157,6 +1184,13 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                                 ✏️ Edit Deposit
                               </button>
                             )}
+                            {/* Move Reservation - always available for CD */}
+                            <button
+                              onClick={() => handleMoveReservation(reservation)}
+                              className="w-full bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                            >
+                              🔄 Move Reservation
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1758,6 +1792,26 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             </div>
           </div>
         </div>
+      )}
+
+      {/* Move Reservation Modal (CD Feature) */}
+      {moveReservationModal && data?.competitions && (
+        <MoveReservationModal
+          isOpen={moveReservationModal.isOpen}
+          onClose={() => setMoveReservationModal(null)}
+          reservation={{
+            id: moveReservationModal.reservationId,
+            studio_name: moveReservationModal.studioName,
+            current_competition_name: moveReservationModal.currentCompetitionName,
+            current_competition_id: moveReservationModal.currentCompetitionId,
+            spaces_confirmed: moveReservationModal.spacesConfirmed,
+          }}
+          competitions={data.competitions || []}
+          onSuccess={() => {
+            setMoveReservationModal(null);
+            utils.reservation.getAll.invalidate();
+          }}
+        />
       )}
     </div>
   );

@@ -2503,4 +2503,212 @@ ${input.comments}
         message: 'Your request has been sent to the Competition Director. You will be notified once it is reviewed.',
       };
     }),
+
+  // Move reservation to a different competition
+  // CD or SA only - handles capacity adjustments and entry updates
+  moveToCompetition: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        targetCompetitionId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Only CDs and Super Admins can move reservations
+      if (isStudioDirector(ctx.userRole)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can move reservations between competitions',
+        });
+      }
+
+      // Get reservation details
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: { select: { name: true, email: true, owner_id: true } },
+          competitions: { select: { id: true, name: true, tenant_id: true } },
+          competition_entries: { select: { id: true } },
+          invoices: { select: { id: true, status: true } },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Reservation not found' });
+      }
+
+      // Verify tenant access (CDs can only move within their tenant)
+      if (ctx.userRole === 'competition_director' && reservation.competitions.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      // Get target competition details
+      const targetCompetition = await prisma.competitions.findUnique({
+        where: { id: input.targetCompetitionId },
+        select: {
+          id: true,
+          name: true,
+          tenant_id: true,
+          available_reservation_tokens: true,
+        },
+      });
+
+      if (!targetCompetition) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Target competition not found' });
+      }
+
+      // Verify target competition is in same tenant
+      if (targetCompetition.tenant_id !== reservation.competitions.tenant_id) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot move reservation to a competition in a different tenant',
+        });
+      }
+
+      // Check if same competition
+      if (reservation.competition_id === input.targetCompetitionId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Reservation is already in this competition',
+        });
+      }
+
+      // Get spaces needed for capacity tracking
+      const spacesNeeded = reservation.spaces_confirmed || reservation.spaces_requested;
+
+      // Execute move in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Release capacity from old competition
+        await tx.competitions.update({
+          where: { id: reservation.competition_id },
+          data: {
+            available_reservation_tokens: { increment: spacesNeeded },
+          },
+        });
+
+        // 2. Reserve capacity in new competition
+        await tx.competitions.update({
+          where: { id: input.targetCompetitionId },
+          data: {
+            available_reservation_tokens: { decrement: spacesNeeded },
+          },
+        });
+
+        // 3. Update reservation
+        await tx.reservations.update({
+          where: { id: input.reservationId },
+          data: {
+            competition_id: input.targetCompetitionId,
+          },
+        });
+
+        // 4. Update all entries under this reservation
+        if (reservation.competition_entries.length > 0) {
+          await tx.competition_entries.updateMany({
+            where: { reservation_id: input.reservationId },
+            data: { competition_id: input.targetCompetitionId },
+          });
+        }
+
+        // 5. Update invoice if exists (any status - DRAFT, SENT, PAID)
+        if (reservation.invoices.length > 0) {
+          await tx.invoices.updateMany({
+            where: { reservation_id: input.reservationId },
+            data: { competition_id: input.targetCompetitionId },
+          });
+        }
+
+        // 6. Log capacity adjustments in ledger
+        // Release from old competition
+        await tx.capacity_ledger.create({
+          data: {
+            tenant_id: reservation.competitions.tenant_id,
+            competition_id: reservation.competition_id,
+            change_amount: spacesNeeded,
+            reason: `Reservation moved to ${targetCompetition.name} (released ${spacesNeeded} spaces)`,
+            reservation_id: input.reservationId,
+            created_by: ctx.userId!,
+          },
+        });
+
+        // Reserve in new competition
+        await tx.capacity_ledger.create({
+          data: {
+            tenant_id: targetCompetition.tenant_id,
+            competition_id: input.targetCompetitionId,
+            change_amount: -spacesNeeded,
+            reason: `Reservation moved from ${reservation.competitions.name} (reserved ${spacesNeeded} spaces)`,
+            reservation_id: input.reservationId,
+            created_by: ctx.userId!,
+          },
+        });
+
+        return {
+          oldCompetition: reservation.competitions.name,
+          newCompetition: targetCompetition.name,
+          entriesUpdated: reservation.competition_entries.length,
+        };
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'move_reservation',
+        entityType: 'reservation',
+        entityId: input.reservationId,
+        entityName: reservation.studios?.name,
+        details: {
+          from_competition: result.oldCompetition,
+          to_competition: result.newCompetition,
+          spaces: spacesNeeded,
+          entries_updated: result.entriesUpdated,
+        },
+      });
+
+      // Send notification email to studio if account is claimed
+      if (reservation.studios?.owner_id && reservation.studios?.email) {
+        try {
+          const emailEnabled = await isEmailEnabled(
+            reservation.studios.owner_id,
+            'reservation_updated'
+          );
+
+          if (emailEnabled) {
+            await sendEmail({
+              to: reservation.studios.email,
+              subject: `Competition Change: ${reservation.studios.name}`,
+              html: `
+                <h2>Competition Update</h2>
+                <p>Dear ${reservation.studios.name},</p>
+                <p>Your reservation has been moved to a different competition:</p>
+                <p><strong>From:</strong> ${result.oldCompetition}<br>
+                <strong>To:</strong> ${result.newCompetition}</p>
+                <p><strong>Spaces:</strong> ${spacesNeeded} entries${
+                result.entriesUpdated > 0
+                  ? `<br><strong>Entries updated:</strong> ${result.entriesUpdated}`
+                  : ''
+              }</p>
+                <p>All your entry data has been preserved and moved to the new competition.</p>
+                <p>If you have any questions, please contact the Competition Director.</p>
+              `,
+            });
+          }
+        } catch (error) {
+          logger.error('Failed to send competition move notification email', {
+            error: error instanceof Error ? error : new Error(String(error)),
+            reservationId: input.reservationId,
+          });
+          // Don't fail the operation if email fails
+        }
+      }
+
+      return {
+        success: true,
+        message: `Reservation moved from "${result.oldCompetition}" to "${result.newCompetition}". ${result.entriesUpdated} entries updated.`,
+        oldCompetition: result.oldCompetition,
+        newCompetition: result.newCompetition,
+        entriesUpdated: result.entriesUpdated,
+      };
+    }),
 });
