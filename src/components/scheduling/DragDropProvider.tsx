@@ -88,6 +88,7 @@ export function DragDropProvider({
   allDraftsByDate = {},
 }: DragDropProviderProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeBlockType, setActiveBlockType] = useState<'award' | 'break' | null>(null);
   const [dropIndicatorTop, setDropIndicatorTop] = useState<number>(0);
   const [showDropIndicator, setShowDropIndicator] = useState(false);
 
@@ -105,8 +106,18 @@ export function DragDropProvider({
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    setActiveId(active.id as string);
-    console.log('[DragDropProvider] Drag started:', { activeId: active.id });
+    const activeIdStr = active.id as string;
+    setActiveId(activeIdStr);
+
+    // Check if dragging a block template
+    if (activeIdStr.startsWith('block-template-')) {
+      const blockType = active.data?.current?.blockType as 'award' | 'break';
+      setActiveBlockType(blockType || null);
+      console.log('[DragDropProvider] Drag started (block template):', { activeId: active.id, blockType });
+    } else {
+      setActiveBlockType(null);
+      console.log('[DragDropProvider] Drag started:', { activeId: active.id });
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -337,6 +348,7 @@ export function DragDropProvider({
     const { active, over } = event;
 
     setActiveId(null);
+    setActiveBlockType(null);
     setShowDropIndicator(false);
 
     if (!over) {
@@ -669,7 +681,24 @@ export function DragDropProvider({
       {children}
       <DropIndicator top={dropIndicatorTop} visible={showDropIndicator} />
       <DragOverlay>
-        {activeRoutine ? (
+        {activeBlockType ? (
+          <div className="opacity-90 scale-110">
+            <div className={`
+              px-4 py-3 rounded-lg border-2 shadow-2xl
+              ${activeBlockType === 'award'
+                ? 'bg-amber-900/90 text-amber-200 border-amber-400'
+                : 'bg-cyan-900/90 text-cyan-200 border-cyan-400'
+              }
+            `}>
+              <div className="font-semibold text-sm">
+                {activeBlockType === 'award' ? '🏆 Award Ceremony' : '☕ Break Block'}
+              </div>
+              <div className="text-xs opacity-80 mt-1">
+                Drop to configure
+              </div>
+            </div>
+          </div>
+        ) : activeRoutine ? (
           <div className="opacity-90 rotate-2 scale-105">
             <RoutineCard
               routine={{

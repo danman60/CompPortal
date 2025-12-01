@@ -767,18 +767,11 @@ export default function SchedulePage() {
 
   // Handle creating a block at a specific position (via drag-and-drop)
   const handleCreateBlockAtPosition = (blockType: 'award' | 'break', targetId: string) => {
-    console.log('[SchedulePage] Creating block via drag-drop:', { blockType, targetId });
+    console.log('[SchedulePage] Opening block modal via drag-drop:', { blockType, targetId });
 
-    // Create block with default values (30 min duration, default title)
-    const defaultTitle = blockType === 'award' ? 'Award Ceremony' : '30 Minute Break';
-
-    createBlockMutation.mutate({
-      competitionId: TEST_COMPETITION_ID,
-      tenantId: TEST_TENANT_ID,
-      blockType,
-      title: defaultTitle,
-      durationMinutes: 30,
-    });
+    // Open modal for user to configure block details (same as clicking button)
+    setBlockType(blockType);
+    setShowBlockModal(true);
   };
 
   // Auto-fix conflict for a single routine
