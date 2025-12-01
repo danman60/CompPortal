@@ -766,12 +766,58 @@ export default function SchedulePage() {
   };
 
   // Handle creating a block at a specific position (via drag-and-drop)
-  const handleCreateBlockAtPosition = (blockType: 'award' | 'break', targetId: string) => {
-    console.log('[SchedulePage] Opening block modal via drag-drop:', { blockType, targetId });
+  const handleCreateBlockAtPosition = async (blockType: 'award' | 'break', targetId: string) => {
+    console.log('[SchedulePage] Auto-placing block via drag-drop:', { blockType, targetId, selectedDate });
 
-    // Open modal for user to configure block details (same as clicking button)
-    setBlockType(blockType);
-    setShowBlockModal(true);
+    // Calculate time based on drop position
+    const dayDraft = draftsByDate[selectedDate] || [];
+    let targetTime = '08:00:00'; // Default start time
+    let sortOrder = 0;
+
+    // If dropped on a routine, place before it
+    if (targetId.startsWith('routine-')) {
+      const routine = dayDraft.find(r => r.id === targetId);
+      if (routine?.performanceTime) {
+        targetTime = routine.performanceTime;
+        sortOrder = routine.entryNumber || 0;
+      }
+    }
+    // If dropped on empty schedule, place at end
+    else if (dayDraft.length > 0) {
+      const lastRoutine = dayDraft[dayDraft.length - 1];
+      if (lastRoutine?.performanceTime) {
+        // Calculate time after last routine
+        const [hours, minutes] = lastRoutine.performanceTime.split(':').map(Number);
+        const totalMinutes = hours * 60 + minutes + (lastRoutine.duration || 3);
+        const nextHours = Math.floor(totalMinutes / 60);
+        const nextMinutes = totalMinutes % 60;
+        targetTime = `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}:00`;
+        sortOrder = (lastRoutine.entryNumber || 0) + 1;
+      }
+    }
+
+    // Create block with auto-filled details
+    const defaultTitle = blockType === 'award' ? 'Award Ceremony' : '30 Minute Break';
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const [hours, minutes] = targetTime.split(':').map(Number);
+    const scheduledTime = new Date(year, month - 1, day, hours, minutes, 0);
+
+    try {
+      await createBlockMutation.mutateAsync({
+        competitionId: TEST_COMPETITION_ID,
+        tenantId: TEST_TENANT_ID,
+        blockType,
+        title: defaultTitle,
+        durationMinutes: 30,
+        scheduledTime,
+        sortOrder,
+      });
+
+      toast.success(`${blockType === 'award' ? '🏆 Award' : '☕ Break'} block added`);
+      refetchBlocks();
+    } catch (error: any) {
+      toast.error(`Failed to create block: ${error.message}`);
+    }
   };
 
   // Auto-fix conflict for a single routine
