@@ -411,37 +411,78 @@ function SortableRoutineRow({
                 <span className="text-sm">⚠️</span>
               </div>
 
-              {/* Hover controls - absolute positioned to overlay properly */}
-              {hoveredConflict === routine.id && (
+              {/* Hover popup - shows conflict details + action buttons */}
+              {hoveredConflict === routine.id && conflicts && conflicts.length > 0 && (
                 <div
-                  className="absolute left-0 top-0 z-[9999] flex items-center gap-2 text-white font-semibold rounded-md px-3 py-2 shadow-2xl whitespace-nowrap"
+                  className="absolute left-0 top-0 z-[9999] flex flex-col gap-2 text-white rounded-md px-3 py-2 shadow-2xl"
                   style={{
                     background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                     border: '2px solid rgba(255, 107, 107, 0.9)',
+                    minWidth: '280px',
+                    maxWidth: '400px',
                   }}
                 >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAutoFixConflict?.(routine.id);
-                    }}
-                    className="flex items-center gap-1 hover:scale-110 transition-transform px-2 py-1 rounded hover:bg-white/20 text-sm"
-                    title="Auto-fix: Move routine to nearest conflict-free position"
-                  >
-                    <span className="text-sm">🔧</span>
-                    <span className="text-sm font-semibold">Fix</span>
-                  </button>
-                  <div className="w-px h-4 bg-white/40" />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDismissIcon(`${routine.id}-conflict`);
-                    }}
-                    className="text-base hover:scale-110 transition-transform px-2 py-1 rounded hover:bg-white/20"
-                    title="Dismiss warning (conflict remains)"
-                  >
-                    ✕
-                  </button>
+                  {/* Conflict Details */}
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {(() => {
+                      const conflict = conflicts[0];
+                      const isRoutine1 = conflict.routine1Id === routine.id;
+                      const conflictingRoutineNumber = isRoutine1 ? conflict.routine2Number : conflict.routine1Number;
+                      const conflictingRoutineTitle = isRoutine1 ? conflict.routine2Title : conflict.routine1Title;
+
+                      return (
+                        <>
+                          <div className="font-bold mb-1">⚠️ Conflict: {conflict.dancerName}</div>
+                          <div className="text-xs opacity-90">
+                            {conflict.routinesBetween} routine{conflict.routinesBetween !== 1 ? 's' : ''} between performances
+                          </div>
+                          <div className="text-xs opacity-90 mb-2">(need 6+ for costume changes)</div>
+
+                          <div className="text-xs font-semibold mb-1">Conflicts with:</div>
+                          <div className="text-xs opacity-90 mb-2">• #{conflictingRoutineNumber} {conflictingRoutineTitle}</div>
+
+                          {routine.dancer_names && routine.dancer_names.length > 0 && (
+                            <>
+                              <div className="text-xs font-semibold mb-1">Dancers in this routine:</div>
+                              <div className="text-xs opacity-90">{routine.dancer_names.join(', ')}</div>
+                            </>
+                          )}
+
+                          {conflicts.length > 1 && (
+                            <div className="text-xs opacity-75 mt-2">
+                              +{conflicts.length - 1} more conflict{conflicts.length - 1 !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/20">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAutoFixConflict?.(routine.id);
+                      }}
+                      className="flex items-center gap-1 hover:scale-110 transition-transform px-2 py-1 rounded hover:bg-white/20 text-sm"
+                      title="Auto-fix: Move routine to nearest conflict-free position"
+                    >
+                      <span className="text-sm">🔧</span>
+                      <span className="text-sm font-semibold">Fix</span>
+                    </button>
+                    <div className="w-px h-4 bg-white/40" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDismissIcon(`${routine.id}-conflict`);
+                      }}
+                      className="text-base hover:scale-110 transition-transform px-2 py-1 rounded hover:bg-white/20"
+                      title="Dismiss warning (conflict remains)"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
