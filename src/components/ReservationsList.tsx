@@ -817,7 +817,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             return (
               <div
                 key={reservation.id}
-                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col"
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col h-full min-h-[400px]"
               >
                 <div className={`grid grid-cols-1 gap-6 ${isStudioDirector ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   {/* Left: Studio & Competition Info */}
