@@ -4,6 +4,7 @@ import InvoiceDelivery from '@/emails/InvoiceDelivery';
 import ReservationApproved from '@/emails/ReservationApproved';
 import ReservationRejected from '@/emails/ReservationRejected';
 import ReservationSubmitted from '@/emails/ReservationSubmitted';
+import ReservationMoved from '@/emails/ReservationMoved';
 import RoutineSummarySubmitted from '@/emails/RoutineSummarySubmitted';
 import StudioProfileSubmitted from '@/emails/StudioProfileSubmitted';
 import EntrySubmitted from '@/emails/EntrySubmitted';
@@ -66,6 +67,17 @@ export interface ReservationRejectedData {
   reason?: string;
   portalUrl: string;
   contactEmail: string;
+  tenantBranding?: TenantBranding;
+}
+
+export interface ReservationMovedData {
+  studioName: string;
+  oldCompetitionName: string;
+  newCompetitionName: string;
+  newCompetitionYear: number;
+  spacesConfirmed: number;
+  entriesUpdated: number;
+  portalUrl: string;
   tenantBranding?: TenantBranding;
 }
 
@@ -233,6 +245,13 @@ export async function renderReservationRejected(data: ReservationRejectedData) {
 }
 
 /**
+ * Render reservation moved email
+ */
+export async function renderReservationMoved(data: ReservationMovedData) {
+  return render(<ReservationMoved {...data} />);
+}
+
+/**
  * Render entry submitted email
  */
 export async function renderEntrySubmitted(data: EntrySubmittedData) {
@@ -313,7 +332,7 @@ export async function renderAccountRecovery(data: AccountRecoveryData) {
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music' | 'daily-digest',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'reservation-moved' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music' | 'daily-digest',
   data: { [key: string]: any }
 ): string {
   const subjects = {
@@ -322,6 +341,7 @@ export function getEmailSubject(
     'reservation-approved': `Reservation Approved - ${data.competitionName} (${data.competitionYear})`,
     'reservation-rejected': `Reservation Status Update - ${data.competitionName} (${data.competitionYear})`,
     'reservation-submitted': `New Reservation from ${data.studioName} - ${data.competitionName}`,
+    'reservation-moved': `Competition Change: Moved to ${data.newCompetitionName}`,
     'routine-summary-submitted': `Routine Summary Ready from ${data.studioName} - ${data.competitionName}`,
     'studio-profile-submitted': `New Studio Registration - ${data.studioName}`,
     entry: `Routine Submitted: ${data.entryTitle} - ${data.competitionName}`,

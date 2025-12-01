@@ -13,12 +13,14 @@ import {
   renderReservationApproved,
   renderReservationRejected,
   renderReservationSubmitted,
+  renderReservationMoved,
   renderPaymentConfirmed,
   renderInvoiceDelivery,
   getEmailSubject,
   type ReservationApprovedData,
   type ReservationRejectedData,
   type ReservationSubmittedData,
+  type ReservationMovedData,
   type PaymentConfirmedData,
   type InvoiceDeliveryData,
 } from '@/lib/email-templates';
@@ -2548,6 +2550,7 @@ ${input.comments}
         select: {
           id: true,
           name: true,
+          year: true,
           tenant_id: true,
           available_reservation_tokens: true,
         },
@@ -2675,23 +2678,51 @@ ${input.comments}
           );
 
           if (emailEnabled) {
+            // Get tenant branding
+            const tenant = await prisma.tenants.findUnique({
+              where: { id: reservation.competitions.tenant_id },
+              select: {
+                name: true,
+                branding: true,
+              },
+            });
+
+            const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string; logo?: string | null } | null;
+            const tenantBranding = {
+              primaryColor: branding?.primaryColor || '#8b5cf6',
+              secondaryColor: branding?.secondaryColor || '#ec4899',
+              logo: branding?.logo || null,
+              tenantName: tenant?.name || 'Competition Portal',
+            };
+
+            // Get portal URL for this tenant
+            const portalUrl = await getTenantPortalUrl(reservation.competitions.tenant_id, '/dashboard/reservations');
+
+            const emailData: ReservationMovedData = {
+              studioName: reservation.studios.name,
+              oldCompetitionName: result.oldCompetition,
+              newCompetitionName: result.newCompetition,
+              newCompetitionYear: targetCompetition.year,
+              spacesConfirmed: spacesNeeded,
+              entriesUpdated: result.entriesUpdated,
+              portalUrl,
+              tenantBranding,
+            };
+
+            const html = await renderReservationMoved(emailData);
+            const subject = getEmailSubject('reservation-moved', {
+              studioName: reservation.studios.name,
+              oldCompetitionName: result.oldCompetition,
+              newCompetitionName: result.newCompetition,
+            });
+
             await sendEmail({
               to: reservation.studios.email,
-              subject: `Competition Change: ${reservation.studios.name}`,
-              html: `
-                <h2>Competition Update</h2>
-                <p>Dear ${reservation.studios.name},</p>
-                <p>Your reservation has been moved to a different competition:</p>
-                <p><strong>From:</strong> ${result.oldCompetition}<br>
-                <strong>To:</strong> ${result.newCompetition}</p>
-                <p><strong>Spaces:</strong> ${spacesNeeded} entries${
-                result.entriesUpdated > 0
-                  ? `<br><strong>Entries updated:</strong> ${result.entriesUpdated}`
-                  : ''
-              }</p>
-                <p>All your entry data has been preserved and moved to the new competition.</p>
-                <p>If you have any questions, please contact the Competition Director.</p>
-              `,
+              subject,
+              html,
+              templateType: 'reservation-moved',
+              studioId: reservation.studio_id,
+              competitionId: input.targetCompetitionId,
             });
           }
         } catch (error) {
