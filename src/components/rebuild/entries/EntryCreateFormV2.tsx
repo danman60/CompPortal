@@ -12,6 +12,7 @@ import { ReservationContextBar } from './ReservationContextBar';
 import { EntryFormActions } from './EntryFormActions';
 import { ImportActions } from './ImportActions';
 import { ClassificationRequestExceptionModal } from '@/components/ClassificationRequestExceptionModal';
+import RequestSpacesModal from '@/components/RequestSpacesModal';
 import { parseISODateToUTC } from '@/lib/date-utils';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,8 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showClassificationModal, setShowClassificationModal] = useState(false);
+  const [showRequestSpacesModal, setShowRequestSpacesModal] = useState(false);
+  const [capacityError, setCapacityError] = useState<string | null>(null);
   const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const [prefilledRoutineId, setPrefilledRoutineId] = useState<string | null>(null);
   const [initialParticipants, setInitialParticipants] = useState<Array<{ id: string; dancer_id: string }>>([]);
@@ -338,7 +341,13 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
       utils.entry.getAll.invalidate();
     },
     onError: (error) => {
-      toast.error(`Failed: ${error.message}`);
+      // Check if it's a capacity error
+      if (error.message.includes('Reservation capacity exceeded') || error.message.includes('capacity')) {
+        setCapacityError(error.message);
+        setShowRequestSpacesModal(true);
+      } else {
+        toast.error(`Failed: ${error.message}`);
+      }
     },
   });
 
@@ -836,6 +845,30 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
               // Manual entry - go back to entries list
               router.push('/dashboard/entries');
             }
+          }}
+        />
+      )}
+
+      {/* Request Additional Spaces Modal */}
+      {showRequestSpacesModal && actualReservationId && reservation && (
+        <RequestSpacesModal
+          isOpen={showRequestSpacesModal}
+          onClose={() => {
+            setShowRequestSpacesModal(false);
+            setCapacityError(null);
+          }}
+          reservationId={actualReservationId}
+          currentSpaces={reservation.spaces_confirmed || 0}
+          activeEntries={
+            (entriesData?.entries || []).filter(
+              (e: any) => e.reservation_id === actualReservationId && e.status !== 'withdrawn'
+            ).length
+          }
+          errorMessage={capacityError || undefined}
+          onSuccess={() => {
+            toast.success('Space request sent to Competition Director');
+            setShowRequestSpacesModal(false);
+            setCapacityError(null);
           }}
         />
       )}

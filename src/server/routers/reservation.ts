@@ -2383,4 +2383,124 @@ ${input.comments}
         message: `Summary reopened. ${reservation.invoices?.length || 0} invoice(s) voided. Studio can now edit entries.`,
       };
     }),
+
+  // Request additional spaces from Competition Director
+  requestAdditionalSpaces: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        additionalSpaces: z.number().int().min(1),
+        justification: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Verify reservation exists and belongs to user's studio
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+              year: true,
+            },
+          },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found',
+        });
+      }
+
+      // Verify tenant isolation
+      if (reservation.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot access reservation from another tenant',
+        });
+      }
+
+      // Get Competition Director user for this tenant
+      const cdUser = await prisma.user_profiles.findFirst({
+        where: {
+          tenant_id: ctx.tenantId,
+          role: 'competition_director',
+        },
+      });
+
+      if (!cdUser) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Competition Director not found for this tenant',
+        });
+      }
+
+      // TODO: Create notification for CD (notifications table not yet implemented)
+      // await prisma.notifications.create({
+      //   data: {
+      //     tenant_id: ctx.tenantId!,
+      //     user_id: cdUser.id,
+      //     type: 'space_request',
+      //     title: `Space Request: ${reservation.studios?.name}`,
+      //     message: `${reservation.studios?.name} is requesting ${input.additionalSpaces} additional spaces...`,
+      //     link: `/dashboard/director-panel/reservations/${input.reservationId}`,
+      //     read: false,
+      //   },
+      // });
+
+      // Send email to CD
+      const cdEmail = await getUserEmail(cdUser.id);
+      if (cdEmail) {
+        const portalUrl = await getTenantPortalUrl(
+          ctx.tenantId!,
+          `/dashboard/director-panel/reservations/${input.reservationId}`
+        );
+        await sendEmail({
+          to: cdEmail,
+          subject: `Space Request from ${reservation.studios?.name}`,
+          html: `
+            <h2>Additional Spaces Requested</h2>
+            <p><strong>${reservation.studios?.name}</strong> is requesting additional spaces:</p>
+            <ul>
+              <li><strong>Competition:</strong> ${reservation.competitions?.name} (${reservation.competitions?.year})</li>
+              <li><strong>Current Spaces:</strong> ${reservation.spaces_confirmed || 0}</li>
+              <li><strong>Additional Requested:</strong> ${input.additionalSpaces}</li>
+              <li><strong>New Total:</strong> ${(reservation.spaces_confirmed || 0) + input.additionalSpaces}</li>
+            </ul>
+            ${input.justification ? `<p><strong>Justification:</strong> ${input.justification}</p>` : ''}
+            <p><a href="${portalUrl}">Review Request</a></p>
+          `,
+        });
+      }
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'space_request',
+        entityType: 'reservation',
+        entityId: input.reservationId,
+        entityName: reservation.studios?.name,
+        details: {
+          currentSpaces: reservation.spaces_confirmed,
+          additionalSpaces: input.additionalSpaces,
+          justification: input.justification,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Your request has been sent to the Competition Director. You will be notified once it is reviewed.',
+      };
+    }),
 });

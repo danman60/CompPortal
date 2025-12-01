@@ -273,6 +273,14 @@ export const entryRouter = router({
       const originalSpaces = fullReservation.spaces_confirmed || 0;
       const unusedSpaces = originalSpaces - routineCount;
 
+      // 🐛 FIX: Validate capacity before attempting database insert (graceful error)
+      if (unusedSpaces < 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot submit summary: You have ${routineCount} active routines but only ${originalSpaces} approved spaces. Please withdraw ${Math.abs(unusedSpaces)} routines or request additional spaces from the Competition Director.`,
+        });
+      }
+
       // Wrap all database operations in a transaction for atomicity
       logger.info('🔄 Transaction START - summary submission', {
         reservationId: fullReservation.id,
@@ -951,7 +959,10 @@ export const entryRouter = router({
     .input(z.object({ studioId: z.string().uuid() }))
     .query(async ({ input }) => {
       const entries = await prisma.competition_entries.findMany({
-        where: { studio_id: input.studioId },
+        where: {
+          studio_id: input.studioId,
+          status: { not: 'withdrawn' }, // Hide withdrawn entries from studio view
+        },
         include: {
           competitions: {
             select: {
@@ -1077,9 +1088,10 @@ export const entryRouter = router({
         const confirmedSpaces = reservation.spaces_confirmed || 0;
 
         if (currentEntries >= confirmedSpaces) {
-          throw new Error(
-            `Reservation capacity exceeded. You have ${confirmedSpaces} confirmed spaces and ${currentEntries} active routines. Please contact the competition director to request additional spaces.`
-          );
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Reservation capacity exceeded. You have ${confirmedSpaces} confirmed spaces and ${currentEntries} active routines. Please request additional spaces from the Competition Director.`,
+          });
         }
       }
 
