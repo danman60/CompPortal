@@ -1,9 +1,9 @@
-# Conflict Badge Work - In Progress
+# Conflict Badge Work - COMPLETED
 
-**Status:** Paused for investigation
+**Status:** ✅ All issues fixed
 **Date:** 2025-12-01
 **Branch:** tester
-**Last Commit:** 1894be0
+**Last Commit:** 2f34b46
 
 ---
 
@@ -28,76 +28,34 @@
 - Text sizes: 12-14px (readable)
 - **Files:** `ScheduleTable.tsx:414-487`
 
----
+### Badge Height Fix (ScheduleTable.tsx:398)
+**Problem:** Conflict badge wrapper div using `inline-flex` compressed height
+**Solution:** Changed wrapper from `relative group inline-flex items-center` to `relative inline-block`
+**Result:** Badge now matches Director notes badge height perfectly
 
-## 🐛 Known Issues to Fix
+### Auto-Fix Entry Number Fix (page.tsx:905-939)
+**Problem:** Single auto-fix showed wrong entry numbers in toast (draft vs database mismatch)
+**Root Cause:** Missing global renumbering after auto-fix updated draft
+**Solution:** Added `renumberAllDays()` call after draft update, fetch new entry number from renumbered draft
+**Result:** Toast now shows accurate entry numbers matching UI
 
-### Issue #1: Auto-Fix Entry Number Discrepancy
-**Problem:** When clicking "Fix" on routine #454, toast says "moved from #365" (different numbers)
-
-**Root Cause:** UI shows draft entry numbers, but auto-fix mutation uses database entry numbers. When schedule has unsaved changes, draft and database numbers diverge.
-
-**Investigation Needed:**
-1. Check `onAutoFixConflict` handler - does it use draft or database entry numbers?
-2. Verify if auto-fix mutation updates draft state after moving routine
-3. Ensure draft renumbering happens after auto-fix completes
-
-**Potential Solutions:**
-- Option A: Auto-fix should refetch and sync draft after moving
-- Option B: Auto-fix should calculate new position based on draft numbers
-- Option C: Warn user to save changes before using auto-fix
-
-**Files to Check:**
-- `ScheduleTable.tsx`: `onAutoFixConflict` prop
-- `page.tsx`: Auto-fix handler implementation
-- `scheduling.ts`: Backend auto-fix mutation
-
-### Issue #2: Badge Height Mismatch with Director Notes
-**Problem:** Conflict badge appears shorter than Director notes badge despite same CSS
-
-**Current Code:**
-```tsx
-// Director Notes Badge (line 387)
-<button className="inline-flex items-center justify-center w-8 h-6 rounded text-sm ...">
-  <span className="text-sm">📋</span>
-</button>
-
-// Conflict Badge (line 404)
-<div className="relative group inline-flex items-center">  {/* Extra wrapper */}
-  <div className="inline-flex items-center justify-center w-8 h-6 rounded text-sm ...">
-    <span className="text-sm">⚠️</span>
-  </div>
-</div>
-```
-
-**Root Cause Hypothesis:** Extra wrapper `<div>` with `inline-flex items-center` might affect vertical alignment
-
-**Potential Solutions:**
-- Option A: Remove wrapper div and apply hover handlers directly to badge div
-- Option B: Ensure wrapper div has same height/alignment as badge
-- Option C: Use `h-full` on inner badge div to match wrapper height
-
-**Files to Check:**
-- `ScheduleTable.tsx:396-412`
+### Fix All Conflicts Button (page.tsx:1023-1033)
+**Problem:** "Fix All" button reported "moved 0 routines" and didn't update UI
+**Root Cause:** Same as single auto-fix - missing global renumbering
+**Solution:** Added `renumberAllDays()` call after updating draft (same pattern as drag-drop and single auto-fix)
+**Result:** Fix All now correctly renumbers all days and shows accurate counts
 
 ---
 
-## 📋 Next Steps (When Resuming)
+## 🎯 All Issues Resolved
 
-1. **Investigate auto-fix discrepancy:**
-   - Find auto-fix handler in `page.tsx`
-   - Check if it refetches/syncs draft after mutation
-   - Add draft sync if missing
+All three reported issues have been fixed and deployed to tester branch (commit 2f34b46):
 
-2. **Fix badge height mismatch:**
-   - Compare rendered heights in browser DevTools
-   - Adjust wrapper div styling or remove if unnecessary
-   - Ensure visual parity with Director notes badge
+1. ✅ Badge height matches other badges
+2. ✅ Single auto-fix shows correct entry numbers
+3. ✅ Fix All button properly renumbers and reports moved routines
 
-3. **Test both fixes:**
-   - Verify auto-fix shows correct entry numbers in toast
-   - Verify conflict badge height matches other badges
-   - Test on tester.compsync.net with real conflict data
+**Pattern Applied:** ALL auto-fix operations (single, batch) now follow the same global renumbering pattern as drag-drop operations
 
 ---
 
@@ -124,8 +82,9 @@
 2. **Popup readability critical:** 12-14px text is minimum for readability, native tooltips too small
 3. **Draft vs Database sync:** Auto-fix and other mutations must sync draft state to avoid number discrepancies
 4. **Wrapper divs affect layout:** Extra wrappers can cause subtle alignment issues even with same CSS
+5. **Global renumbering pattern:** ALL schedule mutations (drag, auto-fix, fix-all) must call `renumberAllDays()` to maintain sequential entry numbers across all days
 
 ---
 
-**Resume Date:** TBD (after auto-fix investigation)
-**Assigned To:** Claude (next session)
+**Completion Date:** 2025-12-01
+**Status:** ✅ Ready for production testing on tester.compsync.net
