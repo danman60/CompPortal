@@ -1,15 +1,15 @@
 'use client';
 
 /**
- * Reset All Confirmation Modal (UI-only, draft clear)
+ * Reset All Confirmation Modal
  *
- * Safe UI-only action - clears draft state without touching database
- * - Requires typing "RESET" to confirm
- * - Clears UI draft state only
- * - Database schedule preserved
+ * Resets all days (works like Reset Day but for entire competition)
+ * - Simple confirmation (no typing required)
+ * - Unschedules all routines (all days)
+ * - Deletes all schedule blocks
+ * - Clears all drafts
  */
 
-import { useState } from 'react';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 
@@ -26,82 +26,44 @@ export function ResetAllConfirmationModal({
   onConfirm,
   isLoading = false,
 }: ResetAllConfirmationModalProps) {
-  const [confirmationText, setConfirmationText] = useState('');
-
-  const handleConfirm = () => {
-    if (confirmationText === 'RESET') {
-      onConfirm();
-      setConfirmationText(''); // Clear input after confirm
-    }
-  };
-
-  const handleClose = () => {
-    setConfirmationText(''); // Clear input on close
-    onClose();
-  };
-
-  const isValid = confirmationText === 'RESET';
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="🗑️ Reset All Drafts (UI Only)">
+    <Modal isOpen={isOpen} onClose={onClose} title="🗑️ Reset All Days">
       <div className="space-y-4">
         {/* Warning Message */}
-        <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-4">
-          <h3 className="text-blue-400 font-bold text-sm mb-2">
-            🗑️ CLEAR UI DRAFTS
+        <div className="bg-orange-900/30 border border-orange-500/50 rounded-lg p-4">
+          <h3 className="text-orange-400 font-bold text-sm mb-2">
+            ⚠️ Reset All Days
           </h3>
-          <p className="text-blue-300 text-sm">
-            This will clear all unsaved draft changes from the UI:
+          <p className="text-orange-300 text-sm">
+            This will reset the entire competition schedule:
           </p>
-          <ul className="list-disc list-inside text-blue-300 text-sm mt-2 space-y-1">
-            <li>Clear all unsaved draft changes (all days)</li>
-            <li>UI will reset to last saved database state</li>
-            <li>No database changes will be made</li>
+          <ul className="list-disc list-inside text-orange-300 text-sm mt-2 space-y-1">
+            <li>Unschedule all routines (all days)</li>
+            <li>Delete all schedule blocks (awards/breaks)</li>
+            <li>Clear all unsaved draft changes</li>
           </ul>
         </div>
 
-        {/* What Will NOT Be Deleted */}
+        {/* What Will Be Preserved */}
         <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
           <h3 className="text-green-400 font-bold text-sm mb-2">
-            ✅ Database Preserved (100% Safe)
+            ✅ What Will Be Preserved
           </h3>
           <ul className="list-disc list-inside text-green-300 text-sm space-y-1">
-            <li>All saved schedules remain in database</li>
-            <li>All schedule blocks (awards/breaks) preserved</li>
-            <li>All version history preserved</li>
+            <li>All version history (can view previous versions)</li>
             <li>All routines (entries) remain in database</li>
             <li>All dancers and studios remain</li>
+            <li>Competition settings unchanged</li>
           </ul>
           <p className="text-green-300 text-sm mt-2">
-            Simply reload the page to restore last saved state.
+            You can re-schedule routines after reset. Version history preserved for review.
           </p>
-        </div>
-
-        {/* Confirmation Input */}
-        <div className="space-y-2">
-          <label className="block text-white text-sm font-medium">
-            Type <span className="font-mono bg-orange-900/50 px-2 py-0.5 rounded text-orange-300">RESET</span> to confirm:
-          </label>
-          <input
-            type="text"
-            value={confirmationText}
-            onChange={(e) => setConfirmationText(e.target.value)}
-            className="w-full px-4 py-2 border border-white/20 bg-black/20 rounded-lg text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Type RESET here"
-            autoComplete="off"
-            disabled={isLoading}
-          />
-          {confirmationText && !isValid && (
-            <p className="text-orange-400 text-xs">
-              Must type exactly "RESET" (all caps)
-            </p>
-          )}
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-2">
           <Button
-            onClick={handleClose}
+            onClick={onClose}
             variant="secondary"
             disabled={isLoading}
             className="flex-1"
@@ -109,15 +71,11 @@ export function ResetAllConfirmationModal({
             Cancel
           </Button>
           <Button
-            onClick={handleConfirm}
-            disabled={!isValid || isLoading}
-            className={`flex-1 ${
-              isValid
-                ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                : 'bg-gray-600 cursor-not-allowed text-gray-400'
-            }`}
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
           >
-            {isLoading ? 'Clearing...' : 'Clear All Drafts (UI Only)'}
+            {isLoading ? 'Resetting...' : 'Reset All Days'}
           </Button>
         </div>
       </div>

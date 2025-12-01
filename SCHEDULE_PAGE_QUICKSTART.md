@@ -41,6 +41,22 @@ Database (routines query):   Source of truth, all routines
 Save Flow: Draft → scheduleMutation → Database → refetch → Draft sync
 ```
 
+### ⚡ CRITICAL: Immediate UI Updates (NON-NEGOTIABLE)
+```
+ON ANY CHANGE (add, remove, reorder routine):
+  1. UPDATE IMMEDIATELY in UI: ALL entry numbers + ALL times
+  2. NO database save yet - just instant UI update
+  3. User sees changes instantly
+
+ON SAVE SCHEDULE button click:
+  4. Commit entire schedule to database
+  5. Refetch to sync UI with database
+
+❌ WRONG: Wait for database save before updating UI
+❌ WRONG: Only update changed routine, not all routines
+✅ CORRECT: Instant UI update → Manual save → DB commit
+```
+
 ---
 
 ## 🏗️ Architecture At-A-Glance

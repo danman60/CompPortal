@@ -287,10 +287,14 @@ export default function SchedulePage() {
 
       // Remove unscheduled routines from draft state AFTER refetch
       const unscheduledIds = new Set(variables.routineIds);
-      setDraftsByDate(prev => ({
-        ...prev,
-        [selectedDate]: (prev[selectedDate] || []).filter(r => !unscheduledIds.has(r.id))
-      }));
+      const updatedDrafts = {
+        ...draftsByDate,
+        [selectedDate]: (draftsByDate[selectedDate] || []).filter(r => !unscheduledIds.has(r.id))
+      };
+
+      // Renumber ALL days after removing routines (instant UI update)
+      const renumbered = renumberAllDays(updatedDrafts);
+      setDraftsByDate(renumbered);
 
       setSelectedScheduledIds(new Set()); // Clear selection
     },
@@ -1576,9 +1580,9 @@ export default function SchedulePage() {
             <button
               className="px-4 py-2 bg-orange-600/80 hover:bg-orange-600 text-white rounded-lg transition-colors font-semibold"
               onClick={() => setShowResetAllModal(true)}
-              title="Clear all drafts (UI only, keeps database)"
+              title="Reset all days (like Reset Day but for entire competition)"
             >
-              🗑️ Reset All (UI)
+              🗑️ Reset All
             </button>
             <button
               className="px-4 py-2 bg-red-800 hover:bg-red-700 text-white rounded-lg transition-colors font-semibold border-2 border-red-500"
@@ -1651,33 +1655,41 @@ export default function SchedulePage() {
                   setShowBlockModal(true);
                 }}
                 onStartTimeUpdated={async (date: string, newStartTime: string) => {
-                  // Recalculate times for draft routines on this day
-                  const dayDraft = draftsByDate[date];
-                  if (dayDraft && dayDraft.length > 0) {
-                    // Parse new start time
-                    const [hours, minutes] = newStartTime.split(':').map(Number);
-                    let currentTime = new Date(1970, 0, 1, hours, minutes, 0);
+                  console.log('[onStartTimeUpdated] Day start time changed:', date, newStartTime);
 
-                    // Recalculate times sequentially
-                    const updatedDraft = dayDraft.map(routine => {
-                      const performanceTime = currentTime.toTimeString().slice(0, 8); // HH:mm:ss
-                      const duration = routine.duration || 3;
-                      currentTime = new Date(currentTime.getTime() + duration * 60000);
-                      return { ...routine, performanceTime };
-                    });
+                  // Backend has already updated ALL routine times for this day
+                  // Force immediate refetch to get updated times from database
+                  await refetch();
 
-                    // Update draft state
+                  // Reload draft from database to sync with new times
+                  const updatedRoutines = await utils.scheduling.getRoutines.fetch({
+                    competitionId: TEST_COMPETITION_ID,
+                    tenantId: TEST_TENANT_ID,
+                  });
+
+                  const serverScheduled = updatedRoutines
+                    .filter(r => r.isScheduled && r.scheduledDateString === date)
+                    .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+                  if (serverScheduled.length > 0) {
+                    // Update draft with database times
                     setDraftsByDate(prev => ({
                       ...prev,
-                      [date]: updatedDraft
+                      [date]: serverScheduled.map(r => ({
+                        id: r.id,
+                        title: r.title,
+                        duration: r.duration,
+                        isScheduled: r.isScheduled,
+                        entryNumber: r.entryNumber,
+                        performanceTime: r.scheduledTimeString, // Use DB time
+                      }))
                     }));
                   }
 
-                  // Force synchronous refetch (not just invalidate) to update day card display
-                  await Promise.all([
-                    refetch(), // Force immediate refetch of routines query
-                    utils.scheduling.detectConflicts.invalidate(),
-                  ]);
+                  // Invalidate conflicts
+                  await utils.scheduling.detectConflicts.invalidate();
+
+                  console.log('[onStartTimeUpdated] Draft synced with database');
                 }}
                 onResetDay={() => {
                   if (confirm(`Reset schedule for ${new Date(selectedDate).toLocaleDateString()}? This will unschedule all routines for this day.`)) {
@@ -1916,17 +1928,17 @@ export default function SchedulePage() {
         </div>
       </Modal>
 
-      {/* Reset All Confirmation Modal (UI-only, draft clear) */}
+      {/* Reset All Confirmation Modal (unschedule all days, like Reset Day but for all) */}
       <ResetAllConfirmationModal
         isOpen={showResetAllModal}
         onClose={() => setShowResetAllModal(false)}
         onConfirm={() => {
-          // Clear ALL drafts (UI state only, does NOT touch database)
-          setDraftsByDate({});
-          setShowResetAllModal(false);
-          toast.success('All drafts cleared (database unchanged)');
+          resetCompetition.mutate({
+            tenantId: TEST_TENANT_ID,
+            competitionId: TEST_COMPETITION_ID,
+          });
         }}
-        isLoading={false}
+        isLoading={resetCompetition.isPending}
       />
 
       {/* Nuclear Reset Confirmation Modal (DESTRUCTIVE - deletes DB + versions) */}
