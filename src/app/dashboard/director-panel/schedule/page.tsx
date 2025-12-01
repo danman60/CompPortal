@@ -1429,7 +1429,7 @@ export default function SchedulePage() {
 
     return dates.map(d => {
       // Get stored start time for this date, default to '08:00:00'
-      const storedStartTime = dayStartTimes?.find(dst => {
+      const storedStartTime = dayStartTimes?.find((dst: any) => {
         const dstDate = new Date(dst.date);
         const targetDate = new Date(d.date);
         return dstDate.getTime() === targetDate.getTime();

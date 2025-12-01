@@ -3198,7 +3198,7 @@ export const schedulingRouter = router({
 
       await prisma.day_start_times.upsert({
         where: {
-          day_start_times_tenant_id_competition_id_date_key: {
+          tenant_id_competition_id_date: {
             tenant_id: tenantId,
             competition_id: competitionId,
             date: parsedDate,

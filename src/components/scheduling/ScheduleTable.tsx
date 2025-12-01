@@ -358,8 +358,8 @@ function SortableRoutineRow({
         </td>
       )}
 
-      {/* Landscape Badges - 28px */}
-      <td className="px-0 py-1" style={{ width: '28px', minHeight: '40px' }}>
+      {/* Landscape Badges - 36px (widened for larger badges) */}
+      <td className="px-0 py-1" style={{ width: '36px', minHeight: '40px' }}>
         <div className="flex flex-row gap-0.5 items-center justify-center min-h-[40px]">
           {hasTrophy && !dismissedIcons.has(`${routine.id}-trophy`) && (
             <button
@@ -368,13 +368,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-trophy`);
               }}
               title={`🏆 Last Routine of ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName} - Ready for awards!`}
-              className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
               style={{
                 background: 'linear-gradient(135deg, #FFD700, #FFA500)',
                 border: '1px solid rgba(255, 215, 0, 0.6)'
               }}
             >
-              <span className="text-[8px]">🏆</span>
+              <span className="text-sm">🏆</span>
             </button>
           )}
           {hasSDRequest && !dismissedIcons.has(`${routine.id}-note`) && (
@@ -384,13 +384,13 @@ function SortableRoutineRow({
                 onDismissIcon(`${routine.id}-note`);
               }}
               title={`📋 ${routine.scheduling_notes || 'Studio Director requested changes'}`}
-              className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px] transition-transform hover:scale-125"
+              className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
               style={{
                 background: 'linear-gradient(135deg, #4FC3F7, #2196F3)',
                 border: '1px solid rgba(33, 150, 243, 0.6)'
               }}
             >
-              <span className="text-[8px]">📋</span>
+              <span className="text-sm">📋</span>
             </button>
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
@@ -401,23 +401,23 @@ function SortableRoutineRow({
             >
               {/* Default conflict icon */}
               <div
-                className="inline-flex items-center justify-center w-6 h-2 rounded text-[10px]"
+                className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
                 style={{
                   background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                   border: '1px solid rgba(255, 107, 107, 0.6)'
                 }}
                 title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
               >
-                <span className="text-[8px]">⚠️</span>
+                <span className="text-sm">⚠️</span>
               </div>
 
-              {/* Hover controls - absolute positioned to avoid squishing */}
+              {/* Hover controls - absolute positioned to overlay properly */}
               {hoveredConflict === routine.id && (
                 <div
-                  className="absolute left-0 top-0 z-50 flex items-center gap-1.5 text-white font-semibold rounded px-2 py-1 shadow-lg whitespace-nowrap"
+                  className="absolute left-0 top-0 z-[9999] flex items-center gap-2 text-white font-semibold rounded-md px-3 py-2 shadow-2xl whitespace-nowrap"
                   style={{
                     background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
-                    border: '1px solid rgba(255, 107, 107, 0.8)',
+                    border: '2px solid rgba(255, 107, 107, 0.9)',
                   }}
                 >
                   <button
@@ -425,19 +425,19 @@ function SortableRoutineRow({
                       e.stopPropagation();
                       onAutoFixConflict?.(routine.id);
                     }}
-                    className="flex items-center gap-0.5 hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
+                    className="flex items-center gap-1 hover:scale-110 transition-transform px-2 py-1 rounded hover:bg-white/20 text-sm"
                     title="Auto-fix: Move routine to nearest conflict-free position"
                   >
-                    <span className="text-[10px]">🔧</span>
-                    <span className="text-[9px] font-semibold">Fix</span>
+                    <span className="text-sm">🔧</span>
+                    <span className="text-sm font-semibold">Fix</span>
                   </button>
-                  <div className="w-px h-3 bg-white/30" />
+                  <div className="w-px h-4 bg-white/40" />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onDismissIcon(`${routine.id}-conflict`);
                     }}
-                    className="text-[11px] hover:scale-110 transition-transform px-1 py-0.5 rounded hover:bg-white/20"
+                    className="text-base hover:scale-110 transition-transform px-2 py-1 rounded hover:bg-white/20"
                     title="Dismiss warning (conflict remains)"
                   >
                     ✕
@@ -828,7 +828,7 @@ export function ScheduleTable({
               )}
               <th
                 className="px-0 py-1 text-center text-[11px] font-semibold text-white/60"
-                style={{ width: '28px' }}
+                style={{ width: '36px' }}
               >
                 <div
                   className="cursor-help"
