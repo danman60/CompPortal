@@ -1005,6 +1005,8 @@ export default function SchedulePage() {
       );
     }
 
+    // Refetch conflicts to update button count
+    refetchConflicts();
     setShowFixAllModal(false);
   };
 
@@ -1153,6 +1155,8 @@ export default function SchedulePage() {
       );
     }
 
+    // Refetch conflicts to update button count
+    refetchConflicts();
     setShowFixAllModal(false);
   };
 
