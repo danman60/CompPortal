@@ -728,14 +728,55 @@ export default function SchedulePage() {
     return () => clearInterval(autosaveInterval);
   }, [hasUnsavedChanges, draftSchedule, scheduleMutation]);
 
+  // Global renumbering function: Maintains sequential entry numbers across ALL days
+  // Per spec: Entry numbers are GLOBAL (100, 101, 102... across Thu/Fri/Sat/Sun)
+  const renumberAllDays = (updatedDrafts: Record<string, RoutineData[]>): Record<string, RoutineData[]> => {
+    const ALL_DATES = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12'];
+
+    // Collect all routines across all days with their day info
+    const allRoutines: Array<{ routine: RoutineData; date: string; index: number }> = [];
+
+    for (const date of ALL_DATES) {
+      const dayRoutines = updatedDrafts[date] || [];
+      dayRoutines.forEach((routine, index) => {
+        allRoutines.push({ routine, date, index });
+      });
+    }
+
+    // Assign sequential entry numbers starting from 100
+    let entryNumber = 100;
+    allRoutines.forEach(item => {
+      item.routine.entryNumber = entryNumber++;
+    });
+
+    // Rebuild drafts map with renumbered routines
+    const renumbered: Record<string, RoutineData[]> = {};
+    for (const date of ALL_DATES) {
+      renumbered[date] = allRoutines
+        .filter(item => item.date === date)
+        .sort((a, b) => a.index - b.index) // Preserve order within day
+        .map(item => item.routine);
+    }
+
+    return renumbered;
+  };
+
   // Handle schedule changes from drag-drop
   const handleScheduleChange = (newSchedule: RoutineData[]) => {
     console.log('[SchedulePage] handleScheduleChange called with', newSchedule.length, 'routines');
     console.log('[SchedulePage] New schedule:', newSchedule);
-    setDraftsByDate(prev => ({
-      ...prev,
+
+    // Update current day's schedule
+    const updatedDrafts = {
+      ...draftsByDate,
       [selectedDate]: newSchedule
-    }));
+    };
+
+    // Renumber ALL days to maintain global sequential order
+    const renumbered = renumberAllDays(updatedDrafts);
+
+    console.log('[SchedulePage] After global renumbering:', renumbered);
+    setDraftsByDate(renumbered);
   };
 
   // Handle block reordering from drag-drop (saves immediately)
