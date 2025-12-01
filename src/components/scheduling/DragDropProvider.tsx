@@ -324,9 +324,15 @@ export function DragDropProvider({
     let currentEntry = maxEntry + 1; // Continue from highest existing entry number
 
     return routineList.map(routine => {
+      // PRESERVE existing entry numbers for scheduled routines (reordering)
+      // Only assign new numbers to unscheduled routines being added
+      const entryNumber = routine.entryNumber != null && routine.isScheduled
+        ? routine.entryNumber  // Keep existing number
+        : currentEntry++;      // Assign next available number
+
       const scheduledRoutine = {
         ...routine,
-        entryNumber: currentEntry,
+        entryNumber,
         performanceTime: currentTime,
         isScheduled: true,
       };
@@ -337,8 +343,6 @@ export function DragDropProvider({
       const nextHours = Math.floor(totalMinutes / 60) % 24; // Wrap around after 24 hours
       const nextMinutes = totalMinutes % 60;
       currentTime = `${String(nextHours).padStart(2, '0')}:${String(nextMinutes).padStart(2, '0')}:00`;
-
-      currentEntry++;
 
       return scheduledRoutine;
     });

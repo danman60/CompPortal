@@ -1619,9 +1619,9 @@ export default function SchedulePage() {
                     }));
                   }
 
-                  // Invalidate cache to force fresh data fetch (for saved routines)
+                  // Force synchronous refetch (not just invalidate) to update day card display
                   await Promise.all([
-                    utils.scheduling.getRoutines.invalidate(),
+                    refetch(), // Force immediate refetch of routines query
                     utils.scheduling.detectConflicts.invalidate(),
                   ]);
                 }}
