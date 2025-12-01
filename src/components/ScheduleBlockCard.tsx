@@ -60,8 +60,8 @@ export function ScheduleBlockCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      onDoubleClick={(e) => {
-        // Double-click to edit (only when in schedule zone)
+      onClick={(e) => {
+        // Single-click to edit (only when in schedule zone)
         if (inZone && onEdit) {
           e.stopPropagation();
           onEdit(block.id);
