@@ -189,7 +189,7 @@ export function ScheduleRow({
         {hasConflict && (
           <td className="absolute top-2 right-2 pointer-events-none">
             <span
-              className="inline-block bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-lg"
+              className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-md border border-red-500 font-medium"
               title={conflictMessage || 'Conflict detected'}
             >
               ⚠️ Conflict
