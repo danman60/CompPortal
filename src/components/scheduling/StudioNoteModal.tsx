@@ -91,14 +91,14 @@ export function StudioNoteModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 border-purple-600/30">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-gray-900">
-            <MessageSquare className="h-5 w-5 text-blue-600" />
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <MessageSquare className="h-5 w-5 text-cyan-400" />
             {canEdit ? 'Add Scheduling Request' : 'View Scheduling Request'}
           </DialogTitle>
-          <DialogDescription className="space-y-1 text-gray-600">
-            <div className="font-medium text-gray-900">
+          <DialogDescription className="space-y-1 text-purple-200">
+            <div className="font-medium text-white">
               Entry #{routine.entryNumber} - "{routine.title}"
             </div>
             <div className="text-sm">
@@ -109,19 +109,19 @@ export function StudioNoteModal({
 
         <div className="space-y-4 py-4">
           {/* Current Schedule */}
-          <div className="bg-gray-50 rounded-lg p-3 space-y-1">
-            <div className="flex items-center gap-2 text-gray-700">
+          <div className="bg-purple-800/30 rounded-lg p-3 space-y-1 border border-purple-600/30">
+            <div className="flex items-center gap-2 text-purple-200">
               <Clock className="h-4 w-4" />
               <span className="font-medium">Current time:</span>
             </div>
-            <p className="text-gray-900 pl-6">
+            <p className="text-white pl-6">
               {formattedDate} at {routine.performanceTime}
             </p>
           </div>
 
           {/* Note Input */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-purple-200">
               Your request:
             </label>
             {canEdit ? (
@@ -129,23 +129,23 @@ export function StudioNoteModal({
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value.slice(0, 500))}
                 placeholder="Example: Please schedule after 10 AM - dancers need time to arrive from school"
-                className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full h-32 px-3 py-2 bg-purple-900/50 border border-purple-600/50 rounded-md text-white placeholder-purple-400 resize-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 maxLength={500}
               />
             ) : (
-              <div className="w-full min-h-[128px] px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-900">
-                {noteText || <span className="text-gray-400">No note submitted</span>}
+              <div className="w-full min-h-[128px] px-3 py-2 bg-purple-900/30 border border-purple-600/30 rounded-md text-white">
+                {noteText || <span className="text-purple-400">No note submitted</span>}
               </div>
             )}
-            <p className="text-xs text-gray-500 text-right">
+            <p className="text-xs text-purple-300 text-right">
               {noteText.length}/500 characters
             </p>
           </div>
 
           {/* Disclaimer */}
           {canEdit && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-sm text-amber-800 flex items-start gap-2">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-sm text-amber-200 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <span>
                   Note: The Competition Director will review your request but cannot guarantee accommodation.
@@ -156,8 +156,8 @@ export function StudioNoteModal({
 
           {/* Read-only Message */}
           {!canEdit && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <p className="text-sm text-gray-600">
+            <div className="bg-purple-800/30 border border-purple-600/30 rounded-lg p-3">
+              <p className="text-sm text-purple-200">
                 Review period closed. You can view your request but cannot edit until the next review period.
               </p>
             </div>
@@ -165,14 +165,14 @@ export function StudioNoteModal({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-between pt-4 border-t border-gray-200">
+        <div className="flex justify-between pt-4 border-t border-purple-700/50">
           <div>
             {canEdit && routine.hasNote && (
               <Button
                 variant="ghost"
                 onClick={handleClear}
                 disabled={isSubmitting}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-red-300 hover:text-red-200 hover:bg-red-500/20"
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 Clear Request
@@ -184,7 +184,7 @@ export function StudioNoteModal({
               variant="secondary"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2"
+              className="px-4 py-2 bg-purple-600/30 text-purple-200 hover:bg-purple-600/50 border border-purple-500/50"
             >
               {canEdit ? 'Cancel' : 'Close'}
             </Button>
@@ -193,7 +193,7 @@ export function StudioNoteModal({
                 variant="primary"
                 onClick={handleSubmit}
                 disabled={isSubmitting || (!noteText && !routine.hasNote)}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+                className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-500/20 border border-cyan-500/50"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">

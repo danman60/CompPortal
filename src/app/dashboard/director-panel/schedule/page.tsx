@@ -2083,8 +2083,8 @@ export default function SchedulePage() {
         onClose={() => setShowStudioPickerModal(false)}
         title="Select Studio Schedule to View"
       >
-        <div className="p-6">
-          <p className="text-gray-600 mb-4">
+        <div className="p-6 bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
+          <p className="text-purple-200 mb-4">
             Choose a studio to preview their interactive schedule view (where they can add notes/requests):
           </p>
           <div className="max-h-96 overflow-y-auto space-y-2">
@@ -2092,10 +2092,10 @@ export default function SchedulePage() {
               <button
                 key={studio.id}
                 onClick={() => handleSelectStudio(studio.id, studio.name)}
-                className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-purple-100 rounded-lg transition-colors border border-gray-200 hover:border-purple-400"
+                className="w-full text-left px-4 py-3 bg-purple-800/30 hover:bg-purple-700/50 rounded-lg transition-all border border-purple-600/30 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/20"
               >
-                <div className="font-medium text-gray-900">{studio.name}</div>
-                <div className="text-sm text-gray-500">
+                <div className="font-medium text-white">{studio.name}</div>
+                <div className="text-sm text-purple-300">
                   {studio.publicCode || 'No code assigned'}
                 </div>
               </button>
@@ -2104,7 +2104,7 @@ export default function SchedulePage() {
           <div className="mt-4 flex justify-end">
             <button
               onClick={() => setShowStudioPickerModal(false)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 bg-purple-600/30 text-purple-200 rounded-lg hover:bg-purple-600/50 border border-purple-500/50 transition-all"
             >
               Cancel
             </button>
