@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/Button';
 import { StudioNoteModal } from '@/components/scheduling/StudioNoteModal';
 
 // TEST studio ID (will be replaced with real studio context)
-const TEST_STUDIO_ID = '00000000-0000-0000-0000-000000000002';
+// Using Apex Dance Company from tester tenant for testing
+const TEST_STUDIO_ID = '2bc476db-62a0-49b3-a264-4bca9437f6a5';
 
 interface ScheduledRoutine {
   id: string;

@@ -303,6 +303,7 @@ function SortableRoutineRow({
 }) {
   const conflictBadgeRef = useRef<HTMLButtonElement>(null);
   const [badgePosition, setBadgePosition] = useState<{ top: number; left: number } | null>(null);
+  const conflictHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     attributes,
@@ -437,6 +438,11 @@ function SortableRoutineRow({
                 border: '1px solid rgba(255, 107, 107, 0.6)'
               }}
               onMouseEnter={() => {
+                // Clear any pending hide timeout
+                if (conflictHideTimeoutRef.current) {
+                  clearTimeout(conflictHideTimeoutRef.current);
+                  conflictHideTimeoutRef.current = null;
+                }
                 if (conflictBadgeRef.current) {
                   const rect = conflictBadgeRef.current.getBoundingClientRect();
                   setBadgePosition({ top: rect.top, left: rect.left + rect.width + 8 });
@@ -444,8 +450,11 @@ function SortableRoutineRow({
                 setHoveredConflict(routine.id);
               }}
               onMouseLeave={() => {
-                setHoveredConflict(null);
-                setBadgePosition(null);
+                // Delay hiding to allow user to move mouse to popup
+                conflictHideTimeoutRef.current = setTimeout(() => {
+                  setHoveredConflict(null);
+                  setBadgePosition(null);
+                }, 200); // 200ms delay
               }}
               title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
             >
@@ -465,6 +474,18 @@ function SortableRoutineRow({
                     border: '2px solid rgba(255, 107, 107, 0.9)',
                     minWidth: '280px',
                     maxWidth: '400px'
+                  }}
+                  onMouseEnter={() => {
+                    // Clear hide timeout when hovering popup
+                    if (conflictHideTimeoutRef.current) {
+                      clearTimeout(conflictHideTimeoutRef.current);
+                      conflictHideTimeoutRef.current = null;
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    // Hide immediately when leaving popup
+                    setHoveredConflict(null);
+                    setBadgePosition(null);
                   }}
                 >
                   {/* Conflict Details */}
