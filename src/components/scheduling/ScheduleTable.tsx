@@ -395,7 +395,7 @@ function SortableRoutineRow({
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
             <div
-              className="relative inline-block"
+              className="relative inline-flex items-center"
               onMouseEnter={() => setHoveredConflict(routine.id)}
               onMouseLeave={() => setHoveredConflict(null)}
             >
