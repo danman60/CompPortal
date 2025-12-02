@@ -688,69 +688,49 @@ export function DragDropProvider({
           const { pointerCoordinates } = args;
 
           if (pointerCoordinates) {
-            // Debug: Log all coordinate values
-            console.log('[CollisionDetection] DEBUG - Pointer coordinates:', {
-              x: pointerCoordinates.x,
-              y: pointerCoordinates.y
-            });
+            // Use document.elementFromPoint to find which element is actually under the pointer
+            // This avoids coordinate system mismatch issues
+            const elementUnderPointer = document.elementFromPoint(pointerCoordinates.x, pointerCoordinates.y);
 
-            console.log('[CollisionDetection] DEBUG - All routine rects:',
-              routineTargets.map((r, i) => ({
-                index: i,
-                id: r.id,
-                top: r.rect?.top,
-                bottom: r.rect?.bottom,
-                left: r.rect?.left,
-                right: r.rect?.right,
-                height: r.rect?.height,
-                width: r.rect?.width
-              }))
-            );
+            if (elementUnderPointer) {
+              // Walk up the DOM tree to find the routine row element
+              let currentElement: HTMLElement | null = elementUnderPointer as HTMLElement;
+              let foundRoutineId: string | null = null;
 
-            // Custom collision: Find which routine row the pointer is actually over
-            let closestRoutine: any = null;
-            let closestDistance = Infinity;
+              // Search up to 10 levels for a routine row element
+              for (let i = 0; i < 10 && currentElement; i++) {
+                // Check if this element has a data attribute or ID that indicates it's a routine
+                const elementId = currentElement.getAttribute('data-rbd-draggable-id') ||
+                                  currentElement.id ||
+                                  currentElement.getAttribute('id');
 
-            for (const routine of routineTargets) {
-              const { rect } = routine;
-              if (!rect) continue;
+                if (elementId && elementId.startsWith('routine-')) {
+                  foundRoutineId = elementId;
+                  break;
+                }
 
-              // Check if pointer Y coordinate is within this routine's row bounds
-              const withinBounds = pointerCoordinates.y >= rect.top && pointerCoordinates.y <= rect.bottom;
+                currentElement = currentElement.parentElement;
+              }
 
-              console.log('[CollisionDetection] DEBUG - Checking routine:', {
-                id: routine.id,
-                pointerY: pointerCoordinates.y,
-                rectTop: rect.top,
-                rectBottom: rect.bottom,
-                withinBounds
-              });
+              // If we found a routine ID, match it to one of the routine targets
+              if (foundRoutineId) {
+                const matchingRoutine = routineTargets.find(r => r.id === foundRoutineId);
 
-              if (withinBounds) {
-                // Calculate distance from pointer to row center
-                const rowCenter = rect.top + rect.height / 2;
-                const distance = Math.abs(pointerCoordinates.y - rowCenter);
-
-                if (distance < closestDistance) {
-                  closestDistance = distance;
-                  closestRoutine = routine;
+                if (matchingRoutine) {
+                  console.log('[CollisionDetection] DOM-based collision found routine:', {
+                    count: routineTargets.length,
+                    match: matchingRoutine.id,
+                    pointerX: pointerCoordinates.x,
+                    pointerY: pointerCoordinates.y
+                  });
+                  return [matchingRoutine];
                 }
               }
-            }
-
-            if (closestRoutine) {
-              console.log('[CollisionDetection] Custom collision found routine:', {
-                count: routineTargets.length,
-                match: closestRoutine.id,
-                pointerY: pointerCoordinates.y,
-                routineRect: closestRoutine.rect
-              });
-              return [closestRoutine];
             }
           }
 
           // If no pointer coordinates or no match, fall back to containers
-          console.log('[CollisionDetection] No custom collision match:', {
+          console.log('[CollisionDetection] No DOM-based collision match:', {
             count: routineTargets.length,
             hasPointer: !!pointerCoordinates
           });
