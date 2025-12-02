@@ -250,6 +250,9 @@ export default function SchedulePage() {
     },
   });
 
+  // Update block position mutation (for drag-and-drop reordering)
+  const updateBlockPositionMutation = trpc.scheduling.updateBlockPosition.useMutation();
+
   // Reset mutations
   const resetDay = trpc.scheduling.resetDay.useMutation({
     onSuccess: async (data) => {
@@ -807,14 +810,10 @@ export default function SchedulePage() {
     try {
       await Promise.all(
         reorderedBlocks.map(block =>
-          fetch('/api/trpc/scheduling.updateBlockPosition', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              blockId: block.id,
-              scheduledTime: block.scheduled_time.toISOString(),
-              sortOrder: block.sort_order,
-            }),
+          updateBlockPositionMutation.mutateAsync({
+            blockId: block.id,
+            scheduledTime: block.scheduled_time.toISOString(),
+            sortOrder: block.sort_order,
           })
         )
       );
