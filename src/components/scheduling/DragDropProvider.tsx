@@ -55,6 +55,8 @@ interface DragDropProviderProps {
   scheduleBlocks?: ScheduleBlockData[];
   /** Current selected date (ISO string "YYYY-MM-DD") */
   selectedDate: string;
+  /** Day start times for all competition days */
+  dayStartTimes?: Array<{ date: string; start_time: string }>;
   /** Callback when schedule order changes (draft state) */
   onScheduleChange: (newSchedule: RoutineData[]) => void;
   /** Callback when blocks are reordered */
@@ -78,6 +80,7 @@ export function DragDropProvider({
   routines,
   scheduleBlocks = [],
   selectedDate,
+  dayStartTimes = [],
   onScheduleChange,
   onBlockReorder,
   onCreateBlockAtPosition,
@@ -91,6 +94,12 @@ export function DragDropProvider({
   const [activeBlockType, setActiveBlockType] = useState<'award' | 'break' | null>(null);
   const [dropIndicatorTop, setDropIndicatorTop] = useState<number>(0);
   const [showDropIndicator, setShowDropIndicator] = useState(false);
+
+  // Helper: Get day start time for a given date (defaults to 08:00:00)
+  const getDayStartTime = (date: string): string => {
+    const dayStart = dayStartTimes?.find(dst => dst.date === date);
+    return dayStart?.start_time || '08:00:00';
+  };
 
   // Get the actively dragged routine
   const activeRoutine = activeId ? routines.find(r => r.id === activeId) : null;
@@ -436,7 +445,7 @@ export function DragDropProvider({
         const newSchedule = [...scheduledForDay, ...routinesToDrag];
         const recalculated = calculateSchedule(
           newSchedule,
-          scheduledForDay[0]?.performanceTime || '08:00:00'
+          scheduledForDay[0]?.performanceTime || getDayStartTime(selectedDate)
         );
         onScheduleChange(recalculated);
 
@@ -499,7 +508,7 @@ export function DragDropProvider({
       const firstRoutine = scheduledForDay[0];
       const recalculated = calculateSchedule(
         newSchedule,
-        firstRoutine?.performanceTime || '08:00:00'
+        firstRoutine?.performanceTime || getDayStartTime(selectedDate)
       );
 
       onScheduleChange(recalculated);
@@ -539,7 +548,7 @@ export function DragDropProvider({
       const firstRoutine = scheduledForDay[0];
       const recalculated = calculateSchedule(
         newSchedule,
-        firstRoutine?.performanceTime || '08:00:00'
+        firstRoutine?.performanceTime || getDayStartTime(selectedDate)
       );
 
       onScheduleChange(recalculated);
@@ -599,7 +608,7 @@ export function DragDropProvider({
         // Recalculate times and entry numbers
         const recalculated = calculateSchedule(
           reordered,
-          reordered[0].performanceTime || '08:00:00'
+          reordered[0].performanceTime || getDayStartTime(selectedDate)
         );
 
         onScheduleChange(recalculated);
@@ -625,7 +634,7 @@ export function DragDropProvider({
         // Recalculate times and entry numbers
         const recalculated = calculateSchedule(
           reordered,
-          reordered[0].performanceTime || '08:00:00'
+          reordered[0].performanceTime || getDayStartTime(selectedDate)
         );
 
         onScheduleChange(recalculated);

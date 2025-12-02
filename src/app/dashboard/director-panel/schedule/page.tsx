@@ -1646,6 +1646,10 @@ export default function SchedulePage() {
           routines={allRoutinesData}
           scheduleBlocks={scheduleBlocks || []}
           selectedDate={selectedDate}
+          dayStartTimes={(dayStartTimes || []).map((dst: any) => ({
+            date: dst.date instanceof Date ? dst.date.toISOString().split('T')[0] : dst.date,
+            start_time: dst.start_time instanceof Date ? `${String(dst.start_time.getHours()).padStart(2, '0')}:${String(dst.start_time.getMinutes()).padStart(2, '0')}:00` : dst.start_time
+          }))}
           onScheduleChange={handleScheduleChange}
           onBlockReorder={handleBlockReorder}
           onCreateBlockAtPosition={handleCreateBlockAtPosition}
