@@ -299,9 +299,11 @@ export function DragDropProvider({
     }
     // If dropped on routine, insert before that routine
     else if (!targetId.startsWith('schedule-table-') && !targetId.startsWith('routine-pool-')) {
-      const targetRoutine = routines.find(r => r.id === targetId);
+      // Strip 'routine-' prefix from target ID to match routine.id format
+      const actualRoutineTargetId = targetId.startsWith('routine-') ? targetId.slice(8) : targetId;
+      const targetRoutine = routines.find(r => r.id === actualRoutineTargetId);
       if (!targetRoutine || !targetRoutine.isScheduled) {
-        console.log('[DragDropProvider] Invalid routine drop target for block');
+        console.log('[DragDropProvider] Invalid routine drop target for block:', targetId, '(stripped:', actualRoutineTargetId, ')');
         return;
       }
 

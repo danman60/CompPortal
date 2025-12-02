@@ -301,6 +301,9 @@ function SortableRoutineRow({
     message: string;
   }>;
 }) {
+  const conflictBadgeRef = useRef<HTMLButtonElement>(null);
+  const [badgePosition, setBadgePosition] = useState<{ top: number; left: number } | null>(null);
+
   const {
     attributes,
     listeners,
@@ -333,8 +336,13 @@ function SortableRoutineRow({
 
     const conflict = conflicts[0]; // Show first conflict
     const isRoutine1 = conflict.routine1Id === routine.id;
-    const conflictingRoutineNumber = isRoutine1 ? conflict.routine2Number : conflict.routine1Number;
+    const conflictingRoutineId = isRoutine1 ? conflict.routine2Id : conflict.routine1Id;
     const conflictingRoutineTitle = isRoutine1 ? conflict.routine2Title : conflict.routine1Title;
+
+    // Get current entry number from scheduled routines (UI state)
+    const conflictingRoutine = scheduledRoutines.find(r => r.id === conflictingRoutineId);
+    const conflictingRoutineNumber = conflictingRoutine?.entryNumber ||
+      (isRoutine1 ? conflict.routine2Number : conflict.routine1Number);
 
     let tooltip = `⚠️ Conflict: ${conflict.dancerName}`;
     tooltip += `\n${conflict.routinesBetween} routine${conflict.routinesBetween !== 1 ? 's' : ''} between performances`;
@@ -422,26 +430,36 @@ function SortableRoutineRow({
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
             <button
+              ref={conflictBadgeRef}
               className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                 border: '1px solid rgba(255, 107, 107, 0.6)'
               }}
-              onMouseEnter={() => setHoveredConflict(routine.id)}
-              onMouseLeave={() => setHoveredConflict(null)}
+              onMouseEnter={() => {
+                if (conflictBadgeRef.current) {
+                  const rect = conflictBadgeRef.current.getBoundingClientRect();
+                  setBadgePosition({ top: rect.top, left: rect.left + rect.width + 8 });
+                }
+                setHoveredConflict(routine.id);
+              }}
+              onMouseLeave={() => {
+                setHoveredConflict(null);
+                setBadgePosition(null);
+              }}
               title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
             >
               <span className="text-sm">⚠️</span>
 
               {/* Hover popup - shows conflict details + action buttons */}
-              {hoveredConflict === routine.id && conflicts && conflicts.length > 0 && typeof window !== 'undefined' && createPortal(
+              {hoveredConflict === routine.id && conflicts && conflicts.length > 0 && badgePosition && typeof window !== 'undefined' && createPortal(
                 <div
                   className="flex flex-col gap-2 text-white rounded-md px-3 py-2 shadow-2xl"
                   style={{
                     position: 'fixed',
                     zIndex: 999999,
-                    right: '20px',
-                    top: '50%',
+                    left: `${badgePosition.left}px`,
+                    top: `${badgePosition.top}px`,
                     transform: 'translateY(-50%)',
                     background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                     border: '2px solid rgba(255, 107, 107, 0.9)',
@@ -454,8 +472,13 @@ function SortableRoutineRow({
                     {(() => {
                       const conflict = conflicts[0];
                       const isRoutine1 = conflict.routine1Id === routine.id;
-                      const conflictingRoutineNumber = isRoutine1 ? conflict.routine2Number : conflict.routine1Number;
+                      const conflictingRoutineId = isRoutine1 ? conflict.routine2Id : conflict.routine1Id;
                       const conflictingRoutineTitle = isRoutine1 ? conflict.routine2Title : conflict.routine1Title;
+
+                      // Get current entry number from scheduled routines (UI state)
+                      const conflictingRoutine = scheduledRoutines.find(r => r.id === conflictingRoutineId);
+                      const conflictingRoutineNumber = conflictingRoutine?.entryNumber ||
+                        (isRoutine1 ? conflict.routine2Number : conflict.routine1Number);
 
                       return (
                         <>
