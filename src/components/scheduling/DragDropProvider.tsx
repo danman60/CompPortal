@@ -707,33 +707,34 @@ export function DragDropProvider({
         return id.startsWith('schedule-table-') || id.startsWith('unscheduled-');
       });
 
-      // When dragging block templates, filter out block IDs - only allow dropping on routines
+      // When dragging block templates, allow dropping on both routines AND blocks
       if (activeId && String(activeId).startsWith('block-template-')) {
-        const routineTargets = specificItems.filter(item =>
-          String(item.id).startsWith('routine-')
-        );
+        const validTargets = specificItems.filter(item => {
+          const id = String(item.id);
+          return id.startsWith('routine-') || id.startsWith('block-');
+        });
 
         console.log('[CollisionDetection] Block template drag:', {
           activeId,
           allItems: specificItems.map(c => c.id),
-          routineTargets: routineTargets.map(c => c.id),
-          returning: routineTargets.length > 0 ? 'routine targets only' : 'containers'
+          validTargets: validTargets.map(c => c.id),
+          returning: validTargets.length > 0 ? 'routine/block targets' : 'containers'
         });
 
-        // If multiple routine targets detected, use custom collision for precise row detection
-        if (routineTargets.length > 1) {
+        // If multiple targets detected, use custom collision for precise row detection
+        if (validTargets.length > 1) {
           const { pointerCoordinates } = args;
 
           if (pointerCoordinates) {
             console.log('[CollisionDetection] Checking rect-based collision:', {
               pointerX: pointerCoordinates.x,
               pointerY: pointerCoordinates.y,
-              routineCount: routineTargets.length
+              targetCount: validTargets.length
             });
 
-            // Check if pointer is within each routine's bounding rect
-            // routineTargets already have rect property from collision detection
-            for (const target of routineTargets) {
+            // Check if pointer is within each target's bounding rect
+            // validTargets already have rect property from collision detection
+            for (const target of validTargets) {
               if (target.data?.current?.sortable?.rect) {
                 const rect = target.data.current.sortable.rect;
                 const isWithinX = pointerCoordinates.x >= rect.left && pointerCoordinates.x <= rect.right;
@@ -757,7 +758,7 @@ export function DragDropProvider({
           return containers;
         }
 
-        return routineTargets.length > 0 ? routineTargets : containers;
+        return validTargets.length > 0 ? validTargets : containers;
       }
 
       // Return specific items if any exist, otherwise return containers (for empty schedules)
