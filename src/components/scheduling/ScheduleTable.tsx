@@ -282,7 +282,7 @@ function SortableRoutineRow({
     transition,
     isDragging,
   } = useSortable({
-    id: routine.id,
+    id: `routine-${routine.id}`,
   });
 
   const style = {
@@ -914,7 +914,7 @@ Click badge to dismiss"
           </thead>
           <SortableContext
             items={[
-              ...sortedRoutines.map(r => r.id),
+              ...sortedRoutines.map(r => `routine-${r.id}`),
               ...scheduleBlocks.map(b => `block-${b.id}`),
             ]}
             strategy={verticalListSortingStrategy}

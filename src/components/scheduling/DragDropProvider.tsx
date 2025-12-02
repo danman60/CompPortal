@@ -400,7 +400,9 @@ export function DragDropProvider({
     }
 
     // Otherwise, dragging a routine
-    const draggedRoutine = routines.find(r => r.id === draggedId);
+    // Strip 'routine-' prefix to get actual routine ID
+    const actualRoutineId = draggedId.startsWith('routine-') ? draggedId.slice(8) : draggedId;
+    const draggedRoutine = routines.find(r => r.id === actualRoutineId);
 
     if (!draggedRoutine) {
       console.error('[DragDropProvider] Dragged routine not found:', draggedId);

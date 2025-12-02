@@ -832,7 +832,8 @@ export default function SchedulePage() {
 
     // If dropped on a routine, place before it
     if (targetId.startsWith('routine-')) {
-      const routine = dayDraft.find(r => r.id === targetId);
+      const routineId = targetId.slice(8); // Strip 'routine-' prefix
+      const routine = dayDraft.find(r => r.id === routineId);
       if (routine?.performanceTime) {
         targetTime = routine.performanceTime;
         // Use fractional sort order to insert BEFORE the target routine
