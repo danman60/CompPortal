@@ -185,11 +185,11 @@ export function ScheduleRow({
           {routine.categoryName}
         </td>
 
-        {/* Conflict Badge (overlay) */}
+        {/* Conflict Badge (fixed position within row) */}
         {hasConflict && (
-          <td className="absolute top-2 right-2 z-20 pointer-events-none">
+          <td className="absolute top-1/2 -translate-y-1/2 right-2 z-30 pointer-events-none">
             <span
-              className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-md border border-red-500 font-medium shadow-lg"
+              className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-md border border-red-500 font-medium shadow-lg whitespace-nowrap"
               title={conflictMessage || 'Conflict detected'}
             >
               ⚠️ Conflict

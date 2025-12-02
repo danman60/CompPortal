@@ -74,6 +74,12 @@ export default function SchedulePage() {
   // Schedule block modal state
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockType, setBlockType] = useState<'award' | 'break'>('award');
+  const [editingBlock, setEditingBlock] = useState<{
+    id: string;
+    type: 'award' | 'break';
+    title: string;
+    duration: number;
+  } | null>(null);
 
   // Selection state (unscheduled routines)
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
@@ -1793,6 +1799,15 @@ export default function SchedulePage() {
                   deleteBlock.mutate({ blockId });
                 }
               }}
+              onEditBlock={(block) => {
+                setEditingBlock({
+                  id: block.id,
+                  type: block.block_type as 'award' | 'break',
+                  title: block.title,
+                  duration: block.duration_minutes,
+                });
+                setShowBlockModal(true);
+              }}
             />
           </div>
           </div>
@@ -1802,7 +1817,11 @@ export default function SchedulePage() {
       {/* Schedule Block Modal */}
       <ScheduleBlockModal
         isOpen={showBlockModal}
-        onClose={() => setShowBlockModal(false)}
+        onClose={() => {
+          setShowBlockModal(false);
+          setEditingBlock(null);
+        }}
+        initialBlock={editingBlock || undefined}
         onSave={async (block) => {
           if (!block.blockId || !block.placement) {
             toast.error('Missing block ID or placement data');
@@ -1861,6 +1880,8 @@ export default function SchedulePage() {
             toast.success(`${block.type === 'award' ? '🏆' : '☕'} Block placed: ${block.title}`);
             refetch();
             refetchBlocks();
+            setShowBlockModal(false);
+            setEditingBlock(null);
           } catch (error: any) {
             toast.error(`Failed to place block: ${error.message}`);
           }
