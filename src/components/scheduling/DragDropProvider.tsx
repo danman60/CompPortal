@@ -315,10 +315,10 @@ export function DragDropProvider({
 
       console.log('[DragDropProvider] Inserting block before routine:', targetRoutine.title);
 
-      // Get target routine time
+      // Get target routine time using SCHEDULE date, not today's date
       const [hours, minutes] = targetRoutine.performanceTime!.split(':').map(Number);
-      const targetTime = new Date();
-      targetTime.setHours(hours, minutes, 0, 0);
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const targetTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
       // Remove block from current position
       const otherBlocks = scheduleBlocks.filter(b => b.id !== actualDraggedId);
