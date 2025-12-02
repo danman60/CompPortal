@@ -17,6 +17,7 @@
  */
 
 import { useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useDroppable } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -421,7 +422,7 @@ function SortableRoutineRow({
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
             <button
-              className="relative inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
+              className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                 border: '1px solid rgba(255, 107, 107, 0.6)'
@@ -433,15 +434,15 @@ function SortableRoutineRow({
               <span className="text-sm">⚠️</span>
 
               {/* Hover popup - shows conflict details + action buttons */}
-              {hoveredConflict === routine.id && conflicts && conflicts.length > 0 && (
+              {hoveredConflict === routine.id && conflicts && conflicts.length > 0 && typeof window !== 'undefined' && createPortal(
                 <div
                   className="flex flex-col gap-2 text-white rounded-md px-3 py-2 shadow-2xl"
                   style={{
                     position: 'fixed',
-                    zIndex: 99999,
-                    left: '50%',
+                    zIndex: 999999,
+                    right: '20px',
                     top: '50%',
-                    transform: 'translate(-50%, -50%)',
+                    transform: 'translateY(-50%)',
                     background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                     border: '2px solid rgba(255, 107, 107, 0.9)',
                     minWidth: '280px',
@@ -509,7 +510,8 @@ function SortableRoutineRow({
                       ✕
                     </button>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </button>
           )}
