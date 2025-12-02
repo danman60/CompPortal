@@ -187,9 +187,9 @@ export function ScheduleRow({
 
         {/* Conflict Badge (overlay) */}
         {hasConflict && (
-          <td className="absolute top-2 right-2 pointer-events-none">
+          <td className="absolute top-2 right-2 z-20 pointer-events-none">
             <span
-              className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-md border border-red-500 font-medium"
+              className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-md border border-red-500 font-medium shadow-lg"
               title={conflictMessage || 'Conflict detected'}
             >
               ⚠️ Conflict
