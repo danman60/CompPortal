@@ -736,12 +736,16 @@ export default function SchedulePage() {
       if (draftSchedule.length === 0) return; // No draft to save
       if (scheduleMutation.isPending) return; // Save already in progress
 
+      // Filter out blocks - they're saved separately
+      const routinesOnly = draftSchedule.filter(item => !item.isBlock);
+      if (routinesOnly.length === 0) return; // No routines to save
+
       console.log('[Autosave] Saving schedule...');
       scheduleMutation.mutate({
         tenantId: TEST_TENANT_ID,
         competitionId: TEST_COMPETITION_ID,
         date: selectedDate,
-        routines: draftSchedule.map(r => ({
+        routines: routinesOnly.map(r => ({
           routineId: r.id,
           entryNumber: r.entryNumber || 100,
           performanceTime: r.performanceTime || '08:00:00',
