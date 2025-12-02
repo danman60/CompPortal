@@ -174,6 +174,7 @@ function SortableBlockRow({
       {...attributes}
       {...listeners}
       className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
+      data-block-id={block.id}
     >
       {showCheckbox && <td className="px-0.5 py-1" style={{ width: '18px' }}></td>}
       <td className="px-0 py-1" style={{ width: '36px' }}></td>
@@ -409,12 +410,17 @@ function SortableRoutineRow({
               {/* Hover popup - shows conflict details + action buttons */}
               {hoveredConflict === routine.id && conflicts && conflicts.length > 0 && (
                 <div
-                  className="absolute left-0 top-0 z-[9999] flex flex-col gap-2 text-white rounded-md px-3 py-2 shadow-2xl"
+                  className="flex flex-col gap-2 text-white rounded-md px-3 py-2 shadow-2xl"
                   style={{
+                    position: 'fixed',
+                    zIndex: 99999,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
                     background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                     border: '2px solid rgba(255, 107, 107, 0.9)',
                     minWidth: '280px',
-                    maxWidth: '400px',
+                    maxWidth: '400px'
                   }}
                 >
                   {/* Conflict Details */}

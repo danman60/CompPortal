@@ -141,8 +141,19 @@ export function DragDropProvider({
 
       setShowDropIndicator(true);
 
-      // Find the element for the routine we're hovering over
-      const overElement = document.querySelector(`[data-routine-id="${over.id}"]`);
+      // Determine if we're hovering over a routine or a block
+      const overId = String(over.id);
+      let overElement: Element | null = null;
+
+      if (overId.startsWith('block-')) {
+        // Extract actual block ID from "block-{id}"
+        const blockId = overId.replace('block-', '');
+        overElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      } else {
+        // It's a routine
+        overElement = document.querySelector(`[data-routine-id="${over.id}"]`);
+      }
+
       if (overElement) {
         const rect = overElement.getBoundingClientRect();
         // Position the line above the hovered row (insertion point)
