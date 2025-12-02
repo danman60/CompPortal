@@ -64,6 +64,7 @@ interface ScheduleTableProps {
     sort_order: number | null;
   }>;
   onDeleteBlock?: (blockId: string) => void;
+  onEditBlock?: (block: { id: string; block_type: string; title: string; duration_minutes: number; scheduled_time: Date | null }) => void;
 }
 
 interface Routine {
@@ -118,6 +119,7 @@ function SortableBlockRow({
   block,
   showCheckbox,
   onDelete,
+  onEdit,
   calculatedTime,
 }: {
   block: {
@@ -129,6 +131,7 @@ function SortableBlockRow({
   };
   showCheckbox?: boolean;
   onDelete?: (blockId: string) => void;
+  onEdit?: (block: { id: string; block_type: string; title: string; duration_minutes: number; scheduled_time: Date | null }) => void;
   calculatedTime?: string | null; // Dynamically calculated time from schedule position
 }) {
   const {
@@ -173,7 +176,13 @@ function SortableBlockRow({
       style={style}
       {...attributes}
       {...listeners}
-      className={`border-b-2 ${borderColor} ${bgColor} cursor-move hover:bg-white/5 transition-colors`}
+      onClick={(e) => {
+        // Only trigger edit on row click, not button clicks
+        if (!isDragging && onEdit && (e.target as HTMLElement).tagName === 'TD') {
+          onEdit(block);
+        }
+      }}
+      className={`border-b-2 ${borderColor} ${bgColor} ${onEdit ? 'cursor-pointer' : 'cursor-move'} hover:bg-white/5 transition-colors`}
       data-block-id={block.id}
     >
       {showCheckbox && <td className="px-0.5 py-1" style={{ width: '18px' }}></td>}
@@ -193,18 +202,32 @@ function SortableBlockRow({
             <span className="text-sm font-semibold text-white">{block.title}</span>
             <span className="text-xs text-white/60 ml-2">({block.duration_minutes} min)</span>
           </div>
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(block.id);
-              }}
-              className="px-2 py-1 text-xs font-bold text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded transition-colors"
-              title="Delete block"
-            >
-              ✕
-            </button>
-          )}
+          <div className="flex gap-1">
+            {onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(block);
+                }}
+                className="px-2 py-1 text-xs font-bold text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 rounded transition-colors"
+                title="Edit block"
+              >
+                ✏️
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(block.id);
+                }}
+                className="px-2 py-1 text-xs font-bold text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded transition-colors"
+                title="Delete block"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       </td>
     </tr>
@@ -587,6 +610,7 @@ export function ScheduleTable({
   onAutoFixConflict,
   scheduleBlocks = [],
   onDeleteBlock,
+  onEditBlock,
 }: ScheduleTableProps) {
   const lastClickedIndexRef = useRef<number | null>(null);
   const [dismissedIcons, setDismissedIcons] = useState<Set<string>>(new Set());
@@ -961,6 +985,7 @@ Click badge to dismiss"
                         block={block}
                         showCheckbox={!!onSelectionChange}
                         onDelete={onDeleteBlock}
+                        onEdit={onEditBlock}
                         calculatedTime={calculatedTimeString}
                       />
                     );
