@@ -657,31 +657,37 @@ export function ScheduleTable({
 
   // Combine routines and blocks into chronological order
   const scheduleItems = useMemo(() => {
-    const items: Array<{ type: 'routine' | 'block'; data: any; order: number }> = [];
+    const items: Array<{ type: 'routine' | 'block'; data: any; time: number }> = [];
 
-    // Add routines
-    sortedRoutines.forEach((routine, index) => {
-      items.push({
-        type: 'routine',
-        data: routine,
-        order: routine.entryNumber || index,
-      });
-    });
-
-    // Add blocks
-    scheduleBlocks.forEach(block => {
-      if (block.sort_order !== null) {
+    // Add routines with their scheduled times
+    sortedRoutines.forEach((routine) => {
+      if (routine.scheduledTimeString) {
+        const [hours, minutes] = routine.scheduledTimeString.split(':').map(Number);
+        const timeInMinutes = hours * 60 + minutes;
         items.push({
-          type: 'block',
-          data: block,
-          order: block.sort_order,
+          type: 'routine',
+          data: routine,
+          time: timeInMinutes,
         });
       }
     });
 
-    // Sort by order
-    return items.sort((a, b) => a.order - b.order);
-  }, [sortedRoutines, scheduleBlocks]);
+    // Add blocks with their scheduled times
+    sortedBlocks.forEach(block => {
+      if (block.scheduled_time) {
+        const schedTime = new Date(block.scheduled_time);
+        const timeInMinutes = schedTime.getHours() * 60 + schedTime.getMinutes();
+        items.push({
+          type: 'block',
+          data: block,
+          time: timeInMinutes,
+        });
+      }
+    });
+
+    // Sort by time (chronological order)
+    return items.sort((a, b) => a.time - b.time);
+  }, [sortedRoutines, sortedBlocks]);
 
   // Handle checkbox change with shift-click support
   const handleCheckboxChange = (routineId: string, index: number, event: React.MouseEvent) => {
