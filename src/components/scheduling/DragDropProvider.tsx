@@ -789,7 +789,11 @@ export function DragDropProvider({
       onDragEnd={handleDragEnd}
     >
       {children}
-      <DropIndicator top={dropIndicatorTop} visible={showDropIndicator} />
+      <DropIndicator
+        top={dropIndicatorTop}
+        visible={showDropIndicator}
+        variant={activeBlockType || 'routine'}
+      />
       <DragOverlay>
         {activeBlockType ? (
           <div className="opacity-90 scale-110">
