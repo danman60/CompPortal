@@ -683,14 +683,25 @@ export function DragDropProvider({
           returning: routineTargets.length > 0 ? 'routine targets only' : 'containers'
         });
 
-        // If multiple routine targets detected, use closestCenter to pick the single closest one
+        // If multiple routine targets detected, use pointerWithin for accurate pointer-based collision
         if (routineTargets.length > 1) {
-          const closest = closestCenter({ ...args, droppableContainers: routineTargets });
-          console.log('[CollisionDetection] Multiple routines detected, using closestCenter:', {
+          // Use pointerWithin first - most accurate for table row selection
+          const pointerMatch = pointerWithin({ ...args, droppableContainers: routineTargets });
+          if (pointerMatch.length > 0) {
+            console.log('[CollisionDetection] Multiple routines, using pointerWithin:', {
+              count: routineTargets.length,
+              match: pointerMatch.map(c => c.id)
+            });
+            return pointerMatch;
+          }
+
+          // Fall back to rectIntersection if pointer not directly over any routine
+          const rectMatch = rectIntersection({ ...args, droppableContainers: routineTargets });
+          console.log('[CollisionDetection] Multiple routines, using rectIntersection fallback:', {
             count: routineTargets.length,
-            closest: closest.map(c => c.id)
+            match: rectMatch.map(c => c.id)
           });
-          return closest.length > 0 ? closest : containers;
+          return rectMatch.length > 0 ? rectMatch : containers;
         }
 
         return routineTargets.length > 0 ? routineTargets : containers;
