@@ -668,6 +668,16 @@ export function DragDropProvider({
         return id.startsWith('schedule-table-') || id.startsWith('unscheduled-');
       });
 
+      // Debug logging for block templates
+      if (activeId && String(activeId).startsWith('block-template-')) {
+        console.log('[CollisionDetection] Block template drag:', {
+          activeId,
+          specificItems: specificItems.map(c => c.id),
+          containers: containers.map(c => c.id),
+          returning: specificItems.length > 0 ? 'specific items' : 'containers'
+        });
+      }
+
       // Return specific items if any exist, otherwise return containers (for empty schedules)
       return specificItems.length > 0 ? specificItems : containers;
     };

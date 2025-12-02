@@ -395,7 +395,7 @@ function SortableRoutineRow({
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
             <button
-              className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
+              className="relative inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                 border: '1px solid rgba(255, 107, 107, 0.6)'
