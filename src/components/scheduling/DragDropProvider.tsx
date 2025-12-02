@@ -683,6 +683,16 @@ export function DragDropProvider({
           returning: routineTargets.length > 0 ? 'routine targets only' : 'containers'
         });
 
+        // If multiple routine targets detected, use closestCenter to pick the single closest one
+        if (routineTargets.length > 1) {
+          const closest = closestCenter({ ...args, droppableContainers: routineTargets });
+          console.log('[CollisionDetection] Multiple routines detected, using closestCenter:', {
+            count: routineTargets.length,
+            closest: closest.map(c => c.id)
+          });
+          return closest.length > 0 ? closest : containers;
+        }
+
         return routineTargets.length > 0 ? routineTargets : containers;
       }
 
