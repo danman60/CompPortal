@@ -106,11 +106,12 @@ export const invoiceRouter = router({
         : [];
       const subtotal = parseFloat(invoice.subtotal?.toString() || '0');
       const creditAmount = Number(invoice.credit_amount || 0);
+      const otherCreditAmount = Number(invoice.other_credit_amount || 0);
       const taxRate = parseFloat(invoice.tax_rate?.toString() || '0.13') / 100;
-      // Tax is calculated AFTER discount is applied
-      const afterDiscount = subtotal - creditAmount;
-      const taxAmount = afterDiscount * taxRate;
-      const totalAmount = afterDiscount + taxAmount;
+      // Tax is calculated AFTER all credits are applied
+      const afterAllCredits = subtotal - creditAmount - otherCreditAmount;
+      const taxAmount = afterAllCredits * taxRate;
+      const totalAmount = afterAllCredits + taxAmount;
 
       return {
         id: invoice.id,
@@ -155,12 +156,16 @@ export const invoiceRouter = router({
           totalAmount,
           creditAmount,
           creditReason: invoice.credit_reason,
+          otherCreditAmount,
+          otherCreditReason: invoice.other_credit_reason,
         },
         status: invoice.status,
         paidAt: invoice.paid_at,
         isLocked: invoice.is_locked,
         credit_amount: invoice.credit_amount,
         credit_reason: invoice.credit_reason,
+        other_credit_amount: invoice.other_credit_amount,
+        other_credit_reason: invoice.other_credit_reason,
       };
     }),
 
@@ -1224,6 +1229,69 @@ export const invoiceRouter = router({
       return {
         success: true,
         discountAmount,
+        newTotal,
+      };
+    }),
+
+  // Apply or remove custom credit (Competition Directors only)
+  // This is for fixed dollar credits (separate from percentage discounts)
+  applyCustomCredit: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      creditAmount: z.number().min(0), // Dollar amount, 0 to remove
+      creditReason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can apply credits
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can apply credits to invoices.',
+        });
+      }
+
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
+      }
+
+      const subtotal = Number(invoice.subtotal);
+      const taxRate = Number(invoice.tax_rate);
+      const existingCreditAmount = Number(invoice.credit_amount || 0); // Percentage discount
+
+      // Calculate new total: (subtotal - percentage_discount - other_credit) * (1 + taxRate/100)
+      const afterAllCredits = subtotal - existingCreditAmount - input.creditAmount;
+      const taxAmount = afterAllCredits * (taxRate / 100);
+      const newTotal = afterAllCredits + taxAmount;
+
+      // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
+      const depositAmount = Number(invoice.deposit_amount || 0);
+      const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
+
+      // Update invoice with other_credit AND amount_due
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          other_credit_amount: input.creditAmount,
+          other_credit_reason: input.creditAmount > 0
+            ? (input.creditReason || 'Custom credit')
+            : null,
+          total: newTotal,
+          amount_due: newAmountDue,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        creditAmount: input.creditAmount,
         newTotal,
       };
     }),

@@ -72,12 +72,12 @@ type Props = {
 };
 
 export default function InvoiceDetail({ studioId, competitionId }: Props) {
-  const [otherCredit, setOtherCredit] = useState({ amount: 0, reason: "" });
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [isEditingPrices, setIsEditingPrices] = useState(false);
   const [editableLineItems, setEditableLineItems] = useState<any[]>([]);
   const [showSplitWizard, setShowSplitWizard] = useState(false);
   const [showSubInvoices, setShowSubInvoices] = useState(false);
+  const [otherCreditInput, setOtherCreditInput] = useState({ amount: 0, reason: "" });
 
   // Get current user role
   const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
@@ -112,6 +112,16 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
   const hasSubInvoices = (subInvoicesData?.sub_invoices?.length || 0) > 0;
 
+  // Populate modal with existing credit values when opening
+  useEffect(() => {
+    if (showCreditModal && dbInvoice) {
+      setOtherCreditInput({
+        amount: Number(dbInvoice.other_credit_amount || 0),
+        reason: dbInvoice.other_credit_reason || "",
+      });
+    }
+  }, [showCreditModal, dbInvoice]);
+
   const sendInvoiceMutation = trpc.invoice.sendInvoice.useMutation({
     onSuccess: () => {
       toast.success('Invoice sent to studio!');
@@ -139,6 +149,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     },
     onError: (error: any) => {
       toast.error(`Failed to apply discount: ${error.message}`);
+    },
+  });
+
+  const applyCustomCreditMutation = trpc.invoice.applyCustomCredit.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.creditAmount > 0 ? 'Credit applied!' : 'Credit removed!');
+      setShowCreditModal(false);
+      setOtherCreditInput({ amount: 0, reason: "" });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to apply credit: ${error.message}`);
     },
   });
 
@@ -213,10 +235,10 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const currentLineItems = isEditingPrices ? editableLineItems : displayLineItems;
   const currentSubtotal = currentLineItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
   const taxRate = invoice?.summary.taxRate || 0;
-  const taxAmount = currentSubtotal * taxRate;
 
-  // Get discount from database (source of truth)
-  const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0;
+  // Get discounts and credits from database (source of truth)
+  const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0; // Percentage discount
+  const otherCreditAmount = dbInvoice ? Number(dbInvoice.other_credit_amount || 0) : 0; // Fixed credit
   const discountPercent = currentSubtotal > 0 ? (creditAmount / currentSubtotal) * 100 : 0;
 
   // Debug logging (safe in useEffect to avoid hydration errors)
@@ -224,18 +246,22 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     console.log('[InvoiceDetail] Credit/Discount calculation:', {
       hasDbInvoice: !!dbInvoice,
       creditAmountFromDb: dbInvoice?.credit_amount,
+      otherCreditAmountFromDb: dbInvoice?.other_credit_amount,
       creditAmountCalculated: creditAmount,
+      otherCreditAmountCalculated: otherCreditAmount,
       creditReason: dbInvoice?.credit_reason,
+      otherCreditReason: dbInvoice?.other_credit_reason,
       discountPercent,
       currentSubtotal,
       userRole: userProfile?.role
     });
-  }, [dbInvoice, creditAmount, discountPercent, currentSubtotal, userProfile]);
+  }, [dbInvoice, creditAmount, otherCreditAmount, discountPercent, currentSubtotal, userProfile]);
 
-  const totalAfterDiscount = currentSubtotal - creditAmount;
-  const totalWithTax = totalAfterDiscount * (1 + taxRate);
+  const totalAfterAllCredits = currentSubtotal - creditAmount - otherCreditAmount;
+  const taxAmount = totalAfterAllCredits * taxRate;
+  const totalWithTax = totalAfterAllCredits + taxAmount;
   const depositAmount = invoice?.reservation?.depositAmount || 0;
-  const totalAmount = Math.max(0, totalWithTax - otherCredit.amount - depositAmount);
+  const totalAmount = Math.max(0, totalWithTax - depositAmount);
 
   if (isLoading) {
     return (
@@ -546,8 +572,39 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
           {discountPercent > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-green-400">Discount ({discountPercent}%)</span>
-              <span className="text-green-400">-${((currentSubtotal * discountPercent) / 100).toFixed(2)}</span>
+              <span className="text-green-400">Discount ({discountPercent.toFixed(1)}%)</span>
+              <span className="text-green-400">-${creditAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {otherCreditAmount > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-white/10">
+              <span className="text-purple-400">Other Credits{dbInvoice?.other_credit_reason && `: ${dbInvoice.other_credit_reason}`}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-purple-400">-${otherCreditAmount.toFixed(2)}</span>
+                {isCompetitionDirector && (
+                  <button
+                    onClick={() => {
+                      if (!dbInvoice) return;
+                      applyCustomCreditMutation.mutate({
+                        invoiceId: dbInvoice.id,
+                        creditAmount: 0,
+                      });
+                    }}
+                    className="text-red-400 hover:text-red-300 transition-colors"
+                    title="Remove credit"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {taxAmount > 0 && (
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-gray-300">Tax ({(taxRate * 100).toFixed(2)}%)</span>
+              <span className="text-white">${taxAmount.toFixed(2)}</span>
             </div>
           )}
 
@@ -555,28 +612,6 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <div className="flex justify-between py-2 border-b border-white/10">
               <span className="text-yellow-400">LESS Deposit</span>
               <span className="text-yellow-400">-${depositAmount.toFixed(2)}</span>
-            </div>
-          )}
-
-          {taxAmount > 0 && (
-            <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-gray-300">Tax ({(taxRate * 100).toFixed(2)}%)</span>
-              <span className="text-white">${(((currentSubtotal * (1 - discountPercent / 100)) * taxRate)).toFixed(2)}</span>
-            </div>
-          )}
-          {otherCredit.amount > 0 && (
-            <div className="flex justify-between items-center py-2 border-b border-white/10">
-              <span className="text-purple-400">Other Credits{otherCredit.reason && `: ${otherCredit.reason}`}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
-                <button
-                  onClick={() => setOtherCredit({ amount: 0, reason: "" })}
-                  className="text-red-400 hover:text-red-300 transition-colors"
-                  title="Remove credit"
-                >
-                  ✕
-                </button>
-              </div>
             </div>
           )}
 
@@ -702,10 +737,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 ...invoice.summary,
                 creditAmount: creditAmount,
                 creditReason: dbInvoice?.credit_reason || null,
+                otherCreditAmount: otherCreditAmount,
+                otherCreditReason: dbInvoice?.other_credit_reason || null,
                 depositAmount: depositAmount,
               }
             };
-            console.log('[InvoiceDetail] Generating PDF with creditAmount:', creditAmount, 'creditReason:', dbInvoice?.credit_reason, 'depositAmount:', depositAmount);
+            console.log('[InvoiceDetail] Generating PDF with credits:', {
+              percentageDiscount: creditAmount,
+              creditReason: dbInvoice?.credit_reason,
+              otherCredit: otherCreditAmount,
+              otherCreditReason: dbInvoice?.other_credit_reason,
+              depositAmount
+            });
             const pdfBlob = generateInvoicePDF(invoiceWithCredit);
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
@@ -771,10 +814,13 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       </div>
 
       {/* Other Credits Modal */}
-      {showCreditModal && (
+      {showCreditModal && dbInvoice && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-xl max-w-md w-full">
-            <h3 className="text-xl font-bold text-white mb-4">Add Other Credits</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
+            </p>
             <div className="space-y-4">
               <div>
                 <label className="block text-gray-400 text-sm mb-2">Credit Amount ($)</label>
@@ -782,35 +828,43 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={otherCredit.amount}
-                  onChange={(e) => setOtherCredit({ ...otherCredit, amount: parseFloat(e.target.value) || 0 })}
+                  value={otherCreditInput.amount}
+                  onChange={(e) => setOtherCreditInput({ ...otherCreditInput, amount: parseFloat(e.target.value) || 0 })}
                   className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                  placeholder={otherCreditAmount > 0 ? `Current: $${otherCreditAmount.toFixed(2)}` : 'Enter amount'}
                 />
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Reason</label>
+                <label className="block text-gray-400 text-sm mb-2">Reason (Optional)</label>
                 <input
                   type="text"
-                  value={otherCredit.reason}
-                  onChange={(e) => setOtherCredit({ ...otherCredit, reason: e.target.value })}
-                  placeholder="e.g., Early bird discount, Loyalty credit"
+                  value={otherCreditInput.reason}
+                  onChange={(e) => setOtherCreditInput({ ...otherCreditInput, reason: e.target.value })}
+                  placeholder={dbInvoice.other_credit_reason || "e.g., Loyalty credit, Refund, Compensation"}
                   className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
                 />
               </div>
             </div>
             <div className="flex gap-4 mt-6">
               <button
-                onClick={() => setShowCreditModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+                onClick={() => {
+                  applyCustomCreditMutation.mutate({
+                    invoiceId: dbInvoice.id,
+                    creditAmount: otherCreditInput.amount,
+                    creditReason: otherCreditInput.reason || undefined,
+                  });
+                }}
+                disabled={applyCustomCreditMutation.isPending}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold"
               >
-                Apply
+                {applyCustomCreditMutation.isPending ? 'Saving...' : 'Save Credit'}
               </button>
               <button
                 onClick={() => {
-                  setOtherCredit({ amount: 0, reason: "" });
+                  setOtherCreditInput({ amount: 0, reason: "" });
                   setShowCreditModal(false);
                 }}
-                className="flex-1 px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30"
+                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
               >
                 Cancel
               </button>

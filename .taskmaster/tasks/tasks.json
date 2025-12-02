@@ -47,13 +47,25 @@
           }
         ],
         "updatedAt": "2025-12-02T02:55:16.664Z"
+      },
+      {
+        "id": "5",
+        "title": "Fix day start time not updating first routine after drag",
+        "description": "User changed Thursday start time to 10:00 AM, dragged routines to schedule, but first routine shows 8:00 AM instead of 10:00 AM. Day start time change not being applied to dragged routines.",
+        "details": "",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2025-12-02T03:44:31.113Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-02T02:55:17.308Z",
-      "taskCount": 2,
-      "completedCount": 2,
+      "lastModified": "2025-12-02T03:44:31.114Z",
+      "taskCount": 3,
+      "completedCount": 3,
       "tags": [
         "master"
       ]

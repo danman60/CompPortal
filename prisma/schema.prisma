@@ -1132,6 +1132,8 @@ model invoices {
   payment_method           String?        @db.VarChar(50)
   credit_amount            Decimal?       @default(0) @db.Decimal(10, 2)
   credit_reason            String?
+  other_credit_amount      Decimal?       @default(0) @db.Decimal(10, 2)
+  other_credit_reason      String?
   tax_rate                 Decimal?       @default(13.00) @db.Decimal(5, 2)
   is_locked                Boolean?       @default(false)
   has_dancer_invoices      Boolean?       @default(false)
