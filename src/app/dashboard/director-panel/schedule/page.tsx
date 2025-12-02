@@ -167,7 +167,7 @@ export default function SchedulePage() {
   const utils = trpc.useUtils();
 
   // Fetch studios for testing button
-  const { data: studios } = trpc.studioInvitations.getStudiosForCD.useQuery();
+  const { data: allStudios } = trpc.studioInvitations.getStudiosForCD.useQuery();
 
   // Fetch all routines
   const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
@@ -1269,13 +1269,13 @@ export default function SchedulePage() {
 
   // Testing: View Studio Schedule
   const handleViewStudioSchedule = () => {
-    if (!studios || studios.length === 0) {
+    if (!allStudios?.studios || allStudios.studios.length === 0) {
       toast.error('No studios found');
       return;
     }
 
     // Pick a random studio
-    const randomStudio = studios[Math.floor(Math.random() * studios.length)];
+    const randomStudio = allStudios.studios[Math.floor(Math.random() * allStudios.studios.length)];
     const url = `/dashboard/schedules/${TEST_COMPETITION_ID}?tenantId=${TEST_TENANT_ID}&studioId=${randomStudio.id}`;
 
     toast.success(`Opening schedule for ${randomStudio.name}`);
