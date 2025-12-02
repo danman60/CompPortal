@@ -172,11 +172,23 @@ interface DraggableBlockTemplateProps {
 export function DraggableBlockTemplate({ type, onClick }: DraggableBlockTemplateProps) {
   const isAward = type === 'award';
 
+  // Make the template actually draggable with correct ID format
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `block-template-${type}`,
+    data: {
+      type: 'block-template',
+      blockType: type,
+    },
+  });
+
   return (
     <button
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       onClick={onClick}
       className={`
-        w-full p-4 rounded-xl border-2 border-dashed transition-all
+        w-full p-4 rounded-xl border-2 border-dashed transition-all cursor-grab
         ${isAward
           ? 'bg-amber-600/10 border-amber-500/50 hover:bg-amber-600/20 hover:border-amber-500'
           : 'bg-cyan-600/10 border-cyan-500/50 hover:bg-cyan-600/20 hover:border-cyan-500'

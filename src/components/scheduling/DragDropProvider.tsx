@@ -26,7 +26,7 @@ import {
   pointerWithin,
   rectIntersection,
 } from '@dnd-kit/core';
-import { DropIndicator } from './DropIndicator';
+// Removed DropIndicator import - no longer showing glowing line animation
 import { RoutineCard } from './RoutineCard';
 
 interface RoutineData {
@@ -830,11 +830,7 @@ export function DragDropProvider({
       onDragEnd={handleDragEnd}
     >
       {children}
-      <DropIndicator
-        top={dropIndicatorTop}
-        visible={showDropIndicator}
-        variant={activeBlockType || 'routine'}
-      />
+      {/* Removed DropIndicator - no longer showing glowing line animation */}
       <DragOverlay>
         {activeBlockType ? (
           <div className="opacity-90 scale-110">
