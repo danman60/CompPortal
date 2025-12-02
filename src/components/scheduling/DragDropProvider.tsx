@@ -685,9 +685,9 @@ export function DragDropProvider({
 
         // If multiple routine targets detected, use custom collision for precise row detection
         if (routineTargets.length > 1) {
-          const { pointerCoordinates, droppableContainers } = args;
+          const { pointerCoordinates } = args;
 
-          if (pointerCoordinates && droppableContainers) {
+          if (pointerCoordinates) {
             console.log('[CollisionDetection] Checking rect-based collision:', {
               pointerX: pointerCoordinates.x,
               pointerY: pointerCoordinates.y,
@@ -695,10 +695,10 @@ export function DragDropProvider({
             });
 
             // Check if pointer is within each routine's bounding rect
+            // routineTargets already have rect property from collision detection
             for (const target of routineTargets) {
-              const container = droppableContainers.get(target.id);
-              if (container?.rect.current) {
-                const rect = container.rect.current;
+              if (target.data?.current?.sortable?.rect) {
+                const rect = target.data.current.sortable.rect;
                 const isWithinX = pointerCoordinates.x >= rect.left && pointerCoordinates.x <= rect.right;
                 const isWithinY = pointerCoordinates.y >= rect.top && pointerCoordinates.y <= rect.bottom;
 
