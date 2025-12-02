@@ -707,23 +707,22 @@ export function DragDropProvider({
   const customCollisionDetection = (args: any) => {
     const activeId = String(args.active?.id || '');
 
-    // CRITICAL: Detect if dragging a sortable item (already in schedule)
-    // Sortable items need dnd-kit's default collision, not custom logic
+    // CRITICAL: Detect if dragging a sortable ROUTINE (already in schedule)
+    // Sortable routines need dnd-kit's default collision, not custom logic
+    // NOTE: Blocks are excluded - they need custom logic to drop on both routines and blocks
     const isSortableRoutine = activeId.startsWith('routine-') &&
       !activeId.startsWith('routine-pool-');
-    const isSortableBlock = activeId.startsWith('block-') &&
-      !activeId.startsWith('block-template-');
 
-    // For sortable items (SR → SR, Block → Block reordering):
+    // For sortable routines (SR → SR reordering):
     // Use dnd-kit's closestCenter which works with verticalListSortingStrategy
-    if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
+    if (isSortableRoutine) {
+      console.log('[CollisionDetection] Sortable routine drag, using closestCenter:', activeId);
       return closestCenter(args);
     }
 
-    // For external draggables (UR → SR, Block Template → SR):
-    // Use custom collision detection to prioritize specific items over containers
-    console.log('[CollisionDetection] External draggable, using custom logic:', activeId);
+    // For blocks, block templates, and UR routines:
+    // Use custom collision detection (blocks need to drop on both routines AND blocks)
+    console.log('[CollisionDetection] Using custom collision logic for:', activeId);
 
     // Helper to prioritize specific items (routines/blocks) over containers
     const prioritizeSpecificItems = (collisions: any[]) => {
