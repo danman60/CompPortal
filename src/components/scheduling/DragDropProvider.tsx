@@ -685,43 +685,38 @@ export function DragDropProvider({
 
         // If multiple routine targets detected, use custom collision for precise row detection
         if (routineTargets.length > 1) {
-          const { pointerCoordinates } = args;
+          const { pointerCoordinates, droppableContainers } = args;
 
-          if (pointerCoordinates) {
-            // Use document.elementFromPoint to find which element is actually under the pointer
-            // This avoids coordinate system mismatch issues
-            const elementUnderPointer = document.elementFromPoint(pointerCoordinates.x, pointerCoordinates.y);
-
-            console.log('[CollisionDetection] DOM element under pointer:', {
-              tagName: elementUnderPointer?.tagName,
-              className: elementUnderPointer?.className,
-              id: elementUnderPointer?.id,
-              routineCount: routineTargets.length,
-              firstRoutineNodeExists: !!routineTargets[0]?.node?.current
+          if (pointerCoordinates && droppableContainers) {
+            console.log('[CollisionDetection] Checking rect-based collision:', {
+              pointerX: pointerCoordinates.x,
+              pointerY: pointerCoordinates.y,
+              routineCount: routineTargets.length
             });
 
-            if (elementUnderPointer) {
-              // Check which routine target's node contains the element under the pointer
-              // This works because useSortable sets the node ref on the <tr> element
-              for (const target of routineTargets) {
-                if (target.node?.current?.contains(elementUnderPointer)) {
-                  console.log('[CollisionDetection] DOM-based collision found routine:', {
-                    count: routineTargets.length,
+            // Check if pointer is within each routine's bounding rect
+            for (const target of routineTargets) {
+              const container = droppableContainers.get(target.id);
+              if (container?.rect.current) {
+                const rect = container.rect.current;
+                const isWithinX = pointerCoordinates.x >= rect.left && pointerCoordinates.x <= rect.right;
+                const isWithinY = pointerCoordinates.y >= rect.top && pointerCoordinates.y <= rect.bottom;
+
+                if (isWithinX && isWithinY) {
+                  console.log('[CollisionDetection] Rect-based collision found:', {
                     match: target.id,
-                    pointerX: pointerCoordinates.x,
-                    pointerY: pointerCoordinates.y
+                    rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
+                    pointer: { x: pointerCoordinates.x, y: pointerCoordinates.y }
                   });
                   return [target];
                 }
               }
             }
+
+            console.log('[CollisionDetection] No rect-based collision match');
           }
 
           // If no pointer coordinates or no match, fall back to containers
-          console.log('[CollisionDetection] No DOM-based collision match:', {
-            count: routineTargets.length,
-            hasPointer: !!pointerCoordinates
-          });
           return containers;
         }
 
