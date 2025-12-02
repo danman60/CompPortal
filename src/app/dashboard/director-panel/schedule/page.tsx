@@ -835,7 +835,19 @@ export default function SchedulePage() {
       const routine = dayDraft.find(r => r.id === targetId);
       if (routine?.performanceTime) {
         targetTime = routine.performanceTime;
-        sortOrder = routine.entryNumber || 0;
+        // Use fractional sort order to insert BEFORE the target routine
+        sortOrder = (routine.entryNumber || 0) - 0.5;
+      }
+    }
+    // If dropped on a block, place before it
+    else if (targetId.startsWith('block-')) {
+      const blockId = targetId.replace('block-', '');
+      const targetBlock = scheduleBlocks?.find(b => b.id === blockId);
+      if (targetBlock?.scheduled_time && targetBlock.sort_order !== null) {
+        const schedTime = new Date(targetBlock.scheduled_time);
+        targetTime = `${String(schedTime.getHours()).padStart(2, '0')}:${String(schedTime.getMinutes()).padStart(2, '0')}:00`;
+        // Place before the target block
+        sortOrder = targetBlock.sort_order - 0.5;
       }
     }
     // If dropped on empty schedule, place at end
