@@ -134,9 +134,9 @@ export default function StudioScheduleView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">
-          <span className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full inline-block mr-2" />
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
+        <div className="text-purple-300">
+          <span className="animate-spin h-6 w-6 border-2 border-cyan-400 border-t-transparent rounded-full inline-block mr-2" />
           Loading schedule...
         </div>
       </div>
@@ -145,12 +145,12 @@ export default function StudioScheduleView() {
 
   if (!schedule) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-medium text-gray-700 mb-2">Schedule Not Found</h2>
-            <p className="text-gray-500 mb-4">
+          <div className="bg-purple-800/30 backdrop-blur-sm rounded-xl shadow-xl border border-purple-600/30 p-12 text-center">
+            <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+            <h2 className="text-xl font-medium text-white mb-2">Schedule Not Found</h2>
+            <p className="text-purple-300 mb-4">
               Unable to load the schedule for this competition.
             </p>
             <Button
@@ -171,21 +171,21 @@ export default function StudioScheduleView() {
   const totalNotes = schedule.routines.filter(e => e.hasNote).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-purple-900/50 backdrop-blur-sm border-b border-purple-700/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard/schedules')}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-purple-300 hover:text-white transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Competition Schedule</h1>
-                <p className="text-sm text-gray-600">
+                <h1 className="text-xl font-semibold text-white">Competition Schedule</h1>
+                <p className="text-sm text-purple-300">
                   Version {schedule.version?.number || 1} • {schedule.routines.length} routines scheduled
                 </p>
               </div>
@@ -194,18 +194,18 @@ export default function StudioScheduleView() {
             {/* Status Badge */}
             <div className="flex items-center gap-4">
               {totalNotes > 0 && (
-                <span className="text-sm text-blue-600 flex items-center gap-1">
+                <span className="text-sm text-cyan-300 flex items-center gap-1">
                   <MessageSquare className="h-4 w-4" />
                   {totalNotes} note{totalNotes !== 1 ? 's' : ''} submitted
                 </span>
               )}
               {canAddNotes ? (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700 border border-green-300">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/50 shadow-lg shadow-green-500/20">
                   <Clock className="h-4 w-4" />
                   Review Open
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 border border-gray-300">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-gray-500/20 text-gray-300 border border-gray-500/50">
                   Review Closed
                 </span>
               )}
@@ -216,15 +216,15 @@ export default function StudioScheduleView() {
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-purple-800/30 backdrop-blur-sm rounded-xl shadow-xl border border-purple-600/30 p-4 mb-6">
           <div className="flex flex-wrap gap-4 items-center">
             {/* Day Filter */}
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-purple-300" />
               <select
                 value={selectedDay || ''}
                 onChange={(e) => setSelectedDay(e.target.value || null)}
-                className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-3 py-1.5 bg-purple-900/50 border border-purple-600/50 rounded-md text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               >
                 <option value="">All Days</option>
                 {competitionDays.map((day) => {
@@ -245,72 +245,72 @@ export default function StudioScheduleView() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by routine title or dancer name..."
-                className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-gray-900 text-sm placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-1.5 bg-purple-900/50 border border-purple-600/50 rounded-md text-white text-sm placeholder-purple-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
             </div>
 
             {/* Results Count */}
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-purple-300">
               {filteredRoutines.length} routine{filteredRoutines.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
 
         {/* Schedule Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-purple-800/30 backdrop-blur-sm rounded-xl shadow-xl border border-purple-600/30 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-purple-900/50 border-b border-purple-700/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">
                     Entry #
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">
                     Day
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">
                     Time
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">
                     Routine
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">
                     Details
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">
                     Dancers
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-purple-300 uppercase tracking-wider">
                     Notes
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-purple-700/30">
                 {filteredRoutines.map((routine) => (
-                  <tr key={routine.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                  <tr key={routine.id} className="hover:bg-purple-700/20 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium text-white">
                       #{routine.entryNumber}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-purple-200">
                       {routine.scheduledDay.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                    <td className="px-4 py-3 text-sm text-cyan-300 font-medium">
                       {routine.performanceTime}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm font-medium text-gray-900">{routine.title}</div>
+                      <div className="text-sm font-medium text-white">{routine.title}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-purple-200">
                       {routine.entrySize} • {routine.classification} • {routine.category}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-600 max-w-xs">
+                      <div className="text-sm text-purple-200 max-w-xs">
                         {routine.dancers && routine.dancers.length > 0 ? (
                           <span className="line-clamp-2" title={routine.dancers.join(', ')}>
                             {routine.dancers.join(', ')}
                           </span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-purple-500">—</span>
                         )}
                       </div>
                     </td>
@@ -318,7 +318,7 @@ export default function StudioScheduleView() {
                       {routine.hasNote ? (
                         <button
                           onClick={() => handleAddNote(routine)}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-xs font-medium hover:bg-blue-100"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded-md text-xs font-medium hover:bg-cyan-500/30 border border-cyan-500/50 shadow-lg shadow-cyan-500/20 transition-all"
                         >
                           <MessageSquare className="h-3.5 w-3.5" />
                           {canAddNotes ? 'Edit Note' : 'View Note'}
@@ -326,13 +326,13 @@ export default function StudioScheduleView() {
                       ) : canAddNotes ? (
                         <button
                           onClick={() => handleAddNote(routine)}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-200"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-purple-600/30 text-purple-200 rounded-md text-xs font-medium hover:bg-purple-600/50 border border-purple-500/50 transition-all"
                         >
                           <MessageSquare className="h-3.5 w-3.5" />
                           Add Note
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-400">—</span>
+                        <span className="text-xs text-purple-500">—</span>
                       )}
                     </td>
                   </tr>
@@ -344,12 +344,12 @@ export default function StudioScheduleView() {
 
         {/* Instructions */}
         {canAddNotes && (
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+          <div className="mt-6 bg-cyan-500/10 backdrop-blur-sm border border-cyan-500/30 rounded-xl p-4 shadow-xl shadow-cyan-500/10">
+            <h3 className="font-medium text-cyan-300 mb-2 flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
               How to Submit Scheduling Requests
             </h3>
-            <ul className="space-y-1 text-sm text-blue-800">
+            <ul className="space-y-1 text-sm text-cyan-200">
               <li>• Click "Add Note" next to any routine to submit a scheduling request</li>
               <li>• Explain your specific needs (e.g., "Please schedule after 10 AM - dancers arrive from school")</li>
               <li>• Requests are not guaranteed but will be considered by the Competition Director</li>
