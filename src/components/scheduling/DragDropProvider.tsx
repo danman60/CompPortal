@@ -688,6 +688,25 @@ export function DragDropProvider({
           const { pointerCoordinates } = args;
 
           if (pointerCoordinates) {
+            // Debug: Log all coordinate values
+            console.log('[CollisionDetection] DEBUG - Pointer coordinates:', {
+              x: pointerCoordinates.x,
+              y: pointerCoordinates.y
+            });
+
+            console.log('[CollisionDetection] DEBUG - All routine rects:',
+              routineTargets.map((r, i) => ({
+                index: i,
+                id: r.id,
+                top: r.rect?.top,
+                bottom: r.rect?.bottom,
+                left: r.rect?.left,
+                right: r.rect?.right,
+                height: r.rect?.height,
+                width: r.rect?.width
+              }))
+            );
+
             // Custom collision: Find which routine row the pointer is actually over
             let closestRoutine: any = null;
             let closestDistance = Infinity;
@@ -697,7 +716,17 @@ export function DragDropProvider({
               if (!rect) continue;
 
               // Check if pointer Y coordinate is within this routine's row bounds
-              if (pointerCoordinates.y >= rect.top && pointerCoordinates.y <= rect.bottom) {
+              const withinBounds = pointerCoordinates.y >= rect.top && pointerCoordinates.y <= rect.bottom;
+
+              console.log('[CollisionDetection] DEBUG - Checking routine:', {
+                id: routine.id,
+                pointerY: pointerCoordinates.y,
+                rectTop: rect.top,
+                rectBottom: rect.bottom,
+                withinBounds
+              });
+
+              if (withinBounds) {
                 // Calculate distance from pointer to row center
                 const rowCenter = rect.top + rect.height / 2;
                 const distance = Math.abs(pointerCoordinates.y - rowCenter);
