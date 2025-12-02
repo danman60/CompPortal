@@ -693,37 +693,17 @@ export function DragDropProvider({
             const elementUnderPointer = document.elementFromPoint(pointerCoordinates.x, pointerCoordinates.y);
 
             if (elementUnderPointer) {
-              // Walk up the DOM tree to find the routine row element
-              let currentElement: HTMLElement | null = elementUnderPointer as HTMLElement;
-              let foundRoutineId: string | null = null;
-
-              // Search up to 10 levels for a routine row element
-              for (let i = 0; i < 10 && currentElement; i++) {
-                // Check if this element has a data attribute or ID that indicates it's a routine
-                const elementId = currentElement.getAttribute('data-rbd-draggable-id') ||
-                                  currentElement.id ||
-                                  currentElement.getAttribute('id');
-
-                if (elementId && elementId.startsWith('routine-')) {
-                  foundRoutineId = elementId;
-                  break;
-                }
-
-                currentElement = currentElement.parentElement;
-              }
-
-              // If we found a routine ID, match it to one of the routine targets
-              if (foundRoutineId) {
-                const matchingRoutine = routineTargets.find(r => r.id === foundRoutineId);
-
-                if (matchingRoutine) {
+              // Check which routine target's node contains the element under the pointer
+              // This works because useSortable sets the node ref on the <tr> element
+              for (const target of routineTargets) {
+                if (target.node.current?.contains(elementUnderPointer)) {
                   console.log('[CollisionDetection] DOM-based collision found routine:', {
                     count: routineTargets.length,
-                    match: matchingRoutine.id,
+                    match: target.id,
                     pointerX: pointerCoordinates.x,
                     pointerY: pointerCoordinates.y
                   });
-                  return [matchingRoutine];
+                  return [target];
                 }
               }
             }
