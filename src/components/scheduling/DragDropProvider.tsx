@@ -696,7 +696,7 @@ export function DragDropProvider({
               // Check which routine target's node contains the element under the pointer
               // This works because useSortable sets the node ref on the <tr> element
               for (const target of routineTargets) {
-                if (target.node.current?.contains(elementUnderPointer)) {
+                if (target.node?.current?.contains(elementUnderPointer)) {
                   console.log('[CollisionDetection] DOM-based collision found routine:', {
                     count: routineTargets.length,
                     match: target.id,
