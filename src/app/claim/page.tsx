@@ -19,6 +19,12 @@ export default function ClaimPage() {
   const [user, setUser] = useState<any>(null);
   const [claiming, setClaiming] = useState(false);
 
+  // Lookup studio by token (for legacy token-based links)
+  const { data: tokenData } = trpc.studio.lookupByToken.useQuery(
+    { token: token || '' },
+    { enabled: !!token && !code }
+  );
+
   // Lookup studio by code using tRPC (avoids RLS issues)
   const { data: studioData, isLoading: studioLoading, error: studioQueryError } = trpc.studio.lookupByCode.useQuery(
     { code: code?.toUpperCase() || '' },
@@ -32,41 +38,14 @@ export default function ClaimPage() {
     async function init() {
       // Handle legacy token-based links by redirecting to code-based links
       if (token && !code) {
-        try {
-          const supabase = createClient();
-
-          // Look up studio from account_recovery_tokens
-          const { data: recoveryToken } = await supabase
-            .from('account_recovery_tokens')
-            .select('studio_id')
-            .eq('token', token)
-            .single();
-
-          if (recoveryToken?.studio_id) {
-            // Get studio's public_code
-            const { data: studioRecord } = await supabase
-              .from('studios')
-              .select('public_code')
-              .eq('id', recoveryToken.studio_id)
-              .single();
-
-            if (studioRecord?.public_code) {
-              // Redirect to code-based claim URL
-              router.replace(`/claim?code=${studioRecord.public_code}`);
-              return;
-            }
-          }
-
-          // If lookup failed, show error
-          setError('Invalid or expired claim link');
-          setLoading(false);
-          return;
-        } catch (err) {
-          console.error('Token lookup failed:', err);
-          setError('Invalid or expired claim link');
-          setLoading(false);
+        // Wait for token lookup to complete
+        if (tokenData?.public_code) {
+          // Redirect to code-based claim URL
+          router.replace(`/claim?code=${tokenData.public_code}`);
           return;
         }
+        // Keep showing loading while tokenData is being fetched
+        return;
       }
 
       if (!code) {
@@ -123,7 +102,7 @@ export default function ClaimPage() {
     }
 
     init();
-  }, [code, token, router, tenant?.id, studioData, studioLoading, studioQueryError]);
+  }, [code, token, tokenData, router, tenant?.id, studioData, studioLoading, studioQueryError]);
 
   const handleClaim = async () => {
     if (!studio || !user) return;

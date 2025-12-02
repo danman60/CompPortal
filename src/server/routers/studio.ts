@@ -87,6 +87,35 @@ export const studioRouter = router({
       return studio;
     }),
 
+  // Lookup studio by account recovery token (for legacy token-based claim links)
+  lookupByToken: publicProcedure
+    .input(z.object({
+      token: z.string(),
+    }))
+    .query(async ({ input }) => {
+      // Look up the token in account_recovery_tokens
+      const recoveryToken = await prisma.account_recovery_tokens.findUnique({
+        where: { token: input.token },
+        select: { studio_id: true },
+      });
+
+      if (!recoveryToken?.studio_id) {
+        throw new Error('Invalid or expired token');
+      }
+
+      // Get the studio's public code
+      const studio = await prisma.studios.findUnique({
+        where: { id: recoveryToken.studio_id },
+        select: { public_code: true },
+      });
+
+      if (!studio?.public_code) {
+        throw new Error('Studio not found');
+      }
+
+      return { public_code: studio.public_code };
+    }),
+
   // Claim studio ownership (bypasses RLS for unclaimed studios)
   claimStudio: protectedProcedure
     .input(z.object({
