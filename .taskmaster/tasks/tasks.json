@@ -1,0 +1,62 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "2",
+        "title": "Verify conflict badge auto-fix accuracy",
+        "description": "Test that single auto-fix and Fix All show accurate entry numbers in toasts",
+        "details": "Session 73E fixes (page.tsx:905-939, 1023-1033):\n- Single auto-fix now calls renumberAllDays() before showing toast\n- Fix All now calls renumberAllDays() and reports correct moved count\n- Entry numbers in toast should match UI display after global renumbering",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2025-12-02T02:55:17.308Z"
+      },
+      {
+        "id": "4",
+        "title": "Fix conflict badge height to match notes/awards badges",
+        "description": "Conflict badge currently w-8 h-6 but doesn't match trophy helper and studio note badges",
+        "details": "Current HTML shows:\n- Conflict badge: w-8 h-6 (32px × 24px)\n- Need to match trophy helper and studio note badge heights\n- File: ScheduleTable.tsx (conflict badge wrapper)\n- User reports: \"still not the same size as notes and awards badges\"",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Change wrapper div from inline-block to inline-flex items-center",
+            "description": "Line 398: className=\"relative inline-block\" → className=\"relative inline-flex items-center\"",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4,
+            "parentId": "undefined",
+            "updatedAt": "2025-12-02T02:51:14.004Z"
+          },
+          {
+            "id": 2,
+            "title": "Test badge alignment on tester environment",
+            "description": "Use Playwright to verify all three badges (trophy, note, conflict) have same visual height",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4,
+            "parentId": "undefined",
+            "updatedAt": "2025-12-02T02:55:16.664Z"
+          }
+        ],
+        "updatedAt": "2025-12-02T02:55:16.664Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2025-12-02T02:55:17.308Z",
+      "taskCount": 2,
+      "completedCount": 2,
+      "tags": [
+        "master"
+      ]
+    }
+  }
+}

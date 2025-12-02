@@ -87,3 +87,20 @@ next-env.d.ts
 # Screenshots (keep the ones we captured for analysis)
 # glow_output/*.png - keeping these for now as they're analysis artifacts
 .vercel
+
+dev-debug.log
+# Dependency directories
+# Environment variables
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# OS specific
+
+# Task files
+# tasks.json
+# tasks/ 
