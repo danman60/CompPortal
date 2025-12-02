@@ -692,6 +692,14 @@ export function DragDropProvider({
             // This avoids coordinate system mismatch issues
             const elementUnderPointer = document.elementFromPoint(pointerCoordinates.x, pointerCoordinates.y);
 
+            console.log('[CollisionDetection] DOM element under pointer:', {
+              tagName: elementUnderPointer?.tagName,
+              className: elementUnderPointer?.className,
+              id: elementUnderPointer?.id,
+              routineCount: routineTargets.length,
+              firstRoutineNodeExists: !!routineTargets[0]?.node?.current
+            });
+
             if (elementUnderPointer) {
               // Check which routine target's node contains the element under the pointer
               // This works because useSortable sets the node ref on the <tr> element
