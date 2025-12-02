@@ -662,10 +662,23 @@ export function DragDropProvider({
         }
       } else {
         // Single routine reorder (original logic)
-        const fromIndex = scheduledRoutines.findIndex(r => r.id === draggedRoutineId);
+        // Strip 'routine-' prefix from dragged ID to match routine.id format
+        const actualDraggedId = String(draggedRoutineId).startsWith('routine-')
+          ? String(draggedRoutineId).slice(8)
+          : String(draggedRoutineId);
+        const fromIndex = scheduledRoutines.findIndex(r => r.id === actualDraggedId);
+
+        console.log('[DragDropProvider] Single routine reorder:', {
+          draggedRoutineId,
+          actualDraggedId,
+          actualTargetId,
+          fromIndex,
+          toIndex,
+          scheduledCount: scheduledRoutines.length
+        });
 
         if (fromIndex === -1 || fromIndex === toIndex) {
-          console.log('[DragDropProvider] No reorder needed');
+          console.log('[DragDropProvider] No reorder needed - fromIndex:', fromIndex, 'toIndex:', toIndex);
           return;
         }
 
@@ -692,7 +705,25 @@ export function DragDropProvider({
 
   // Custom collision detection: prefer specific items over containers
   const customCollisionDetection = (args: any) => {
-    const activeId = args.active?.id;
+    const activeId = String(args.active?.id || '');
+
+    // CRITICAL: Detect if dragging a sortable item (already in schedule)
+    // Sortable items need dnd-kit's default collision, not custom logic
+    const isSortableRoutine = activeId.startsWith('routine-') &&
+      !activeId.startsWith('routine-pool-');
+    const isSortableBlock = activeId.startsWith('block-') &&
+      !activeId.startsWith('block-template-');
+
+    // For sortable items (SR → SR, Block → Block reordering):
+    // Use dnd-kit's closestCenter which works with verticalListSortingStrategy
+    if (isSortableRoutine || isSortableBlock) {
+      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
+      return closestCenter(args);
+    }
+
+    // For external draggables (UR → SR, Block Template → SR):
+    // Use custom collision detection to prioritize specific items over containers
+    console.log('[CollisionDetection] External draggable, using custom logic:', activeId);
 
     // Helper to prioritize specific items (routines/blocks) over containers
     const prioritizeSpecificItems = (collisions: any[]) => {
