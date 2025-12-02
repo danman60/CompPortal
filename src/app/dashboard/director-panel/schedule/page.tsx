@@ -109,6 +109,9 @@ export default function SchedulePage() {
   // Nuclear reset confirmation modal state
   const [showNuclearResetModal, setShowNuclearResetModal] = useState(false);
 
+  // Studio picker modal state
+  const [showStudioPickerModal, setShowStudioPickerModal] = useState(false);
+
   // Selection handlers (unscheduled)
   const handleToggleSelection = (routineId: string, shiftKey: boolean) => {
     // Get the current filtered routines array (defined later in useMemo)
@@ -1274,12 +1277,16 @@ export default function SchedulePage() {
       return;
     }
 
-    // Pick a random studio
-    const randomStudio = allStudios.studios[Math.floor(Math.random() * allStudios.studios.length)];
-    const url = `/dashboard/schedules/${TEST_COMPETITION_ID}?tenantId=${TEST_TENANT_ID}&studioId=${randomStudio.id}`;
+    // Open modal to pick a studio
+    setShowStudioPickerModal(true);
+  };
 
-    toast.success(`Opening schedule for ${randomStudio.name}`);
+  // Navigate to selected studio's schedule
+  const handleSelectStudio = (studioId: string, studioName: string) => {
+    const url = `/dashboard/schedules/${TEST_COMPETITION_ID}?tenantId=${TEST_TENANT_ID}&studioId=${studioId}`;
+    toast.success(`Opening schedule for ${studioName}`);
     router.push(url);
+    setShowStudioPickerModal(false);
   };
 
   // Save draft schedule to database
@@ -2069,6 +2076,41 @@ export default function SchedulePage() {
         }}
         isLoading={resetAllDraftsAndVersions.isPending}
       />
+
+      {/* Studio Picker Modal */}
+      <Modal
+        isOpen={showStudioPickerModal}
+        onClose={() => setShowStudioPickerModal(false)}
+        title="Select Studio Schedule to View"
+      >
+        <div className="p-6">
+          <p className="text-gray-600 mb-4">
+            Choose a studio to preview their interactive schedule view (where they can add notes/requests):
+          </p>
+          <div className="max-h-96 overflow-y-auto space-y-2">
+            {allStudios?.studios?.map((studio) => (
+              <button
+                key={studio.id}
+                onClick={() => handleSelectStudio(studio.id, studio.name)}
+                className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-purple-100 rounded-lg transition-colors border border-gray-200 hover:border-purple-400"
+              >
+                <div className="font-medium text-gray-900">{studio.name}</div>
+                <div className="text-sm text-gray-500">
+                  {studio.publicCode || 'No code assigned'}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => setShowStudioPickerModal(false)}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Version History Panel */}
       {showVersionHistory && versionHistory && (
