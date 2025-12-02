@@ -15,6 +15,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import { DragDropProvider } from '@/components/scheduling/DragDropProvider';
@@ -33,7 +34,7 @@ import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModa
 import { NuclearResetConfirmationModal } from '@/components/NuclearResetConfirmationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Mail, Clock, History } from 'lucide-react';
+import { Mail, Clock, History, Eye } from 'lucide-react';
 import { autoFixRoutineConflict, autoFixDayConflicts, autoFixWeekendConflicts } from '@/lib/conflictAutoFix';
 
 // TEST tenant ID (will be replaced with real tenant context)
@@ -159,8 +160,14 @@ export default function SchedulePage() {
     setSelectedScheduledIds(new Set());
   };
 
+  // Router for navigation
+  const router = useRouter();
+
   // tRPC utils for cache invalidation
   const utils = trpc.useUtils();
+
+  // Fetch studios for testing button
+  const { data: studios } = trpc.studioInvitations.getStudiosForCD.useQuery();
 
   // Fetch all routines
   const { data: routines, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
@@ -1260,6 +1267,21 @@ export default function SchedulePage() {
     setShowFixAllModal(false);
   };
 
+  // Testing: View Studio Schedule
+  const handleViewStudioSchedule = () => {
+    if (!studios || studios.length === 0) {
+      toast.error('No studios found');
+      return;
+    }
+
+    // Pick a random studio
+    const randomStudio = studios[Math.floor(Math.random() * studios.length)];
+    const url = `/dashboard/schedules/${TEST_COMPETITION_ID}?tenantId=${TEST_TENANT_ID}&studioId=${randomStudio.id}`;
+
+    toast.success(`Opening schedule for ${randomStudio.name}`);
+    router.push(url);
+  };
+
   // Save draft schedule to database
   const handleSaveSchedule = async () => {
     if (!routines) return;
@@ -1565,6 +1587,15 @@ export default function SchedulePage() {
             >
               <Mail className="h-4 w-4" />
               Send Draft to Studios
+            </button>
+            {/* View Studio Schedule (Testing) */}
+            <button
+              onClick={handleViewStudioSchedule}
+              className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+              title="View schedule from a random studio's perspective"
+            >
+              <Eye className="h-4 w-4" />
+              View Studio Schedule
             </button>
             {/* Fix All Conflicts Button - Only show if conflicts exist */}
             {dayConflictCount > 0 && (

@@ -40,6 +40,7 @@ export default function StudioScheduleView() {
 
   const competitionId = params.competitionId as string;
   const tenantId = searchParams.get('tenantId') || '';
+  const studioId = searchParams.get('studioId') || TEST_STUDIO_ID;
 
   const [selectedRoutine, setSelectedRoutine] = useState<ScheduledRoutine | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
@@ -50,7 +51,7 @@ export default function StudioScheduleView() {
   const { data: schedule, isLoading, refetch } = trpc.scheduling.getStudioSchedule.useQuery({
     tenantId,
     competitionId,
-    studioId: TEST_STUDIO_ID,
+    studioId,
   });
 
   // Get current version to check if review is open
