@@ -560,10 +560,12 @@ export function DragDropProvider({
       return;
     }
 
-    const targetRoutine = routines.find(r => r.id === targetId);
+    // Strip 'routine-' prefix from target ID to match routine.id format
+    const actualTargetId = targetId.startsWith('routine-') ? targetId.slice(8) : targetId;
+    const targetRoutine = routines.find(r => r.id === actualTargetId);
 
     if (!targetRoutine) {
-      console.error('[DragDropProvider] Target routine not found:', targetId);
+      console.error('[DragDropProvider] Target routine not found:', targetId, '(stripped:', actualTargetId, ')');
       return;
     }
 
@@ -577,7 +579,7 @@ export function DragDropProvider({
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
       // Find insertion index (insert before target)
-      const insertionIndex = scheduledForDay.findIndex(r => r.id === targetId);
+      const insertionIndex = scheduledForDay.findIndex(r => r.id === actualTargetId);
 
       // Insert the dragged routine(s) at the target position
       const newSchedule = [...scheduledForDay];
@@ -609,7 +611,7 @@ export function DragDropProvider({
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
       // Find target insertion index
-      const toIndex = scheduledRoutines.findIndex(r => r.id === targetId);
+      const toIndex = scheduledRoutines.findIndex(r => r.id === actualTargetId);
 
       if (toIndex === -1) {
         console.log('[DragDropProvider] Target routine not found in schedule');
@@ -624,7 +626,7 @@ export function DragDropProvider({
         const draggedIds = new Set(routinesToDrag.map(r => r.id));
 
         // Check if target is one of the selected routines (no-op)
-        if (draggedIds.has(targetId)) {
+        if (draggedIds.has(actualTargetId)) {
           console.log('[DragDropProvider] Target is in selection, no reorder needed');
           return;
         }
@@ -707,8 +709,8 @@ export function DragDropProvider({
         return id.startsWith('schedule-table-') || id.startsWith('unscheduled-');
       });
 
-      // When dragging block templates, allow dropping on both routines AND blocks
-      if (activeId && String(activeId).startsWith('block-template-')) {
+      // When dragging block templates OR existing blocks, allow dropping on both routines AND blocks
+      if (activeId && (String(activeId).startsWith('block-template-') || String(activeId).startsWith('block-'))) {
         const validTargets = specificItems.filter(item => {
           const id = String(item.id);
           return id.startsWith('routine-') || id.startsWith('block-');

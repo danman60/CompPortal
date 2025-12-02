@@ -177,8 +177,10 @@ function SortableBlockRow({
       {...attributes}
       {...listeners}
       onClick={(e) => {
-        // Only trigger edit on row click, not button clicks
-        if (!isDragging && onEdit && (e.target as HTMLElement).tagName === 'TD') {
+        // Only trigger edit on row/cell click, not button clicks
+        const target = e.target as HTMLElement;
+        const isButton = target.tagName === 'BUTTON' || target.closest('button');
+        if (!isDragging && onEdit && !isButton) {
           onEdit(block);
         }
       }}
