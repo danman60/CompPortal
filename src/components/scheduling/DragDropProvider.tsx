@@ -647,36 +647,45 @@ export function DragDropProvider({
     }
   };
 
-  // Custom collision detection: prefer pointerWithin, then rectIntersection, then closestCenter
-  // IMPORTANT: Exclude the active dragging element AND container elements from valid drop targets
+  // Custom collision detection: prefer specific items over containers
   const customCollisionDetection = (args: any) => {
     const activeId = args.active?.id;
 
-    // Helper to filter out invalid drop targets
-    const filterInvalid = (collisions: any[]) => {
-      return collisions.filter((collision: any) => {
+    // Helper to prioritize specific items (routines/blocks) over containers
+    const prioritizeSpecificItems = (collisions: any[]) => {
+      const filtered = collisions.filter((collision: any) => {
         const id = collision.id as string;
-        // Exclude: active element, routine pool containers
-        // NOTE: schedule-table-* is a VALID drop target for empty schedules
-        return id !== activeId
-          && !id.startsWith('routine-pool-');
+        return id !== activeId && !id.startsWith('routine-pool-');
       });
+
+      // Separate specific items from containers
+      const specificItems = filtered.filter(c => {
+        const id = c.id as string;
+        return !id.startsWith('schedule-table-') && !id.startsWith('unscheduled-');
+      });
+      const containers = filtered.filter(c => {
+        const id = c.id as string;
+        return id.startsWith('schedule-table-') || id.startsWith('unscheduled-');
+      });
+
+      // Return specific items if any exist, otherwise return containers (for empty schedules)
+      return specificItems.length > 0 ? specificItems : containers;
     };
 
-    // First try pointerWithin - most accurate for where user intends to drop
-    const pointerCollisions = filterInvalid(pointerWithin(args));
+    // Try pointerWithin first - most accurate
+    const pointerCollisions = prioritizeSpecificItems(pointerWithin(args));
     if (pointerCollisions.length > 0) {
       return pointerCollisions;
     }
 
-    // Then try rectangle intersection
-    const intersectionCollisions = filterInvalid(rectIntersection(args));
+    // Then rectangle intersection
+    const intersectionCollisions = prioritizeSpecificItems(rectIntersection(args));
     if (intersectionCollisions.length > 0) {
       return intersectionCollisions;
     }
 
-    // Fallback to closest center (but exclude invalid targets)
-    return filterInvalid(closestCenter(args));
+    // Fallback to closest center
+    return prioritizeSpecificItems(closestCenter(args));
   };
 
   return (

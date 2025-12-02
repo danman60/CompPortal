@@ -394,8 +394,8 @@ function SortableRoutineRow({
             </button>
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
-            <div
-              className="relative inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
+            <button
+              className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
                 border: '1px solid rgba(255, 107, 107, 0.6)'
@@ -404,7 +404,6 @@ function SortableRoutineRow({
               onMouseLeave={() => setHoveredConflict(null)}
               title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
             >
-              {/* Conflict icon */}
               <span className="text-sm">⚠️</span>
 
               {/* Hover popup - shows conflict details + action buttons */}
@@ -481,7 +480,7 @@ function SortableRoutineRow({
                   </div>
                 </div>
               )}
-            </div>
+            </button>
           )}
         </div>
       </td>
