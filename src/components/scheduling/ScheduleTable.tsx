@@ -395,21 +395,17 @@ function SortableRoutineRow({
           )}
           {hasConflict && !dismissedIcons.has(`${routine.id}-conflict`) && (
             <div
-              className="relative inline-flex items-center justify-center w-8 h-6"
+              className="relative inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
+              style={{
+                background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
+                border: '1px solid rgba(255, 107, 107, 0.6)'
+              }}
               onMouseEnter={() => setHoveredConflict(routine.id)}
               onMouseLeave={() => setHoveredConflict(null)}
+              title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
             >
-              {/* Default conflict icon */}
-              <div
-                className="inline-flex items-center justify-center w-8 h-6 rounded text-sm transition-transform hover:scale-110"
-                style={{
-                  background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)',
-                  border: '1px solid rgba(255, 107, 107, 0.6)'
-                }}
-                title={hoveredConflict === routine.id ? '' : getConflictTooltip()}
-              >
-                <span className="text-sm">⚠️</span>
-              </div>
+              {/* Conflict icon */}
+              <span className="text-sm">⚠️</span>
 
               {/* Hover popup - shows conflict details + action buttons */}
               {hoveredConflict === routine.id && conflicts && conflicts.length > 0 && (
