@@ -926,60 +926,59 @@ Click badge to dismiss"
             strategy={verticalListSortingStrategy}
           >
             <tbody>
-              {scheduleItems.map((item, index) => {
-                if (item.type === 'block') {
-                  // Calculate block time based on previous routine's end time
-                  let calculatedTime: string | null = null;
-
-                  if (index > 0 && scheduleItems[index - 1].type === 'routine') {
-                    const prevRoutine = scheduleItems[index - 1].data;
-                    if (prevRoutine.scheduledTimeString) {
-                      // Parse previous routine's time
-                      const [hours24, minutes] = prevRoutine.scheduledTimeString.split(':');
-                      const startMinutes = parseInt(hours24, 10) * 60 + parseInt(minutes, 10);
-
-                      // Add duration to get end time
-                      const endMinutes = startMinutes + (prevRoutine.duration || 0);
-                      const endHour24 = Math.floor(endMinutes / 60);
-                      const endMin = endMinutes % 60;
-
-                      // Format to 12-hour time
-                      const hour12 = endHour24 === 0 ? 12 : endHour24 > 12 ? endHour24 - 12 : endHour24;
-                      const ampm = endHour24 >= 12 ? 'PM' : 'AM';
-                      calculatedTime = `${String(hour12).padStart(2, '0')}:${String(endMin).padStart(2, '0')} ${ampm}`;
-                    }
+              {/* Calculate cascading times for all items */}
+              {(() => {
+                // Get day start time from first routine or default to 8:00 AM
+                let currentTimeMinutes = 480; // 8:00 AM default
+                if (scheduleItems.length > 0 && scheduleItems[0].type === 'routine') {
+                  const firstRoutine = scheduleItems[0].data;
+                  if (firstRoutine.scheduledTimeString) {
+                    const [hours, minutes] = firstRoutine.scheduledTimeString.split(':').map(Number);
+                    currentTimeMinutes = hours * 60 + minutes;
                   }
-
-                  // Render schedule block
-                  return (
-                    <SortableBlockRow
-                      key={`block-${item.data.id}`}
-                      block={item.data}
-                      showCheckbox={!!onSelectionChange}
-                      onDelete={onDeleteBlock}
-                      calculatedTime={calculatedTime}
-                    />
-                  );
                 }
 
-                // Render routine
-                const routine = item.data;
-                const routineIndex = sortedRoutines.findIndex(r => r.id === routine.id);
-                const isLastInOveralls = lastRoutineIds.has(routine.id);
-                const conflict = getRoutineConflict(routine.id);
-                const isFirstInConflict = isFirstInConflictGroup(routine.id);
-                const conflictSpan = getConflictSpan(routine.id);
+                return scheduleItems.map((item, index) => {
+                  // Calculate this item's start time (based on accumulated time)
+                  const thisItemStartMinutes = currentTimeMinutes;
 
-                // Format time - split into number and period for compact display
-                const performanceTime = routine.scheduledTimeString
-                  ? (() => {
-                      const [hours24, minutes] = routine.scheduledTimeString.split(':');
-                      const hour24 = parseInt(hours24, 10);
-                      const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-                      const ampm = hour24 >= 12 ? 'PM' : 'AM';
-                      return { time: `${hour12}:${minutes}`, period: ampm };
-                    })()
-                  : { time: 'TBD', period: '' };
+                  // Format time for display
+                  const hour24 = Math.floor(thisItemStartMinutes / 60);
+                  const minute = thisItemStartMinutes % 60;
+                  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+                  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                  const calculatedTimeString = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+
+                  if (item.type === 'block') {
+                    const block = item.data;
+                    // Add block duration to cumulative time
+                    currentTimeMinutes += block.duration_minutes || 0;
+
+                    // Render schedule block
+                    return (
+                      <SortableBlockRow
+                        key={`block-${block.id}`}
+                        block={block}
+                        showCheckbox={!!onSelectionChange}
+                        onDelete={onDeleteBlock}
+                        calculatedTime={calculatedTimeString}
+                      />
+                    );
+                  }
+
+                  // Render routine
+                  const routine = item.data;
+                  const routineIndex = sortedRoutines.findIndex(r => r.id === routine.id);
+                  const isLastInOveralls = lastRoutineIds.has(routine.id);
+                  const conflict = getRoutineConflict(routine.id);
+                  const isFirstInConflict = isFirstInConflictGroup(routine.id);
+                  const conflictSpan = getConflictSpan(routine.id);
+
+                  // Add routine duration to cumulative time for next item
+                  currentTimeMinutes += routine.duration || 0;
+
+                  // Format time - split into number and period for compact display
+                  const performanceTime = { time: `${hour12}:${String(minute).padStart(2, '0')}`, period: ampm };
 
                 // Classification color
                 const classificationColor = getClassificationColor(routine.classificationName);
@@ -1016,7 +1015,8 @@ Click badge to dismiss"
                     conflicts={conflictsByRoutineId?.get(routine.id) || []}
                   />
                 );
-              })}
+              });
+            })()}
             </tbody>
           </SortableContext>
         </table>
