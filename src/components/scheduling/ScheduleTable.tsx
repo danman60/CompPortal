@@ -648,6 +648,13 @@ export function ScheduleTable({
     return [...routines].sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
   }, [routines]);
 
+  // Sort blocks by scheduled_time (CRITICAL for SortableContext)
+  const sortedBlocks = useMemo(() => {
+    return [...scheduleBlocks]
+      .filter(b => b.scheduled_time)
+      .sort((a, b) => new Date(a.scheduled_time!).getTime() - new Date(b.scheduled_time!).getTime());
+  }, [scheduleBlocks]);
+
   // Combine routines and blocks into chronological order
   const scheduleItems = useMemo(() => {
     const items: Array<{ type: 'routine' | 'block'; data: any; order: number }> = [];
@@ -972,7 +979,7 @@ Click badge to dismiss"
           <SortableContext
             items={[
               ...sortedRoutines.map(r => `routine-${r.id}`),
-              ...scheduleBlocks.map(b => `block-${b.id}`),
+              ...sortedBlocks.map(b => `block-${b.id}`),
             ]}
             strategy={verticalListSortingStrategy}
           >
