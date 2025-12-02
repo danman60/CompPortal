@@ -188,8 +188,9 @@ export function DragDropProvider({
     // Add scheduled routines
     routines.filter(r => r.isScheduled && r.performanceTime).forEach(routine => {
       const [hours, minutes] = routine.performanceTime!.split(':').map(Number);
-      const date = new Date(routine.performanceTime!);
-      date.setHours(hours, minutes, 0, 0);
+      // CRITICAL FIX: Use schedule date (selectedDate), NOT today's date
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
       timeline.push({
         type: 'routine',
         data: routine,
@@ -713,21 +714,22 @@ export function DragDropProvider({
   const customCollisionDetection = (args: any) => {
     const activeId = String(args.active?.id || '');
 
-    // CRITICAL: Detect if dragging a sortable ROUTINE (already in schedule)
-    // Sortable routines need dnd-kit's default collision, not custom logic
-    // NOTE: Blocks are excluded - they need custom logic to drop on both routines and blocks
+    // CRITICAL: Detect if dragging sortable items (already in schedule)
+    // Sortable items need dnd-kit's default collision for proper reordering
     const isSortableRoutine = activeId.startsWith('routine-') &&
       !activeId.startsWith('routine-pool-');
+    const isSortableBlock = activeId.startsWith('block-') &&
+      !activeId.startsWith('block-template-');
 
-    // For sortable routines (SR → SR reordering):
+    // For sortable items (SR → SR, Block → Block reordering):
     // Use dnd-kit's closestCenter which works with verticalListSortingStrategy
-    if (isSortableRoutine) {
-      console.log('[CollisionDetection] Sortable routine drag, using closestCenter:', activeId);
+    if (isSortableRoutine || isSortableBlock) {
+      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
       return closestCenter(args);
     }
 
-    // For blocks, block templates, and UR routines:
-    // Use custom collision detection (blocks need to drop on both routines AND blocks)
+    // For block templates and UR routines:
+    // Use custom collision detection to prioritize specific drop targets
     console.log('[CollisionDetection] Using custom collision logic for:', activeId);
 
     // Helper to prioritize specific items (routines/blocks) over containers
