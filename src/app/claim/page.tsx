@@ -11,6 +11,7 @@ export default function ClaimPage() {
   const searchParams = useSearchParams();
   const { tenant } = useTenantTheme();
   const code = searchParams.get('code');
+  const token = searchParams.get('token');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,6 +30,45 @@ export default function ClaimPage() {
 
   useEffect(() => {
     async function init() {
+      // Handle legacy token-based links by redirecting to code-based links
+      if (token && !code) {
+        try {
+          const supabase = createClient();
+
+          // Look up studio from account_recovery_tokens
+          const { data: recoveryToken } = await supabase
+            .from('account_recovery_tokens')
+            .select('studio_id')
+            .eq('token', token)
+            .single();
+
+          if (recoveryToken?.studio_id) {
+            // Get studio's public_code
+            const { data: studioRecord } = await supabase
+              .from('studios')
+              .select('public_code')
+              .eq('id', recoveryToken.studio_id)
+              .single();
+
+            if (studioRecord?.public_code) {
+              // Redirect to code-based claim URL
+              router.replace(`/claim?code=${studioRecord.public_code}`);
+              return;
+            }
+          }
+
+          // If lookup failed, show error
+          setError('Invalid or expired claim link');
+          setLoading(false);
+          return;
+        } catch (err) {
+          console.error('Token lookup failed:', err);
+          setError('Invalid or expired claim link');
+          setLoading(false);
+          return;
+        }
+      }
+
       if (!code) {
         setError('No studio code provided');
         setLoading(false);
@@ -83,7 +123,7 @@ export default function ClaimPage() {
     }
 
     init();
-  }, [code, router, tenant?.id, studioData, studioLoading, studioQueryError]);
+  }, [code, token, router, tenant?.id, studioData, studioLoading, studioQueryError]);
 
   const handleClaim = async () => {
     if (!studio || !user) return;
