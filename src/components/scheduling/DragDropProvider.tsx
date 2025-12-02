@@ -683,25 +683,49 @@ export function DragDropProvider({
           returning: routineTargets.length > 0 ? 'routine targets only' : 'containers'
         });
 
-        // If multiple routine targets detected, use pointerWithin for accurate pointer-based collision
+        // If multiple routine targets detected, use custom collision for precise row detection
         if (routineTargets.length > 1) {
-          // Use pointerWithin first - most accurate for table row selection
-          const pointerMatch = pointerWithin({ ...args, droppableContainers: routineTargets });
-          if (pointerMatch.length > 0) {
-            console.log('[CollisionDetection] Multiple routines, using pointerWithin:', {
-              count: routineTargets.length,
-              match: pointerMatch.map(c => c.id)
-            });
-            return pointerMatch;
+          const { pointerCoordinates } = args;
+
+          if (pointerCoordinates) {
+            // Custom collision: Find which routine row the pointer is actually over
+            let closestRoutine: any = null;
+            let closestDistance = Infinity;
+
+            for (const routine of routineTargets) {
+              const { rect } = routine;
+              if (!rect) continue;
+
+              // Check if pointer Y coordinate is within this routine's row bounds
+              if (pointerCoordinates.y >= rect.top && pointerCoordinates.y <= rect.bottom) {
+                // Calculate distance from pointer to row center
+                const rowCenter = rect.top + rect.height / 2;
+                const distance = Math.abs(pointerCoordinates.y - rowCenter);
+
+                if (distance < closestDistance) {
+                  closestDistance = distance;
+                  closestRoutine = routine;
+                }
+              }
+            }
+
+            if (closestRoutine) {
+              console.log('[CollisionDetection] Custom collision found routine:', {
+                count: routineTargets.length,
+                match: closestRoutine.id,
+                pointerY: pointerCoordinates.y,
+                routineRect: closestRoutine.rect
+              });
+              return [closestRoutine];
+            }
           }
 
-          // Fall back to rectIntersection if pointer not directly over any routine
-          const rectMatch = rectIntersection({ ...args, droppableContainers: routineTargets });
-          console.log('[CollisionDetection] Multiple routines, using rectIntersection fallback:', {
+          // If no pointer coordinates or no match, fall back to containers
+          console.log('[CollisionDetection] No custom collision match:', {
             count: routineTargets.length,
-            match: rectMatch.map(c => c.id)
+            hasPointer: !!pointerCoordinates
           });
-          return rectMatch.length > 0 ? rectMatch : containers;
+          return containers;
         }
 
         return routineTargets.length > 0 ? routineTargets : containers;
