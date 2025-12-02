@@ -670,14 +670,20 @@ export function DragDropProvider({
         return id.startsWith('schedule-table-') || id.startsWith('unscheduled-');
       });
 
-      // Debug logging for block templates
+      // When dragging block templates, filter out block IDs - only allow dropping on routines
       if (activeId && String(activeId).startsWith('block-template-')) {
+        const routineTargets = specificItems.filter(item =>
+          String(item.id).startsWith('routine-')
+        );
+
         console.log('[CollisionDetection] Block template drag:', {
           activeId,
-          specificItems: specificItems.map(c => c.id),
-          containers: containers.map(c => c.id),
-          returning: specificItems.length > 0 ? 'specific items' : 'containers'
+          allItems: specificItems.map(c => c.id),
+          routineTargets: routineTargets.map(c => c.id),
+          returning: routineTargets.length > 0 ? 'routine targets only' : 'containers'
         });
+
+        return routineTargets.length > 0 ? routineTargets : containers;
       }
 
       // Return specific items if any exist, otherwise return containers (for empty schedules)
