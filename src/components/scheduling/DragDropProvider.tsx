@@ -202,7 +202,13 @@ export function DragDropProvider({
 
     // Recalculate times based on order
     const recalculatedBlocks: ScheduleBlockData[] = [];
-    let currentTime = timeline[0]?.time || new Date();
+    // CRITICAL FIX: Use schedule date (selectedDate), NOT today's date
+    // Parse selectedDate (YYYY-MM-DD) and get day start time
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const dayStart = getDayStartTime(selectedDate);
+    const [hours, minutes] = dayStart.split(':').map(Number);
+    const scheduleDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    let currentTime = timeline[0]?.time || scheduleDate;
 
     timeline.forEach((item, index) => {
       if (item.type === 'block') {
