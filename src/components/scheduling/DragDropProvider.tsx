@@ -94,6 +94,7 @@ export function DragDropProvider({
   const [activeBlockType, setActiveBlockType] = useState<'award' | 'break' | null>(null);
   const [dropIndicatorTop, setDropIndicatorTop] = useState<number>(0);
   const [showDropIndicator, setShowDropIndicator] = useState(false);
+  const [intendedDropTarget, setIntendedDropTarget] = useState<string | null>(null);
 
   // Helper: Get day start time for a given date (defaults to 08:00:00)
   const getDayStartTime = (date: string): string => {
@@ -136,10 +137,12 @@ export function DragDropProvider({
       // Don't show indicator if hovering over self
       if (over.id === active.id) {
         setShowDropIndicator(false);
+        setIntendedDropTarget(null);
         return;
       }
 
       setShowDropIndicator(true);
+      setIntendedDropTarget(String(over.id)); // Store for container drops
 
       // Determine if we're hovering over a routine or a block
       const overId = String(over.id);
@@ -162,6 +165,7 @@ export function DragDropProvider({
       }
     } else {
       setShowDropIndicator(false);
+      setIntendedDropTarget(null);
     }
   };
 
@@ -443,17 +447,35 @@ export function DragDropProvider({
 
     // Case: Dropping onto empty schedule container
     if (targetId.startsWith('schedule-table-')) {
+      // FIX: Use intended drop target from drop indicator if available
+      if (intendedDropTarget && !intendedDropTarget.startsWith('schedule-table-')) {
+        console.log('[DragDropProvider] Using intended drop target:', intendedDropTarget);
+        // Redirect to the intended target (routine or block)
+        const redirectedEvent = {
+          ...event,
+          over: { ...event.over!, id: intendedDropTarget }
+        };
+        // Recursively call with corrected target
+        return handleDragEnd(redirectedEvent as DragEndEvent);
+      }
+
+      // Get existing scheduled routines
+      const currentDraft = allDraftsByDate[selectedDate] || [];
+      const scheduledForDay = currentDraft.length > 0
+        ? currentDraft
+        : routines
+            .filter(r => r.isScheduled && r.performanceTime)
+            .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+      // Only allow drops to empty container when schedule is truly empty
+      if (scheduledForDay.length > 0) {
+        console.log('[DragDropProvider] Schedule not empty, no intended target - ignoring drop');
+        return;
+      }
+
       console.log('[DragDropProvider] Drop onto empty schedule container');
 
       if (!draggedRoutine.isScheduled) {
-        // Get existing scheduled routines from BOTH database AND current day's draft
-        const currentDraft = allDraftsByDate[selectedDate] || [];
-        const scheduledForDay = currentDraft.length > 0
-          ? currentDraft  // Use draft if exists (already has entry numbers)
-          : routines
-              .filter(r => r.isScheduled && r.performanceTime)
-              .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
-
         // Add to end of schedule (single or multiple routines)
         const newSchedule = [...scheduledForDay, ...routinesToDrag];
         const recalculated = calculateSchedule(
@@ -490,9 +512,13 @@ export function DragDropProvider({
       console.log('[DragDropProvider] Inserting routine(s) before block:', targetBlock.title);
 
       // Get all currently scheduled routines for this day
-      const scheduledForDay = routines
+      let scheduledForDay = routines
         .filter(r => r.isScheduled && r.performanceTime)
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+      // FIX: Remove dragged routines if already scheduled (prevent duplicates)
+      const draggedIds = new Set(routinesToDrag.map(r => r.id));
+      scheduledForDay = scheduledForDay.filter(r => !draggedIds.has(r.id));
 
       // Parse block time to find insertion point
       const blockDate = new Date(targetBlock.scheduled_time);
