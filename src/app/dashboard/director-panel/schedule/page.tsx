@@ -833,11 +833,21 @@ export default function SchedulePage() {
     // If dropped on a routine, place before it
     if (targetId.startsWith('routine-')) {
       const routineId = targetId.slice(8); // Strip 'routine-' prefix
+      console.log('[BlockPosition] Looking for routine:', {
+        targetId,
+        routineId,
+        dayDraftLength: dayDraft.length,
+        dayDraftIds: dayDraft.map(r => ({ id: r.id, entry: r.entryNumber }))
+      });
       const routine = dayDraft.find(r => r.id === routineId);
+      console.log('[BlockPosition] Routine found?', { found: !!routine, routine: routine ? { id: routine.id, time: routine.performanceTime, entry: routine.entryNumber } : null });
       if (routine?.performanceTime) {
         targetTime = routine.performanceTime;
         // Use fractional sort order to insert BEFORE the target routine
         sortOrder = (routine.entryNumber || 0) - 0.5;
+        console.log('[BlockPosition] Placing block before routine:', { targetTime, sortOrder });
+      } else {
+        console.log('[BlockPosition] Routine not found or no performanceTime, using default');
       }
     }
     // If dropped on a block, place before it
