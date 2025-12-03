@@ -692,7 +692,9 @@ export function DragDropProvider({
         // Reorder array
         const reordered = [...scheduledRoutines];
         const [removed] = reordered.splice(fromIndex, 1);
-        reordered.splice(toIndex, 0, removed);
+        // When moving down (fromIndex < toIndex), adjust for the removal that happened before toIndex
+        const adjustedToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+        reordered.splice(adjustedToIndex, 0, removed);
 
         // Recalculate times and entry numbers
         const recalculated = calculateSchedule(
@@ -722,43 +724,21 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use custom collision that considers vertical position within row
+    // Use pointerWithin for precise drop positioning
     if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using custom vertical collision:', activeId);
-
-      // Get all collisions
-      const allCollisions = rectIntersection(args);
-
-      if (allCollisions.length === 0) {
-        return closestCenter(args);
+      console.log('[CollisionDetection] Sortable item drag, using pointerWithin:', activeId);
+      // Try pointerWithin first for most accurate drop position
+      const pointerCollisions = pointerWithin(args);
+      if (pointerCollisions.length > 0) {
+        return pointerCollisions;
       }
-
-      // If dragging over a single item, check vertical position within that item
-      if (allCollisions.length === 1 && args.pointerCoordinates) {
-        const collision = allCollisions[0];
-        const rect = collision.data?.current?.sortable?.rect;
-
-        if (rect) {
-          const pointerY = args.pointerCoordinates.y;
-          const itemTop = rect.top;
-          const itemBottom = rect.bottom;
-          const itemMidpoint = (itemTop + itemBottom) / 2;
-
-          console.log('[CollisionDetection] Vertical position check:', {
-            pointerY,
-            itemTop,
-            itemMidpoint,
-            itemBottom,
-            inTopHalf: pointerY < itemMidpoint
-          });
-
-          // If pointer is in top half of item, we want to insert BEFORE this item
-          // If pointer is in bottom half, we want to insert AFTER this item
-          // Return the collision as-is; insertion logic will handle it
-        }
+      // Fallback to rectIntersection
+      const rectCollisions = rectIntersection(args);
+      if (rectCollisions.length > 0) {
+        return rectCollisions;
       }
-
-      return allCollisions;
+      // Final fallback to closestCenter
+      return closestCenter(args);
     }
 
     // For block templates and UR routines:

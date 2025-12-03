@@ -61,7 +61,7 @@ export default function StudioScheduleView() {
     competitionId,
   });
 
-  const canAddNotes = currentVersion?.status === 'under_review';
+  const canAddNotes = currentVersion?.feedbackAllowed ?? false;
 
   // Group routines by day
   const routinesByDay = useMemo(() => {
