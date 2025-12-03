@@ -295,17 +295,20 @@ export function DragDropProvider({
 
       console.log('[DragDropProvider] Block reorder - fromIndex:', fromIndex, 'toIndex:', toIndex);
       console.log('[DragDropProvider] Moving', fromIndex < toIndex ? 'DOWN' : 'UP');
+      console.log('[DragDropProvider] Block names:', {
+        from: sortedBlocks[fromIndex].title,
+        to: sortedBlocks[toIndex].title,
+      });
 
-      // Reorder
+      // Reorder - collision detection appears to be off by one when moving UP
+      // Moving DOWN: User said this worked, so keep toIndex - 1
+      // Moving UP: Also needs toIndex - 1 based on testing
       const reordered = [...sortedBlocks];
       const [removed] = reordered.splice(fromIndex, 1);
 
-      // When moving DOWN (fromIndex < toIndex), after removal all indices shift down by 1
-      // So we need to insert at toIndex - 1
-      // When moving UP (fromIndex > toIndex), toIndex is already correct
-      const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+      const insertIndex = toIndex > 0 ? toIndex - 1 : 0;
 
-      console.log('[DragDropProvider] Inserting at index:', insertIndex);
+      console.log('[DragDropProvider] Inserting at index:', insertIndex, '(adjusted from toIndex:', toIndex, ')');
       reordered.splice(insertIndex, 0, removed);
 
       // Recalculate times with cascade
