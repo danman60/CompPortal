@@ -722,21 +722,43 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use pointerWithin for precise positioning (fixes off-by-one drop issue)
+    // Use custom collision that considers vertical position within row
     if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using pointerWithin:', activeId);
-      // Try pointerWithin first for most accurate drop position
-      const pointerCollisions = pointerWithin(args);
-      if (pointerCollisions.length > 0) {
-        return pointerCollisions;
+      console.log('[CollisionDetection] Sortable item drag, using custom vertical collision:', activeId);
+
+      // Get all collisions
+      const allCollisions = rectIntersection(args);
+
+      if (allCollisions.length === 0) {
+        return closestCenter(args);
       }
-      // Fallback to rectIntersection for edge cases
-      const rectCollisions = rectIntersection(args);
-      if (rectCollisions.length > 0) {
-        return rectCollisions;
+
+      // If dragging over a single item, check vertical position within that item
+      if (allCollisions.length === 1 && args.pointerCoordinates) {
+        const collision = allCollisions[0];
+        const rect = collision.data?.current?.sortable?.rect;
+
+        if (rect) {
+          const pointerY = args.pointerCoordinates.y;
+          const itemTop = rect.top;
+          const itemBottom = rect.bottom;
+          const itemMidpoint = (itemTop + itemBottom) / 2;
+
+          console.log('[CollisionDetection] Vertical position check:', {
+            pointerY,
+            itemTop,
+            itemMidpoint,
+            itemBottom,
+            inTopHalf: pointerY < itemMidpoint
+          });
+
+          // If pointer is in top half of item, we want to insert BEFORE this item
+          // If pointer is in bottom half, we want to insert AFTER this item
+          // Return the collision as-is; insertion logic will handle it
+        }
       }
-      // Final fallback to closestCenter
-      return closestCenter(args);
+
+      return allCollisions;
     }
 
     // For block templates and UR routines:

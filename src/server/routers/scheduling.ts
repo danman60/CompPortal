@@ -4140,11 +4140,24 @@ export const schedulingRouter = router({
       // Create new draft version with incremented major version
       const newMajorVersion = currentVersion.major_version + 1;
 
+      // Find max version_number to avoid unique constraint violation
+      const maxVersionNumber = await prisma.schedule_versions.aggregate({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+        },
+        _max: {
+          version_number: true,
+        },
+      });
+
+      const nextVersionNumber = (maxVersionNumber._max.version_number || 0) + 1;
+
       await prisma.schedule_versions.create({
         data: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
-          version_number: newMajorVersion, // Legacy field
+          version_number: nextVersionNumber, // Unique version number
           major_version: newMajorVersion,
           minor_version: 1,
           is_published_to_studios: false,
