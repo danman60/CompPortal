@@ -780,7 +780,11 @@ export function DragDropProvider({
     // Use rectIntersection for better collision detection with small movements
     if (isSortableRoutine || isSortableBlock) {
       console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
-      return rectIntersection(args);
+      const collisions = rectIntersection(args);
+      // Filter out the active item itself to prevent "dropped on itself" bugs
+      const filtered = collisions.filter((collision: any) => collision.id !== activeId);
+      console.log('[CollisionDetection] Filtered collisions:', filtered.length, 'targets');
+      return filtered;
     }
 
     // For block templates and UR routines:
