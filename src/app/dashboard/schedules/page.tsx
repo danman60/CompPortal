@@ -8,28 +8,34 @@
  */
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { Calendar, Clock, MessageSquare, ChevronRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 // TEST IDs (will be replaced with real context)
-const TEST_STUDIO_ID = '00000000-0000-0000-0000-000000000002';
+// Using Apex Dance Company from tester tenant for testing
+const TEST_STUDIO_ID = '2bc476db-62a0-49b3-a264-4bca9437f6a5';
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
 
 export default function SchedulesDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedTenant, setSelectedTenant] = useState<string>('');
+
+  // Get studioId from URL parameter, fallback to TEST_STUDIO_ID
+  const studioId = searchParams.get('studioId') || TEST_STUDIO_ID;
+  const tenantId = searchParams.get('tenantId') || TEST_TENANT_ID;
 
   // Fetch available schedules for this studio
   const { data: schedules, isLoading } = trpc.scheduling.getAvailableSchedules.useQuery({
-    studioId: TEST_STUDIO_ID,
-    tenantId: TEST_TENANT_ID,
+    studioId,
+    tenantId,
   });
 
-  const handleViewSchedule = (competitionId: string, tenantId: string) => {
-    // Navigate to the schedule view page
-    router.push(`/dashboard/schedules/${competitionId}?tenantId=${tenantId}`);
+  const handleViewSchedule = (competitionId: string, tenantIdParam: string) => {
+    // Navigate to the schedule view page, passing studioId for isolation testing
+    router.push(`/dashboard/schedules/${competitionId}?tenantId=${tenantIdParam}&studioId=${studioId}`);
   };
 
   if (isLoading) {

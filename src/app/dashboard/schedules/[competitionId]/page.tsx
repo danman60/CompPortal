@@ -369,7 +369,7 @@ export default function StudioScheduleView() {
         routine={selectedRoutine}
         canEdit={canAddNotes}
         tenantId={tenantId}
-        studioId={TEST_STUDIO_ID}
+        studioId={studioId}
         onSuccess={() => {
           refetch();
         }}
