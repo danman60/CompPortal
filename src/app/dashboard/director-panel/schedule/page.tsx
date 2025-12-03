@@ -213,6 +213,47 @@ export default function SchedulePage() {
     }
   );
 
+  // Toggle feedback mutation
+  const toggleFeedbackMutation = trpc.scheduling.toggleScheduleFeedback.useMutation({
+    onSuccess: () => {
+      toast.success('Feedback setting updated');
+      refetchVersion();
+    },
+    onError: (error) => {
+      toast.error(`Failed to update feedback: ${error.message}`);
+    },
+  });
+
+  // Publish version mutation
+  const publishVersionMutation = trpc.scheduling.publishVersionToStudios.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Published V${data.publishedVersion} to studios. Now working on ${data.newDraftVersion}`);
+      refetchVersion();
+      refetchHistory();
+    },
+    onError: (error) => {
+      toast.error(`Failed to publish: ${error.message}`);
+    },
+  });
+
+  const handleToggleFeedback = () => {
+    const newState = !versionData?.feedbackAllowed;
+    toggleFeedbackMutation.mutate({
+      tenantId: TEST_TENANT_ID,
+      competitionId: TEST_COMPETITION_ID,
+      enabled: newState,
+    });
+  };
+
+  const handlePublishToStudios = () => {
+    if (confirm('Publish current version to studios? This will create a new draft version.')) {
+      publishVersionMutation.mutate({
+        tenantId: TEST_TENANT_ID,
+        competitionId: TEST_COMPETITION_ID,
+      });
+    }
+  };
+
   // Fetch version history
   const { data: versionHistory, refetch: refetchHistory } = trpc.scheduling.getVersionHistory.useQuery(
     {
@@ -1557,19 +1598,13 @@ export default function SchedulePage() {
               {versionData && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-white/90">
-                    Version {versionData.versionNumber}
+                    {versionData.versionDisplay || `Version ${versionData.versionNumber}`}
                   </span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                    versionData.status === 'draft'
-                      ? 'bg-purple-900/30 text-purple-200 border border-purple-500/30'
-                      : versionData.status === 'under_review'
-                      ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                      : 'bg-green-100 text-green-700 border border-green-300'
-                  }`}>
-                    {versionData.status === 'draft' && '⚠️ Draft'}
-                    {versionData.status === 'under_review' && '⏱️ Under Review'}
-                    {versionData.status === 'review_closed' && '✅ Review Closed'}
-                  </span>
+                  {versionData.isPublished && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/50">
+                      ✓ Published
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -1587,13 +1622,31 @@ export default function SchedulePage() {
             </p>
           </div>
           <div className="flex gap-3 items-center">
-            {/* Send to Studios Button */}
+            {/* Feedback Toggle */}
+            {versionData && (
+              <button
+                onClick={handleToggleFeedback}
+                disabled={toggleFeedbackMutation.isPending}
+                className={`px-4 py-2 font-semibold rounded-lg transition-all flex items-center gap-2 ${
+                  versionData.feedbackAllowed
+                    ? 'bg-green-500/20 text-green-300 border-2 border-green-500/50 hover:bg-green-500/30'
+                    : 'bg-gray-500/20 text-gray-300 border-2 border-gray-500/50 hover:bg-gray-500/30'
+                }`}
+                title={versionData.feedbackAllowed ? 'Click to close feedback' : 'Click to open feedback'}
+              >
+                {versionData.feedbackAllowed ? '🟢 Feedback Open' : '⭕ Feedback Closed'}
+              </button>
+            )}
+
+            {/* Publish to Studios Button */}
             <button
-              onClick={() => setShowSendModal(true)}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+              onClick={handlePublishToStudios}
+              disabled={publishVersionMutation.isPending || versionData?.isPublished}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+              title={versionData?.isPublished ? 'This version is already published' : 'Publish this version to studios'}
             >
               <Mail className="h-4 w-4" />
-              Send Draft to Studios
+              {publishVersionMutation.isPending ? 'Publishing...' : 'Publish to Studios'}
             </button>
             {/* View Studio Schedule (Testing) */}
             <button
