@@ -821,6 +821,7 @@ model competitions {
   tokens_override_enabled           Boolean?                            @default(false)
   schedule_published_at             DateTime?                           @db.Timestamptz(6)
   schedule_locked                   Boolean?                            @default(false)
+  schedule_feedback_allowed         Boolean?                            @default(false)
   schedule_state                    String?                             @default("draft") @db.VarChar(20)
   schedule_finalized_at             DateTime?                           @db.Timestamptz(6)
   schedule_finalized_by             String?                             @db.Uuid
@@ -1992,6 +1993,9 @@ model schedule_versions {
   responding_studios_count  Int?
   total_studios_count       Int?
   snapshot_data             Json?
+  major_version             Int                           @default(1)
+  minor_version             Int                           @default(1)
+  is_published_to_studios   Boolean                       @default(false)
   created_at                DateTime?                     @default(now()) @db.Timestamptz(6)
   updated_at                DateTime?                     @default(now()) @db.Timestamptz(6)
 

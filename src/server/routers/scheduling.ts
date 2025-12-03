@@ -3489,17 +3489,36 @@ export const schedulingRouter = router({
       competitionId: z.string().uuid(),
     }))
     .query(async ({ input }) => {
+      // Get competition to check feedback toggle
+      const competition = await prisma.competitions.findUnique({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+      });
+
+      const feedbackAllowed = competition?.schedule_feedback_allowed ?? false;
+
+      // Get latest version (CD sees all, including drafts)
       const currentVersion = await prisma.schedule_versions.findFirst({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
         },
-        orderBy: { version_number: 'desc' },
+        orderBy: [
+          { major_version: 'desc' },
+          { minor_version: 'desc' },
+        ],
       });
 
       if (!currentVersion) {
         return {
           versionNumber: 0,
+          versionDisplay: '0.0',
+          majorVersion: 0,
+          minorVersion: 0,
+          isPublished: false,
+          feedbackAllowed,
           status: 'draft' as const,
           deadline: undefined,
           daysRemaining: undefined,
@@ -3509,24 +3528,17 @@ export const schedulingRouter = router({
         };
       }
 
-      // Auto-close if deadline passed
-      if (currentVersion.status === 'under_review' && currentVersion.deadline && currentVersion.deadline < new Date()) {
-        await prisma.schedule_versions.update({
-          where: { id: currentVersion.id },
-          data: {
-            status: 'review_closed',
-            closed_at: new Date(),
-          },
-        });
-        currentVersion.status = 'review_closed';
-      }
-
       const daysRemaining = currentVersion.deadline
         ? Math.ceil((currentVersion.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         : undefined;
 
       return {
-        versionNumber: currentVersion.version_number,
+        versionNumber: currentVersion.version_number, // Legacy
+        versionDisplay: `${currentVersion.major_version}.${currentVersion.minor_version}`,
+        majorVersion: currentVersion.major_version,
+        minorVersion: currentVersion.minor_version,
+        isPublished: currentVersion.is_published_to_studios,
+        feedbackAllowed,
         status: currentVersion.status as 'draft' | 'under_review' | 'review_closed',
         deadline: currentVersion.deadline,
         daysRemaining: daysRemaining && daysRemaining > 0 ? daysRemaining : 0,
@@ -3661,44 +3673,47 @@ export const schedulingRouter = router({
       tenantId: z.string().uuid(),
       competitionId: z.string().uuid(),
       studioId: z.string().uuid(),
-      versionNumber: z.number().optional(),
+      majorVersion: z.number().optional(),
     }))
     .query(async ({ input }) => {
-      // Get requested version or latest published
+      // Get competition to check feedback toggle
+      const competition = await prisma.competitions.findUnique({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+      });
+
+      const feedbackAllowed = competition?.schedule_feedback_allowed ?? false;
+
+      // Get requested version or latest published (SDs only see published)
       let version;
-      if (input.versionNumber !== undefined) {
+      if (input.majorVersion !== undefined) {
         version = await prisma.schedule_versions.findFirst({
           where: {
             tenant_id: input.tenantId,
             competition_id: input.competitionId,
-            version_number: input.versionNumber,
+            major_version: input.majorVersion,
+            is_published_to_studios: true,
           },
         });
       } else {
+        // Get latest published version
         version = await prisma.schedule_versions.findFirst({
           where: {
             tenant_id: input.tenantId,
             competition_id: input.competitionId,
-            status: { in: ['under_review', 'review_closed'] },
+            is_published_to_studios: true,
           },
-          orderBy: { version_number: 'desc' },
+          orderBy: [
+            { major_version: 'desc' },
+            { minor_version: 'desc' },
+          ],
         });
       }
 
       if (!version) {
-        throw new Error('Schedule not available');
-      }
-
-      // Auto-close if deadline passed
-      if (version.status === 'under_review' && version.deadline && version.deadline < new Date()) {
-        await prisma.schedule_versions.update({
-          where: { id: version.id },
-          data: {
-            status: 'review_closed',
-            closed_at: new Date(),
-          },
-        });
-        version.status = 'review_closed';
+        throw new Error('No published schedule available');
       }
 
       // Get studio's scheduled routines
@@ -3741,11 +3756,12 @@ export const schedulingRouter = router({
 
       return {
         version: {
-          number: version.version_number,
+          number: version.major_version, // SDs see only major version (1, 2, 3)
+          versionDisplay: `V${version.major_version}`,
           status: version.status,
           deadline: version.deadline,
           daysRemaining: daysRemaining && daysRemaining > 0 ? daysRemaining : 0,
-          canEditNotes: version.status === 'under_review' && (!version.deadline || version.deadline > new Date()),
+          canEditNotes: feedbackAllowed, // Global toggle overrides all
         },
         routines: routines.map(r => ({
           id: r.id,
@@ -3793,23 +3809,33 @@ export const schedulingRouter = router({
         throw new Error('Routine not found or access denied');
       }
 
-      // Get current version
+      // Check global feedback toggle
+      const competition = await prisma.competitions.findUnique({
+        where: {
+          id: routine.competition_id,
+          tenant_id: input.tenantId,
+        },
+      });
+
+      if (!competition?.schedule_feedback_allowed) {
+        throw new Error('Feedback is currently closed by the Competition Director');
+      }
+
+      // Get latest published version
       const currentVersion = await prisma.schedule_versions.findFirst({
         where: {
           tenant_id: input.tenantId,
           competition_id: routine.competition_id,
-          status: 'under_review',
+          is_published_to_studios: true,
         },
-        orderBy: { version_number: 'desc' },
+        orderBy: [
+          { major_version: 'desc' },
+          { minor_version: 'desc' },
+        ],
       });
 
       if (!currentVersion) {
-        throw new Error('No schedule available for review');
-      }
-
-      // Check deadline
-      if (currentVersion.deadline && currentVersion.deadline < new Date()) {
-        throw new Error('Review period has closed');
+        throw new Error('No published schedule available');
       }
 
       // Update routine with note
@@ -4019,6 +4045,106 @@ export const schedulingRouter = router({
         versionsDeleted: versionsResult.count,
         routinesUnscheduled: routinesResult.count,
         blocksDeleted: blocksResult.count,
+      };
+    }),
+
+  // =================================================================
+  // VERSION CONTROL & FEEDBACK MANAGEMENT
+  // =================================================================
+
+  /**
+   * Toggle global feedback control
+   * When enabled: SDs can add notes to published schedules
+   * When disabled: SDs cannot add notes (overrides all)
+   */
+  toggleScheduleFeedback: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      enabled: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      console.log('[toggleScheduleFeedback] Setting feedback to', input.enabled);
+
+      const competition = await prisma.competitions.update({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          schedule_feedback_allowed: input.enabled,
+        },
+      });
+
+      return {
+        success: true,
+        feedbackAllowed: competition.schedule_feedback_allowed ?? false,
+      };
+    }),
+
+  /**
+   * Publish current version to studios
+   * - Marks current version as published
+   * - Creates new draft version with incremented major version
+   * - SDs will see only published versions
+   */
+  publishVersionToStudios: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      console.log('[publishVersionToStudios] Publishing version for competition', input.competitionId);
+
+      // Get current draft version
+      const currentVersion = await prisma.schedule_versions.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          is_published_to_studios: false,
+        },
+        orderBy: [
+          { major_version: 'desc' },
+          { minor_version: 'desc' },
+        ],
+      });
+
+      if (!currentVersion) {
+        throw new Error('No draft version found to publish');
+      }
+
+      // Mark current version as published
+      await prisma.schedule_versions.update({
+        where: { id: currentVersion.id },
+        data: {
+          is_published_to_studios: true,
+          sent_at: new Date(),
+        },
+      });
+
+      console.log(`[publishVersionToStudios] Published version ${currentVersion.major_version}.${currentVersion.minor_version} as V${currentVersion.major_version}`);
+
+      // Create new draft version with incremented major version
+      const newMajorVersion = currentVersion.major_version + 1;
+
+      await prisma.schedule_versions.create({
+        data: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          version_number: newMajorVersion, // Legacy field
+          major_version: newMajorVersion,
+          minor_version: 1,
+          is_published_to_studios: false,
+          status: 'draft',
+        },
+      });
+
+      console.log(`[publishVersionToStudios] Created new draft V${newMajorVersion}.1`);
+
+      return {
+        success: true,
+        publishedVersion: currentVersion.major_version,
+        newDraftVersion: `${newMajorVersion}.1`,
       };
     }),
 
