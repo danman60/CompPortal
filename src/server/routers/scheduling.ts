@@ -3713,7 +3713,20 @@ export const schedulingRouter = router({
       }
 
       if (!version) {
-        throw new Error('No published schedule available');
+        // No published schedule yet - return empty state
+        return {
+          version: {
+            number: 0,
+            versionDisplay: 'No published schedule',
+            status: 'draft' as const,
+            deadline: null,
+            daysRemaining: 0,
+            canEditNotes: false,
+          },
+          routines: [],
+          blocks: [],
+          gaps: [],
+        };
       }
 
       // Get studio's scheduled routines
