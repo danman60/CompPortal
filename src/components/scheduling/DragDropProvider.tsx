@@ -777,10 +777,10 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use closestCenter directly - it already excludes the active item
+    // Use rectIntersection for better collision detection with small movements
     if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
-      return closestCenter(args);
+      console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
+      return rectIntersection(args);
     }
 
     // For block templates and UR routines:

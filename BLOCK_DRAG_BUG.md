@@ -27,21 +27,35 @@ if (isSortableRoutine || isSortableBlock) {
 - `onDragEnd` never fired because `over` was null (no valid collision targets after filtering)
 - `closestCenter` ALREADY excludes the active item - additional filtering is unnecessary and harmful
 
-## Correct Solution ✅
-
-**File**: `src/components/scheduling/DragDropProvider.tsx`
-**Lines 779-784**:
-
+### ❌ Attempt 3: Using closestCenter without filtering (commit 286e1f0)
 ```typescript
-// For sortable items (SR → SR, Block → Block reordering):
-// Use closestCenter directly - it already excludes the active item
 if (isSortableRoutine || isSortableBlock) {
   console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
   return closestCenter(args);
 }
 ```
 
-**Key insight:** `closestCenter` from dnd-kit is designed to work with `verticalListSortingStrategy` and handles collision detection correctly on its own. Do NOT add filtering or fallback chains.
+**Why this failed:**
+- Removed filtering as expected
+- Console STILL showed: Drag started, CollisionDetection called 4 times, but NO drag end
+- `closestCenter` itself is not detecting collisions when dragging UP by small distances
+- **Root cause**: `closestCenter` calculates distance between CENTERS of elements. When dragging UP by 1 space, the block center may not get close enough to routine center to trigger detection
+
+## Attempt 4: Using rectIntersection ⏳
+
+**Hypothesis**: `rectIntersection` detects bounding box overlap, which should work better for small movements than center-to-center distance calculation.
+
+**File**: `src/components/scheduling/DragDropProvider.tsx`
+**Lines 779-784**:
+
+```typescript
+// For sortable items (SR → SR, Block → Block reordering):
+// Use rectIntersection for better collision detection with small movements
+if (isSortableRoutine || isSortableBlock) {
+  console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
+  return rectIntersection(args);
+}
+```
 
 ## Why This Works
 - `closestCenter` is the collision detection that `verticalListSortingStrategy` expects
