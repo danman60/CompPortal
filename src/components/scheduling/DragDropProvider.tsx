@@ -692,9 +692,25 @@ export function DragDropProvider({
         // Reorder array
         const reordered = [...scheduledRoutines];
         const [removed] = reordered.splice(fromIndex, 1);
-        // When moving down (fromIndex < toIndex), adjust for the removal that happened before toIndex
-        const adjustedToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
-        reordered.splice(adjustedToIndex, 0, removed);
+
+        // Moving DOWN already works (per user), so don't adjust
+        // Moving UP requires adjustment - subtract 1 to move insertion point up
+        let insertIndex = toIndex;
+        if (fromIndex > toIndex) {
+          // Moving up - adjust to move insertion point higher
+          insertIndex = Math.max(0, toIndex - 1);
+        }
+
+        reordered.splice(insertIndex, 0, removed);
+
+        console.log('[DragDropProvider] Array reorder:', {
+          from: fromIndex,
+          to: toIndex,
+          insertIndex,
+          direction: fromIndex < toIndex ? 'down' : 'up',
+          originalItems: scheduledRoutines.map((r, i) => `${i}:${r.entryNumber}`),
+          resultItems: reordered.map((r, i) => `${i}:${r.entryNumber}`)
+        });
 
         // Recalculate times and entry numbers
         const recalculated = calculateSchedule(
