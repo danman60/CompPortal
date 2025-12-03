@@ -41,21 +41,81 @@ if (isSortableRoutine || isSortableBlock) {
 - `closestCenter` itself is not detecting collisions when dragging UP by small distances
 - **Root cause**: `closestCenter` calculates distance between CENTERS of elements. When dragging UP by 1 space, the block center may not get close enough to routine center to trigger detection
 
-## Attempt 4: Using rectIntersection ⏳
-
-**Hypothesis**: `rectIntersection` detects bounding box overlap, which should work better for small movements than center-to-center distance calculation.
-
-**File**: `src/components/scheduling/DragDropProvider.tsx`
-**Lines 779-784**:
-
+### ❌ Attempt 4: Using rectIntersection without filtering (commit c691521)
 ```typescript
-// For sortable items (SR → SR, Block → Block reordering):
-// Use rectIntersection for better collision detection with small movements
 if (isSortableRoutine || isSortableBlock) {
   console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
   return rectIntersection(args);
 }
 ```
+
+**Why this failed:**
+- `rectIntersection` DOES detect collisions (unlike `closestCenter` which timed out)
+- BUT it returns the block ITSELF in the collision results
+- Result: "Block dropped on itself - no action taken"
+- `rectIntersection` doesn't automatically exclude the activeId like `closestCenter` does
+
+### ❌ Attempt 5: rectIntersection WITH activeId filtering (commit 885d59a)
+
+**Fix**: Filter out the activeId from `rectIntersection` results
+
+**File**: `src/components/scheduling/DragDropProvider.tsx`
+**Lines 782-788**:
+
+```typescript
+if (isSortableRoutine || isSortableBlock) {
+  console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
+  const collisions = rectIntersection(args);
+  // Filter out the active item itself to prevent "dropped on itself" bugs
+  const filtered = collisions.filter((collision: any) => collision.id !== activeId);
+  console.log('[CollisionDetection] Filtered collisions:', filtered.length, 'targets');
+  return filtered;
+}
+```
+
+**Why this failed:**
+- Collision detection DOES fire (unlike Attempt 3 which timed out)
+- activeId filtering prevents "dropped on itself" bug (unlike Attempt 4)
+- BUT `rectIntersection` returns the **droppable CONTAINER** (`schedule-table-2026-04-11`) instead of the **specific routine** (`routine-...`) being dragged over
+- Console log: `targetId: schedule-table-2026-04-11, targetStartsWithBlock: false`
+- Drag handler doesn't know WHERE to insert the block, so nothing happens
+- **Root cause**: `rectIntersection` detects ALL collisions including containers. Need to prioritize specific items (routines/blocks) over containers
+
+## Attempt 6: Priority-based collision detection ⏳
+
+**Solution**: Use `rectIntersection` but prioritize specific items (routines/blocks with IDs starting with `routine-` or `block-`) over containers (IDs starting with `schedule-table-`).
+
+**File**: `src/components/scheduling/DragDropProvider.tsx`
+**Lines 782-795**:
+
+```typescript
+if (isSortableRoutine || isSortableBlock) {
+  console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
+  const collisions = rectIntersection(args);
+
+  // Filter out the active item itself
+  const filtered = collisions.filter((collision: any) => collision.id !== activeId);
+
+  // Prioritize specific items (routines/blocks) over containers
+  const specificItems = filtered.filter((c: any) =>
+    c.id.startsWith('routine-') || c.id.startsWith('block-')
+  );
+
+  // If we found specific items, return those. Otherwise return all (including containers)
+  const result = specificItems.length > 0 ? specificItems : filtered;
+  console.log('[CollisionDetection] Filtered collisions:', result.length, 'targets');
+  return result;
+}
+```
+
+**Why this should work:**
+- `rectIntersection` detects collisions even for small movements (solves Attempt 3 timeout)
+- activeId filtering prevents "dropped on itself" (solves Attempt 4 issue)
+- Prioritizing specific items over containers ensures targetId is a routine/block, not the container
+- Falls back to container if no specific items found (edge case: dropping on empty schedule)
+- Matches the solution described in DRAG_DROP_ANALYSIS.md lines 100-104
+
+**Status**: Ready to implement
 
 ## Why This Works
 - `closestCenter` is the collision detection that `verticalListSortingStrategy` expects

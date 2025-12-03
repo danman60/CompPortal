@@ -777,14 +777,23 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use rectIntersection for better collision detection with small movements
+    // Use rectIntersection with priority-based filtering
     if (isSortableRoutine || isSortableBlock) {
       console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
       const collisions = rectIntersection(args);
+
       // Filter out the active item itself to prevent "dropped on itself" bugs
       const filtered = collisions.filter((collision: any) => collision.id !== activeId);
-      console.log('[CollisionDetection] Filtered collisions:', filtered.length, 'targets');
-      return filtered;
+
+      // Prioritize specific items (routines/blocks) over containers
+      const specificItems = filtered.filter((c: any) =>
+        c.id.startsWith('routine-') || c.id.startsWith('block-')
+      );
+
+      // If we found specific items, return those. Otherwise return all (including containers)
+      const result = specificItems.length > 0 ? specificItems : filtered;
+      console.log('[CollisionDetection] Filtered collisions:', result.length, 'targets', result.map((r: any) => r.id));
+      return result;
     }
 
     // For block templates and UR routines:
