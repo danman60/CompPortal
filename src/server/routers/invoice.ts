@@ -568,7 +568,7 @@ export const invoiceRouter = router({
             totalAmount: Number(group?._sum.total_fee || 0),
             hasInvoice: !!existingInvoice,
             invoiceId: existingInvoice?.id || null,
-            invoiceStatus: existingInvoice?.status || null,
+            invoiceStatus: existingInvoice?.status || null, // DRAFT, SENT, PAID, VOIDED
             invoiceCreatedAt: existingInvoice?.created_at || null,
             reservation: reservation ? {
               id: reservation.id,
@@ -750,18 +750,34 @@ export const invoiceRouter = router({
         });
       }
 
-      // 🛡️ GUARD: Check for existing invoice
+      // 🛡️ GUARD: Check for existing invoice and void it if found
+      // This allows creating new invoices after reopening/resubmitting summaries
       const existingInvoice = await prisma.invoices.findFirst({
         where: {
           tenant_id: ctx.tenantId!,
           studio_id: reservation.studio_id,
           competition_id: reservation.competition_id,
           reservation_id: reservationId,
+          status: { not: 'VOIDED' }, // Only check non-voided invoices
         },
       });
 
       if (existingInvoice) {
-        throw new Error('Invoice already exists for this reservation');
+        // Void the old invoice instead of blocking
+        await prisma.invoices.update({
+          where: { id: existingInvoice.id },
+          data: {
+            status: 'VOIDED',
+            is_locked: true,
+            other_credit_reason: 'VOIDED: Summary reopened and resubmitted',
+            updated_at: new Date(),
+          },
+        });
+
+        console.log('[INVOICE] Voided existing invoice:', {
+          invoice_id: existingInvoice.id,
+          reason: 'Summary reopened and resubmitted',
+        });
       }
 
       // Build line items from all entries for this reservation (summary was already validated)
@@ -2128,6 +2144,71 @@ export const invoiceRouter = router({
           branding: tenant.branding as any,
         } : undefined,
       };
+    }),
+
+  /**
+   * Void an invoice (CD/SA only)
+   * Sets invoice status to VOIDED and prevents further modifications
+   */
+  voidInvoice: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can void invoices
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can void invoices.',
+        });
+      }
+
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
+      }
+
+      if (invoice.status === 'VOIDED') {
+        throw new Error('Invoice is already voided');
+      }
+
+      // Update invoice to VOIDED status
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          status: 'VOIDED',
+          is_locked: true, // Lock voided invoices
+          other_credit_reason: input.reason ? `VOIDED: ${input.reason}` : 'VOIDED',
+          updated_at: new Date(),
+        },
+      });
+
+      // Activity log (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          action: 'invoice.void',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: {
+            competition_id: invoice.competition_id,
+            reason: input.reason,
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity (invoice.void)', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      return { success: true };
     }),
 
   /**

@@ -137,6 +137,17 @@ export default function AllInvoicesList() {
     },
   });
 
+  // Void invoice mutation
+  const voidInvoiceMutation = trpc.invoice.voidInvoice.useMutation({
+    onSuccess: () => {
+      toast.success('Invoice voided successfully');
+      utils.invoice.getAllInvoices.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
   const handleMarkAsPaid = (reservationId: string, currentStatus: string, studioName: string) => {
     // Store previous status for undo
     const previousStatus = currentStatus as 'pending' | 'cancelled' | 'partial' | 'paid' | 'refunded';
@@ -168,6 +179,16 @@ export default function AllInvoicesList() {
     sendReminderMutation.mutate({
       studioId,
       competitionId,
+    });
+  };
+
+  const handleVoidInvoice = (invoiceId: string, studioName: string) => {
+    const reason = prompt(`Void invoice for ${studioName}?\n\nEnter reason (optional):`);
+    if (reason === null) return; // User cancelled
+
+    voidInvoiceMutation.mutate({
+      invoiceId,
+      reason: reason || undefined,
     });
   };
 
@@ -302,6 +323,24 @@ export default function AllInvoicesList() {
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${color}`}>
         {(status || 'pending').toUpperCase()}
+      </span>
+    );
+  };
+
+  const getInvoiceStatusBadge = (status: string | null | undefined) => {
+    const statusColors: Record<string, string> = {
+      DRAFT: 'bg-gray-500/20 text-gray-300 border-gray-400/30',
+      SENT: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
+      PAID: 'bg-green-500/20 text-green-300 border-green-400/30',
+      VOIDED: 'bg-red-500/20 text-red-400 border-red-500/30 line-through',
+      UNPAID: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30',
+    };
+
+    const color = statusColors[status || 'UNPAID'] || statusColors.UNPAID;
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${color}`}>
+        {status || 'UNPAID'}
       </span>
     );
   };
@@ -521,6 +560,7 @@ export default function AllInvoicesList() {
                 <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Routines" sortKey="entryCount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Total Amount" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Invoice Status" sortKey="invoiceStatus" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Payment Status" sortKey="reservation.payment_status" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Actions
@@ -530,7 +570,7 @@ export default function AllInvoicesList() {
             <tbody className="divide-y divide-white/10">
               {sortedInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={8} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center">
                       <div className="text-6xl mb-4">📋</div>
                       <h3 className="text-xl font-bold text-white mb-2">No Invoices Found</h3>
@@ -592,6 +632,14 @@ export default function AllInvoicesList() {
                       {formatCurrency(invoice.totalAmount || 0)}
                     </td>
                     <td className="px-6 py-4">
+                      {getInvoiceStatusBadge(invoice.invoiceStatus)}
+                      {invoice.invoiceCreatedAt && (
+                        <div className="text-gray-500 text-xs mt-1">
+                          Created: {formatDate(invoice.invoiceCreatedAt)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
                       {getPaymentStatusBadge(invoice.reservation?.paymentStatus)}
                       {invoice.reservation?.paymentConfirmedAt && (
                         <div className="text-gray-500 text-xs mt-1">
@@ -632,6 +680,15 @@ export default function AllInvoicesList() {
                               {sendReminderMutation.isPending ? 'Sending...' : 'Send Reminder'}
                             </button>
                           </>
+                        )}
+                        {invoice.invoiceId && invoice.invoiceStatus !== 'VOIDED' && (
+                          <button
+                            onClick={() => handleVoidInvoice(invoice.invoiceId!, invoice.studioName)}
+                            disabled={voidInvoiceMutation.isPending}
+                            className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg text-sm font-semibold transition-all border border-red-400/30 disabled:opacity-50"
+                          >
+                            {voidInvoiceMutation.isPending ? 'Voiding...' : 'Void'}
+                          </button>
                         )}
                       </div>
                     </td>
