@@ -777,13 +777,10 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use closestCenter but filter out the dragged item itself
+    // Use closestCenter directly - it already excludes the active item
     if (isSortableRoutine || isSortableBlock) {
       console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
-      const collisions = closestCenter(args);
-      // Filter out the dragged item to prevent "dropped on itself"
-      const filtered = collisions.filter((collision: any) => collision.id !== activeId);
-      return filtered;
+      return closestCenter(args);
     }
 
     // For block templates and UR routines:
