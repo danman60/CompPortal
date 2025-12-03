@@ -48,6 +48,7 @@ interface RoutinePoolProps {
   trophyHelper?: Array<{ routineId: string }>;
   ageChanges?: string[];
   routineNotes?: Record<string, boolean>;
+  routineNotesText?: Record<string, string>; // Map of routine ID → note text for tooltips
   // Bulk selection (Session 63)
   selectedRoutineIds?: Set<string>;
   onToggleSelection?: (routineId: string, shiftKey: boolean) => void;
@@ -78,12 +79,13 @@ function getClassificationColor(classification: string): string {
 }
 
 // Draggable Table Row
-function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity, hasNotes, hasAgeChange, isLastRoutine, isSelected, onToggleSelection }: {
+function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity, hasNotes, noteText, hasAgeChange, isLastRoutine, isSelected, onToggleSelection }: {
   routine: Routine;
   viewMode: ViewMode;
   hasConflict: boolean;
   conflictSeverity: 'critical' | 'error' | 'warning';
   hasNotes: boolean;
+  noteText?: string;
   hasAgeChange: boolean;
   isLastRoutine: boolean;
   isSelected: boolean;
@@ -138,7 +140,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
             {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
-            {hasNotes && <span className="text-blue-400" title="Has notes">📝</span>}
+            {hasNotes && <span className="text-blue-400" title={noteText ? `Note: ${noteText}` : "Has notes"}>📝</span>}
             {hasAgeChange && <span className="text-yellow-400" title="Age changed">🎂</span>}
           </div>
         </div>
@@ -186,6 +188,7 @@ export function RoutinePool({
   trophyHelper = [],
   ageChanges = [],
   routineNotes = {},
+  routineNotesText = {},
   selectedRoutineIds = new Set(),
   onToggleSelection,
   onSelectAll,
@@ -522,6 +525,7 @@ export function RoutinePool({
                     hasConflict={hasConflict(routine.id)}
                     conflictSeverity={getConflictSeverity(routine.id)}
                     hasNotes={routineNotes[routine.id] || false}
+                    noteText={routineNotesText[routine.id]}
                     hasAgeChange={ageChanges.includes(routine.id)}
                     isLastRoutine={isLastRoutine(routine.id)}
                     isSelected={selectedRoutineIds.has(routine.id)}

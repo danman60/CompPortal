@@ -1528,6 +1528,18 @@ export default function SchedulePage() {
         }
       }
 
+      // Apply search filter
+      if (filters.search.length > 0) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesTitle = r.title.toLowerCase().includes(searchLower);
+        const matchesStudio = r.studioName.toLowerCase().includes(searchLower) || r.studioCode.toLowerCase().includes(searchLower);
+        const matchesClassification = r.classificationName.toLowerCase().includes(searchLower);
+        const matchesCategory = r.categoryName.toLowerCase().includes(searchLower);
+        if (!matchesTitle && !matchesStudio && !matchesClassification && !matchesCategory) {
+          return false;
+        }
+      }
+
       return true;
     });
   }, [unscheduledRoutines, draftsByDate, filters]);
@@ -1787,6 +1799,8 @@ export default function SchedulePage() {
               onFiltersChange={setFilters}
               totalRoutines={routines?.length || 0}
               filteredRoutines={unscheduledRoutinesFiltered.length}
+              routineNotes={Object.fromEntries((routines || []).filter(r => r.has_studio_requests || r.scheduling_notes).map(r => [r.id, true]))}
+              routineNotesText={Object.fromEntries((routines || []).filter(r => r.scheduling_notes).map(r => [r.id, r.scheduling_notes!]))}
               selectedRoutineIds={selectedRoutineIds}
               onToggleSelection={handleToggleSelection}
               onSelectAll={handleSelectAll}
