@@ -334,13 +334,17 @@ export function DragDropProvider({
       const [year, month, day] = selectedDate.split('-').map(Number);
       const targetTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
+      // Subtract 1ms to ensure block sorts BEFORE the routine (not after)
+      // Without this, same timestamps can sort unpredictably
+      const blockTime = new Date(targetTime.getTime() - 1);
+
       // Remove block from current position
       const otherBlocks = scheduleBlocks.filter(b => b.id !== actualDraggedId);
 
-      // Create updated block with new time
+      // Create updated block with new time (1ms before target routine)
       const updatedBlock = {
         ...draggedBlock,
-        scheduled_time: targetTime,
+        scheduled_time: blockTime,
       };
 
       // Combine and recalculate
