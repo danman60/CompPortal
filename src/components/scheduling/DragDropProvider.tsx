@@ -722,9 +722,20 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use dnd-kit's closestCenter which works with verticalListSortingStrategy
+    // Use pointerWithin for precise positioning (fixes off-by-one drop issue)
     if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
+      console.log('[CollisionDetection] Sortable item drag, using pointerWithin:', activeId);
+      // Try pointerWithin first for most accurate drop position
+      const pointerCollisions = pointerWithin(args);
+      if (pointerCollisions.length > 0) {
+        return pointerCollisions;
+      }
+      // Fallback to rectIntersection for edge cases
+      const rectCollisions = rectIntersection(args);
+      if (rectCollisions.length > 0) {
+        return rectCollisions;
+      }
+      // Final fallback to closestCenter
       return closestCenter(args);
     }
 
