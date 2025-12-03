@@ -198,8 +198,30 @@ export function DragDropProvider({
       });
     });
 
+    // Log timeline BEFORE sort for debugging
+    console.log('[recalculateBlockTimes] Timeline BEFORE sort:',
+      timeline.map((item, idx) => ({
+        idx,
+        type: item.type,
+        name: item.type === 'block' ? item.data.title : item.data.title,
+        time: item.time.toISOString(),
+        ms: item.time.getTime()
+      }))
+    );
+
     // Sort by time
     timeline.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+    // Log timeline AFTER sort for debugging
+    console.log('[recalculateBlockTimes] Timeline AFTER sort:',
+      timeline.map((item, idx) => ({
+        idx,
+        type: item.type,
+        name: item.type === 'block' ? item.data.title : item.data.title,
+        time: item.time.toISOString(),
+        ms: item.time.getTime()
+      }))
+    );
 
     // Recalculate times based on order
     const recalculatedBlocks: ScheduleBlockData[] = [];
