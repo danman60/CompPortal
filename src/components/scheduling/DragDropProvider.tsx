@@ -777,20 +777,9 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use pointerWithin for precise drop positioning
+    // Use closestCenter directly - works with verticalListSortingStrategy
     if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using pointerWithin:', activeId);
-      // Try pointerWithin first for most accurate drop position
-      const pointerCollisions = pointerWithin(args);
-      if (pointerCollisions.length > 0) {
-        return pointerCollisions;
-      }
-      // Fallback to rectIntersection
-      const rectCollisions = rectIntersection(args);
-      if (rectCollisions.length > 0) {
-        return rectCollisions;
-      }
-      // Final fallback to closestCenter
+      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
       return closestCenter(args);
     }
 
