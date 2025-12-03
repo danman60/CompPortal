@@ -293,10 +293,20 @@ export function DragDropProvider({
         return;
       }
 
+      console.log('[DragDropProvider] Block reorder - fromIndex:', fromIndex, 'toIndex:', toIndex);
+      console.log('[DragDropProvider] Moving', fromIndex < toIndex ? 'DOWN' : 'UP');
+
       // Reorder
       const reordered = [...sortedBlocks];
       const [removed] = reordered.splice(fromIndex, 1);
-      reordered.splice(toIndex, 0, removed);
+
+      // When moving DOWN (fromIndex < toIndex), after removal all indices shift down by 1
+      // So we need to insert at toIndex - 1
+      // When moving UP (fromIndex > toIndex), toIndex is already correct
+      const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
+
+      console.log('[DragDropProvider] Inserting at index:', insertIndex);
+      reordered.splice(insertIndex, 0, removed);
 
       // Recalculate times with cascade
       const recalculated = recalculateBlockTimes(reordered, routines);
@@ -693,13 +703,10 @@ export function DragDropProvider({
         const reordered = [...scheduledRoutines];
         const [removed] = reordered.splice(fromIndex, 1);
 
-        // Moving DOWN already works (per user), so don't adjust
-        // Moving UP requires adjustment - subtract 1 to move insertion point up
-        let insertIndex = toIndex;
-        if (fromIndex > toIndex) {
-          // Moving up - adjust to move insertion point higher
-          insertIndex = Math.max(0, toIndex - 1);
-        }
+        // When moving DOWN (fromIndex < toIndex), after removal all indices shift down by 1
+        // So we need to insert at toIndex - 1
+        // When moving UP (fromIndex > toIndex), toIndex is already correct
+        const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
 
         reordered.splice(insertIndex, 0, removed);
 
