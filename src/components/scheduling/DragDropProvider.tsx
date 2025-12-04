@@ -350,6 +350,16 @@ export function DragDropProvider({
         return;
       }
 
+      // Enhanced diagnostic: Show block's current position and target
+      const blockCurrentRoutine = routines.find(r =>
+        r.performanceTime && draggedBlock.scheduled_time &&
+        new Date(r.performanceTime).getTime() > new Date(draggedBlock.scheduled_time).getTime()
+      );
+      console.log('[DragDropProvider] Block-to-Routine Drop Diagnostic:');
+      console.log('  - Block current position: Entry', draggedBlock.id?.slice(0, 8));
+      console.log('  - closestCenter selected target:', targetRoutine.title, 'Entry #' + (targetRoutine.entryNumber || '?'));
+      console.log('  - Block will insert BEFORE this routine');
+
       console.log('[DragDropProvider] Inserting block before routine:', targetRoutine.title);
 
       // Get target routine time using SCHEDULE date, not today's date
@@ -776,12 +786,30 @@ export function DragDropProvider({
     const isSortableBlock = activeId.startsWith('block-') &&
       !activeId.startsWith('block-template-');
 
-    // For sortable items (SR → SR, Block → Block reordering):
-    // Use dnd-kit's closestCenter (works with verticalListSortingStrategy)
-    if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
+    // For sortable blocks: Use pointerWithin for accurate position-based collision detection
+    // This fixes off-by-one issue when dragging blocks UP by small distances
+    if (isSortableBlock) {
+      console.log('[CollisionDetection] Sortable block drag, using pointerWithin:', activeId);
+      const collisions = pointerWithin(args);
+      const filtered = collisions.filter((collision: any) => collision.id !== activeId);
+
+      // If pointerWithin found collisions, use those. Otherwise fall back to closestCenter
+      if (filtered.length > 0) {
+        console.log('[CollisionDetection] pointerWithin returned:', filtered.length, 'collisions', filtered.map((c: any) => c.id));
+        return filtered;
+      }
+
+      // Fallback to closestCenter for edge cases (dragging between items)
+      const fallbackCollisions = closestCenter(args);
+      const fallbackFiltered = fallbackCollisions.filter((collision: any) => collision.id !== activeId);
+      console.log('[CollisionDetection] pointerWithin fallback to closestCenter:', fallbackFiltered.length, 'collisions');
+      return fallbackFiltered;
+    }
+
+    // For sortable routines: Use closestCenter (works well for routine reordering)
+    if (isSortableRoutine) {
+      console.log('[CollisionDetection] Sortable routine drag, using closestCenter:', activeId);
       const collisions = closestCenter(args);
-      // Filter out the active item itself to prevent "dropped on itself" behavior
       const filtered = collisions.filter((collision: any) => collision.id !== activeId);
       console.log('[CollisionDetection] closestCenter returned:', filtered.length, 'collisions after filtering', filtered.map((c: any) => c.id));
       return filtered;
