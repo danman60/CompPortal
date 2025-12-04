@@ -976,6 +976,42 @@ export function ScheduleTable({
     return { sessions, itemSessionMap, dayStartMinutes };
   }, [scheduleItems]);
 
+  // Calculate eligible awards for each session based on trophy helper logic
+  const eligibleAwardsBySession = useMemo(() => {
+    const awardMap = new Map<number, EligibleAward[]>();
+
+    sessionInfo.sessions.forEach(session => {
+      const eligibleAwards: EligibleAward[] = [];
+      const seenCategories = new Set<string>();
+
+      // Check each routine in this session
+      session.itemIds.forEach(itemId => {
+        // Find the routine with this ID
+        const routine = sortedRoutines.find(r => r.id === itemId);
+        if (!routine) return;
+
+        // Check if this routine has a trophy (is last in its category)
+        if (lastRoutineIds.has(routine.id)) {
+          // Build category key to avoid duplicates
+          const categoryKey = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
+
+          if (!seenCategories.has(categoryKey)) {
+            seenCategories.add(categoryKey);
+            eligibleAwards.push({
+              entrySize: routine.entrySizeName,
+              ageGroup: routine.ageGroupName,
+              classification: routine.classificationName,
+            });
+          }
+        }
+      });
+
+      awardMap.set(session.sessionNumber, eligibleAwards);
+    });
+
+    return awardMap;
+  }, [sessionInfo, sortedRoutines, lastRoutineIds]);
+
   // Detect conflict groups (consecutive routines with same dancer)
   const conflictGroups = useMemo(() => {
     const groups: Array<{ routineIds: string[]; conflict: Conflict }> = [];
@@ -1163,6 +1199,11 @@ Click badge to dismiss"
                       }
                     }
 
+                    // Get eligible awards for this session (if award block)
+                    const eligibleAwards = block.block_type === 'award' && blockSessionInfo?.sessionNumber
+                      ? eligibleAwardsBySession.get(blockSessionInfo.sessionNumber) || []
+                      : [];
+
                     // Render schedule block
                     return (
                       <SortableBlockRow
@@ -1176,6 +1217,7 @@ Click badge to dismiss"
                         sessionNumber={blockSessionInfo?.sessionNumber}
                         sessionColor={blockSessionInfo?.sessionColor}
                         routineNumberBefore={routineNumberBefore}
+                        eligibleAwards={eligibleAwards}
                       />
                     );
                   }
