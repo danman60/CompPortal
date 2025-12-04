@@ -780,7 +780,9 @@ export function DragDropProvider({
     // Use dnd-kit's closestCenter (works with verticalListSortingStrategy)
     if (isSortableRoutine || isSortableBlock) {
       console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
-      return closestCenter(args);
+      const collisions = closestCenter(args);
+      console.log('[CollisionDetection] closestCenter returned:', collisions.length, 'collisions', collisions.map((c: any) => c.id));
+      return collisions;
     }
 
     // For block templates and UR routines:
