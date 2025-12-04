@@ -177,6 +177,166 @@ if (isSortableRoutine || isSortableBlock) {
 [SchedulePage] Block reorder triggered, updating 2 blocks
 ```
 
+### ❌ Attempt 13: Prioritize specific items over containers in collision detection (commit dc94e05)
+
+**Hypothesis**: Collision detection was returning the container (`schedule-table-2026-04-11`) instead of specific routines, causing the index-based drag handler to skip its logic.
+
+**Fix**: Modified collision detection for sortable blocks (DragDropProvider.tsx:829-881) to:
+1. Get `pointerWithin` collisions
+2. Separate specific items (routines/blocks) from containers
+3. Prioritize and return specific items first
+4. Fall back to `closestCenter` if only container found
+
+```typescript
+if (isSortableBlock) {
+  const collisions = pointerWithin(args);
+  const filtered = collisions.filter((collision: any) => collision.id !== activeId);
+
+  // Separate specific items from containers
+  const specificItems = filtered.filter(c => {
+    const id = String(c.id);
+    return id.startsWith('routine-') || id.startsWith('block-');
+  });
+  const containers = filtered.filter(c => {
+    const id = String(c.id);
+    return id.startsWith('schedule-table-');
+  });
+
+  // Prioritize specific items over containers
+  if (specificItems.length > 0) {
+    return specificItems;
+  }
+  // ... fallback logic
+}
+```
+
+**Status**: ❌ FAILED - Blocks still locked at bottom, snap back after drag
+
+**Why this failed**: Investigation needed - console logs required to see what collision detection is actually returning and why blocks still don't move.
+
+## Architecture Overview (for debugging tools)
+
+### System Components
+
+**1. dnd-kit Library**
+- React drag-and-drop framework
+- Provides: `DndContext`, `useDraggable`, `useSortable`, collision detection algorithms
+- Key concept: Items have IDs, collision detection returns which items are colliding during drag
+
+**2. DragDropProvider.tsx** (lines 1-950+)
+Main drag-drop orchestration component with three key subsystems:
+
+**2a. Collision Detection** (lines 819-945)
+- **Purpose**: Determine what the dragged item is hovering over
+- **Input**: Active item ID, pointer coordinates, droppable item positions
+- **Output**: Array of collision objects with IDs (e.g., `[{id: 'routine-abc123'}]`)
+- **Logic Flow**:
+  ```
+  customCollisionDetection(args) {
+    if (isSortableBlock) → pointerWithin + prioritize specific items
+    if (isSortableRoutine) → closestCenter
+    if (external drag) → custom priority logic
+  }
+  ```
+
+**2b. Drag Handlers** (lines 228-697)
+Three separate handlers based on what's being dragged:
+
+- **handleBlockDrag** (lines 228-337): Block → Block/Routine reordering
+- **Block Template Drop** (lines 387-411): Creating new blocks from templates
+- **handleDragEnd** (lines 488-697): Routine drops and reordering
+
+**2c. State Management**
+- `scheduleBlocks`: Array of block objects with `{id, scheduled_time, duration}`
+- `routines`: Array of routine objects with `{id, performanceTime, duration}`
+- Changes trigger `onBlockReorder()` or `onScheduleChange()` callbacks
+
+### Data Flow: Block Drag Operation
+
+```
+1. User starts dragging block
+   ↓
+2. onDragStart() → Sets activeId
+   ↓
+3. As mouse moves → customCollisionDetection() called repeatedly
+   ↓
+4. Collision detection returns array of IDs (routines/blocks/containers)
+   ↓
+5. onDragEnd(event) receives:
+      - event.active.id (dragged block ID)
+      - event.over.id (target ID from collision detection)
+   ↓
+6. handleBlockDrag() checks targetId:
+      - If starts with 'routine-' → Insert before that routine
+      - If starts with 'block-' → Reorder blocks
+      - If starts with 'schedule-table-' → SKIP (container, not specific target)
+   ↓
+7. Index-based reordering (Attempt 12):
+      - Create timeline of blocks + routines sorted by time
+      - Find draggedIndex and targetIndex in timeline
+      - Calculate insertIndex (adjust for direction)
+      - Splice and reorder timeline
+      - Extract blocks, recalculate times
+   ↓
+8. onBlockReorder(reorderedBlocks) → SchedulePage updates state
+   ↓
+9. React re-renders with new block positions
+```
+
+### The Bug: What's Breaking
+
+**Symptoms (as of dc94e05)**:
+- Drag operation completes (no timeout)
+- Success toast appears
+- Blocks snap back to bottom position
+- No errors in console
+
+**Possible Causes**:
+1. Collision detection returns wrong IDs → Handler receives bad targetId
+2. Handler logic executes but calculates wrong position
+3. `onBlockReorder()` is called but state update fails
+4. `recalculateBlockTimes()` puts blocks back at bottom
+
+**Debug Strategy**:
+1. Check console logs during drag to see:
+   - What collision detection returns: `[CollisionDetection] pointerWithin results:`
+   - What handler receives: `[DragDropProvider] Block drag: {targetId: ...}`
+   - Timeline indices: `[DragDropProvider] Timeline indices - dragged: X target: Y`
+   - Insert index: `[DragDropProvider] Moving UP/DOWN - insert at index: X`
+2. If collision detection returns containers → Fix collision detection
+3. If handler receives correct routine IDs → Fix index calculation
+4. If index calculation correct → Fix `recalculateBlockTimes()` or state update
+
+### Key Files
+- `src/components/scheduling/DragDropProvider.tsx` - Drag-drop logic (950+ lines)
+- `src/app/dashboard/director-panel/schedule/page.tsx` - SchedulePage component
+- `src/components/scheduling/ScheduleTable.tsx` - Renders draggable rows
+
+### Critical Code Patterns
+
+**Routine Reordering (WORKS)**:
+```typescript
+// handleDragEnd lines 606-697
+const fromIndex = scheduledRoutines.findIndex(r => r.id === routineId);
+const toIndex = scheduledRoutines.findIndex(r => r.id === targetRoutineId);
+const movingDown = fromIndex < toIndex;
+const insertIndex = movingDown ? toIndex - 1 : toIndex;
+reordered.splice(insertIndex, 0, removed);
+```
+
+**Block Reordering (BROKEN)**:
+```typescript
+// handleBlockDrag lines 343-429 (Attempt 12)
+const timeline = [...blocks, ...routines].sort(by time);
+const draggedIndex = timeline.findIndex(block);
+const targetIndex = timeline.findIndex(routine);
+const movingDown = draggedIndex < targetIndex;
+const insertIndex = movingDown ? targetIndex - 1 : targetIndex;
+reordered.splice(insertIndex, 0, removed);
+```
+
+Pattern is identical, but blocks still fail. Why?
+
 ## Testing Plan
 1. Build and deploy fix (commit removing filtering)
 2. Navigate to schedule page with blocks (Saturday April 11)

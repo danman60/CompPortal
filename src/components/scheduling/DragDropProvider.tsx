@@ -416,15 +416,37 @@ export function DragDropProvider({
 
       console.log('[DragDropProvider] Moving', movingDown ? 'DOWN' : 'UP', '- insert at index:', insertIndex);
 
-      // Extract blocks from reordered timeline
-      const reorderedBlocks = reordered
-        .filter(item => item.type === 'block')
-        .map(item => item.data as ScheduleBlockData);
+      // CRITICAL: Calculate times from INDEX order, NOT time-sorted order
+      // DO NOT call recalculateBlockTimes - it re-sorts by time, undoing our reorder!
+      const dayStart = getDayStartTime(selectedDate);
+      const [startHours, startMinutes] = dayStart.split(':').map(Number);
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      let currentTime = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
 
-      // Recalculate times based on new order
-      const recalculated = recalculateBlockTimes(reorderedBlocks, routines);
+      // Calculate times based on NEW index order (reordered timeline)
+      const recalculated: ScheduleBlockData[] = [];
+      for (const item of reordered) {
+        if (item.type === 'block') {
+          const block = item.data as ScheduleBlockData;
+          recalculated.push({
+            ...block,
+            scheduled_time: new Date(currentTime),
+          });
+          // Add block duration to current time
+          currentTime = new Date(currentTime.getTime() + block.duration_minutes * 60000);
+        } else {
+          // Routine: use its performance time to cascade
+          const routine = item.data as RoutineData;
+          if (routine.performanceTime) {
+            const [rHours, rMinutes] = routine.performanceTime.split(':').map(Number);
+            const routineEndTime = new Date(year, month - 1, day, rHours, rMinutes, 0, 0);
+            // Add routine duration
+            currentTime = new Date(routineEndTime.getTime() + routine.duration * 60000);
+          }
+        }
+      }
 
-      console.log('[DragDropProvider] Block reordered with index adjustment, cascading times');
+      console.log('[DragDropProvider] Block reordered with index adjustment, times calculated from NEW order (Attempt 14)');
       onBlockReorder(recalculated);
     }
   };
