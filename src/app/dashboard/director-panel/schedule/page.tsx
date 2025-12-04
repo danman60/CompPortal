@@ -1881,7 +1881,7 @@ export default function SchedulePage() {
           {/* Right Panel - Scheduled Routines (67%) */}
           <div className="col-span-2 space-y-4">
             {/* Day Tabs + Schedule Block Buttons */}
-            <div className="py-2">
+            <div className="sticky top-0 z-30 bg-gray-900 py-2">
               <DayTabs
                 days={competitionDates}
                 activeDay={selectedDate}
