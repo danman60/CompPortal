@@ -3,10 +3,22 @@
 ## Problem
 Dragging schedule blocks (break blocks, award ceremony blocks) UP by 1 space does nothing - the block doesn't move to the new position.
 
-## Root Cause (VERIFIED)
-The issue is with **collision detection** in DragDropProvider.tsx lines 779-784.
+## Root Cause (VERIFIED - Attempt 16)
+**UI was re-sorting blocks by stale `scheduled_time` after database returned them in correct `sort_order`.**
 
-**The bug:** After switching to `closestCenter`, I added filtering to remove the activeId from collision results. This filtering **removes valid drop targets**, causing `over` to be null and preventing `onDragEnd` from firing.
+**Location:** ScheduleTable.tsx line 676
+**Fix:** Changed `sortedBlocks` to sort by `sort_order` instead of `scheduled_time`
+**Result:** Blocks now persist in dragged position after refetch
+
+## Investigation Journey Summary
+
+**15 failed attempts** before finding the real bug:
+- **Attempts 1-7:** Collision detection issues (timeouts, wrong targets)
+- **Attempts 8-14:** Index-based reordering logic improvements
+- **Attempt 15:** Time cascade and sort_order calculation fixes (drag worked, but blocks snapped back)
+- **Attempt 16:** ✅ Found UI re-sorting bug - REAL FIX
+
+**Key insight:** The drag-drop logic, database mutations, and queries were ALL correct. The bug was in a client-side `useMemo` that re-sorted blocks by time AFTER fetching them from the database.
 
 ## Failed Attempts (DO NOT REPEAT)
 
@@ -430,33 +442,41 @@ The time cascade fix (#1) only affects blocks being sent to database. When `refe
 
 **Real fix needed:** Block reordering should ONLY rely on `sort_order`, NOT on cascading times from routines. The refetch should sort by `sort_order` field, ignoring `scheduled_time` which gets stale.
 
-## Attempt 16: Fix database query to sort by sort_order instead of scheduled_time ⏳
+## Attempt 16: Fix UI re-sorting after database fetch ✅ REAL FIX
 
-**Hypothesis:** The database query `getScheduleBlocks` is sorting by `scheduled_time` which causes blocks to snap back when refetched. We need to sort by `sort_order` instead.
+**Hypothesis:** The database query `getScheduleBlocks` is sorting by `scheduled_time` which causes blocks to snap back when refetched.
 
-**Fix Location:** `src/server/routers/scheduling.ts` - `getScheduleBlocks` procedure
+**Investigation Results:**
+- ✅ Database query ALREADY sorts by `sort_order` correctly (scheduling.ts:1491-1494)
+- ✅ Backend mutation SAVES `sort_order` correctly (scheduling.ts:1590)
+- ❌ **UI RE-SORTS blocks by `scheduled_time` AFTER fetch** (ScheduleTable.tsx:676)
 
-**Change needed:**
+**Root Cause Found:** Line 676 in ScheduleTable.tsx re-sorts blocks by stale `scheduled_time`:
 ```typescript
 // BEFORE (causes snap-back):
-const blocks = await ctx.db.scheduleBlock.findMany({
-  where: { competition_id, scheduled_date },
-  orderBy: { scheduled_time: 'asc' }  // ❌ Wrong - uses stale times
-});
-
-// AFTER (fixes snap-back):
-const blocks = await ctx.db.scheduleBlock.findMany({
-  where: { competition_id, scheduled_date },
-  orderBy: { sort_order: 'asc' }  // ✅ Correct - uses manually set order
-});
+const sortedBlocks = useMemo(() => {
+  return [...scheduleBlocks]
+    .filter(b => b.scheduled_time)
+    .sort((a, b) => new Date(a.scheduled_time!).getTime() - new Date(b.scheduled_time!).getTime());
+}, [scheduleBlocks]);
 ```
 
-**Why this works:**
-- `sort_order` is explicitly set during drag-drop (Fix #2)
-- `scheduled_time` becomes stale because we don't update routine times
-- Sorting by `sort_order` makes drag-drop results persist after refetch
+**Fix Applied (Commit 4cf2d94):**
+```typescript
+// AFTER (respects database sort_order):
+const sortedBlocks = useMemo(() => {
+  return [...scheduleBlocks]
+    .filter(b => b.scheduled_time)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)); // ✅ Use sort_order
+}, [scheduleBlocks]);
+```
 
-**Status:** ⏳ IMPLEMENTING
+**Why this fixes snap-back:**
+1. Database returns blocks in correct `sort_order` (from drag-drop)
+2. UI no longer re-sorts them by stale `scheduled_time`
+3. Blocks stay in dragged position after refetch
+
+**Status:** ✅ IMPLEMENTED - Deployed to tester branch (build 4cf2d94)
 
 ## Testing Plan
 1. Build and deploy fix (commit removing filtering)
