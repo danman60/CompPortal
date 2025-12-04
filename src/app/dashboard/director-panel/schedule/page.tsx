@@ -31,7 +31,6 @@ import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
-import { NuclearResetConfirmationModal } from '@/components/NuclearResetConfirmationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Mail, Clock, History, Eye } from 'lucide-react';
@@ -112,9 +111,6 @@ export default function SchedulePage() {
 
   // Reset all confirmation modal state
   const [showResetAllModal, setShowResetAllModal] = useState(false);
-
-  // Nuclear reset confirmation modal state
-  const [showNuclearResetModal, setShowNuclearResetModal] = useState(false);
 
   // Studio picker modal state
   const [showStudioPickerModal, setShowStudioPickerModal] = useState(false);
@@ -314,8 +310,8 @@ export default function SchedulePage() {
   // Reset mutations
   const resetDay = trpc.scheduling.resetDay.useMutation({
     onSuccess: async (data) => {
-      toast.success(`Unscheduled ${data.count} routines`);
-      await Promise.all([refetch(), refetchConflicts()]); // Refetch routines AND conflicts
+      toast.success(`Unscheduled ${data.count} routines and deleted ${data.blocksDeleted || 0} blocks`);
+      await Promise.all([refetch(), refetchBlocks(), refetchConflicts()]); // Refetch routines, blocks, AND conflicts
       setDraftsByDate(prev => {
         const next = { ...prev };
         delete next[selectedDate]; // Clear draft for current day only
@@ -338,18 +334,6 @@ export default function SchedulePage() {
     },
   });
 
-  // Nuclear reset mutation (database + drafts + versions)
-  const resetAllDraftsAndVersions = trpc.scheduling.resetAllDraftsAndVersions.useMutation({
-    onSuccess: async (data) => {
-      toast.success(`Nuclear reset complete: ${data.routinesUnscheduled} routines unscheduled, ${data.blocksDeleted} blocks deleted, ${data.versionsDeleted} versions deleted`);
-      setDraftsByDate({}); // Clear ALL drafts FIRST
-      setShowNuclearResetModal(false); // Close modal
-      await Promise.all([refetch(), refetchBlocks(), refetchConflicts(), refetchVersion()]); // Refetch everything including versions
-    },
-    onError: (error) => {
-      toast.error(`Failed to nuclear reset: ${error.message}`);
-    },
-  });
 
   // Unschedule specific routines mutation
   const unscheduleRoutines = trpc.scheduling.unscheduleRoutines.useMutation({
@@ -1840,13 +1824,6 @@ export default function SchedulePage() {
               🗑️ Reset All
             </button>
             <button
-              className="px-4 py-2 bg-red-800 hover:bg-red-700 text-white rounded-lg transition-colors font-semibold border-2 border-red-500"
-              onClick={() => setShowNuclearResetModal(true)}
-              title="⚠️ DESTRUCTIVE: Deletes schedule + versions from database"
-            >
-              ☢️ Nuclear Reset
-            </button>
-            <button
               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
               onClick={handleExportPDF}
             >
@@ -2222,23 +2199,13 @@ export default function SchedulePage() {
           resetCompetition.mutate({
             tenantId: TEST_TENANT_ID,
             competitionId: TEST_COMPETITION_ID,
+          }, {
+            onSuccess: () => {
+              setShowResetAllModal(false);
+            }
           });
         }}
         isLoading={resetCompetition.isPending}
-      />
-
-      {/* Nuclear Reset Confirmation Modal (DESTRUCTIVE - deletes DB + versions) */}
-      <NuclearResetConfirmationModal
-        isOpen={showNuclearResetModal}
-        onClose={() => setShowNuclearResetModal(false)}
-        onConfirm={() => {
-          resetAllDraftsAndVersions.mutate({
-            tenantId: TEST_TENANT_ID,
-            competitionId: TEST_COMPETITION_ID,
-            confirmation: 'RESET',
-          });
-        }}
-        isLoading={resetAllDraftsAndVersions.isPending}
       />
 
       {/* Studio Picker Modal */}

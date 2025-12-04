@@ -226,14 +226,14 @@ function SortableBlockRow({
         </div>
       </td>
       <td colSpan={5} className="px-1 py-1">
-        <div className="flex items-center gap-2 justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-6 flex-1">
             <span className="text-lg">{icon}</span>
             <span className="text-sm font-semibold text-white">{block.title}</span>
-            <span className="text-xs text-white/60 ml-2">({block.duration_minutes} min)</span>
+            <span className="text-xs text-white/60">({block.duration_minutes} min)</span>
             {/* Session Duration Indicator for Award Blocks */}
             {block.block_type === 'award' && sessionDurationMinutes !== undefined && sessionNumber !== undefined && (
-              <div className="ml-4 flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <div className="h-4 w-px bg-white/30" />
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40">
                   <span className="text-[10px] font-bold text-amber-300">SESSION {sessionNumber}</span>
@@ -244,7 +244,7 @@ function SortableBlockRow({
             )}
             {/* Eligible Awards from Trophy Helper (categories with last routine in this session) */}
             {block.block_type === 'award' && eligibleAwards && eligibleAwards.length > 0 && (
-              <div className="ml-4 flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="h-4 w-px bg-white/30" />
                 <span className="text-[10px] text-amber-300/70">Eligible:</span>
                 {eligibleAwards.slice(0, 5).map((award, idx) => (

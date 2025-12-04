@@ -3297,7 +3297,7 @@ export const schedulingRouter = router({
     }),
 
   // Reset schedule for a specific day (Schedule Page Rebuild Phase 4)
-  // Unschedule all routines scheduled for the given date
+  // Unschedule all routines scheduled for the given date AND delete all schedule blocks for that date
   resetDay: publicProcedure
     .input(z.object({
       tenantId: z.string().uuid(),
@@ -3310,6 +3310,7 @@ export const schedulingRouter = router({
         throw new Error('Tenant ID mismatch');
       }
 
+      // Unschedule routines
       const result = await prisma.competition_entries.updateMany({
         where: {
           tenant_id: input.tenantId,
@@ -3326,11 +3327,21 @@ export const schedulingRouter = router({
         },
       });
 
-      console.log('[resetDay] Unscheduled', result.count, 'routines for', input.date);
+      // Delete schedule blocks for this date
+      const blocksResult = await prisma.schedule_blocks.deleteMany({
+        where: {
+          tenant_id: input.tenantId,
+          competition_id: input.competitionId,
+          schedule_day: new Date(input.date),
+        },
+      });
+
+      console.log('[resetDay] Unscheduled', result.count, 'routines and deleted', blocksResult.count, 'blocks for', input.date);
 
       return {
         success: true,
         count: result.count,
+        blocksDeleted: blocksResult.count,
       };
     }),
 
