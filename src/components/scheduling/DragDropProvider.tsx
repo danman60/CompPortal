@@ -357,19 +357,19 @@ export function DragDropProvider({
       );
       console.log('[DragDropProvider] Block-to-Routine Drop Diagnostic:');
       console.log('  - Block current position: Entry', draggedBlock.id?.slice(0, 8));
-      console.log('  - Collision detection selected target:', targetRoutine.title, 'Entry #' + (targetRoutine.entryNumber || '?'));
-      console.log('  - Block will insert AFTER this routine');
+      console.log('  - closestCenter selected target:', targetRoutine.title, 'Entry #' + (targetRoutine.entryNumber || '?'));
+      console.log('  - Block will insert BEFORE this routine');
 
-      console.log('[DragDropProvider] Inserting block after routine:', targetRoutine.title);
+      console.log('[DragDropProvider] Inserting block before routine:', targetRoutine.title);
 
       // Get target routine time using SCHEDULE date, not today's date
       const [hours, minutes] = targetRoutine.performanceTime!.split(':').map(Number);
       const [year, month, day] = selectedDate.split('-').map(Number);
       const targetTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
-      // Add routine duration + 1ms to ensure block sorts AFTER the routine (not before)
-      // This gives the user-expected behavior: drag over routine → block inserts after it
-      const blockTime = new Date(targetTime.getTime() + (targetRoutine.duration * 60 * 1000) + 1);
+      // Subtract 1ms to ensure block sorts BEFORE the routine (not after)
+      // Without this, same timestamps can sort unpredictably
+      const blockTime = new Date(targetTime.getTime() - 1);
 
       // Remove block from current position
       const otherBlocks = scheduleBlocks.filter(b => b.id !== actualDraggedId);
