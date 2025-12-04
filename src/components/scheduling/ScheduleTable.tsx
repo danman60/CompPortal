@@ -225,7 +225,7 @@ function SortableBlockRow({
           <span className="font-semibold text-[13px]">{displayTime}</span>
         </div>
       </td>
-      <td colSpan={7} className="px-1 py-1">
+      <td colSpan={6} className="px-1 py-1">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-6 flex-1">
             <span className="text-lg">{icon}</span>
@@ -691,7 +691,7 @@ function SortableRoutineRow({
       {/* Session Separator */}
       {isLastInSession && (
         <tr className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20">
-          <td colSpan={7} className="px-1 py-1">
+          <td colSpan={6} className="px-1 py-1">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-purple-500"></div>
               <span className="text-xs font-bold text-purple-300">
