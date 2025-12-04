@@ -74,6 +74,21 @@ export function addMinutesToTimeString(timeString: TimeString, minutes: number):
 // LEGACY HELPERS (To be refactored to use TimeString helpers)
 // ============================================================================
 
+// Calculate duration in minutes from routine_length or defaults based on entry size
+function calculateDuration(entry: any): number {
+  // If extended time is specified, use routine_length_minutes/seconds
+  if (entry.routine_length_minutes || entry.routine_length_seconds) {
+    const totalSeconds = (entry.routine_length_minutes || 0) * 60 + (entry.routine_length_seconds || 0);
+    return Math.round(totalSeconds / 60); // Round to nearest minute
+  }
+
+  // Otherwise use defaults based on entry size name
+  const sizeName = entry.entry_size_categories?.name?.toLowerCase();
+  if (sizeName?.includes('solo')) return 3;
+  if (sizeName?.includes('production') || sizeName?.includes('line')) return 5;
+  return 4; // Groups default
+}
+
 // Convert Prisma entry to SchedulingEntry
 function toSchedulingEntry(entry: any): SchedulingEntry {
   return {
@@ -86,7 +101,7 @@ function toSchedulingEntry(entry: any): SchedulingEntry {
     ageGroupId: entry.age_group_id,
     ageGroupName: entry.age_groups.name,
     entrySizeCategoryId: entry.entry_size_category_id,
-    duration: entry.duration || 3, // Default 3 minutes if not set
+    duration: calculateDuration(entry), // Calculate from routine_length or defaults
     warmUpTime: 15, // Default 15 minutes warm-up
     sessionId: entry.session_id,
     performanceTime: entry.performance_time,
@@ -2230,7 +2245,7 @@ export const schedulingRouter = router({
               minute: '2-digit'
             })
           : 'N/A';
-        const duration = 3; // Default 3 minutes (duration field is interval type)
+        const duration = calculateDuration(entry); // Calculate from routine_length or defaults
 
         // Format entry number with suffix (e.g., "156" or "156a")
         const entryNumber = entry.entry_number
@@ -2341,8 +2356,8 @@ export const schedulingRouter = router({
           performanceTime.getMinutes()
         );
 
-        // Duration is stored as interval, use default 3 minutes
-        const duration = 3;
+        // Calculate duration from routine_length or defaults
+        const duration = calculateDuration(entry);
         const endDateTime = new Date(startDateTime.getTime() + duration * 60 * 1000);
 
         const sessionName = entry.competition_sessions?.session_name ||
