@@ -827,23 +827,57 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable blocks: Use pointerWithin for accurate position-based collision detection
-    // This fixes off-by-one issue when dragging blocks UP by small distances
+    // CRITICAL: Must prioritize specific items (routines/blocks) over containers
     if (isSortableBlock) {
       console.log('[CollisionDetection] Sortable block drag, using pointerWithin:', activeId);
       const collisions = pointerWithin(args);
       const filtered = collisions.filter((collision: any) => collision.id !== activeId);
 
-      // If pointerWithin found collisions, use those. Otherwise fall back to closestCenter
-      if (filtered.length > 0) {
-        console.log('[CollisionDetection] pointerWithin returned:', filtered.length, 'collisions', filtered.map((c: any) => c.id));
-        return filtered;
+      // Separate specific items from containers
+      const specificItems = filtered.filter(c => {
+        const id = String(c.id);
+        return id.startsWith('routine-') || id.startsWith('block-');
+      });
+      const containers = filtered.filter(c => {
+        const id = String(c.id);
+        return id.startsWith('schedule-table-');
+      });
+
+      console.log('[CollisionDetection] pointerWithin results:', {
+        total: filtered.length,
+        specificItems: specificItems.map((c: any) => c.id),
+        containers: containers.map((c: any) => c.id)
+      });
+
+      // Prioritize specific items over containers
+      if (specificItems.length > 0) {
+        console.log('[CollisionDetection] Returning specific items (routines/blocks)');
+        return specificItems;
       }
 
-      // Fallback to closestCenter for edge cases (dragging between items)
-      const fallbackCollisions = closestCenter(args);
-      const fallbackFiltered = fallbackCollisions.filter((collision: any) => collision.id !== activeId);
-      console.log('[CollisionDetection] pointerWithin fallback to closestCenter:', fallbackFiltered.length, 'collisions');
-      return fallbackFiltered;
+      // If no specific items but have container, try closestCenter as fallback
+      if (containers.length > 0) {
+        console.log('[CollisionDetection] Only container found, trying closestCenter fallback');
+        const fallbackCollisions = closestCenter(args);
+        const fallbackFiltered = fallbackCollisions.filter((collision: any) => collision.id !== activeId);
+        const fallbackSpecific = fallbackFiltered.filter(c => {
+          const id = String(c.id);
+          return id.startsWith('routine-') || id.startsWith('block-');
+        });
+
+        if (fallbackSpecific.length > 0) {
+          console.log('[CollisionDetection] closestCenter fallback found specific items:', fallbackSpecific.map((c: any) => c.id));
+          return fallbackSpecific;
+        }
+
+        // Last resort: return container
+        console.log('[CollisionDetection] No specific items found, returning container');
+        return containers;
+      }
+
+      // No collisions at all
+      console.log('[CollisionDetection] No collisions found');
+      return [];
     }
 
     // For sortable routines: Use closestCenter (works well for routine reordering)
