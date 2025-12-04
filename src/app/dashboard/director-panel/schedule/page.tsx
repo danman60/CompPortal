@@ -80,6 +80,9 @@ export default function SchedulePage() {
     type: 'award' | 'break';
     title: string;
     duration: number;
+    placement?: {
+      routineNumber?: number; // Entry number of routine this block is positioned after
+    };
   } | null>(null);
 
   // Selection state (unscheduled routines)
@@ -1908,11 +1911,15 @@ export default function SchedulePage() {
                 }
               }}
               onEditBlock={(block) => {
+                // The routine number is passed from ScheduleTable
+                const routineNumber = block.routineNumberBefore;
+
                 setEditingBlock({
                   id: block.id,
                   type: block.block_type as 'award' | 'break',
                   title: block.title,
                   duration: block.duration_minutes,
+                  placement: routineNumber ? { routineNumber } : undefined,
                 });
                 setShowBlockModal(true);
               }}

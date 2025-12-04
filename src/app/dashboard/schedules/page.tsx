@@ -40,9 +40,9 @@ export default function SchedulesDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">
-          <span className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full inline-block mr-2" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white/80 flex items-center gap-3">
+          <span className="animate-spin h-6 w-6 border-2 border-purple-400 border-t-transparent rounded-full" />
           Loading available schedules...
         </div>
       </div>
@@ -51,13 +51,13 @@ export default function SchedulesDashboard() {
 
   if (!schedules || schedules.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Competition Schedules</h1>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-medium text-gray-700 mb-2">No Schedules Available</h2>
-            <p className="text-gray-500">
+          <h1 className="text-3xl font-bold text-white mb-8">Competition Schedules</h1>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
+            <Calendar className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+            <h2 className="text-xl font-medium text-white mb-2">No Schedules Available</h2>
+            <p className="text-white/60">
               Competition schedules will appear here when they are sent for review.
             </p>
           </div>
@@ -67,12 +67,12 @@ export default function SchedulesDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Schedules</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-white mb-2">Competition Schedules</h1>
+          <p className="text-white/60">
             Review schedules and submit scheduling requests for your routines
           </p>
         </div>
@@ -86,15 +86,15 @@ export default function SchedulesDashboard() {
             return (
               <div
                 key={schedule.competitionId}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden hover:bg-white/15 transition-colors"
               >
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                      <h2 className="text-xl font-semibold text-white mb-1">
                         {schedule.competitionName}
                       </h2>
-                      <p className="text-gray-600 text-sm mb-2">
+                      <p className="text-white/60 text-sm mb-2">
                         {schedule.competitionDates?.start && schedule.competitionDates?.end && (
                           <>
                             {new Date(schedule.competitionDates.start).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
@@ -103,7 +103,7 @@ export default function SchedulesDashboard() {
                           </>
                         )}
                       </p>
-                      <p className="text-gray-500 text-sm">
+                      <p className="text-white/50 text-sm">
                         Version {schedule.version?.number || 1} • {schedule.routineCount} of your entries scheduled
                       </p>
                     </div>
@@ -112,18 +112,18 @@ export default function SchedulesDashboard() {
                     <div className="flex flex-col items-end gap-2">
                       {isReviewOpen ? (
                         <>
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-300">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-400/40">
                             <Clock className="h-3 w-3" />
                             Review Open
                           </span>
                           <span className={`text-sm ${
-                            daysRemaining <= 1 ? 'text-red-600 font-medium' : 'text-gray-600'
+                            daysRemaining <= 1 ? 'text-red-400 font-medium' : 'text-white/60'
                           }`}>
                             {daysRemaining === 0 ? 'Closes today' : `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} left`}
                           </span>
                         </>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-white/60 border border-white/20">
                           Review Closed
                         </span>
                       )}
@@ -132,12 +132,12 @@ export default function SchedulesDashboard() {
 
                   {/* Stats */}
                   <div className="flex gap-6 mb-4 text-sm">
-                    <div className="flex items-center gap-1 text-gray-600">
+                    <div className="flex items-center gap-1 text-white/60">
                       <Calendar className="h-4 w-4" />
                       <span>{schedule.routineCount} entries</span>
                     </div>
                     {schedule.notesCount > 0 && (
-                      <div className="flex items-center gap-1 text-blue-600">
+                      <div className="flex items-center gap-1 text-blue-400">
                         <MessageSquare className="h-4 w-4" />
                         <span>{schedule.notesCount} note{schedule.notesCount !== 1 ? 's' : ''} submitted</span>
                       </div>
@@ -146,13 +146,13 @@ export default function SchedulesDashboard() {
 
                   {/* Feedback Deadline Warning */}
                   {isReviewOpen && schedule.version?.deadline && (
-                    <div className={`p-3 rounded-md mb-4 ${
+                    <div className={`p-3 rounded-lg mb-4 ${
                       daysRemaining <= 1
-                        ? 'bg-red-50 border border-red-200'
-                        : 'bg-amber-50 border border-amber-200'
+                        ? 'bg-red-500/20 border border-red-400/40'
+                        : 'bg-amber-500/20 border border-amber-400/40'
                     }`}>
                       <p className={`text-sm flex items-start gap-2 ${
-                        daysRemaining <= 1 ? 'text-red-800' : 'text-amber-800'
+                        daysRemaining <= 1 ? 'text-red-300' : 'text-amber-300'
                       }`}>
                         <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                         <span>
@@ -172,7 +172,7 @@ export default function SchedulesDashboard() {
                   <Button
                     variant="primary"
                     onClick={() => handleViewSchedule(schedule.competitionId, TEST_TENANT_ID)}
-                    className="w-full flex items-center justify-center gap-2"
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500"
                   >
                     View Schedule
                     <ChevronRight className="h-4 w-4" />
@@ -184,23 +184,23 @@ export default function SchedulesDashboard() {
         </div>
 
         {/* Instructions */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-medium text-blue-900 mb-2">How Schedule Review Works</h3>
-          <ul className="space-y-1 text-sm text-blue-800">
+        <div className="mt-8 bg-purple-500/10 border border-purple-400/30 rounded-xl p-6">
+          <h3 className="font-medium text-purple-300 mb-2">How Schedule Review Works</h3>
+          <ul className="space-y-1 text-sm text-purple-200/80">
             <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">1.</span>
+              <span className="text-purple-400 mt-0.5">1.</span>
               <span>When the Competition Director sends a schedule for review, it will appear here</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">2.</span>
+              <span className="text-purple-400 mt-0.5">2.</span>
               <span>Click "View Schedule" to see your routines and their scheduled times</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">3.</span>
+              <span className="text-purple-400 mt-0.5">3.</span>
               <span>Submit scheduling requests for specific routines if needed</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">4.</span>
+              <span className="text-purple-400 mt-0.5">4.</span>
               <span>Requests must be submitted before the feedback deadline</span>
             </li>
           </ul>

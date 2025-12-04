@@ -35,6 +35,9 @@ interface ScheduleBlockModalProps {
     type: 'award' | 'break';
     title: string;
     duration: number;
+    placement?: {
+      routineNumber?: number; // For edit mode: pre-populate with current position
+    };
   } | null;
   mode?: 'create' | 'edit';
   preselectedType?: 'award' | 'break';
@@ -72,7 +75,8 @@ export function ScheduleBlockModal({
       setDuration(initialBlock?.duration || 30);
       setError('');
       setPlacementType('after_routine');
-      setRoutineNumber('');
+      // Pre-populate routine number if editing an existing block
+      setRoutineNumber(initialBlock?.placement?.routineNumber || '');
       setTimeValue('09:00');
     }
   }, [isOpen, initialBlock, preselectedType]);

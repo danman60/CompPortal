@@ -65,7 +65,7 @@ interface ScheduleTableProps {
     sort_order: number | null;
   }>;
   onDeleteBlock?: (blockId: string) => void;
-  onEditBlock?: (block: { id: string; block_type: string; title: string; duration_minutes: number; scheduled_time: Date | null }) => void;
+  onEditBlock?: (block: { id: string; block_type: string; title: string; duration_minutes: number; scheduled_time: Date | null; routineNumberBefore?: number }) => void;
 }
 
 interface Routine {
@@ -134,6 +134,7 @@ function SortableBlockRow({
   sessionDurationMinutes,
   sessionNumber,
   sessionColor,
+  routineNumberBefore,
 }: {
   block: {
     id: string;
@@ -144,11 +145,12 @@ function SortableBlockRow({
   };
   showCheckbox?: boolean;
   onDelete?: (blockId: string) => void;
-  onEdit?: (block: { id: string; block_type: string; title: string; duration_minutes: number; scheduled_time: Date | null }) => void;
+  onEdit?: (block: { id: string; block_type: string; title: string; duration_minutes: number; scheduled_time: Date | null; routineNumberBefore?: number }) => void;
   calculatedTime?: string | null; // Dynamically calculated time from schedule position
   sessionDurationMinutes?: number; // Duration of session ending at this award block
   sessionNumber?: number; // Session number for this block
   sessionColor?: string; // Background color for this session
+  routineNumberBefore?: number; // Entry number of routine this block is positioned after
 }) {
   const {
     attributes,
@@ -198,7 +200,7 @@ function SortableBlockRow({
         const target = e.target as HTMLElement;
         const isButton = target.tagName === 'BUTTON' || target.closest('button');
         if (!isDragging && onEdit && !isButton) {
-          onEdit(block);
+          onEdit({ ...block, routineNumberBefore });
         }
       }}
       className={`border-b-2 ${borderColor} ${bgColor} ${onEdit ? 'cursor-pointer' : 'cursor-move'} hover:bg-white/5 transition-colors`}
@@ -237,7 +239,7 @@ function SortableBlockRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit(block);
+                  onEdit({ ...block, routineNumberBefore });
                 }}
                 className="px-2 py-1 text-xs font-bold text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 rounded transition-colors"
                 title="Edit block"
@@ -1151,6 +1153,15 @@ Click badge to dismiss"
                     // Get session info for this block
                     const blockSessionInfo = sessionInfo.itemSessionMap.get(block.id);
 
+                    // Find the routine number this block is positioned after
+                    let routineNumberBefore: number | undefined = undefined;
+                    for (let i = index - 1; i >= 0; i--) {
+                      if (scheduleItems[i].type === 'routine') {
+                        routineNumberBefore = scheduleItems[i].data.entryNumber;
+                        break;
+                      }
+                    }
+
                     // Render schedule block
                     return (
                       <SortableBlockRow
@@ -1163,6 +1174,7 @@ Click badge to dismiss"
                         sessionDurationMinutes={blockSessionInfo?.durationMinutes}
                         sessionNumber={blockSessionInfo?.sessionNumber}
                         sessionColor={blockSessionInfo?.sessionColor}
+                        routineNumberBefore={routineNumberBefore}
                       />
                     );
                   }
