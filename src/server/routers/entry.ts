@@ -103,7 +103,7 @@ const entryInputSchema = z.object({
   entry_fee: z.number().min(0).optional(),
   late_fee: z.number().min(0).default(0),
   total_fee: z.number().min(0).optional(),
-  status: z.enum(['draft', 'registered', 'confirmed', 'cancelled', 'completed']).default('draft'),
+  status: z.enum(['draft', 'submitted', 'registered', 'confirmed', 'cancelled', 'completed', 'pending_classification_approval', 'withdrawn']).default('draft'),
   choreographer: z.string().min(1).max(255), // Phase 2 spec lines 36-42: Required
   costume_description: z.string().optional(),
   props_required: z.string().optional(),
@@ -1264,6 +1264,12 @@ export const entryRouter = router({
           // Add title upgrade fee if applicable
           if (data.is_title_upgrade) {
             finalEntryFee += 30;
+          }
+
+          // Add extended time fee if applicable (not for submitted entries)
+          if (data.extended_time_requested && data.status !== 'submitted') {
+            const extendedTimeFee = participantCount === 1 ? 5 : participantCount * 2;
+            finalEntryFee += extendedTimeFee;
           }
 
           finalTotalFee = finalEntryFee + (late_fee || 0);
