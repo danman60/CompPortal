@@ -350,77 +350,41 @@ export function DragDropProvider({
         return;
       }
 
-      console.log('[DragDropProvider] Block-to-Routine drag: Using index-based reordering (like routines)');
+      // Enhanced diagnostic: Show block's current position and target
+      const blockCurrentRoutine = routines.find(r =>
+        r.performanceTime && draggedBlock.scheduled_time &&
+        new Date(r.performanceTime).getTime() > new Date(draggedBlock.scheduled_time).getTime()
+      );
+      console.log('[DragDropProvider] Block-to-Routine Drop Diagnostic:');
+      console.log('  - Block current position: Entry', draggedBlock.id?.slice(0, 8));
+      console.log('  - closestCenter selected target:', targetRoutine.title, 'Entry #' + (targetRoutine.entryNumber || '?'));
+      console.log('  - Block will insert BEFORE this routine');
 
-      // Create combined timeline (blocks + routines) sorted by current order
-      type TimelineItem = {
-        type: 'block' | 'routine';
-        data: ScheduleBlockData | RoutineData;
-        time: Date;
-        id: string;
+      console.log('[DragDropProvider] Inserting block before routine:', targetRoutine.title);
+
+      // Get target routine time using SCHEDULE date, not today's date
+      const [hours, minutes] = targetRoutine.performanceTime!.split(':').map(Number);
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const targetTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+
+      // Subtract 1ms to ensure block sorts BEFORE the routine (not after)
+      // Without this, same timestamps can sort unpredictably
+      const blockTime = new Date(targetTime.getTime() - 1);
+
+      // Remove block from current position
+      const otherBlocks = scheduleBlocks.filter(b => b.id !== actualDraggedId);
+
+      // Create updated block with new time (1ms before target routine)
+      const updatedBlock = {
+        ...draggedBlock,
+        scheduled_time: blockTime,
       };
 
-      const timeline: TimelineItem[] = [];
+      // Combine and recalculate
+      const allBlocks = [...otherBlocks, updatedBlock];
+      const recalculated = recalculateBlockTimes(allBlocks, routines);
 
-      // Add blocks with scheduled times
-      scheduleBlocks.forEach(block => {
-        if (block.scheduled_time) {
-          timeline.push({
-            type: 'block',
-            data: block,
-            time: new Date(block.scheduled_time),
-            id: block.id,
-          });
-        }
-      });
-
-      // Add scheduled routines
-      routines.filter(r => r.isScheduled && r.performanceTime).forEach(routine => {
-        const [hours, minutes] = routine.performanceTime!.split(':').map(Number);
-        const [year, month, day] = selectedDate.split('-').map(Number);
-        const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
-        timeline.push({
-          type: 'routine',
-          data: routine,
-          time: date,
-          id: routine.id,
-        });
-      });
-
-      // Sort by time (current order)
-      timeline.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-      // Find indices in combined timeline
-      const draggedIndex = timeline.findIndex(item => item.type === 'block' && item.id === actualDraggedId);
-      const targetIndex = timeline.findIndex(item => item.type === 'routine' && item.id === actualRoutineTargetId);
-
-      if (draggedIndex === -1) {
-        console.error('[DragDropProvider] Dragged block not found in timeline');
-        return;
-      }
-      if (targetIndex === -1) {
-        console.error('[DragDropProvider] Target routine not found in timeline');
-        return;
-      }
-
-      console.log('[DragDropProvider] Timeline indices - dragged:', draggedIndex, 'target:', targetIndex);
-
-      // Use splice to reorder (same as routine reordering logic)
-      const reordered = [...timeline];
-      const [removed] = reordered.splice(draggedIndex, 1);
-      reordered.splice(targetIndex, 0, removed);
-
-      console.log('[DragDropProvider] Reordered timeline - block moved to position', targetIndex);
-
-      // Extract blocks from reordered timeline
-      const reorderedBlocks = reordered
-        .filter(item => item.type === 'block')
-        .map(item => item.data as ScheduleBlockData);
-
-      // Recalculate times based on new order
-      const recalculated = recalculateBlockTimes(reorderedBlocks, routines);
-
-      console.log('[DragDropProvider] Block reordered using index-based positioning, cascading times');
+      console.log('[DragDropProvider] Block inserted, cascading times');
       onBlockReorder(recalculated);
     }
   };
