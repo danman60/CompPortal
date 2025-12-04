@@ -2005,7 +2005,10 @@ export default function SchedulePage() {
         }}
         initialBlock={editingBlock || undefined}
         onSave={async (block) => {
-          if (!block.blockId || !block.placement) {
+          // For edit mode, use editingBlock.id; for create mode, use block.blockId
+          const blockId = editingBlock?.id || block.blockId;
+
+          if (!blockId || !block.placement) {
             toast.error('Missing block ID or placement data');
             return;
           }
@@ -2054,7 +2057,7 @@ export default function SchedulePage() {
 
             // Call placeScheduleBlock mutation
             await placeBlock.mutateAsync({
-              blockId: block.blockId,
+              blockId: blockId,
               targetTime,
               displayOrder,
             });

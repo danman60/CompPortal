@@ -225,7 +225,7 @@ function SortableBlockRow({
           <span className="font-semibold text-[13px]">{displayTime}</span>
         </div>
       </td>
-      <td colSpan={5} className="px-1 py-1">
+      <td colSpan={7} className="px-1 py-1">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-6 flex-1">
             <span className="text-lg">{icon}</span>
