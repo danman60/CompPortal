@@ -777,23 +777,10 @@ export function DragDropProvider({
       !activeId.startsWith('block-template-');
 
     // For sortable items (SR → SR, Block → Block reordering):
-    // Use rectIntersection with priority-based filtering
+    // Use dnd-kit's closestCenter (works with verticalListSortingStrategy)
     if (isSortableRoutine || isSortableBlock) {
-      console.log('[CollisionDetection] Sortable item drag, using rectIntersection:', activeId);
-      const collisions = rectIntersection(args);
-
-      // Filter out the active item itself to prevent "dropped on itself" bugs
-      const filtered = collisions.filter((collision: any) => collision.id !== activeId);
-
-      // Prioritize specific items (routines/blocks) over containers
-      const specificItems = filtered.filter((c: any) =>
-        c.id.startsWith('routine-') || c.id.startsWith('block-')
-      );
-
-      // If we found specific items, return those. Otherwise return all (including containers)
-      const result = specificItems.length > 0 ? specificItems : filtered;
-      console.log('[CollisionDetection] Filtered collisions:', result.length, 'targets', result.map((r: any) => r.id));
-      return result;
+      console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
+      return closestCenter(args);
     }
 
     // For block templates and UR routines:
