@@ -115,13 +115,45 @@ if (isSortableRoutine || isSortableBlock) {
 - Falls back to container if no specific items found (edge case: dropping on empty schedule)
 - Matches the solution described in DRAG_DROP_ANALYSIS.md lines 100-104
 
-**Status**: Ready to implement
+**Status**: ❌ FAILED - Implemented as commit 68d86ff, timed out identical to Attempt 3
 
-## Why This Works
-- `closestCenter` is the collision detection that `verticalListSortingStrategy` expects
-- It already excludes the dragged item from collision results
-- No additional filtering or logic needed
-- Routines use the same pattern (lines 736-739) and work correctly
+### ❌ Attempt 7: Using closestCenter per DRAG_DROP_ANALYSIS.md (commit 68d86ff)
+
+**Fix**: Switched from `rectIntersection` back to `closestCenter` based on DRAG_DROP_ANALYSIS.md recommendation (lines 94-97).
+
+**File**: `src/components/scheduling/DragDropProvider.tsx`
+**Lines 779-784**:
+
+```typescript
+if (isSortableRoutine || isSortableBlock) {
+  console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
+  return closestCenter(args);
+}
+```
+
+**Why this failed:**
+- IDENTICAL behavior to Attempt 3 (both use `closestCenter` without filtering)
+- Collision detection fired 4 times but `onDragEnd` never executed
+- Drag operation timed out after 5000ms
+- Console log pattern EXACTLY matches Attempt 3 failure
+
+**Console Evidence (build 68d86ff)**:
+```
+[DragDropProvider] Drag started: {activeId: block-81ba4540...}
+[CollisionDetection] Sortable item drag, using closestCenter: block-81ba4540...
+[CollisionDetection] Sortable item drag, using closestCenter: block-81ba4540...
+[CollisionDetection] Sortable item drag, using closestCenter: block-81ba4540...
+[CollisionDetection] Sortable item drag, using closestCenter: block-81ba4540...
+(NO drag end - timeout)
+```
+
+**Root Cause Analysis:**
+- The issue is NOT which collision algorithm is used (`closestCenter` vs `rectIntersection`)
+- The issue is NOT filtering (both Attempt 3 and 7 have no filtering, both fail)
+- `closestCenter` is likely returning ZERO collision results for blocks moving UP by small distances
+- This suggests a fundamental issue with how dnd-kit calculates center-based distances for blocks
+
+**Status**: ❌ FAILED - Proves collision algorithm choice is NOT the root cause
 
 ## Console Log Evidence
 

@@ -781,8 +781,10 @@ export function DragDropProvider({
     if (isSortableRoutine || isSortableBlock) {
       console.log('[CollisionDetection] Sortable item drag, using closestCenter:', activeId);
       const collisions = closestCenter(args);
-      console.log('[CollisionDetection] closestCenter returned:', collisions.length, 'collisions', collisions.map((c: any) => c.id));
-      return collisions;
+      // Filter out the active item itself to prevent "dropped on itself" behavior
+      const filtered = collisions.filter((collision: any) => collision.id !== activeId);
+      console.log('[CollisionDetection] closestCenter returned:', filtered.length, 'collisions after filtering', filtered.map((c: any) => c.id));
+      return filtered;
     }
 
     // For block templates and UR routines:
