@@ -337,6 +337,127 @@ reordered.splice(insertIndex, 0, removed);
 
 Pattern is identical, but blocks still fail. Why?
 
+### ❌ Attempt 14: Calculate times from index order, skip recalculateBlockTimes (commit ff0e3fd)
+
+**Hypothesis**: `recalculateBlockTimes()` was re-sorting by time, undoing the index reorder.
+
+**Fix**: Replaced `recalculateBlockTimes()` call with inline time calculation directly from the NEW index-reordered timeline (DragDropProvider.tsx:419-450).
+
+**Implementation**:
+```typescript
+// Calculate times based on NEW index order (reordered timeline)
+const dayStart = getDayStartTime(selectedDate);
+let currentTime = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
+
+for (const item of reordered) {
+  if (item.type === 'block') {
+    recalculated.push({
+      ...block,
+      scheduled_time: new Date(currentTime),
+    });
+    currentTime = new Date(currentTime.getTime() + block.duration_minutes * 60000);
+  } else {
+    // Routine: use its performance time to cascade
+    const routine = item.data as RoutineData;
+    if (routine.performanceTime) {
+      const [rHours, rMinutes] = routine.performanceTime.split(':').map(Number);
+      const routineEndTime = new Date(year, month - 1, day, rHours, rMinutes, 0, 0);
+      currentTime = new Date(routineEndTime.getTime() + routine.duration * 60000);
+    }
+  }
+}
+```
+
+**Status**: ❌ FAILED - Blocks still snap back to bottom
+
+**Why this failed** (Root Cause Analysis):
+
+**Bug #1: Broken Time Cascade Logic** ⚠️ CRITICAL
+- When processing routines in the reordered timeline, code uses routine's ORIGINAL `performanceTime` instead of cascading from `currentTime`
+- **What happens**: Block moves to 08:00 → currentTime advances to 08:03 → Next routine JUMPS to 08:49 (original time) → Cascade breaks → Subsequent blocks get 08:49+ times → Back at bottom
+- **What should happen**: Routines should NOT override `currentTime` - they should START at `currentTime`, not jump back to their original time
+
+**Bug #2: sort_order Never Updated** ⚠️ LIKELY
+- `sort_order` field is inherited from old block, never recalculated based on new timeline position
+- If database/UI sorts by `sort_order` instead of `scheduled_time`, blocks snap back to old position
+- Need to recalculate `sort_order` based on new timeline indices
+
+**Bug #3: Potential Race Condition** ⚠️ POSSIBLE
+- After updating database, `refetchBlocks()` may return stale data due to caching or async timing
+- Optimistic UI update needed before refetch
+
+## Attempt 15: Fix all 3 bugs ⏳
+
+**Fix #1: Proper Time Cascade**
+```typescript
+for (const item of reordered) {
+  if (item.type === 'block') {
+    recalculated.push({
+      ...block,
+      scheduled_time: new Date(currentTime),
+      sort_order: blockIndex++,  // Fix #2
+    });
+    currentTime = new Date(currentTime.getTime() + block.duration_minutes * 60000);
+  } else {
+    // Routine: cascade through WITHOUT jumping to original time
+    const routine = item.data as RoutineData;
+    // Use currentTime + routine duration, DON'T read routine's old performanceTime
+    currentTime = new Date(currentTime.getTime() + routine.duration * 60000);
+  }
+}
+```
+
+**Fix #2: Recalculate sort_order**
+- Add `sort_order` calculation based on block's index in recalculated array
+
+**Fix #3: Optimistic Update** (ABANDONED - no queryClient available)
+- Attempted to update local state immediately before refetch
+- Not possible without React Query's queryClient
+- scheduleBlocks comes from tRPC query, not useState
+
+**Status**: ❌ FAILED
+
+**Test Results (Build ff0e3fd):**
+- Drag executed successfully (no timeout)
+- Console logs show correct timeline indices: dragged: 8, target: 7
+- Console logs show "Moving UP - insert at index: 7"
+- Console logs show "Block reordered with Attempt 15"
+- Success toast appeared: "Schedule blocks reordered"
+- **BUT: Break block still at 08:53 AM - snap-back still occurs**
+
+**Root Cause Discovered:**
+The time cascade fix (#1) only affects blocks being sent to database. When `refetchBlocks()` runs, it doesn't update routine times - routines keep their original `performanceTime` values from the database. This means the cascade is broken on refetch, causing blocks to snap back.
+
+**Real fix needed:** Block reordering should ONLY rely on `sort_order`, NOT on cascading times from routines. The refetch should sort by `sort_order` field, ignoring `scheduled_time` which gets stale.
+
+## Attempt 16: Fix database query to sort by sort_order instead of scheduled_time ⏳
+
+**Hypothesis:** The database query `getScheduleBlocks` is sorting by `scheduled_time` which causes blocks to snap back when refetched. We need to sort by `sort_order` instead.
+
+**Fix Location:** `src/server/routers/scheduling.ts` - `getScheduleBlocks` procedure
+
+**Change needed:**
+```typescript
+// BEFORE (causes snap-back):
+const blocks = await ctx.db.scheduleBlock.findMany({
+  where: { competition_id, scheduled_date },
+  orderBy: { scheduled_time: 'asc' }  // ❌ Wrong - uses stale times
+});
+
+// AFTER (fixes snap-back):
+const blocks = await ctx.db.scheduleBlock.findMany({
+  where: { competition_id, scheduled_date },
+  orderBy: { sort_order: 'asc' }  // ✅ Correct - uses manually set order
+});
+```
+
+**Why this works:**
+- `sort_order` is explicitly set during drag-drop (Fix #2)
+- `scheduled_time` becomes stale because we don't update routine times
+- Sorting by `sort_order` makes drag-drop results persist after refetch
+
+**Status:** ⏳ IMPLEMENTING
+
 ## Testing Plan
 1. Build and deploy fix (commit removing filtering)
 2. Navigate to schedule page with blocks (Saturday April 11)

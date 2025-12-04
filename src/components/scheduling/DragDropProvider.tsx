@@ -425,28 +425,26 @@ export function DragDropProvider({
 
       // Calculate times based on NEW index order (reordered timeline)
       const recalculated: ScheduleBlockData[] = [];
+      let blockIndex = 0;  // Fix #2: Track block position for sort_order
       for (const item of reordered) {
         if (item.type === 'block') {
           const block = item.data as ScheduleBlockData;
           recalculated.push({
             ...block,
             scheduled_time: new Date(currentTime),
+            sort_order: blockIndex++,  // Fix #2: Update sort_order based on new position
           });
           // Add block duration to current time
           currentTime = new Date(currentTime.getTime() + block.duration_minutes * 60000);
         } else {
-          // Routine: use its performance time to cascade
+          // Fix #1: Routine - cascade through WITHOUT jumping to original time
           const routine = item.data as RoutineData;
-          if (routine.performanceTime) {
-            const [rHours, rMinutes] = routine.performanceTime.split(':').map(Number);
-            const routineEndTime = new Date(year, month - 1, day, rHours, rMinutes, 0, 0);
-            // Add routine duration
-            currentTime = new Date(routineEndTime.getTime() + routine.duration * 60000);
-          }
+          // Continue cascade from currentTime, don't read routine's old performanceTime
+          currentTime = new Date(currentTime.getTime() + routine.duration * 60000);
         }
       }
 
-      console.log('[DragDropProvider] Block reordered with index adjustment, times calculated from NEW order (Attempt 14)');
+      console.log('[DragDropProvider] Block reordered (Attempt 15): Fixed time cascade + sort_order');
       onBlockReorder(recalculated);
     }
   };

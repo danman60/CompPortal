@@ -669,11 +669,11 @@ export function ScheduleTable({
     return [...routines].sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
   }, [routines]);
 
-  // Sort blocks by scheduled_time (CRITICAL for SortableContext)
+  // Sort blocks by sort_order (CRITICAL for SortableContext) - NOT scheduled_time which becomes stale
   const sortedBlocks = useMemo(() => {
     return [...scheduleBlocks]
       .filter(b => b.scheduled_time)
-      .sort((a, b) => new Date(a.scheduled_time!).getTime() - new Date(b.scheduled_time!).getTime());
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)); // Fix: Use sort_order, not scheduled_time
   }, [scheduleBlocks]);
 
   // Combine routines and blocks into chronological order
