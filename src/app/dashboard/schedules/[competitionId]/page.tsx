@@ -10,9 +10,13 @@
 import { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
-import { ArrowLeft, Calendar, Clock, MessageSquare, AlertCircle, Filter } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MessageSquare, AlertCircle, Filter, Download } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StudioNoteModal } from '@/components/scheduling/StudioNoteModal';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import toast from 'react-hot-toast';
 
 // TEST studio ID (will be replaced with real studio context)
 // Using Apex Dance Company from tester tenant for testing
@@ -38,6 +42,9 @@ export default function StudioScheduleView() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Tenant branding
+  const { tenant, primaryColor, logo } = useTenantTheme();
 
   const competitionId = params.competitionId as string;
   const tenantId = searchParams.get('tenantId') || '';
@@ -132,6 +139,120 @@ export default function StudioScheduleView() {
     setShowNoteModal(true);
   };
 
+  // PDF Export function
+  const handleExportPDF = () => {
+    if (filteredRoutines.length === 0) {
+      toast.error('No routines to export');
+      return;
+    }
+
+    try {
+      // Create PDF
+      const doc = new jsPDF();
+
+      // Convert hex color to RGB for jsPDF
+      const hexToRgb = (hex: string): [number, number, number] => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+          ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+          : [99, 102, 241]; // Fallback indigo
+      };
+
+      const brandColor = hexToRgb(primaryColor);
+
+      // Header with tenant branding
+      doc.setFillColor(...brandColor);
+      doc.rect(0, 0, 210, 45, 'F'); // Full-width colored header
+
+      // Header text (white on colored background)
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text(tenant?.name || 'Competition Schedule', 14, 18);
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Studio Schedule', 14, 28);
+
+      doc.setFontSize(11);
+      doc.setTextColor(240, 240, 240);
+      const dayText = selectedDay
+        ? `Day: ${new Date(selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`
+        : 'All Days';
+      doc.text(`Your Studio • ${filteredRoutines.length} routines • ${dayText}`, 14, 37);
+
+      // Reset text color for body
+      doc.setTextColor(0, 0, 0);
+
+      // Prepare table data
+      const tableData = filteredRoutines.map(routine => [
+        `#${routine.entryNumber}`,
+        routine.scheduledDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        routine.performanceTime,
+        routine.title,
+        `${routine.entrySize} • ${routine.classification}`,
+        routine.category,
+        routine.hasNote ? '✓ Has Note' : '',
+      ]);
+
+      // Add table with enhanced styling
+      autoTable(doc, {
+        startY: 50,
+        head: [['Entry #', 'Day', 'Time', 'Routine Title', 'Details', 'Category', 'Notes']],
+        body: tableData,
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+        },
+        headStyles: {
+          fillColor: brandColor,
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: 'bold',
+          halign: 'left',
+        },
+        columnStyles: {
+          0: { cellWidth: 18, halign: 'center' }, // Entry #
+          1: { cellWidth: 22, halign: 'center' }, // Day
+          2: { cellWidth: 20, halign: 'center' }, // Time
+          3: { cellWidth: 48 }, // Title
+          4: { cellWidth: 42 }, // Details
+          5: { cellWidth: 30 }, // Category
+          6: { cellWidth: 20, halign: 'center' }, // Notes
+        },
+        alternateRowStyles: {
+          fillColor: [249, 249, 249], // Very light gray for zebra striping
+        },
+      });
+
+      // Footer
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Studio Schedule • Page ${i} of ${pageCount}`,
+          105,
+          285,
+          { align: 'center' }
+        );
+      }
+
+      // Save PDF
+      const tenantSlug = tenant?.slug || 'schedule';
+      const daySlug = selectedDay ? new Date(selectedDay).toISOString().split('T')[0] : 'all-days';
+      const filename = `${tenantSlug}-studio-schedule-${daySlug}.pdf`;
+      doc.save(filename);
+      toast.success(`📄 PDF exported: ${filename}`);
+    } catch (error) {
+      console.error('[PDF Export] Error:', error);
+      toast.error(`Failed to export PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
@@ -191,8 +312,17 @@ export default function StudioScheduleView() {
               </div>
             </div>
 
-            {/* Status Badge */}
+            {/* Actions and Status */}
             <div className="flex items-center gap-4">
+              {/* PDF Export Button */}
+              <button
+                onClick={handleExportPDF}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600/30 text-purple-200 rounded-md text-sm font-medium hover:bg-purple-600/50 border border-purple-500/50 transition-all"
+              >
+                <Download className="h-4 w-4" />
+                Export PDF
+              </button>
+
               {totalNotes > 0 && (
                 <span className="text-sm text-cyan-300 flex items-center gap-1">
                   <MessageSquare className="h-4 w-4" />

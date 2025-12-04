@@ -36,6 +36,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Mail, Clock, History, Eye } from 'lucide-react';
 import { autoFixRoutineConflict, autoFixDayConflicts, autoFixWeekendConflicts } from '@/lib/conflictAutoFix';
+import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
 // TEST tenant ID (will be replaced with real tenant context)
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
@@ -52,6 +53,9 @@ interface RoutineData {
 }
 
 export default function SchedulePage() {
+  // Tenant branding
+  const { tenant, primaryColor, logo } = useTenantTheme();
+
   // Selected date state
   const [selectedDate, setSelectedDate] = useState<string>('2026-04-11');
 
@@ -437,14 +441,48 @@ export default function SchedulePage() {
       // Create PDF
       const doc = new jsPDF();
 
-      // Add competition branding
-      doc.setFontSize(18);
-      doc.text(competition?.name || 'Competition Schedule', 14, 15);
-      doc.setFontSize(12);
-      doc.text('Performance Schedule', 14, 23);
-      doc.setFontSize(10);
-      doc.text(`Date: ${selectedDate}`, 14, 30);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 35);
+      // Convert hex color to RGB for jsPDF
+      const hexToRgb = (hex: string): [number, number, number] => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+          ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+          : [99, 102, 241]; // Fallback indigo
+      };
+
+      const brandColor = hexToRgb(primaryColor);
+
+      // Header with tenant branding
+      doc.setFillColor(...brandColor);
+      doc.rect(0, 0, 210, 45, 'F'); // Full-width colored header
+
+      // Add logo if available
+      let logoY = 10;
+      if (logo) {
+        try {
+          // Note: For now we'll skip logo rendering since it requires async image loading
+          // TODO: Implement async logo loading with data URLs
+          logoY = 10;
+        } catch (e) {
+          console.warn('Logo rendering skipped:', e);
+        }
+      }
+
+      // Header text (white on colored background)
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text(tenant?.name || 'Competition Schedule', 14, logoY + 8);
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.text(competition?.name || 'Performance Schedule', 14, logoY + 18);
+
+      doc.setFontSize(11);
+      doc.setTextColor(240, 240, 240);
+      doc.text(`📅 ${selectedDate}  •  Generated: ${new Date().toLocaleDateString()}`, 14, logoY + 27);
+
+      // Reset text color for body
+      doc.setTextColor(0, 0, 0);
 
       // Merge routines and blocks into single sorted array
       const scheduleItems: Array<{ type: 'routine' | 'block'; data: any }> = [];
@@ -475,7 +513,7 @@ export default function SchedulePage() {
         return timeA.localeCompare(timeB);
       });
 
-      // Prepare table data
+      // Prepare table data with beautiful block styling
       const tableData = scheduleItems.map(item => {
         if (item.type === 'routine') {
           const r = item.data;
@@ -489,35 +527,87 @@ export default function SchedulePage() {
             `${r.duration} min`,
           ];
         } else {
-          // Block row
+          // Block row - beautiful formatting
           const block = item.data;
           const time = block.scheduled_time ? block.scheduled_time.toTimeString().split(' ')[0].substring(0, 5) : '';
-          const icon = block.block_type === 'award' ? '🏆' : '☕';
-          const label = block.block_type === 'award' ? 'AWARD CEREMONY' : `${block.duration_minutes || 30} MINUTE BREAK`;
-          return ['', time, `${icon} ${label}`, '', '', '', `${block.duration_minutes || 30} min`];
+
+          if (block.block_type === 'award') {
+            const title = block.title || 'Award Ceremony';
+            return ['🏆', time, `AWARDS: ${title}`, '', '', '', `${block.duration_minutes || 30} min`];
+          } else {
+            const title = block.title || 'Break';
+            return ['☕', time, `BREAK: ${title}`, '', '', '', `${block.duration_minutes || 30} min`];
+          }
         }
       });
 
-      // Add table
+      // Add table with enhanced styling
       autoTable(doc, {
-        startY: 40,
-        head: [['#', 'Time', 'Routine', 'Studio', 'Classification', 'Category', 'Duration']],
+        startY: 50,
+        head: [['#', 'Time', 'Title', 'Studio', 'Classification', 'Category', 'Duration']],
         body: tableData,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [99, 102, 241] },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+        },
+        headStyles: {
+          fillColor: brandColor,
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: 'bold',
+          halign: 'left',
+        },
         columnStyles: {
-          0: { cellWidth: 15 }, // #
-          1: { cellWidth: 20 }, // Time
-          2: { cellWidth: 50 }, // Routine
-          3: { cellWidth: 35 }, // Studio
-          4: { cellWidth: 25 }, // Classification
-          5: { cellWidth: 25 }, // Category
-          6: { cellWidth: 20 }, // Duration
+          0: { cellWidth: 15, halign: 'center' }, // #
+          1: { cellWidth: 22, halign: 'center' }, // Time
+          2: { cellWidth: 52 }, // Title
+          3: { cellWidth: 32 }, // Studio
+          4: { cellWidth: 28 }, // Classification
+          5: { cellWidth: 28 }, // Category
+          6: { cellWidth: 18, halign: 'center' }, // Duration
+        },
+        didParseCell: (data) => {
+          // Style block rows (award/break)
+          const rowData = data.row.raw as string[];
+          if (rowData[0] === '🏆' || rowData[0] === '☕') {
+            // Award block - light gold background
+            if (rowData[0] === '🏆') {
+              data.cell.styles.fillColor = [255, 250, 235]; // Light gold
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.textColor = [150, 100, 0]; // Dark gold text
+            }
+            // Break block - light blue background
+            else if (rowData[0] === '☕') {
+              data.cell.styles.fillColor = [235, 245, 255]; // Light blue
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.textColor = [50, 100, 150]; // Dark blue text
+            }
+          }
+        },
+        alternateRowStyles: {
+          fillColor: [249, 249, 249], // Very light gray for zebra striping
         },
       });
 
+      // Footer
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `${tenant?.name || 'Competition'} • Page ${i} of ${pageCount}`,
+          105,
+          285,
+          { align: 'center' }
+        );
+      }
+
       // Save PDF
-      const filename = `schedule-${selectedDate}.pdf`;
+      const tenantSlug = tenant?.slug || 'schedule';
+      const filename = `${tenantSlug}-schedule-${selectedDate}.pdf`;
       doc.save(filename);
       toast.success(`📄 PDF exported: ${filename}`);
     } catch (error) {
