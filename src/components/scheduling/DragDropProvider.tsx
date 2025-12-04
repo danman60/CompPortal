@@ -954,23 +954,11 @@ export function DragDropProvider({
         return specificItems;
       }
 
-      // If no specific items but have container, try closestCenter as fallback
+      // ATTEMPT 18 FIX: If only container found (no specific items), return container directly!
+      // This allows blocks to be dropped at the BOTTOM of the schedule (past all routines)
+      // The handleBlockDrag function will handle appending to end when target is schedule-table-*
       if (containers.length > 0) {
-        console.log('[CollisionDetection] Only container found, trying closestCenter fallback');
-        const fallbackCollisions = closestCenter(args);
-        const fallbackFiltered = fallbackCollisions.filter((collision: any) => collision.id !== activeId);
-        const fallbackSpecific = fallbackFiltered.filter(c => {
-          const id = String(c.id);
-          return id.startsWith('routine-') || id.startsWith('block-');
-        });
-
-        if (fallbackSpecific.length > 0) {
-          console.log('[CollisionDetection] closestCenter fallback found specific items:', fallbackSpecific.map((c: any) => c.id));
-          return fallbackSpecific;
-        }
-
-        // Last resort: return container
-        console.log('[CollisionDetection] No specific items found, returning container');
+        console.log('[CollisionDetection] No specific items found, returning container for bottom-of-schedule drop (Attempt 18)');
         return containers;
       }
 

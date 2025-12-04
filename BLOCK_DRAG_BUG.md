@@ -504,12 +504,46 @@ else if (!targetId.startsWith('schedule-table-') && !targetId.startsWith('routin
 
 **Status:** ⏳ IMPLEMENTED - Needs testing
 
+## Attempt 18: Fix collision detection to return container for bottom drops ✅
+
+**Problem:** Even with the container handler (Attempt 17), blocks still couldn't drop to the bottom because collision detection was using `closestCenter` as a fallback when only the container was detected. This made it return the LAST routine instead of the container.
+
+**Root Cause (DragDropProvider.tsx lines ~929-970):**
+```typescript
+// OLD CODE (buggy):
+if (containers.length > 0) {
+  console.log('[CollisionDetection] Only container found, trying closestCenter fallback');
+  const fallbackCollisions = closestCenter(args);  // ❌ Returns last routine!
+  // ... tries to find specific items from closestCenter ...
+  return containers;  // Never reached if closestCenter finds something
+}
+```
+
+**Why closestCenter fallback is wrong:**
+- When dragging block to bottom (past all routines), `pointerWithin` finds only the container
+- `closestCenter` fallback returns the LAST routine (closest by distance)
+- Handler receives last routine ID → inserts BEFORE it → block stays at same position
+- Need to return CONTAINER so handleBlockDrag can append to end
+
+**Fix Applied:**
+```typescript
+// NEW CODE (Attempt 18):
+if (containers.length > 0) {
+  console.log('[CollisionDetection] No specific items found, returning container for bottom-of-schedule drop (Attempt 18)');
+  return containers;  // ✅ Return container directly, no fallback
+}
+```
+
+**Status:** ✅ IMPLEMENTED
+
 ## Testing Plan
 1. Build and deploy fix
 2. Navigate to schedule page with blocks (Saturday April 11)
 3. Test cases:
-   - ✅ Drag block UP by 1 position (should still work from Attempt 16)
-   - ⏳ Drag block to BOTTOM (past all routines) - NEW FIX
+   - ✅ Drag block UP by 1 position (regression test - Attempt 16)
+   - ⏳ Drag block to BOTTOM (past all routines) - Attempt 17 + 18
    - ⏳ Drag block to middle position
-4. Verify console logs show "Block moved to end of schedule (Attempt 17)"
+4. Verify console logs:
+   - "No specific items found, returning container for bottom-of-schedule drop (Attempt 18)"
+   - "Block moved to end of schedule (Attempt 17)"
 5. Verify block persists in new position after page refresh

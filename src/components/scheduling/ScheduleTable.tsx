@@ -115,6 +115,15 @@ interface OverallsCategory {
   classification: string;
 }
 
+// Helper: Format duration in hours and minutes
+function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
 // Schedule Block Row Component (Sortable)
 function SortableBlockRow({
   block,
@@ -122,6 +131,9 @@ function SortableBlockRow({
   onDelete,
   onEdit,
   calculatedTime,
+  sessionDurationMinutes,
+  sessionNumber,
+  sessionColor,
 }: {
   block: {
     id: string;
@@ -134,6 +146,9 @@ function SortableBlockRow({
   onDelete?: (blockId: string) => void;
   onEdit?: (block: { id: string; block_type: string; title: string; duration_minutes: number; scheduled_time: Date | null }) => void;
   calculatedTime?: string | null; // Dynamically calculated time from schedule position
+  sessionDurationMinutes?: number; // Duration of session ending at this award block
+  sessionNumber?: number; // Session number for this block
+  sessionColor?: string; // Background color for this session
 }) {
   const {
     attributes,
@@ -152,9 +167,10 @@ function SortableBlockRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Use session color for background, with block-type accent
   const bgColor = block.block_type === 'award'
-    ? 'bg-gradient-to-r from-amber-900/30 to-yellow-900/30'
-    : 'bg-gradient-to-r from-cyan-900/30 to-blue-900/30';
+    ? `${sessionColor || 'bg-purple-500/8'} border-l-4 border-l-amber-500`
+    : `${sessionColor || 'bg-blue-500/8'} border-l-4 border-l-cyan-500`;
 
   const icon = block.block_type === 'award' ? '🏆' : '☕';
   const borderColor = block.block_type === 'award' ? 'border-amber-500/50' : 'border-cyan-500/50';
@@ -204,6 +220,17 @@ function SortableBlockRow({
             <span className="text-lg">{icon}</span>
             <span className="text-sm font-semibold text-white">{block.title}</span>
             <span className="text-xs text-white/60 ml-2">({block.duration_minutes} min)</span>
+            {/* Session Duration Indicator for Award Blocks */}
+            {block.block_type === 'award' && sessionDurationMinutes !== undefined && sessionNumber !== undefined && (
+              <div className="ml-4 flex items-center gap-2">
+                <div className="h-4 w-px bg-white/30" />
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40">
+                  <span className="text-[10px] font-bold text-amber-300">SESSION {sessionNumber}</span>
+                  <span className="text-[10px] text-amber-200/80">•</span>
+                  <span className="text-[10px] font-semibold text-amber-200">{formatDuration(sessionDurationMinutes)}</span>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-1">
             {onEdit && (
@@ -252,6 +279,7 @@ function SortableRoutineRow({
   sessionNumber,
   isLastInSession,
   sessionBlock,
+  sessionColor,
   onRoutineClick,
   isSelected,
   onCheckboxChange,
@@ -277,6 +305,7 @@ function SortableRoutineRow({
   sessionNumber: number;
   isLastInSession: boolean;
   sessionBlock: any;
+  sessionColor: string;
   onRoutineClick?: (routineId: string) => void;
   isSelected?: boolean;
   onCheckboxChange?: (routineId: string, index: number, event: React.MouseEvent) => void;
@@ -322,8 +351,8 @@ function SortableRoutineRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // Session background colors (alternating faded colors)
-  const sessionBg = sessionNumber % 2 === 0 ? 'bg-purple-500/5' : 'bg-blue-500/5';
+  // Session background color (passed from parent based on award block delineation)
+  const sessionBg = sessionColor || (sessionNumber % 2 === 0 ? 'bg-purple-500/5' : 'bg-blue-500/5');
 
   // Helper icon detection (using dynamic conflicts)
   const hasConflict = conflicts && conflicts.length > 0;
@@ -788,65 +817,145 @@ export function ScheduleTable({
     return lastIds;
   }, [sortedRoutines, allRoutines]);
 
-  // Calculate session blocks (~3-4 hour chunks) for visual indicators
-  const sessionBlocks = useMemo(() => {
-    if (sortedRoutines.length === 0) return [];
+  // Calculate session blocks based on AWARD blocks (sessions end at award ceremonies)
+  // Each session = time from day start (or previous award) to current award (inclusive)
+  const sessionInfo = useMemo(() => {
+    // Build chronological timeline with calculated times
+    const timeline: Array<{
+      type: 'routine' | 'block';
+      id: string;
+      blockType?: string;
+      startMinutes: number;
+      durationMinutes: number;
+      endMinutes: number;
+    }> = [];
 
-    const blocks: Array<{ sessionNumber: number; startIndex: number; endIndex: number; startTime: Date | null; endTime: Date | null; suggestAward: boolean }> = [];
+    // Get day start time (default 8:00 AM = 480 minutes)
+    let currentMinutes = 480;
+    if (scheduleItems.length > 0 && scheduleItems[0].type === 'routine') {
+      const firstRoutine = scheduleItems[0].data;
+      if (firstRoutine.scheduledTimeString) {
+        const [hours, minutes] = firstRoutine.scheduledTimeString.split(':').map(Number);
+        currentMinutes = hours * 60 + minutes;
+      }
+    }
+
+    const dayStartMinutes = currentMinutes;
+
+    // Build timeline with calculated times
+    scheduleItems.forEach((item) => {
+      const startMinutes = currentMinutes;
+      const durationMinutes = item.type === 'block' 
+        ? (item.data.duration_minutes || 0)
+        : (item.data.duration || 0);
+      const endMinutes = startMinutes + durationMinutes;
+
+      timeline.push({
+        type: item.type,
+        id: item.data.id,
+        blockType: item.type === 'block' ? item.data.block_type : undefined,
+        startMinutes,
+        durationMinutes,
+        endMinutes,
+      });
+
+      currentMinutes = endMinutes;
+    });
+
+    // Find award block positions and calculate sessions
+    const sessions: Array<{
+      sessionNumber: number;
+      startMinutes: number;
+      endMinutes: number; // Includes award block duration
+      durationMinutes: number;
+      awardBlockId: string | null;
+      itemIds: Set<string>; // All routine/block IDs in this session
+    }> = [];
+
     let sessionNumber = 1;
-    let sessionStartIndex = 0;
-    let sessionStartTime = sortedRoutines[0]?.scheduledTime ? new Date(sortedRoutines[0].scheduledTime) : null;
+    let sessionStartMinutes = dayStartMinutes;
+    let currentSessionItems = new Set<string>();
 
-    sortedRoutines.forEach((routine, index) => {
-      if (!routine.scheduledTime || !sessionStartTime) return;
+    timeline.forEach((item, index) => {
+      currentSessionItems.add(item.id);
 
-      const currentTime = new Date(routine.scheduledTime);
-      const hoursElapsed = (currentTime.getTime() - sessionStartTime.getTime()) / (1000 * 60 * 60);
+      // Check if this is an AWARD block (ends a session)
+      if (item.type === 'block' && item.blockType === 'award') {
+        const sessionEndMinutes = item.endMinutes; // Include award block duration
+        const sessionDuration = sessionEndMinutes - sessionStartMinutes;
 
-      // Start new session after ~3.5 hours
-      if (hoursElapsed >= 3.5 && index > 0) {
-        const prevRoutine = sortedRoutines[index - 1];
-        const endTime = prevRoutine?.scheduledTime ? new Date(prevRoutine.scheduledTime) : null;
-
-        // Check if there are trophy helper routines near this boundary (within last 10 routines of session)
-        const lastFewRoutines = sortedRoutines.slice(Math.max(sessionStartIndex, index - 10), index);
-        const hasTrophyHelperNearby = lastFewRoutines.some(r => lastRoutineIds.has(r.id));
-
-        blocks.push({
+        sessions.push({
           sessionNumber,
-          startIndex: sessionStartIndex,
-          endIndex: index - 1,
-          startTime: sessionStartTime,
-          endTime,
-          suggestAward: hasTrophyHelperNearby,
+          startMinutes: sessionStartMinutes,
+          endMinutes: sessionEndMinutes,
+          durationMinutes: sessionDuration,
+          awardBlockId: item.id,
+          itemIds: new Set(currentSessionItems),
         });
 
+        // Start new session after this award block
         sessionNumber++;
-        sessionStartIndex = index;
-        sessionStartTime = currentTime;
+        sessionStartMinutes = sessionEndMinutes;
+        currentSessionItems = new Set<string>();
       }
     });
 
-    // Add final session
-    if (sessionStartIndex < sortedRoutines.length) {
-      const lastRoutine = sortedRoutines[sortedRoutines.length - 1];
-      const endTime = lastRoutine?.scheduledTime ? new Date(lastRoutine.scheduledTime) : null;
+    // Add final session if there are items after the last award (or no awards at all)
+    if (currentSessionItems.size > 0) {
+      const lastItem = timeline[timeline.length - 1];
+      const sessionEndMinutes = lastItem?.endMinutes || dayStartMinutes;
+      const sessionDuration = sessionEndMinutes - sessionStartMinutes;
 
-      const lastFewRoutines = sortedRoutines.slice(Math.max(sessionStartIndex, sortedRoutines.length - 10));
-      const hasTrophyHelperNearby = lastFewRoutines.some(r => lastRoutineIds.has(r.id));
-
-      blocks.push({
+      sessions.push({
         sessionNumber,
-        startIndex: sessionStartIndex,
-        endIndex: sortedRoutines.length - 1,
-        startTime: sessionStartTime,
-        endTime,
-        suggestAward: hasTrophyHelperNearby,
+        startMinutes: sessionStartMinutes,
+        endMinutes: sessionEndMinutes,
+        durationMinutes: sessionDuration,
+        awardBlockId: null, // No award block ends this session
+        itemIds: new Set(currentSessionItems),
       });
     }
 
-    return blocks;
-  }, [sortedRoutines, lastRoutineIds]);
+    // Create lookup map: itemId -> session info
+    const itemSessionMap = new Map<string, { sessionNumber: number; durationMinutes: number; isLastInSession: boolean; sessionColor: string }>();
+    
+    // Session colors (alternating)
+    const sessionColors = [
+      'bg-purple-500/8',
+      'bg-blue-500/8', 
+      'bg-indigo-500/8',
+      'bg-violet-500/8',
+    ];
+
+    sessions.forEach((session) => {
+      const color = sessionColors[(session.sessionNumber - 1) % sessionColors.length];
+      const itemIdsArray = Array.from(session.itemIds);
+      
+      itemIdsArray.forEach((id, idx) => {
+        const isLast = idx === itemIdsArray.length - 1;
+        itemSessionMap.set(id, {
+          sessionNumber: session.sessionNumber,
+          durationMinutes: session.durationMinutes,
+          isLastInSession: isLast,
+          sessionColor: color,
+        });
+      });
+    });
+
+    return { sessions, itemSessionMap, dayStartMinutes };
+  }, [scheduleItems]);
+
+  // Legacy session blocks for backward compatibility (converts new format)
+  const sessionBlocks = useMemo(() => {
+    return sessionInfo.sessions.map(s => ({
+      sessionNumber: s.sessionNumber,
+      startIndex: 0, // Not used in new implementation
+      endIndex: 0, // Not used in new implementation  
+      startTime: null,
+      endTime: null,
+      suggestAward: false,
+    }));
+  }, [sessionInfo]);
 
   // Helper: Get session number for a routine index
   const getSessionNumber = (index: number): number => {
@@ -1039,6 +1148,9 @@ Click badge to dismiss"
                     // Add block duration to cumulative time
                     currentTimeMinutes += block.duration_minutes || 0;
 
+                    // Get session info for this block
+                    const blockSessionInfo = sessionInfo.itemSessionMap.get(block.id);
+
                     // Render schedule block
                     return (
                       <SortableBlockRow
@@ -1048,6 +1160,9 @@ Click badge to dismiss"
                         onDelete={onDeleteBlock}
                         onEdit={onEditBlock}
                         calculatedTime={calculatedTimeString}
+                        sessionDurationMinutes={blockSessionInfo?.durationMinutes}
+                        sessionNumber={blockSessionInfo?.sessionNumber}
+                        sessionColor={blockSessionInfo?.sessionColor}
                       />
                     );
                   }
@@ -1059,6 +1174,9 @@ Click badge to dismiss"
                   const conflict = getRoutineConflict(routine.id);
                   const isFirstInConflict = isFirstInConflictGroup(routine.id);
                   const conflictSpan = getConflictSpan(routine.id);
+
+                  // Get session info for this routine
+                  const routineSessionInfo = sessionInfo.itemSessionMap.get(routine.id);
 
                   // Add routine duration to cumulative time for next item
                   currentTimeMinutes += routine.duration || 0;
@@ -1085,9 +1203,10 @@ Click badge to dismiss"
                     classificationColor={classificationColor}
                     studioDisplay={studioDisplay}
                     viewMode={viewMode}
-                    sessionNumber={getSessionNumber(routineIndex)}
-                    isLastInSession={isLastInSession(routineIndex)}
+                    sessionNumber={routineSessionInfo?.sessionNumber || getSessionNumber(routineIndex)}
+                    isLastInSession={routineSessionInfo?.isLastInSession || isLastInSession(routineIndex)}
                     sessionBlock={getSessionBlock(routineIndex)}
+                    sessionColor={routineSessionInfo?.sessionColor || ''}
                     onRoutineClick={onRoutineClick}
                     isSelected={selectedRoutineIds.has(routine.id)}
                     onCheckboxChange={handleCheckboxChange}
@@ -1110,8 +1229,26 @@ Click badge to dismiss"
 
       {/* Table Footer Summary */}
       <div className="bg-white/5 border-t border-white/20 px-1 py-1 flex items-center justify-between text-xs">
-        <div className="text-white/60">
-          Total: <span className="font-semibold text-white">{sortedRoutines.length}</span> routines
+        <div className="flex items-center gap-4">
+          <div className="text-white/60">
+            Total: <span className="font-semibold text-white">{sortedRoutines.length}</span> routines
+          </div>
+          {/* Session Duration Summary */}
+          {sessionInfo.sessions.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-white/40">|</span>
+              <span className="text-white/60">Sessions:</span>
+              {sessionInfo.sessions.map((session, idx) => (
+                <span
+                  key={session.sessionNumber}
+                  className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-white/10"
+                  title={`Session ${session.sessionNumber}: ${formatDuration(session.durationMinutes)}${session.awardBlockId ? ' (ends with award)' : ''}`}
+                >
+                  S{session.sessionNumber}: {formatDuration(session.durationMinutes)}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-4">
           {conflicts.length > 0 && (
