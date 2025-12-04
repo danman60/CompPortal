@@ -115,6 +115,13 @@ interface OverallsCategory {
   classification: string;
 }
 
+// Eligible award category (from trophy helper)
+interface EligibleAward {
+  entrySize: string;
+  ageGroup: string;
+  classification: string;
+}
+
 // Helper: Format duration in hours and minutes
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -135,6 +142,7 @@ function SortableBlockRow({
   sessionNumber,
   sessionColor,
   routineNumberBefore,
+  eligibleAwards,
 }: {
   block: {
     id: string;
@@ -151,6 +159,7 @@ function SortableBlockRow({
   sessionNumber?: number; // Session number for this block
   sessionColor?: string; // Background color for this session
   routineNumberBefore?: number; // Entry number of routine this block is positioned after
+  eligibleAwards?: EligibleAward[]; // Award categories with last routine in this session
 }) {
   const {
     attributes,
@@ -233,6 +242,28 @@ function SortableBlockRow({
                 </div>
               </div>
             )}
+            {/* Eligible Awards from Trophy Helper (categories with last routine in this session) */}
+            {block.block_type === 'award' && eligibleAwards && eligibleAwards.length > 0 && (
+              <div className="ml-4 flex items-center gap-2 flex-wrap">
+                <div className="h-4 w-px bg-white/30" />
+                <span className="text-[10px] text-amber-300/70">Eligible:</span>
+                {eligibleAwards.slice(0, 5).map((award, idx) => (
+                  <div
+                    key={`${award.entrySize}-${award.ageGroup}-${award.classification}-${idx}`}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-yellow-500/20 border border-yellow-500/30"
+                    title={`🏆 ${award.entrySize} • ${award.ageGroup} • ${award.classification}`}
+                  >
+                    <span className="text-[10px]">🏆</span>
+                    <span className="text-[9px] font-medium text-yellow-200">{award.entrySize}</span>
+                    <span className="text-[9px] text-yellow-300/60">•</span>
+                    <span className="text-[9px] text-yellow-200/80">{award.ageGroup}</span>
+                  </div>
+                ))}
+                {eligibleAwards.length > 5 && (
+                  <span className="text-[9px] text-amber-300/60">+{eligibleAwards.length - 5} more</span>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-1">
             {onEdit && (
@@ -280,7 +311,6 @@ function SortableRoutineRow({
   viewMode,
   sessionNumber,
   isLastInSession,
-  sessionBlock,
   sessionColor,
   onRoutineClick,
   isSelected,
@@ -306,7 +336,6 @@ function SortableRoutineRow({
   viewMode: ViewMode;
   sessionNumber: number;
   isLastInSession: boolean;
-  sessionBlock: any;
   sessionColor: string;
   onRoutineClick?: (routineId: string) => void;
   isSelected?: boolean;
@@ -947,34 +976,6 @@ export function ScheduleTable({
     return { sessions, itemSessionMap, dayStartMinutes };
   }, [scheduleItems]);
 
-  // Legacy session blocks for backward compatibility (converts new format)
-  const sessionBlocks = useMemo(() => {
-    return sessionInfo.sessions.map(s => ({
-      sessionNumber: s.sessionNumber,
-      startIndex: 0, // Not used in new implementation
-      endIndex: 0, // Not used in new implementation  
-      startTime: null,
-      endTime: null,
-      suggestAward: false,
-    }));
-  }, [sessionInfo]);
-
-  // Helper: Get session number for a routine index
-  const getSessionNumber = (index: number): number => {
-    const session = sessionBlocks.find(s => index >= s.startIndex && index <= s.endIndex);
-    return session?.sessionNumber || 1;
-  };
-
-  // Helper: Check if this is the last routine in a session
-  const isLastInSession = (index: number): boolean => {
-    return sessionBlocks.some(s => s.endIndex === index);
-  };
-
-  // Helper: Get session block for routine index
-  const getSessionBlock = (index: number) => {
-    return sessionBlocks.find(s => index >= s.startIndex && index <= s.endIndex);
-  };
-
   // Detect conflict groups (consecutive routines with same dancer)
   const conflictGroups = useMemo(() => {
     const groups: Array<{ routineIds: string[]; conflict: Conflict }> = [];
@@ -1215,9 +1216,8 @@ Click badge to dismiss"
                     classificationColor={classificationColor}
                     studioDisplay={studioDisplay}
                     viewMode={viewMode}
-                    sessionNumber={routineSessionInfo?.sessionNumber || getSessionNumber(routineIndex)}
-                    isLastInSession={routineSessionInfo?.isLastInSession || isLastInSession(routineIndex)}
-                    sessionBlock={getSessionBlock(routineIndex)}
+                    sessionNumber={routineSessionInfo?.sessionNumber || 1}
+                    isLastInSession={routineSessionInfo?.isLastInSession || false}
                     sessionColor={routineSessionInfo?.sessionColor || ''}
                     onRoutineClick={onRoutineClick}
                     isSelected={selectedRoutineIds.has(routine.id)}
