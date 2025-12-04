@@ -478,10 +478,38 @@ const sortedBlocks = useMemo(() => {
 
 **Status:** ✅ IMPLEMENTED - Deployed to tester branch (build 4cf2d94)
 
+## Attempt 17: Handle container drops (move to bottom) ⏳
+
+**Problem:** Block can now move UP (Attempt 16 fix), but cannot be moved to the BOTTOM of the schedule.
+
+**Root Cause:** When dragging a block past all routines to the bottom, collision detection returns the container (`schedule-table-2026-04-11`) instead of a specific routine. The `handleBlockDrag` function had no handler for container drops:
+
+```typescript
+// handleBlockDrag cases:
+if (targetId.startsWith('block-')) {       // ✅ block-to-block
+  // ...
+}
+else if (!targetId.startsWith('schedule-table-') && !targetId.startsWith('routine-pool-')) {
+  // ✅ block-to-routine (but excludes containers!)
+}
+// ❌ MISSING: No handler for schedule-table-* (container drops)
+```
+
+**Fix Applied (DragDropProvider.tsx lines 342-420):**
+- Added new `else if (targetId.startsWith('schedule-table-'))` case
+- Creates combined timeline of blocks + routines
+- Removes dragged block from current position
+- Appends block to END of timeline
+- Recalculates times and sort_order
+
+**Status:** ⏳ IMPLEMENTED - Needs testing
+
 ## Testing Plan
-1. Build and deploy fix (commit removing filtering)
+1. Build and deploy fix
 2. Navigate to schedule page with blocks (Saturday April 11)
-3. Try dragging break block UP from 08:53 AM to before Entry #116 at 8:49 AM
-4. Verify console shows drag end and block reorder messages
-5. Verify block moves to correct position visually
-6. Try dragging DOWN as well to ensure both directions work
+3. Test cases:
+   - ✅ Drag block UP by 1 position (should still work from Attempt 16)
+   - ⏳ Drag block to BOTTOM (past all routines) - NEW FIX
+   - ⏳ Drag block to middle position
+4. Verify console logs show "Block moved to end of schedule (Attempt 17)"
+5. Verify block persists in new position after page refresh

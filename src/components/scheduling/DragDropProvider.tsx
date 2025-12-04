@@ -340,8 +340,87 @@ export function DragDropProvider({
       console.log('[DragDropProvider] Block reorder complete, cascading times');
       onBlockReorder(recalculated);
     }
+    // If dropped on container (schedule-table-), append to END of schedule
+    else if (targetId.startsWith('schedule-table-')) {
+      console.log('[DragDropProvider] Block dropped on container - appending to end of schedule');
+
+      // Create combined timeline (blocks + routines) sorted by current order
+      type TimelineItem = {
+        type: 'block' | 'routine';
+        data: ScheduleBlockData | RoutineData;
+        time: Date;
+        id: string;
+      };
+
+      const timeline: TimelineItem[] = [];
+
+      // Add blocks with scheduled times
+      scheduleBlocks.forEach(block => {
+        if (block.scheduled_time) {
+          timeline.push({
+            type: 'block',
+            data: block,
+            time: new Date(block.scheduled_time),
+            id: block.id,
+          });
+        }
+      });
+
+      // Add scheduled routines
+      routines.filter(r => r.isScheduled && r.performanceTime).forEach(routine => {
+        const [hours, minutes] = routine.performanceTime!.split(':').map(Number);
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        timeline.push({ type: 'routine', data: routine, time: date, id: routine.id });
+      });
+
+      // Sort by current time order
+      timeline.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+      // Find dragged block and remove it
+      const draggedIndex = timeline.findIndex(item => item.type === 'block' && item.id === actualDraggedId);
+      if (draggedIndex === -1) {
+        console.error('[DragDropProvider] Dragged block not found in timeline');
+        return;
+      }
+
+      const reordered = [...timeline];
+      const [removed] = reordered.splice(draggedIndex, 1);
+
+      // Append to END of timeline
+      reordered.push(removed);
+
+      console.log('[DragDropProvider] Moving block to end - timeline length:', reordered.length, 'block moved from index:', draggedIndex, 'to end');
+
+      // Recalculate times from index order
+      const dayStart = getDayStartTime(selectedDate);
+      const [startHours, startMinutes] = dayStart.split(':').map(Number);
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      let currentTime = new Date(year, month - 1, day, startHours, startMinutes, 0, 0);
+
+      const recalculated: ScheduleBlockData[] = [];
+      let blockIndex = 0;
+
+      for (const item of reordered) {
+        if (item.type === 'block') {
+          const block = item.data as ScheduleBlockData;
+          recalculated.push({
+            ...block,
+            scheduled_time: new Date(currentTime),
+            sort_order: blockIndex++,
+          });
+          currentTime = new Date(currentTime.getTime() + block.duration_minutes * 60000);
+        } else {
+          const routine = item.data as RoutineData;
+          currentTime = new Date(currentTime.getTime() + routine.duration * 60000);
+        }
+      }
+
+      console.log('[DragDropProvider] Block moved to end of schedule (Attempt 17)');
+      onBlockReorder(recalculated);
+    }
     // If dropped on routine, insert before that routine
-    else if (!targetId.startsWith('schedule-table-') && !targetId.startsWith('routine-pool-')) {
+    else if (!targetId.startsWith('routine-pool-')) {
       // Strip 'routine-' prefix from target ID to match routine.id format
       const actualRoutineTargetId = targetId.startsWith('routine-') ? targetId.slice(8) : targetId;
       const targetRoutine = routines.find(r => r.id === actualRoutineTargetId);
