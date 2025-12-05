@@ -276,9 +276,13 @@ function SortableScheduleRow({
             <input
               type="checkbox"
               checked={isSelected || false}
-              onChange={() => {}} // Handled by tr onClick
+              onChange={(e) => {
+                e.stopPropagation(); // Prevent drag
+                if (onToggleSelection) {
+                  onToggleSelection(e as any);
+                }
+              }}
               className="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 cursor-pointer"
-              onClick={(e) => e.stopPropagation()} // Prevent drag when clicking checkbox
             />
           </div>
         </td>
@@ -1026,12 +1030,17 @@ export default function ScheduleV2Page() {
 
     // Case 2: Adding from unscheduled to schedule
     if (!scheduleOrder.includes(activeId) && !activeId.startsWith('block-')) {
+      // Check if activeId is in selectedRoutineIds (multi-select drag)
+      const idsToAdd = selectedRoutineIds.has(activeId)
+        ? Array.from(selectedRoutineIds).filter(id => !scheduleOrder.includes(id))
+        : [activeId];
+
       // Dropping on the schedule drop zone or a specific item
       if (overId === 'schedule-drop-zone') {
         // Drop at end of schedule
         setScheduleByDate(prev => ({
           ...prev,
-          [selectedDate]: [...(prev[selectedDate] || []), activeId],
+          [selectedDate]: [...(prev[selectedDate] || []), ...idsToAdd],
         }));
       } else {
         // Drop at specific position
@@ -1039,13 +1048,16 @@ export default function ScheduleV2Page() {
         setScheduleByDate(prev => {
           const newOrder = [...(prev[selectedDate] || [])];
           if (overIndex >= 0) {
-            newOrder.splice(overIndex, 0, activeId);
+            newOrder.splice(overIndex, 0, ...idsToAdd);
           } else {
-            newOrder.push(activeId);
+            newOrder.push(...idsToAdd);
           }
           return { ...prev, [selectedDate]: newOrder };
         });
       }
+
+      // Clear selection after dragging
+      setSelectedRoutineIds(new Set());
       return;
     }
 
