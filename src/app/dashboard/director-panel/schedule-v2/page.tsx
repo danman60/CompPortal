@@ -1937,42 +1937,6 @@ export default function ScheduleV2Page() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Day Tabs + Block Buttons */}
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <DayTabs
-              days={competitionDates}
-              activeDay={selectedDate}
-              onDayChange={(date) => setSelectedDate(date)}
-              competitionId={TEST_COMPETITION_ID}
-              tenantId={TEST_TENANT_ID}
-              onStartTimeUpdated={handleStartTimeUpdated}
-              onResetDay={() => {
-                if (confirm(`Reset schedule for ${selectedDate}?`)) {
-                  resetDayMutation.mutate({
-                    tenantId: TEST_TENANT_ID,
-                    competitionId: TEST_COMPETITION_ID,
-                    date: selectedDate,
-                  });
-                }
-              }}
-              onResetAll={() => setShowResetAllModal(true)}
-            />
-
-            {/* Draggable Block Buttons - Inline */}
-            <div className="flex gap-3 flex-shrink-0">
-              <DraggableBlockCard
-                type="award"
-                onClick={() => handleCreateBlock('award')}
-              />
-              <DraggableBlockCard
-                type="break"
-                onClick={() => handleCreateBlock('break')}
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Main Content */}
         <div className="px-6 py-2">
           <div className="grid grid-cols-3 gap-4">
@@ -2017,6 +1981,40 @@ export default function ScheduleV2Page() {
 
             {/* Right: Schedule Table */}
             <div className="col-span-2">
+              {/* Day Tabs + Block Buttons - Above Schedule Table (V1 layout) */}
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <DayTabs
+                  days={competitionDates}
+                  activeDay={selectedDate}
+                  onDayChange={(date) => setSelectedDate(date)}
+                  competitionId={TEST_COMPETITION_ID}
+                  tenantId={TEST_TENANT_ID}
+                  onStartTimeUpdated={handleStartTimeUpdated}
+                  onResetDay={() => {
+                    if (confirm(`Reset schedule for ${selectedDate}?`)) {
+                      resetDayMutation.mutate({
+                        tenantId: TEST_TENANT_ID,
+                        competitionId: TEST_COMPETITION_ID,
+                        date: selectedDate,
+                      });
+                    }
+                  }}
+                  onResetAll={() => setShowResetAllModal(true)}
+                />
+
+                {/* Draggable Block Buttons - Inline */}
+                <div className="flex gap-3 flex-shrink-0">
+                  <DraggableBlockCard
+                    type="award"
+                    onClick={() => handleCreateBlock('award')}
+                  />
+                  <DraggableBlockCard
+                    type="break"
+                    onClick={() => handleCreateBlock('break')}
+                  />
+                </div>
+              </div>
+
               <DroppableScheduleTable
                 scheduleOrder={scheduleOrder}
                 routinesMap={routinesMap}
