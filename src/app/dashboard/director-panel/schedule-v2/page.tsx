@@ -471,7 +471,6 @@ export default function ScheduleV2Page() {
   // ===== STATE =====
   const [selectedDate, setSelectedDate] = useState('2026-04-11');
   const [scheduleByDate, setScheduleByDate] = useState<Record<string, string[]>>({});
-  const [initialized, setInitialized] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], routineAges: [], search: '',
@@ -590,7 +589,6 @@ export default function ScheduleV2Page() {
     onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines`);
       setScheduleByDate(prev => ({ ...prev, [selectedDate]: [] }));
-      setInitialized(prev => { const next = new Set(prev); next.delete(selectedDate); return next; });
       refetch();
       refetchBlocks();
     },
@@ -601,7 +599,6 @@ export default function ScheduleV2Page() {
     onSuccess: async (data) => {
       toast.success(`Unscheduled ${data.count} routines from all days`);
       setScheduleByDate({});
-      setInitialized(new Set());
       refetch();
       refetchBlocks();
     },
@@ -665,7 +662,7 @@ export default function ScheduleV2Page() {
 
   // ===== INITIALIZE FROM DB (ALL DAYS) =====
   useEffect(() => {
-    if (!routinesData || initialized.has('all-days')) return;
+    if (!routinesData) return;
 
     const allSchedules: Record<string, string[]> = {};
 
@@ -696,8 +693,7 @@ export default function ScheduleV2Page() {
     });
 
     setScheduleByDate(allSchedules);
-    setInitialized(prev => new Set(prev).add('all-days'));
-  }, [routinesData, blocksData, initialized]);
+  }, [routinesData, blocksData]);
 
   // ===== COMPUTED: Unscheduled Routines =====
   const unscheduledRoutines = useMemo(() => {
@@ -1435,7 +1431,7 @@ export default function ScheduleV2Page() {
 
             {/* Refresh button */}
             <button
-              onClick={() => { setInitialized(new Set()); refetch(); refetchBlocks(); }}
+              onClick={() => { refetch(); refetchBlocks(); }}
               className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
             >
               🔄
