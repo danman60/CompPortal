@@ -1039,17 +1039,19 @@ export default function ScheduleV2Page() {
       // Create temporary block ID
       const tempBlockId = `block-temp-${Date.now()}`;
 
-      // Insert block at drop position
-      if (overId === 'schedule-drop-zone' || overId.startsWith('routine-') || overId.startsWith('block-')) {
-        // Dropping on schedule - add at specific position or end
-        if (overId === 'schedule-drop-zone') {
-          // Drop at end
+      // Check if dropping on schedule area or any item in schedule
+      const isDropOnScheduleZone = overId === 'schedule-drop-zone';
+      const isDropOnScheduleItem = scheduleOrder.includes(overId);
+
+      if (isDropOnScheduleZone || isDropOnScheduleItem) {
+        if (isDropOnScheduleZone) {
+          // Drop at end of schedule
           setScheduleByDate(prev => ({
             ...prev,
             [selectedDate]: [...(prev[selectedDate] || []), tempBlockId],
           }));
         } else {
-          // Drop at specific position
+          // Drop at specific position (before the item we're hovering over)
           const overIndex = scheduleOrder.indexOf(overId);
           setScheduleByDate(prev => {
             const newOrder = [...(prev[selectedDate] || [])];
@@ -1880,14 +1882,15 @@ export default function ScheduleV2Page() {
         </div>
       </div>
 
-      {/* Day Tabs + Block Buttons */}
-      <div className="px-6 py-3">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+      {/* Single DndContext wrapping both day tabs/block buttons AND main content */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        {/* Day Tabs + Block Buttons */}
+        <div className="px-6 py-3">
           <div className="flex items-center justify-between gap-4">
             <DayTabs
               days={competitionDates}
@@ -1920,17 +1923,10 @@ export default function ScheduleV2Page() {
               />
             </div>
           </div>
-        </DndContext>
-      </div>
+        </div>
 
-      {/* Main Content */}
-      <div className="px-6 py-2">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+        {/* Main Content */}
+        <div className="px-6 py-2">
           <div className="grid grid-cols-3 gap-4">
             {/* Left: Unscheduled Pool */}
             <div className="col-span-1">
@@ -2025,8 +2021,8 @@ export default function ScheduleV2Page() {
               </div>
             )}
           </DragOverlay>
-        </DndContext>
-      </div>
+        </div>
+      </DndContext>
 
       {/* Block Modal */}
       <ScheduleBlockModal
