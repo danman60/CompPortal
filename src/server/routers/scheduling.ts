@@ -3618,11 +3618,15 @@ export const schedulingRouter = router({
       });
 
       return versions.map(v => ({
+        id: v.id,
         versionNumber: v.version_number,
         status: v.status,
+        createdAt: v.created_at,
         sentAt: v.sent_at,
         deadline: v.deadline,
         closedAt: v.closed_at,
+        isPublished: v.is_published_to_studios ?? false,
+        publishedAt: v.sent_at, // Use sent_at as publishedAt
         respondingStudios: v.responding_studios_count ?? 0,
         totalStudios: v.total_studios_count ?? 0,
         notesCount: v.notes_count ?? 0,
