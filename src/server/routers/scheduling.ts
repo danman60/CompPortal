@@ -1610,6 +1610,34 @@ export const schedulingRouter = router({
       return updated;
     }),
 
+  // Update block details (title and duration)
+  updateBlockDetails: publicProcedure
+    .input(z.object({
+      blockId: z.string().uuid(),
+      title: z.string().optional(),
+      duration: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const updateData: any = {
+        updated_at: new Date(),
+      };
+
+      if (input.title !== undefined) {
+        updateData.title = input.title;
+      }
+
+      if (input.duration !== undefined) {
+        updateData.duration_minutes = input.duration;
+      }
+
+      const updated = await prisma.schedule_blocks.update({
+        where: { id: input.blockId },
+        data: updateData,
+      });
+
+      return updated;
+    }),
+
   // Add studio request/note to routine
   addStudioRequest: publicProcedure
     .input(z.object({

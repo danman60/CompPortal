@@ -382,6 +382,17 @@ export default function SchedulePage() {
     },
   });
 
+  // Update block details (title/duration) mutation
+  const updateBlockDetails = trpc.scheduling.updateBlockDetails.useMutation({
+    onSuccess: async () => {
+      console.log('[Schedule] Block details updated');
+    },
+    onError: (error) => {
+      console.error('[Schedule] Failed to update block details:', error);
+      toast.error('Failed to update block details');
+    },
+  });
+
   // PDF Export function
   const handleExportPDF = async () => {
     if (!routines) {
@@ -2014,6 +2025,16 @@ export default function SchedulePage() {
           }
 
           try {
+            // If editing an existing block, update title/duration first
+            if (editingBlock) {
+              console.log('[Schedule] Updating block details for:', blockId);
+              await updateBlockDetails.mutateAsync({
+                blockId: blockId,
+                title: block.title,
+                duration: block.duration,
+              });
+            }
+
             // Calculate targetTime and displayOrder based on placement type
             let targetTime: Date;
             let displayOrder: number;
