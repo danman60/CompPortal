@@ -63,14 +63,16 @@ const COMPETITION_DATES = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12
 
 // ===================== COMPONENTS =====================
 
-function DraggableBlockCard({ type, label, onClick }: { type: 'award' | 'break'; label: string; onClick?: () => void }) {
+function DraggableBlockCard({ type, onClick }: { type: 'award' | 'break'; onClick?: () => void }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: `template-${type}`,
     data: { type: 'template', blockType: type },
   });
 
+  const isAward = type === 'award';
+
   return (
-    <div
+    <button
       ref={setNodeRef}
       {...attributes}
       {...listeners}
@@ -80,14 +82,29 @@ function DraggableBlockCard({ type, label, onClick }: { type: 'award' | 'break';
           onClick();
         }
       }}
-      className={`px-4 py-3 rounded-lg border-2 border-dashed cursor-grab active:cursor-grabbing transition-all hover:scale-105 ${
-        type === 'award'
-          ? 'bg-amber-500/20 border-amber-500/50 text-amber-200'
-          : 'bg-cyan-500/20 border-cyan-500/50 text-cyan-200'
-      }`}
+      className={`
+        relative flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all
+        border-2 flex flex-col justify-center
+        cursor-grab active:cursor-grabbing
+        ${isAward
+          ? 'bg-amber-900/30 text-amber-300 border-amber-500/50 hover:bg-amber-900/50 hover:border-amber-500'
+          : 'bg-cyan-900/30 text-cyan-300 border-cyan-500/50 hover:bg-cyan-900/50 hover:border-cyan-500'
+        }
+      `}
+      title="Drag to schedule or click to configure"
     >
-      <span className="font-semibold">{label}</span>
-    </div>
+      <div className="font-semibold text-xs mb-1">
+        {isAward ? '🏆 +Award' : '☕ +Break'}
+      </div>
+      <div className={`text-xs ${isAward ? 'text-amber-200/80' : 'text-cyan-200/80'}`}>
+        {isAward ? 'Add ceremony block' : 'Add break block'}
+      </div>
+      <div className="absolute top-1 right-1 opacity-40">
+        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16"></path>
+        </svg>
+      </div>
+    </button>
   );
 }
 
@@ -1099,14 +1116,41 @@ export default function ScheduleV2Page() {
 
     // Case 3: Reordering within schedule
     if (activeId !== overId && scheduleOrder.includes(activeId) && scheduleOrder.includes(overId)) {
-      const oldIndex = scheduleOrder.indexOf(activeId);
-      const newIndex = scheduleOrder.indexOf(overId);
-      
-      if (oldIndex >= 0 && newIndex >= 0) {
+      // Check if activeId is part of multi-select
+      const isMultiSelect = selectedScheduledIds.has(activeId);
+
+      if (isMultiSelect) {
+        // Move all selected routines together as a group
+        const selectedIds = Array.from(selectedScheduledIds).filter(id => scheduleOrder.includes(id));
+        const nonSelectedIds = scheduleOrder.filter(id => !selectedScheduledIds.has(id));
+        const targetIndex = nonSelectedIds.indexOf(overId);
+
+        // Insert selected items at target position
+        const newOrder = [...nonSelectedIds];
+        if (targetIndex >= 0) {
+          newOrder.splice(targetIndex, 0, ...selectedIds);
+        } else {
+          newOrder.push(...selectedIds);
+        }
+
         setScheduleByDate(prev => ({
           ...prev,
-          [selectedDate]: arrayMove(prev[selectedDate] || [], oldIndex, newIndex),
+          [selectedDate]: newOrder,
         }));
+
+        // Clear selection after move
+        setSelectedScheduledIds(new Set());
+      } else {
+        // Single item move
+        const oldIndex = scheduleOrder.indexOf(activeId);
+        const newIndex = scheduleOrder.indexOf(overId);
+
+        if (oldIndex >= 0 && newIndex >= 0) {
+          setScheduleByDate(prev => ({
+            ...prev,
+            [selectedDate]: arrayMove(prev[selectedDate] || [], oldIndex, newIndex),
+          }));
+        }
       }
     }
   };
@@ -1873,12 +1917,10 @@ export default function ScheduleV2Page() {
           <div className="px-0 py-2 flex gap-3 mb-4">
             <DraggableBlockCard
               type="award"
-              label="🏆 Award Ceremony"
               onClick={() => handleCreateBlock('award')}
             />
             <DraggableBlockCard
               type="break"
-              label="☕ Break"
               onClick={() => handleCreateBlock('break')}
             />
           </div>
