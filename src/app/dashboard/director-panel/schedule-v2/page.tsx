@@ -936,21 +936,21 @@ export default function ScheduleV2Page() {
   // ===== HANDLERS =====
   const handleSave = async () => {
     const routineIds = scheduleOrder.filter(id => !id.startsWith('block-'));
-    
+
     let currentMinutes = 8 * 60; // 8:00 AM
-    const routinesToSave = routineIds.map((id, index) => {
+    const routinesToSave = routineIds.map((id) => {
       const routine = routinesMap.get(id);
       const duration = routine?.duration || 3;
-      
+
       const hours = Math.floor(currentMinutes / 60);
       const mins = currentMinutes % 60;
       const timeString = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
-      
+
       currentMinutes += duration;
-      
+
       return {
         routineId: id,
-        entryNumber: 100 + index,
+        entryNumber: entryNumbersByRoutineId.get(id) ?? 100,
         performanceTime: timeString,
       };
     });
