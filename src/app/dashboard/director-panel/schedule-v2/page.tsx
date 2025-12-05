@@ -1395,15 +1395,13 @@ export default function ScheduleV2Page() {
               </>
             )}
             
-            {/* PDF Export button */}
-            {scheduleOrder.filter(id => !id.startsWith('block-')).length > 0 && (
-              <button
-                onClick={handleExportPDF}
-                className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-sm font-semibold rounded-lg transition-colors border border-purple-500/30"
-              >
-                📄 Export PDF
-              </button>
-            )}
+            {/* PDF Export button - Always visible like V1 */}
+            <button
+              onClick={handleExportPDF}
+              className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-sm font-semibold rounded-lg transition-colors border border-purple-500/30"
+            >
+              📄 Export PDF
+            </button>
 
             {/* Send to Studios button */}
             {versionData && versionData.isPublished && (
