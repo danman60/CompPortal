@@ -1355,6 +1355,18 @@ export default function ScheduleV2Page() {
       ...prev,
       [selectedDate]: (prev[selectedDate] || []).filter(id => id !== `block-${blockId}`),
     }));
+
+    // If temp block (not yet saved), just remove from local state
+    if (blockId.startsWith('temp-')) {
+      setTempBlocks(prev => {
+        const next = new Map(prev);
+        next.delete(blockId);
+        return next;
+      });
+      return;
+    }
+
+    // Real database block - delete via mutation
     deleteBlockMutation.mutate({ blockId });
   };
 
