@@ -65,6 +65,27 @@ export default function RoutineSummaries() {
     }
   };
 
+  // Reopen summary mutation (copy from PipelinePageContainer)
+  const reopenSummaryMutation = trpc.reservation.reopenSummary.useMutation({
+    onSuccess: async () => {
+      await refetch();
+    },
+  });
+
+  const handleReopenSummary = async (reservationId: string, studioName: string) => {
+    if (!confirm(`Reopen summary for ${studioName}?\n\nThis will:\n• Void any existing invoices\n• Allow studio to edit entries again\n• Require re-submitting summary`)) {
+      return;
+    }
+
+    try {
+      const result = await reopenSummaryMutation.mutateAsync({ reservationId });
+      toast.success(result.message);
+    } catch (error) {
+      console.error('Failed to reopen summary:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reopen summary');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
       <div className="max-w-7xl mx-auto">
@@ -204,15 +225,38 @@ export default function RoutineSummaries() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         {summary.status === 'summarized' ? (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCreateInvoice(summary);
+                              }}
+                              disabled={createInvoiceMutation.isPending}
+                              className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {createInvoiceMutation.isPending ? 'Creating...' : 'Create Invoice'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReopenSummary(summary.reservation_id, summary.studio_name);
+                              }}
+                              disabled={reopenSummaryMutation.isPending}
+                              className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {reopenSummaryMutation.isPending ? 'Reopening...' : '🔄 Reopen'}
+                            </button>
+                          </>
+                        ) : summary.status === 'invoiced' ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCreateInvoice(summary);
+                              handleReopenSummary(summary.reservation_id, summary.studio_name);
                             }}
-                            disabled={createInvoiceMutation.isPending}
-                            className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={reopenSummaryMutation.isPending}
+                            className="px-4 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {createInvoiceMutation.isPending ? 'Creating...' : 'Create Invoice'}
+                            {reopenSummaryMutation.isPending ? 'Reopening...' : '🔄 Reopen Summary'}
                           </button>
                         ) : (
                           <Link
