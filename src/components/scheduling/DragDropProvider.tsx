@@ -925,46 +925,16 @@ export function DragDropProvider({
     const isSortableBlock = activeId.startsWith('block-') &&
       !activeId.startsWith('block-template-');
 
-    // For sortable blocks: Use pointerWithin for accurate position-based collision detection
-    // CRITICAL: Must prioritize specific items (routines/blocks) over containers
+    // For sortable blocks: Use closestCenter (matches routine collision logic)
+    // FIX: pointerWithin returned ALL items containing pointer, causing blocks
+    // to jump 7-9 spaces when many routines present. closestCenter returns only
+    // the closest match, eliminating the jumping behavior.
     if (isSortableBlock) {
-      console.log('[CollisionDetection] Sortable block drag, using pointerWithin:', activeId);
-      const collisions = pointerWithin(args);
+      console.log('[CollisionDetection] Sortable block drag, using closestCenter:', activeId);
+      const collisions = closestCenter(args);
       const filtered = collisions.filter((collision: any) => collision.id !== activeId);
-
-      // Separate specific items from containers
-      const specificItems = filtered.filter(c => {
-        const id = String(c.id);
-        return id.startsWith('routine-') || id.startsWith('block-');
-      });
-      const containers = filtered.filter(c => {
-        const id = String(c.id);
-        return id.startsWith('schedule-table-');
-      });
-
-      console.log('[CollisionDetection] pointerWithin results:', {
-        total: filtered.length,
-        specificItems: specificItems.map((c: any) => c.id),
-        containers: containers.map((c: any) => c.id)
-      });
-
-      // Prioritize specific items over containers
-      if (specificItems.length > 0) {
-        console.log('[CollisionDetection] Returning specific items (routines/blocks)');
-        return specificItems;
-      }
-
-      // ATTEMPT 18 FIX: If only container found (no specific items), return container directly!
-      // This allows blocks to be dropped at the BOTTOM of the schedule (past all routines)
-      // The handleBlockDrag function will handle appending to end when target is schedule-table-*
-      if (containers.length > 0) {
-        console.log('[CollisionDetection] No specific items found, returning container for bottom-of-schedule drop (Attempt 18)');
-        return containers;
-      }
-
-      // No collisions at all
-      console.log('[CollisionDetection] No collisions found');
-      return [];
+      console.log('[CollisionDetection] closestCenter returned:', filtered.length, 'collisions after filtering', filtered.map((c: any) => c.id));
+      return filtered;
     }
 
     // For sortable routines: Use closestCenter (works well for routine reordering)
