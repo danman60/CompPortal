@@ -48,7 +48,6 @@ import { AssignStudioCodesModal } from '@/components/AssignStudioCodesModal';
 import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
 import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
-import { TrophyTooltip } from '@/components/scheduling/TrophyTooltip';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Mail, History, Eye, FileText, Clock, Pencil } from 'lucide-react';
@@ -696,11 +695,6 @@ export default function ScheduleV2Page() {
     tenantId: TEST_TENANT_ID,
   });
 
-  // Trophy Helper: Get last routines per category for award block placement
-  const { data: trophyHelperData } = trpc.scheduling.getTrophyHelper.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-  });
-
   // Update day start time mutation (V1 parity - recalculates all routine times)
   const updateDayStartTimeMutation = trpc.scheduling.updateDayStartTime.useMutation({
     onSuccess: async (data) => {
@@ -861,17 +855,23 @@ export default function ScheduleV2Page() {
   }, [routinesData, scheduleByDate, filters]);
 
   // ===== COMPUTED: Trophy Helper =====
-  // Use backend trophyHelperData which only shows trophies when ALL routines in category are scheduled
+  // Find last routine per category in current schedule (local state)
   const trophyIds = useMemo(() => {
     const trophies = new Set<string>();
-    if (!trophyHelperData) return trophies;
+    const categoryLastRoutine = new Map<string, string>();
 
-    trophyHelperData.forEach(entry => {
-      trophies.add(entry.lastRoutineId);
+    // Loop through schedule order to find last routine per category
+    scheduleOrder.forEach(id => {
+      if (id.startsWith('block-')) return;
+      const routine = routinesMap.get(id);
+      if (!routine) return;
+      const key = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
+      categoryLastRoutine.set(key, id);
     });
 
+    categoryLastRoutine.forEach(id => trophies.add(id));
     return trophies;
-  }, [trophyHelperData]);
+  }, [scheduleOrder, routinesMap]);
 
   // ===== COMPUTED: Conflicts =====
   const conflictsMap = useMemo(() => {
