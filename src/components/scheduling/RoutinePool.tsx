@@ -593,16 +593,32 @@ function FilterDropdown({
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 });
 
-  // Calculate dropdown position when it opens
+  // Calculate dropdown position when it opens and on scroll/resize
   React.useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      // For position:fixed, use viewport coordinates directly (no scroll offset)
-      setDropdownPosition({
-        top: rect.bottom + 4,   // 4px gap below button
-        left: rect.left,
-      });
-    }
+    if (!isOpen || !buttonRef.current) return;
+
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        // For position:fixed, use viewport coordinates directly (no scroll offset)
+        setDropdownPosition({
+          top: rect.bottom + 4,   // 4px gap below button
+          left: rect.left,
+        });
+      }
+    };
+
+    // Initial position
+    updatePosition();
+
+    // Update on scroll (parent might scroll, changing button's viewport position)
+    window.addEventListener('scroll', updatePosition, true); // Use capture to catch all scrolls
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [isOpen]);
 
   // Close dropdown when clicking outside
