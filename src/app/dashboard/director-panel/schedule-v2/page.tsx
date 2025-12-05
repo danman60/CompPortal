@@ -172,6 +172,8 @@ function SortableScheduleRow({
   onDelete,
   onEdit,
   onUnschedule,
+  isSelected,
+  onToggleSelection,
 }: {
   item: ScheduleItem;
   routine?: RoutineData;
@@ -187,6 +189,8 @@ function SortableScheduleRow({
   onDelete?: () => void;
   onEdit?: () => void;
   onUnschedule?: () => void;
+  isSelected?: boolean;
+  onToggleSelection?: (e: React.MouseEvent) => void;
 }) {
   const {
     attributes,
@@ -216,6 +220,7 @@ function SortableScheduleRow({
           isAward ? 'border-l-4 border-l-amber-500 border-amber-500/50' : 'border-l-4 border-l-cyan-500 border-cyan-500/50'
         }`}
       >
+        <td className="px-1 py-2" style={{ width: '36px' }}></td>
         <td className="px-1 py-2" style={{ width: '36px' }}></td>
         <td className="px-1 py-2 text-lg" style={{ width: '30px' }}>{isAward ? '🏆' : '☕'}</td>
         <td className="px-1 py-2 font-mono text-sm text-white/90" style={{ width: '70px' }}>{timeString}</td>
@@ -260,10 +265,24 @@ function SortableScheduleRow({
         style={style}
         {...attributes}
         {...listeners}
+        onClick={onToggleSelection}
         className={`border-b border-white/10 cursor-grab active:cursor-grabbing hover:bg-white/5 transition-colors ${sessionColor} ${
           hasConflict ? 'border-l-4 border-l-red-500' : ''
-        }`}
+        } ${isSelected ? 'bg-blue-500/20' : ''}`}
       >
+        {/* Selection Checkbox */}
+        <td className="px-1 py-2" style={{ width: '36px' }}>
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={() => {}} // Handled by tr onClick
+              className="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 cursor-pointer"
+              onClick={(e) => e.stopPropagation()} // Prevent drag when clicking checkbox
+            />
+          </div>
+        </td>
+
         {/* Badges */}
         <td className="px-1 py-2" style={{ width: '36px' }}>
           <div className="flex gap-0.5">
@@ -364,6 +383,10 @@ function DroppableScheduleTable({
   onDeleteBlock,
   onEditBlock,
   onUnscheduleRoutine,
+  selectedScheduledIds,
+  setSelectedScheduledIds,
+  lastClickedScheduledRoutineId,
+  setLastClickedScheduledRoutineId,
 }: {
   scheduleOrder: string[];
   routinesMap: Map<string, RoutineData>;
@@ -375,8 +398,47 @@ function DroppableScheduleTable({
   onDeleteBlock: (blockId: string) => void;
   onEditBlock: (block: BlockData) => void;
   onUnscheduleRoutine: (routineId: string) => void;
+  selectedScheduledIds: Set<string>;
+  setSelectedScheduledIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  lastClickedScheduledRoutineId: string | null;
+  setLastClickedScheduledRoutineId: React.Dispatch<React.SetStateAction<string | null>>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'schedule-drop-zone' });
+
+  // Shift+click handler for scheduled routines (copied from V1 pattern)
+  const handleScheduledRoutineClick = (routineId: string, e: React.MouseEvent) => {
+    const shift = e.shiftKey;
+    const scheduledRoutines = scheduleOrder.filter(id => !id.startsWith('block-'));
+
+    if (shift && lastClickedScheduledRoutineId && scheduledRoutines.length > 0) {
+      const lastIndex = scheduledRoutines.findIndex(id => id === lastClickedScheduledRoutineId);
+      const currentIndex = scheduledRoutines.findIndex(id => id === routineId);
+
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const [start, end] = lastIndex < currentIndex ? [lastIndex, currentIndex] : [currentIndex, lastIndex];
+        const rangeIds = scheduledRoutines.slice(start, end + 1);
+        setSelectedScheduledIds(prev => {
+          const newSet = new Set(prev);
+          rangeIds.forEach(id => newSet.add(id));
+          return newSet;
+        });
+        setLastClickedScheduledRoutineId(routineId);
+        return;
+      }
+    }
+
+    // Normal click: toggle selection
+    setSelectedScheduledIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(routineId)) {
+        newSet.delete(routineId);
+      } else {
+        newSet.add(routineId);
+      }
+      return newSet;
+    });
+    setLastClickedScheduledRoutineId(routineId);
+  };
 
   // Calculate times and entry numbers
   let currentMinutes = dayStartMinutes;
@@ -414,6 +476,8 @@ function DroppableScheduleTable({
         onDelete={isBlock ? () => onDeleteBlock(actualId) : undefined}
         onEdit={isBlock && block ? () => onEditBlock(block) : undefined}
         onUnschedule={!isBlock ? () => onUnscheduleRoutine(actualId) : undefined}
+        isSelected={!isBlock && selectedScheduledIds.has(actualId)}
+        onToggleSelection={!isBlock ? (e) => handleScheduledRoutineClick(actualId, e) : undefined}
       />
     );
   });
@@ -446,6 +510,7 @@ function DroppableScheduleTable({
         <table className="w-full" style={{ tableLayout: 'fixed' }}>
           <thead className="sticky top-0 z-10">
             <tr className="bg-indigo-600/40 border-b border-indigo-600/30">
+              <th className="px-1 py-2 text-xs font-semibold text-white/80 text-center" style={{ width: '36px' }}>☑</th>
               <th className="px-1 py-2 text-xs font-semibold text-white/80 text-center" style={{ width: '36px' }}>●</th>
               <th className="px-1 py-2 text-xs font-semibold text-white text-left" style={{ width: '30px' }}>#</th>
               <th className="px-1 py-2 text-xs font-semibold text-white text-left" style={{ width: '70px' }}>TIME</th>
@@ -484,6 +549,7 @@ export default function ScheduleV2Page() {
   });
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
   const [lastClickedRoutineId, setLastClickedRoutineId] = useState<string | null>(null);
+  const [lastClickedScheduledRoutineId, setLastClickedScheduledRoutineId] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockType, setBlockType] = useState<'award' | 'break'>('award');
   const [editingBlock, setEditingBlock] = useState<{ id: string; type: 'award' | 'break'; title: string; duration: number } | null>(null);
@@ -1344,7 +1410,28 @@ export default function ScheduleV2Page() {
                 📥 Schedule All ({unscheduledRoutines.length})
               </button>
             )}
-            
+
+            {/* Unschedule Selected button (copied from V1) */}
+            {selectedScheduledIds.size > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm(`Unschedule ${selectedScheduledIds.size} selected routine(s)?`)) {
+                    // Remove selected routines from schedule
+                    setScheduleByDate(prev => ({
+                      ...prev,
+                      [selectedDate]: (prev[selectedDate] || []).filter(id => !selectedScheduledIds.has(id)),
+                    }));
+                    toast.success(`Unscheduled ${selectedScheduledIds.size} routines`);
+                    setSelectedScheduledIds(new Set());
+                    setLastClickedScheduledRoutineId(null);
+                  }
+                }}
+                className="px-3 py-2 bg-red-500/80 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                ↩️ Unschedule ({selectedScheduledIds.size})
+              </button>
+            )}
+
             {/* Reset Day button */}
             {scheduleOrder.length > 0 && (
               <button
@@ -1553,6 +1640,10 @@ export default function ScheduleV2Page() {
                     [selectedDate]: (prev[selectedDate] || []).filter(id => id !== routineId),
                   }));
                 }}
+                selectedScheduledIds={selectedScheduledIds}
+                setSelectedScheduledIds={setSelectedScheduledIds}
+                lastClickedScheduledRoutineId={lastClickedScheduledRoutineId}
+                setLastClickedScheduledRoutineId={setLastClickedScheduledRoutineId}
               />
             </div>
           </div>
