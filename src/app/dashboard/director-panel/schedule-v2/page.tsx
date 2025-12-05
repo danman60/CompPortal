@@ -62,7 +62,7 @@ const COMPETITION_DATES = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12
 
 // ===================== COMPONENTS =====================
 
-function DraggableBlockCard({ type, label }: { type: 'award' | 'break'; label: string }) {
+function DraggableBlockCard({ type, label, onClick }: { type: 'award' | 'break'; label: string; onClick?: () => void }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: `template-${type}`,
     data: { type: 'template', blockType: type },
@@ -73,6 +73,12 @@ function DraggableBlockCard({ type, label }: { type: 'award' | 'break'; label: s
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      onClick={(e) => {
+        // Only trigger onClick if not dragging
+        if (onClick && e.detail === 1) {
+          onClick();
+        }
+      }}
       className={`px-4 py-3 rounded-lg border-2 border-dashed cursor-grab active:cursor-grabbing transition-all hover:scale-105 ${
         type === 'award'
           ? 'bg-amber-500/20 border-amber-500/50 text-amber-200'
@@ -964,32 +970,10 @@ export default function ScheduleV2Page() {
     });
   };
 
-  const handleCreateBlock = async (type: 'award' | 'break') => {
-    const title = type === 'award' ? 'Award Ceremony' : '30 Minute Break';
-    const duration = 30;
-    
-    // Calculate time based on current schedule end
-    let currentMinutes = 8 * 60;
-    scheduleOrder.forEach(id => {
-      const routine = routinesMap.get(id.replace('block-', ''));
-      const block = blocksMap.get(id.replace('block-', ''));
-      currentMinutes += routine?.duration || block?.duration_minutes || 0;
-    });
-
-    const [year, month, day] = selectedDate.split('-').map(Number);
-    const hours = Math.floor(currentMinutes / 60);
-    const mins = currentMinutes % 60;
-    const scheduledTime = new Date(year, month - 1, day, hours, mins, 0);
-
-    await createBlockMutation.mutateAsync({
-      competitionId: TEST_COMPETITION_ID,
-      tenantId: TEST_TENANT_ID,
-      blockType: type,
-      title,
-      durationMinutes: duration,
-      scheduledTime,
-      sortOrder: scheduleOrder.length,
-    });
+  const handleCreateBlock = (type: 'award' | 'break') => {
+    // Open modal to configure block (copied from V1 pattern)
+    setBlockType(type);
+    setShowBlockModal(true);
   };
 
   const handleUpdateBlock = async (blockId: string, title: string, duration: number) => {
@@ -1453,12 +1437,6 @@ export default function ScheduleV2Page() {
         />
       </div>
 
-      {/* Block Templates */}
-      <div className="px-6 py-2 flex gap-3">
-        <DraggableBlockCard type="award" label="🏆 Award Ceremony" />
-        <DraggableBlockCard type="break" label="☕ Break" />
-      </div>
-
       {/* Main Content */}
       <div className="px-6 py-2">
         <DndContext
@@ -1467,6 +1445,19 @@ export default function ScheduleV2Page() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
+          {/* Block Templates - MUST be inside DndContext to enable drag-drop */}
+          <div className="px-0 py-2 flex gap-3 mb-4">
+            <DraggableBlockCard
+              type="award"
+              label="🏆 Award Ceremony"
+              onClick={() => handleCreateBlock('award')}
+            />
+            <DraggableBlockCard
+              type="break"
+              label="☕ Break"
+              onClick={() => handleCreateBlock('break')}
+            />
+          </div>
           <div className="grid grid-cols-3 gap-4">
             {/* Left: Unscheduled Pool */}
             <div className="col-span-1">
