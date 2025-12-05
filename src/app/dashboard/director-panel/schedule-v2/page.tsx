@@ -220,10 +220,10 @@ function SortableScheduleRow({
           isAward ? 'border-l-4 border-l-amber-500 border-amber-500/50' : 'border-l-4 border-l-cyan-500 border-cyan-500/50'
         }`}
       >
+        <td className="px-1 py-2" style={{ width: '43px' }}></td>
         <td className="px-1 py-2" style={{ width: '36px' }}></td>
-        <td className="px-1 py-2" style={{ width: '36px' }}></td>
-        <td className="px-1 py-2 text-lg" style={{ width: '30px' }}>{isAward ? '🏆' : '☕'}</td>
-        <td className="px-1 py-2 font-mono text-sm text-white/90" style={{ width: '70px' }}>{timeString}</td>
+        <td className="px-1 py-2 text-lg" style={{ width: '36px' }}>{isAward ? '🏆' : '☕'}</td>
+        <td className="px-1 py-2 font-mono text-sm text-white/90" style={{ width: '84px' }}>{timeString}</td>
         <td colSpan={7} className="px-2 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -271,7 +271,7 @@ function SortableScheduleRow({
         } ${isSelected ? 'bg-blue-500/20' : ''}`}
       >
         {/* Selection Checkbox */}
-        <td className="px-1 py-2" style={{ width: '36px' }}>
+        <td className="px-1 py-2" style={{ width: '43px' }}>
           <div className="flex items-center justify-center">
             <input
               type="checkbox"
@@ -291,7 +291,7 @@ function SortableScheduleRow({
         <td className="px-1 py-2" style={{ width: '36px' }}>
           <div className="flex gap-0.5">
             {hasTrophy && (
-              <span className="inline-flex items-center justify-center w-6 h-5 rounded text-xs" 
+              <span className="inline-flex items-center justify-center w-6 h-5 rounded text-xs"
                 style={{ background: 'linear-gradient(135deg, #FFD700, #FFA500)' }}
                 title={`🏆 Last in ${routine.entrySizeName} • ${routine.ageGroupName} • ${routine.classificationName}`}>
                 🏆
@@ -313,14 +313,14 @@ function SortableScheduleRow({
             )}
           </div>
         </td>
-        
+
         {/* Entry # */}
-        <td className="px-1 py-2 text-sm font-bold text-white" style={{ width: '30px' }}>
+        <td className="px-1 py-2 text-sm font-bold text-white" style={{ width: '36px' }}>
           #{entryNumber}
         </td>
-        
+
         {/* Time */}
-        <td className="px-1 py-2 font-mono text-sm text-white/90" style={{ width: '70px' }}>
+        <td className="px-1 py-2 font-mono text-sm text-white/90" style={{ width: '84px' }}>
           {timeString}
         </td>
         
@@ -1012,7 +1012,37 @@ export default function ScheduleV2Page() {
     // Case 0: Handle template block drops
     if (activeId.startsWith('template-')) {
       const blockType = activeId.replace('template-', '') as 'award' | 'break';
-      handleCreateBlock(blockType);
+
+      // Create temporary block ID
+      const tempBlockId = `block-temp-${Date.now()}`;
+
+      // Insert block at drop position
+      if (overId === 'schedule-drop-zone' || overId.startsWith('routine-') || overId.startsWith('block-')) {
+        // Dropping on schedule - add at specific position or end
+        if (overId === 'schedule-drop-zone') {
+          // Drop at end
+          setScheduleByDate(prev => ({
+            ...prev,
+            [selectedDate]: [...(prev[selectedDate] || []), tempBlockId],
+          }));
+        } else {
+          // Drop at specific position
+          const overIndex = scheduleOrder.indexOf(overId);
+          setScheduleByDate(prev => {
+            const newOrder = [...(prev[selectedDate] || [])];
+            if (overIndex >= 0) {
+              newOrder.splice(overIndex, 0, tempBlockId);
+            } else {
+              newOrder.push(tempBlockId);
+            }
+            return { ...prev, [selectedDate]: newOrder };
+          });
+        }
+
+        // Open modal for configuration
+        handleCreateBlock(blockType);
+        toast.success(`${blockType === 'award' ? 'Award' : 'Break'} block added - configure details`);
+      }
       return;
     }
 
@@ -1926,6 +1956,17 @@ export default function ScheduleV2Page() {
               <div className="p-3 rounded-lg bg-purple-600 border-2 border-purple-400 shadow-xl opacity-90 max-w-xs">
                 <div className="font-medium text-white truncate">{activeRoutine.title}</div>
                 <div className="text-xs text-white/70">{activeRoutine.studioCode} • {activeRoutine.duration}m</div>
+              </div>
+            )}
+            {activeId?.startsWith('template-') && (
+              <div className={`px-4 py-3 rounded-lg border-2 border-dashed shadow-xl opacity-90 ${
+                activeId === 'template-award'
+                  ? 'bg-amber-500/80 border-amber-400 text-white'
+                  : 'bg-cyan-500/80 border-cyan-400 text-white'
+              }`}>
+                <span className="font-semibold">
+                  {activeId === 'template-award' ? '🏆 Award Ceremony' : '☕ Break'}
+                </span>
               </div>
             )}
           </DragOverlay>
