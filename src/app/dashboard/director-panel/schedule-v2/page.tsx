@@ -271,16 +271,22 @@ function SortableScheduleRow({
         } ${isSelected ? 'bg-blue-500/20' : ''}`}
       >
         {/* Selection Checkbox */}
-        <td className="px-1 py-2" style={{ width: '55px' }}>
+        <td
+          className="px-1 py-2"
+          style={{ width: '55px' }}
+          onClick={(e) => {
+            e.stopPropagation(); // Stop click from bubbling to row
+            if (onToggleSelection) {
+              onToggleSelection(e as any);
+            }
+          }}
+        >
           <div className="flex items-center justify-center">
             <input
               type="checkbox"
               checked={isSelected || false}
               onChange={(e) => {
-                e.stopPropagation(); // Prevent drag
-                if (onToggleSelection) {
-                  onToggleSelection(e as any);
-                }
+                // onChange already handled by td onClick
               }}
               className="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 cursor-pointer"
             />
