@@ -148,8 +148,8 @@ export default function RoutineSummaries() {
         </div>
       </div>
 
-      {/* Summaries Table */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+      {/* Desktop Table (hidden on mobile) */}
+      <div className="hidden md:block bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-800">
             <tr>
@@ -274,6 +274,114 @@ export default function RoutineSummaries() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Card Layout (visible on mobile only) */}
+      <div className="md:hidden space-y-4">
+        {filteredSummaries.length === 0 ? (
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-12 text-center">
+            <p className="text-gray-400">No routine submissions found</p>
+          </div>
+        ) : (
+          filteredSummaries.map((summary: any) => {
+            const key = `${summary.studio_id}-${summary.competition_id}`;
+
+            return (
+              <div
+                key={key}
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6"
+              >
+                {/* Status Badge */}
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{summary.studio_name}</h3>
+                    {summary.studio_code && (
+                      <p className="text-sm text-gray-400">({summary.studio_code})</p>
+                    )}
+                  </div>
+                  {summary.status === 'summarized' ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-blue-500/20 text-blue-300 border-blue-500/30">
+                      Awaiting Invoice
+                    </span>
+                  ) : summary.status === 'invoiced' ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+                      Invoiced
+                    </span>
+                  ) : summary.status === 'closed' ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-green-500/20 text-green-300 border-green-500/30">
+                      Paid
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-gray-500/20 text-gray-300 border-gray-500/30">
+                      {summary.status}
+                    </span>
+                  )}
+                </div>
+
+                {/* Competition Info */}
+                <div className="mb-4">
+                  <p className="text-sm text-gray-400">Competition</p>
+                  <p className="text-white">{summary.competition_name}</p>
+                  <p className="text-xs text-gray-400">
+                    Submitted: {new Date(summary.submitted_at).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {/* Stats */}
+                <div className="flex justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-gray-400">Routines</p>
+                    <p className="text-2xl font-bold text-white">{summary.entry_count}</p>
+                    {summary.entries_unused > 0 && (
+                      <p className="text-xs text-gray-400">({summary.entries_unused} refunded)</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-400">Total Amount</p>
+                    <p className="text-2xl font-bold text-white">${summary.total_amount.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2">
+                  {summary.status === 'summarized' ? (
+                    <>
+                      <button
+                        onClick={() => handleCreateInvoice(summary)}
+                        disabled={createInvoiceMutation.isPending}
+                        className="w-full px-4 py-3 rounded-lg transition-all text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      >
+                        {createInvoiceMutation.isPending ? 'Creating...' : 'Create Invoice'}
+                      </button>
+                      <button
+                        onClick={() => handleReopenSummary(summary.reservation_id, summary.studio_name)}
+                        disabled={reopenSummaryMutation.isPending}
+                        className="w-full px-4 py-3 rounded-lg transition-all text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      >
+                        {reopenSummaryMutation.isPending ? 'Reopening...' : '🔄 Reopen'}
+                      </button>
+                    </>
+                  ) : summary.status === 'invoiced' ? (
+                    <button
+                      onClick={() => handleReopenSummary(summary.reservation_id, summary.studio_name)}
+                      disabled={reopenSummaryMutation.isPending}
+                      className="w-full px-4 py-3 rounded-lg transition-all text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {reopenSummaryMutation.isPending ? 'Reopening...' : '🔄 Reopen Summary'}
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/dashboard/reservation-pipeline?reservation=${summary.reservation_id}`}
+                      className="block w-full px-4 py-3 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg text-center font-medium"
+                    >
+                      View Details
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Summary Stats */}

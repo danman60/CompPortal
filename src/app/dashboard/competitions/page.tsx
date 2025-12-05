@@ -54,6 +54,60 @@ export default function CompetitionsPage() {
     },
   });
 
+  // Move hook definitions BEFORE any early returns to maintain consistent hook count
+  const competitions = data?.competitions || [];
+  const tenants = tenantsData?.tenants || [];
+  const isSuperAdmin = userData?.role === 'super_admin';
+
+  const filteredCompetitions = filter === 'all'
+    ? competitions
+    : filter === 'active'
+    ? competitions.filter(c => c.status !== 'cancelled')
+    : competitions.filter(c => c.status === filter);
+
+  // Sort competitions for table view (hook must be called consistently)
+  const sortedCompetitions = useMemo(() => {
+    if (viewMode !== 'table') return filteredCompetitions;
+
+    return [...filteredCompetitions].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'year':
+          aValue = a.year;
+          bValue = b.year;
+          break;
+        case 'tenant':
+          aValue = a.tenants?.name.toLowerCase() || '';
+          bValue = b.tenants?.name.toLowerCase() || '';
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'capacity':
+          const aReserved = a.reservations?.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+          const bReserved = b.reservations?.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
+          aValue = (a.venue_capacity || 600) - aReserved;
+          bValue = (b.venue_capacity || 600) - bReserved;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredCompetitions, viewMode, sortColumn, sortDirection]);
+
+  const displayCompetitions = viewMode === 'table' ? sortedCompetitions : filteredCompetitions;
+
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
       deleteMutation.mutate({ id });
@@ -111,59 +165,6 @@ export default function CompetitionsPage() {
       </main>
     );
   }
-
-  const competitions = data?.competitions || [];
-  const tenants = tenantsData?.tenants || [];
-  const isSuperAdmin = userData?.role === 'super_admin';
-
-  const filteredCompetitions = filter === 'all'
-    ? competitions
-    : filter === 'active'
-    ? competitions.filter(c => c.status !== 'cancelled')
-    : competitions.filter(c => c.status === filter);
-
-  // Sort competitions for table view
-  const sortedCompetitions = useMemo(() => {
-    if (viewMode !== 'table') return filteredCompetitions;
-
-    return [...filteredCompetitions].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortColumn) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'year':
-          aValue = a.year;
-          bValue = b.year;
-          break;
-        case 'tenant':
-          aValue = a.tenants?.name.toLowerCase() || '';
-          bValue = b.tenants?.name.toLowerCase() || '';
-          break;
-        case 'status':
-          aValue = a.status;
-          bValue = b.status;
-          break;
-        case 'capacity':
-          const aReserved = a.reservations?.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
-          const bReserved = b.reservations?.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.spaces_confirmed || 0), 0) || 0;
-          aValue = (a.venue_capacity || 600) - aReserved;
-          bValue = (b.venue_capacity || 600) - bReserved;
-          break;
-        default:
-          return 0;
-      }
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [filteredCompetitions, viewMode, sortColumn, sortDirection]);
-
-  const displayCompetitions = viewMode === 'table' ? sortedCompetitions : filteredCompetitions;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black p-6">
