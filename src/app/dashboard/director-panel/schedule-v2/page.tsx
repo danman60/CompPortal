@@ -736,6 +736,10 @@ export default function ScheduleV2Page() {
     onError: (err) => toast.error(`Failed to publish: ${err.message}`),
   });
 
+  // ===== LOCAL TEMP BLOCKS STATE =====
+  // Temp blocks are created on drag before being persisted to DB
+  const [tempBlocks, setTempBlocks] = useState<Map<string, BlockData>>(new Map());
+
   // ===== BUILD MAPS =====
   const routinesMap = useMemo(() => {
     const map = new Map<string, RoutineData>();
@@ -764,8 +768,10 @@ export default function ScheduleV2Page() {
     return map;
   }, [routinesData]);
 
+  // Combine DB blocks + temp blocks into single map
   const blocksMap = useMemo(() => {
     const map = new Map<string, BlockData>();
+    // Add blocks from DB
     (blocksData || []).forEach(b => {
       map.set(b.id, {
         id: b.id,
@@ -774,8 +780,12 @@ export default function ScheduleV2Page() {
         duration_minutes: b.duration_minutes,
       });
     });
+    // Add temp blocks (for drag-created blocks not yet in DB)
+    tempBlocks.forEach((block, id) => {
+      map.set(id, block);
+    });
     return map;
-  }, [blocksData]);
+  }, [blocksData, tempBlocks]);
 
   // ===== INITIALIZE FROM DB (ALL DAYS) =====
   useEffect(() => {
@@ -1039,6 +1049,18 @@ export default function ScheduleV2Page() {
       // Create temporary block ID
       const tempBlockId = `block-temp-${Date.now()}`;
 
+      // Add temp block to tempBlocks state so it appears in blocksMap
+      setTempBlocks(prev => {
+        const next = new Map(prev);
+        next.set(tempBlockId, {
+          id: tempBlockId,
+          block_type: blockType,
+          title: blockType === 'award' ? '🏆 Award Ceremony' : '☕ Break',
+          duration_minutes: blockType === 'award' ? 30 : 15,
+        });
+        return next;
+      });
+
       // Check if dropping on schedule area or any item in schedule
       const isDropOnScheduleZone = overId === 'schedule-drop-zone';
       const isDropOnScheduleItem = scheduleOrder.includes(overId);
@@ -1156,7 +1178,25 @@ export default function ScheduleV2Page() {
   };
 
   // ===== HANDLERS =====
-  
+
+  // Helper: Get day start time in minutes from dayStartTimes
+  const getDayStartMinutes = (date: string): number => {
+    const storedStartTime = dayStartTimes?.find((dst: any) => {
+      const dstDate = new Date(dst.date);
+      const targetDate = new Date(date);
+      return dstDate.getTime() === targetDate.getTime();
+    });
+
+    if (storedStartTime?.start_time) {
+      const timeValue = new Date(storedStartTime.start_time);
+      const hours = timeValue.getUTCHours();
+      const minutes = timeValue.getUTCMinutes();
+      return hours * 60 + minutes;
+    }
+
+    return 8 * 60; // Default to 8:00 AM
+  };
+
   // Save ALL days (V1 parity - multi-day save with progress)
   const handleSaveAllDays = async () => {
     if (!routinesData) return;
@@ -1186,7 +1226,7 @@ export default function ScheduleV2Page() {
         }
 
         // Calculate times with global entry numbers
-        let currentMinutes = 8 * 60; // 8:00 AM default
+        let currentMinutes = getDayStartMinutes(date); // Use configured start time
         const routinesToSave = routineIds.map((id) => {
           const routine = routinesMap.get(id);
           const duration = routine?.duration || 3;
@@ -1235,7 +1275,7 @@ export default function ScheduleV2Page() {
   const handleSave = async () => {
     const routineIds = scheduleOrder.filter(id => !id.startsWith('block-'));
 
-    let currentMinutes = 8 * 60; // 8:00 AM
+    let currentMinutes = getDayStartMinutes(selectedDate); // Use configured start time
     const routinesToSave = routineIds.map((id) => {
       const routine = routinesMap.get(id);
       const duration = routine?.duration || 3;
@@ -2052,7 +2092,7 @@ export default function ScheduleV2Page() {
               blockType: block.type,
               title: block.title,
               durationMinutes: block.duration,
-              scheduledTime: new Date(),
+              scheduledTime: new Date(`${selectedDate}T00:00:00`),
               sortOrder: scheduleOrder.length,
             });
           }
