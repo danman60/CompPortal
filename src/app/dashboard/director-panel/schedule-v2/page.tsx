@@ -325,7 +325,7 @@ function SortableScheduleRow({
         </td>
         
         {/* Title */}
-        <td className="px-2 py-2 text-sm font-medium text-white truncate" style={{ maxWidth: '180px', width: '180px' }} title={routine.title}>
+        <td className="px-2 py-2 text-sm font-medium text-white truncate" style={{ maxWidth: '126px', width: '126px' }} title={routine.title}>
           {routine.title}
         </td>
         
