@@ -476,6 +476,7 @@ export default function ScheduleV2Page() {
     classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], routineAges: [], search: '',
   });
   const [selectedRoutineIds, setSelectedRoutineIds] = useState<Set<string>>(new Set());
+  const [lastClickedRoutineId, setLastClickedRoutineId] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockType, setBlockType] = useState<'award' | 'break'>('award');
   const [editingBlock, setEditingBlock] = useState<{ id: string; type: 'award' | 'break'; title: string; duration: number } | null>(null);
@@ -1475,8 +1476,29 @@ export default function ScheduleV2Page() {
                 onToggleSelection={(id, shift) => {
                   setSelectedRoutineIds(prev => {
                     const next = new Set(prev);
+
+                    // Shift+click range selection (copied from V1)
+                    if (shift && lastClickedRoutineId && unscheduledRoutines.length > 0) {
+                      const lastIndex = unscheduledRoutines.findIndex(r => r.id === lastClickedRoutineId);
+                      const currentIndex = unscheduledRoutines.findIndex(r => r.id === id);
+
+                      if (lastIndex !== -1 && currentIndex !== -1) {
+                        const start = Math.min(lastIndex, currentIndex);
+                        const end = Math.max(lastIndex, currentIndex);
+
+                        // Select all routines in range
+                        for (let i = start; i <= end; i++) {
+                          next.add(unscheduledRoutines[i].id);
+                        }
+                        setLastClickedRoutineId(id);
+                        return next;
+                      }
+                    }
+
+                    // Normal click - toggle single routine
                     if (next.has(id)) next.delete(id);
                     else next.add(id);
+                    setLastClickedRoutineId(id);
                     return next;
                   });
                 }}
