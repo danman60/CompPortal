@@ -1062,9 +1062,7 @@ export default function ScheduleV2Page() {
           });
         }
 
-        // Open modal for configuration
-        handleCreateBlock(blockType);
-        toast.success(`${blockType === 'award' ? 'Award' : 'Break'} block added - configure details`);
+        toast.success(`${blockType === 'award' ? '🏆 Award' : '☕ Break'} block added - click to edit`);
       }
       return;
     }
