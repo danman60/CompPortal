@@ -1045,32 +1045,37 @@ export default function ScheduleV2Page() {
     // Case 0: Handle template block drops
     if (activeId.startsWith('template-')) {
       const blockType = activeId.replace('template-', '') as 'award' | 'break';
+      const timestamp = Date.now();
 
-      // Create temporary block ID
-      const tempBlockId = `block-temp-${Date.now()}`;
+      // CRITICAL: Two different ID formats needed
+      const tempMapKey = `temp-${timestamp}`;           // Key for tempBlocks Map (what lookup expects)
+      const scheduleArrayId = `block-temp-${timestamp}`; // ID for scheduleByDate array
 
-      // Add temp block to tempBlocks state so it appears in blocksMap
-      setTempBlocks(prev => {
-        const next = new Map(prev);
-        next.set(tempBlockId, {
-          id: tempBlockId,
-          block_type: blockType,
-          title: blockType === 'award' ? '🏆 Award Ceremony' : '☕ Break',
-          duration_minutes: blockType === 'award' ? 30 : 15,
-        });
-        return next;
-      });
+      // Create temp block data
+      const tempBlockData: BlockData = {
+        id: tempMapKey,  // Use the Map key format
+        block_type: blockType,
+        title: blockType === 'award' ? '🏆 Award Ceremony' : '☕ Break',
+        duration_minutes: blockType === 'award' ? 30 : 15,
+      };
 
       // Check if dropping on schedule area or any item in schedule
       const isDropOnScheduleZone = overId === 'schedule-drop-zone';
       const isDropOnScheduleItem = scheduleOrder.includes(overId);
 
       if (isDropOnScheduleZone || isDropOnScheduleItem) {
+        // CRITICAL: Add block data to tempBlocks FIRST (so blocksMap has it when rendering)
+        setTempBlocks(prev => {
+          const next = new Map(prev);
+          next.set(tempMapKey, tempBlockData);  // Key WITHOUT 'block-' prefix
+          return next;
+        });
+
         if (isDropOnScheduleZone) {
           // Drop at end of schedule
           setScheduleByDate(prev => ({
             ...prev,
-            [selectedDate]: [...(prev[selectedDate] || []), tempBlockId],
+            [selectedDate]: [...(prev[selectedDate] || []), scheduleArrayId],
           }));
         } else {
           // Drop at specific position (before the item we're hovering over)
@@ -1078,9 +1083,9 @@ export default function ScheduleV2Page() {
           setScheduleByDate(prev => {
             const newOrder = [...(prev[selectedDate] || [])];
             if (overIndex >= 0) {
-              newOrder.splice(overIndex, 0, tempBlockId);
+              newOrder.splice(overIndex, 0, scheduleArrayId);
             } else {
-              newOrder.push(tempBlockId);
+              newOrder.push(scheduleArrayId);
             }
             return { ...prev, [selectedDate]: newOrder };
           });
@@ -1787,25 +1792,6 @@ export default function ScheduleV2Page() {
                 📥 Schedule {selectedRoutineIds.size} Selected
               </button>
             )}
-            
-            {/* Schedule All Filtered button */}
-            {unscheduledRoutines.length > 0 && selectedRoutineIds.size === 0 && (
-              <button
-                onClick={() => {
-                  const idsToAdd = unscheduledRoutines.map(r => r.id).filter(id => !scheduleOrder.includes(id));
-                  if (idsToAdd.length > 0) {
-                    setScheduleByDate(prev => ({
-                      ...prev,
-                      [selectedDate]: [...(prev[selectedDate] || []), ...idsToAdd],
-                    }));
-                    toast.success(`Added ${idsToAdd.length} routines to schedule`);
-                  }
-                }}
-                className="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors"
-              >
-                📥 Schedule All ({unscheduledRoutines.length})
-              </button>
-            )}
 
             {/* Unschedule Selected button */}
             {selectedScheduledIds.size > 0 && (
@@ -2016,7 +2002,7 @@ export default function ScheduleV2Page() {
                 trophyIds={trophyIds}
                 conflictsMap={conflictsMap}
                 sessionColors={sessionColors}
-                dayStartMinutes={8 * 60}
+                dayStartMinutes={getDayStartMinutes(selectedDate)}
                 onDeleteBlock={handleDeleteBlock}
                 onEditBlock={(block) => {
                   setEditingBlock({
@@ -2342,6 +2328,17 @@ function DroppableUnscheduledPool({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unscheduled-pool' });
 
+  // Build notes maps from routines data
+  const routineNotes: Record<string, boolean> = {};
+  const routineNotesText: Record<string, string> = {};
+
+  routines.forEach(routine => {
+    if (routine.has_studio_requests || routine.scheduling_notes) {
+      routineNotes[routine.id] = true;
+      routineNotesText[routine.id] = routine.scheduling_notes || 'Has studio requests';
+    }
+  });
+
   return (
     <div
       ref={setNodeRef}
@@ -2364,6 +2361,8 @@ function DroppableUnscheduledPool({
         onToggleSelection={onToggleSelection}
         onSelectAll={onSelectAll}
         onDeselectAll={onDeselectAll}
+        routineNotes={routineNotes}
+        routineNotesText={routineNotesText}
       />
     </div>
   );

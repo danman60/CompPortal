@@ -739,8 +739,6 @@ export const schedulingRouter = router({
               name: true,
             },
           },
-          // REMOVED entry_participants - not needed for display (6000+ rows for 600 routines!)
-          // Participants are fetched separately by detectConflicts when scheduling
         },
         orderBy: [
           { created_at: 'asc' },
@@ -816,7 +814,7 @@ export const schedulingRouter = router({
           entryNumber: routine.entry_number, // V4: Sequential entry number
           has_studio_requests: routine.has_studio_requests ?? false, // SD notes flag
           scheduling_notes: routine.scheduling_notes ?? null, // SD notes text
-          dancer_names: routine.dancer_names ?? [], // Array of dancer names in this routine
+          dancer_names: routine.dancer_names ?? [], // Array of dancer names (auto-populated by trigger)
         };
       });
     }),

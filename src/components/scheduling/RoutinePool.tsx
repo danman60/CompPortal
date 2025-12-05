@@ -597,9 +597,10 @@ function FilterDropdown({
   React.useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      // For position:fixed, use viewport coordinates directly (no scroll offset)
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        top: rect.bottom + 4,   // 4px gap below button
+        left: rect.left,
       });
     }
   }, [isOpen]);
