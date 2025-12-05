@@ -1880,27 +1880,47 @@ export default function ScheduleV2Page() {
         </div>
       </div>
 
-      {/* Day Tabs */}
+      {/* Day Tabs + Block Buttons */}
       <div className="px-6 py-3">
-        <DayTabs
-          days={competitionDates}
-          activeDay={selectedDate}
-          onDayChange={(date) => setSelectedDate(date)}
-          competitionId={TEST_COMPETITION_ID}
-          tenantId={TEST_TENANT_ID}
-          onCreateBlock={(type) => handleCreateBlock(type)}
-          onStartTimeUpdated={handleStartTimeUpdated}
-          onResetDay={() => {
-            if (confirm(`Reset schedule for ${selectedDate}?`)) {
-              resetDayMutation.mutate({
-                tenantId: TEST_TENANT_ID,
-                competitionId: TEST_COMPETITION_ID,
-                date: selectedDate,
-              });
-            }
-          }}
-          onResetAll={() => setShowResetAllModal(true)}
-        />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <DayTabs
+              days={competitionDates}
+              activeDay={selectedDate}
+              onDayChange={(date) => setSelectedDate(date)}
+              competitionId={TEST_COMPETITION_ID}
+              tenantId={TEST_TENANT_ID}
+              onStartTimeUpdated={handleStartTimeUpdated}
+              onResetDay={() => {
+                if (confirm(`Reset schedule for ${selectedDate}?`)) {
+                  resetDayMutation.mutate({
+                    tenantId: TEST_TENANT_ID,
+                    competitionId: TEST_COMPETITION_ID,
+                    date: selectedDate,
+                  });
+                }
+              }}
+              onResetAll={() => setShowResetAllModal(true)}
+            />
+
+            {/* Draggable Block Buttons - Inline */}
+            <div className="flex gap-3 flex-shrink-0">
+              <DraggableBlockCard
+                type="award"
+                onClick={() => handleCreateBlock('award')}
+              />
+              <DraggableBlockCard
+                type="break"
+                onClick={() => handleCreateBlock('break')}
+              />
+            </div>
+          </div>
+        </DndContext>
       </div>
 
       {/* Main Content */}
@@ -1911,17 +1931,6 @@ export default function ScheduleV2Page() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          {/* Block Templates */}
-          <div className="px-0 py-2 flex gap-3 mb-4">
-            <DraggableBlockCard
-              type="award"
-              onClick={() => handleCreateBlock('award')}
-            />
-            <DraggableBlockCard
-              type="break"
-              onClick={() => handleCreateBlock('break')}
-            />
-          </div>
           <div className="grid grid-cols-3 gap-4">
             {/* Left: Unscheduled Pool */}
             <div className="col-span-1">
