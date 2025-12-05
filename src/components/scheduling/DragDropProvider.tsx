@@ -925,15 +925,18 @@ export function DragDropProvider({
     const isSortableBlock = activeId.startsWith('block-') &&
       !activeId.startsWith('block-template-');
 
-    // For sortable blocks: Use closestCenter (matches routine collision logic)
-    // FIX: pointerWithin returned ALL items containing pointer, causing blocks
-    // to jump 7-9 spaces when many routines present. closestCenter returns only
-    // the closest match, eliminating the jumping behavior.
+    // For sortable blocks: Use closestCenter but ONLY consider other blocks
+    // FIX: With 800 routines, closestCenter was returning routine IDs, causing
+    // blocks to position relative to routines instead of other blocks.
     if (isSortableBlock) {
       console.log('[CollisionDetection] Sortable block drag, using closestCenter:', activeId);
       const collisions = closestCenter(args);
-      const filtered = collisions.filter((collision: any) => collision.id !== activeId);
-      console.log('[CollisionDetection] closestCenter returned:', filtered.length, 'collisions after filtering', filtered.map((c: any) => c.id));
+      // CRITICAL: Only consider other blocks as valid drop targets
+      const filtered = collisions.filter((collision: any) => {
+        const id = String(collision.id);
+        return id !== activeId && id.startsWith('block-');
+      });
+      console.log('[CollisionDetection] closestCenter returned:', filtered.length, 'block-only collisions', filtered.map((c: any) => c.id));
       return filtered;
     }
 
