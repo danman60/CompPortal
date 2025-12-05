@@ -19,6 +19,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import {
   DndContext,
   DragEndEvent,
@@ -497,6 +498,9 @@ export default function ScheduleV2Page() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, currentDayName: '' });
   const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
+
+  // Router for navigation
+  const router = useRouter();
 
   // Tenant branding
   const { tenant, primaryColor, logo } = useTenantTheme();
@@ -994,6 +998,22 @@ export default function ScheduleV2Page() {
     deleteBlockMutation.mutate({ blockId });
   };
 
+  // View Studio Schedule (copied from V1)
+  const handleViewStudioSchedule = () => {
+    if (!allStudios?.studios || allStudios.studios.length === 0) {
+      toast.error('No studios found');
+      return;
+    }
+    setShowStudioPickerModal(true);
+  };
+
+  const handleSelectStudio = (studioId: string, studioName: string) => {
+    const url = `/dashboard/schedules/${TEST_COMPETITION_ID}?tenantId=${TEST_TENANT_ID}&studioId=${studioId}`;
+    toast.success(`Opening schedule for ${studioName}`);
+    router.push(url);
+    setShowStudioPickerModal(false);
+  };
+
   const handleExportPDF = () => {
     const scheduled = (routinesData || [])
       .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
@@ -1396,6 +1416,16 @@ export default function ScheduleV2Page() {
               </button>
             )}
 
+            {/* View Studio Schedule button (copied from V1) */}
+            <button
+              onClick={handleViewStudioSchedule}
+              className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-sm font-semibold rounded-lg transition-colors border border-purple-500/30"
+              title="View schedule from a studio's perspective"
+            >
+              <Eye className="h-4 w-4 inline mr-1" />
+              View Studio Schedule
+            </button>
+
             {/* Publish button */}
             {versionData && !versionData.isPublished && hasChanges === false && (
               <button
@@ -1630,6 +1660,41 @@ export default function ScheduleV2Page() {
             <Button variant="primary" onClick={handleFixAllDay}>
               Fix All Conflicts
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Studio Picker Modal (copied from V1) */}
+      <Modal
+        isOpen={showStudioPickerModal}
+        onClose={() => setShowStudioPickerModal(false)}
+        title="Select Studio Schedule to View"
+      >
+        <div className="p-6 bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
+          <p className="text-purple-200 mb-4">
+            Choose a studio to preview their interactive schedule view (where they can add notes/requests):
+          </p>
+          <div className="max-h-96 overflow-y-auto space-y-2">
+            {allStudios?.studios?.map((studio) => (
+              <button
+                key={studio.id}
+                onClick={() => handleSelectStudio(studio.id, studio.name)}
+                className="w-full text-left px-4 py-3 bg-purple-800/30 hover:bg-purple-700/50 rounded-lg transition-all border border-purple-600/30 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/20"
+              >
+                <div className="font-medium text-white">{studio.name}</div>
+                <div className="text-sm text-purple-300">
+                  {studio.publicCode || 'No code assigned'}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => setShowStudioPickerModal(false)}
+              className="px-4 py-2 bg-purple-600/30 text-purple-200 rounded-lg hover:bg-purple-600/50 border border-purple-500/50 transition-all"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </Modal>
