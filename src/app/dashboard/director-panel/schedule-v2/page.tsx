@@ -16,7 +16,7 @@
  * - All modals
  */
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -407,6 +407,7 @@ function DroppableScheduleTable({
   conflictsMap,
   sessionColors,
   dayStartMinutes,
+  entryNumbersByRoutineId,
   onDeleteBlock,
   onEditBlock,
   onUnscheduleRoutine,
@@ -422,6 +423,7 @@ function DroppableScheduleTable({
   conflictsMap: Map<string, string>;
   sessionColors: Map<string, string>;
   dayStartMinutes: number;
+  entryNumbersByRoutineId: Map<string, number>;
   onDeleteBlock: (blockId: string) => void;
   onEditBlock: (block: BlockData) => void;
   onUnscheduleRoutine: (routineId: string) => void;
@@ -469,21 +471,20 @@ function DroppableScheduleTable({
 
   // Calculate times and entry numbers
   let currentMinutes = dayStartMinutes;
-  let entryNumber = 100;
 
   const rows = scheduleOrder.map((id) => {
     const isBlock = id.startsWith('block-');
     const actualId = isBlock ? id.replace('block-', '') : id;
-    
+
     const routine = !isBlock ? routinesMap.get(actualId) : undefined;
     const block = isBlock ? blocksMap.get(actualId) : undefined;
-    
+
     const duration = routine?.duration || block?.duration_minutes || 0;
     const timeFormatted = formatTime(currentMinutes);
     const timeString = `${timeFormatted.time} ${timeFormatted.period}`;
-    
-    const thisEntryNumber = !isBlock ? entryNumber++ : 0;
-    
+
+    const thisEntryNumber = !isBlock ? (entryNumbersByRoutineId.get(actualId) ?? 100) : 0;
+
     currentMinutes += duration;
 
     return (
@@ -591,6 +592,9 @@ export default function ScheduleV2Page() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, currentDayName: '' });
   const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
+
+  // Track if we've initialized scheduleByDate from database (prevent wiping local changes)
+  const hasInitializedSchedule = useRef(false);
 
   // Edit day start time modal state (V1 parity)
   const [showEditStartTimeModal, setShowEditStartTimeModal] = useState(false);
@@ -788,8 +792,11 @@ export default function ScheduleV2Page() {
   }, [blocksData, tempBlocks]);
 
   // ===== INITIALIZE FROM DB (ALL DAYS) =====
+  // Only runs ONCE when data first loads - preserves local unsaved changes after that
   useEffect(() => {
-    if (!routinesData) return;
+    if (!routinesData || hasInitializedSchedule.current) return;
+
+    hasInitializedSchedule.current = true;
 
     const allSchedules: Record<string, string[]> = {};
 
@@ -2003,6 +2010,7 @@ export default function ScheduleV2Page() {
                 conflictsMap={conflictsMap}
                 sessionColors={sessionColors}
                 dayStartMinutes={getDayStartMinutes(selectedDate)}
+                entryNumbersByRoutineId={entryNumbersByRoutineId}
                 onDeleteBlock={handleDeleteBlock}
                 onEditBlock={(block) => {
                   setEditingBlock({
