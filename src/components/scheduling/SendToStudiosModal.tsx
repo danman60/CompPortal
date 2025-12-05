@@ -12,7 +12,9 @@ interface SendToStudiosModalProps {
   onClose: () => void;
   competitionId: string;
   tenantId: string;
-  currentVersion: number;
+  versionDisplay: string;      // e.g., "1.3"
+  majorVersion: number;         // e.g., 1
+  minorVersion: number;         // e.g., 3
   onSuccess: () => void;
   onSaveBeforeSend: () => Promise<void>;
 }
@@ -22,12 +24,17 @@ export function SendToStudiosModal({
   onClose,
   competitionId,
   tenantId,
-  currentVersion,
+  versionDisplay,
+  majorVersion,
+  minorVersion,
   onSuccess,
   onSaveBeforeSend,
 }: SendToStudiosModalProps) {
   const [feedbackWindowDays, setFeedbackWindowDays] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Calculate next major version (e.g., 1.3 → 2.0)
+  const nextMajorVersion = `${majorVersion + 1}.0`;
 
   const sendToStudiosMutation = trpc.scheduling.sendToStudios.useMutation({
     onSuccess: (data) => {
@@ -71,7 +78,7 @@ export function SendToStudiosModal({
       isOpen={open}
       onClose={onClose}
       title="Send Schedule to Studio Directors"
-      description={`Send version ${currentVersion} to all registered Studio Directors for review`}
+      description={`Send version ${versionDisplay} to all registered Studio Directors for review`}
       size="md"
       footer={
         <div className="flex justify-end gap-3">
@@ -139,7 +146,7 @@ export function SendToStudiosModal({
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-400 mt-0.5">•</span>
-              <span>Lock current version (v{currentVersion})</span>
+              <span>Lock current version (v{versionDisplay}) and publish to studios</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-400 mt-0.5">•</span>
@@ -151,9 +158,12 @@ export function SendToStudiosModal({
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-400 mt-0.5">•</span>
-              <span>Create v{currentVersion + 1} when you make changes</span>
+              <span>When you make changes, create new major version (v{nextMajorVersion})</span>
             </li>
           </ul>
+          <p className="text-xs text-blue-200 mt-3 italic">
+            Note: Minor versions (x.1, x.2, x.3) are internal CD drafts. Major versions (1.0, 2.0, 3.0) are published to studios.
+          </p>
         </div>
 
         {/* Studio Count */}

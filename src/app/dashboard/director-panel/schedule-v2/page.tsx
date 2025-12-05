@@ -1265,7 +1265,9 @@ export default function ScheduleV2Page() {
           });
           savedDays.push(dayName);
         } catch (error) {
-          failedDays.push(dayName);
+          console.error(`[Save] Failed to save ${dayName}:`, error);
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          failedDays.push(`${dayName} (${errorMsg})`);
         }
       }
 
@@ -1273,7 +1275,8 @@ export default function ScheduleV2Page() {
       if (failedDays.length === 0) {
         toast.success(`✅ Saved all ${savedDays.length} days`);
       } else {
-        toast.error(`⚠️ Saved ${savedDays.length} days, but ${failedDays.length} failed`);
+        console.error('[Save] Failed days:', failedDays);
+        toast.error(`⚠️ Saved ${savedDays.length} days, but ${failedDays.length} failed. Check console for details.`);
       }
 
       await refetch();
@@ -2203,7 +2206,9 @@ export default function ScheduleV2Page() {
           onClose={() => setShowSendModal(false)}
           competitionId={TEST_COMPETITION_ID}
           tenantId={TEST_TENANT_ID}
-          currentVersion={versionData.versionNumber}
+          versionDisplay={versionData.versionDisplay}
+          majorVersion={versionData.majorVersion}
+          minorVersion={versionData.minorVersion}
           onSuccess={() => {
             refetchVersion();
             refetchHistory();
