@@ -1397,110 +1397,96 @@ export default function ScheduleV2Page() {
     setLastClickedRoutineId(null);
   };
 
-  const handleExportPDF = () => {
-    const scheduled = (routinesData || [])
-      .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
+  const handleExportPDF = async () => {
+    // Save schedule first to ensure PDF reflects latest changes
+    await handleSaveAllDays();
+
+    // Get ALL scheduled routines across all days
+    const allScheduled = (routinesData || [])
+      .filter(r => r.isScheduled)
       .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
 
-    if (scheduled.length === 0) {
-      toast.error('No routines scheduled for this day');
+    if (allScheduled.length === 0) {
+      toast.error('No routines scheduled');
       return;
     }
 
     try {
       const doc = new jsPDF();
-
       const hexToRgb = (hex: string): [number, number, number] => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result
-          ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
-          : [99, 102, 241];
+        return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [99, 102, 241];
       };
-
       const brandColor = hexToRgb(primaryColor);
 
+      // Header on first page
       doc.setFillColor(...brandColor);
       doc.rect(0, 0, 210, 45, 'F');
-
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
       doc.text(tenant?.name || 'Competition Schedule', 14, 18);
-
       doc.setFontSize(14);
       doc.setFont('helvetica', 'normal');
       doc.text(competition?.name || 'Performance Schedule', 14, 28);
-
       doc.setFontSize(11);
       doc.setTextColor(240, 240, 240);
-      doc.text(`📅 ${selectedDate}  •  Generated: ${new Date().toLocaleDateString()}`, 14, 37);
-
+      doc.text(`Complete Schedule  •  Generated: ${new Date().toLocaleDateString()}`, 14, 37);
       doc.setTextColor(0, 0, 0);
 
-      const scheduleItems: Array<{ type: 'routine' | 'block'; data: any }> = [];
-      scheduled.forEach(r => scheduleItems.push({ type: 'routine', data: r }));
-      (blocksData || []).forEach(block => scheduleItems.push({ type: 'block', data: block }));
+      let currentY = 50;
 
-      scheduleItems.sort((a, b) => {
-        const timeA = a.type === 'routine' ? a.data.scheduledTimeString : a.data.scheduled_time?.toTimeString().split(' ')[0];
-        const timeB = b.type === 'routine' ? b.data.scheduledTimeString : b.data.scheduled_time?.toTimeString().split(' ')[0];
-        if (!timeA || !timeB) return 0;
-        return timeA.localeCompare(timeB);
-      });
+      // Loop through all competition dates
+      COMPETITION_DATES.forEach((date, dayIndex) => {
+        const dayScheduled = allScheduled.filter(r => r.scheduledDateString === date);
+        if (dayScheduled.length === 0) return;
 
-      const tableData = scheduleItems.map(item => {
-        if (item.type === 'routine') {
-          const r = item.data;
-          return [
-            `#${r.entryNumber || ''}`,
-            r.scheduledTimeString || '',
-            r.title,
-            r.studioName || '',
-            r.classificationName || '',
-            r.categoryName || '',
-            `${r.duration} min`,
-          ];
-        } else {
-          const block = item.data;
-          const time = block.scheduled_time ? block.scheduled_time.toTimeString().split(' ')[0].substring(0, 5) : '';
-          if (block.block_type === 'award') {
-            return ['🏆', time, `AWARDS: ${block.title || 'Award Ceremony'}`, '', '', '', `${block.duration_minutes || 30} min`];
-          } else {
-            return ['☕', time, `BREAK: ${block.title || 'Break'}`, '', '', '', `${block.duration_minutes || 30} min`];
-          }
+        // Add page break between days (except first)
+        if (dayIndex > 0) {
+          doc.addPage();
+          currentY = 20;
         }
+
+        // Day header
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...brandColor);
+        const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        doc.text(dayName, 14, currentY);
+        currentY += 10;
+
+        // Build table data for this day
+        const tableData = dayScheduled.map(r => [
+          `#${r.entryNumber || ''}`,
+          r.scheduledTimeString || '',
+          r.title || '',
+          r.studioName || '',
+          r.classificationName || '',
+          `${r.duration || 3}m`,
+        ]);
+
+        // Generate table
+        autoTable(doc, {
+          startY: currentY,
+          head: [['#', 'Time', 'Title', 'Studio', 'Class', 'Dur']],
+          body: tableData,
+          styles: { fontSize: 9, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
+          headStyles: { fillColor: brandColor, textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold', halign: 'left' },
+          columnStyles: {
+            0: { cellWidth: 18, halign: 'center' },  // Wider entry #
+            1: { cellWidth: 24, halign: 'center' },  // Wider time
+            2: { cellWidth: 65 },                     // Much wider title
+            3: { cellWidth: 40 },                     // Wider studio
+            4: { cellWidth: 30 },                     // Class
+            5: { cellWidth: 16, halign: 'center' },  // Duration
+          },
+          alternateRowStyles: { fillColor: [249, 249, 249] },
+        });
+
+        currentY = (doc as any).lastAutoTable.finalY + 10;
       });
 
-      autoTable(doc, {
-        startY: 50,
-        head: [['#', 'Time', 'Title', 'Studio', 'Classification', 'Category', 'Duration']],
-        body: tableData,
-        styles: { fontSize: 9, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
-        headStyles: { fillColor: brandColor, textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold', halign: 'left' },
-        columnStyles: {
-          0: { cellWidth: 15, halign: 'center' },
-          1: { cellWidth: 22, halign: 'center' },
-          2: { cellWidth: 52 },
-          3: { cellWidth: 32 },
-          4: { cellWidth: 28 },
-          5: { cellWidth: 28 },
-          6: { cellWidth: 18, halign: 'center' },
-        },
-        didParseCell: (data) => {
-          const rowData = data.row.raw as string[];
-          if (rowData[0] === '🏆') {
-            data.cell.styles.fillColor = [255, 250, 235];
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.textColor = [150, 100, 0];
-          } else if (rowData[0] === '☕') {
-            data.cell.styles.fillColor = [235, 245, 255];
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.textColor = [50, 100, 150];
-          }
-        },
-        alternateRowStyles: { fillColor: [249, 249, 249] },
-      });
-
+      // Footer on all pages
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -1509,7 +1495,7 @@ export default function ScheduleV2Page() {
         doc.text(`${tenant?.name || 'Competition'} • Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
       }
 
-      const filename = `${tenant?.slug || 'schedule'}-schedule-${selectedDate}.pdf`;
+      const filename = `${tenant?.slug || 'schedule'}-full-schedule.pdf`;
       doc.save(filename);
       toast.success(`📄 PDF exported: ${filename}`);
     } catch (error) {
@@ -1893,6 +1879,23 @@ export default function ScheduleV2Page() {
               className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
             >
               📄 Export PDF
+            </button>
+
+            {/* Save Major Draft and Send to Studios button (V1 parity) */}
+            <button
+              onClick={async () => {
+                await handleSaveAllDays();
+                // Publish version creates major version (1, 2, 3) visible to studios
+                await publishVersionMutation.mutateAsync({
+                  tenantId: TEST_TENANT_ID,
+                  competitionId: TEST_COMPETITION_ID,
+                });
+                setShowSendModal(true);
+              }}
+              className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-200 text-sm font-semibold rounded-lg transition-colors border border-green-500/30"
+              title="Save schedule as major draft and send to studios"
+            >
+              💾📧 Save Draft & Send
             </button>
 
             {/* View Studio Schedule button */}

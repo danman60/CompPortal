@@ -353,17 +353,28 @@ export const schedulingRouter = router({
       // This creates a complete snapshot of the schedule for backup/restore purposes
       // Happens AFTER transaction to ensure data is persisted first
 
-      // Get current max version number for this competition
-      const maxVersion = await prisma.schedule_versions.findFirst({
+      // Get current draft version to increment minor version
+      const currentDraft = await prisma.schedule_versions.findFirst({
         where: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
+          is_published_to_studios: false,
         },
-        orderBy: { version_number: 'desc' },
-        select: { version_number: true },
+        orderBy: [
+          { major_version: 'desc' },
+          { minor_version: 'desc' },
+        ],
+        select: {
+          version_number: true,
+          major_version: true,
+          minor_version: true,
+        },
       });
 
-      const nextVersionNumber = (maxVersion?.version_number ?? 0) + 1;
+      // If no draft exists, create first version (1.1)
+      const majorVersion = currentDraft?.major_version ?? 1;
+      const minorVersion = currentDraft ? (currentDraft.minor_version ?? 0) + 1 : 1;
+      const nextVersionNumber = (currentDraft?.version_number ?? 0) + 1;
 
       // Fetch full routine data with related tables for complete snapshot
       const routinesWithDetails = await prisma.competition_entries.findMany({
@@ -396,13 +407,16 @@ export const schedulingRouter = router({
         isScheduled: routine.is_scheduled,
       }));
 
-      // Create schedule version snapshot record
+      // Create schedule version snapshot record with incremented minor version
       await prisma.schedule_versions.create({
         data: {
           tenant_id: input.tenantId,
           competition_id: input.competitionId,
           version_number: nextVersionNumber,
+          major_version: majorVersion,
+          minor_version: minorVersion,
           status: 'draft', // Internal backup, not sent to studios
+          is_published_to_studios: false,
           routine_count: routinesWithDetails.length,
           snapshot_data: snapshotData,
         },
