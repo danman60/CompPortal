@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Schedule V2 - Simplified Implementation
+ * Schedule V2 - Simplified Implementation (V1 Feature Parity)
  * 
  * MIRRORS V1 UI EXACTLY but with simplified backend:
  * 1. Single source of truth: scheduleOrder (array of IDs)  
@@ -50,7 +50,7 @@ import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Mail, History, Eye, FileText, Clock } from 'lucide-react';
+import { Mail, History, Eye, FileText, Clock, Pencil } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { autoFixRoutineConflict, autoFixDayConflicts, autoFixWeekendConflicts } from '@/lib/conflictAutoFix';
@@ -565,8 +565,16 @@ export default function ScheduleV2Page() {
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, currentDayName: '' });
   const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
 
+  // Edit day start time modal state (V1 parity)
+  const [showEditStartTimeModal, setShowEditStartTimeModal] = useState(false);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [editingStartTime, setEditingStartTime] = useState('08:00');
+
   // Router for navigation
   const router = useRouter();
+
+  // tRPC utils for cache invalidation
+  const utils = trpc.useUtils();
 
   // Tenant branding
   const { tenant, primaryColor, logo } = useTenantTheme();
@@ -591,13 +599,13 @@ export default function ScheduleV2Page() {
     date: selectedDate,
   });
 
-  const saveMutation = trpc.scheduling.schedule.useMutation({
-    onSuccess: () => {
-      toast.success('Schedule saved!');
-      refetch();
-    },
-    onError: (err) => toast.error(`Save failed: ${err.message}`),
+  // Day start times (V1 parity - affects first routine time)
+  const { data: dayStartTimes, refetch: refetchDayStartTimes } = trpc.scheduling.getDayStartTimes.useQuery({
+    competitionId: TEST_COMPETITION_ID,
+    tenantId: TEST_TENANT_ID,
   });
+
+  const saveMutation = trpc.scheduling.schedule.useMutation();
 
   const createBlockMutation = trpc.scheduling.createScheduleBlock.useMutation({
     onSuccess: (data) => {
@@ -656,9 +664,14 @@ export default function ScheduleV2Page() {
     tenantId: TEST_TENANT_ID,
   });
 
-  const { data: dayStartTimes, refetch: refetchDayStartTimes } = trpc.scheduling.getDayStartTimes.useQuery({
-    competitionId: TEST_COMPETITION_ID,
-    tenantId: TEST_TENANT_ID,
+  // Update day start time mutation (V1 parity - recalculates all routine times)
+  const updateDayStartTimeMutation = trpc.scheduling.updateDayStartTime.useMutation({
+    onSuccess: async (data) => {
+      toast.success(`Updated start time - recalculated ${data.updatedCount} routines`);
+      await refetch(); // Refetch routines with new times
+      await refetchDayStartTimes(); // Refetch start times
+    },
+    onError: (err) => toast.error(`Failed to update start time: ${err.message}`),
   });
 
   // Reset mutations
@@ -847,6 +860,12 @@ export default function ScheduleV2Page() {
     return conflicts;
   }, [scheduleOrder, routinesMap]);
 
+  // ===== COMPUTED: Day Conflict Count =====
+  const dayConflictCount = useMemo(() => {
+    // Conflicts are counted twice (once per routine), so divide by 2
+    return Math.floor(conflictsMap.size / 2);
+  }, [conflictsMap]);
+
   // ===== COMPUTED: Session Colors =====
   const sessionColors = useMemo(() => {
     const colors = new Map<string, string>();
@@ -895,15 +914,32 @@ export default function ScheduleV2Page() {
 
   // ===== COMPUTED: Day Tabs Data =====
   const competitionDates = useMemo(() => {
-    return COMPETITION_DATES.map(date => ({
-      date,
-      startTime: '08:00:00',
-      routineCount: (scheduleByDate[date] || []).filter(id => !id.startsWith('block-')).length,
-      savedRoutineCount: (routinesData || []).filter(r => r.isScheduled && r.scheduledDateString === date).length,
-    }));
-  }, [scheduleByDate, routinesData]);
+    return COMPETITION_DATES.map(date => {
+      // Get stored start time for this date
+      const storedStartTime = dayStartTimes?.find((dst: any) => {
+        const dstDate = new Date(dst.date);
+        const targetDate = new Date(date);
+        return dstDate.getTime() === targetDate.getTime();
+      });
 
-  // ===== COMPUTED: Has Changes =====
+      let startTime = '08:00:00';
+      if (storedStartTime?.start_time) {
+        const timeValue = new Date(storedStartTime.start_time);
+        const hours = String(timeValue.getUTCHours()).padStart(2, '0');
+        const minutes = String(timeValue.getUTCMinutes()).padStart(2, '0');
+        startTime = `${hours}:${minutes}:00`;
+      }
+
+      return {
+        date,
+        startTime,
+        routineCount: (scheduleByDate[date] || []).filter(id => !id.startsWith('block-')).length,
+        savedRoutineCount: (routinesData || []).filter(r => r.isScheduled && r.scheduledDateString === date).length,
+      };
+    });
+  }, [scheduleByDate, routinesData, dayStartTimes]);
+
+  // ===== COMPUTED: Has Changes (Current Day) =====
   const hasChanges = useMemo(() => {
     if (!routinesData) return false;
     
@@ -918,19 +954,36 @@ export default function ScheduleV2Page() {
     return serverScheduled.some((id, i) => id !== currentRoutines[i]);
   }, [routinesData, scheduleOrder, selectedDate]);
 
-  // ===== AUTOSAVE EFFECT =====
+  // ===== COMPUTED: Has Any Unsaved Changes (All Days) - V1 Parity =====
+  const hasAnyUnsavedChanges = useMemo(() => {
+    if (!routinesData) return false;
+
+    return COMPETITION_DATES.some(date => {
+      const daySchedule = scheduleByDate[date] || [];
+      const dayRoutinesOnly = daySchedule.filter(id => !id.startsWith('block-'));
+
+      const serverScheduled = routinesData
+        .filter(r => r.isScheduled && r.scheduledDateString === date)
+        .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
+        .map(r => r.id);
+
+      if (dayRoutinesOnly.length !== serverScheduled.length) return true;
+      return dayRoutinesOnly.some((id, i) => id !== serverScheduled[i]);
+    });
+  }, [routinesData, scheduleByDate]);
+
+  // ===== AUTOSAVE EFFECT (5 minutes) =====
   useEffect(() => {
     const autosaveInterval = setInterval(() => {
-      if (!hasChanges) return;
-      if (scheduleOrder.length === 0) return;
+      if (!hasAnyUnsavedChanges) return;
       if (saveMutation.isPending) return;
 
-      console.log('[Autosave] Saving schedule...');
-      handleSave();
+      console.log('[Autosave] Saving all days...');
+      handleSaveAllDays();
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(autosaveInterval);
-  }, [hasChanges, scheduleOrder, saveMutation.isPending]);
+  }, [hasAnyUnsavedChanges, saveMutation.isPending]);
 
   // ===== CHECK FOR UNASSIGNED STUDIO CODES =====
   useEffect(() => {
@@ -1011,6 +1064,82 @@ export default function ScheduleV2Page() {
   };
 
   // ===== HANDLERS =====
+  
+  // Save ALL days (V1 parity - multi-day save with progress)
+  const handleSaveAllDays = async () => {
+    if (!routinesData) return;
+
+    setIsSaving(true);
+    const savedDays: string[] = [];
+    const failedDays: string[] = [];
+
+    try {
+      for (let i = 0; i < COMPETITION_DATES.length; i++) {
+        const date = COMPETITION_DATES[i];
+        const daySchedule = scheduleByDate[date] || [];
+        const routineIds = daySchedule.filter(id => !id.startsWith('block-'));
+
+        // Update progress
+        const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        setSaveProgress({
+          current: i + 1,
+          total: COMPETITION_DATES.length,
+          currentDayName: dayName,
+        });
+
+        // Skip empty days
+        if (routineIds.length === 0) {
+          savedDays.push(dayName);
+          continue;
+        }
+
+        // Calculate times with global entry numbers
+        let currentMinutes = 8 * 60; // 8:00 AM default
+        const routinesToSave = routineIds.map((id) => {
+          const routine = routinesMap.get(id);
+          const duration = routine?.duration || 3;
+
+          const hours = Math.floor(currentMinutes / 60);
+          const mins = currentMinutes % 60;
+          const timeString = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
+
+          currentMinutes += duration;
+
+          return {
+            routineId: id,
+            entryNumber: entryNumbersByRoutineId.get(id) ?? 100,
+            performanceTime: timeString,
+          };
+        });
+
+        try {
+          await saveMutation.mutateAsync({
+            tenantId: TEST_TENANT_ID,
+            competitionId: TEST_COMPETITION_ID,
+            date,
+            routines: routinesToSave,
+          });
+          savedDays.push(dayName);
+        } catch (error) {
+          failedDays.push(dayName);
+        }
+      }
+
+      // Show summary
+      if (failedDays.length === 0) {
+        toast.success(`✅ Saved all ${savedDays.length} days`);
+      } else {
+        toast.error(`⚠️ Saved ${savedDays.length} days, but ${failedDays.length} failed`);
+      }
+
+      await refetch();
+    } finally {
+      setIsSaving(false);
+      setSaveProgress({ current: 0, total: 0, currentDayName: '' });
+    }
+  };
+
+  // Save current day only (quick save)
   const handleSave = async () => {
     const routineIds = scheduleOrder.filter(id => !id.startsWith('block-'));
 
@@ -1032,16 +1161,39 @@ export default function ScheduleV2Page() {
       };
     });
 
-    await saveMutation.mutateAsync({
+    try {
+      await saveMutation.mutateAsync({
+        tenantId: TEST_TENANT_ID,
+        competitionId: TEST_COMPETITION_ID,
+        date: selectedDate,
+        routines: routinesToSave,
+      });
+      toast.success('Schedule saved!');
+      await refetch();
+    } catch (err: any) {
+      toast.error(`Save failed: ${err.message}`);
+    }
+  };
+
+  // Discard changes (V1 parity)
+  const handleDiscardChanges = () => {
+    setScheduleByDate({});
+    refetchBlocks();
+    refetch();
+    toast.success('Changes discarded');
+  };
+
+  // Toggle feedback (V1 parity)
+  const handleToggleFeedback = () => {
+    const newState = !versionData?.feedbackAllowed;
+    toggleFeedbackMutation.mutate({
       tenantId: TEST_TENANT_ID,
       competitionId: TEST_COMPETITION_ID,
-      date: selectedDate,
-      routines: routinesToSave,
+      enabled: newState,
     });
   };
 
   const handleCreateBlock = (type: 'award' | 'break') => {
-    // Open modal to configure block (copied from V1 pattern)
     setBlockType(type);
     setShowBlockModal(true);
   };
@@ -1055,16 +1207,14 @@ export default function ScheduleV2Page() {
   };
 
   const handleDeleteBlock = (blockId: string) => {
-    // Remove from local state
     setScheduleByDate(prev => ({
       ...prev,
       [selectedDate]: (prev[selectedDate] || []).filter(id => id !== `block-${blockId}`),
     }));
-    // Delete from DB
     deleteBlockMutation.mutate({ blockId });
   };
 
-  // View Studio Schedule (copied from V1)
+  // View Studio Schedule (V1 parity)
   const handleViewStudioSchedule = () => {
     if (!allStudios?.studios || allStudios.studios.length === 0) {
       toast.error('No studios found');
@@ -1080,6 +1230,17 @@ export default function ScheduleV2Page() {
     setShowStudioPickerModal(false);
   };
 
+  // Select All / Deselect All handlers (V1 parity)
+  const handleSelectAll = () => {
+    const allIds = new Set(unscheduledRoutines.map(r => r.id));
+    setSelectedRoutineIds(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedRoutineIds(new Set());
+    setLastClickedRoutineId(null);
+  };
+
   const handleExportPDF = () => {
     const scheduled = (routinesData || [])
       .filter(r => r.isScheduled && r.scheduledDateString === selectedDate)
@@ -1093,17 +1254,15 @@ export default function ScheduleV2Page() {
     try {
       const doc = new jsPDF();
 
-      // Convert hex color to RGB for jsPDF
       const hexToRgb = (hex: string): [number, number, number] => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result
           ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
-          : [99, 102, 241]; // Fallback indigo
+          : [99, 102, 241];
       };
 
       const brandColor = hexToRgb(primaryColor);
 
-      // Header with tenant branding
       doc.setFillColor(...brandColor);
       doc.rect(0, 0, 210, 45, 'F');
 
@@ -1122,7 +1281,6 @@ export default function ScheduleV2Page() {
 
       doc.setTextColor(0, 0, 0);
 
-      // Merge routines and blocks
       const scheduleItems: Array<{ type: 'routine' | 'block'; data: any }> = [];
       scheduled.forEach(r => scheduleItems.push({ type: 'routine', data: r }));
       (blocksData || []).forEach(block => scheduleItems.push({ type: 'block', data: block }));
@@ -1204,7 +1362,14 @@ export default function ScheduleV2Page() {
     }
   };
 
-  const handleFixSingleConflict = (routineId: string) => {
+  // Fix All Day (V1 parity - uses autoFixDayConflicts)
+  const handleFixAllDay = () => {
+    if (dayConflictCount === 0) {
+      toast.error('No conflicts to fix on this day');
+      setShowFixAllModal(false);
+      return;
+    }
+
     const daySchedule = scheduleOrder.filter(id => !id.startsWith('block-')).map(id => {
       const routine = routinesMap.get(id);
       if (!routine) return null;
@@ -1220,40 +1385,169 @@ export default function ScheduleV2Page() {
       };
     }).filter(Boolean) as any[];
 
-    const { success, newSchedule, result } = autoFixRoutineConflict(routineId, daySchedule);
+    // Build conflict objects for autoFixDayConflicts with required fields
+    const dayConflicts = Array.from(conflictsMap.entries()).map(([routineId, info]) => {
+      const dancerName = info.split(':')[0];
+      const spacingMatch = info.match(/(\d+) routines between/);
+      const routinesBetween = spacingMatch ? parseInt(spacingMatch[1]) : 0;
 
-    if (success && newSchedule) {
-      const updatedOrder = newSchedule.map(r => r.id);
+      return {
+        routine1Id: routineId,
+        routine2Id: routineId, // Will be refined by the algorithm
+        dancerId: dancerName,
+        dancerName: dancerName,
+        routinesBetween,
+        severity: (routinesBetween < 3 ? 'critical' : routinesBetween < 6 ? 'error' : 'warning') as 'critical' | 'error' | 'warning',
+        message: info,
+      };
+    });
+
+    const result = autoFixDayConflicts(daySchedule, dayConflicts);
+
+    if (result.newSchedule) {
+      const updatedOrder = result.newSchedule.map(r => r.id);
       setScheduleByDate(prev => ({ ...prev, [selectedDate]: updatedOrder }));
 
-      const movedRoutine = result.movedRoutines[0];
-      if (movedRoutine) {
-        const newEntryNumber = entryNumbersByRoutineId.get(routineId) || '?';
-        toast.success(`Auto-fix: Moved routine to position ${movedRoutine.toPosition + 1} → Entry #${newEntryNumber}`);
+      if (result.resolvedConflicts > 0) {
+        toast.success(`✅ Fixed ${result.resolvedConflicts} conflict(s), moved ${result.movedRoutines.length} routine(s)`);
+      } else {
+        toast.error('Could not auto-fix conflicts - try moving routines to different days');
       }
+    }
+
+    setShowFixAllModal(false);
+  };
+
+  // Fix All Weekend (V1 parity - uses autoFixWeekendConflicts)
+  const handleFixAllWeekend = () => {
+    // Build schedule for all days
+    const scheduleByDateWithParticipants: Record<string, any[]> = {};
+    const conflictsByDate: Record<string, any[]> = {};
+
+    COMPETITION_DATES.forEach(date => {
+      const daySchedule = (scheduleByDate[date] || []).filter(id => !id.startsWith('block-')).map(id => {
+        const routine = routinesMap.get(id);
+        if (!routine) return null;
+        return {
+          id: routine.id,
+          title: routine.title,
+          entryNumber: entryNumbersByRoutineId.get(id),
+          participants: (routine.dancer_names || []).map((name: string) => ({
+            dancerId: name,
+            dancerName: name,
+          })),
+          scheduledDateString: date,
+        };
+      }).filter(Boolean) as any[];
+
+      scheduleByDateWithParticipants[date] = daySchedule;
+
+      // Compute conflicts for this day
+      const dayConflicts: any[] = [];
+      const MIN_SPACING = 6;
+      const dancerPositions = new Map<string, number[]>();
+
+      daySchedule.forEach((routine, index) => {
+        routine.participants?.forEach((p: any) => {
+          if (!dancerPositions.has(p.dancerName)) dancerPositions.set(p.dancerName, []);
+          dancerPositions.get(p.dancerName)!.push(index);
+        });
+      });
+
+      dancerPositions.forEach((positions, dancer) => {
+        for (let i = 0; i < positions.length - 1; i++) {
+          const spacing = positions[i + 1] - positions[i] - 1;
+          if (spacing < MIN_SPACING) {
+            dayConflicts.push({
+              routine1Id: daySchedule[positions[i]].id,
+              routine2Id: daySchedule[positions[i + 1]].id,
+              dancerId: dancer,
+              dancerName: dancer,
+              routinesBetween: spacing,
+              severity: (spacing < 3 ? 'critical' : spacing < 6 ? 'error' : 'warning') as 'critical' | 'error' | 'warning',
+              message: `${dancer}: ${spacing} routines between (need ${MIN_SPACING})`,
+            });
+          }
+        }
+      });
+
+      if (dayConflicts.length > 0) {
+        conflictsByDate[date] = dayConflicts;
+      }
+    });
+
+    const results = autoFixWeekendConflicts(scheduleByDateWithParticipants, conflictsByDate);
+
+    // Update all days
+    let totalMoved = 0;
+    let totalResolved = 0;
+
+    setScheduleByDate(prev => {
+      const updated = { ...prev };
+      for (const [date, result] of Object.entries(results)) {
+        if (result.newSchedule && result.movedRoutines.length > 0) {
+          updated[date] = result.newSchedule.map(r => r.id);
+          totalMoved += result.movedRoutines.length;
+          totalResolved += result.resolvedConflicts;
+        }
+      }
+      return updated;
+    });
+
+    if (totalResolved > 0) {
+      toast.success(`✅ Fixed ${totalResolved} conflict(s) across all days, moved ${totalMoved} routine(s)`);
     } else {
-      const unresolvedReason = result.unresolvedConflicts[0]?.reason || 'Failed to auto-fix conflict';
-      toast.error(unresolvedReason);
+      toast.error('Could not auto-fix weekend conflicts - schedules may be too dense');
+    }
+
+    setShowFixAllModal(false);
+  };
+
+  // Day start time update handler (V1 parity)
+  const handleStartTimeUpdated = async (date: string, newStartTime: string) => {
+    console.log('[V2] Day start time updated:', date, newStartTime);
+    await refetchDayStartTimes();
+    await refetch();
+
+    // Reload draft from database
+    const updatedRoutines = await utils.scheduling.getRoutines.fetch({
+      competitionId: TEST_COMPETITION_ID,
+      tenantId: TEST_TENANT_ID,
+    });
+
+    const serverScheduled = updatedRoutines
+      .filter(r => r.isScheduled && r.scheduledDateString === date)
+      .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+    if (serverScheduled.length > 0) {
+      setScheduleByDate(prev => ({
+        ...prev,
+        [date]: serverScheduled.map(r => r.id),
+      }));
     }
   };
 
-  const handleFixAllDay = () => {
-    const dayConflicts = Array.from(conflictsMap.entries());
+  // Edit day start time handler (V1 parity)
+  const handleEditStartTime = (date: string, currentTime: string) => {
+    setEditingDate(date);
+    setEditingStartTime(currentTime.slice(0, 5)); // HH:mm format
+    setShowEditStartTimeModal(true);
+  };
 
-    if (dayConflicts.length === 0) {
-      toast.error('No conflicts to fix on this day');
-      setShowFixAllModal(false);
-      return;
+  const handleSaveStartTime = async () => {
+    if (!editingDate || !editingStartTime) return;
+
+    try {
+      await updateDayStartTimeMutation.mutateAsync({
+        tenantId: TEST_TENANT_ID,
+        competitionId: TEST_COMPETITION_ID,
+        date: editingDate,
+        newStartTime: `${editingStartTime}:00`, // Convert HH:mm to HH:mm:ss
+      });
+      setShowEditStartTimeModal(false);
+    } catch (error) {
+      console.error('Failed to update start time:', error);
     }
-
-    let fixedCount = 0;
-    dayConflicts.forEach(([routineId]) => {
-      handleFixSingleConflict(routineId);
-      fixedCount++;
-    });
-
-    toast.success(`Auto-fixed ${fixedCount} conflicts`);
-    setShowFixAllModal(false);
   };
 
   // Get active item for overlay
@@ -1270,6 +1564,15 @@ export default function ScheduleV2Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
+      {/* Saving Progress Overlay */}
+      {isSaving && (
+        <ScheduleSavingProgress
+          currentDay={saveProgress.current}
+          totalDays={saveProgress.total}
+          currentDayName={saveProgress.currentDayName}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -1302,74 +1605,35 @@ export default function ScheduleV2Page() {
             </p>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            {/* Conflict indicator + Auto-fix */}
-            {conflictsMap.size > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-red-500/30 border border-red-500/50 rounded-lg text-red-200 text-sm font-medium">
-                  ⚠️ {Math.floor(conflictsMap.size / 2)} conflicts
+            {/* Feedback Toggle (V1 parity) */}
+            {versionData && (
+              <button
+                onClick={handleToggleFeedback}
+                disabled={toggleFeedbackMutation.isPending}
+                className={`px-3 py-2 font-semibold rounded-lg transition-all flex items-center gap-2 text-sm ${
+                  versionData.feedbackAllowed
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/50 hover:bg-green-500/30'
+                    : 'bg-gray-500/20 text-gray-300 border border-gray-500/50 hover:bg-gray-500/30'
+                }`}
+                title={versionData.feedbackAllowed ? 'Click to close feedback' : 'Click to open feedback'}
+              >
+                {versionData.feedbackAllowed ? '🟢 Feedback Open' : '⭕ Feedback Closed'}
+              </button>
+            )}
+
+            {/* Fix All Conflicts Button (V1 parity - header button with count) */}
+            {dayConflictCount > 0 && (
+              <button
+                onClick={() => setShowFixAllModal(true)}
+                className="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm"
+                title={`${dayConflictCount} conflict${dayConflictCount !== 1 ? 's' : ''} detected`}
+              >
+                <span>🔧</span>
+                <span>Fix All Conflicts</span>
+                <span className="px-2 py-0.5 bg-white/20 rounded-md text-xs font-bold min-w-[1.5rem] text-center">
+                  {dayConflictCount}
                 </span>
-                <button
-                  onClick={() => {
-                    // Auto-fix: Try to spread out conflicting routines
-                    const newOrder = [...scheduleOrder];
-                    let fixed = 0;
-                    const MIN_SPACING = 6;
-                    
-                    // Build dancer position map
-                    const getDancerPositions = (order: string[]) => {
-                      const positions = new Map<string, number[]>();
-                      order.forEach((id, idx) => {
-                        if (id.startsWith('block-')) return;
-                        const routine = routinesMap.get(id);
-                        routine?.dancer_names?.forEach(dancer => {
-                          if (!positions.has(dancer)) positions.set(dancer, []);
-                          positions.get(dancer)!.push(idx);
-                        });
-                      });
-                      return positions;
-                    };
-                    
-                    // Try to fix conflicts by moving routines
-                    let iterations = 0;
-                    while (iterations < 50) {
-                      iterations++;
-                      const positions = getDancerPositions(newOrder);
-                      let foundConflict = false;
-                      
-                      for (const [dancer, idxs] of positions) {
-                        for (let i = 0; i < idxs.length - 1; i++) {
-                          const spacing = idxs[i + 1] - idxs[i] - 1;
-                          if (spacing < MIN_SPACING) {
-                            // Try to move the second routine further down
-                            const fromIdx = idxs[i + 1];
-                            const targetIdx = idxs[i] + MIN_SPACING + 1;
-                            if (targetIdx < newOrder.length && targetIdx !== fromIdx) {
-                              const [moved] = newOrder.splice(fromIdx, 1);
-                              newOrder.splice(Math.min(targetIdx, newOrder.length), 0, moved);
-                              fixed++;
-                              foundConflict = true;
-                              break;
-                            }
-                          }
-                        }
-                        if (foundConflict) break;
-                      }
-                      
-                      if (!foundConflict) break;
-                    }
-                    
-                    if (fixed > 0) {
-                      setScheduleByDate(prev => ({ ...prev, [selectedDate]: newOrder }));
-                      toast.success(`Auto-fixed ${fixed} conflict(s)`);
-                    } else {
-                      toast.error('Could not auto-fix conflicts - try manual adjustment');
-                    }
-                  }}
-                  className="px-2 py-1 bg-red-500/50 hover:bg-red-500/70 text-white text-xs font-semibold rounded transition-colors"
-                >
-                  🔧 Auto-Fix
-                </button>
-              </div>
+              </button>
             )}
             
             {/* Schedule Selected button */}
@@ -1411,12 +1675,11 @@ export default function ScheduleV2Page() {
               </button>
             )}
 
-            {/* Unschedule Selected button (copied from V1) */}
+            {/* Unschedule Selected button */}
             {selectedScheduledIds.size > 0 && (
               <button
                 onClick={() => {
                   if (confirm(`Unschedule ${selectedScheduledIds.size} selected routine(s)?`)) {
-                    // Remove selected routines from schedule
                     setScheduleByDate(prev => ({
                       ...prev,
                       [selectedDate]: (prev[selectedDate] || []).filter(id => !selectedScheduledIds.has(id)),
@@ -1432,87 +1695,81 @@ export default function ScheduleV2Page() {
               </button>
             )}
 
-            {/* Reset Day button */}
-            {scheduleOrder.length > 0 && (
-              <button
-                onClick={() => {
-                  const routineCount = scheduleOrder.filter(id => !id.startsWith('block-')).length;
-                  if (confirm(`Clear schedule for ${selectedDate}? This will unschedule all ${routineCount} routines and delete blocks.`)) {
-                    resetDayMutation.mutate({
-                      tenantId: TEST_TENANT_ID,
-                      competitionId: TEST_COMPETITION_ID,
-                      date: selectedDate,
-                    });
-                  }
-                }}
-                disabled={resetDayMutation.isPending}
-                className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-semibold rounded-lg transition-colors border border-red-500/30 disabled:opacity-50"
-              >
-                🗑️ Reset Day
-              </button>
-            )}
-
-            {/* Reset All button */}
-            <button
-              onClick={() => {
-                if (confirm('Clear ALL schedules for this competition? This cannot be undone.')) {
-                  resetCompetitionMutation.mutate({
-                    tenantId: TEST_TENANT_ID,
-                    competitionId: TEST_COMPETITION_ID,
-                  });
-                }
-              }}
-              disabled={resetCompetitionMutation.isPending}
-              className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-200 text-sm font-semibold rounded-lg transition-colors border border-red-600/30 disabled:opacity-50"
-            >
-              ⚠️ Reset All
-            </button>
-            
-            {/* Save button */}
-            {hasChanges && (
+            {/* Save button (multi-day) */}
+            {hasAnyUnsavedChanges && (
               <>
                 <button
-                  onClick={handleSave}
-                  disabled={saveMutation.isPending}
+                  onClick={handleSaveAllDays}
+                  disabled={saveMutation.isPending || isSaving}
                   className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
                 >
-                  💾 Save
+                  💾 Save Schedule
+                </button>
+                <button
+                  onClick={handleDiscardChanges}
+                  className="px-3 py-2 bg-red-500/80 hover:bg-red-600 text-white rounded-lg transition-colors text-sm"
+                >
+                  ❌ Discard
                 </button>
                 <span className="text-yellow-300 text-sm font-medium">● Unsaved</span>
               </>
             )}
             
-            {/* PDF Export button - Always visible like V1 */}
+            {/* Refresh button */}
+            <button
+              onClick={() => { refetch(); refetchBlocks(); }}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
+            >
+              🔄
+            </button>
+
+            {/* Reset Day button */}
+            <button
+              onClick={() => {
+                const routineCount = scheduleOrder.filter(id => !id.startsWith('block-')).length;
+                if (confirm(`Clear schedule for ${selectedDate}? This will unschedule all ${routineCount} routines and delete blocks.`)) {
+                  resetDayMutation.mutate({
+                    tenantId: TEST_TENANT_ID,
+                    competitionId: TEST_COMPETITION_ID,
+                    date: selectedDate,
+                  });
+                }
+              }}
+              disabled={resetDayMutation.isPending}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+            >
+              🗑️ Reset Day
+            </button>
+
+            {/* Reset All button */}
+            <button
+              onClick={() => setShowResetAllModal(true)}
+              disabled={resetCompetitionMutation.isPending}
+              className="px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-200 text-sm font-semibold rounded-lg transition-colors border border-orange-600/30 disabled:opacity-50"
+            >
+              ⚠️ Reset All
+            </button>
+            
+            {/* PDF Export button */}
             <button
               onClick={handleExportPDF}
-              className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-sm font-semibold rounded-lg transition-colors border border-purple-500/30"
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
             >
               📄 Export PDF
             </button>
 
-            {/* Send to Studios button */}
-            {versionData && versionData.isPublished && (
-              <button
-                onClick={() => setShowSendModal(true)}
-                className="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 text-sm font-semibold rounded-lg transition-colors border border-blue-500/30"
-              >
-                <Mail className="h-4 w-4 inline mr-1" />
-                Send to Studios
-              </button>
-            )}
-
-            {/* View Studio Schedule button (copied from V1) */}
+            {/* View Studio Schedule button */}
             <button
               onClick={handleViewStudioSchedule}
               className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-sm font-semibold rounded-lg transition-colors border border-purple-500/30"
               title="View schedule from a studio's perspective"
             >
               <Eye className="h-4 w-4 inline mr-1" />
-              View Studio Schedule
+              View Studio
             </button>
 
             {/* Publish button */}
-            {versionData && !versionData.isPublished && hasChanges === false && (
+            {versionData && !versionData.isPublished && !hasAnyUnsavedChanges && (
               <button
                 onClick={() => {
                   if (confirm('Publish this version to studios?')) {
@@ -1523,19 +1780,12 @@ export default function ScheduleV2Page() {
                   }
                 }}
                 disabled={publishVersionMutation.isPending}
-                className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-200 text-sm font-semibold rounded-lg transition-colors border border-green-500/30 disabled:opacity-50"
+                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
               >
-                📣 Publish Version
+                <Mail className="h-4 w-4 inline mr-1" />
+                Publish
               </button>
             )}
-
-            {/* Refresh button */}
-            <button
-              onClick={() => { refetch(); refetchBlocks(); }}
-              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
-            >
-              🔄
-            </button>
           </div>
         </div>
       </div>
@@ -1549,6 +1799,17 @@ export default function ScheduleV2Page() {
           competitionId={TEST_COMPETITION_ID}
           tenantId={TEST_TENANT_ID}
           onCreateBlock={(type) => handleCreateBlock(type)}
+          onStartTimeUpdated={handleStartTimeUpdated}
+          onResetDay={() => {
+            if (confirm(`Reset schedule for ${selectedDate}?`)) {
+              resetDayMutation.mutate({
+                tenantId: TEST_TENANT_ID,
+                competitionId: TEST_COMPETITION_ID,
+                date: selectedDate,
+              });
+            }
+          }}
+          onResetAll={() => setShowResetAllModal(true)}
         />
       </div>
 
@@ -1560,7 +1821,7 @@ export default function ScheduleV2Page() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          {/* Block Templates - MUST be inside DndContext to enable drag-drop */}
+          {/* Block Templates */}
           <div className="px-0 py-2 flex gap-3 mb-4">
             <DraggableBlockCard
               type="award"
@@ -1583,7 +1844,6 @@ export default function ScheduleV2Page() {
                   setSelectedRoutineIds(prev => {
                     const next = new Set(prev);
 
-                    // Shift+click range selection (copied from V1)
                     if (shift && lastClickedRoutineId && unscheduledRoutines.length > 0) {
                       const lastIndex = unscheduledRoutines.findIndex(r => r.id === lastClickedRoutineId);
                       const currentIndex = unscheduledRoutines.findIndex(r => r.id === id);
@@ -1592,7 +1852,6 @@ export default function ScheduleV2Page() {
                         const start = Math.min(lastIndex, currentIndex);
                         const end = Math.max(lastIndex, currentIndex);
 
-                        // Select all routines in range
                         for (let i = start; i <= end; i++) {
                           next.add(unscheduledRoutines[i].id);
                         }
@@ -1601,7 +1860,6 @@ export default function ScheduleV2Page() {
                       }
                     }
 
-                    // Normal click - toggle single routine
                     if (next.has(id)) next.delete(id);
                     else next.add(id);
                     setLastClickedRoutineId(id);
@@ -1611,6 +1869,8 @@ export default function ScheduleV2Page() {
                 filters={filters}
                 onFiltersChange={setFilters}
                 filterOptions={filterOptions}
+                onSelectAll={handleSelectAll}
+                onDeselectAll={handleDeselectAll}
               />
             </div>
 
@@ -1660,15 +1920,6 @@ export default function ScheduleV2Page() {
         </DndContext>
       </div>
 
-      {/* Saving Progress Overlay */}
-      {isSaving && (
-        <ScheduleSavingProgress
-          currentDay={saveProgress.current}
-          totalDays={saveProgress.total}
-          currentDayName={saveProgress.currentDayName}
-        />
-      )}
-
       {/* Block Modal */}
       <ScheduleBlockModal
         isOpen={showBlockModal}
@@ -1690,7 +1941,16 @@ export default function ScheduleV2Page() {
           if (editingBlock) {
             await handleUpdateBlock(editingBlock.id, block.title, block.duration);
           } else {
-            await handleCreateBlock(block.type);
+            // Create block via mutation
+            await createBlockMutation.mutateAsync({
+              competitionId: TEST_COMPETITION_ID,
+              tenantId: TEST_TENANT_ID,
+              blockType: block.type,
+              title: block.title,
+              durationMinutes: block.duration,
+              scheduledTime: new Date(),
+              sortOrder: scheduleOrder.length,
+            });
           }
           setShowBlockModal(false);
           setEditingBlock(null);
@@ -1722,38 +1982,88 @@ export default function ScheduleV2Page() {
             refetchHistory();
           }}
           onSaveBeforeSend={async () => {
-            if (hasChanges) {
-              await handleSave();
+            if (hasAnyUnsavedChanges) {
+              await handleSaveAllDays();
             }
           }}
         />
       )}
 
-      {/* Fix All Conflicts Modal */}
+      {/* Fix All Conflicts Modal (V1 parity - Day vs Weekend) */}
       <Modal
         isOpen={showFixAllModal}
         onClose={() => setShowFixAllModal(false)}
-        title="Fix All Conflicts"
+        title="Auto-Fix Conflicts"
       >
-        <div className="space-y-4">
+        <div className="space-y-4 p-4">
           <p className="text-gray-700">
-            Auto-fix will attempt to resolve conflicts by spacing out routines with conflicting dancers.
+            Select which conflicts to automatically fix. The system will move routines the minimum distance necessary to resolve conflicts.
           </p>
-          <p className="text-sm text-gray-600">
-            Found {conflictsMap.size} conflicts on {selectedDate}.
-          </p>
+
+          <div className="grid gap-3">
+            {/* Fix This Day */}
+            <button
+              onClick={handleFixAllDay}
+              className="p-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition-all text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <span className="text-xl">🔧</span>
+                    Fix This Day Only
+                  </div>
+                  <div className="text-sm text-white/80 mt-1">
+                    Resolve {dayConflictCount} conflict{dayConflictCount !== 1 ? 's' : ''} on {selectedDate}
+                  </div>
+                </div>
+                <span className="text-2xl group-hover:scale-110 transition-transform">→</span>
+              </div>
+            </button>
+
+            {/* Fix Entire Weekend */}
+            <button
+              onClick={handleFixAllWeekend}
+              className="p-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-lg transition-all text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <span className="text-xl">🔧</span>
+                    Fix Entire Weekend
+                  </div>
+                  <div className="text-sm text-white/80 mt-1">
+                    Resolve conflicts across all competition days (Apr 9-12)
+                  </div>
+                </div>
+                <span className="text-2xl group-hover:scale-110 transition-transform">→</span>
+              </div>
+            </button>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={() => setShowFixAllModal(false)}>
               Cancel
-            </Button>
-            <Button variant="primary" onClick={handleFixAllDay}>
-              Fix All Conflicts
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* Studio Picker Modal (copied from V1) */}
+      {/* Reset All Confirmation Modal */}
+      <ResetAllConfirmationModal
+        isOpen={showResetAllModal}
+        onClose={() => setShowResetAllModal(false)}
+        onConfirm={() => {
+          resetCompetitionMutation.mutate({
+            tenantId: TEST_TENANT_ID,
+            competitionId: TEST_COMPETITION_ID,
+          }, {
+            onSuccess: () => setShowResetAllModal(false),
+          });
+        }}
+        isLoading={resetCompetitionMutation.isPending}
+      />
+
+      {/* Studio Picker Modal */}
       <Modal
         isOpen={showStudioPickerModal}
         onClose={() => setShowStudioPickerModal(false)}
@@ -1761,14 +2071,14 @@ export default function ScheduleV2Page() {
       >
         <div className="p-6 bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
           <p className="text-purple-200 mb-4">
-            Choose a studio to preview their interactive schedule view (where they can add notes/requests):
+            Choose a studio to preview their interactive schedule view:
           </p>
           <div className="max-h-96 overflow-y-auto space-y-2">
             {allStudios?.studios?.map((studio) => (
               <button
                 key={studio.id}
                 onClick={() => handleSelectStudio(studio.id, studio.name)}
-                className="w-full text-left px-4 py-3 bg-purple-800/30 hover:bg-purple-700/50 rounded-lg transition-all border border-purple-600/30 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/20"
+                className="w-full text-left px-4 py-3 bg-purple-800/30 hover:bg-purple-700/50 rounded-lg transition-all border border-purple-600/30 hover:border-cyan-500/50"
               >
                 <div className="font-medium text-white">{studio.name}</div>
                 <div className="text-sm text-purple-300">
@@ -1780,7 +2090,7 @@ export default function ScheduleV2Page() {
           <div className="mt-4 flex justify-end">
             <button
               onClick={() => setShowStudioPickerModal(false)}
-              className="px-4 py-2 bg-purple-600/30 text-purple-200 rounded-lg hover:bg-purple-600/50 border border-purple-500/50 transition-all"
+              className="px-4 py-2 bg-purple-600/30 text-purple-200 rounded-lg hover:bg-purple-600/50 border border-purple-500/50"
             >
               Cancel
             </button>
@@ -1829,6 +2139,39 @@ export default function ScheduleV2Page() {
           </div>
         </div>
       )}
+
+      {/* Edit Day Start Time Modal (V1 parity - alternative to DayTabs inline edit) */}
+      {showEditStartTimeModal && editingDate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-white mb-4">Edit Day Start Time</h3>
+            <p className="text-gray-300 text-sm mb-4">
+              This will recalculate all routine times for {new Date(editingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </p>
+            <input
+              type="time"
+              value={editingStartTime}
+              onChange={(e) => setEditingStartTime(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 text-white rounded mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowEditStartTimeModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveStartTime}
+                disabled={updateDayStartTimeMutation.isPending}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded disabled:opacity-50"
+              >
+                {updateDayStartTimeMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1841,6 +2184,8 @@ function DroppableUnscheduledPool({
   filters,
   onFiltersChange,
   filterOptions,
+  onSelectAll,
+  onDeselectAll,
 }: {
   routines: any[];
   selectedIds: Set<string>;
@@ -1848,6 +2193,8 @@ function DroppableUnscheduledPool({
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   filterOptions: any;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unscheduled-pool' });
 
@@ -1871,8 +2218,8 @@ function DroppableUnscheduledPool({
         filteredRoutines={routines.length}
         selectedRoutineIds={selectedIds}
         onToggleSelection={onToggleSelection}
-        onSelectAll={() => {}}
-        onDeselectAll={() => {}}
+        onSelectAll={onSelectAll}
+        onDeselectAll={onDeselectAll}
       />
     </div>
   );
