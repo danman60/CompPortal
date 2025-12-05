@@ -2191,6 +2191,17 @@ export const invoiceRouter = router({
         },
       });
 
+      // Update reservation status back to 'summarized' so CD can create fresh invoice
+      if (invoice.reservation_id) {
+        await prisma.reservations.update({
+          where: { id: invoice.reservation_id },
+          data: {
+            status: 'summarized',
+            updated_at: new Date(),
+          },
+        });
+      }
+
       // Activity log (non-blocking)
       try {
         await logActivity({
