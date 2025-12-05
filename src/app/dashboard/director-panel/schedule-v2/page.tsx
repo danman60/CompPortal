@@ -580,7 +580,7 @@ export default function ScheduleV2Page() {
   const [lastClickedScheduledRoutineId, setLastClickedScheduledRoutineId] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockType, setBlockType] = useState<'award' | 'break'>('award');
-  const [editingBlock, setEditingBlock] = useState<{ id: string; type: 'award' | 'break'; title: string; duration: number } | null>(null);
+  const [editingBlock, setEditingBlock] = useState<{ id: string; type: 'award' | 'break'; title: string; duration: number; placement?: { routineNumber: number } } | null>(null);
   
   // Additional modal states
   const [showSendModal, setShowSendModal] = useState(false);
@@ -1417,24 +1417,39 @@ export default function ScheduleV2Page() {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [99, 102, 241];
       };
-      const brandColor = hexToRgb(primaryColor);
 
-      // Header on first page
-      doc.setFillColor(...brandColor);
-      doc.rect(0, 0, 210, 45, 'F');
+      // App color palette: purple/indigo gradients
+      const primaryBrand = hexToRgb(primaryColor);
+      const purpleDark: [number, number, number] = [88, 28, 135];   // purple-900
+      const indigoDark: [number, number, number] = [49, 46, 129];   // indigo-900
+      const purpleLight: [number, number, number] = [147, 51, 234]; // purple-600
+
+      // Elegant header with gradient-style coloring
+      doc.setFillColor(...purpleDark);
+      doc.rect(0, 0, 210, 55, 'F');
+
+      // Add accent bar
+      doc.setFillColor(...purpleLight);
+      doc.rect(0, 0, 210, 3, 'F');
+
+      // Header text
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      doc.setFontSize(28);
       doc.setFont('helvetica', 'bold');
-      doc.text(tenant?.name || 'Competition Schedule', 14, 18);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'normal');
-      doc.text(competition?.name || 'Performance Schedule', 14, 28);
-      doc.setFontSize(11);
-      doc.setTextColor(240, 240, 240);
-      doc.text(`Complete Schedule  •  Generated: ${new Date().toLocaleDateString()}`, 14, 37);
-      doc.setTextColor(0, 0, 0);
+      doc.text(tenant?.name || 'Competition Schedule', 14, 22);
 
-      let currentY = 50;
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'normal');
+      doc.text(competition?.name || 'Performance Schedule', 14, 33);
+
+      doc.setFontSize(10);
+      doc.setTextColor(200, 200, 220);
+      const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(`Complete Schedule • Generated ${dateStr}`, 14, 44);
+      doc.text(`${allScheduled.length} Routines Scheduled`, 14, 50);
+
+      let currentY = 65;
+      let isFirstDay = true;
 
       // Loop through all competition dates
       COMPETITION_DATES.forEach((date, dayIndex) => {
@@ -1442,18 +1457,36 @@ export default function ScheduleV2Page() {
         if (dayScheduled.length === 0) return;
 
         // Add page break between days (except first)
-        if (dayIndex > 0) {
+        if (!isFirstDay) {
           doc.addPage();
           currentY = 20;
         }
+        isFirstDay = false;
 
-        // Day header
-        doc.setFontSize(14);
+        // Day header with elegant styling
+        const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        });
+
+        // Day header background
+        doc.setFillColor(240, 240, 250);
+        doc.rect(14, currentY - 5, 182, 12, 'F');
+
+        // Day header text
+        doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...brandColor);
-        const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-        doc.text(dayName, 14, currentY);
-        currentY += 10;
+        doc.setTextColor(...primaryBrand);
+        doc.text(dayName, 18, currentY + 3);
+
+        // Routine count badge
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 120);
+        doc.text(`${dayScheduled.length} routines`, 175, currentY + 3);
+
+        currentY += 15;
 
         // Build table data for this day
         const tableData = dayScheduled.map(r => [
@@ -1462,37 +1495,61 @@ export default function ScheduleV2Page() {
           r.title || '',
           r.studioName || '',
           r.classificationName || '',
-          `${r.duration || 3}m`,
+          `${r.duration || 3} min`,
         ]);
 
-        // Generate table
+        // Generate table with polished styling
         autoTable(doc, {
           startY: currentY,
-          head: [['#', 'Time', 'Title', 'Studio', 'Class', 'Dur']],
+          head: [['Entry', 'Time', 'Routine Title', 'Studio', 'Classification', 'Duration']],
           body: tableData,
-          styles: { fontSize: 9, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
-          headStyles: { fillColor: brandColor, textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold', halign: 'left' },
-          columnStyles: {
-            0: { cellWidth: 18, halign: 'center' },  // Wider entry #
-            1: { cellWidth: 24, halign: 'center' },  // Wider time
-            2: { cellWidth: 65 },                     // Much wider title
-            3: { cellWidth: 40 },                     // Wider studio
-            4: { cellWidth: 30 },                     // Class
-            5: { cellWidth: 16, halign: 'center' },  // Duration
+          theme: 'grid',
+          styles: {
+            fontSize: 9,
+            cellPadding: 4,
+            lineColor: [220, 220, 230],
+            lineWidth: 0.1,
+            textColor: [40, 40, 60],
           },
-          alternateRowStyles: { fillColor: [249, 249, 249] },
+          headStyles: {
+            fillColor: primaryBrand,
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold',
+            halign: 'left',
+            cellPadding: 5,
+          },
+          columnStyles: {
+            0: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+            1: { cellWidth: 22, halign: 'center' },
+            2: { cellWidth: 70, fontStyle: 'bold' },
+            3: { cellWidth: 45 },
+            4: { cellWidth: 32 },
+            5: { cellWidth: 18, halign: 'center' },
+          },
+          alternateRowStyles: {
+            fillColor: [248, 248, 252],
+          },
         });
 
-        currentY = (doc as any).lastAutoTable.finalY + 10;
+        currentY = (doc as any).lastAutoTable.finalY + 15;
       });
 
-      // Footer on all pages
+      // Elegant footer on all pages
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(128, 128, 128);
-        doc.text(`${tenant?.name || 'Competition'} • Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
+
+        // Footer line
+        doc.setDrawColor(200, 200, 220);
+        doc.setLineWidth(0.5);
+        doc.line(14, 280, 196, 280);
+
+        // Footer text
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 140);
+        doc.text(tenant?.name || 'Competition Schedule', 14, 287);
+        doc.text(`Page ${i} of ${pageCount}`, 196, 287, { align: 'right' });
       }
 
       const filename = `${tenant?.slug || 'schedule'}-full-schedule.pdf`;
@@ -2026,11 +2083,29 @@ export default function ScheduleV2Page() {
                 entryNumbersByRoutineId={entryNumbersByRoutineId}
                 onDeleteBlock={handleDeleteBlock}
                 onEditBlock={(block) => {
+                  // Find routine number that comes before this block for auto-population
+                  const daySchedule = scheduleByDate[selectedDate] || [];
+                  const blockPosition = daySchedule.indexOf(`block-${block.id}`);
+                  let routineNumber: number | undefined;
+
+                  // Look backwards from block position to find the previous routine
+                  if (blockPosition > 0) {
+                    for (let i = blockPosition - 1; i >= 0; i--) {
+                      const itemId = daySchedule[i];
+                      if (!itemId.startsWith('block-')) {
+                        // Found a routine - get its entry number
+                        routineNumber = entryNumbersByRoutineId.get(itemId);
+                        break;
+                      }
+                    }
+                  }
+
                   setEditingBlock({
                     id: block.id,
                     type: block.block_type,
                     title: block.title,
                     duration: block.duration_minutes,
+                    placement: routineNumber ? { routineNumber } : undefined,
                   });
                   setShowBlockModal(true);
                 }}
@@ -2086,6 +2161,7 @@ export default function ScheduleV2Page() {
           type: editingBlock.type,
           title: editingBlock.title,
           duration: editingBlock.duration,
+          placement: editingBlock.placement,
         } : null}
         preselectedType={blockType}
         onSave={async (block) => {

@@ -158,28 +158,37 @@ export default function StudioScheduleView() {
           : [99, 102, 241]; // Fallback indigo
       };
 
-      const brandColor = hexToRgb(primaryColor);
+      // App color palette: purple/indigo gradients
+      const primaryBrand = hexToRgb(primaryColor);
+      const purpleDark: [number, number, number] = [88, 28, 135];   // purple-900
+      const purpleLight: [number, number, number] = [147, 51, 234]; // purple-600
 
-      // Header with tenant branding
-      doc.setFillColor(...brandColor);
-      doc.rect(0, 0, 210, 45, 'F'); // Full-width colored header
+      // Elegant header with gradient-style coloring
+      doc.setFillColor(...purpleDark);
+      doc.rect(0, 0, 210, 55, 'F');
 
-      // Header text (white on colored background)
+      // Add accent bar
+      doc.setFillColor(...purpleLight);
+      doc.rect(0, 0, 210, 3, 'F');
+
+      // Header text
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      doc.setFontSize(28);
       doc.setFont('helvetica', 'bold');
-      doc.text(tenant?.name || 'Competition Schedule', 14, 18);
+      doc.text(tenant?.name || 'Competition Schedule', 14, 22);
 
-      doc.setFontSize(14);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'normal');
-      doc.text('Studio Schedule', 14, 28);
+      doc.text('Studio Schedule', 14, 33);
 
-      doc.setFontSize(11);
-      doc.setTextColor(240, 240, 240);
+      doc.setFontSize(10);
+      doc.setTextColor(200, 200, 220);
       const dayText = selectedDay
-        ? `Day: ${new Date(selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`
+        ? new Date(selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
         : 'All Days';
-      doc.text(`Your Studio • ${filteredRoutines.length} routines • ${dayText}`, 14, 37);
+      const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(`${dayText} • Generated ${dateStr}`, 14, 44);
+      doc.text(`${filteredRoutines.length} Routines Scheduled`, 14, 50);
 
       // Reset text color for body
       doc.setTextColor(0, 0, 0);
@@ -192,53 +201,59 @@ export default function StudioScheduleView() {
         routine.title,
         `${routine.entrySize} • ${routine.classification}`,
         routine.category,
-        routine.hasNote ? '✓ Has Note' : '',
+        routine.hasNote ? '✓ Note' : '',
       ]);
 
-      // Add table with enhanced styling
+      // Add table with polished styling matching CD schedule
       autoTable(doc, {
-        startY: 50,
-        head: [['Entry #', 'Day', 'Time', 'Routine Title', 'Details', 'Category', 'Notes']],
+        startY: 65,
+        head: [['Entry', 'Day', 'Time', 'Routine Title', 'Details', 'Category', 'Notes']],
         body: tableData,
+        theme: 'grid',
         styles: {
           fontSize: 9,
-          cellPadding: 3,
-          lineColor: [200, 200, 200],
+          cellPadding: 4,
+          lineColor: [220, 220, 230],
           lineWidth: 0.1,
+          textColor: [40, 40, 60],
         },
         headStyles: {
-          fillColor: brandColor,
+          fillColor: primaryBrand,
           textColor: [255, 255, 255],
           fontSize: 10,
           fontStyle: 'bold',
           halign: 'left',
+          cellPadding: 5,
         },
         columnStyles: {
-          0: { cellWidth: 18, halign: 'center' }, // Entry #
-          1: { cellWidth: 22, halign: 'center' }, // Day
-          2: { cellWidth: 20, halign: 'center' }, // Time
-          3: { cellWidth: 48 }, // Title
-          4: { cellWidth: 42 }, // Details
-          5: { cellWidth: 30 }, // Category
-          6: { cellWidth: 20, halign: 'center' }, // Notes
+          0: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 20, halign: 'center' },
+          3: { cellWidth: 55, fontStyle: 'bold' },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 28 },
+          6: { cellWidth: 18, halign: 'center' },
         },
         alternateRowStyles: {
-          fillColor: [249, 249, 249], // Very light gray for zebra striping
+          fillColor: [248, 248, 252],
         },
       });
 
-      // Footer
+      // Elegant footer on all pages
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(128, 128, 128);
-        doc.text(
-          `Studio Schedule • Page ${i} of ${pageCount}`,
-          105,
-          285,
-          { align: 'center' }
-        );
+
+        // Footer line
+        doc.setDrawColor(200, 200, 220);
+        doc.setLineWidth(0.5);
+        doc.line(14, 280, 196, 280);
+
+        // Footer text
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 140);
+        doc.text('Studio Schedule', 14, 287);
+        doc.text(`Page ${i} of ${pageCount}`, 196, 287, { align: 'right' });
       }
 
       // Save PDF
