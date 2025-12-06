@@ -168,6 +168,10 @@ export const invoiceRouter = router({
         other_credit_reason: invoice.other_credit_reason,
         amount_paid: invoice.amount_paid,
         balance_remaining: invoice.balance_remaining,
+        // Add database fields for accurate accounting
+        total: invoice.total,
+        deposit_amount: invoice.deposit_amount,
+        amount_due: invoice.amount_due,
       };
     }),
 
@@ -886,6 +890,8 @@ export const invoiceRouter = router({
             total,
             deposit_amount: depositAmount,
             amount_due: amountDue,
+            amount_paid: 0,
+            balance_remaining: amountDue,
             status: 'DRAFT',
           },
         });
@@ -1230,7 +1236,7 @@ export const invoiceRouter = router({
       const depositAmount = Number(invoice.deposit_amount || 0);
       const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
 
-      // Update invoice with discount AND amount_due
+      // Update invoice with discount AND amount_due AND balance_remaining
       await prisma.invoices.update({
         where: { id: input.invoiceId },
         data: {
@@ -1240,6 +1246,7 @@ export const invoiceRouter = router({
             : null,
           total: newTotal,
           amount_due: newAmountDue,
+          balance_remaining: newAmountDue - Number(invoice.amount_paid || 0),
           updated_at: new Date(),
         },
       });
@@ -1293,7 +1300,7 @@ export const invoiceRouter = router({
       const depositAmount = Number(invoice.deposit_amount || 0);
       const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
 
-      // Update invoice with other_credit AND amount_due
+      // Update invoice with other_credit AND amount_due AND balance_remaining
       await prisma.invoices.update({
         where: { id: input.invoiceId },
         data: {
@@ -1303,6 +1310,7 @@ export const invoiceRouter = router({
             : null,
           total: newTotal,
           amount_due: newAmountDue,
+          balance_remaining: newAmountDue - Number(invoice.amount_paid || 0),
           updated_at: new Date(),
         },
       });
@@ -1375,6 +1383,7 @@ export const invoiceRouter = router({
           subtotal,
           total: newTotal,
           amount_due: newAmountDue,
+          balance_remaining: newAmountDue - Number(invoice.amount_paid || 0),
           updated_at: new Date(),
         },
       });
@@ -2456,7 +2465,7 @@ export const invoiceRouter = router({
 
         // 2. Calculate new totals
         const newAmountPaid = parseFloat(invoice.amount_paid?.toString() || '0') + input.amount;
-        const newBalance = parseFloat(invoice.total.toString()) - newAmountPaid;
+        const newBalance = parseFloat(invoice.amount_due.toString()) - newAmountPaid;
         const isFullyPaid = newBalance <= 0.01; // Allow for floating point rounding
 
         // 3. Update invoice

@@ -314,13 +314,13 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-400 mb-1">Total Amount</div>
+          <div className="text-sm text-gray-400 mb-1">Balance Due</div>
           <div className="text-4xl font-bold text-green-400">
-            ${totalAmount.toFixed(2)}
+            ${balanceDue.toFixed(2)}
           </div>
           {discountPercent > 0 && (
             <div className="text-xs text-green-400 mt-1">
-              ({discountPercent}% discount applied)
+              ({discountPercent.toFixed(1)}% discount applied)
             </div>
           )}
         </div>
@@ -966,7 +966,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       {showPaymentModal && dbInvoice && (
         <ApplyPartialPaymentModal
           invoiceId={dbInvoice.id}
-          currentBalance={dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : totalAmount}
+          currentBalance={dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : balanceDue}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={() => {
             refetch();

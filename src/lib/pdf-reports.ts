@@ -622,6 +622,8 @@ export function generateInvoicePDF(invoice: {
     totalAmount: number;
     creditAmount?: number;
     creditReason?: string | null;
+    otherCreditAmount?: number;
+    otherCreditReason?: string | null;
   };
 }): Blob {
   // Use tenant primary color if available, fallback to default
@@ -900,6 +902,16 @@ export function generateInvoicePDF(invoice: {
     const discountLabel = invoice.summary.creditReason || 'Discount';
     doc.text(discountLabel, totalsX, yPos);
     doc.text(`-$${creditAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+  }
+
+  // Other credits (if applicable) - e.g., Glow Dollars
+  const otherCreditAmount = invoice.summary.otherCreditAmount || 0;
+  if (otherCreditAmount > 0) {
+    doc.setTextColor(COLORS.success);
+    const otherCreditLabel = invoice.summary.otherCreditReason || 'Credit';
+    doc.text(otherCreditLabel, totalsX, yPos);
+    doc.text(`-$${otherCreditAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
     yPos += 6;
   }
 
