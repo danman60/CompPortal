@@ -48,6 +48,7 @@ export interface Routine {
   entryNumber?: number | null;
   has_studio_requests?: boolean | null; // SD notes flag for blue glow
   scheduling_notes?: string | null; // SD notes text for tooltip
+  dancer_names?: string[]; // Array of dancer names (populated by DB trigger)
 }
 
 interface RoutineCardProps {

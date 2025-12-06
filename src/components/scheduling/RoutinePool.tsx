@@ -184,17 +184,9 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
             </div>
           </div>
           {/* Dancer names for Solo/Duet-Trio */}
-          {(routine.entrySizeName === 'Solo' || routine.entrySizeName === 'Duet/Trio') && routine.participants.length > 0 && (
+          {(routine.entrySizeName === 'Solo' || routine.entrySizeName === 'Duet/Trio') && routine.dancer_names && routine.dancer_names.length > 0 && (
             <div className="text-[10px] text-gray-400 truncate">
-              {routine.participants.map(p => {
-                const parts = p.dancerName.split(' ');
-                if (parts.length >= 2) {
-                  const firstName = parts[0];
-                  const lastInitial = parts[parts.length - 1].charAt(0);
-                  return `${firstName} ${lastInitial}.`;
-                }
-                return p.dancerName;
-              }).join(', ')}
+              {routine.dancer_names.join(', ')}
             </div>
           )}
         </div>
