@@ -166,6 +166,8 @@ export const invoiceRouter = router({
         credit_reason: invoice.credit_reason,
         other_credit_amount: invoice.other_credit_amount,
         other_credit_reason: invoice.other_credit_reason,
+        amount_paid: invoice.amount_paid,
+        balance_remaining: invoice.balance_remaining,
       };
     }),
 
@@ -2366,5 +2368,183 @@ export const invoiceRouter = router({
         failed,
         errors: errors.length > 0 ? errors : undefined,
       };
+    }),
+
+  /**
+   * Apply partial payment to invoice
+   * AUDIT TRAIL: Records WHO applied payment, WHEN, and full payment details
+   */
+  applyPartialPayment: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      amount: z.number().positive(),
+      paymentDate: z.date(),
+      paymentMethod: z.enum(['check', 'e-transfer', 'cash', 'credit_card', 'wire_transfer', 'other']).optional(),
+      referenceNumber: z.string().max(100).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Authorization: Only CD/SA
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || !userProfile.role || !['competition_director', 'super_admin'].includes(userProfile.role)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can apply payments',
+        });
+      }
+
+      // Get invoice with tenant check
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+        select: {
+          id: true,
+          total: true,
+          amount_paid: true,
+          balance_remaining: true,
+          status: true,
+          tenant_id: true,
+          studio_id: true,
+          studios: { select: { name: true } },
+        },
+      });
+
+      if (!invoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Tenant isolation check
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Invoice not found' });
+      }
+
+      // Validation: Cannot apply payment to already-paid invoice
+      if (invoice.status === 'PAID') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invoice is already marked as paid',
+        });
+      }
+
+      // Validation: Payment cannot exceed remaining balance
+      const currentBalance = parseFloat(invoice.balance_remaining?.toString() || '0');
+      if (input.amount > currentBalance) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Payment amount ($${input.amount.toFixed(2)}) exceeds remaining balance ($${currentBalance.toFixed(2)})`,
+        });
+      }
+
+      // ATOMIC TRANSACTION: Create payment + Update invoice
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Record payment in invoice_payments table (AUDIT TRAIL)
+        const payment = await tx.invoice_payments.create({
+          data: {
+            invoice_id: input.invoiceId,
+            tenant_id: ctx.tenantId!,
+            amount: input.amount,
+            payment_date: input.paymentDate,
+            payment_method: input.paymentMethod || null,
+            reference_number: input.referenceNumber || null,
+            notes: input.notes || null,
+            recorded_by: ctx.userId!,
+          },
+        });
+
+        // 2. Calculate new totals
+        const newAmountPaid = parseFloat(invoice.amount_paid?.toString() || '0') + input.amount;
+        const newBalance = parseFloat(invoice.total.toString()) - newAmountPaid;
+        const isFullyPaid = newBalance <= 0.01; // Allow for floating point rounding
+
+        // 3. Update invoice
+        const updatedInvoice = await tx.invoices.update({
+          where: { id: input.invoiceId },
+          data: {
+            amount_paid: newAmountPaid,
+            balance_remaining: newBalance,
+            status: isFullyPaid ? 'PAID' : invoice.status,
+            paid_at: isFullyPaid ? new Date() : null,
+            updated_at: new Date(),
+          },
+        });
+
+        return { payment, updatedInvoice, isFullyPaid };
+      });
+
+      // 4. Log activity (AUDIT TRAIL)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          tenantId: ctx.tenantId,
+          action: 'invoice.partialPaymentApplied',
+          entityType: 'invoice',
+          entityId: input.invoiceId,
+          details: {
+            studio_name: invoice.studios?.name,
+            payment_amount: input.amount,
+            payment_method: input.paymentMethod || 'not_specified',
+            reference_number: input.referenceNumber,
+            new_amount_paid: result.updatedInvoice.amount_paid,
+            new_balance: result.updatedInvoice.balance_remaining,
+            fully_paid: result.isFullyPaid,
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity (invoice.partialPaymentApplied)', {
+          error: e instanceof Error ? e : new Error(String(e))
+        });
+      }
+
+      return {
+        success: true,
+        payment: result.payment,
+        invoice: result.updatedInvoice,
+        message: result.isFullyPaid
+          ? `Payment of $${input.amount.toFixed(2)} applied. Invoice is now PAID in full!`
+          : `Payment of $${input.amount.toFixed(2)} applied. Remaining balance: $${result.updatedInvoice.balance_remaining?.toString() || '0'}`,
+      };
+    }),
+
+  /**
+   * Get payment history for an invoice
+   * Returns all payments with WHO recorded them
+   */
+  getPaymentHistory: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      // Get invoice to check tenant isolation
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+        select: { tenant_id: true },
+      });
+
+      if (!invoice || invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Get all payments with user details (WHO recorded each payment)
+      const payments = await prisma.invoice_payments.findMany({
+        where: { invoice_id: input.invoiceId },
+        include: {
+          user_profiles: {
+            select: {
+              first_name: true,
+              last_name: true,
+              users: {
+                select: { email: true },
+              },
+            },
+          },
+        },
+        orderBy: { payment_date: 'desc' },
+      });
+
+      return payments;
     }),
 });

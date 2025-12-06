@@ -6,6 +6,8 @@ import { generateInvoicePDF } from '@/lib/pdf-reports';
 import toast from 'react-hot-toast';
 import SplitInvoiceWizard from '@/components/SplitInvoiceWizard';
 import SubInvoiceList from '@/components/SubInvoiceList';
+import ApplyPartialPaymentModal from '@/components/ApplyPartialPaymentModal';
+import PaymentHistoryTable from '@/components/PaymentHistoryTable';
 
 // Helper functions to format dates (manual formatting to avoid SSR/CSR hydration mismatch)
 const MONTH_NAMES = [
@@ -78,6 +80,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [showSplitWizard, setShowSplitWizard] = useState(false);
   const [showSubInvoices, setShowSubInvoices] = useState(false);
   const [otherCreditInput, setOtherCreditInput] = useState({ amount: 0, reason: "" });
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Get current user role
   const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
@@ -621,6 +624,24 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               ${totalAmount.toFixed(2)}
             </span>
           </div>
+
+          {/* Payment Summary (show if partial payments exist) */}
+          {dbInvoice && (dbInvoice.amount_paid !== null || dbInvoice.balance_remaining !== null) && (
+            <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-300">Amount Paid:</span>
+                <span className="text-blue-200 font-semibold">
+                  ${(dbInvoice.amount_paid ? parseFloat(dbInvoice.amount_paid.toString()) : 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-blue-500/20 pt-2">
+                <span className="text-blue-300 font-semibold">Balance Remaining:</span>
+                <span className="text-blue-100 font-bold text-lg">
+                  ${(dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : totalAmount).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -646,17 +667,23 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                     📋 Invoice Sent - Payment will be confirmed by competition staff after external payment received (e-transfer, check, etc.)
                   </div>
                 ) : (
-                  // Competition Directors can mark as paid
+                  // Competition Directors can record partial payments or mark as fully paid
                   <>
                     <div className="flex-1 bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 px-6 py-3 rounded-lg font-semibold text-center">
                       ⏳ Awaiting External Payment from Studio
                     </div>
                     <button
+                      onClick={() => setShowPaymentModal(true)}
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
+                    >
+                      💵 Apply Partial Payment
+                    </button>
+                    <button
                       onClick={() => markAsPaidMutation.mutate({ invoiceId: dbInvoice.id, paymentMethod: 'manual' })}
                       disabled={markAsPaidMutation.isPending}
                       className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
                     >
-                      {markAsPaidMutation.isPending ? '✓ Confirming...' : '✓ Mark as Paid'}
+                      {markAsPaidMutation.isPending ? '✓ Confirming...' : '✓ Mark as Paid (Full)'}
                     </button>
                   </>
                 )}
@@ -807,6 +834,13 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       </div>
       </div>
 
+      {/* Payment History (show if invoice exists in database) */}
+      {dbInvoice && isCompetitionDirector && (
+        <div className="mt-8">
+          <PaymentHistoryTable invoiceId={dbInvoice.id} />
+        </div>
+      )}
+
       {/* Footer */}
       <div className="mt-8 pt-8 border-t border-white/20 text-center text-sm text-gray-400">
         <p>Thank you for participating in {invoice.competition.name}!</p>
@@ -896,6 +930,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             />
           </div>
         </div>
+      )}
+
+      {/* Apply Partial Payment Modal */}
+      {showPaymentModal && dbInvoice && (
+        <ApplyPartialPaymentModal
+          invoiceId={dbInvoice.id}
+          currentBalance={dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : totalAmount}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
       )}
     </div>
   );

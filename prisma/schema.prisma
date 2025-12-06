@@ -1138,11 +1138,14 @@ model invoices {
   is_locked                Boolean?       @default(false)
   has_dancer_invoices      Boolean?       @default(false)
   total_margin_applied     Decimal?       @db.Decimal(10, 2)
+  amount_paid              Decimal?       @default(0) @db.Decimal(10, 2)
+  balance_remaining        Decimal?       @db.Decimal(10, 2)
   competitions             competitions   @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   reservations             reservations?  @relation(fields: [reservation_id], references: [id], onUpdate: NoAction)
   studios                  studios        @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                  tenants        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   sub_invoices             sub_invoices[]
+  invoice_payments         invoice_payments[]
 
   @@index([competition_id], map: "idx_invoices_competition")
   @@index([paid_at], map: "idx_invoices_paid_at")
@@ -1152,6 +1155,31 @@ model invoices {
   @@index([stripe_payment_intent_id], map: "idx_invoices_stripe_payment_intent")
   @@index([studio_id], map: "idx_invoices_studio")
   @@index([tenant_id], map: "idx_invoices_tenant")
+  @@schema("public")
+}
+
+/// Tracks partial payments applied to invoices with complete audit trail
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model invoice_payments {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoice_id        String        @db.Uuid
+  tenant_id         String        @db.Uuid
+  amount            Decimal       @db.Decimal(10, 2)
+  payment_date      DateTime      @db.Timestamp(6)
+  payment_method    String?       @db.VarChar(50)
+  reference_number  String?       @db.VarChar(100)
+  notes             String?       @db.Text
+  recorded_by       String        @db.Uuid
+  created_at        DateTime      @default(now()) @db.Timestamp(6)
+  updated_at        DateTime      @default(now()) @db.Timestamp(6)
+  invoices          invoices      @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants           tenants       @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_profiles     user_profiles @relation(fields: [recorded_by], references: [id], onUpdate: NoAction)
+
+  @@index([invoice_id], map: "idx_invoice_payments_invoice")
+  @@index([tenant_id], map: "idx_invoice_payments_tenant")
+  @@index([payment_date], map: "idx_invoice_payments_date")
+  @@index([recorded_by], map: "idx_invoice_payments_recorded_by")
   @@schema("public")
 }
 
@@ -1510,6 +1538,7 @@ model tenants {
   entry_participants                entry_participants[]
   entry_size_categories             entry_size_categories[]
   invoices                          invoices[]
+  invoice_payments                  invoice_payments[]
   judges                            judges[]
   rankings                          rankings[]
   reservations                      reservations[]
@@ -1602,6 +1631,7 @@ model user_profiles {
   classification_exception_requests_classification_exception_requests_created_byTouser_profiles   classification_exception_requests[] @relation("classification_exception_requests_created_byTouser_profiles")
   classification_exception_requests_classification_exception_requests_responded_byTouser_profiles classification_exception_requests[] @relation("classification_exception_requests_responded_byTouser_profiles")
   email_preferences                                                                               email_preferences[]
+  invoice_payments                                                                                invoice_payments[]
   two_factor_audit_log                                                                            two_factor_audit_log[]
   users                                                                                           users                               @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                                                                                         tenants?                            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
