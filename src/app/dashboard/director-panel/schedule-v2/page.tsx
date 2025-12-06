@@ -63,13 +63,38 @@ const COMPETITION_DATES = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12
 
 // ===================== COMPONENTS =====================
 
-function DraggableBlockCard({ type, onClick }: { type: 'award' | 'break'; onClick?: () => void }) {
+function DraggableBlockCard({ type, onClick }: { type: 'award' | 'break' | 'event'; onClick?: () => void }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: `template-${type}`,
     data: { type: 'template', blockType: type },
   });
 
-  const isAward = type === 'award';
+  const getStyles = () => {
+    if (type === 'award') {
+      return 'bg-amber-900/30 text-amber-300 border-amber-500/50 hover:bg-amber-900/50 hover:border-amber-500';
+    } else if (type === 'event') {
+      return 'bg-fuchsia-900/30 text-fuchsia-300 border-fuchsia-500/50 hover:bg-fuchsia-900/50 hover:border-fuchsia-500';
+    }
+    return 'bg-cyan-900/30 text-cyan-300 border-cyan-500/50 hover:bg-cyan-900/50 hover:border-cyan-500';
+  };
+
+  const getLabel = () => {
+    if (type === 'award') return '🏆 +Adjudication';
+    if (type === 'event') return '🎉 +Event';
+    return '☕ +Break';
+  };
+
+  const getDescription = () => {
+    if (type === 'award') return 'Add adjudication block';
+    if (type === 'event') return 'Add special event';
+    return 'Add break block';
+  };
+
+  const getTextColor = () => {
+    if (type === 'award') return 'text-amber-200/80';
+    if (type === 'event') return 'text-fuchsia-200/80';
+    return 'text-cyan-200/80';
+  };
 
   return (
     <button
@@ -86,18 +111,15 @@ function DraggableBlockCard({ type, onClick }: { type: 'award' | 'break'; onClic
         relative flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all
         border-2 flex flex-col justify-center
         cursor-grab active:cursor-grabbing
-        ${isAward
-          ? 'bg-amber-900/30 text-amber-300 border-amber-500/50 hover:bg-amber-900/50 hover:border-amber-500'
-          : 'bg-cyan-900/30 text-cyan-300 border-cyan-500/50 hover:bg-cyan-900/50 hover:border-cyan-500'
-        }
+        ${getStyles()}
       `}
       title="Drag to schedule or click to configure"
     >
       <div className="font-semibold text-xs mb-1">
-        {isAward ? '🏆 +Adjudication' : '☕ +Break'}
+        {getLabel()}
       </div>
-      <div className={`text-xs ${isAward ? 'text-amber-200/80' : 'text-cyan-200/80'}`}>
-        {isAward ? 'Add adjudication block' : 'Add break block'}
+      <div className={`text-xs ${getTextColor()}`}>
+        {getDescription()}
       </div>
       <div className="absolute top-1 right-1 opacity-40">
         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,9 +159,10 @@ interface RoutineData {
 
 interface BlockData {
   id: string;
-  block_type: 'award' | 'break';
+  block_type: 'award' | 'break' | 'event';
   title: string;
   duration_minutes: number;
+  notes?: string | null;
 }
 
 // ===================== HELPER FUNCTIONS (Pure) =====================
@@ -579,8 +602,8 @@ export default function ScheduleV2Page() {
   const [lastClickedRoutineId, setLastClickedRoutineId] = useState<string | null>(null);
   const [lastClickedScheduledRoutineId, setLastClickedScheduledRoutineId] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
-  const [blockType, setBlockType] = useState<'award' | 'break'>('award');
-  const [editingBlock, setEditingBlock] = useState<{ id: string; type: 'award' | 'break'; title: string; duration: number; placement?: { routineNumber: number } } | null>(null);
+  const [blockType, setBlockType] = useState<'award' | 'break' | 'event'>('award');
+  const [editingBlock, setEditingBlock] = useState<{ id: string; type: 'award' | 'break' | 'event'; title: string; duration: number; placement?: { routineNumber: number } } | null>(null);
   
   // Additional modal states
   const [showSendModal, setShowSendModal] = useState(false);
@@ -1343,7 +1366,7 @@ export default function ScheduleV2Page() {
     });
   };
 
-  const handleCreateBlock = (type: 'award' | 'break') => {
+  const handleCreateBlock = (type: 'award' | 'break' | 'event') => {
     setBlockType(type);
     setShowBlockModal(true);
   };
@@ -2075,6 +2098,10 @@ export default function ScheduleV2Page() {
                     type="break"
                     onClick={() => handleCreateBlock('break')}
                   />
+                  <DraggableBlockCard
+                    type="event"
+                    onClick={() => handleCreateBlock('event')}
+                  />
                 </div>
               </div>
 
@@ -2141,10 +2168,12 @@ export default function ScheduleV2Page() {
               <div className={`px-4 py-3 rounded-lg border-2 border-dashed shadow-xl opacity-90 ${
                 activeId === 'template-award'
                   ? 'bg-amber-500/80 border-amber-400 text-white'
+                  : activeId === 'template-event'
+                  ? 'bg-fuchsia-500/80 border-fuchsia-400 text-white'
                   : 'bg-cyan-500/80 border-cyan-400 text-white'
               }`}>
                 <span className="font-semibold">
-                  {activeId === 'template-award' ? '🏆 Adjudication Ceremony' : '☕ Break'}
+                  {activeId === 'template-award' ? '🏆 Adjudication Ceremony' : activeId === 'template-event' ? '🎉 Special Event' : '☕ Break'}
                 </span>
               </div>
             )}

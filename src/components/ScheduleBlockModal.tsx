@@ -18,7 +18,7 @@ interface ScheduleBlockModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (block: {
-    type: 'award' | 'break';
+    type: 'award' | 'break' | 'event';
     title: string;
     duration: number;
     placement?: {
@@ -27,20 +27,22 @@ interface ScheduleBlockModalProps {
       time?: string; // HH:MM format
     };
     blockId?: string; // ID of created block (for placement)
+    notes?: string; // For event blocks
   }) => void;
   competitionId: string;
   tenantId: string;
   initialBlock?: {
     id: string;
-    type: 'award' | 'break';
+    type: 'award' | 'break' | 'event';
     title: string;
     duration: number;
     placement?: {
       routineNumber?: number; // For edit mode: pre-populate with current position
     };
+    notes?: string; // For event blocks
   } | null;
   mode?: 'create' | 'edit';
-  preselectedType?: 'award' | 'break';
+  preselectedType?: 'award' | 'break' | 'event';
 }
 
 const DURATION_OPTIONS = [5, 10, 15];
@@ -55,11 +57,12 @@ export function ScheduleBlockModal({
   mode = 'create',
   preselectedType,
 }: ScheduleBlockModalProps) {
-  const [blockType, setBlockType] = useState<'award' | 'break'>(
+  const [blockType, setBlockType] = useState<'award' | 'break' | 'event'>(
     preselectedType || initialBlock?.type || 'award'
   );
   const [title, setTitle] = useState(initialBlock?.title || '');
   const [duration, setDuration] = useState(initialBlock?.duration || 30);
+  const [notes, setNotes] = useState(initialBlock?.notes || '');
   const [error, setError] = useState('');
 
   // Placement options
@@ -73,6 +76,7 @@ export function ScheduleBlockModal({
       setBlockType(preselectedType || initialBlock?.type || 'award');
       setTitle(initialBlock?.title || '');
       setDuration(initialBlock?.duration || 30);
+      setNotes(initialBlock?.notes || '');
       setError('');
       setPlacementType('after_routine');
       // Pre-populate routine number if editing an existing block
@@ -94,6 +98,7 @@ export function ScheduleBlockModal({
           time: placementType === 'by_time' ? timeValue : undefined,
         },
         blockId: data.id, // Include the created block ID
+        notes: notes.trim() || undefined,
       });
       handleClose();
     },
@@ -131,6 +136,7 @@ export function ScheduleBlockModal({
           routineNumber: placementType === 'after_routine' && routineNumber !== '' ? routineNumber : undefined,
           time: placementType === 'by_time' ? timeValue : undefined,
         },
+        notes: notes.trim() || undefined,
       });
       handleClose();
       return;
@@ -143,6 +149,7 @@ export function ScheduleBlockModal({
       blockType,
       title: finalTitle,
       durationMinutes: duration,
+      notes: notes.trim() || undefined,
     });
   };
 
@@ -156,6 +163,8 @@ export function ScheduleBlockModal({
   const getDefaultTitle = () => {
     if (blockType === 'award') {
       return 'Adjudication Ceremony';
+    } else if (blockType === 'event') {
+      return 'Special Event';
     }
     return `${duration} Minute Break`;
   };
@@ -163,6 +172,8 @@ export function ScheduleBlockModal({
   const getPlaceholder = () => {
     if (blockType === 'award') {
       return 'e.g., "Jazz Awards Ceremony", "Senior Division Awards"';
+    } else if (blockType === 'event') {
+      return 'e.g., "Glow-Off Competition", "Meet & Greet"';
     }
     return 'e.g., "Lunch Break", "Costume Change Break"';
   };
@@ -179,7 +190,7 @@ export function ScheduleBlockModal({
               {mode === 'edit' ? '✏️ Edit' : '➕ Add'} Schedule Block
             </h3>
             <p className="text-gray-400 text-sm">
-              {blockType === 'award' ? 'Adjudication ceremony timing' : 'Scheduled break period'}
+              {blockType === 'award' ? 'Adjudication ceremony timing' : blockType === 'event' ? 'Special event scheduling' : 'Scheduled break period'}
             </p>
           </div>
           <button
@@ -200,7 +211,7 @@ export function ScheduleBlockModal({
               <label className="block text-sm font-medium text-purple-300 mb-3">
                 Block Type
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setBlockType('award')}
@@ -227,6 +238,19 @@ export function ScheduleBlockModal({
                   <div className="text-sm font-medium text-white">Break</div>
                   <div className="text-xs text-gray-400 mt-1">Scheduled</div>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setBlockType('event')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    blockType === 'event'
+                      ? 'bg-fuchsia-600/20 border-fuchsia-500 shadow-lg'
+                      : 'bg-white/5 border-white/20 hover:border-fuchsia-500/50'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">🎉</div>
+                  <div className="text-sm font-medium text-white">Event</div>
+                  <div className="text-xs text-gray-400 mt-1">Special</div>
+                </button>
               </div>
             </div>
           )}
@@ -249,6 +273,27 @@ export function ScheduleBlockModal({
               Leave empty for default: "{getDefaultTitle()}"
             </div>
           </div>
+
+          {/* Notes Input - Event blocks only */}
+          {blockType === 'event' && (
+            <div className="mb-6">
+              <label htmlFor="notes" className="block text-sm font-medium text-purple-300 mb-2">
+                Event Details <span className="text-gray-500">(optional)</span>
+              </label>
+              <textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="e.g., Top 10 solos compete for title"
+                rows={3}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 transition-all resize-none"
+                maxLength={500}
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Add any details about the event (max 500 characters)
+              </div>
+            </div>
+          )}
 
           {/* Duration Selector */}
           <div className="mb-6">
@@ -384,17 +429,24 @@ export function ScheduleBlockModal({
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                 blockType === 'award'
                   ? 'bg-gradient-to-br from-amber-500 to-yellow-600'
+                  : blockType === 'event'
+                  ? 'bg-gradient-to-br from-fuchsia-500 to-purple-600'
                   : 'bg-gradient-to-br from-cyan-500 to-blue-600'
               }`}>
-                <span className="text-xl">{blockType === 'award' ? '🏆' : '☕'}</span>
+                <span className="text-xl">{blockType === 'award' ? '🏆' : blockType === 'event' ? '🎉' : '☕'}</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <div className="font-medium text-white">
                   {title.trim() || getDefaultTitle()}
                 </div>
                 <div className="text-xs text-purple-300">
                   {duration} minute{duration !== 1 ? 's' : ''}
                 </div>
+                {blockType === 'event' && notes.trim() && (
+                  <div className="text-xs text-gray-400 mt-1 italic">
+                    {notes.trim()}
+                  </div>
+                )}
               </div>
             </div>
           </div>

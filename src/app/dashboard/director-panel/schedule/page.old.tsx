@@ -746,7 +746,7 @@ export default function SchedulePage() {
     toast.success('🗑️ Block deleted');
   };
 
-  const handleSaveBlock = (block: { type: 'award' | 'break'; title: string; duration: number }) => {
+  const handleSaveBlock = (block: { type: 'award' | 'break' | 'event'; title: string; duration: number; placement?: { type: 'after_routine' | 'by_time'; routineNumber?: number; time?: string }; blockId?: string; notes?: string }) => {
     if (blockModalMode === 'edit' && editingBlock) {
       // Update existing block
       setScheduleBlocks(prev => prev.map(b =>

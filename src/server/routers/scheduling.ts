@@ -1528,11 +1528,12 @@ export const schedulingRouter = router({
     .input(z.object({
       competitionId: z.string().uuid(),
       tenantId: z.string().uuid(),
-      blockType: z.enum(['award', 'break']),
+      blockType: z.enum(['award', 'break', 'event']),
       title: z.string(),
       durationMinutes: z.number(),
       scheduledTime: z.date().optional(), // For auto-placement via drag-drop
       sortOrder: z.number().optional(),   // For auto-placement via drag-drop
+      notes: z.string().optional(),        // For event blocks (e.g., "Top 10 solos compete")
     }))
     .mutation(async ({ input }) => {
       const block = await prisma.schedule_blocks.create({
@@ -1544,6 +1545,7 @@ export const schedulingRouter = router({
           duration_minutes: input.durationMinutes,
           scheduled_time: input.scheduledTime,
           sort_order: input.sortOrder,
+          notes: input.notes,
         },
       });
 

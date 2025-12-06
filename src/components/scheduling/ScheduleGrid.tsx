@@ -21,7 +21,7 @@ export type ScheduleZone = 'saturday-am' | 'saturday-pm' | 'sunday-am' | 'sunday
 
 export interface ScheduleBlock {
   id: string;
-  type: 'award' | 'break';
+  type: 'award' | 'break' | 'event';
   title: string;
   duration: number;
   zone: ScheduleZone | null;
