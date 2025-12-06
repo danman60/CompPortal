@@ -2412,6 +2412,7 @@ export const invoiceRouter = router({
         select: {
           id: true,
           total: true,
+          amount_due: true,
           amount_paid: true,
           balance_remaining: true,
           status: true,
@@ -2465,7 +2466,7 @@ export const invoiceRouter = router({
 
         // 2. Calculate new totals
         const newAmountPaid = parseFloat(invoice.amount_paid?.toString() || '0') + input.amount;
-        const newBalance = parseFloat(invoice.amount_due.toString()) - newAmountPaid;
+        const newBalance = parseFloat(invoice.amount_due?.toString() || '0') - newAmountPaid;
         const isFullyPaid = newBalance <= 0.01; // Allow for floating point rounding
 
         // 3. Update invoice
