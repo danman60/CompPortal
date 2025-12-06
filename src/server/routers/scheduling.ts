@@ -1375,119 +1375,11 @@ export const schedulingRouter = router({
       return { conflicts, total: conflicts.length };
     }),
 
-  // Finalize schedule (lock entry numbers)
-  finalizeSchedule: publicProcedure
-    .input(z.object({
-      competitionId: z.string().uuid(),
-      tenantId: z.string().uuid(),
-      userId: z.string().uuid(),
-    }))
-    .mutation(async ({ input }) => {
-      // Verify no critical conflicts
-      const conflictsResponse = await prisma.$queryRaw<any[]>`
-        SELECT COUNT(*) as critical_count
-        FROM schedule_conflicts
-        WHERE competition_id = ${input.competitionId}::uuid
-          AND severity = 'critical'
-          AND status = 'active'
-      `;
-
-      const criticalCount = conflictsResponse[0]?.critical_count || 0;
-
-      if (criticalCount > 0) {
-        throw new Error(`Cannot finalize schedule: ${criticalCount} critical conflict(s) must be resolved first`);
-      }
-
-      // Update competition status
-      const updated = await prisma.competitions.update({
-        where: {
-          id: input.competitionId,
-          tenant_id: input.tenantId,
-        },
-        data: {
-          schedule_state: 'finalized',
-          schedule_finalized_at: new Date(),
-          schedule_finalized_by: input.userId,
-          schedule_locked: true,
-        },
-      });
-
-      return { success: true, competition: updated };
-    }),
-
-  // Publish schedule (reveal studio names)
-  publishSchedule: publicProcedure
-    .input(z.object({
-      competitionId: z.string().uuid(),
-      tenantId: z.string().uuid(),
-      userId: z.string().uuid(),
-    }))
-    .mutation(async ({ input }) => {
-      // Verify status is finalized
-      const competition = await prisma.competitions.findUnique({
-        where: {
-          id: input.competitionId,
-          tenant_id: input.tenantId,
-        },
-        select: { schedule_state: true },
-      });
-
-      if (competition?.schedule_state !== 'finalized') {
-        throw new Error('Schedule must be finalized before publishing');
-      }
-
-      // Update competition status
-      const updated = await prisma.competitions.update({
-        where: {
-          id: input.competitionId,
-          tenant_id: input.tenantId,
-        },
-        data: {
-          schedule_state: 'published',
-          schedule_published_at: new Date(),
-          schedule_published_by: input.userId,
-        },
-      });
-
-      return { success: true, competition: updated };
-    }),
-
-  // Unlock schedule (finalized -> draft)
-  unlockSchedule: publicProcedure
-    .input(z.object({
-      competitionId: z.string().uuid(),
-      tenantId: z.string().uuid(),
-    }))
-    .mutation(async ({ input }) => {
-      // Verify status is finalized (can't unlock published schedules)
-      const competition = await prisma.competitions.findUnique({
-        where: {
-          id: input.competitionId,
-          tenant_id: input.tenantId,
-        },
-        select: { schedule_state: true },
-      });
-
-      if (competition?.schedule_state === 'published') {
-        throw new Error('Cannot unlock a published schedule');
-      }
-
-      // Update competition status
-      const updated = await prisma.competitions.update({
-        where: {
-          id: input.competitionId,
-          tenant_id: input.tenantId,
-        },
-        data: {
-          schedule_state: 'draft',
-          schedule_locked: false,
-          schedule_finalized_at: null,
-          schedule_finalized_by: null,
-        },
-      });
-
-      return { success: true, competition: updated };
-    }),
+  // DEPRECATED ENDPOINTS REMOVED (P2-15):
+  // - finalizeSchedule (used 'finalized' - violates DB constraint)
+  // - publishSchedule (used 'published' - violates DB constraint)
+  // - unlockSchedule (used 'draft' - violates DB constraint)
+  // Replaced by toggleScheduleStatus with 'tentative'/'final' values
 
   // Create schedule block (award or break)
   getScheduleBlocks: publicProcedure
@@ -2777,13 +2669,13 @@ export const schedulingRouter = router({
         reservations.map(r => [r.studio_id, r.studio_code])
       );
 
-      // Check if schedule is published
+      // Check if schedule is published (P2-15: now using 'final' instead of 'published')
       const competition = await prisma.competitions.findUnique({
         where: { id: input.competitionId },
         select: { schedule_state: true },
       });
 
-      const isPublished = competition?.schedule_state === 'published';
+      const isPublished = competition?.schedule_state === 'final';
 
       // Transform based on view mode
       return routines.map(routine => {
