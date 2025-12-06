@@ -4178,6 +4178,33 @@ export const schedulingRouter = router({
       };
     }),
 
+  // P2-15: Toggle schedule status (Tentative vs Final)
+  toggleScheduleStatus: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      status: z.enum(['tentative', 'final']),
+    }))
+    .mutation(async ({ input }) => {
+      console.log('[toggleScheduleStatus] Setting schedule to:', input.status);
+
+      const updatedCompetition = await prisma.competitions.update({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          schedule_state: input.status,
+          schedule_finalized_at: input.status === 'final' ? new Date() : null,
+        },
+      });
+
+      return {
+        success: true,
+        scheduleState: updatedCompetition.schedule_state,
+      };
+    }),
+
   /**
    * Publish current version to studios
    * - Marks current version as published

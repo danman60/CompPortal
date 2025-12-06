@@ -45,6 +45,7 @@ import { DayTabs } from '@/components/scheduling/DayTabs';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
 import { ManageStudioVisibilityModal } from '@/components/scheduling/ManageStudioVisibilityModal';
+import { ScheduleStatusToggle } from '@/components/scheduling/ScheduleStatusToggle';
 import { AssignStudioCodesModal } from '@/components/AssignStudioCodesModal';
 import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
@@ -743,6 +744,15 @@ export default function ScheduleV2Page() {
   const toggleFeedbackMutation = trpc.scheduling.toggleScheduleFeedback.useMutation({
     onSuccess: () => { toast.success('Feedback setting updated'); refetch(); },
     onError: (err) => toast.error(`Failed: ${err.message}`),
+  });
+
+  // P2-15: Toggle schedule status (Tentative vs Final)
+  const toggleScheduleStatusMutation = trpc.scheduling.toggleScheduleStatus.useMutation({
+    onSuccess: () => {
+      toast.success('Schedule status updated');
+      utils.competition.getById.invalidate({ id: TEST_COMPETITION_ID });
+    },
+    onError: (err) => toast.error(`Failed to update status: ${err.message}`),
   });
 
   // ===== LOCAL TEMP BLOCKS STATE =====
@@ -1997,6 +2007,23 @@ export default function ScheduleV2Page() {
           </div>
         </div>
       </div>
+
+      {/* P2-15: Schedule Status Toggle (Tentative vs Final) */}
+      {competition && (
+        <div className="px-6 pt-4">
+          <ScheduleStatusToggle
+            status={(competition.schedule_state as 'tentative' | 'final') || 'tentative'}
+            onToggle={(newStatus) => {
+              toggleScheduleStatusMutation.mutate({
+                tenantId: TEST_TENANT_ID,
+                competitionId: TEST_COMPETITION_ID,
+                status: newStatus,
+              });
+            }}
+            disabled={toggleScheduleStatusMutation.isPending}
+          />
+        </div>
+      )}
 
       {/* Single DndContext wrapping both day tabs/block buttons AND main content */}
       <DndContext
