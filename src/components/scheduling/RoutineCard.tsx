@@ -208,10 +208,10 @@ export function RoutineCard({
           </div>
         )}
 
-        {/* Notes Badge (Blue Dot) */}
+        {/* Notes Badge (Amber - Prominent) */}
         {hasNotes && (
           <div
-            className="bg-blue-500/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg"
+            className="bg-amber-500/90 text-white px-2 py-1 rounded-md text-xs font-bold shadow-lg"
             title="Has notes or studio requests"
           >
             📝
