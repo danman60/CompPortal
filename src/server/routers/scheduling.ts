@@ -3739,13 +3739,12 @@ export const schedulingRouter = router({
       return result;
     }),
 
-  // SD: Get studio's schedule view
+  // SD: Get studio's schedule view (P1-8: Live updates, no versioning)
   getStudioSchedule: publicProcedure
     .input(z.object({
       tenantId: z.string().uuid(),
       competitionId: z.string().uuid(),
       studioId: z.string().uuid(),
-      majorVersion: z.number().optional(),
     }))
     .query(async ({ input }) => {
       // Get competition to check feedback toggle
@@ -3758,50 +3757,7 @@ export const schedulingRouter = router({
 
       const feedbackAllowed = competition?.schedule_feedback_allowed ?? false;
 
-      // Get requested version or latest published (SDs only see published)
-      let version;
-      if (input.majorVersion !== undefined) {
-        version = await prisma.schedule_versions.findFirst({
-          where: {
-            tenant_id: input.tenantId,
-            competition_id: input.competitionId,
-            major_version: input.majorVersion,
-            is_published_to_studios: true,
-          },
-        });
-      } else {
-        // Get latest published version
-        version = await prisma.schedule_versions.findFirst({
-          where: {
-            tenant_id: input.tenantId,
-            competition_id: input.competitionId,
-            is_published_to_studios: true,
-          },
-          orderBy: [
-            { major_version: 'desc' },
-            { minor_version: 'desc' },
-          ],
-        });
-      }
-
-      if (!version) {
-        // No published schedule yet - return empty state
-        return {
-          version: {
-            number: 0,
-            versionDisplay: 'No published schedule',
-            status: 'draft' as const,
-            deadline: null,
-            daysRemaining: 0,
-            canEditNotes: false,
-          },
-          routines: [],
-          blocks: [],
-          gaps: [],
-        };
-      }
-
-      // Get studio's scheduled routines
+      // Get studio's scheduled routines (live - no version filtering)
       const routines = await prisma.competition_entries.findMany({
         where: {
           tenant_id: input.tenantId,
@@ -3821,7 +3777,7 @@ export const schedulingRouter = router({
         },
       });
 
-      // Get schedule blocks
+      // Get ALL schedule blocks (P0-5: studios see all blocks)
       const blocks = await prisma.schedule_blocks.findMany({
         where: {
           tenant_id: input.tenantId,
@@ -3831,23 +3787,8 @@ export const schedulingRouter = router({
         orderBy: { scheduled_time: 'asc' },
       });
 
-      // Calculate gaps (simplified - just show time ranges)
-      const gaps: any[] = [];
-      // TODO: Calculate actual gaps between studio's routines
-
-      const daysRemaining = version.deadline
-        ? Math.ceil((version.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        : undefined;
-
       return {
-        version: {
-          number: version.major_version, // SDs see only major version (1, 2, 3)
-          versionDisplay: `V${version.major_version}`,
-          status: version.status,
-          deadline: version.deadline,
-          daysRemaining: daysRemaining && daysRemaining > 0 ? daysRemaining : 0,
-          canEditNotes: feedbackAllowed, // Global toggle overrides all
-        },
+        feedbackAllowed, // Direct from competition settings
         routines: routines.map(r => ({
           id: r.id,
           entryNumber: r.entry_number,
@@ -3863,12 +3804,11 @@ export const schedulingRouter = router({
           noteText: r.scheduling_notes,
         })),
         blocks: blocks.map(b => ({
-          type: b.block_type as 'award' | 'break',
+          type: b.block_type as 'award' | 'break' | 'event',
           scheduledDay: b.schedule_day,
           startTime: b.scheduled_time?.toISOString().substring(11, 16) || '',
           duration: b.duration_minutes,
         })),
-        gaps,
       };
     }),
 

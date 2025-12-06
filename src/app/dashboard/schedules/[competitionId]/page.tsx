@@ -67,20 +67,15 @@ export default function StudioScheduleView() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch studio schedule
+  // Fetch studio schedule (P1-8: Live updates, no versioning)
   const { data: schedule, isLoading, refetch } = trpc.scheduling.getStudioSchedule.useQuery({
     tenantId,
     competitionId,
     studioId,
   });
 
-  // Get current version to check if review is open
-  const { data: currentVersion } = trpc.scheduling.getCurrentVersion.useQuery({
-    tenantId,
-    competitionId,
-  });
-
-  const canAddNotes = currentVersion?.feedbackAllowed ?? false;
+  // Feedback toggle from schedule response (no version dependency)
+  const canAddNotes = schedule?.feedbackAllowed ?? false;
 
   // Group routines AND blocks by day (P0-5: Studios see all blocks)
   const scheduleItemsByDay = useMemo(() => {

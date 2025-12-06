@@ -46,7 +46,6 @@ import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
 import { AssignStudioCodesModal } from '@/components/AssignStudioCodesModal';
 import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
-import { VersionIndicator } from '@/components/scheduling/VersionIndicator';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -610,7 +609,6 @@ export default function ScheduleV2Page() {
   const [showStudioCodeModal, setShowStudioCodeModal] = useState(false);
   const [showResetAllModal, setShowResetAllModal] = useState(false);
   const [showFixAllModal, setShowFixAllModal] = useState(false);
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showStudioPickerModal, setShowStudioPickerModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, currentDayName: '' });
@@ -700,16 +698,6 @@ export default function ScheduleV2Page() {
 
   // Additional queries for V1 feature parity
   const { data: competition } = trpc.competition.getById.useQuery({ id: TEST_COMPETITION_ID });
-  
-  const { data: versionData, refetch: refetchVersion } = trpc.scheduling.getCurrentVersion.useQuery({
-    tenantId: TEST_TENANT_ID,
-    competitionId: TEST_COMPETITION_ID,
-  });
-
-  const { data: versionHistory, refetch: refetchHistory } = trpc.scheduling.getVersionHistory.useQuery(
-    { tenantId: TEST_TENANT_ID, competitionId: TEST_COMPETITION_ID },
-    { enabled: showVersionHistory }
-  );
 
   const { data: allStudios } = trpc.studioInvitations.getStudiosForCD.useQuery();
 
@@ -749,18 +737,10 @@ export default function ScheduleV2Page() {
     onError: (err) => toast.error(`Failed to reset competition: ${err.message}`),
   });
 
+  // P1-8: Feedback toggle (no version dependency)
   const toggleFeedbackMutation = trpc.scheduling.toggleScheduleFeedback.useMutation({
-    onSuccess: () => { toast.success('Feedback setting updated'); refetchVersion(); },
+    onSuccess: () => { toast.success('Feedback setting updated'); refetch(); },
     onError: (err) => toast.error(`Failed: ${err.message}`),
-  });
-
-  const publishVersionMutation = trpc.scheduling.publishVersionToStudios.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Published V${data.publishedVersion} to studios`);
-      refetchVersion();
-      refetchHistory();
-    },
-    onError: (err) => toast.error(`Failed to publish: ${err.message}`),
   });
 
   // ===== LOCAL TEMP BLOCKS STATE =====
@@ -1389,9 +1369,9 @@ export default function ScheduleV2Page() {
     toast.success('Changes discarded');
   };
 
-  // Toggle feedback (V1 parity)
+  // P1-8: Toggle feedback (no version dependency)
   const handleToggleFeedback = () => {
-    const newState = !versionData?.feedbackAllowed;
+    const newState = !competition?.schedule_feedback_allowed;
     toggleFeedbackMutation.mutate({
       tenantId: TEST_TENANT_ID,
       competitionId: TEST_COMPETITION_ID,
@@ -1838,47 +1818,26 @@ export default function ScheduleV2Page() {
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-white">Schedule V2</h1>
-              {/* Version Indicator */}
-              {versionData && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white/90">
-                    {versionData.versionDisplay || `Version ${versionData.versionNumber}`}
-                  </span>
-                  {versionData.isPublished && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/50">
-                      ✓ Published
-                    </span>
-                  )}
-                </div>
-              )}
-              <button
-                onClick={() => setShowVersionHistory(!showVersionHistory)}
-                className="text-xs text-purple-200 hover:text-white flex items-center gap-1"
-              >
-                <History className="h-3 w-3" />
-                {showVersionHistory ? 'Hide' : 'View'} History
-              </button>
-            </div>
+            {/* P1-8: No version UI - live updates only */}
+            <h1 className="text-2xl font-bold text-white">Schedule V2</h1>
             <p className="text-sm text-purple-100 mt-1">
               {competition?.name || 'Test Competition'} • {selectedDate} • {scheduleOrder.filter(id => !id.startsWith('block-')).length} scheduled
             </p>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            {/* Feedback Toggle (V1 parity) */}
-            {versionData && (
+            {/* P1-8: Feedback Toggle (no version dependency) */}
+            {competition && (
               <button
                 onClick={handleToggleFeedback}
                 disabled={toggleFeedbackMutation.isPending}
                 className={`px-3 py-2 font-semibold rounded-lg transition-all flex items-center gap-2 text-sm ${
-                  versionData.feedbackAllowed
+                  competition.schedule_feedback_allowed
                     ? 'bg-green-500/20 text-green-300 border border-green-500/50 hover:bg-green-500/30'
                     : 'bg-gray-500/20 text-gray-300 border border-gray-500/50 hover:bg-gray-500/30'
                 }`}
-                title={versionData.feedbackAllowed ? 'Click to close feedback' : 'Click to open feedback'}
+                title={competition.schedule_feedback_allowed ? 'Click to close feedback' : 'Click to open feedback'}
               >
-                {versionData.feedbackAllowed ? '🟢 Feedback Open' : '⭕ Feedback Closed'}
+                {competition.schedule_feedback_allowed ? '🟢 Feedback Open' : '⭕ Feedback Closed'}
               </button>
             )}
 
@@ -2000,21 +1959,16 @@ export default function ScheduleV2Page() {
               📄 Export PDF
             </button>
 
-            {/* Save Major Draft and Send to Studios button (V1 parity) */}
+            {/* P1-8: Save & Email Studios (no publish step - live updates) */}
             <button
               onClick={async () => {
                 await handleSaveAllDays();
-                // Publish version creates major version (1, 2, 3) visible to studios
-                await publishVersionMutation.mutateAsync({
-                  tenantId: TEST_TENANT_ID,
-                  competitionId: TEST_COMPETITION_ID,
-                });
                 setShowSendModal(true);
               }}
               className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-200 text-sm font-semibold rounded-lg transition-colors border border-green-500/30"
-              title="Save schedule as major draft and send to studios"
+              title="Save schedule and email studios"
             >
-              💾📧 Save Draft & Send
+              💾📧 Save & Email Studios
             </button>
 
             {/* View Studio Schedule button */}
@@ -2027,24 +1981,7 @@ export default function ScheduleV2Page() {
               View Studio
             </button>
 
-            {/* Publish button */}
-            {versionData && !versionData.isPublished && !hasAnyUnsavedChanges && (
-              <button
-                onClick={() => {
-                  if (confirm('Publish this version to studios?')) {
-                    publishVersionMutation.mutate({
-                      tenantId: TEST_TENANT_ID,
-                      competitionId: TEST_COMPETITION_ID,
-                    });
-                  }
-                }}
-                disabled={publishVersionMutation.isPending}
-                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
-              >
-                <Mail className="h-4 w-4 inline mr-1" />
-                Publish
-              </button>
-            )}
+            {/* P1-8: Publish button removed - schedules are live */}
           </div>
         </div>
       </div>
@@ -2264,27 +2201,21 @@ export default function ScheduleV2Page() {
         }}
       />
 
-      {/* Send to Studios Modal */}
-      {versionData && (
-        <SendToStudiosModal
-          open={showSendModal}
-          onClose={() => setShowSendModal(false)}
-          competitionId={TEST_COMPETITION_ID}
-          tenantId={TEST_TENANT_ID}
-          versionDisplay={versionData.versionDisplay}
-          majorVersion={versionData.majorVersion}
-          minorVersion={versionData.minorVersion}
-          onSuccess={() => {
-            refetchVersion();
-            refetchHistory();
-          }}
-          onSaveBeforeSend={async () => {
-            if (hasAnyUnsavedChanges) {
-              await handleSaveAllDays();
-            }
-          }}
-        />
-      )}
+      {/* Send to Studios Modal - P1-8: Live updates, no versioning */}
+      <SendToStudiosModal
+        open={showSendModal}
+        onClose={() => setShowSendModal(false)}
+        competitionId={TEST_COMPETITION_ID}
+        tenantId={TEST_TENANT_ID}
+        onSuccess={() => {
+          refetch(); // Refresh schedule data
+        }}
+        onSaveBeforeSend={async () => {
+          if (hasAnyUnsavedChanges) {
+            await handleSaveAllDays();
+          }
+        }}
+      />
 
       {/* Fix All Conflicts Modal (V1 parity - Day vs Weekend) */}
       <Modal

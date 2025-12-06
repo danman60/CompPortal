@@ -7,14 +7,12 @@ import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 import { Calendar, Mail, Users, Clock, AlertCircle } from 'lucide-react';
 
+// P1-8: Live schedule updates (no versioning)
 interface SendToStudiosModalProps {
   open: boolean;
   onClose: () => void;
   competitionId: string;
   tenantId: string;
-  versionDisplay: string;      // e.g., "1.3"
-  majorVersion: number;         // e.g., 1
-  minorVersion: number;         // e.g., 3
   onSuccess: () => void;
   onSaveBeforeSend: () => Promise<void>;
 }
@@ -24,17 +22,11 @@ export function SendToStudiosModal({
   onClose,
   competitionId,
   tenantId,
-  versionDisplay,
-  majorVersion,
-  minorVersion,
   onSuccess,
   onSaveBeforeSend,
 }: SendToStudiosModalProps) {
   const [feedbackWindowDays, setFeedbackWindowDays] = useState(7);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Calculate next major version (e.g., 1.3 → 2.0)
-  const nextMajorVersion = `${majorVersion + 1}.0`;
 
   const sendToStudiosMutation = trpc.scheduling.sendToStudios.useMutation({
     onSuccess: (data) => {
@@ -78,7 +70,7 @@ export function SendToStudiosModal({
       isOpen={open}
       onClose={onClose}
       title="Send Schedule to Studio Directors"
-      description={`Send version ${versionDisplay} to all registered Studio Directors for review`}
+      description="Send current schedule to all registered Studio Directors for review"
       size="md"
       footer={
         <div className="flex justify-end gap-3">
@@ -133,7 +125,7 @@ export function SendToStudiosModal({
           </p>
         </div>
 
-        {/* What Will Happen */}
+        {/* What Will Happen - P1-8: Live updates, no versioning */}
         <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4">
           <h4 className="font-medium text-blue-200 mb-3 flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
@@ -146,10 +138,6 @@ export function SendToStudiosModal({
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-400 mt-0.5">•</span>
-              <span>Lock current version (v{versionDisplay}) and publish to studios</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 mt-0.5">•</span>
               <span>Notify all Studio Directors via email</span>
             </li>
             <li className="flex items-start gap-2">
@@ -158,11 +146,11 @@ export function SendToStudiosModal({
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-400 mt-0.5">•</span>
-              <span>When you make changes, create new major version (v{nextMajorVersion})</span>
+              <span>SDs will see live updates as you make changes</span>
             </li>
           </ul>
           <p className="text-xs text-blue-200 mt-3 italic">
-            Note: Minor versions (x.1, x.2, x.3) are internal CD drafts. Major versions (1.0, 2.0, 3.0) are published to studios.
+            Note: Studios see the schedule in real-time. Any changes you make will be immediately visible to them.
           </p>
         </div>
 
