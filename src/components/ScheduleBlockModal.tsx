@@ -334,7 +334,7 @@ export function ScheduleBlockModal({
               />
               <div className="text-xs text-purple-300 mt-2 flex items-center gap-1">
                 <span>⏰</span>
-                <span>Block start times auto-round to nearest 5-minute increment</span>
+                <span>Block start times auto-round UP to next 5-minute increment</span>
               </div>
             </div>
           </div>
@@ -409,7 +409,7 @@ export function ScheduleBlockModal({
                 />
                 <div className="text-xs text-cyan-300 mt-2 flex items-center gap-1">
                   <span>⏰</span>
-                  <span>Times auto-round to nearest 5-minute increment</span>
+                  <span>Times auto-round UP to next 5-minute increment</span>
                 </div>
               </div>
             )}

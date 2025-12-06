@@ -1560,9 +1560,9 @@ export const schedulingRouter = router({
       displayOrder: z.number(),
     }))
     .mutation(async ({ input }) => {
-      // Round targetTime to nearest 5 minutes
+      // Round targetTime UP to next 5 minutes
       const minutes = input.targetTime.getMinutes();
-      const roundedMinutes = Math.round(minutes / 5) * 5;
+      const roundedMinutes = Math.ceil(minutes / 5) * 5;
       const roundedTime = new Date(input.targetTime);
       roundedTime.setMinutes(roundedMinutes);
       roundedTime.setSeconds(0);
