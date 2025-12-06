@@ -2326,48 +2326,6 @@ export default function ScheduleV2Page() {
         </div>
       </Modal>
 
-      {/* Version History Panel */}
-      {showVersionHistory && versionHistory && (
-        <div className="fixed right-4 top-20 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-40 max-h-[80vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <History className="h-5 w-5 text-gray-600" />
-                Version History
-              </h3>
-              <button
-                onClick={() => setShowVersionHistory(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-          <div className="p-4 space-y-3">
-            {versionHistory.map((v: any) => (
-              <div key={v.id} className="border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900">V{v.versionNumber}</span>
-                  {v.isPublished && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Published
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500">
-                  {new Date(v.createdAt).toLocaleString()}
-                </p>
-                {v.publishedAt && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Published: {new Date(v.publishedAt).toLocaleString()}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Edit Day Start Time Modal (V1 parity - alternative to DayTabs inline edit) */}
       {showEditStartTimeModal && editingDate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

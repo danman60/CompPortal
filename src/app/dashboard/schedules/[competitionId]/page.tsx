@@ -334,6 +334,32 @@ export default function StudioScheduleView() {
     );
   }
 
+  // P1-9: Check if studio is blocked from viewing schedule
+  if (schedule?.isBlocked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-amber-800/30 backdrop-blur-sm rounded-xl shadow-xl border border-amber-600/30 p-12 text-center">
+            <AlertCircle className="h-16 w-16 text-amber-400 mx-auto mb-4" />
+            <h2 className="text-xl font-medium text-white mb-2">Schedule Not Available</h2>
+            <p className="text-amber-200 mb-4">
+              The schedule is not currently available for your studio.
+              Please contact the Competition Director for more information.
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => router.push('/dashboard/schedules')}
+              className="inline-flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Schedules
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!schedule) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-8">
@@ -377,7 +403,7 @@ export default function StudioScheduleView() {
               <div>
                 <h1 className="text-xl font-semibold text-white">Competition Schedule</h1>
                 <p className="text-sm text-purple-300">
-                  Version {schedule.version?.number || 1} • {schedule.routines.length} routines scheduled
+                  {schedule.routines.length} routines scheduled
                 </p>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, publicProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
 import {
@@ -3747,7 +3748,7 @@ export const schedulingRouter = router({
       studioId: z.string().uuid(),
     }))
     .query(async ({ input }) => {
-      // Get competition to check feedback toggle
+      // Get competition to check feedback toggle and visibility
       const competition = await prisma.competitions.findUnique({
         where: {
           id: input.competitionId,
@@ -3756,6 +3757,19 @@ export const schedulingRouter = router({
       });
 
       const feedbackAllowed = competition?.schedule_feedback_allowed ?? false;
+
+      // P1-9: Check if studio is blocked from viewing schedule
+      const isBlocked = competition?.schedule_hidden_studios?.includes(input.studioId) ?? false;
+
+      if (isBlocked) {
+        // Return blocked state - studio cannot view schedule
+        return {
+          feedbackAllowed: false,
+          isBlocked: true,
+          routines: [],
+          blocks: [],
+        };
+      }
 
       // Get studio's scheduled routines (live - no version filtering)
       const routines = await prisma.competition_entries.findMany({
@@ -3789,6 +3803,7 @@ export const schedulingRouter = router({
 
       return {
         feedbackAllowed, // Direct from competition settings
+        isBlocked: false, // P1-9: Studio has access
         routines: routines.map(r => ({
           id: r.id,
           entryNumber: r.entry_number,
@@ -4104,6 +4119,62 @@ export const schedulingRouter = router({
       return {
         success: true,
         feedbackAllowed: competition.schedule_feedback_allowed ?? false,
+      };
+    }),
+
+  // P1-9: Toggle studio schedule visibility (block/unblock specific studios)
+  toggleStudioScheduleVisibility: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      studioId: z.string().uuid(),
+      hidden: z.boolean(), // true = block studio, false = allow access
+    }))
+    .mutation(async ({ input }) => {
+      console.log('[toggleStudioScheduleVisibility] Studio', input.studioId, 'hidden:', input.hidden);
+
+      const competition = await prisma.competitions.findUnique({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+      });
+
+      if (!competition) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Competition not found',
+        });
+      }
+
+      const currentHiddenStudios = competition.schedule_hidden_studios || [];
+      let updatedHiddenStudios: string[];
+
+      if (input.hidden) {
+        // Add studio to hidden list if not already there
+        if (!currentHiddenStudios.includes(input.studioId)) {
+          updatedHiddenStudios = [...currentHiddenStudios, input.studioId];
+        } else {
+          updatedHiddenStudios = currentHiddenStudios;
+        }
+      } else {
+        // Remove studio from hidden list
+        updatedHiddenStudios = currentHiddenStudios.filter((id) => id !== input.studioId);
+      }
+
+      const updatedCompetition = await prisma.competitions.update({
+        where: {
+          id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+        data: {
+          schedule_hidden_studios: updatedHiddenStudios,
+        },
+      });
+
+      return {
+        success: true,
+        hiddenStudios: updatedCompetition.schedule_hidden_studios || [],
       };
     }),
 

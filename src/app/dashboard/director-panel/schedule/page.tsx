@@ -2104,9 +2104,6 @@ export default function SchedulePage() {
         onClose={() => setShowSendModal(false)}
         competitionId={TEST_COMPETITION_ID}
         tenantId={TEST_TENANT_ID}
-        versionDisplay={currentVersion?.versionDisplay || '0.0'}
-        majorVersion={currentVersion?.majorVersion || 0}
-        minorVersion={currentVersion?.minorVersion || 0}
         onSuccess={() => {
           refetchVersion();
           refetchHistory();
