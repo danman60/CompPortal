@@ -260,11 +260,19 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     });
   }, [dbInvoice, creditAmount, otherCreditAmount, discountPercent, currentSubtotal, userProfile]);
 
+  // SOURCE OF TRUTH: Use database values when available, fall back to calculated for old/generated invoices
   const totalAfterAllCredits = currentSubtotal - creditAmount - otherCreditAmount;
   const taxAmount = totalAfterAllCredits * taxRate;
-  const totalWithTax = totalAfterAllCredits + taxAmount;
-  const depositAmount = invoice?.reservation?.depositAmount || 0;
-  const totalAmount = Math.max(0, totalWithTax - depositAmount);
+  const calculatedTotal = totalAfterAllCredits + taxAmount;
+
+  // Use database values as source of truth
+  const invoiceTotal = dbInvoice ? parseFloat(dbInvoice.total.toString()) : calculatedTotal;
+  const depositAmount = dbInvoice && dbInvoice.deposit_amount
+    ? parseFloat(dbInvoice.deposit_amount.toString())
+    : (invoice?.reservation?.depositAmount || 0);
+  const balanceDue = dbInvoice && dbInvoice.amount_due
+    ? parseFloat(dbInvoice.amount_due.toString())
+    : Math.max(0, calculatedTotal - depositAmount);
 
   if (isLoading) {
     return (
@@ -611,33 +619,55 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             </div>
           )}
 
+          {/* Invoice Total (before deposit) */}
+          <div className="flex justify-between py-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-4 rounded-lg border-b border-white/10">
+            <span className="text-white font-bold text-lg">INVOICE TOTAL</span>
+            <span className="text-blue-300 font-bold text-2xl">
+              ${invoiceTotal.toFixed(2)}
+            </span>
+          </div>
+
+          {/* Deposit (if applicable) */}
           {depositAmount > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-yellow-400">LESS Deposit</span>
+              <span className="text-yellow-400">LESS: Deposit Paid</span>
               <span className="text-yellow-400">-${depositAmount.toFixed(2)}</span>
             </div>
           )}
 
-          <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
-            <span className="text-white font-bold text-lg">TOTAL</span>
-            <span className="text-green-400 font-bold text-2xl">
-              ${totalAmount.toFixed(2)}
-            </span>
-          </div>
+          {/* Balance Due (after deposit, before payments) */}
+          {depositAmount > 0 && (
+            <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
+              <span className="text-white font-bold text-lg">BALANCE DUE</span>
+              <span className="text-green-400 font-bold text-2xl">
+                ${balanceDue.toFixed(2)}
+              </span>
+            </div>
+          )}
 
-          {/* Payment Summary (show if partial payments exist) */}
-          {dbInvoice && (dbInvoice.amount_paid !== null || dbInvoice.balance_remaining !== null) && (
-            <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg space-y-2">
+          {/* If no deposit, just show total as balance due */}
+          {depositAmount === 0 && (
+            <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
+              <span className="text-white font-bold text-lg">BALANCE DUE</span>
+              <span className="text-green-400 font-bold text-2xl">
+                ${balanceDue.toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {/* Payment Summary (show ONLY if partial payments have been applied) */}
+          {dbInvoice && dbInvoice.amount_paid && parseFloat(dbInvoice.amount_paid.toString()) > 0 && (
+            <div className="mt-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-blue-300">Amount Paid:</span>
-                <span className="text-blue-200 font-semibold">
-                  ${(dbInvoice.amount_paid ? parseFloat(dbInvoice.amount_paid.toString()) : 0).toFixed(2)}
+                <span className="text-purple-300">Amount Paid:</span>
+                <span className="text-purple-200 font-semibold">
+                  ${parseFloat(dbInvoice.amount_paid.toString()).toFixed(2)}
                 </span>
               </div>
-              <div className="flex justify-between text-sm border-t border-blue-500/20 pt-2">
-                <span className="text-blue-300 font-semibold">Balance Remaining:</span>
-                <span className="text-blue-100 font-bold text-lg">
-                  ${(dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : totalAmount).toFixed(2)}
+              <div className="flex justify-between text-sm border-t border-purple-500/20 pt-2">
+                <span className="text-purple-300 font-semibold">Balance Remaining:</span>
+                <span className="text-purple-100 font-bold text-lg">
+                  ${(dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : balanceDue).toFixed(2)}
                 </span>
               </div>
             </div>
