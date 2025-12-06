@@ -339,17 +339,19 @@ export default function StudioScheduleView() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-amber-800/30 backdrop-blur-sm rounded-xl shadow-xl border border-amber-600/30 p-12 text-center">
-            <AlertCircle className="h-16 w-16 text-amber-400 mx-auto mb-4" />
-            <h2 className="text-xl font-medium text-white mb-2">Schedule Not Available</h2>
-            <p className="text-amber-200 mb-4">
-              The schedule is not currently available for your studio.
-              Please contact the Competition Director for more information.
+          <div className="bg-purple-800/30 backdrop-blur-sm rounded-xl shadow-xl border border-purple-600/30 p-12 text-center">
+            <Calendar className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-medium text-white mb-3">Schedule Coming Soon</h2>
+            <p className="text-purple-200 mb-2 text-lg">
+              We're still finalizing the competition schedule.
+            </p>
+            <p className="text-purple-300 mb-6">
+              Please check back soon, or feel free to reach out to the Competition Director with any questions!
             </p>
             <Button
               variant="secondary"
               onClick={() => router.push('/dashboard/schedules')}
-              className="inline-flex items-center gap-2"
+              className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white border-none"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Schedules

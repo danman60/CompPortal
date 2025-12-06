@@ -44,12 +44,13 @@ import { RoutinePool, FilterState } from '@/components/scheduling/RoutinePool';
 import { DayTabs } from '@/components/scheduling/DayTabs';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
+import { ManageStudioVisibilityModal } from '@/components/scheduling/ManageStudioVisibilityModal';
 import { AssignStudioCodesModal } from '@/components/AssignStudioCodesModal';
 import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Mail, History, Eye, FileText, Clock, Pencil } from 'lucide-react';
+import { Mail, History, Eye, EyeOff, FileText, Clock, Pencil } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { autoFixRoutineConflict, autoFixDayConflicts, autoFixWeekendConflicts } from '@/lib/conflictAutoFix';
@@ -606,6 +607,7 @@ export default function ScheduleV2Page() {
   
   // Additional modal states
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showVisibilityModal, setShowVisibilityModal] = useState(false); // P1-9
   const [showStudioCodeModal, setShowStudioCodeModal] = useState(false);
   const [showResetAllModal, setShowResetAllModal] = useState(false);
   const [showFixAllModal, setShowFixAllModal] = useState(false);
@@ -1981,6 +1983,16 @@ export default function ScheduleV2Page() {
               View Studio
             </button>
 
+            {/* P1-9: Manage Studio Visibility button */}
+            <button
+              onClick={() => setShowVisibilityModal(true)}
+              className="px-3 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 text-sm font-semibold rounded-lg transition-colors border border-orange-500/30"
+              title="Control which studios can view the schedule"
+            >
+              <EyeOff className="h-4 w-4 inline mr-1" />
+              Manage Visibility
+            </button>
+
             {/* P1-8: Publish button removed - schedules are live */}
           </div>
         </div>
@@ -2215,6 +2227,14 @@ export default function ScheduleV2Page() {
             await handleSaveAllDays();
           }
         }}
+      />
+
+      {/* P1-9: Manage Studio Visibility Modal */}
+      <ManageStudioVisibilityModal
+        open={showVisibilityModal}
+        onClose={() => setShowVisibilityModal(false)}
+        competitionId={TEST_COMPETITION_ID}
+        tenantId={TEST_TENANT_ID}
       />
 
       {/* Fix All Conflicts Modal (V1 parity - Day vs Weekend) */}
