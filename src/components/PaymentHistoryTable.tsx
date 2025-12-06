@@ -49,9 +49,9 @@ export default function PaymentHistoryTable({ invoiceId }: Props) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="text-gray-500">Loading payment history...</div>
+          <div className="text-blue-300">Loading payment history...</div>
         </div>
       </div>
     );
@@ -59,9 +59,9 @@ export default function PaymentHistoryTable({ invoiceId }: Props) {
 
   if (!payments || payments.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment History</h3>
-        <div className="text-center py-8 text-gray-500">
+      <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Payment History</h3>
+        <div className="text-center py-8 text-gray-400">
           No payments recorded yet
         </div>
       </div>
@@ -69,21 +69,21 @@ export default function PaymentHistoryTable({ invoiceId }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+    <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+      <h3 className="text-lg font-semibold text-white mb-4">
         Payment History ({payments.length})
       </h3>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">Date Paid</th>
-              <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Amount</th>
-              <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">Method</th>
-              <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">Reference</th>
-              <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">Recorded By</th>
-              <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">Notes</th>
+            <tr className="border-b border-white/20">
+              <th className="text-left py-3 px-2 text-sm font-semibold text-blue-300">Date Paid</th>
+              <th className="text-right py-3 px-2 text-sm font-semibold text-blue-300">Amount</th>
+              <th className="text-left py-3 px-2 text-sm font-semibold text-blue-300">Method</th>
+              <th className="text-left py-3 px-2 text-sm font-semibold text-blue-300">Reference</th>
+              <th className="text-left py-3 px-2 text-sm font-semibold text-blue-300">Recorded By</th>
+              <th className="text-left py-3 px-2 text-sm font-semibold text-blue-300">Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -95,28 +95,28 @@ export default function PaymentHistoryTable({ invoiceId }: Props) {
               const recordedByEmail = payment.user_profiles?.users?.email || '';
 
               return (
-                <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-2 text-sm text-gray-900">
+                <tr key={payment.id} className="border-b border-white/10 hover:bg-white/5">
+                  <td className="py-3 px-2 text-sm text-white">
                     {formatDate(payment.payment_date)}
                   </td>
-                  <td className="py-3 px-2 text-sm font-semibold text-green-700 text-right">
+                  <td className="py-3 px-2 text-sm font-semibold text-green-400 text-right">
                     ${parseFloat(payment.amount.toString()).toFixed(2)}
                   </td>
-                  <td className="py-3 px-2 text-sm text-gray-900">
+                  <td className="py-3 px-2 text-sm text-white">
                     {formatPaymentMethod(payment.payment_method)}
                   </td>
-                  <td className="py-3 px-2 text-sm text-gray-600">
+                  <td className="py-3 px-2 text-sm text-gray-400">
                     {payment.reference_number || '-'}
                   </td>
-                  <td className="py-3 px-2 text-sm text-gray-900">
+                  <td className="py-3 px-2 text-sm text-white">
                     <div className="flex flex-col">
                       <span className="font-medium">{recordedByName}</span>
                       {recordedByEmail && (
-                        <span className="text-xs text-gray-500">{recordedByEmail}</span>
+                        <span className="text-xs text-gray-400">{recordedByEmail}</span>
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-2 text-sm text-gray-600">
+                  <td className="py-3 px-2 text-sm text-gray-400">
                     {payment.notes ? (
                       <div className="max-w-xs">
                         <span className="line-clamp-2">{payment.notes}</span>
@@ -130,9 +130,9 @@ export default function PaymentHistoryTable({ invoiceId }: Props) {
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-gray-300">
-              <td className="py-3 px-2 text-sm font-semibold text-gray-900">Total Paid:</td>
-              <td className="py-3 px-2 text-sm font-bold text-green-700 text-right">
+            <tr className="border-t-2 border-white/30">
+              <td className="py-3 px-2 text-sm font-semibold text-white">Total Paid:</td>
+              <td className="py-3 px-2 text-sm font-bold text-green-400 text-right">
                 ${payments.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0).toFixed(2)}
               </td>
               <td colSpan={4}></td>

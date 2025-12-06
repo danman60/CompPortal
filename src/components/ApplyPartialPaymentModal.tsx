@@ -68,13 +68,13 @@ export default function ApplyPartialPaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4">
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto mb-4">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Apply Partial Payment</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Current balance: <span className="font-semibold">${currentBalance.toFixed(2)}</span>
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-xl font-bold text-white">Apply Partial Payment</h2>
+          <p className="text-sm text-blue-300 mt-1">
+            Current balance: <span className="font-semibold text-blue-200">${currentBalance.toFixed(2)}</span>
           </p>
         </div>
 
@@ -82,11 +82,11 @@ export default function ApplyPartialPaymentModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Amount <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-blue-300 mb-1">
+              Payment Amount <span className="text-red-400">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300">$</span>
               <input
                 type="number"
                 step="0.01"
@@ -94,7 +94,7 @@ export default function ApplyPartialPaymentModal({
                 max={currentBalance}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-8 pr-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
                 placeholder="0.00"
                 required
               />
@@ -103,83 +103,83 @@ export default function ApplyPartialPaymentModal({
 
           {/* Payment Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Date <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-blue-300 mb-1">
+              Payment Date <span className="text-red-400">*</span>
             </label>
             <input
               type="date"
               value={paymentDate}
               onChange={(e) => setPaymentDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
               required
             />
           </div>
 
           {/* Payment Method */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-blue-300 mb-1">
               Payment Method
             </label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
             >
-              <option value="">Select method (optional)</option>
-              <option value="check">Check</option>
-              <option value="e-transfer">E-Transfer</option>
-              <option value="cash">Cash</option>
-              <option value="credit_card">Credit Card</option>
-              <option value="wire_transfer">Wire Transfer</option>
-              <option value="other">Other</option>
+              <option value="" className="bg-gray-800">Select method (optional)</option>
+              <option value="check" className="bg-gray-800">Check</option>
+              <option value="e-transfer" className="bg-gray-800">E-Transfer</option>
+              <option value="cash" className="bg-gray-800">Cash</option>
+              <option value="credit_card" className="bg-gray-800">Credit Card</option>
+              <option value="wire_transfer" className="bg-gray-800">Wire Transfer</option>
+              <option value="other" className="bg-gray-800">Other</option>
             </select>
           </div>
 
           {/* Reference Number */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-blue-300 mb-1">
               Reference Number
             </label>
             <input
               type="text"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
               placeholder="Check #, Transaction ID, etc."
               maxLength={100}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               Optional: Check number, transaction ID, or confirmation code
             </p>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-blue-300 mb-1">
               Notes
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
               placeholder="Optional notes about this payment..."
               rows={3}
             />
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors border border-white/20"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Applying...' : 'Apply Payment'}

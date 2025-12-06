@@ -849,33 +849,33 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Other Credits Modal */}
       {showCreditModal && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full mb-4">
             <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
             <p className="text-sm text-gray-400 mb-4">
               Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Credit Amount ($)</label>
+                <label className="block text-blue-300 text-sm mb-2">Credit Amount ($)</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={otherCreditInput.amount}
                   onChange={(e) => setOtherCreditInput({ ...otherCreditInput, amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
                   placeholder={otherCreditAmount > 0 ? `Current: $${otherCreditAmount.toFixed(2)}` : 'Enter amount'}
                 />
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Reason (Optional)</label>
+                <label className="block text-blue-300 text-sm mb-2">Reason (Optional)</label>
                 <input
                   type="text"
                   value={otherCreditInput.reason}
                   onChange={(e) => setOtherCreditInput({ ...otherCreditInput, reason: e.target.value })}
                   placeholder={dbInvoice.other_credit_reason || "e.g., Loyalty credit, Refund, Compensation"}
-                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
                 />
               </div>
             </div>
@@ -889,7 +889,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                   });
                 }}
                 disabled={applyCustomCreditMutation.isPending}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold"
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold disabled:opacity-50"
               >
                 {applyCustomCreditMutation.isPending ? 'Saving...' : 'Save Credit'}
               </button>
@@ -898,7 +898,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                   setOtherCreditInput({ amount: 0, reason: "" });
                   setShowCreditModal(false);
                 }}
-                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+                className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors border border-white/20"
               >
                 Cancel
               </button>
@@ -922,8 +922,8 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Sub-Invoices View */}
       {showSubInvoices && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="w-full max-w-6xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4">
+          <div className="w-full max-w-6xl mb-4 max-h-[90vh] overflow-y-auto">
             <SubInvoiceList
               parentInvoiceId={dbInvoice.id}
               onBack={() => setShowSubInvoices(false)}
