@@ -135,14 +135,30 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
 
       {/* Title with indicators */}
       <td className="px-1 py-2 text-xs font-medium text-white align-middle w-32">
-        <div className="flex items-center gap-1 min-w-0">
-          <span className="truncate" title={routine.title}>{routine.title}</span>
-          <div className="flex items-center gap-0.5 flex-shrink-0">
-            {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
-            {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
-            {hasNotes && <span className="text-blue-400" title={noteText ? `Note: ${noteText}` : "Has notes"}>📝</span>}
-            {hasAgeChange && <span className="text-yellow-400" title="Age changed">🎂</span>}
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="truncate" title={routine.title}>{routine.title}</span>
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              {isLastRoutine && <span className="text-yellow-400" title="Last in category">🏆</span>}
+              {hasConflict && <span className="text-red-400" title="Has conflict">⚠️</span>}
+              {hasNotes && <span className="text-blue-400" title={noteText ? `Note: ${noteText}` : "Has notes"}>📝</span>}
+              {hasAgeChange && <span className="text-yellow-400" title="Age changed">🎂</span>}
+            </div>
           </div>
+          {/* Dancer names for Solo/Duet-Trio */}
+          {(routine.entrySizeName === 'Solo' || routine.entrySizeName === 'Duet/Trio') && routine.participants.length > 0 && (
+            <div className="text-[10px] text-gray-400 truncate">
+              {routine.participants.map(p => {
+                const parts = p.dancerName.split(' ');
+                if (parts.length >= 2) {
+                  const firstName = parts[0];
+                  const lastInitial = parts[parts.length - 1].charAt(0);
+                  return `${firstName} ${lastInitial}.`;
+                }
+                return p.dancerName;
+              }).join(', ')}
+            </div>
+          )}
         </div>
       </td>
 

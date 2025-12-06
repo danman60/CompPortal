@@ -94,10 +94,10 @@ function DraggableBlockCard({ type, onClick }: { type: 'award' | 'break'; onClic
       title="Drag to schedule or click to configure"
     >
       <div className="font-semibold text-xs mb-1">
-        {isAward ? '🏆 +Award' : '☕ +Break'}
+        {isAward ? '🏆 +Adjudication' : '☕ +Break'}
       </div>
       <div className={`text-xs ${isAward ? 'text-amber-200/80' : 'text-cyan-200/80'}`}>
-        {isAward ? 'Add ceremony block' : 'Add break block'}
+        {isAward ? 'Add adjudication block' : 'Add break block'}
       </div>
       <div className="absolute top-1 right-1 opacity-40">
         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -873,6 +873,23 @@ export default function ScheduleV2Page() {
     return trophies;
   }, [scheduleOrder, routinesMap]);
 
+  // ===== COMPUTED: Global Entry Numbers =====
+  const entryNumbersByRoutineId = useMemo(() => {
+    const map = new Map<string, number>();
+    let entryNumber = 100;
+
+    COMPETITION_DATES.forEach(date => {
+      const daySchedule = scheduleByDate[date] || [];
+      daySchedule.forEach(id => {
+        if (!id.startsWith('block-')) {
+          map.set(id, entryNumber++);
+        }
+      });
+    });
+
+    return map;
+  }, [scheduleByDate]);
+
   // ===== COMPUTED: Conflicts =====
   const conflictsMap = useMemo(() => {
     const conflicts = new Map<string, string>();
@@ -896,14 +913,16 @@ export default function ScheduleV2Page() {
         if (spacing < MIN_SPACING) {
           const id1 = scheduleOrder[positions[i]];
           const id2 = scheduleOrder[positions[i + 1]];
-          conflicts.set(id1, `${dancer}: ${spacing} routines between (need ${MIN_SPACING})`);
-          conflicts.set(id2, `${dancer}: ${spacing} routines between (need ${MIN_SPACING})`);
+          const entryNum1 = entryNumbersByRoutineId.get(id1) || 0;
+          const entryNum2 = entryNumbersByRoutineId.get(id2) || 0;
+          conflicts.set(id1, `${dancer} - ${spacing} between - #${entryNum2}`);
+          conflicts.set(id2, `${dancer} - ${spacing} between - #${entryNum1}`);
         }
       }
     });
 
     return conflicts;
-  }, [scheduleOrder, routinesMap]);
+  }, [scheduleOrder, routinesMap, entryNumbersByRoutineId]);
 
   // ===== COMPUTED: Day Conflict Count =====
   const dayConflictCount = useMemo(() => {
@@ -930,23 +949,6 @@ export default function ScheduleV2Page() {
 
     return colors;
   }, [scheduleOrder, blocksMap]);
-
-  // ===== COMPUTED: Global Entry Numbers =====
-  const entryNumbersByRoutineId = useMemo(() => {
-    const map = new Map<string, number>();
-    let entryNumber = 100;
-
-    COMPETITION_DATES.forEach(date => {
-      const daySchedule = scheduleByDate[date] || [];
-      daySchedule.forEach(id => {
-        if (!id.startsWith('block-')) {
-          map.set(id, entryNumber++);
-        }
-      });
-    });
-
-    return map;
-  }, [scheduleByDate]);
 
   // ===== COMPUTED: Filter Options =====
   const filterOptions = useMemo(() => ({
@@ -1063,7 +1065,7 @@ export default function ScheduleV2Page() {
       const tempBlockData: BlockData = {
         id: tempMapKey,  // Use the Map key format
         block_type: blockType,
-        title: blockType === 'award' ? '🏆 Award Ceremony' : '☕ Break',
+        title: blockType === 'award' ? '🏆 Adjudication Ceremony' : '☕ Break',
         duration_minutes: blockType === 'award' ? 30 : 15,
       };
 
@@ -1099,7 +1101,7 @@ export default function ScheduleV2Page() {
           });
         }
 
-        toast.success(`${blockType === 'award' ? '🏆 Award' : '☕ Break'} block added - click to edit`);
+        toast.success(`${blockType === 'award' ? '🏆 Adjudication' : '☕ Break'} block added - click to edit`);
       }
       return;
     }
@@ -2142,7 +2144,7 @@ export default function ScheduleV2Page() {
                   : 'bg-cyan-500/80 border-cyan-400 text-white'
               }`}>
                 <span className="font-semibold">
-                  {activeId === 'template-award' ? '🏆 Award Ceremony' : '☕ Break'}
+                  {activeId === 'template-award' ? '🏆 Adjudication Ceremony' : '☕ Break'}
                 </span>
               </div>
             )}

@@ -43,7 +43,7 @@ interface ScheduleBlockModalProps {
   preselectedType?: 'award' | 'break';
 }
 
-const DURATION_OPTIONS = [15, 30, 45, 60];
+const DURATION_OPTIONS = [5, 10, 15];
 
 export function ScheduleBlockModal({
   isOpen,
@@ -155,7 +155,7 @@ export function ScheduleBlockModal({
 
   const getDefaultTitle = () => {
     if (blockType === 'award') {
-      return 'Award Ceremony';
+      return 'Adjudication Ceremony';
     }
     return `${duration} Minute Break`;
   };
@@ -179,7 +179,7 @@ export function ScheduleBlockModal({
               {mode === 'edit' ? '✏️ Edit' : '➕ Add'} Schedule Block
             </h3>
             <p className="text-gray-400 text-sm">
-              {blockType === 'award' ? 'Award ceremony timing' : 'Scheduled break period'}
+              {blockType === 'award' ? 'Adjudication ceremony timing' : 'Scheduled break period'}
             </p>
           </div>
           <button
@@ -211,7 +211,7 @@ export function ScheduleBlockModal({
                   }`}
                 >
                   <div className="text-3xl mb-2">🏆</div>
-                  <div className="text-sm font-medium text-white">Award</div>
+                  <div className="text-sm font-medium text-white">Adjudication</div>
                   <div className="text-xs text-gray-400 mt-1">Ceremony</div>
                 </button>
                 <button

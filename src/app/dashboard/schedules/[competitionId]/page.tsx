@@ -38,6 +38,18 @@ interface ScheduledRoutine {
   dancers?: string[];
 }
 
+interface ScheduleBlock {
+  type: 'award' | 'break' | 'event';
+  scheduledDay: Date | null;
+  startTime: string;
+  duration: number;
+  title?: string;
+}
+
+type ScheduleItem =
+  | { itemType: 'routine'; data: ScheduledRoutine }
+  | { itemType: 'block'; data: ScheduleBlock };
+
 export default function StudioScheduleView() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -70,12 +82,13 @@ export default function StudioScheduleView() {
 
   const canAddNotes = currentVersion?.feedbackAllowed ?? false;
 
-  // Group routines by day
-  const routinesByDay = useMemo(() => {
+  // Group routines AND blocks by day (P0-5: Studios see all blocks)
+  const scheduleItemsByDay = useMemo(() => {
     if (!schedule?.routines) return {};
 
-    const grouped: Record<string, ScheduledRoutine[]> = {};
+    const grouped: Record<string, ScheduleItem[]> = {};
 
+    // Add studio's routines
     schedule.routines.forEach((entry) => {
       if (!entry.scheduledDay) return; // Skip unscheduled routines
 
@@ -84,55 +97,98 @@ export default function StudioScheduleView() {
         grouped[dayKey] = [];
       }
       grouped[dayKey].push({
-        id: entry.id,
-        entryNumber: entry.entryNumber || 0,
-        title: entry.title,
-        scheduledDay: new Date(entry.scheduledDay),
-        performanceTime: entry.performanceTime || '',
-        classification: entry.classification,
-        category: entry.category,
-        ageGroup: entry.ageGroup,
-        entrySize: entry.entrySize,
-        duration: entry.duration,
-        hasNote: entry.hasNote,
-        noteText: entry.noteText,
-        dancers: [],
+        itemType: 'routine',
+        data: {
+          id: entry.id,
+          entryNumber: entry.entryNumber || 0,
+          title: entry.title,
+          scheduledDay: new Date(entry.scheduledDay),
+          performanceTime: entry.performanceTime || '',
+          classification: entry.classification,
+          category: entry.category,
+          ageGroup: entry.ageGroup,
+          entrySize: entry.entrySize,
+          duration: entry.duration,
+          hasNote: entry.hasNote,
+          noteText: entry.noteText,
+          dancers: [],
+        },
       });
     });
 
-    // Sort routines within each day by performance time
+    // Add ALL blocks (adjudications, breaks, events) - studios see all blocks
+    schedule.blocks?.forEach((block) => {
+      if (!block.scheduledDay) return;
+
+      const dayKey = new Date(block.scheduledDay).toISOString().split('T')[0];
+      if (!grouped[dayKey]) {
+        grouped[dayKey] = [];
+      }
+
+      // Generate block title based on type
+      let blockTitle = '';
+      if (block.type === 'award') {
+        blockTitle = 'Adjudication Ceremony';
+      } else if (block.type === 'break') {
+        blockTitle = `${block.duration} Minute Break`;
+      } else if (block.type === 'event') {
+        blockTitle = 'Special Event';
+      }
+
+      grouped[dayKey].push({
+        itemType: 'block',
+        data: {
+          type: block.type,
+          scheduledDay: new Date(block.scheduledDay),
+          startTime: block.startTime,
+          duration: block.duration,
+          title: blockTitle,
+        },
+      });
+    });
+
+    // Sort items within each day by time
     Object.keys(grouped).forEach((day) => {
       grouped[day].sort((a, b) => {
-        const timeA = a.performanceTime.split(':').map(Number);
-        const timeB = b.performanceTime.split(':').map(Number);
-        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+        const timeA = a.itemType === 'routine' ? a.data.performanceTime : a.data.startTime;
+        const timeB = b.itemType === 'routine' ? b.data.performanceTime : b.data.startTime;
+
+        const [hoursA, minutesA] = timeA.split(':').map(Number);
+        const [hoursB, minutesB] = timeB.split(':').map(Number);
+        return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
       });
     });
 
     return grouped;
   }, [schedule]);
 
-  // Filter routines based on search and selected day
-  const filteredRoutines = useMemo(() => {
-    let routines: ScheduledRoutine[] = [];
+  // Filter items based on search and selected day
+  const filteredItems = useMemo(() => {
+    let items: ScheduleItem[] = [];
 
     if (selectedDay) {
-      routines = routinesByDay[selectedDay] || [];
+      items = scheduleItemsByDay[selectedDay] || [];
     } else {
       // Show all days
-      routines = Object.values(routinesByDay).flat();
+      items = Object.values(scheduleItemsByDay).flat();
     }
 
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
-      routines = routines.filter((r) =>
-        r.title.toLowerCase().includes(search) ||
-        r.dancers?.some(d => d.toLowerCase().includes(search))
-      );
+      items = items.filter((item) => {
+        if (item.itemType === 'routine') {
+          return (
+            item.data.title.toLowerCase().includes(search) ||
+            item.data.dancers?.some(d => d.toLowerCase().includes(search))
+          );
+        }
+        // Blocks are always shown (not affected by search)
+        return true;
+      });
     }
 
-    return routines;
-  }, [routinesByDay, selectedDay, searchTerm]);
+    return items;
+  }, [scheduleItemsByDay, selectedDay, searchTerm]);
 
   const handleAddNote = (routine: ScheduledRoutine) => {
     setSelectedRoutine(routine);
@@ -141,7 +197,8 @@ export default function StudioScheduleView() {
 
   // PDF Export function
   const handleExportPDF = () => {
-    if (filteredRoutines.length === 0) {
+    const routineItems = filteredItems.filter(item => item.itemType === 'routine');
+    if (routineItems.length === 0) {
       toast.error('No routines to export');
       return;
     }
@@ -188,21 +245,24 @@ export default function StudioScheduleView() {
         : 'All Days';
       const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       doc.text(`${dayText} • Generated ${dateStr}`, 14, 44);
-      doc.text(`${filteredRoutines.length} Routines Scheduled`, 14, 50);
+      doc.text(`${routineItems.length} Routines Scheduled`, 14, 50);
 
       // Reset text color for body
       doc.setTextColor(0, 0, 0);
 
       // Prepare table data
-      const tableData = filteredRoutines.map(routine => [
-        `#${routine.entryNumber}`,
-        routine.scheduledDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        routine.performanceTime,
-        routine.title,
-        `${routine.entrySize} • ${routine.classification}`,
-        routine.category,
-        routine.hasNote ? '✓ Note' : '',
-      ]);
+      const tableData = routineItems.map(item => {
+        const routine = item.data as ScheduledRoutine;
+        return [
+          `#${routine.entryNumber}`,
+          routine.scheduledDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          routine.performanceTime,
+          routine.title,
+          `${routine.entrySize} • ${routine.classification}`,
+          routine.category,
+          routine.hasNote ? '✓ Note' : '',
+        ];
+      });
 
       // Add table with polished styling matching CD schedule
       autoTable(doc, {
@@ -303,7 +363,7 @@ export default function StudioScheduleView() {
     );
   }
 
-  const competitionDays = Object.keys(routinesByDay).sort();
+  const competitionDays = Object.keys(scheduleItemsByDay).sort();
   const totalNotes = schedule.routines.filter(e => e.hasNote).length;
 
   return (
@@ -396,7 +456,7 @@ export default function StudioScheduleView() {
 
             {/* Results Count */}
             <div className="text-sm text-purple-300">
-              {filteredRoutines.length} routine{filteredRoutines.length !== 1 ? 's' : ''}
+              {filteredItems.filter(item => item.itemType === 'routine').length} routine{filteredItems.filter(item => item.itemType === 'routine').length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
@@ -431,57 +491,79 @@ export default function StudioScheduleView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-700/30">
-                {filteredRoutines.map((routine) => (
-                  <tr key={routine.id} className="hover:bg-purple-700/20 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-white">
-                      #{routine.entryNumber}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-purple-200">
-                      {routine.scheduledDay.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-cyan-300 font-medium">
-                      {routine.performanceTime}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-sm font-medium text-white">{routine.title}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-purple-200">
-                      {routine.entrySize} • {routine.classification} • {routine.category}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-sm text-purple-200 max-w-xs">
-                        {routine.dancers && routine.dancers.length > 0 ? (
-                          <span className="line-clamp-2" title={routine.dancers.join(', ')}>
-                            {routine.dancers.join(', ')}
-                          </span>
-                        ) : (
-                          <span className="text-purple-500">—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {routine.hasNote ? (
-                        <button
-                          onClick={() => handleAddNote(routine)}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded-md text-xs font-medium hover:bg-cyan-500/30 border border-cyan-500/50 shadow-lg shadow-cyan-500/20 transition-all"
-                        >
-                          <MessageSquare className="h-3.5 w-3.5" />
-                          {canAddNotes ? 'Edit Note' : 'View Note'}
-                        </button>
-                      ) : canAddNotes ? (
-                        <button
-                          onClick={() => handleAddNote(routine)}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-purple-600/30 text-purple-200 rounded-md text-xs font-medium hover:bg-purple-600/50 border border-purple-500/50 transition-all"
-                        >
-                          <MessageSquare className="h-3.5 w-3.5" />
-                          Add Note
-                        </button>
-                      ) : (
-                        <span className="text-xs text-purple-500">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {filteredItems.map((item, index) => {
+                  if (item.itemType === 'block') {
+                    // Render block as separator row
+                    const block = item.data;
+                    const blockIcon = block.type === 'award' ? '🏆' : block.type === 'break' ? '☕' : '🎉';
+                    return (
+                      <tr key={`block-${index}`} className="bg-purple-700/30">
+                        <td colSpan={7} className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-2 text-sm font-medium text-cyan-300">
+                            <span>{blockIcon}</span>
+                            <span>{block.startTime}</span>
+                            <span>|</span>
+                            <span>{block.title}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    // Render routine row
+                    const routine = item.data;
+                    return (
+                      <tr key={routine.id} className="hover:bg-purple-700/20 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-white">
+                          #{routine.entryNumber}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-purple-200">
+                          {routine.scheduledDay.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-cyan-300 font-medium">
+                          {routine.performanceTime}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-medium text-white">{routine.title}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-purple-200">
+                          {routine.entrySize} • {routine.classification} • {routine.category}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-purple-200 max-w-xs">
+                            {routine.dancers && routine.dancers.length > 0 ? (
+                              <span className="line-clamp-2" title={routine.dancers.join(', ')}>
+                                {routine.dancers.join(', ')}
+                              </span>
+                            ) : (
+                              <span className="text-purple-500">—</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {routine.hasNote ? (
+                            <button
+                              onClick={() => handleAddNote(routine)}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded-md text-xs font-medium hover:bg-cyan-500/30 border border-cyan-500/50 shadow-lg shadow-cyan-500/20 transition-all"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              {canAddNotes ? 'Edit Note' : 'View Note'}
+                            </button>
+                          ) : canAddNotes ? (
+                            <button
+                              onClick={() => handleAddNote(routine)}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-purple-600/30 text-purple-200 rounded-md text-xs font-medium hover:bg-purple-600/50 border border-purple-500/50 transition-all"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Add Note
+                            </button>
+                          ) : (
+                            <span className="text-xs text-purple-500">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  }
+                })}
               </tbody>
             </table>
           </div>

@@ -1,13 +1,46 @@
 # Current Work - Phase 2 Scheduler Testing & Refinement
 
-**Date:** November 29, 2025 (Session 71)
+**Date:** December 5, 2025 (Session 79)
 **Project:** CompPortal - Tester Branch (Phase 2 Scheduler)
 **Branch:** tester
-**Status:** ✅ Session 71 Complete - Manual Testing Required
+**Status:** ✅ Session Complete - Awaiting Demo Schedule Updates
 
 ---
 
 ## Recent Sessions Summary
+
+### Session 79: Trophy Helper Fix + Critical Security Patch (Dec 5, 2025)
+**Status:** ✅ COMPLETE - Security vulnerability patched
+
+**COMPLETED:**
+- ✅ Trophy helper regression fixed (reverted to local state calculation)
+- ✅ **CRITICAL SECURITY PATCH**: Next.js 15.5.7 (CVE-2025-55182)
+- ✅ Security patch applied to BOTH tester and production branches
+
+**KEY FIX (Commit 6ae9774 - tester):**
+Trophy helper was broken after attempting to use backend query. Backend `getTrophyHelper` filters on `schedule_zone` and `is_scheduled` (persisted DB fields), but Schedule V2 works with local draft state (`scheduleOrder`). Reverted to local calculation to support draft schedules before saving.
+
+**SECURITY PATCH (Commits 9fc1caf - tester, 08247b7 - main):**
+- Upgraded Next.js from 15.0.3 → 15.5.7
+- CVE-2025-55182: Critical remote code execution vulnerability in React Server Components
+- Patched on both production (empwr/glow) and staging (tester)
+- Vercel WAF provides additional protection, but upgrade required per security advisory
+
+**Files Modified:**
+- `src/app/dashboard/director-panel/schedule-v2/page.tsx:863-880` (trophy helper)
+- `package.json` (Next.js version)
+- `package-lock.json` (security patches)
+
+**Build:** ✅ 91/91 pages
+
+**Next Steps:**
+1. ⏳ **AWAITING**: Schedule updates from demo/testing session
+2. Monitor production logs for CVE-2025-55182 exploitation attempts (none expected with patch)
+3. Continue Phase 2 scheduler refinement
+
+---
+
+## Previous Sessions Summary
 
 ### Session 71: Production-Scale Schedule Save Preparation (Nov 29, 2025)
 **Status:** ✅ ALL CODE COMPLETE - Manual testing required
