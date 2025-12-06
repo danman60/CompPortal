@@ -78,6 +78,44 @@ function getClassificationColor(classification: string): string {
   return 'bg-gray-500 text-white';
 }
 
+// P2-14: Sortable Header Component
+function SortableHeader({
+  column,
+  label,
+  currentSort,
+  sortDirection,
+  onClick,
+  className,
+  style
+}: {
+  column: string;
+  label: string;
+  currentSort: string | null;
+  sortDirection: 'asc' | 'desc';
+  onClick: () => void;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const isActive = currentSort === column;
+
+  return (
+    <th
+      className={`px-1 py-2 text-xs font-semibold text-white/80 uppercase tracking-wider align-middle cursor-pointer hover:text-white hover:bg-white/5 transition-colors ${className || ''}`}
+      style={style}
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-1 justify-start">
+        <span>{label}</span>
+        {isActive && (
+          <span className="text-white">
+            {sortDirection === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+  );
+}
+
 // Draggable Table Row
 function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity, hasNotes, noteText, hasAgeChange, isLastRoutine, isSelected, onToggleSelection }: {
   routine: Routine;
@@ -228,6 +266,11 @@ export function RoutinePool({
   // Dropdown state for each filter category
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
+  // P2-14: Sorting state
+  type SortColumn = 'title' | 'studioCode' | 'classificationName' | 'entrySizeName' | 'routineAge' | 'ageGroupName' | 'categoryName' | 'duration';
+  const [sortBy, setSortBy] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
   // Helper: Check if routine has conflict
   const hasConflict = (routineId: string) => {
     return conflicts.some((c) => c.routine1Id === routineId || c.routine2Id === routineId);
@@ -247,6 +290,46 @@ export function RoutinePool({
   const isLastRoutine = (routineId: string) => {
     return trophyHelper.some((t) => t.routineId === routineId);
   };
+
+  // P2-14: Sort handler
+  const handleSort = (column: SortColumn) => {
+    if (sortBy === column) {
+      // Toggle direction if clicking same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      setSortBy(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // P2-14: Sorted routines
+  const sortedRoutines = React.useMemo(() => {
+    if (!sortBy) return routines;
+
+    const sorted = [...routines].sort((a, b) => {
+      let aVal: any = a[sortBy];
+      let bVal: any = b[sortBy];
+
+      // Handle null values
+      if (aVal === null && bVal === null) return 0;
+      if (aVal === null) return sortDirection === 'asc' ? 1 : -1;
+      if (bVal === null) return sortDirection === 'asc' ? -1 : 1;
+
+      // Numeric comparison for routineAge and duration
+      if (sortBy === 'routineAge' || sortBy === 'duration') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      // String comparison for all others
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      const comparison = aStr.localeCompare(bStr);
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [routines, sortBy, sortDirection]);
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
@@ -506,34 +589,82 @@ export function RoutinePool({
                       />
                     )}
                   </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '100px' }}>
-                    Routine
-                  </th>
-                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '35px' }}>
-                    Std
-                  </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '80px' }}>
-                    Class
-                  </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '65px' }}>
-                    Size
-                  </th>
-                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '40px' }}>
-                    RA
-                  </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '65px' }}>
-                    Age
-                  </th>
-                  <th className="px-1 py-2 text-left text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '75px' }}>
-                    Genre
-                  </th>
-                  <th className="px-1 py-2 text-center text-xs font-semibold text-white/80 uppercase tracking-wider align-middle" style={{ width: '60px' }}>
-                    Dur
-                  </th>
+                  <SortableHeader
+                    column="title"
+                    label="Routine"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('title')}
+                    className="text-left"
+                    style={{ width: '100px' }}
+                  />
+                  <SortableHeader
+                    column="studioCode"
+                    label="Std"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('studioCode')}
+                    className="text-center"
+                    style={{ width: '35px' }}
+                  />
+                  <SortableHeader
+                    column="classificationName"
+                    label="Class"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('classificationName')}
+                    className="text-left"
+                    style={{ width: '80px' }}
+                  />
+                  <SortableHeader
+                    column="entrySizeName"
+                    label="Size"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('entrySizeName')}
+                    className="text-left"
+                    style={{ width: '65px' }}
+                  />
+                  <SortableHeader
+                    column="routineAge"
+                    label="RA"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('routineAge')}
+                    className="text-center"
+                    style={{ width: '40px' }}
+                  />
+                  <SortableHeader
+                    column="ageGroupName"
+                    label="Age"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('ageGroupName')}
+                    className="text-left"
+                    style={{ width: '65px' }}
+                  />
+                  <SortableHeader
+                    column="categoryName"
+                    label="Genre"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('categoryName')}
+                    className="text-left"
+                    style={{ width: '75px' }}
+                  />
+                  <SortableHeader
+                    column="duration"
+                    label="Dur"
+                    currentSort={sortBy}
+                    sortDirection={sortDirection}
+                    onClick={() => handleSort('duration')}
+                    className="text-center"
+                    style={{ width: '60px' }}
+                  />
                 </tr>
               </thead>
               <tbody>
-                {routines.map((routine) => (
+                {sortedRoutines.map((routine) => (
                   <DraggableRoutineRow
                     key={routine.id}
                     routine={routine}
