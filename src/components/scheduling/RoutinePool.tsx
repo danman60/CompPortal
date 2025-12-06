@@ -440,20 +440,20 @@ export function RoutinePool({
               />
             )}
 
-            {/* Age Group Filter */}
-            {ageGroups.length > 0 && (
+            {/* Routine Age Filter */}
+            {routineAges.length > 0 && (
               <FilterDropdown
                 label="Age"
-                options={ageGroups}
-                selectedIds={filters.ageGroups}
+                options={routineAges}
+                selectedIds={filters.routineAges}
                 onToggle={(id) => {
-                  const newValues = filters.ageGroups.includes(id)
-                    ? filters.ageGroups.filter(v => v !== id)
-                    : [...filters.ageGroups, id];
-                  onFiltersChange({ ...filters, ageGroups: newValues });
+                  const newValues = filters.routineAges.includes(id)
+                    ? filters.routineAges.filter(v => v !== id)
+                    : [...filters.routineAges, id];
+                  onFiltersChange({ ...filters, routineAges: newValues });
                 }}
-                isOpen={openDropdown === 'ageGroups'}
-                onToggleOpen={() => setOpenDropdown(openDropdown === 'ageGroups' ? null : 'ageGroups')}
+                isOpen={openDropdown === 'routineAges'}
+                onToggleOpen={() => setOpenDropdown(openDropdown === 'routineAges' ? null : 'routineAges')}
               />
             )}
 
@@ -505,23 +505,6 @@ export function RoutinePool({
                 }}
                 isOpen={openDropdown === 'studios'}
                 onToggleOpen={() => setOpenDropdown(openDropdown === 'studios' ? null : 'studios')}
-              />
-            )}
-
-            {/* Routine Age Filter */}
-            {routineAges.length > 0 && (
-              <FilterDropdown
-                label="Routine Age"
-                options={routineAges}
-                selectedIds={filters.routineAges}
-                onToggle={(id) => {
-                  const newValues = filters.routineAges.includes(id)
-                    ? filters.routineAges.filter(v => v !== id)
-                    : [...filters.routineAges, id];
-                  onFiltersChange({ ...filters, routineAges: newValues });
-                }}
-                isOpen={openDropdown === 'routineAges'}
-                onToggleOpen={() => setOpenDropdown(openDropdown === 'routineAges' ? null : 'routineAges')}
               />
             )}
 
