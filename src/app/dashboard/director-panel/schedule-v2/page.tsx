@@ -865,11 +865,44 @@ export default function ScheduleV2Page() {
         if (filters.classifications.length > 0 && !filters.classifications.includes(r.classificationId)) return false;
         if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(r.ageGroupId)) return false;
         if (filters.genres.length > 0 && !filters.genres.includes(r.categoryId)) return false;
-        if (filters.groupSizes.length > 0 && !filters.groupSizes.includes(r.entrySizeId)) return false;
+
+        // P2-13: Combined Duet/Trio filtering
+        // Treat "Duet", "Trio", and "Duet/Trio" as equivalent for filtering
+        if (filters.groupSizes.length > 0) {
+          // Get the names of selected size filters
+          const selectedSizeNames = new Set(
+            filters.groupSizes
+              .map(id => routinesData?.find(r => r.entrySizeId === id)?.entrySizeName)
+              .filter(Boolean)
+          );
+
+          // Check if any Duet/Trio variant is selected
+          const hasDuetTrioFilter = Array.from(selectedSizeNames).some(name =>
+            name?.toLowerCase().includes('duet') || name?.toLowerCase().includes('trio')
+          );
+
+          // If Duet/Trio filter is active, accept any Duet/Trio variant
+          if (hasDuetTrioFilter) {
+            const routineSizeName = r.entrySizeName.toLowerCase();
+            const isDuetTrioRoutine = routineSizeName.includes('duet') || routineSizeName.includes('trio');
+
+            if (isDuetTrioRoutine) {
+              // This routine is Duet/Trio and filter includes Duet/Trio - accept it
+              // Continue to check other selected filters
+            } else {
+              // This routine is NOT Duet/Trio, check if it's in the selected filters
+              if (!filters.groupSizes.includes(r.entrySizeId)) return false;
+            }
+          } else {
+            // No Duet/Trio filter active, use standard exact matching
+            if (!filters.groupSizes.includes(r.entrySizeId)) return false;
+          }
+        }
+
         if (filters.studios.length > 0 && !filters.studios.includes(r.studioId)) return false;
         if (filters.search) {
           const search = filters.search.toLowerCase();
-          if (!r.title.toLowerCase().includes(search) && 
+          if (!r.title.toLowerCase().includes(search) &&
               !r.studioName.toLowerCase().includes(search) &&
               !r.studioCode.toLowerCase().includes(search)) return false;
         }
