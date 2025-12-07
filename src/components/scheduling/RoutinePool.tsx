@@ -716,7 +716,8 @@ function FilterDropdown({
   const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 });
 
   // Calculate dropdown position when it opens and on scroll/resize
-  React.useEffect(() => {
+  // Use useLayoutEffect + requestAnimationFrame for stable positioning
+  React.useLayoutEffect(() => {
     if (!isOpen || !buttonRef.current) return;
 
     const updatePosition = () => {
@@ -730,14 +731,17 @@ function FilterDropdown({
       }
     };
 
-    // Initial position
-    updatePosition();
+    // Use requestAnimationFrame to ensure layout is complete before calculating position
+    const rafId = requestAnimationFrame(() => {
+      updatePosition();
+    });
 
     // Update on scroll (parent might scroll, changing button's viewport position)
     window.addEventListener('scroll', updatePosition, true); // Use capture to catch all scrolls
     window.addEventListener('resize', updatePosition);
 
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('scroll', updatePosition, true);
       window.removeEventListener('resize', updatePosition);
     };

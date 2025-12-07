@@ -504,12 +504,23 @@ function DroppableScheduleTable({
     const block = isBlock ? blocksMap.get(actualId) : undefined;
 
     const duration = routine?.duration || block?.duration_minutes || 0;
+
+    // P2-11: For blocks (adjudications, breaks, events), start time should be at 5-minute boundary
+    if (isBlock && currentMinutes % 5 !== 0) {
+      currentMinutes = Math.ceil(currentMinutes / 5) * 5;
+    }
+
     const timeFormatted = formatTime(currentMinutes);
     const timeString = `${timeFormatted.time} ${timeFormatted.period}`;
 
     const thisEntryNumber = !isBlock ? (entryNumbersByRoutineId.get(actualId) ?? 100) : 0;
 
     currentMinutes += duration;
+
+    // P2-11: Round UP to nearest 5 minutes after blocks end
+    if (isBlock && currentMinutes % 5 !== 0) {
+      currentMinutes = Math.ceil(currentMinutes / 5) * 5;
+    }
 
     return (
       <SortableScheduleRow
@@ -858,40 +869,27 @@ export default function ScheduleV2Page() {
         if (filters.ageGroups.length > 0 && !filters.ageGroups.includes(r.ageGroupId)) return false;
         if (filters.genres.length > 0 && !filters.genres.includes(r.categoryId)) return false;
 
-        // P2-13: Combined Duet/Trio filtering
-        // Treat "Duet", "Trio", and "Duet/Trio" as equivalent for filtering
+        // P2-13: Combined Duet/Trio filtering (uses 'duet-trio-combined' ID)
         if (filters.groupSizes.length > 0) {
-          // Get the names of selected size filters
-          const selectedSizeNames = new Set(
-            filters.groupSizes
-              .map(id => routinesData?.find(r => r.entrySizeId === id)?.entrySizeName)
-              .filter(Boolean)
-          );
+          const hasDuetTrioFilter = filters.groupSizes.includes('duet-trio-combined');
+          const routineSizeName = r.entrySizeName?.toLowerCase() || '';
+          const isDuetTrioRoutine = routineSizeName.includes('duet') || routineSizeName.includes('trio');
+          const otherFilters = filters.groupSizes.filter(id => id !== 'duet-trio-combined');
 
-          // Check if any Duet/Trio variant is selected
-          const hasDuetTrioFilter = Array.from(selectedSizeNames).some(name =>
-            name?.toLowerCase().includes('duet') || name?.toLowerCase().includes('trio')
-          );
-
-          // If Duet/Trio filter is active, accept any Duet/Trio variant
-          if (hasDuetTrioFilter) {
-            const routineSizeName = r.entrySizeName.toLowerCase();
-            const isDuetTrioRoutine = routineSizeName.includes('duet') || routineSizeName.includes('trio');
-
-            if (isDuetTrioRoutine) {
-              // This routine is Duet/Trio and filter includes Duet/Trio - accept it
-              // Continue to check other selected filters
-            } else {
-              // This routine is NOT Duet/Trio, check if it's in the selected filters
-              if (!filters.groupSizes.includes(r.entrySizeId)) return false;
-            }
-          } else {
-            // No Duet/Trio filter active, use standard exact matching
-            if (!filters.groupSizes.includes(r.entrySizeId)) return false;
+          // If duet-trio filter active and this is a duet/trio routine, accept
+          if (hasDuetTrioFilter && isDuetTrioRoutine) {
+            // Accept - continue to other filter checks
+          } else if (otherFilters.length > 0) {
+            // Check other size filters
+            if (!otherFilters.includes(r.entrySizeId)) return false;
+          } else if (hasDuetTrioFilter && !isDuetTrioRoutine) {
+            // Only duet-trio filter active but this isn't duet/trio
+            return false;
           }
         }
 
         if (filters.studios.length > 0 && !filters.studios.includes(r.studioId)) return false;
+        if (filters.routineAges.length > 0 && !filters.routineAges.includes(String(r.routineAge))) return false;
         if (filters.search) {
           const search = filters.search.toLowerCase();
           if (!r.title.toLowerCase().includes(search) &&
@@ -999,13 +997,38 @@ export default function ScheduleV2Page() {
   }, [scheduleOrder, blocksMap]);
 
   // ===== COMPUTED: Filter Options =====
-  const filterOptions = useMemo(() => ({
-    classifications: [...new Map((routinesData || []).map(r => [r.classificationId, { id: r.classificationId, label: r.classificationName }])).values()],
-    ageGroups: [...new Map((routinesData || []).map(r => [r.ageGroupId, { id: r.ageGroupId, label: r.ageGroupName }])).values()],
-    genres: [...new Map((routinesData || []).map(r => [r.categoryId, { id: r.categoryId, label: r.categoryName }])).values()],
-    groupSizes: [...new Map((routinesData || []).map(r => [r.entrySizeId, { id: r.entrySizeId, label: r.entrySizeName }])).values()],
-    studios: [...new Map((routinesData || []).map(r => [r.studioId, { id: r.studioId, label: `${r.studioCode} - ${r.studioName}` }])).values()],
-  }), [routinesData]);
+  const filterOptions = useMemo(() => {
+    // Build routine ages from unique values, sorted numerically
+    const routineAgesSet = new Set<number>();
+    (routinesData || []).forEach(r => {
+      if (r.routineAge !== null && r.routineAge !== undefined) {
+        routineAgesSet.add(r.routineAge);
+      }
+    });
+    const routineAges = Array.from(routineAgesSet)
+      .sort((a, b) => a - b)
+      .map(age => ({ id: String(age), label: String(age) }));
+
+    // Build group sizes with Duet/Trio combined
+    const sizeMap = new Map<string, { id: string; label: string }>();
+    (routinesData || []).forEach(r => {
+      const sizeName = r.entrySizeName?.toLowerCase() || '';
+      if (sizeName.includes('duet') || sizeName.includes('trio')) {
+        sizeMap.set('duet-trio-combined', { id: 'duet-trio-combined', label: 'Duet/Trio' });
+      } else {
+        sizeMap.set(r.entrySizeId, { id: r.entrySizeId, label: r.entrySizeName });
+      }
+    });
+
+    return {
+      classifications: [...new Map((routinesData || []).map(r => [r.classificationId, { id: r.classificationId, label: r.classificationName }])).values()],
+      ageGroups: [...new Map((routinesData || []).map(r => [r.ageGroupId, { id: r.ageGroupId, label: r.ageGroupName }])).values()],
+      genres: [...new Map((routinesData || []).map(r => [r.categoryId, { id: r.categoryId, label: r.categoryName }])).values()],
+      groupSizes: [...sizeMap.values()],
+      studios: [...new Map((routinesData || []).map(r => [r.studioId, { id: r.studioId, label: `${r.studioCode} - ${r.studioName}` }])).values()],
+      routineAges,
+    };
+  }, [routinesData]);
 
   // ===== COMPUTED: Day Tabs Data =====
   const competitionDates = useMemo(() => {
@@ -1102,7 +1125,7 @@ export default function ScheduleV2Page() {
 
     // Case 0: Handle template block drops
     if (activeId.startsWith('template-')) {
-      const blockType = activeId.replace('template-', '') as 'award' | 'break';
+      const blockType = activeId.replace('template-', '') as 'award' | 'break' | 'event';
       const timestamp = Date.now();
 
       // CRITICAL: Two different ID formats needed
@@ -1113,8 +1136,8 @@ export default function ScheduleV2Page() {
       const tempBlockData: BlockData = {
         id: tempMapKey,  // Use the Map key format
         block_type: blockType,
-        title: blockType === 'award' ? '🏆 Adjudication Ceremony' : '☕ Break',
-        duration_minutes: blockType === 'award' ? 30 : 15,
+        title: blockType === 'award' ? '🏆 Adjudication Ceremony' : blockType === 'event' ? '🎉 Special Event' : '☕ Break',
+        duration_minutes: blockType === 'award' ? 30 : blockType === 'event' ? 30 : 15,
       };
 
       // Check if dropping on schedule area or any item in schedule
@@ -1149,7 +1172,7 @@ export default function ScheduleV2Page() {
           });
         }
 
-        toast.success(`${blockType === 'award' ? '🏆 Adjudication' : '☕ Break'} block added - click to edit`);
+        toast.success(`${blockType === 'award' ? '🏆 Adjudication' : blockType === 'event' ? '🎉 Event' : '☕ Break'} block added - click to edit`);
       }
       return;
     }
@@ -2010,7 +2033,7 @@ export default function ScheduleV2Page() {
 
       {/* P2-15: Schedule Status Toggle (Tentative vs Final) */}
       {competition && (
-        <div className="px-6 pt-4">
+        <div className="px-6 pt-4 w-full">
           <ScheduleStatusToggle
             status={(competition.schedule_state as 'tentative' | 'final') || 'tentative'}
             onToggle={(newStatus) => {
@@ -2455,7 +2478,7 @@ function DroppableUnscheduledPool({
         genres={filterOptions.genres}
         groupSizes={filterOptions.groupSizes}
         studios={filterOptions.studios}
-        routineAges={[]}
+        routineAges={filterOptions.routineAges}
         filters={filters}
         onFiltersChange={onFiltersChange}
         totalRoutines={routines.length}
