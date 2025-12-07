@@ -1408,6 +1408,201 @@ export const reservationRouter = router({
     };
   }),
 
+  // Pipeline V2 - Enhanced view with display status and issue detection
+  getPipelineViewV2: protectedProcedure.query(async ({ ctx }) => {
+    // Only competition directors and super admins can view pipeline
+    if (isStudioDirector(ctx.userRole)) {
+      throw new Error('Studio directors cannot access the reservation pipeline');
+    }
+
+    // Helper: Derive human-readable display status
+    const deriveDisplayStatus = (
+      status: string | null,
+      hasSummary: boolean,
+      invoice: { status: string | null } | null
+    ): string => {
+      // Check for data integrity issues first
+      if (status === 'summarized' && !hasSummary) {
+        return 'needs_attention';
+      }
+
+      // Check invoice status
+      if (invoice) {
+        if (invoice.status === 'PAID') return 'paid_complete';
+        if (invoice.status === 'SENT') return 'invoice_sent';
+        if (invoice.status === 'VOIDED') return 'needs_attention';
+        if (invoice.status === 'DRAFT') return 'invoice_sent';
+      }
+
+      // Reservation status mapping
+      switch (status) {
+        case 'pending': return 'pending_review';
+        case 'approved': return 'approved';
+        case 'rejected': return 'rejected';
+        case 'summarized': return 'ready_to_invoice';
+        case 'invoiced': return invoice ? 'invoice_sent' : 'needs_attention';
+        default: return 'needs_attention';
+      }
+    };
+
+    // Helper: Detect data integrity issues
+    const detectDataIntegrityIssue = (
+      status: string | null,
+      hasSummary: boolean,
+      invoice: { status: string | null } | null
+    ): string | null => {
+      if (status === 'summarized' && !hasSummary) {
+        return 'STATUS_MISMATCH: Status is summarized but no summary record exists';
+      }
+      if (invoice && status !== 'invoiced' && status !== 'summarized') {
+        return 'STATUS_MISMATCH: Invoice exists but reservation status is not invoiced';
+      }
+      if (invoice?.status === 'VOIDED') {
+        return 'VOIDED_INVOICE: Invoice was voided, studio may need to be reset';
+      }
+      return null;
+    };
+
+    // Fetch all reservations with extended data
+    const reservations = await prisma.reservations.findMany({
+      where: {
+        tenant_id: ctx.tenantId!,
+      },
+      select: {
+        // Main reservation fields
+        id: true,
+        studio_id: true,
+        competition_id: true,
+        spaces_requested: true,
+        spaces_confirmed: true,
+        agent_first_name: true,
+        agent_last_name: true,
+        status: true,
+        deposit_amount: true,
+        deposit_paid_at: true,
+        approved_at: true,
+        approved_by: true,
+        internal_notes: true,
+        requested_at: true,
+        // Relations
+        studios: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            city: true,
+            province: true,
+            email: true,
+            phone: true,
+            address1: true,
+            created_at: true,
+          },
+        },
+        competitions: {
+          select: {
+            id: true,
+            name: true,
+            year: true,
+            competition_start_date: true,
+            competition_end_date: true,
+            primary_location: true,
+            venue_capacity: true,
+          },
+        },
+        invoices: {
+          select: {
+            id: true,
+            total: true,
+            status: true,
+            amount_paid: true,
+            balance_remaining: true,
+            paid_at: true,
+          },
+          take: 1,
+        },
+        summaries: {
+          select: {
+            id: true,
+            submitted_at: true,
+          },
+        },
+        _count: {
+          select: {
+            competition_entries: true,
+          },
+        },
+      },
+      orderBy: [
+        { requested_at: 'desc' },
+      ],
+    });
+
+    // Transform data for frontend
+    const transformedReservations = reservations.map(r => {
+      const invoice = r.invoices?.[0] || null;
+      const summary = r.summaries || null; // singular relation, not array
+      const hasSummary = !!summary;
+
+      const displayStatus = deriveDisplayStatus(r.status, hasSummary, invoice);
+      const hasIssue = detectDataIntegrityIssue(r.status, hasSummary, invoice);
+
+      return {
+        id: r.id,
+        studioId: r.studio_id,
+        studioName: r.studios?.name || 'Unknown Studio',
+        studioCode: r.studios?.code || null,
+        studioCity: r.studios?.city || '',
+        studioProvince: r.studios?.province || '',
+        studioAddress: r.studios?.address1 || '',
+        studioCreatedAt: r.studios?.created_at,
+        contactName: r.agent_first_name && r.agent_last_name
+          ? `${r.agent_first_name} ${r.agent_last_name}`
+          : null,
+        contactEmail: r.studios?.email || '',
+        contactPhone: r.studios?.phone || '',
+        competitionId: r.competition_id,
+        competitionName: r.competitions?.name || 'Unknown Competition',
+        competitionYear: r.competitions?.year || new Date().getFullYear(),
+        spacesRequested: r.spaces_requested,
+        spacesConfirmed: r.spaces_confirmed || 0,
+        entryCount: r._count?.competition_entries || 0,
+        status: r.status,
+        // Deposit
+        depositAmount: r.deposit_amount ? parseFloat(r.deposit_amount.toString()) : 0,
+        depositPaidAt: r.deposit_paid_at,
+        // Approval
+        approvedAt: r.approved_at,
+        approvedBy: r.approved_by,
+        rejectionReason: null, // Not in schema - stored in internal_notes if needed
+        internalNotes: r.internal_notes,
+        // Summary
+        hasSummary,
+        summaryId: summary?.id || null,
+        summarySubmittedAt: summary?.submitted_at || null,
+        // Invoice
+        invoiceId: invoice?.id || null,
+        invoiceNumber: null, // Not available in schema
+        invoiceStatus: invoice?.status || null,
+        invoiceAmount: invoice?.total ? parseFloat(invoice.total.toString()) : null,
+        invoiceAmountPaid: invoice?.amount_paid ? parseFloat(invoice.amount_paid.toString()) : null,
+        invoiceBalanceRemaining: invoice?.balance_remaining ? parseFloat(invoice.balance_remaining.toString()) : null,
+        invoiceSentAt: null, // Not available in schema
+        invoicePaidAt: invoice?.paid_at || null,
+        invoiceDueDate: null, // Not available in schema
+        // Derived
+        displayStatus,
+        hasIssue,
+        // Last action
+        lastAction: r.status === 'approved' ? 'Approved' : 'Reservation submitted',
+        lastActionDate: r.approved_at || r.requested_at,
+      };
+    });
+
+    return {
+      reservations: transformedReservations,
+    };
+  }),
+
   // Reduce reservation capacity with routine impact warnings
   reduceCapacity: protectedProcedure
     .input(
