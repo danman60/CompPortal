@@ -464,7 +464,7 @@ export default function AllInvoicesList() {
             <button
               onClick={() => {
               // Generate CSV from current invoices
-              const csvHeaders = ['Studio', 'Code', 'City', 'Event', 'Year', 'Routines', 'Total Amount', 'Payment Status'];
+              const csvHeaders = ['Studio', 'Code', 'City', 'Event', 'Year', 'Routines', 'Balance Due', 'Payment Status'];
               const csvRows = sortedInvoices.map(inv => [
                 inv.studioName || 'N/A',
                 inv.studioCode || 'N/A',
@@ -559,7 +559,7 @@ export default function AllInvoicesList() {
                 <SortableHeader label="Studio" sortKey="studioName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Routines" sortKey="entryCount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
-                <SortableHeader label="Total Amount" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Balance Due" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Invoice Status" sortKey="invoiceStatus" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Payment Status" sortKey="reservation.payment_status" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
@@ -760,7 +760,7 @@ export default function AllInvoicesList() {
                       <div className="text-xl font-bold text-white">{invoice.entryCount || 0}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-400">Total Amount</div>
+                      <div className="text-sm text-gray-400">Balance Due</div>
                       <div className="text-xl font-bold text-green-400">
                         {formatCurrency(invoice.totalAmount || 0)}
                       </div>
