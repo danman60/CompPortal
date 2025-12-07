@@ -384,7 +384,7 @@ export const invoiceRouter = router({
           competitionYear: inv.competitions?.year,
           startDate: inv.competitions?.competition_start_date,
           entryCount: lineItems.length,
-          totalAmount: parseFloat(inv.total?.toString() || '0'),
+          totalAmount: parseFloat(inv.balance_remaining?.toString() || '0'),
           status: inv.status,
           paidAt: inv.paid_at,
           invoiceStatus: inv.status,
@@ -435,6 +435,7 @@ export const invoiceRouter = router({
           competition_id: true,
           status: true,
           created_at: true,
+          balance_remaining: true,
         },
       });
 
@@ -571,7 +572,7 @@ export const invoiceRouter = router({
             competitionStartDate: competition.competition_start_date,
             competitionEndDate: competition.competition_end_date,
             entryCount: group?._count.id || 0,
-            totalAmount: Number(group?._sum.total_fee || 0),
+            totalAmount: Number(existingInvoice?.balance_remaining || 0),
             hasInvoice: !!existingInvoice,
             invoiceId: existingInvoice?.id || null,
             invoiceStatus: existingInvoice?.status || null, // DRAFT, SENT, PAID, VOIDED
