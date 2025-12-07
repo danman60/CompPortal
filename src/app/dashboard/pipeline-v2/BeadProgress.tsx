@@ -1,93 +1,99 @@
 'use client';
 
-import { Check, AlertTriangle, X } from 'lucide-react';
 import type { PipelineBeadProgressProps, DisplayStatus } from './types';
 
-// Map display status to step completion (0-4)
+// Map display status to step completion (0-3) - 4 beads like mockup
 function getStepFromStatus(status: DisplayStatus): number {
   switch (status) {
     case 'pending_review':
-      return 0;
+      return -1; // Before first bead
     case 'rejected':
-      return 0;
+      return -1;
     case 'approved':
-      return 1;
+      return 0; // First bead active
     case 'ready_to_invoice':
-      return 2;
+      return 1; // Second bead active (entries submitted)
     case 'invoice_sent':
-      return 3;
+      return 2; // Third bead active
     case 'paid_complete':
-      return 4;
+      return 3; // All beads complete
     case 'needs_attention':
-      return 1; // Show at approved stage with warning
+      return 1; // Show at entries stage with error
     default:
-      return 0;
+      return -1;
   }
 }
 
-const steps = ['Requested', 'Approved', 'Summary', 'Invoiced', 'Paid'];
+// 4 steps like mockup: Approved → Entries Submitted → Invoice Sent → Paid
+const steps = ['Approved', 'Entries', 'Invoice', 'Paid'];
 
 export function BeadProgress({ status, hasIssue }: PipelineBeadProgressProps) {
   const currentStep = getStepFromStatus(status);
-  const isRejected = status === 'rejected';
-  const hasWarning = hasIssue !== null || status === 'needs_attention';
+  const isError = hasIssue !== null || status === 'needs_attention';
+  const isPending = status === 'pending_review';
 
   return (
-    <div className="flex items-center">
+    <div className="flex items-center gap-1">
       {steps.map((step, index) => {
-        const isCompleted = index < currentStep || (status === 'paid_complete' && index === 4);
+        const isCompleted = index < currentStep || (status === 'paid_complete');
         const isCurrent = index === currentStep && status !== 'paid_complete';
-        const isFuture = index > currentStep;
+        const isFuture = index > currentStep || isPending;
 
-        // Determine bead styling
-        let beadBg = 'bg-white/10'; // future step
+        // Determine bead styling based on state
+        let beadBg = 'bg-white/5';
         let borderColor = 'border-white/20';
-        let iconColor = 'text-purple-200/30';
+        let content: React.ReactNode = null;
 
-        if (isRejected && index === 0) {
+        if (isPending && index === 0) {
+          // Pending review - show ? on first bead
+          beadBg = 'bg-yellow-500/20';
+          borderColor = 'border-yellow-500';
+          content = <span className="text-yellow-400 text-xs">?</span>;
+        } else if (isError && (index === 1 || index === 2)) {
+          // Error state - show ! or X
           beadBg = 'bg-red-500/20';
           borderColor = 'border-red-500';
-          iconColor = 'text-red-400';
+          content = index === 1
+            ? <span className="text-red-400 text-xs font-bold">!</span>
+            : <span className="text-red-400 text-xs">✕</span>;
         } else if (isCompleted) {
+          // Completed - show checkmark
           beadBg = 'bg-emerald-500/20';
           borderColor = 'border-emerald-500';
-          iconColor = 'text-emerald-400';
+          content = (
+            <svg className="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+            </svg>
+          );
         } else if (isCurrent) {
-          if (hasWarning) {
-            beadBg = 'bg-amber-500/20';
-            borderColor = 'border-amber-500';
-            iconColor = 'text-amber-400';
-          } else {
-            beadBg = 'bg-indigo-500/20';
-            borderColor = 'border-indigo-500';
-            iconColor = 'text-indigo-400';
-          }
+          // Current step - show dot
+          const colorMap: Record<number, { bg: string; border: string; dot: string }> = {
+            0: { bg: 'bg-emerald-500/20', border: 'border-emerald-500', dot: 'bg-emerald-400' },
+            1: { bg: 'bg-purple-500/20', border: 'border-purple-500', dot: 'bg-purple-400' },
+            2: { bg: 'bg-blue-500/20', border: 'border-blue-500', dot: 'bg-blue-400' },
+            3: { bg: 'bg-emerald-500/20', border: 'border-emerald-500', dot: 'bg-emerald-400' },
+          };
+          const colors = colorMap[index] || colorMap[0];
+          beadBg = colors.bg;
+          borderColor = colors.border;
+          content = <div className={`w-2 h-2 rounded-full ${colors.dot}`}></div>;
         }
+
+        // Connector line color
+        const lineColor = isCompleted ? 'bg-emerald-500/50' : isError && index <= 2 ? 'bg-red-500/50' : 'bg-white/10';
 
         return (
           <div key={step} className="flex items-center">
-            {/* Bead - 24px (h-6 w-6) with border */}
+            {/* Bead - 24px circle like mockup */}
             <div
-              className={`w-6 h-6 rounded-full ${beadBg} border-2 ${borderColor} flex items-center justify-center transition-all`}
+              className={`progress-bead w-6 h-6 rounded-full ${beadBg} border-2 ${borderColor} flex items-center justify-center transition-transform hover:scale-110`}
               title={step}
             >
-              {isCompleted && !isRejected && (
-                <Check className={`h-3.5 w-3.5 ${iconColor}`} strokeWidth={3} />
-              )}
-              {isRejected && index === 0 && (
-                <X className={`h-3.5 w-3.5 ${iconColor}`} strokeWidth={3} />
-              )}
-              {isCurrent && hasWarning && (
-                <AlertTriangle className={`h-3 w-3 ${iconColor}`} />
-              )}
+              {content}
             </div>
             {/* Connector line (except after last) */}
             {index < steps.length - 1 && (
-              <div
-                className={`w-4 h-0.5 ${
-                  isCompleted ? 'bg-emerald-500' : 'bg-white/10'
-                }`}
-              />
+              <div className={`w-4 h-0.5 ${lineColor}`} />
             )}
           </div>
         );

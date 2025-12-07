@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronRight, Mail, Phone, MapPin } from 'lucide-react';
+import { ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { BeadProgress } from './BeadProgress';
 import { formatCurrency } from './PipelineTable';
@@ -17,146 +17,136 @@ export function PipelineRow({
   // Use invoiceBalanceRemaining directly if available, otherwise calculate
   const balanceDue = r.invoiceBalanceRemaining ?? (r.invoiceAmount ? r.invoiceAmount - (r.invoiceAmountPaid || 0) : 0);
 
+  // Determine row background based on status
+  const rowBg = r.displayStatus === 'needs_attention'
+    ? 'hover:bg-red-500/5'
+    : r.displayStatus === 'paid_complete'
+    ? 'bg-emerald-500/5 hover:bg-emerald-500/10'
+    : 'hover:bg-white/5';
+
   return (
     <tr
-      className={`hover:bg-white/5 cursor-pointer transition-colors ${
+      className={`border-b border-white/5 cursor-pointer transition-colors ${rowBg} ${
         isExpanded ? 'bg-white/10' : ''
       }`}
       onClick={() => onExpandChange(!isExpanded)}
     >
       {/* Expand toggle */}
-      <td className="px-4 py-3 w-10">
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-purple-200/50" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-purple-200/50" />
-        )}
+      <td className="px-4 py-4">
+        <svg
+          className={`w-4 h-4 text-purple-300/50 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+        </svg>
       </td>
 
-      {/* Studio info */}
-      <td className="px-4 py-3">
-        <div className="flex flex-col gap-0.5">
+      {/* Studio info - combined with location like mockup */}
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-2">
           <span className="font-medium text-white">{r.studioName}</span>
-          {r.studioCode && (
-            <span className="text-xs text-purple-200/50">Code: {r.studioCode}</span>
+          {r.hasIssue && (
+            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">FIX</span>
           )}
-          <div className="flex items-center gap-1 text-xs text-purple-200/50">
-            <MapPin className="h-3 w-3" />
-            {r.studioCity}, {r.studioProvince}
-          </div>
+        </div>
+        <div className="text-xs text-purple-200/50">
+          {r.studioCity}, {r.studioProvince} {r.studioCode && `• ${r.studioCode}`}
         </div>
       </td>
 
-      {/* Contact */}
-      <td className="px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          {r.contactName && (
-            <span className="text-sm text-white">{r.contactName}</span>
-          )}
-          <div className="flex items-center gap-1 text-xs text-purple-200/50">
-            <Mail className="h-3 w-3" />
-            {r.contactEmail}
-          </div>
-          {r.contactPhone && (
-            <div className="flex items-center gap-1 text-xs text-purple-200/50">
-              <Phone className="h-3 w-3" />
-              {r.contactPhone}
-            </div>
-          )}
-        </div>
-      </td>
-
-      {/* Competition */}
-      <td className="px-4 py-3">
-        <span className="text-sm text-white">{r.competitionName}</span>
-        <span className="text-xs text-purple-200/50 ml-1">{r.competitionYear}</span>
-      </td>
-
-      {/* Spaces */}
-      <td className="px-4 py-3 text-center">
-        <span className="text-sm font-medium text-white">
-          {r.spacesConfirmed}/{r.spacesRequested}
-        </span>
-        <span className="text-xs text-purple-200/50 ml-1">spaces</span>
-      </td>
-
-      {/* Entries */}
-      <td className="px-4 py-3 text-center">
-        <span className="text-sm font-medium text-white">{r.entryCount}</span>
-        <span className="text-xs text-purple-200/50 ml-1">entries</span>
-      </td>
-
-      {/* Balance */}
-      <td className="px-4 py-3 text-right">
-        {balanceDue > 0 ? (
-          <div className="flex flex-col items-end">
-            <span className="text-sm font-semibold text-amber-400">
-              {formatCurrency(balanceDue)}
-            </span>
-            {r.invoiceDueDate && (
-              <span className="text-xs text-purple-200/50">
-                due {new Date(r.invoiceDueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </span>
-            )}
-          </div>
-        ) : r.displayStatus === 'paid_complete' ? (
-          <span className="text-sm font-medium text-emerald-400">Paid</span>
-        ) : (
-          <span className="text-sm text-purple-200/40">—</span>
-        )}
-      </td>
-
-      {/* Progress */}
-      <td className="px-4 py-3">
-        <BeadProgress status={r.displayStatus} hasIssue={r.hasIssue} />
-      </td>
-
-      {/* Status */}
-      <td className="px-4 py-3">
+      {/* Status - now in second position like mockup */}
+      <td className="px-4 py-4">
         <StatusBadge status={r.displayStatus} />
       </td>
 
-      {/* Quick actions (stop propagation to prevent row expansion) */}
-      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2">
-          {/* Primary action button based on status */}
-          {r.displayStatus === 'pending_review' && (
-            <button
-              onClick={() => mutations.openApprovalModal(r)}
-              disabled={mutations.isApproving}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg disabled:opacity-50 shadow-lg shadow-green-500/25"
-            >
-              Approve
-            </button>
-          )}
-          {r.displayStatus === 'ready_to_invoice' && (
-            <button
-              onClick={() => mutations.createInvoice({ reservationId: r.id })}
-              disabled={mutations.isCreatingInvoice}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 rounded-lg disabled:opacity-50 shadow-lg shadow-purple-500/25"
-            >
-              {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
-            </button>
-          )}
-          {r.displayStatus === 'invoice_sent' && r.invoiceId && (
-            <button
-              onClick={() => mutations.markAsPaid({ invoiceId: r.invoiceId! })}
-              disabled={mutations.isMarkingPaid}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-lg disabled:opacity-50 shadow-lg shadow-green-500/25"
-            >
-              {mutations.isMarkingPaid ? 'Processing...' : 'Mark Paid'}
-            </button>
-          )}
-          {r.displayStatus === 'needs_attention' && (
-            <button
-              onClick={() => mutations.reopenSummary({ reservationId: r.id })}
-              disabled={mutations.isReopeningSummary}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-lg disabled:opacity-50 shadow-lg shadow-amber-500/25"
-            >
-              {mutations.isReopeningSummary ? 'Fixing...' : 'Fix Issue'}
-            </button>
-          )}
+      {/* Competition */}
+      <td className="px-4 py-4">
+        <div className="text-sm text-purple-100">{r.competitionName}</div>
+      </td>
+
+      {/* Progress - centered like mockup */}
+      <td className="px-4 py-4">
+        <div className="flex justify-center">
+          <BeadProgress status={r.displayStatus} hasIssue={r.hasIssue} />
         </div>
+      </td>
+
+      {/* Entries - formatted like mockup */}
+      <td className="px-4 py-4 text-center">
+        <span className="text-white font-medium">{r.entryCount}</span>
+        <span className="text-purple-200/50">/{r.spacesConfirmed}</span>
+      </td>
+
+      {/* Balance - right aligned like mockup */}
+      <td className="px-4 py-4 text-right">
+        {balanceDue > 0 ? (
+          <div>
+            <div className="text-orange-400 font-medium">{formatCurrency(balanceDue)}</div>
+            {r.invoiceDueDate && (
+              <div className="text-xs text-purple-200/50">
+                Due {new Date(r.invoiceDueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+            )}
+          </div>
+        ) : r.displayStatus === 'paid_complete' ? (
+          <div className="text-emerald-400 font-medium">$0</div>
+        ) : (
+          <div className="text-purple-200/50">—</div>
+        )}
+      </td>
+
+      {/* Action - centered like mockup */}
+      <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+        {r.displayStatus === 'pending_review' && (
+          <button
+            onClick={() => mutations.openApprovalModal(r)}
+            disabled={mutations.isApproving}
+            className="px-3 py-1.5 bg-yellow-500/20 text-yellow-300 text-xs font-medium rounded-lg border border-yellow-500/30 hover:bg-yellow-500/30 transition-colors"
+          >
+            Review Request
+          </button>
+        )}
+        {r.displayStatus === 'approved' && (
+          <span className="text-purple-200/50 text-xs">Awaiting entries</span>
+        )}
+        {r.displayStatus === 'ready_to_invoice' && (
+          <button
+            onClick={() => mutations.createInvoice({ reservationId: r.id })}
+            disabled={mutations.isCreatingInvoice}
+            className="px-3 py-1.5 text-white text-xs font-medium rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:shadow-lg hover:shadow-pink-500/30 transition-all"
+          >
+            {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
+          </button>
+        )}
+        {r.displayStatus === 'invoice_sent' && r.invoiceId && (
+          <button
+            onClick={() => mutations.openPaymentModal(r.invoiceId!)}
+            className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors"
+          >
+            Record Payment
+          </button>
+        )}
+        {r.displayStatus === 'paid_complete' && (
+          <span className="text-emerald-400 text-xs">Done</span>
+        )}
+        {r.displayStatus === 'needs_attention' && (
+          <button
+            onClick={() => mutations.reopenSummary({ reservationId: r.id })}
+            disabled={mutations.isReopeningSummary}
+            className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors"
+          >
+            {mutations.isReopeningSummary ? 'Fixing...' : 'Fix Issue'}
+          </button>
+        )}
+      </td>
+
+      {/* More menu - like mockup */}
+      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+        <button className="p-2 text-purple-300/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
       </td>
     </tr>
   );

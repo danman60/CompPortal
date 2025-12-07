@@ -1,38 +1,34 @@
 'use client';
 
-import { Clock, CheckCircle, FileText, Send, DollarSign, AlertTriangle } from 'lucide-react';
 import type { PipelineKPICardsProps, DisplayStatus } from './types';
 
 interface KPICard {
   key: DisplayStatus | null;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
   getValue: (stats: PipelineKPICardsProps['stats']) => number;
   textColor: string;
   hoverBorder: string;
+  extraBorder?: string;
 }
 
 const kpiCards: KPICard[] = [
   {
+    key: null,
+    label: 'Total Studios',
+    getValue: (s) => s.total,
+    textColor: 'text-white',
+    hoverBorder: '',
+  },
+  {
     key: 'pending_review',
     label: 'Pending Review',
-    icon: Clock,
     getValue: (s) => s.pending,
     textColor: 'text-yellow-400',
     hoverBorder: 'hover:border-yellow-400/50',
   },
   {
-    key: 'approved',
-    label: 'Approved',
-    icon: CheckCircle,
-    getValue: (s) => s.approved,
-    textColor: 'text-blue-400',
-    hoverBorder: 'hover:border-blue-400/50',
-  },
-  {
     key: 'ready_to_invoice',
     label: 'Ready to Invoice',
-    icon: FileText,
     getValue: (s) => s.readyToInvoice,
     textColor: 'text-purple-400',
     hoverBorder: 'hover:border-purple-400/50',
@@ -40,56 +36,49 @@ const kpiCards: KPICard[] = [
   {
     key: 'invoice_sent',
     label: 'Awaiting Payment',
-    icon: Send,
     getValue: (s) => s.awaitingPayment,
-    textColor: 'text-cyan-400',
-    hoverBorder: 'hover:border-cyan-400/50',
+    textColor: 'text-blue-400',
+    hoverBorder: 'hover:border-blue-400/50',
   },
   {
     key: 'paid_complete',
-    label: 'Paid',
-    icon: DollarSign,
+    label: 'Paid Complete',
     getValue: (s) => s.paidComplete,
     textColor: 'text-emerald-400',
-    hoverBorder: 'hover:border-emerald-400/50',
+    hoverBorder: '',
   },
   {
     key: 'needs_attention',
     label: 'Needs Attention',
-    icon: AlertTriangle,
     getValue: (s) => s.needsAttention,
     textColor: 'text-red-400',
     hoverBorder: 'hover:border-red-400/50',
+    extraBorder: 'border-red-400/30',
   },
 ];
 
 export function KPICards({ stats, onFilterClick, activeFilter }: PipelineKPICardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
       {kpiCards.map((card) => {
-        const Icon = card.icon;
         const value = card.getValue(stats);
         const isActive = activeFilter === card.key;
+        const isClickable = card.key !== null && card.hoverBorder;
 
         return (
           <button
-            key={card.key || 'all'}
-            onClick={() => onFilterClick(isActive ? null : card.key)}
-            className={`bg-white/10 backdrop-blur-sm rounded-xl p-4 border-2 transition-all cursor-pointer ${
+            key={card.key || 'total'}
+            onClick={() => isClickable && onFilterClick(isActive ? null : card.key)}
+            className={`glass-card bg-white/10 backdrop-blur-sm rounded-xl p-4 border-2 transition-all ${
+              isClickable ? 'cursor-pointer' : 'cursor-default'
+            } ${
               isActive
                 ? 'border-white/40 bg-white/20'
-                : `border-white/20 ${card.hoverBorder}`
+                : `border-white/20 ${card.hoverBorder} ${card.extraBorder || ''}`
             }`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-white/10`}>
-                <Icon className={`h-4 w-4 ${card.textColor}`} />
-              </div>
-              <div className="text-left">
-                <p className={`text-2xl font-bold ${card.textColor}`}>{value}</p>
-                <p className="text-xs text-purple-200/60 mt-1">{card.label}</p>
-              </div>
-            </div>
+            <div className={`text-2xl font-bold ${card.textColor}`}>{value}</div>
+            <div className="text-xs text-purple-200/60 mt-1">{card.label}</div>
           </button>
         );
       })}

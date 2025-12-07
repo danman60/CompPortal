@@ -30,35 +30,30 @@ export function PipelineTable({
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-white/10">
           <thead className="bg-white/5">
-            <tr>
-              <th className="px-4 py-3 w-10"></th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+            <tr className="border-b border-white/10">
+              <th className="w-8 px-4 py-4"></th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
                 Studio
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Contact
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Competition
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Spaces
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Entries
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Balance
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Progress
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+              <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Actions
+              <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                Competition
               </th>
+              <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                Progress
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                Entries
+              </th>
+              <th className="px-4 py-4 text-right text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                Balance
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                Action
+              </th>
+              <th className="w-10 px-4 py-4"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">

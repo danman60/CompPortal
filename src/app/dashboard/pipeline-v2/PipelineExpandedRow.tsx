@@ -33,7 +33,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
 
   return (
     <tr className="bg-white/5">
-      <td colSpan={10} className="px-4 py-4">
+      <td colSpan={9} className="px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Column 1: Reservation Details */}
           <div className="space-y-3">
