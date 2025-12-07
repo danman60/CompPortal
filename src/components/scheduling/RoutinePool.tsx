@@ -138,12 +138,13 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
   // Always show studio code (5-digit code)
   const studioDisplay = routine.studioCode;
 
-  // Row classes
+  // Row classes - P1-7: Amber highlight for notes
   const rowClasses = [
     'border-b border-white/10 hover:bg-white/5 transition-colors cursor-grab',
     isLastRoutine ? 'bg-yellow-500/10 border-l-4 border-l-yellow-400' : '',
     hasAgeChange ? 'bg-yellow-900/30' : '',
     hasConflict ? 'border-l-4 border-l-red-500' : '',
+    hasNotes && !isLastRoutine && !hasAgeChange ? 'bg-amber-900/20' : '', // P1-7: Amber background for notes
     isDragging ? 'opacity-50' : '',
   ].filter(Boolean).join(' ');
 
@@ -183,8 +184,8 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
               {hasAgeChange && <span className="text-yellow-400" title="Age changed">🎂</span>}
             </div>
           </div>
-          {/* Dancer names for Solo/Duet-Trio */}
-          {(routine.entrySizeName === 'Solo' || routine.entrySizeName === 'Duet/Trio') && routine.dancer_names && routine.dancer_names.length > 0 && (
+          {/* Dancer names for Solo/Duet/Trio - P0-1: Show dancer names for small entries */}
+          {routine.dancer_names && routine.dancer_names.length > 0 && routine.dancer_names.length <= 3 && (
             <div className="text-[10px] text-gray-400 truncate">
               {routine.dancer_names.join(', ')}
             </div>

@@ -309,7 +309,7 @@ function SortableScheduleRow({
         onClick={onToggleSelection}
         className={`border-b border-white/10 cursor-grab active:cursor-grabbing hover:bg-white/5 transition-colors ${sessionColor} ${
           hasConflict ? 'border-l-4 border-l-red-500' : ''
-        } ${isSelected ? 'bg-blue-500/20' : ''}`}
+        } ${isSelected ? 'bg-blue-500/20' : ''} ${hasNotes ? 'bg-amber-900/20' : ''}`}
       >
         {/* Selection Checkbox */}
         <td
