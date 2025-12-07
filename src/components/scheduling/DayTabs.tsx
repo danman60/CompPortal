@@ -71,7 +71,7 @@ function DraggableBlockButton({ type, onClick }: DraggableBlockButtonProps) {
       title={isAward ? 'Drag to schedule or click to configure' : 'Drag to schedule or click to configure'}
     >
       <div className="font-semibold text-xs mb-1">
-        {isAward ? '🏆 +Award' : '☕ +Break'}
+        {isAward ? '🏆 +Adjudication' : '☕ +Break'}
       </div>
       <div className={`text-xs ${isAward ? 'text-amber-200/80' : 'text-cyan-200/80'}`}>
         {isAward ? 'Add ceremony block' : 'Add break block'}

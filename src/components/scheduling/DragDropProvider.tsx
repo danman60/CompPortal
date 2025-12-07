@@ -1065,7 +1065,7 @@ export function DragDropProvider({
               }
             `}>
               <div className="font-semibold text-sm">
-                {activeBlockType === 'award' ? '🏆 Award Ceremony' : '☕ Break Block'}
+                {activeBlockType === 'award' ? '🏆 Adjudication Ceremony' : '☕ Break Block'}
               </div>
               <div className="text-xs opacity-80 mt-1">
                 Drop to configure

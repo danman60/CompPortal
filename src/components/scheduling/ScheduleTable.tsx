@@ -405,11 +405,9 @@ function SortableRoutineRow({
     const conflictingRoutineNumber = conflictingRoutine?.entryNumber ||
       (isRoutine1 ? conflict.routine2Number : conflict.routine1Number);
 
-    let tooltip = `⚠️ Conflict: ${conflict.dancerName}`;
-    tooltip += `\n${conflict.routinesBetween} routine${conflict.routinesBetween !== 1 ? 's' : ''} between performances`;
-    tooltip += `\n(need 6+ for costume changes)`;
-    tooltip += `\n\nConflicts with:`;
-    tooltip += `\n• #${conflictingRoutineNumber} ${conflictingRoutineTitle}`;
+    // P0-2: Compact conflict format per spec
+    let tooltip = `⚠️ ${conflict.dancerName} - ${conflict.routinesBetween} between - #${conflictingRoutineNumber}`;
+    tooltip += `\n\nConflicts with: ${conflictingRoutineTitle}`;
 
     if (routine.dancer_names && routine.dancer_names.length > 0) {
       tooltip += `\n\nDancers in this routine:`;
@@ -561,16 +559,13 @@ function SortableRoutineRow({
                       const conflictingRoutineNumber = conflictingRoutine?.entryNumber ||
                         (isRoutine1 ? conflict.routine2Number : conflict.routine1Number);
 
+                      // P0-2: Compact conflict format per spec
                       return (
                         <>
-                          <div className="font-bold mb-1">⚠️ Conflict: {conflict.dancerName}</div>
-                          <div className="text-xs opacity-90">
-                            {conflict.routinesBetween} routine{conflict.routinesBetween !== 1 ? 's' : ''} between performances
+                          <div className="font-bold mb-1">
+                            ⚠️ {conflict.dancerName} - {conflict.routinesBetween} between - #{conflictingRoutineNumber}
                           </div>
-                          <div className="text-xs opacity-90 mb-2">(need 6+ for costume changes)</div>
-
-                          <div className="text-xs font-semibold mb-1">Conflicts with:</div>
-                          <div className="text-xs opacity-90 mb-2">• #{conflictingRoutineNumber} {conflictingRoutineTitle}</div>
+                          <div className="text-xs opacity-90 mb-2">Conflicts with: {conflictingRoutineTitle}</div>
 
                           {routine.dancer_names && routine.dancer_names.length > 0 && (
                             <>
@@ -642,6 +637,17 @@ function SortableRoutineRow({
         <div className="truncate-cell">
           <span className="truncate" title={routine.title}>{routine.title}</span>
         </div>
+        {/* P0-1: Show dancer names for solo/duet/trio (≤3 dancers) with First Name + Last Initial format */}
+        {routine.dancer_names && routine.dancer_names.length > 0 && routine.dancer_names.length <= 3 && (
+          <div className="text-[10px] text-gray-400 truncate" title={routine.dancer_names.join(', ')}>
+            {routine.dancer_names.map(name => {
+              const parts = name.split(' ');
+              const firstName = parts[0] || '';
+              const lastInitial = parts.length > 1 ? parts[parts.length - 1].charAt(0) + '.' : '';
+              return firstName + (lastInitial ? ' ' + lastInitial : '');
+            }).join(', ')}
+          </div>
+        )}
       </td>
 
       {/* Studio - 35px */}
@@ -682,7 +688,7 @@ function SortableRoutineRow({
           }}
         >
           <div className="absolute left-2 top-2 bg-red-600 text-white px-3 py-1 rounded-md text-xs font-bold shadow-lg whitespace-nowrap z-10">
-            ⚠️ {conflict.conflict.dancerName}: {conflict.conflict.routinesBetween} routines between (need 6 min)
+            ⚠️ {conflict.conflict.dancerName} - {conflict.conflict.routinesBetween} between
           </div>
         </td>
       )}
