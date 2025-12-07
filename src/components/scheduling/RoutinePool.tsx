@@ -713,17 +713,25 @@ function FilterDropdown({
   const selectedCount = selectedIds.length;
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
-  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 });
 
-  // Calculate dropdown position when it opens and on scroll/resize
-  // Use useLayoutEffect + requestAnimationFrame for stable positioning
+  // Track position - null until calculated (prevents flash at wrong position)
+  const [dropdownPosition, setDropdownPosition] = React.useState<{ top: number; left: number } | null>(null);
+
+  // Reset position when dropdown closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setDropdownPosition(null);
+    }
+  }, [isOpen]);
+
+  // Calculate dropdown position SYNCHRONOUSLY when it opens (before browser paint)
   React.useLayoutEffect(() => {
     if (!isOpen || !buttonRef.current) return;
 
     const updatePosition = () => {
       if (buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect();
-        // For position:fixed, use viewport coordinates directly (no scroll offset)
+        // For position:fixed, use viewport coordinates directly
         setDropdownPosition({
           top: rect.bottom + 4,   // 4px gap below button
           left: rect.left,
@@ -731,17 +739,14 @@ function FilterDropdown({
       }
     };
 
-    // Use requestAnimationFrame to ensure layout is complete before calculating position
-    const rafId = requestAnimationFrame(() => {
-      updatePosition();
-    });
+    // Calculate position IMMEDIATELY - no RAF delay to prevent flash
+    updatePosition();
 
-    // Update on scroll (parent might scroll, changing button's viewport position)
-    window.addEventListener('scroll', updatePosition, true); // Use capture to catch all scrolls
+    // Update on scroll/resize for subsequent changes
+    window.addEventListener('scroll', updatePosition, true);
     window.addEventListener('resize', updatePosition);
 
     return () => {
-      cancelAnimationFrame(rafId);
       window.removeEventListener('scroll', updatePosition, true);
       window.removeEventListener('resize', updatePosition);
     };
@@ -775,7 +780,8 @@ function FilterDropdown({
         {label}{selectedCount > 0 && ` (${selectedCount})`} ▼
       </button>
 
-      {isOpen && (
+      {/* Only render dropdown when position is calculated - prevents flash at wrong position */}
+      {isOpen && dropdownPosition && (
         <div
           className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar"
           style={{
