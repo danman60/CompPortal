@@ -2,9 +2,17 @@
 
 import { usePipelineV2 } from './usePipelineV2';
 import { PipelineV2 } from './PipelineV2';
+import ApplyPartialPaymentModal from '@/components/ApplyPartialPaymentModal';
 
 export default function PipelineV2Page() {
   const pipelineData = usePipelineV2();
+
+  // Find the reservation with the selected invoice for payment modal
+  const paymentModalReservation = pipelineData.paymentModalInvoiceId
+    ? pipelineData.allReservations.find(
+        (r) => r.invoiceId === pipelineData.paymentModalInvoiceId
+      )
+    : null;
 
   if (pipelineData.isLoading) {
     return (
@@ -17,5 +25,19 @@ export default function PipelineV2Page() {
     );
   }
 
-  return <PipelineV2 {...pipelineData} />;
+  return (
+    <>
+      <PipelineV2 {...pipelineData} />
+
+      {/* Payment Modal */}
+      {pipelineData.paymentModalInvoiceId && paymentModalReservation && (
+        <ApplyPartialPaymentModal
+          invoiceId={pipelineData.paymentModalInvoiceId}
+          currentBalance={paymentModalReservation.invoiceBalanceRemaining || 0}
+          onClose={() => pipelineData.setPaymentModalInvoiceId(null)}
+          onSuccess={() => pipelineData.refetch()}
+        />
+      )}
+    </>
+  );
 }
