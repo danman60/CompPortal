@@ -1,7 +1,9 @@
 'use client';
 
+import { Fragment } from 'react';
 import { PipelineRow } from './PipelineRow';
 import { PipelineExpandedRow } from './PipelineExpandedRow';
+import { PipelineMobileCard } from './PipelineMobileCard';
 import type { PipelineReservation, PipelineMutations } from './types';
 
 interface PipelineTableProps {
@@ -26,62 +28,74 @@ export function PipelineTable({
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-xl border-2 border-white/20 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-white/10">
-          <thead className="bg-white/5">
-            <tr className="border-b border-white/10">
-              <th className="w-8 px-4 py-4"></th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Studio
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Competition
-              </th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Progress
-              </th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Entries
-              </th>
-              <th className="px-4 py-4 text-right text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Balance
-              </th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                Action
-              </th>
-              <th className="w-10 px-4 py-4"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {reservations.map((reservation) => {
-              const isExpanded = expandedRowId === reservation.id;
-              return (
-                <>
-                  <PipelineRow
-                    key={reservation.id}
-                    reservation={reservation}
-                    isExpanded={isExpanded}
-                    onExpandChange={() => onRowExpand(reservation.id)}
-                    mutations={mutations}
-                  />
-                  {isExpanded && (
-                    <PipelineExpandedRow
-                      key={`${reservation.id}-expanded`}
+    <>
+      {/* Mobile Card View - visible on small screens only */}
+      <div className="md:hidden space-y-3">
+        {reservations.map((reservation) => (
+          <PipelineMobileCard
+            key={reservation.id}
+            reservation={reservation}
+            mutations={mutations}
+          />
+        ))}
+      </div>
+
+      {/* Desktop Table View - hidden on small screens */}
+      <div className="hidden md:block bg-white/10 backdrop-blur-sm rounded-xl border-2 border-white/20 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-white/10">
+            <thead className="bg-white/5">
+              <tr className="border-b border-white/10">
+                <th className="w-8 px-4 py-4"></th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                  Studio
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                  Competition
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                  Progress
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                  Entries
+                </th>
+                <th className="px-4 py-4 text-right text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                  Balance
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
+                  Action
+                </th>
+                <th className="w-10 px-4 py-4"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {reservations.map((reservation) => {
+                const isExpanded = expandedRowId === reservation.id;
+                return (
+                  <Fragment key={reservation.id}>
+                    <PipelineRow
                       reservation={reservation}
+                      isExpanded={isExpanded}
+                      onExpandChange={() => onRowExpand(reservation.id)}
                       mutations={mutations}
                     />
-                  )}
-                </>
-              );
-            })}
-          </tbody>
-        </table>
+                    {isExpanded && (
+                      <PipelineExpandedRow
+                        reservation={reservation}
+                        mutations={mutations}
+                      />
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
