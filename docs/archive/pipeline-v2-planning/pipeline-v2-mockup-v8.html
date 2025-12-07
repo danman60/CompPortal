@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline V2 - Elite UX Final</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --primary: #8b5cf6;
+      --primary-soft: rgba(139, 92, 246, 0.15);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background: linear-gradient(145deg, #0f1117 0%, #1a1d2e 100%);
+      min-height: 100vh;
+    }
+
+    /* Glass morphism */
+    .glass {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+    }
+
+    /* Status indicators - left border accent */
+    .status-pending { border-left: 3px solid #f59e0b; }
+    .status-approved { border-left: 3px solid #3b82f6; }
+    .status-ready { border-left: 3px solid #8b5cf6; }
+    .status-invoiced { border-left: 3px solid #06b6d4; }
+    .status-paid { border-left: 3px solid #10b981; }
+    .status-issue { border-left: 3px solid #ef4444; }
+
+    /* Smooth expand */
+    .expandable {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.3s ease;
+    }
+    .expandable.open { grid-template-rows: 1fr; }
+    .expandable > div { overflow: hidden; }
+
+    /* Progress bar gradient */
+    .progress-fill {
+      background: linear-gradient(90deg, #8b5cf6, #ec4899);
+    }
+
+    /* Action button hover lift */
+    .action-btn {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Keyboard shortcut hint */
+    .kbd {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 10px;
+      padding: 2px 5px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    /* Quick search modal */
+    .search-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      place-items: center;
+      z-index: 100;
+    }
+    .search-modal.open { display: grid; }
+
+    /* Skeleton loading */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Subtle scroll */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  </style>
+</head>
+<body class="text-gray-100">
+
+  <!-- Quick Search Modal (Cmd+K) -->
+  <div id="searchModal" class="search-modal">
+    <div class="w-full max-w-lg mx-4 glass rounded-2xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/5">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" placeholder="Search studios, invoices, actions..." class="flex-1 bg-transparent text-white placeholder-gray-500 outline-none text-lg" autofocus>
+          <span class="kbd">ESC</span>
+        </div>
+      </div>
+      <div class="p-2 max-h-80 overflow-y-auto">
+        <div class="px-3 py-2 text-xs text-gray-500 uppercase tracking-wide">Quick Actions</div>
+        <button class="w-full px-3 py-2.5 flex items-center gap-3 rounded-lg hover:bg-white/5 text-left">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm text-white">Add New Studio</div>
+            <div class="text-xs text-gray-500">Create studio with reservation</div>
+          </div>
+          <span class="kbd">N</span>
+        </button>
+        <button class="w-full px-3 py-2.5 flex items-center gap-3 rounded-lg hover:bg-white/5 text-left">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm text-white">Review Pending (4)</div>
+            <div class="text-xs text-gray-500">Reservations awaiting approval</div>
+          </div>
+          <span class="kbd">P</span>
+        </button>
+        <button class="w-full px-3 py-2.5 flex items-center gap-3 rounded-lg hover:bg-white/5 text-left">
+          <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm text-white">Fix Data Issues (1)</div>
+            <div class="text-xs text-gray-500">Studios with integrity errors</div>
+          </div>
+          <span class="kbd">I</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- Header: Clean and minimal -->
+    <header class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-semibold text-white">Studio Pipeline</h1>
+        <p class="text-sm text-gray-500 mt-1">31 studios across 2 competitions</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSearch()" class="flex items-center gap-2 px-3 py-2 glass rounded-lg text-sm text-gray-400 hover:text-white hover:border-white/10 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          Search
+          <span class="kbd ml-1">⌘K</span>
+        </button>
+        <button class="action-btn px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-lg flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Add Studio
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI Cards: Scannable at a glance -->
+    <section class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+      <div class="glass rounded-xl p-4">
+        <div class="text-2xl font-semibold text-white">31</div>
+        <div class="text-xs text-gray-500 mt-1">Total Studios</div>
+      </div>
+      <div class="glass rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors" onclick="filterBy('pending')">
+        <div class="text-2xl font-semibold text-amber-400">4</div>
+        <div class="text-xs text-gray-500 mt-1">Need Review</div>
+      </div>
+      <div class="glass rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors" onclick="filterBy('ready')">
+        <div class="text-2xl font-semibold text-purple-400">6</div>
+        <div class="text-xs text-gray-500 mt-1">Ready to Invoice</div>
+      </div>
+      <div class="glass rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors" onclick="filterBy('invoiced')">
+        <div class="text-2xl font-semibold text-cyan-400">7</div>
+        <div class="text-xs text-gray-500 mt-1">Awaiting Payment</div>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <div class="text-2xl font-semibold text-emerald-400">5</div>
+        <div class="text-xs text-gray-500 mt-1">Paid in Full</div>
+      </div>
+      <div class="glass rounded-xl p-4 border-red-500/30 cursor-pointer hover:bg-red-500/5 transition-colors" onclick="filterBy('issues')">
+        <div class="text-2xl font-semibold text-red-400">1</div>
+        <div class="text-xs text-gray-500 mt-1">Data Issue</div>
+      </div>
+    </section>
+
+    <!-- Streamlined Filters: Essential only -->
+    <section class="glass rounded-xl p-4 mb-6">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex-1 min-w-[200px]">
+          <input type="text" placeholder="Search by name, code, or email..." class="w-full px-4 py-2.5 bg-black/30 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50">
+        </div>
+        <select class="px-4 py-2.5 bg-black/30 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-purple-500/50">
+          <option>All Competitions</option>
+          <option>Glow 2026</option>
+          <option>EMPWR 2026</option>
+        </select>
+        <select class="px-4 py-2.5 bg-black/30 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-purple-500/50">
+          <option>All Stages</option>
+          <option>Pending Review</option>
+          <option>Approved - Entering</option>
+          <option>Ready to Invoice</option>
+          <option>Invoice Sent</option>
+          <option>Paid</option>
+        </select>
+        <div class="flex items-center gap-4 text-sm text-gray-400">
+          <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+            <input type="checkbox" class="w-4 h-4 rounded bg-black/30 border-white/20 accent-purple-500">
+            Hide completed
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Table: Clean, scannable -->
+    <div class="glass rounded-2xl overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-white/5 text-left">
+            <th class="w-8 px-4 py-4"></th>
+            <th class="px-4 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Studio</th>
+            <th class="px-4 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
+            <th class="px-4 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Competition</th>
+            <th class="px-4 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">Entries</th>
+            <th class="px-4 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Balance</th>
+            <th class="px-4 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">Next Step</th>
+            <th class="w-12 px-4 py-4"></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- Row 1: Invoice Sent - Awaiting Payment -->
+          <tr class="status-invoiced hover:bg-white/[0.02] cursor-pointer transition-colors group" onclick="toggleRow(1)">
+            <td class="px-4 py-4">
+              <svg id="chevron1" class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </td>
+            <td class="px-4 py-4">
+              <div class="font-medium text-white">Fever Dance Academy</div>
+              <div class="text-xs text-gray-500">Toronto, ON • FEV</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-cyan-500/15 text-cyan-400">Invoice Sent</span>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Sent Dec 4</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm text-gray-300">Glow 2026</div>
+              <div class="text-xs text-gray-500">Apr 11-13</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="text-white font-medium">45</span>
+              <span class="text-gray-500">/50</span>
+            </td>
+            <td class="px-4 py-4 text-right">
+              <div class="text-orange-400 font-medium">$32,427</div>
+              <div class="text-xs text-gray-500">Due Dec 15</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <button class="action-btn px-3 py-1.5 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-lg hover:bg-emerald-500/25 border border-emerald-500/20">
+                Record Payment
+              </button>
+            </td>
+            <td class="px-4 py-4">
+              <button class="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Expanded Row 1 -->
+          <tr>
+            <td colspan="8" class="p-0">
+              <div id="expand1" class="expandable open">
+                <div>
+                  <div class="p-6 bg-gradient-to-b from-cyan-500/5 to-transparent border-t border-cyan-500/10">
+
+                    <!-- Journey Progress: Simple & Clear -->
+                    <div class="mb-6">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-400">Journey Progress</span>
+                        <span class="text-sm text-white">3 of 4 steps complete</span>
+                      </div>
+                      <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div class="h-full progress-fill rounded-full" style="width: 75%"></div>
+                      </div>
+                      <div class="flex justify-between mt-2 text-xs text-gray-500">
+                        <span class="text-emerald-400">Approved</span>
+                        <span class="text-emerald-400">Entries Submitted</span>
+                        <span class="text-cyan-400 font-medium">Invoice Sent</span>
+                        <span>Payment</span>
+                      </div>
+                    </div>
+
+                    <!-- Key Info Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                      <!-- Contact & Details -->
+                      <div class="space-y-4">
+                        <h4 class="text-sm font-medium text-white flex items-center gap-2">
+                          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                          Contact
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Owner</span>
+                            <span class="text-white">Sarah Johnson</span>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Email</span>
+                            <a href="mailto:fever@dance.com" class="text-purple-400 hover:underline">fever@dance.com</a>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Phone</span>
+                            <span class="text-white">(416) 555-0123</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Reservation Details -->
+                      <div class="space-y-4">
+                        <h4 class="text-sm font-medium text-white flex items-center gap-2">
+                          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                          Reservation
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Spaces</span>
+                            <span class="text-white">50 confirmed</span>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Entries</span>
+                            <span class="text-white">45 submitted <span class="text-amber-400">(5 unused)</span></span>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Deposit</span>
+                            <span class="text-emerald-400">$500 paid</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Invoice Details -->
+                      <div class="space-y-4">
+                        <h4 class="text-sm font-medium text-white flex items-center gap-2">
+                          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                          Invoice
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Invoice #</span>
+                            <a href="#" class="text-purple-400 hover:underline font-mono">INV-2026-FEV</a>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Total</span>
+                            <span class="text-white">$32,927.00</span>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-gray-500">Remaining</span>
+                            <span class="text-orange-400 font-medium">$32,427.00</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-6 pt-6 border-t border-white/5 flex flex-wrap gap-3">
+                      <button class="action-btn px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg">
+                        Record Payment
+                      </button>
+                      <button class="action-btn px-4 py-2 bg-emerald-500/15 text-emerald-400 text-sm rounded-lg border border-emerald-500/20">
+                        Mark as Paid in Full
+                      </button>
+                      <button class="px-4 py-2 glass text-gray-300 text-sm rounded-lg hover:bg-white/5">
+                        View Invoice
+                      </button>
+                      <button class="px-4 py-2 glass text-gray-300 text-sm rounded-lg hover:bg-white/5">
+                        Send Reminder
+                      </button>
+                      <button class="px-4 py-2 glass text-amber-400 text-sm rounded-lg hover:bg-amber-500/10 ml-auto">
+                        Reopen for Edits
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Row 2: DATA ISSUE - Elite Star -->
+          <tr class="status-issue hover:bg-red-500/[0.03] cursor-pointer transition-colors group" onclick="toggleRow(2)">
+            <td class="px-4 py-4">
+              <svg id="chevron2" class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-white">Elite Star Dance</span>
+                <span class="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">FIX</span>
+              </div>
+              <div class="text-xs text-gray-500">Mississauga, ON • ESD</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-red-500/15 text-red-400 border border-red-500/30">Data Issue</span>
+              </div>
+              <div class="text-xs text-red-400 mt-1">Status mismatch detected</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm text-gray-300">Glow 2026</div>
+              <div class="text-xs text-gray-500">Apr 11-13</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="text-white font-medium">12</span>
+              <span class="text-gray-500">/15</span>
+            </td>
+            <td class="px-4 py-4 text-right">
+              <div class="text-red-400">—</div>
+              <div class="text-xs text-red-400">Needs fix</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <button class="action-btn px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600">
+                Fix Now
+              </button>
+            </td>
+            <td class="px-4 py-4">
+              <button class="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Expanded Row 2 -->
+          <tr>
+            <td colspan="8" class="p-0">
+              <div id="expand2" class="expandable">
+                <div>
+                  <div class="p-6 bg-gradient-to-b from-red-500/5 to-transparent border-t border-red-500/20">
+
+                    <!-- Error Alert: Clear explanation -->
+                    <div class="mb-6 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                      <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+                          <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                          </svg>
+                        </div>
+                        <div class="flex-1">
+                          <h4 class="font-semibold text-red-300">Status Mismatch Detected</h4>
+                          <p class="text-sm text-red-200/70 mt-1">
+                            This reservation is marked as "entries submitted" but no summary record exists in the database.
+                            This can happen when an invoice is voided. The studio cannot proceed until this is fixed.
+                          </p>
+                          <div class="flex gap-3 mt-4">
+                            <button class="action-btn px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600">
+                              Reset to Approved
+                            </button>
+                            <button class="px-4 py-2 glass text-gray-300 text-sm rounded-lg hover:bg-white/5">
+                              View Technical Details
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Technical Details (collapsed by default in real impl) -->
+                    <details class="text-sm">
+                      <summary class="cursor-pointer text-gray-400 hover:text-white py-2">Technical Details</summary>
+                      <div class="mt-2 p-3 bg-black/30 rounded-lg font-mono text-xs space-y-1">
+                        <div><span class="text-gray-500">reservation.status =</span> <span class="text-orange-400">'summarized'</span></div>
+                        <div><span class="text-gray-500">summaries record =</span> <span class="text-red-400 font-semibold">NULL (EXPECTED: EXISTS)</span></div>
+                        <div><span class="text-gray-500">invoice.status =</span> <span class="text-gray-400">'VOIDED'</span></div>
+                        <div><span class="text-gray-500">last_modified =</span> <span class="text-gray-400">2025-12-03T14:22:00Z</span></div>
+                      </div>
+                    </details>
+
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Row 3: Pending Review -->
+          <tr class="status-pending hover:bg-white/[0.02] cursor-pointer transition-colors group" onclick="toggleRow(3)">
+            <td class="px-4 py-4">
+              <svg id="chevron3" class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </td>
+            <td class="px-4 py-4">
+              <div class="font-medium text-white">Inspire Dance Studio</div>
+              <div class="text-xs text-gray-500">Ottawa, ON • IDS</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-500/15 text-amber-400">Pending Review</span>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Requested Dec 1</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm text-gray-300">Glow 2026</div>
+              <div class="text-xs text-gray-500">Apr 11-13</div>
+            </td>
+            <td class="px-4 py-4 text-center text-gray-500">—</td>
+            <td class="px-4 py-4 text-right text-gray-500">—</td>
+            <td class="px-4 py-4 text-center">
+              <button class="action-btn px-3 py-1.5 bg-amber-500/15 text-amber-400 text-xs font-medium rounded-lg hover:bg-amber-500/25 border border-amber-500/20">
+                Review
+              </button>
+            </td>
+            <td class="px-4 py-4">
+              <button class="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Expanded Row 3 -->
+          <tr>
+            <td colspan="8" class="p-0">
+              <div id="expand3" class="expandable">
+                <div>
+                  <div class="p-6 bg-gradient-to-b from-amber-500/5 to-transparent border-t border-amber-500/10">
+
+                    <!-- Pending Review Card -->
+                    <div class="max-w-md">
+                      <h4 class="text-sm font-medium text-white mb-4">Reservation Request</h4>
+
+                      <div class="space-y-3 text-sm mb-6">
+                        <div class="flex justify-between">
+                          <span class="text-gray-500">Spaces Requested</span>
+                          <span class="text-white font-medium">25</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-500">Deposit Required</span>
+                          <span class="text-amber-400">$250</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-500">Contact</span>
+                          <span class="text-white">inspire@dance.com</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-500">Requested</span>
+                          <span class="text-gray-400">Dec 1, 2025</span>
+                        </div>
+                      </div>
+
+                      <!-- Approval Actions -->
+                      <div class="flex gap-3">
+                        <button class="action-btn flex-1 px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">
+                          Approve (25 spaces)
+                        </button>
+                        <button class="action-btn px-4 py-2.5 bg-red-500/15 text-red-400 text-sm rounded-lg border border-red-500/20 hover:bg-red-500/25">
+                          Reject
+                        </button>
+                      </div>
+                      <button class="w-full mt-2 px-4 py-2 glass text-gray-400 text-sm rounded-lg hover:bg-white/5">
+                        Approve with Different Spaces
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Row 4: Paid Complete -->
+          <tr class="status-paid hover:bg-white/[0.02] cursor-pointer transition-colors group bg-emerald-500/[0.02]" onclick="toggleRow(4)">
+            <td class="px-4 py-4">
+              <svg id="chevron4" class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </td>
+            <td class="px-4 py-4">
+              <div class="font-medium text-white">Dance Plus Academy</div>
+              <div class="text-xs text-gray-500">Barrie, ON • DPA</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-500/15 text-emerald-400">Paid in Full</span>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Paid Dec 5</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm text-gray-300">Glow 2026</div>
+              <div class="text-xs text-gray-500">Apr 11-13</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="text-white font-medium">30</span>
+              <span class="text-gray-500">/30</span>
+            </td>
+            <td class="px-4 py-4 text-right">
+              <div class="text-emerald-400 font-medium">$0</div>
+              <div class="text-xs text-emerald-400">Paid</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="px-3 py-1.5 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-lg flex items-center gap-1 justify-center">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Complete
+              </span>
+            </td>
+            <td class="px-4 py-4">
+              <button class="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Expanded Row 4 -->
+          <tr>
+            <td colspan="8" class="p-0">
+              <div id="expand4" class="expandable">
+                <div>
+                  <div class="p-6 bg-gradient-to-b from-emerald-500/5 to-transparent border-t border-emerald-500/10">
+
+                    <!-- Complete Journey -->
+                    <div class="mb-6">
+                      <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="text-sm text-emerald-400 font-medium">Journey Complete</span>
+                      </div>
+                      <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-500 rounded-full" style="width: 100%"></div>
+                      </div>
+                    </div>
+
+                    <!-- Summary Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div class="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                        <div class="text-xs text-gray-500 mb-1">Spaces</div>
+                        <div class="text-lg font-medium text-white">30 / 30</div>
+                      </div>
+                      <div class="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                        <div class="text-xs text-gray-500 mb-1">Entries</div>
+                        <div class="text-lg font-medium text-white">30 routines</div>
+                      </div>
+                      <div class="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                        <div class="text-xs text-gray-500 mb-1">Total Paid</div>
+                        <div class="text-lg font-medium text-emerald-400">$18,750</div>
+                      </div>
+                      <div class="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
+                        <div class="text-xs text-gray-500 mb-1">Invoice</div>
+                        <a href="#" class="text-lg font-medium text-purple-400 hover:underline font-mono">INV-2026-DPA</a>
+                      </div>
+                    </div>
+
+                    <!-- Payment History -->
+                    <div class="mt-6">
+                      <h4 class="text-sm font-medium text-white mb-3">Payment History</h4>
+                      <div class="space-y-2">
+                        <div class="flex items-center justify-between p-3 bg-black/20 rounded-lg text-sm">
+                          <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <div>
+                              <div class="text-white">Final Payment</div>
+                              <div class="text-xs text-gray-500">Dec 5, 2025 • E-transfer</div>
+                            </div>
+                          </div>
+                          <div class="text-emerald-400 font-medium">$15,000.00</div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-black/20 rounded-lg text-sm">
+                          <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <div>
+                              <div class="text-white">Partial Payment</div>
+                              <div class="text-xs text-gray-500">Dec 1, 2025 • Check #1234</div>
+                            </div>
+                          </div>
+                          <div class="text-emerald-400 font-medium">$3,450.00</div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-black/20 rounded-lg text-sm">
+                          <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <div>
+                              <div class="text-white">Deposit</div>
+                              <div class="text-xs text-gray-500">Nov 15, 2025</div>
+                            </div>
+                          </div>
+                          <div class="text-emerald-400 font-medium">$300.00</div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Row 5: Ready to Invoice -->
+          <tr class="status-ready hover:bg-white/[0.02] cursor-pointer transition-colors group" onclick="toggleRow(5)">
+            <td class="px-4 py-4">
+              <svg id="chevron5" class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </td>
+            <td class="px-4 py-4">
+              <div class="font-medium text-white">Rhythm & Motion</div>
+              <div class="text-xs text-gray-500">Hamilton, ON • RAM</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-purple-500/15 text-purple-400">Ready to Invoice</span>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Submitted Dec 3</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm text-gray-300">Glow 2026</div>
+              <div class="text-xs text-gray-500">Apr 11-13</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="text-white font-medium">40</span>
+              <span class="text-gray-500">/40</span>
+            </td>
+            <td class="px-4 py-4 text-right text-gray-500">—</td>
+            <td class="px-4 py-4 text-center">
+              <button class="action-btn px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700">
+                Create Invoice
+              </button>
+            </td>
+            <td class="px-4 py-4">
+              <button class="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Expanded Row 5 (collapsed) -->
+          <tr>
+            <td colspan="8" class="p-0">
+              <div id="expand5" class="expandable">
+                <div>
+                  <div class="p-6 bg-gradient-to-b from-purple-500/5 to-transparent border-t border-purple-500/10">
+                    <p class="text-gray-400 text-sm">40 entries ready for invoicing. Click "Create Invoice" to generate and review before sending.</p>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-6 flex items-center justify-between text-sm text-gray-500">
+      <div>
+        Showing 5 of 31 studios
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span> 4 pending
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-red-400"></span> 1 issue
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-orange-400"></span> $65,432 outstanding
+        </span>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    function toggleRow(num) {
+      const expand = document.getElementById('expand' + num);
+      const chevron = document.getElementById('chevron' + num);
+
+      expand.classList.toggle('open');
+      chevron.classList.toggle('rotate-90');
+    }
+
+    function toggleSearch() {
+      const modal = document.getElementById('searchModal');
+      modal.classList.toggle('open');
+      if (modal.classList.contains('open')) {
+        modal.querySelector('input').focus();
+      }
+    }
+
+    function filterBy(stage) {
+      console.log('Filter by:', stage);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Cmd/Ctrl + K for search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleSearch();
+      }
+      // ESC to close search
+      if (e.key === 'Escape') {
+        document.getElementById('searchModal').classList.remove('open');
+      }
+    });
+
+    // Close modal on backdrop click
+    document.getElementById('searchModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        toggleSearch();
+      }
+    });
+  </script>
+
+</body>
+</html>

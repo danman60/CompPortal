@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline V2 - Enhanced Studio Management (with DB Status Indicators)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .gradient-bg {
+      background: linear-gradient(to bottom right, #0f172a, #111827, #000000);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .progress-step {
+      transition: all 0.3s ease;
+    }
+    .row-expand {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .row-expand.open {
+      max-height: 700px;
+    }
+    .capacity-panel {
+      max-height: 200px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .capacity-panel.collapsed {
+      max-height: 48px;
+    }
+    .db-status-badge {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+    .integrity-error {
+      animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen text-white p-6">
+  <div class="max-w-7xl mx-auto px-4">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+          <span class="text-4xl">~</span>
+          Reservation Pipeline
+        </h1>
+        <p class="text-gray-400 mt-1">Unified studio management dashboard with database status indicators</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-400">Last updated: Dec 6, 8:32 PM</span>
+        <button class="px-4 py-2 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-lg hover:bg-purple-500/30 transition-colors">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- COLLAPSIBLE Capacity Cards -->
+    <div id="capacityPanel" class="capacity-panel glass-card rounded-xl mb-6">
+      <div class="flex items-center justify-between p-4 cursor-pointer" onclick="toggleCapacity()">
+        <div class="flex items-center gap-4">
+          <span class="text-xl">~</span>
+          <span class="font-semibold text-white">Capacity Overview</span>
+          <span id="capacitySummary" class="text-gray-400 text-sm hidden">Glow 2026: 75% (450/600) | EMPWR 2026: 45% (270/600)</span>
+        </div>
+        <button class="text-gray-400 hover:text-white transition-colors">
+          <span id="capacityToggleIcon">v</span> <span id="capacityToggleText">Collapse</span>
+        </button>
+      </div>
+
+      <div id="capacityCards" class="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Competition Card 1 -->
+        <div class="bg-black/30 rounded-xl p-5 border border-white/10">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-white">Glow 2026</h3>
+              <p class="text-sm text-gray-400">Apr 11-13, 2026 - Toronto</p>
+            </div>
+            <span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-semibold rounded-full">3 PENDING</span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Capacity</span>
+              <span class="text-white font-semibold">450 / 600 tokens</span>
+            </div>
+            <div class="h-3 bg-white/10 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" style="width: 75%"></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-400">
+              <span>150 available</span>
+              <span>18 studios</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Competition Card 2 -->
+        <div class="bg-black/30 rounded-xl p-5 border border-white/10">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-white">EMPWR 2026</h3>
+              <p class="text-sm text-gray-400">May 15-17, 2026 - Vancouver</p>
+            </div>
+            <span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-semibold rounded-full">1 PENDING</span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Capacity</span>
+              <span class="text-white font-semibold">270 / 600 tokens</span>
+            </div>
+            <div class="h-3 bg-white/10 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" style="width: 45%"></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-400">
+              <span>330 available</span>
+              <span>12 studios</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Actions Bar -->
+    <div class="flex flex-wrap items-center gap-3 mb-6">
+      <button class="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-all font-semibold flex items-center gap-2 shadow-lg shadow-purple-500/20">
+        <span class="text-lg">+</span> Add Studio with Reservation
+      </button>
+      <button class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium flex items-center gap-2 border border-white/20">
+        <span>~</span> Bulk Import Studios
+      </button>
+      <button class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium flex items-center gap-2 border border-white/20">
+        <span>@</span> Send Bulk Invites
+      </button>
+      <button class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium flex items-center gap-2 border border-white/20">
+        <span>#</span> Bulk Create Invoices
+      </button>
+      <button class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium flex items-center gap-2 border border-white/20">
+        <span>!</span> Send Payment Reminders
+      </button>
+      <button class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium flex items-center gap-2 border border-white/20">
+        <span>~</span> Export Report
+      </button>
+    </div>
+
+    <!-- Filter Bar with DB Status Legend -->
+    <div class="glass-card rounded-xl p-4 mb-6">
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- Competition Filter -->
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs text-gray-400 mb-1">Competition</label>
+          <select class="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option>All Competitions</option>
+            <option>Glow 2026</option>
+            <option>EMPWR 2026</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs text-gray-400 mb-1">Pipeline Stage</label>
+          <select class="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option>All Stages</option>
+            <option>reservation.status = 'pending'</option>
+            <option>reservation.status = 'approved'</option>
+            <option>reservation.status = 'rejected'</option>
+            <option>reservation.status = 'summarized'</option>
+            <option>invoice.status = 'DRAFT'</option>
+            <option>invoice.status = 'SENT'</option>
+            <option>invoice.status = 'PAID'</option>
+            <option>invoice.status = 'VOIDED'</option>
+            <option>DATA INTEGRITY ISSUES</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div class="flex-1 min-w-[250px]">
+          <label class="block text-xs text-gray-400 mb-1">Search</label>
+          <input type="text" placeholder="Search studios..." class="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        <!-- Hide Completed Toggle -->
+        <div class="flex items-center gap-2 pt-5">
+          <input type="checkbox" id="hideCompleted" class="w-4 h-4 rounded bg-black/30 border-white/20">
+          <label for="hideCompleted" class="text-sm text-gray-300">Hide Completed</label>
+        </div>
+      </div>
+
+      <!-- DB Status Legend -->
+      <div class="mt-4 pt-4 border-t border-white/10">
+        <div class="text-xs text-gray-400 mb-2">Database Status Legend:</div>
+        <div class="flex flex-wrap gap-3 text-xs">
+          <span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded db-status-badge">pending</span>
+          <span class="px-2 py-1 bg-green-500/20 text-green-300 rounded db-status-badge">approved</span>
+          <span class="px-2 py-1 bg-red-500/20 text-red-300 rounded db-status-badge">rejected</span>
+          <span class="px-2 py-1 bg-orange-500/20 text-orange-300 rounded db-status-badge">summarized</span>
+          <span class="px-2 py-1 bg-purple-500/20 text-purple-300 rounded db-status-badge">DRAFT</span>
+          <span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded db-status-badge">SENT</span>
+          <span class="px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded db-status-badge">PAID</span>
+          <span class="px-2 py-1 bg-gray-500/20 text-gray-300 rounded db-status-badge">VOIDED</span>
+          <span class="px-2 py-1 bg-red-600/30 text-red-400 rounded db-status-badge border border-red-500">! INTEGRITY</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="flex flex-wrap gap-2 mb-6">
+      <button class="px-4 py-2 bg-purple-500 text-white rounded-lg font-semibold flex items-center gap-2">
+        All <span class="px-2 py-0.5 bg-white/20 rounded-full text-xs">31</span>
+      </button>
+      <button class="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 flex items-center gap-2">
+        Pending <span class="px-2 py-0.5 bg-yellow-500 text-black rounded-full text-xs font-bold">4</span>
+      </button>
+      <button class="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 flex items-center gap-2">
+        Approved <span class="px-2 py-0.5 bg-green-500 text-white rounded-full text-xs">8</span>
+      </button>
+      <button class="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 flex items-center gap-2">
+        Summarized <span class="px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs">6</span>
+      </button>
+      <button class="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 flex items-center gap-2">
+        Invoiced <span class="px-2 py-0.5 bg-purple-500 text-white rounded-full text-xs">7</span>
+      </button>
+      <button class="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 flex items-center gap-2">
+        Paid <span class="px-2 py-0.5 bg-green-500 text-white rounded-full text-xs">5</span>
+      </button>
+      <button class="px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 flex items-center gap-2 border border-red-500/30">
+        Issues <span class="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold">1</span>
+      </button>
+    </div>
+
+    <!-- Pipeline Table -->
+    <div class="glass-card rounded-xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-black/40">
+            <tr>
+              <th class="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase w-10"></th>
+              <th class="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white">
+                <div class="flex items-center gap-1">Studio <span class="text-purple-400">^</span></div>
+              </th>
+              <th class="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">
+                DB Status
+              </th>
+              <th class="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white">
+                Competition
+              </th>
+              <th class="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white">
+                Progress
+              </th>
+              <th class="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white">
+                Entries
+              </th>
+              <th class="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white">
+                Balance
+              </th>
+              <th class="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">
+                Next Action
+              </th>
+              <th class="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase w-20">
+
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+
+            <!-- Row 1: Fever - Invoice Sent -->
+            <tr class="hover:bg-white/5 cursor-pointer" onclick="toggleRow('row1')">
+              <td class="px-4 py-4">
+                <span id="arrow1" class="text-gray-400 transition-transform inline-block rotate-90">></span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-white">Fever Dance Academy</div>
+                <div class="text-xs text-gray-400">Toronto, ON</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex flex-col gap-1">
+                  <span class="db-status-badge px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded inline-block w-fit">res: summarized</span>
+                  <span class="db-status-badge px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded inline-block w-fit">inv: SENT</span>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-gray-300">Glow 2026</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1">
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                  <div class="w-6 h-0.5 bg-green-500"></div>
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                  <div class="w-6 h-0.5 bg-green-500"></div>
+                  <div class="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-xs">o</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs text-gray-500">-</div>
+                </div>
+                <div class="text-center text-xs text-gray-400 mt-1">78% - Awaiting Payment</div>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <span class="text-white font-semibold">45</span>
+                <span class="text-gray-400">/50</span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <div class="text-orange-400 font-semibold">$32,427</div>
+                <div class="text-xs text-gray-400">Due Dec 15</div>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <span class="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-semibold rounded-full">
+                  Add Payment
+                </span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <button class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10" onclick="event.stopPropagation(); toggleQuickMenu('menu1')">
+                  *
+                </button>
+              </td>
+            </tr>
+
+            <!-- Expanded Details for Row 1 -->
+            <tr id="row1" class="row-expand open bg-black/20">
+              <td colspan="9" class="p-0">
+                <div class="p-6 border-t border-white/10">
+                  <!-- Database Status Bar -->
+                  <div class="mb-4 p-3 bg-black/40 rounded-lg border border-white/10">
+                    <div class="text-xs text-gray-400 mb-2">Raw Database Status:</div>
+                    <div class="flex flex-wrap gap-3 text-xs font-mono">
+                      <span class="text-gray-300">reservations.status = <span class="text-orange-400">'summarized'</span></span>
+                      <span class="text-gray-300">summaries.id = <span class="text-green-400">EXISTS</span></span>
+                      <span class="text-gray-300">invoices.status = <span class="text-blue-400">'SENT'</span></span>
+                      <span class="text-gray-300">invoice_payments.count = <span class="text-gray-400">0</span></span>
+                      <span class="text-gray-300">deposit_paid_at = <span class="text-green-400">'2025-12-01'</span></span>
+                      <span class="text-gray-300">is_closed = <span class="text-gray-400">false</span></span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+                    <!-- Reservation -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">v</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Reservation</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded text-xs">summarized</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Spaces</span>
+                          <span class="text-white">50 confirmed</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Deposit</span>
+                          <span class="text-green-400">$500 paid</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Approved</span>
+                          <span class="text-white">Dec 1, 2025</span>
+                        </div>
+                      </div>
+                      <div class="mt-3 grid grid-cols-2 gap-2">
+                        <button class="px-3 py-2 bg-blue-500/20 text-blue-300 text-sm rounded-lg border border-blue-500/30 hover:bg-blue-500/30">
+                          Edit Spaces
+                        </button>
+                        <button class="px-3 py-2 bg-green-500/20 text-green-300 text-sm rounded-lg border border-green-500/30 hover:bg-green-500/30">
+                          Edit Deposit
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">v</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Summary</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">EXISTS</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Entries</span>
+                          <span class="text-white">45 routines</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Unused</span>
+                          <span class="text-yellow-400">5 spaces</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Submitted</span>
+                          <span class="text-white">Dec 3, 2025</span>
+                        </div>
+                      </div>
+                      <button class="mt-3 w-full px-3 py-2 bg-orange-500/20 text-orange-300 text-sm rounded-lg border border-orange-500/30 hover:bg-orange-500/30">
+                        Reopen Summary
+                      </button>
+                    </div>
+
+                    <!-- Invoice -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-purple-500/30">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">o</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Invoice</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs">SENT</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Invoice #</span>
+                          <a href="#" class="text-purple-400 hover:underline">INV-2026-FEV</a>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Total</span>
+                          <span class="text-white">$32,927</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Sent</span>
+                          <span class="text-white">Dec 4, 2025</span>
+                        </div>
+                      </div>
+                      <div class="mt-3 grid grid-cols-2 gap-2">
+                        <button class="px-3 py-2 bg-white/10 text-white text-sm rounded-lg hover:bg-white/20">
+                          View
+                        </button>
+                        <button class="px-3 py-2 bg-red-500/20 text-red-300 text-sm rounded-lg border border-red-500/30 hover:bg-red-500/30">
+                          Void
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Payment -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-400">-</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Payment</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-gray-500/20 text-gray-300 rounded text-xs">0 payments</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Deposit</span>
+                          <span class="text-green-400">$500</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Remaining</span>
+                          <span class="text-orange-400 font-semibold">$32,427</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Due Date</span>
+                          <span class="text-white">Dec 15, 2025</span>
+                        </div>
+                      </div>
+                      <div class="mt-3 grid grid-cols-2 gap-2">
+                        <button class="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm rounded-lg font-semibold hover:opacity-90">
+                          + Payment
+                        </button>
+                        <button class="px-3 py-2 bg-green-500/20 text-green-300 text-sm rounded-lg border border-green-500/30 hover:bg-green-500/30">
+                          Mark Paid
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Activity Log -->
+                  <div class="mt-6 bg-black/30 rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center justify-between mb-3">
+                      <div class="flex items-center gap-2">
+                        <span class="text-lg">~</span>
+                        <span class="text-sm font-semibold text-white">Activity Log</span>
+                      </div>
+                      <button class="text-xs text-purple-400 hover:underline">View All</button>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex items-center gap-3 text-sm">
+                        <span class="text-gray-500 w-24">Dec 4, 10:30</span>
+                        <span class="text-gray-300">Invoice sent to fever@dance.com</span>
+                        <span class="text-gray-500 text-xs">by Sarah</span>
+                      </div>
+                      <div class="flex items-center gap-3 text-sm">
+                        <span class="text-gray-500 w-24">Dec 4, 10:28</span>
+                        <span class="text-gray-300">Invoice INV-2026-FEV created</span>
+                        <span class="text-gray-500 text-xs">by Sarah</span>
+                      </div>
+                      <div class="flex items-center gap-3 text-sm">
+                        <span class="text-gray-500 w-24">Dec 3, 4:15</span>
+                        <span class="text-gray-300">Summary submitted: 45 entries, 5 unused</span>
+                        <span class="text-gray-500 text-xs">by Studio</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2: Elite Star - DATA INTEGRITY ERROR -->
+            <tr class="hover:bg-red-500/10 cursor-pointer bg-red-500/5 integrity-error" onclick="toggleRow('row2')">
+              <td class="px-4 py-4">
+                <span id="arrow2" class="text-gray-400 transition-transform inline-block">></span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-white flex items-center gap-2">
+                  Elite Star Dance
+                  <span class="px-2 py-0.5 bg-red-500 text-white text-xs rounded font-bold">! ERROR</span>
+                </div>
+                <div class="text-xs text-gray-400">Mississauga, ON</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex flex-col gap-1">
+                  <span class="db-status-badge px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded inline-block w-fit">res: summarized</span>
+                  <span class="db-status-badge px-2 py-0.5 bg-red-600/30 text-red-400 rounded inline-block w-fit border border-red-500">summary: MISSING!</span>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-gray-300">Glow 2026</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1">
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                  <div class="w-6 h-0.5 bg-green-500"></div>
+                  <div class="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-xs font-bold">!</div>
+                  <div class="w-6 h-0.5 bg-red-500"></div>
+                  <div class="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-xs">x</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs text-gray-500">-</div>
+                </div>
+                <div class="text-center text-xs text-red-400 mt-1 font-semibold">DATA INTEGRITY ERROR</div>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <span class="text-white font-semibold">12</span>
+                <span class="text-gray-400">/15</span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <div class="text-red-400 font-semibold">--</div>
+                <div class="text-xs text-red-400">FIX REQUIRED</div>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <span class="px-3 py-1 bg-red-500/20 text-red-300 text-xs font-semibold rounded-full border border-red-500/50">
+                  Fix Data Issue
+                </span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <button class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10">*</button>
+              </td>
+            </tr>
+            <tr id="row2" class="row-expand bg-red-500/5">
+              <td colspan="9" class="p-0">
+                <div class="p-6 border-t border-red-500/30">
+                  <!-- INTEGRITY ERROR ALERT -->
+                  <div class="mb-4 p-4 bg-red-500/20 rounded-lg border border-red-500/50">
+                    <div class="flex items-center gap-3 mb-2">
+                      <span class="text-2xl">!</span>
+                      <span class="text-lg font-bold text-red-300">Data Integrity Error Detected</span>
+                    </div>
+                    <div class="text-sm text-red-200 mb-3">
+                      The reservation status is 'summarized' but no summary record exists in the database.
+                      This inconsistency can occur when an invoice is voided without properly resetting the reservation.
+                    </div>
+                    <div class="flex gap-3">
+                      <button class="px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg font-semibold hover:opacity-90">
+                        Reset to Approved Status
+                      </button>
+                      <button class="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20">
+                        View Debug Info
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Database Status Bar -->
+                  <div class="mb-4 p-3 bg-black/40 rounded-lg border border-red-500/30">
+                    <div class="text-xs text-gray-400 mb-2">Raw Database Status (MISMATCH):</div>
+                    <div class="flex flex-wrap gap-3 text-xs font-mono">
+                      <span class="text-gray-300">reservations.status = <span class="text-orange-400">'summarized'</span></span>
+                      <span class="text-red-400 font-bold">summaries.id = NULL (SHOULD EXIST!)</span>
+                      <span class="text-gray-300">invoices.status = <span class="text-gray-400">'VOIDED'</span></span>
+                      <span class="text-gray-300">entries.count = <span class="text-gray-400">12</span></span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Reservation -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-red-500/30">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">!</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Reservation</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded text-xs">summarized (INVALID)</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Spaces</span>
+                          <span class="text-white">15 confirmed</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Deposit</span>
+                          <span class="text-green-400">$150 paid</span>
+                        </div>
+                      </div>
+                      <button class="mt-3 w-full px-3 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm rounded-lg font-semibold hover:opacity-90">
+                        Reset to 'approved'
+                      </button>
+                    </div>
+                    <!-- Summary - MISSING -->
+                    <div class="bg-red-500/10 rounded-xl p-4 border border-red-500/50">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 font-bold">X</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Summary</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-red-600/30 text-red-400 rounded text-xs border border-red-500">MISSING</span>
+                        </div>
+                      </div>
+                      <div class="text-sm text-red-300 mt-4">
+                        No summary record found despite reservation.status = 'summarized'.
+                        <br/><br/>
+                        The studio has 12 entries in 'draft' status that need to be submitted.
+                      </div>
+                    </div>
+                    <!-- Invoice - VOIDED -->
+                    <div class="bg-gray-500/10 rounded-xl p-4 border border-gray-500/30 opacity-75">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-gray-500/20 flex items-center justify-center text-gray-400">x</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Invoice</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-gray-500/20 text-gray-300 rounded text-xs">VOIDED</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Previous #</span>
+                          <span class="text-gray-500 line-through">INV-2026-ELS</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Voided</span>
+                          <span class="text-gray-400">Dec 5, 2025</span>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Payment - Blocked -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10 opacity-50">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-500">-</div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-400">Payment</div>
+                          <div class="text-xs text-gray-500">Blocked</div>
+                        </div>
+                      </div>
+                      <div class="text-sm text-gray-500 mt-4">
+                        Fix data integrity issue first.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3: Inspire - Pending -->
+            <tr class="hover:bg-white/5 cursor-pointer" onclick="toggleRow('row3')">
+              <td class="px-4 py-4">
+                <span id="arrow3" class="text-gray-400 transition-transform inline-block">></span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-white">Inspire Dance Studio</div>
+                <div class="text-xs text-gray-400">Ottawa, ON</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="db-status-badge px-2 py-0.5 bg-yellow-500/20 text-yellow-300 rounded inline-block">res: pending</span>
+              </td>
+              <td class="px-4 py-4 text-gray-300">Glow 2026</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1">
+                  <div class="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-xs text-black">?</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs text-gray-500">-</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs text-gray-500">-</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs text-gray-500">-</div>
+                </div>
+                <div class="text-center text-xs text-yellow-400 mt-1">Pending Approval</div>
+              </td>
+              <td class="px-4 py-4 text-center text-gray-400">--</td>
+              <td class="px-4 py-4 text-center text-gray-400">--</td>
+              <td class="px-4 py-4 text-center">
+                <span class="px-3 py-1 bg-yellow-500/20 text-yellow-300 text-xs font-semibold rounded-full">
+                  Approve / Reject
+                </span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <button class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10">*</button>
+              </td>
+            </tr>
+            <tr id="row3" class="row-expand bg-black/20">
+              <td colspan="9" class="p-0">
+                <div class="p-6 border-t border-white/10">
+                  <!-- Database Status Bar -->
+                  <div class="mb-4 p-3 bg-black/40 rounded-lg border border-white/10">
+                    <div class="text-xs text-gray-400 mb-2">Raw Database Status:</div>
+                    <div class="flex flex-wrap gap-3 text-xs font-mono">
+                      <span class="text-gray-300">reservations.status = <span class="text-yellow-400">'pending'</span></span>
+                      <span class="text-gray-300">spaces_requested = <span class="text-white">25</span></span>
+                      <span class="text-gray-300">spaces_confirmed = <span class="text-gray-400">NULL</span></span>
+                      <span class="text-gray-300">deposit_paid_at = <span class="text-gray-400">NULL</span></span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Reservation - PENDING -->
+                    <div class="bg-yellow-500/10 rounded-xl p-4 border border-yellow-500/30">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">?</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Reservation</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-yellow-500/20 text-yellow-300 rounded text-xs">pending</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Requested</span>
+                          <span class="text-white">25 spaces</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Deposit</span>
+                          <span class="text-yellow-400">$250 pending</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Requested</span>
+                          <span class="text-white">Dec 6, 2025</span>
+                        </div>
+                      </div>
+                      <div class="mt-4 space-y-2">
+                        <div class="flex gap-2">
+                          <button class="flex-1 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm rounded-lg font-semibold hover:opacity-90">
+                            v Approve
+                          </button>
+                          <button class="flex-1 px-3 py-2 bg-red-500/20 text-red-300 text-sm rounded-lg border border-red-500/30 hover:bg-red-500/30">
+                            x Reject
+                          </button>
+                        </div>
+                        <button class="w-full px-3 py-2 bg-blue-500/20 text-blue-300 text-sm rounded-lg border border-blue-500/30 hover:bg-blue-500/30">
+                          Adjust Spaces (25 -> ?)
+                        </button>
+                      </div>
+                    </div>
+                    <!-- Summary - Locked -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10 opacity-50">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-500">-</div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-400">Summary</div>
+                          <div class="text-xs text-gray-500">Locked</div>
+                        </div>
+                      </div>
+                      <div class="text-sm text-gray-500 mt-4">
+                        Awaiting reservation approval.
+                      </div>
+                    </div>
+                    <!-- Invoice - Locked -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10 opacity-50">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-500">-</div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-400">Invoice</div>
+                          <div class="text-xs text-gray-500">Locked</div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Payment - Locked -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10 opacity-50">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-500">-</div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-400">Payment</div>
+                          <div class="text-xs text-gray-500">Locked</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4: Rhythm - Approved (Awaiting Summary) -->
+            <tr class="hover:bg-white/5 cursor-pointer" onclick="toggleRow('row4')">
+              <td class="px-4 py-4">
+                <span id="arrow4" class="text-gray-400 transition-transform inline-block">></span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-white">Rhythm & Motion</div>
+                <div class="text-xs text-gray-400">Hamilton, ON</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex flex-col gap-1">
+                  <span class="db-status-badge px-2 py-0.5 bg-green-500/20 text-green-300 rounded inline-block w-fit">res: approved</span>
+                  <span class="db-status-badge px-2 py-0.5 bg-gray-500/20 text-gray-300 rounded inline-block w-fit">summary: none</span>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-gray-300">Glow 2026</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1">
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-xs">o</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs text-gray-500">-</div>
+                  <div class="w-6 h-0.5 bg-white/20"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs text-gray-500">-</div>
+                </div>
+                <div class="text-center text-xs text-blue-400 mt-1">Awaiting Summary</div>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <span class="text-white font-semibold">18</span>
+                <span class="text-gray-400">/25</span>
+                <div class="text-xs text-gray-400">drafts</div>
+              </td>
+              <td class="px-4 py-4 text-center text-gray-400">--</td>
+              <td class="px-4 py-4 text-center">
+                <span class="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-semibold rounded-full">
+                  Remind Studio
+                </span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <button class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10">*</button>
+              </td>
+            </tr>
+            <tr id="row4" class="row-expand bg-black/20">
+              <td colspan="9" class="p-0">
+                <div class="p-6 border-t border-white/10">
+                  <!-- Database Status Bar -->
+                  <div class="mb-4 p-3 bg-black/40 rounded-lg border border-white/10">
+                    <div class="text-xs text-gray-400 mb-2">Raw Database Status:</div>
+                    <div class="flex flex-wrap gap-3 text-xs font-mono">
+                      <span class="text-gray-300">reservations.status = <span class="text-green-400">'approved'</span></span>
+                      <span class="text-gray-300">summaries.id = <span class="text-gray-400">NULL</span></span>
+                      <span class="text-gray-300">entries.count = <span class="text-blue-400">18</span></span>
+                      <span class="text-gray-300">entries[].status = <span class="text-yellow-400">'draft'</span></span>
+                      <span class="text-gray-300">deposit_paid_at = <span class="text-green-400">'2025-12-03'</span></span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Reservation -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">v</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Reservation</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">approved</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Spaces</span>
+                          <span class="text-white">25 confirmed</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Deposit</span>
+                          <span class="text-green-400">$250 paid</span>
+                        </div>
+                      </div>
+                      <div class="mt-3 grid grid-cols-2 gap-2">
+                        <button class="px-3 py-2 bg-blue-500/20 text-blue-300 text-sm rounded-lg border border-blue-500/30 hover:bg-blue-500/30">
+                          Edit Spaces
+                        </button>
+                        <button class="px-3 py-2 bg-green-500/20 text-green-300 text-sm rounded-lg border border-green-500/30 hover:bg-green-500/30">
+                          Edit Deposit
+                        </button>
+                      </div>
+                    </div>
+                    <!-- Summary - In Progress -->
+                    <div class="bg-blue-500/10 rounded-xl p-4 border border-blue-500/30">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">o</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Summary</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-gray-500/20 text-gray-300 rounded text-xs">not submitted</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Drafts Created</span>
+                          <span class="text-white">18 entries</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Spaces Left</span>
+                          <span class="text-yellow-400">7 remaining</span>
+                        </div>
+                      </div>
+                      <div class="mt-3 space-y-2">
+                        <button class="w-full px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm rounded-lg font-semibold hover:opacity-90">
+                          Send Reminder
+                        </button>
+                        <button class="w-full px-3 py-2 bg-white/10 text-white text-sm rounded-lg hover:bg-white/20">
+                          View Entries
+                        </button>
+                      </div>
+                    </div>
+                    <!-- Invoice - Locked -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10 opacity-50">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-500">-</div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-400">Invoice</div>
+                          <div class="text-xs text-gray-500">Awaiting Summary</div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Payment - Locked -->
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10 opacity-50">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-500">-</div>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-400">Payment</div>
+                          <div class="text-xs text-gray-500">Awaiting Invoice</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 5: Rejected Studio -->
+            <tr class="hover:bg-white/5 cursor-pointer" onclick="toggleRow('row5')">
+              <td class="px-4 py-4">
+                <span id="arrow5" class="text-gray-400 transition-transform inline-block">></span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-400">Metro Dance Co</div>
+                <div class="text-xs text-gray-500">London, ON</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="db-status-badge px-2 py-0.5 bg-red-500/20 text-red-300 rounded inline-block">res: rejected</span>
+              </td>
+              <td class="px-4 py-4 text-gray-400">Glow 2026</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1">
+                  <div class="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-xs">x</div>
+                  <div class="w-6 h-0.5 bg-white/10"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-xs text-gray-600">-</div>
+                  <div class="w-6 h-0.5 bg-white/10"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-xs text-gray-600">-</div>
+                  <div class="w-6 h-0.5 bg-white/10"></div>
+                  <div class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-xs text-gray-600">-</div>
+                </div>
+                <div class="text-center text-xs text-red-400 mt-1">Rejected</div>
+              </td>
+              <td class="px-4 py-4 text-center text-gray-500">--</td>
+              <td class="px-4 py-4 text-center text-gray-500">--</td>
+              <td class="px-4 py-4 text-center">
+                <span class="px-3 py-1 bg-gray-500/20 text-gray-400 text-xs font-semibold rounded-full">
+                  Reconsider
+                </span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <button class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10">*</button>
+              </td>
+            </tr>
+            <tr id="row5" class="row-expand bg-black/20">
+              <td colspan="9" class="p-0">
+                <div class="p-6 border-t border-white/10">
+                  <!-- Database Status Bar -->
+                  <div class="mb-4 p-3 bg-black/40 rounded-lg border border-white/10">
+                    <div class="text-xs text-gray-400 mb-2">Raw Database Status:</div>
+                    <div class="flex flex-wrap gap-3 text-xs font-mono">
+                      <span class="text-gray-300">reservations.status = <span class="text-red-400">'rejected'</span></span>
+                      <span class="text-gray-300">internal_notes = <span class="text-gray-400">'Capacity full for this location'</span></span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div class="bg-red-500/10 rounded-xl p-4 border border-red-500/30">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">x</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Reservation</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-xs">rejected</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Requested</span>
+                          <span class="text-gray-400 line-through">40 spaces</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Reason</span>
+                          <span class="text-red-300">Capacity full</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Rejected</span>
+                          <span class="text-gray-400">Dec 2, 2025</span>
+                        </div>
+                      </div>
+                      <button class="mt-3 w-full px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm rounded-lg font-semibold hover:opacity-90">
+                        Approve (Reconsider)
+                      </button>
+                    </div>
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/10 opacity-30 col-span-3">
+                      <div class="text-gray-500 text-sm">
+                        Further stages blocked due to rejection.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 6: Dance Plus - Fully Paid -->
+            <tr class="hover:bg-white/5 cursor-pointer bg-green-500/5" onclick="toggleRow('row6')">
+              <td class="px-4 py-4">
+                <span id="arrow6" class="text-gray-400 transition-transform inline-block">></span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-white">Dance Plus Academy</div>
+                <div class="text-xs text-gray-400">Barrie, ON</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex flex-col gap-1">
+                  <span class="db-status-badge px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded inline-block w-fit">res: summarized</span>
+                  <span class="db-status-badge px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded inline-block w-fit">inv: PAID</span>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-gray-300">Glow 2026</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1">
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                  <div class="w-6 h-0.5 bg-green-500"></div>
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                  <div class="w-6 h-0.5 bg-green-500"></div>
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                  <div class="w-6 h-0.5 bg-green-500"></div>
+                  <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-xs">v</div>
+                </div>
+                <div class="text-center text-xs text-green-400 mt-1">Complete v</div>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <span class="text-white font-semibold">30</span>
+                <span class="text-gray-400">/30</span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <div class="text-green-400 font-semibold">$0</div>
+                <div class="text-xs text-green-400">Paid in Full</div>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded-full">
+                  Complete
+                </span>
+              </td>
+              <td class="px-4 py-4 text-center">
+                <button class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10">*</button>
+              </td>
+            </tr>
+            <tr id="row6" class="row-expand bg-black/20">
+              <td colspan="9" class="p-0">
+                <div class="p-6 border-t border-white/10">
+                  <!-- Database Status Bar -->
+                  <div class="mb-4 p-3 bg-green-500/10 rounded-lg border border-green-500/30">
+                    <div class="text-xs text-gray-400 mb-2">Raw Database Status (COMPLETE):</div>
+                    <div class="flex flex-wrap gap-3 text-xs font-mono">
+                      <span class="text-gray-300">reservations.status = <span class="text-orange-400">'summarized'</span></span>
+                      <span class="text-gray-300">summaries.id = <span class="text-green-400">EXISTS</span></span>
+                      <span class="text-gray-300">invoices.status = <span class="text-emerald-400">'PAID'</span></span>
+                      <span class="text-gray-300">invoice_payments.count = <span class="text-green-400">2</span></span>
+                      <span class="text-gray-300">balance_remaining = <span class="text-green-400">$0</span></span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- All Complete Cards -->
+                    <div class="bg-green-500/5 rounded-xl p-4 border border-green-500/20">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">v</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Reservation</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-orange-500/20 text-orange-300 rounded text-xs">summarized</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Spaces</span>
+                          <span class="text-white">30 confirmed</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Deposit</span>
+                          <span class="text-green-400">$300 paid</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="bg-green-500/5 rounded-xl p-4 border border-green-500/20">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">v</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Summary</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">EXISTS</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Entries</span>
+                          <span class="text-white">30 routines</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Unused</span>
+                          <span class="text-green-400">0 spaces</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="bg-green-500/5 rounded-xl p-4 border border-green-500/20">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">v</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Invoice</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-xs">PAID</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Invoice #</span>
+                          <a href="#" class="text-purple-400 hover:underline">INV-2026-DPA</a>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Total</span>
+                          <span class="text-white">$18,750</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="bg-green-500/5 rounded-xl p-4 border border-green-500/20">
+                      <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">v</div>
+                        <div>
+                          <div class="text-sm font-semibold text-white">Payment</div>
+                          <span class="db-status-badge px-2 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">2 payments</span>
+                        </div>
+                      </div>
+                      <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Total Paid</span>
+                          <span class="text-green-400 font-semibold">$18,750</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span class="text-gray-400">Balance</span>
+                          <span class="text-green-400">$0</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Summary Footer -->
+    <div class="mt-6 text-center text-sm text-gray-400">
+      Showing 6 of 31 studios - 4 pending - 1 integrity issue - $65,432 outstanding
+    </div>
+
+  </div>
+
+  <!-- Quick Actions Dropdown -->
+  <div id="menu1" class="hidden fixed bg-gray-900 border border-white/20 rounded-xl shadow-2xl p-2 min-w-[220px] z-50" style="top: 200px; right: 100px;">
+    <div class="text-xs text-gray-400 px-3 py-2 font-semibold uppercase">Quick Actions</div>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>@</span> Email Studio
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>~</span> View Entries
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>#</span> View Invoice
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>$</span> Record Payment
+    </button>
+    <div class="border-t border-white/10 my-2"></div>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>*</span> Edit Spaces
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>*</span> Edit Deposit
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>~</span> Reopen Summary
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg flex items-center gap-2">
+      <span>!</span> Void Invoice
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-orange-400 hover:bg-orange-500/10 rounded-lg flex items-center gap-2">
+      <span>~</span> Void & Reopen Summary
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-purple-400 hover:bg-purple-500/10 rounded-lg flex items-center gap-2">
+      <span>~</span> Void & Regenerate Invoice
+    </button>
+    <div class="border-t border-white/10 my-2"></div>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>@</span> Isolate Studio View
+    </button>
+    <button class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-lg flex items-center gap-2">
+      <span>~</span> View Activity Log
+    </button>
+    <div class="border-t border-white/10 my-2"></div>
+    <button class="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg flex items-center gap-2">
+      <span>X</span> Delete Studio
+    </button>
+  </div>
+
+  <script>
+    function toggleRow(rowId) {
+      const row = document.getElementById(rowId);
+      const arrowNum = rowId.replace('row', '');
+      const arrow = document.getElementById('arrow' + arrowNum);
+
+      if (row.classList.contains('open')) {
+        row.classList.remove('open');
+        arrow.classList.remove('rotate-90');
+      } else {
+        row.classList.add('open');
+        arrow.classList.add('rotate-90');
+      }
+    }
+
+    function toggleCapacity() {
+      const panel = document.getElementById('capacityPanel');
+      const icon = document.getElementById('capacityToggleIcon');
+      const text = document.getElementById('capacityToggleText');
+      const summary = document.getElementById('capacitySummary');
+
+      if (panel.classList.contains('collapsed')) {
+        panel.classList.remove('collapsed');
+        icon.textContent = 'v';
+        text.textContent = 'Collapse';
+        summary.classList.add('hidden');
+      } else {
+        panel.classList.add('collapsed');
+        icon.textContent = '>';
+        text.textContent = 'Expand';
+        summary.classList.remove('hidden');
+      }
+    }
+
+    function toggleQuickMenu(menuId) {
+      const menu = document.getElementById(menuId);
+      menu.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#menu1') && !e.target.closest('button')) {
+        document.getElementById('menu1').classList.add('hidden');
+      }
+    });
+  </script>
+
+</body>
+</html>
