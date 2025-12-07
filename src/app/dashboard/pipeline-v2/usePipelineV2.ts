@@ -10,6 +10,8 @@ import type {
   PipelineStats,
   DisplayStatus,
   CompetitionCapacity,
+  SortState,
+  SortField,
 } from './types';
 
 /**
@@ -27,6 +29,9 @@ export function usePipelineV2() {
 
   // State for expanded rows
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // State for sorting
+  const [sort, setSort] = useState<SortState>({ field: 'studio', direction: 'asc' });
 
   // State for modals
   const [approvalModalReservation, setApprovalModalReservation] = useState<PipelineReservation | null>(null);
@@ -271,7 +276,18 @@ export function usePipelineV2() {
     return Array.from(compMap.values());
   }, [reservations, competitionsData]);
 
-  // Filter reservations
+  // Status priority for sorting (lower number = earlier in workflow)
+  const statusPriority: Record<DisplayStatus, number> = {
+    pending_review: 1,
+    approved: 2,
+    ready_to_invoice: 3,
+    invoice_sent: 4,
+    paid_complete: 5,
+    needs_attention: 0, // Always first when sorting asc
+    rejected: 6,
+  };
+
+  // Filter and sort reservations
   const filteredReservations = useMemo(() => {
     let result = reservations;
 
@@ -303,8 +319,31 @@ export function usePipelineV2() {
       result = result.filter((r) => r.displayStatus !== 'paid_complete');
     }
 
+    // Apply sorting
+    result = [...result].sort((a, b) => {
+      const multiplier = sort.direction === 'asc' ? 1 : -1;
+
+      switch (sort.field) {
+        case 'studio':
+          return multiplier * a.studioName.localeCompare(b.studioName);
+        case 'status':
+          return multiplier * (statusPriority[a.displayStatus] - statusPriority[b.displayStatus]);
+        case 'competition':
+          return multiplier * a.competitionName.localeCompare(b.competitionName);
+        case 'entries':
+          return multiplier * (a.entryCount - b.entryCount);
+        case 'balance': {
+          const balanceA = a.invoiceBalanceRemaining ?? 0;
+          const balanceB = b.invoiceBalanceRemaining ?? 0;
+          return multiplier * (balanceA - balanceB);
+        }
+        default:
+          return 0;
+      }
+    });
+
     return result;
-  }, [reservations, filters]);
+  }, [reservations, filters, sort, statusPriority]);
 
   // Calculate stats
   const stats = useMemo((): PipelineStats => {
@@ -334,6 +373,14 @@ export function usePipelineV2() {
     });
   }, []);
 
+  // Handle column sort toggle
+  const handleSort = useCallback((field: SortField) => {
+    setSort((prev) => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  }, []);
+
   return {
     // Data
     reservations: filteredReservations,
@@ -351,6 +398,10 @@ export function usePipelineV2() {
     // Row expansion
     expandedRowId,
     toggleRowExpansion,
+
+    // Sorting
+    sort,
+    handleSort,
 
     // Mutations
     mutations,

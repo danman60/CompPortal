@@ -132,6 +132,15 @@ export interface FilterState {
   hideCompleted: boolean;
 }
 
+// Sort configuration for pipeline table
+export type SortField = 'studio' | 'status' | 'competition' | 'entries' | 'balance';
+export type SortDirection = 'asc' | 'desc';
+
+export interface SortState {
+  field: SortField;
+  direction: SortDirection;
+}
+
 // Stats for KPI cards
 export interface PipelineStats {
   total: number;

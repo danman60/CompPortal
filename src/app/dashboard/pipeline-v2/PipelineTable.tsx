@@ -1,16 +1,58 @@
 'use client';
 
 import { Fragment } from 'react';
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { PipelineRow } from './PipelineRow';
 import { PipelineExpandedRow } from './PipelineExpandedRow';
 import { PipelineMobileCard } from './PipelineMobileCard';
-import type { PipelineReservation, PipelineMutations } from './types';
+import type { PipelineReservation, PipelineMutations, SortState, SortField } from './types';
 
 interface PipelineTableProps {
   reservations: PipelineReservation[];
   expandedRowId: string | null;
   onRowExpand: (id: string) => void;
   mutations: PipelineMutations;
+  sort: SortState;
+  onSort: (field: SortField) => void;
+}
+
+// Sortable column header component
+function SortableHeader({
+  label,
+  field,
+  currentSort,
+  onSort,
+  className = '',
+}: {
+  label: string;
+  field: SortField;
+  currentSort: SortState;
+  onSort: (field: SortField) => void;
+  className?: string;
+}) {
+  const isActive = currentSort.field === field;
+
+  return (
+    <th
+      className={`px-4 py-4 text-xs font-medium text-purple-200/60 uppercase tracking-wider cursor-pointer hover:text-purple-200 hover:bg-white/5 transition-colors select-none ${className}`}
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        <span>{label}</span>
+        <span className="inline-flex">
+          {isActive ? (
+            currentSort.direction === 'asc' ? (
+              <ChevronUp className="w-4 h-4 text-purple-300" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-purple-300" />
+            )
+          ) : (
+            <ChevronsUpDown className="w-4 h-4 opacity-40" />
+          )}
+        </span>
+      </div>
+    </th>
+  );
 }
 
 export function PipelineTable({
@@ -18,6 +60,8 @@ export function PipelineTable({
   expandedRowId,
   onRowExpand,
   mutations,
+  sort,
+  onSort,
 }: PipelineTableProps) {
   if (reservations.length === 0) {
     return (
@@ -47,24 +91,14 @@ export function PipelineTable({
             <thead className="bg-white/5">
               <tr className="border-b border-white/10">
                 <th className="w-8 px-4 py-4"></th>
-                <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                  Studio
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                  Competition
-                </th>
+                <SortableHeader label="Studio" field="studio" currentSort={sort} onSort={onSort} className="text-left" />
+                <SortableHeader label="Status" field="status" currentSort={sort} onSort={onSort} className="text-left" />
+                <SortableHeader label="Competition" field="competition" currentSort={sort} onSort={onSort} className="text-left" />
                 <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
                   Progress
                 </th>
-                <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                  Entries
-                </th>
-                <th className="px-4 py-4 text-right text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                  Balance
-                </th>
+                <SortableHeader label="Entries" field="entries" currentSort={sort} onSort={onSort} className="text-center" />
+                <SortableHeader label="Balance" field="balance" currentSort={sort} onSort={onSort} className="text-right" />
                 <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
                   Action
                 </th>

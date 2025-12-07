@@ -11,6 +11,8 @@ import type {
   FilterState,
   DisplayStatus,
   CompetitionCapacity,
+  SortState,
+  SortField,
 } from './types';
 
 interface PipelineV2Props {
@@ -23,6 +25,8 @@ interface PipelineV2Props {
   expandedRowId: string | null;
   toggleRowExpansion: (id: string) => void;
   mutations: PipelineMutations;
+  sort: SortState;
+  handleSort: (field: SortField) => void;
 }
 
 export function PipelineV2({
@@ -35,6 +39,8 @@ export function PipelineV2({
   expandedRowId,
   toggleRowExpansion,
   mutations,
+  sort,
+  handleSort,
 }: PipelineV2Props) {
   const handleStatusFilterClick = (status: DisplayStatus | null) => {
     setFilters({ ...filters, status });
@@ -140,6 +146,8 @@ export function PipelineV2({
           expandedRowId={expandedRowId}
           onRowExpand={toggleRowExpansion}
           mutations={mutations}
+          sort={sort}
+          onSort={handleSort}
         />
       </div>
     </div>

@@ -1466,10 +1466,13 @@ export const reservationRouter = router({
       return null;
     };
 
-    // Fetch all reservations with extended data
+    // Fetch all reservations with extended data (exclude cancelled)
     const reservations = await prisma.reservations.findMany({
       where: {
         tenant_id: ctx.tenantId!,
+        status: {
+          not: 'cancelled',
+        },
       },
       select: {
         // Main reservation fields
