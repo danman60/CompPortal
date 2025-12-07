@@ -133,7 +133,7 @@ export interface FilterState {
 }
 
 // Sort configuration for pipeline table
-export type SortField = 'studio' | 'status' | 'competition' | 'entries' | 'balance';
+export type SortField = 'studio' | 'status' | 'competition' | 'progress' | 'entries' | 'balance';
 export type SortDirection = 'asc' | 'desc';
 
 export interface SortState {

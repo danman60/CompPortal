@@ -330,6 +330,9 @@ export function usePipelineV2() {
           return multiplier * (statusPriority[a.displayStatus] - statusPriority[b.displayStatus]);
         case 'competition':
           return multiplier * a.competitionName.localeCompare(b.competitionName);
+        case 'progress':
+          // Progress sorts by workflow position (same as status priority)
+          return multiplier * (statusPriority[a.displayStatus] - statusPriority[b.displayStatus]);
         case 'entries':
           return multiplier * (a.entryCount - b.entryCount);
         case 'balance': {

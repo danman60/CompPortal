@@ -94,9 +94,7 @@ export function PipelineTable({
                 <SortableHeader label="Studio" field="studio" currentSort={sort} onSort={onSort} className="text-left" />
                 <SortableHeader label="Status" field="status" currentSort={sort} onSort={onSort} className="text-left" />
                 <SortableHeader label="Competition" field="competition" currentSort={sort} onSort={onSort} className="text-left" />
-                <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
-                  Progress
-                </th>
+                <SortableHeader label="Progress" field="progress" currentSort={sort} onSort={onSort} className="text-center" />
                 <SortableHeader label="Entries" field="entries" currentSort={sort} onSort={onSort} className="text-center" />
                 <SortableHeader label="Balance" field="balance" currentSort={sort} onSort={onSort} className="text-right" />
                 <th className="px-4 py-4 text-center text-xs font-medium text-purple-200/60 uppercase tracking-wider">
