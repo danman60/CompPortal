@@ -66,10 +66,14 @@ export function usePipelineV2() {
     },
   });
 
-  // Reduce capacity (adjust spaces)
-  const reduceCapacityMutation = trpc.reservation.reduceCapacity.useMutation({
-    onSuccess: async () => {
-      toast.success('Spaces adjusted successfully');
+  // Adjust spaces (both increase and decrease)
+  const adjustSpacesMutation = trpc.reservation.adjustReservationSpaces.useMutation({
+    onSuccess: async (result) => {
+      // Check for capacity warning (optional field) - use error toast since warning doesn't exist
+      if ('capacityWarning' in result && result.capacityWarning) {
+        toast.error(result.capacityWarning as string, { duration: 5000 });
+      }
+      toast.success(result.message || 'Spaces adjusted successfully');
       await refetch();
       await refetchCompetitions();
     },
@@ -164,10 +168,9 @@ export function usePipelineV2() {
       await rejectMutation.mutateAsync(input);
     },
     adjustSpaces: async (input) => {
-      await reduceCapacityMutation.mutateAsync({
-        id: input.id,
-        newCapacity: input.newSpaces,
-        confirmed: true,
+      await adjustSpacesMutation.mutateAsync({
+        reservationId: input.id,
+        newSpacesConfirmed: input.newSpaces,
       });
     },
     updateDeposit: async (input) => {
