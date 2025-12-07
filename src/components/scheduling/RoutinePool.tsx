@@ -17,6 +17,7 @@
  */
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { RoutineCard, Routine, ViewMode } from './RoutineCard';
 import { useDraggable } from '@dnd-kit/core';
 
@@ -719,6 +720,7 @@ function FilterDropdown({
   const selectedCount = selectedIds.length;
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);  // For portaled menu
 
   // Track position - null until calculated (prevents flash at wrong position)
   const [dropdownPosition, setDropdownPosition] = React.useState<{ top: number; left: number } | null>(null);
@@ -763,7 +765,11 @@ function FilterDropdown({
     if (!isOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // Check if click is inside wrapper (button) OR dropdown menu (portaled)
+      const isInsideWrapper = dropdownRef.current?.contains(target);
+      const isInsideMenu = menuRef.current?.contains(target);
+      if (!isInsideWrapper && !isInsideMenu) {
         onToggleOpen(); // Close the dropdown
       }
     };
@@ -786,9 +792,10 @@ function FilterDropdown({
         {label}{selectedCount > 0 && ` (${selectedCount})`} ▼
       </button>
 
-      {/* Only render dropdown when position is calculated - prevents flash at wrong position */}
-      {isOpen && dropdownPosition && (
+      {/* PORTAL: Render dropdown at document.body to escape backdrop-filter containing block */}
+      {isOpen && dropdownPosition && typeof window !== 'undefined' && createPortal(
         <div
+          ref={menuRef}
           className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar"
           style={{
             top: `${dropdownPosition.top}px`,
@@ -812,7 +819,8 @@ function FilterDropdown({
               {option.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
