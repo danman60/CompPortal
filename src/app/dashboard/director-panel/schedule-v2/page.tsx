@@ -215,6 +215,7 @@ function SortableScheduleRow({
   onUnschedule,
   isSelected,
   onToggleSelection,
+  eligibleAwards,
 }: {
   item: ScheduleItem;
   routine?: RoutineData;
@@ -232,6 +233,7 @@ function SortableScheduleRow({
   onUnschedule?: () => void;
   isSelected?: boolean;
   onToggleSelection?: (e: React.MouseEvent) => void;
+  eligibleAwards?: Array<{ category: string; count: number }>; // P2-12
 }) {
   const {
     attributes,
@@ -293,6 +295,20 @@ function SortableScheduleRow({
               )}
             </div>
           </div>
+          {/* P2-12: Show eligible awards for adjudication blocks */}
+          {isAward && eligibleAwards && eligibleAwards.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              <span className="text-[10px] text-amber-400/80 font-medium">Awards ready:</span>
+              {eligibleAwards.slice(0, 6).map((award, idx) => (
+                <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded">
+                  {award.category} ({award.count})
+                </span>
+              ))}
+              {eligibleAwards.length > 6 && (
+                <span className="text-[10px] text-amber-400/60">+{eligibleAwards.length - 6} more</span>
+              )}
+            </div>
+          )}
         </td>
       </tr>
     );
@@ -439,6 +455,7 @@ function DroppableScheduleTable({
   setSelectedScheduledIds,
   lastClickedScheduledRoutineId,
   setLastClickedScheduledRoutineId,
+  eligibleAwardsByBlockId,
 }: {
   scheduleOrder: string[];
   routinesMap: Map<string, RoutineData>;
@@ -455,6 +472,7 @@ function DroppableScheduleTable({
   setSelectedScheduledIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   lastClickedScheduledRoutineId: string | null;
   setLastClickedScheduledRoutineId: React.Dispatch<React.SetStateAction<string | null>>;
+  eligibleAwardsByBlockId: Map<string, Array<{ category: string; count: number }>>; // P2-12
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'schedule-drop-zone' });
 
@@ -541,6 +559,7 @@ function DroppableScheduleTable({
         onUnschedule={!isBlock ? () => onUnscheduleRoutine(actualId) : undefined}
         isSelected={!isBlock && selectedScheduledIds.has(actualId)}
         onToggleSelection={!isBlock ? (e) => handleScheduledRoutineClick(actualId, e) : undefined}
+        eligibleAwards={isBlock ? eligibleAwardsByBlockId.get(actualId) : undefined}
       />
     );
   });
@@ -918,6 +937,60 @@ export default function ScheduleV2Page() {
     categoryLastRoutine.forEach(id => trophies.add(id));
     return trophies;
   }, [scheduleOrder, routinesMap]);
+
+  // ===== P2-12: COMPUTED: Eligible Awards per Adjudication Block =====
+  // For each adjudication block, find award categories where ALL routines are scheduled BEFORE the block
+  const eligibleAwardsByBlockId = useMemo(() => {
+    const result = new Map<string, Array<{ category: string; count: number }>>();
+
+    // First, count total routines per category across all routines
+    const totalPerCategory = new Map<string, number>();
+    routinesMap.forEach((routine) => {
+      const key = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
+      totalPerCategory.set(key, (totalPerCategory.get(key) || 0) + 1);
+    });
+
+    // For each position in the schedule, track how many routines of each category have been seen
+    const categoryCountSoFar = new Map<string, number>();
+
+    scheduleOrder.forEach((id) => {
+      if (id.startsWith('block-')) {
+        const blockId = id.replace('block-', '');
+        const block = blocksMap.get(blockId);
+
+        // Only calculate for adjudication (award) blocks
+        if (block?.block_type === 'award') {
+          const eligible: Array<{ category: string; count: number }> = [];
+
+          // Check each category - if we have seen all routines in this category, it is eligible
+          totalPerCategory.forEach((total, categoryKey) => {
+            const seen = categoryCountSoFar.get(categoryKey) || 0;
+            if (seen === total) {
+              const [size, age, classification] = categoryKey.split('|');
+              eligible.push({
+                category: `${age} ${size} ${classification}`,
+                count: total,
+              });
+            }
+          });
+
+          // Sort by category name
+          eligible.sort((a, b) => a.category.localeCompare(b.category));
+          result.set(blockId, eligible);
+        }
+      } else {
+        // Count this routine category
+        const routine = routinesMap.get(id);
+        if (routine) {
+          const key = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
+          categoryCountSoFar.set(key, (categoryCountSoFar.get(key) || 0) + 1);
+        }
+      }
+    });
+
+    return result;
+  }, [scheduleOrder, routinesMap, blocksMap]);
+
 
   // ===== COMPUTED: Global Entry Numbers =====
   const entryNumbersByRoutineId = useMemo(() => {
@@ -2146,6 +2219,7 @@ export default function ScheduleV2Page() {
                 sessionColors={sessionColors}
                 dayStartMinutes={getDayStartMinutes(selectedDate)}
                 entryNumbersByRoutineId={entryNumbersByRoutineId}
+                eligibleAwardsByBlockId={eligibleAwardsByBlockId}
                 onDeleteBlock={handleDeleteBlock}
                 onEditBlock={(block) => {
                   // Find routine number that comes before this block for auto-population
