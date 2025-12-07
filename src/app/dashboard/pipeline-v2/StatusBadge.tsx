@@ -4,42 +4,49 @@ import type { PipelineStatusBadgeProps, DisplayStatus } from './types';
 
 const statusConfig: Record<
   DisplayStatus,
-  { label: string; bgColor: string; textColor: string }
+  { label: string; bgColor: string; textColor: string; borderColor: string }
 > = {
   pending_review: {
     label: 'Pending Review',
-    bgColor: 'bg-amber-100',
-    textColor: 'text-amber-800',
+    bgColor: 'bg-yellow-500/20',
+    textColor: 'text-yellow-300',
+    borderColor: 'border-yellow-500/50',
   },
   approved: {
     label: 'Approved',
-    bgColor: 'bg-blue-100',
-    textColor: 'text-blue-800',
+    bgColor: 'bg-blue-500/20',
+    textColor: 'text-blue-300',
+    borderColor: 'border-blue-500/50',
   },
   ready_to_invoice: {
     label: 'Ready to Invoice',
-    bgColor: 'bg-purple-100',
-    textColor: 'text-purple-800',
+    bgColor: 'bg-purple-500/20',
+    textColor: 'text-purple-300',
+    borderColor: 'border-purple-500/50',
   },
   invoice_sent: {
-    label: 'Invoice Sent',
-    bgColor: 'bg-cyan-100',
-    textColor: 'text-cyan-800',
+    label: 'Awaiting Payment',
+    bgColor: 'bg-cyan-500/20',
+    textColor: 'text-cyan-300',
+    borderColor: 'border-cyan-500/50',
   },
   paid_complete: {
-    label: 'Paid - Complete',
-    bgColor: 'bg-green-100',
-    textColor: 'text-green-800',
+    label: 'Paid',
+    bgColor: 'bg-emerald-500/20',
+    textColor: 'text-emerald-300',
+    borderColor: 'border-emerald-500/50',
   },
   needs_attention: {
     label: 'Needs Attention',
-    bgColor: 'bg-red-100',
-    textColor: 'text-red-800',
+    bgColor: 'bg-red-500/20',
+    textColor: 'text-red-300',
+    borderColor: 'border-red-500/50',
   },
   rejected: {
     label: 'Rejected',
-    bgColor: 'bg-gray-100',
-    textColor: 'text-gray-800',
+    bgColor: 'bg-gray-500/20',
+    textColor: 'text-gray-300',
+    borderColor: 'border-gray-500/50',
   },
 };
 
@@ -48,7 +55,7 @@ export function StatusBadge({ status }: PipelineStatusBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}
+      className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${config.bgColor} ${config.textColor} ${config.borderColor}`}
     >
       {config.label}
     </span>

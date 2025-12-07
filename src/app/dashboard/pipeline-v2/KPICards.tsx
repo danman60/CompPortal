@@ -8,71 +8,64 @@ interface KPICard {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   getValue: (stats: PipelineKPICardsProps['stats']) => number;
-  bgColor: string;
-  iconColor: string;
-  borderColor: string;
+  textColor: string;
+  hoverBorder: string;
 }
 
 const kpiCards: KPICard[] = [
   {
     key: 'pending_review',
-    label: 'Pending',
+    label: 'Pending Review',
     icon: Clock,
     getValue: (s) => s.pending,
-    bgColor: 'bg-amber-50',
-    iconColor: 'text-amber-600',
-    borderColor: 'border-amber-200',
+    textColor: 'text-yellow-400',
+    hoverBorder: 'hover:border-yellow-400/50',
   },
   {
     key: 'approved',
     label: 'Approved',
     icon: CheckCircle,
     getValue: (s) => s.approved,
-    bgColor: 'bg-blue-50',
-    iconColor: 'text-blue-600',
-    borderColor: 'border-blue-200',
+    textColor: 'text-blue-400',
+    hoverBorder: 'hover:border-blue-400/50',
   },
   {
     key: 'ready_to_invoice',
     label: 'Ready to Invoice',
     icon: FileText,
     getValue: (s) => s.readyToInvoice,
-    bgColor: 'bg-purple-50',
-    iconColor: 'text-purple-600',
-    borderColor: 'border-purple-200',
+    textColor: 'text-purple-400',
+    hoverBorder: 'hover:border-purple-400/50',
   },
   {
     key: 'invoice_sent',
     label: 'Awaiting Payment',
     icon: Send,
     getValue: (s) => s.awaitingPayment,
-    bgColor: 'bg-cyan-50',
-    iconColor: 'text-cyan-600',
-    borderColor: 'border-cyan-200',
+    textColor: 'text-cyan-400',
+    hoverBorder: 'hover:border-cyan-400/50',
   },
   {
     key: 'paid_complete',
     label: 'Paid',
     icon: DollarSign,
     getValue: (s) => s.paidComplete,
-    bgColor: 'bg-green-50',
-    iconColor: 'text-green-600',
-    borderColor: 'border-green-200',
+    textColor: 'text-emerald-400',
+    hoverBorder: 'hover:border-emerald-400/50',
   },
   {
     key: 'needs_attention',
     label: 'Needs Attention',
     icon: AlertTriangle,
     getValue: (s) => s.needsAttention,
-    bgColor: 'bg-red-50',
-    iconColor: 'text-red-600',
-    borderColor: 'border-red-200',
+    textColor: 'text-red-400',
+    hoverBorder: 'hover:border-red-400/50',
   },
 ];
 
 export function KPICards({ stats, onFilterClick, activeFilter }: PipelineKPICardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {kpiCards.map((card) => {
         const Icon = card.icon;
         const value = card.getValue(stats);
@@ -82,18 +75,20 @@ export function KPICards({ stats, onFilterClick, activeFilter }: PipelineKPICard
           <button
             key={card.key || 'all'}
             onClick={() => onFilterClick(isActive ? null : card.key)}
-            className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+            className={`bg-white/10 backdrop-blur-sm rounded-xl p-4 border-2 transition-all cursor-pointer ${
               isActive
-                ? `${card.bgColor} ${card.borderColor} border-2 shadow-sm`
-                : `bg-white border-gray-200 hover:${card.bgColor} hover:${card.borderColor}`
+                ? 'border-white/40 bg-white/20'
+                : `border-white/20 ${card.hoverBorder}`
             }`}
           >
-            <div className={`p-2 rounded-lg ${card.bgColor}`}>
-              <Icon className={`h-4 w-4 ${card.iconColor}`} />
-            </div>
-            <div className="text-left">
-              <p className="text-lg font-semibold text-gray-900">{value}</p>
-              <p className="text-xs text-gray-500">{card.label}</p>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg bg-white/10`}>
+                <Icon className={`h-4 w-4 ${card.textColor}`} />
+              </div>
+              <div className="text-left">
+                <p className={`text-2xl font-bold ${card.textColor}`}>{value}</p>
+                <p className="text-xs text-purple-200/60 mt-1">{card.label}</p>
+              </div>
             </div>
           </button>
         );

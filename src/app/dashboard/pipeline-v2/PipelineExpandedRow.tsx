@@ -10,7 +10,8 @@ import {
   RefreshCw,
   Ban,
   Edit,
-  Trash2,
+  ClipboardList,
+  Clock,
 } from 'lucide-react';
 import type { PipelineExpandedRowProps } from './types';
 
@@ -31,122 +32,148 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
   };
 
   return (
-    <tr className="bg-indigo-50/30">
-      <td colSpan={9} className="px-4 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column: Deposit & Reservation details */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Deposit & Payment
+    <tr className="bg-white/5">
+      <td colSpan={10} className="px-4 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Column 1: Reservation Details */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-purple-400" />
+              Reservation
             </h4>
-            <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-2">
+            <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Deposit Amount</span>
-                <span className="font-medium text-gray-900">
-                  {formatCurrency(r.depositAmount)}
+                <span className="text-purple-200/60">Spaces</span>
+                <span className="font-medium text-white">
+                  {r.spacesConfirmed}/{r.spacesRequested}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Deposit Paid</span>
-                <span className="font-medium text-gray-900">
-                  {r.depositPaidAt ? formatDate(r.depositPaidAt) : 'Not paid'}
-                </span>
+                <span className="text-purple-200/60">Entries</span>
+                <span className="font-medium text-white">{r.entryCount}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Approved</span>
-                <span className="font-medium text-gray-900">{formatDate(r.approvedAt)}</span>
+                <span className="text-purple-200/60">Approved</span>
+                <span className="font-medium text-white">{formatDate(r.approvedAt)}</span>
               </div>
-              {!r.depositPaidAt && r.displayStatus !== 'pending_review' && (
+              <button
+                onClick={() => mutations.openSpacesModal(r.id)}
+                className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-purple-200 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20"
+              >
+                <Edit className="h-3 w-3" />
+                Adjust Spaces
+              </button>
+            </div>
+          </div>
+
+          {/* Column 2: Summary */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-blue-400" />
+              Summary
+            </h4>
+            <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-purple-200/60">Status</span>
+                <span className={`font-medium ${r.hasSummary ? 'text-emerald-400' : 'text-purple-200/60'}`}>
+                  {r.hasSummary ? 'Submitted' : 'Pending'}
+                </span>
+              </div>
+              {r.summarySubmittedAt && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-purple-200/60">Submitted</span>
+                  <span className="font-medium text-white">{formatDate(r.summarySubmittedAt)}</span>
+                </div>
+              )}
+              {r.hasIssue && (
+                <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg mt-2">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-amber-300">Issue Detected</p>
+                      <p className="text-xs text-amber-200/80 mt-0.5">{r.hasIssue}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {r.hasSummary && r.displayStatus !== 'paid_complete' && (
                 <button
-                  onClick={() => mutations.openDepositModal(r.id)}
-                  className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md border border-indigo-200"
+                  onClick={() => mutations.reopenSummary({ reservationId: r.id })}
+                  disabled={mutations.isReopeningSummary}
+                  className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
                 >
-                  Record Deposit
+                  <RefreshCw className="h-3 w-3" />
+                  {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
                 </button>
               )}
             </div>
           </div>
 
-          {/* Middle column: Invoice details */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+          {/* Column 3: Invoice */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <FileText className="h-4 w-4 text-cyan-400" />
               Invoice
             </h4>
             {r.invoiceId ? (
-              <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-2">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Invoice #</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-purple-200/60">Invoice #</span>
+                  <span className="font-medium text-white">
                     {r.invoiceNumber || r.invoiceId.slice(0, 8)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Total</span>
-                  <span className="font-medium text-gray-900">
-                    {formatCurrency(r.invoiceAmount)}
-                  </span>
+                  <span className="text-purple-200/60">Total</span>
+                  <span className="font-medium text-white">{formatCurrency(r.invoiceAmount)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Paid</span>
-                  <span className="font-medium text-gray-900">
-                    {formatCurrency(r.invoiceAmountPaid)}
-                  </span>
+                  <span className="text-purple-200/60">Paid</span>
+                  <span className="font-medium text-emerald-400">{formatCurrency(r.invoiceAmountPaid)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Balance</span>
-                  <span
-                    className={`font-medium ${
-                      (r.invoiceBalanceRemaining || 0) > 0 ? 'text-red-600' : 'text-green-600'
-                    }`}
-                  >
+                  <span className="text-purple-200/60">Balance</span>
+                  <span className={`font-semibold ${(r.invoiceBalanceRemaining || 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
                     {formatCurrency(r.invoiceBalanceRemaining)}
                   </span>
                 </div>
-
-                {/* Invoice actions */}
-                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                <div className="flex gap-2 pt-2 border-t border-white/10">
                   {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
                     <>
                       <button
                         onClick={() => mutations.sendInvoice({ invoiceId: r.invoiceId! })}
                         disabled={mutations.isSendingInvoice}
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-cyan-600 bg-cyan-50 hover:bg-cyan-100 rounded-md"
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg border border-cyan-500/30"
                       >
                         <Send className="h-3 w-3" />
-                        {mutations.isSendingInvoice ? 'Sending...' : 'Send'}
+                        {mutations.isSendingInvoice ? '...' : 'Send'}
                       </button>
                       <button
                         onClick={() => mutations.openPaymentModal(r.invoiceId!)}
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-md"
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
                       >
                         <DollarSign className="h-3 w-3" />
-                        Add Payment
+                        Payment
+                      </button>
+                      <button
+                        onClick={() => mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' })}
+                        disabled={mutations.isVoidingInvoice}
+                        className="px-2 py-1.5 text-xs font-medium text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg border border-red-500/30"
+                      >
+                        <Ban className="h-3 w-3" />
                       </button>
                     </>
-                  )}
-                  {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
-                    <button
-                      onClick={() =>
-                        mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' })
-                      }
-                      disabled={mutations.isVoidingInvoice}
-                      className="px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md"
-                    >
-                      <Ban className="h-3 w-3" />
-                    </button>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg p-4 border border-gray-200 text-center">
-                <p className="text-sm text-gray-500">No invoice created yet</p>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 text-center">
+                <p className="text-sm text-purple-200/60">No invoice yet</p>
                 {r.displayStatus === 'ready_to_invoice' && (
                   <button
                     onClick={() => mutations.createInvoice({ reservationId: r.id })}
                     disabled={mutations.isCreatingInvoice}
-                    className="mt-2 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md"
+                    className="mt-3 w-full px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 rounded-lg shadow-lg shadow-purple-500/25"
                   >
                     {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
                   </button>
@@ -155,70 +182,50 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
             )}
           </div>
 
-          {/* Right column: Actions & notes */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Summary & Actions
+          {/* Column 4: Payment & Activity */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-emerald-400" />
+              Payment
             </h4>
-            <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-2">
+            <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Summary Status</span>
-                <span className="font-medium text-gray-900">
-                  {r.hasSummary ? 'Submitted' : 'Not submitted'}
+                <span className="text-purple-200/60">Deposit</span>
+                <span className="font-medium text-white">{formatCurrency(r.depositAmount)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-purple-200/60">Deposit Paid</span>
+                <span className={`font-medium ${r.depositPaidAt ? 'text-emerald-400' : 'text-purple-200/60'}`}>
+                  {r.depositPaidAt ? formatDate(r.depositPaidAt) : 'Pending'}
                 </span>
               </div>
-              {r.summarySubmittedAt && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Submitted At</span>
-                  <span className="font-medium text-gray-900">
-                    {formatDate(r.summarySubmittedAt)}
-                  </span>
-                </div>
-              )}
-
-              {/* Issue warning */}
-              {r.hasIssue && (
-                <div className="p-2 bg-amber-50 border border-amber-200 rounded-md">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-amber-800">Data Issue Detected</p>
-                      <p className="text-xs text-amber-700 mt-0.5">{r.hasIssue}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Notes */}
-              {r.internalNotes && (
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 mb-1">Internal Notes</p>
-                  <p className="text-sm text-gray-700">{r.internalNotes}</p>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex gap-2 pt-2 border-t border-gray-100">
-                {r.hasSummary && r.displayStatus !== 'paid_complete' && (
-                  <button
-                    onClick={() => mutations.reopenSummary({ reservationId: r.id })}
-                    disabled={mutations.isReopeningSummary}
-                    className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-md"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
-                  </button>
-                )}
+              {!r.depositPaidAt && r.displayStatus !== 'pending_review' && (
                 <button
-                  onClick={() => mutations.openSpacesModal(r.id)}
-                  className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-md"
+                  onClick={() => mutations.openDepositModal(r.id)}
+                  className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
                 >
-                  <Edit className="h-3 w-3" />
-                  Adjust Spaces
+                  Record Deposit
                 </button>
-              </div>
+              )}
+              {/* Notes section */}
+              {r.internalNotes && (
+                <div className="pt-2 mt-2 border-t border-white/10">
+                  <p className="text-xs text-purple-200/60 mb-1">Notes</p>
+                  <p className="text-sm text-purple-200">{r.internalNotes}</p>
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+
+        {/* Activity Log placeholder */}
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="flex items-center gap-2 text-sm text-purple-200/60">
+            <Clock className="h-4 w-4" />
+            <span>Last activity: {r.lastAction || 'No recent activity'}</span>
+            {r.lastActionDate && (
+              <span className="text-purple-200/40">• {formatDate(r.lastActionDate)}</span>
+            )}
           </div>
         </div>
       </td>

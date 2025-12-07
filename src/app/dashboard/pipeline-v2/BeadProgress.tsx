@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import { Check, AlertTriangle, X } from 'lucide-react';
 import type { PipelineBeadProgressProps, DisplayStatus } from './types';
 
 // Map display status to step completion (0-4)
@@ -25,7 +25,7 @@ function getStepFromStatus(status: DisplayStatus): number {
   }
 }
 
-const steps = ['Requested', 'Approved', 'Summary In', 'Invoiced', 'Paid'];
+const steps = ['Requested', 'Approved', 'Summary', 'Invoiced', 'Paid'];
 
 export function BeadProgress({ status, hasIssue }: PipelineBeadProgressProps) {
   const currentStep = getStepFromStatus(status);
@@ -33,54 +33,65 @@ export function BeadProgress({ status, hasIssue }: PipelineBeadProgressProps) {
   const hasWarning = hasIssue !== null || status === 'needs_attention';
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center">
       {steps.map((step, index) => {
-        const isCompleted = index < currentStep;
-        const isCurrent = index === currentStep;
-        const isPast = index <= currentStep;
+        const isCompleted = index < currentStep || (status === 'paid_complete' && index === 4);
+        const isCurrent = index === currentStep && status !== 'paid_complete';
+        const isFuture = index > currentStep;
 
-        // Determine bead color
-        let beadColor = 'bg-gray-200'; // future step
+        // Determine bead styling
+        let beadBg = 'bg-white/10'; // future step
+        let borderColor = 'border-white/20';
+        let iconColor = 'text-purple-200/30';
+
         if (isRejected && index === 0) {
-          beadColor = 'bg-red-500';
+          beadBg = 'bg-red-500/20';
+          borderColor = 'border-red-500';
+          iconColor = 'text-red-400';
         } else if (isCompleted) {
-          beadColor = 'bg-green-500';
+          beadBg = 'bg-emerald-500/20';
+          borderColor = 'border-emerald-500';
+          iconColor = 'text-emerald-400';
         } else if (isCurrent) {
           if (hasWarning) {
-            beadColor = 'bg-amber-500';
-          } else if (status === 'paid_complete') {
-            beadColor = 'bg-green-500';
+            beadBg = 'bg-amber-500/20';
+            borderColor = 'border-amber-500';
+            iconColor = 'text-amber-400';
           } else {
-            beadColor = 'bg-indigo-500';
+            beadBg = 'bg-indigo-500/20';
+            borderColor = 'border-indigo-500';
+            iconColor = 'text-indigo-400';
           }
         }
 
         return (
           <div key={step} className="flex items-center">
-            {/* Bead */}
+            {/* Bead - 24px (h-6 w-6) with border */}
             <div
-              className={`w-2.5 h-2.5 rounded-full ${beadColor} ${
-                isCurrent ? 'ring-2 ring-offset-1 ring-current' : ''
-              }`}
+              className={`w-6 h-6 rounded-full ${beadBg} border-2 ${borderColor} flex items-center justify-center transition-all`}
               title={step}
-            />
+            >
+              {isCompleted && !isRejected && (
+                <Check className={`h-3.5 w-3.5 ${iconColor}`} strokeWidth={3} />
+              )}
+              {isRejected && index === 0 && (
+                <X className={`h-3.5 w-3.5 ${iconColor}`} strokeWidth={3} />
+              )}
+              {isCurrent && hasWarning && (
+                <AlertTriangle className={`h-3 w-3 ${iconColor}`} />
+              )}
+            </div>
             {/* Connector line (except after last) */}
             {index < steps.length - 1 && (
               <div
-                className={`w-3 h-0.5 ${
-                  isPast && index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                className={`w-4 h-0.5 ${
+                  isCompleted ? 'bg-emerald-500' : 'bg-white/10'
                 }`}
               />
             )}
           </div>
         );
       })}
-      {/* Warning indicator */}
-      {hasWarning && (
-        <span title={hasIssue || 'Needs attention'}>
-          <AlertTriangle className="h-4 w-4 text-amber-500 ml-1" />
-        </span>
-      )}
     </div>
   );
 }
