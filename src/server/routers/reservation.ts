@@ -1426,11 +1426,14 @@ export const reservationRouter = router({
         return 'needs_attention';
       }
 
-      // Check invoice status
+      // Check invoice status - treat VOID/VOIDED as no invoice (ready for new invoice)
       if (invoice) {
         if (invoice.status === 'PAID') return 'paid_complete';
         if (invoice.status === 'SENT') return 'invoice_sent';
-        if (invoice.status === 'VOIDED') return 'needs_attention';
+        if (invoice.status === 'VOIDED' || invoice.status === 'VOID') {
+          // Voided invoice = treat as ready to create new invoice
+          return 'ready_to_invoice';
+        }
         if (invoice.status === 'DRAFT') return 'invoice_sent';
       }
 
@@ -1454,12 +1457,12 @@ export const reservationRouter = router({
       if (status === 'summarized' && !hasSummary) {
         return 'STATUS_MISMATCH: Status is summarized but no summary record exists';
       }
-      if (invoice && status !== 'invoiced' && status !== 'summarized') {
+      // Skip status mismatch check for voided invoices - treat as no invoice
+      const isVoidedInvoice = invoice?.status === 'VOID' || invoice?.status === 'VOIDED';
+      if (invoice && !isVoidedInvoice && status !== 'invoiced' && status !== 'summarized') {
         return 'STATUS_MISMATCH: Invoice exists but reservation status is not invoiced';
       }
-      if (invoice?.status === 'VOIDED') {
-        return 'VOIDED_INVOICE: Invoice was voided, studio may need to be reset';
-      }
+      // Don't flag voided invoices as issues - they're ready for new invoice
       return null;
     };
 
