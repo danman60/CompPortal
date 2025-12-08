@@ -265,6 +265,29 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     },
   });
 
+
+  // CD: Approve pending space request mutation
+  const approveSpaceRequestMutation = trpc.reservation.approveSpaceRequest.useMutation({
+    onSuccess: () => {
+      toast.success('Space request approved! Additional spaces have been allocated.');
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
+  // CD: Deny pending space request mutation
+  const denySpaceRequestMutation = trpc.reservation.denySpaceRequest.useMutation({
+    onSuccess: () => {
+      toast.success('Space request denied.');
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
   const handleApprove = (reservationId: string, spacesRequested: number) => {
     const spacesConfirmed = prompt(
       `Approve this reservation.\n\nRoutines Requested: ${spacesRequested}\n\nHow many routines to allocate?`,
@@ -1183,6 +1206,44 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                               >
                                 ✏️ Edit Deposit
                               </button>
+                            )}
+                                                        {/* Pending Space Request - show if studio requested more spaces */}
+                            {(reservation as any).pending_additional_spaces && (
+                              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-lg">📋</span>
+                                  <span className="text-sm font-semibold text-amber-300">Pending Space Request</span>
+                                </div>
+                                <div className="space-y-1 mb-3 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-amber-200/70">Requested</span>
+                                    <span className="font-medium text-amber-300">+{(reservation as any).pending_additional_spaces}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-amber-200/70">New Total</span>
+                                    <span className="font-medium text-amber-300">{(reservation.spaces_confirmed || 0) + (reservation as any).pending_additional_spaces}</span>
+                                  </div>
+                                  {(reservation as any).pending_spaces_justification && (
+                                    <p className="text-xs text-amber-200/80 mt-2 italic">&quot;{(reservation as any).pending_spaces_justification}&quot;</p>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => approveSpaceRequestMutation.mutate({ reservationId: reservation.id })}
+                                    disabled={approveSpaceRequestMutation.isPending}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-sm font-medium text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg border border-emerald-500/40"
+                                  >
+                                    ✓ {approveSpaceRequestMutation.isPending ? '...' : 'Approve'}
+                                  </button>
+                                  <button
+                                    onClick={() => denySpaceRequestMutation.mutate({ reservationId: reservation.id })}
+                                    disabled={denySpaceRequestMutation.isPending}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-sm font-medium text-red-300 bg-red-500/20 hover:bg-red-500/30 rounded-lg border border-red-500/40"
+                                  >
+                                    ✗ {denySpaceRequestMutation.isPending ? '...' : 'Deny'}
+                                  </button>
+                                </div>
+                              </div>
                             )}
                             {/* Move Reservation - always available for CD */}
                             <button
