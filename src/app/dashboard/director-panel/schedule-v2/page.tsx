@@ -45,7 +45,8 @@ import { DayTabs } from '@/components/scheduling/DayTabs';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
 import { ManageStudioVisibilityModal } from '@/components/scheduling/ManageStudioVisibilityModal';
-import { ScheduleStatusToggle } from '@/components/scheduling/ScheduleStatusToggle';
+import { StatusBadge } from '@/components/scheduling/StatusBadge';
+import { ActionsDropdown } from '@/components/scheduling/ActionsDropdown';
 import { AssignStudioCodesModal } from '@/components/AssignStudioCodesModal';
 import { ResetAllConfirmationModal } from '@/components/ResetAllConfirmationModal';
 import ScheduleSavingProgress from '@/components/ScheduleSavingProgress';
@@ -1939,22 +1940,66 @@ export default function ScheduleV2Page() {
       )}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-4">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-3">
         <div className="flex items-center justify-between">
           <div>
             {/* P1-8: No version UI - live updates only */}
-            <h1 className="text-2xl font-bold text-white">Schedule V2</h1>
+            <h1 className="text-xl font-bold text-white">Schedule V2</h1>
             <p className="text-sm text-purple-100 mt-1">
               {competition?.name || 'Test Competition'} • {selectedDate} • {scheduleOrder.filter(id => !id.startsWith('block-')).length} scheduled
             </p>
           </div>
-          <div className="flex gap-2 items-center flex-wrap">
-            {/* P1-8: Feedback Toggle (no version dependency) */}
+          {/* Center: Status Badge + Actions Dropdown */}
+          <div className="flex items-center gap-3">
+            {/* Status Badge (Tentative/Final) */}
+            {competition && (
+              <StatusBadge
+                status={(competition.schedule_state as 'tentative' | 'final') || 'tentative'}
+                onToggle={(newStatus) => {
+                  toggleScheduleStatusMutation.mutate({
+                    tenantId: TEST_TENANT_ID,
+                    competitionId: TEST_COMPETITION_ID,
+                    status: newStatus,
+                  });
+                }}
+                disabled={toggleScheduleStatusMutation.isPending}
+              />
+            )}
+
+            {/* Actions Dropdown */}
+            <ActionsDropdown
+              onRefresh={() => { refetch(); refetchBlocks(); }}
+              onExportPDF={handleExportPDF}
+              onSaveAndEmail={async () => {
+                await handleSaveAllDays();
+                setShowSendModal(true);
+              }}
+              onViewStudioSchedule={handleViewStudioSchedule}
+              onManageVisibility={() => setShowVisibilityModal(true)}
+              onResetDay={() => {
+                const routineCount = scheduleOrder.filter(id => !id.startsWith('block-')).length;
+                if (confirm(`Clear schedule for ${selectedDate}? This will unschedule all ${routineCount} routines and delete blocks.`)) {
+                  resetDayMutation.mutate({
+                    tenantId: TEST_TENANT_ID,
+                    competitionId: TEST_COMPETITION_ID,
+                    date: selectedDate,
+                  });
+                }
+              }}
+              onResetAll={() => setShowResetAllModal(true)}
+              isRefreshing={false}
+              isSaving={saveMutation.isPending || isSaving}
+            />
+          </div>
+
+          {/* Right: Primary Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Feedback Toggle */}
             {competition && (
               <button
                 onClick={handleToggleFeedback}
                 disabled={toggleFeedbackMutation.isPending}
-                className={`px-3 py-2 font-semibold rounded-lg transition-all flex items-center gap-2 text-sm ${
+                className={`px-3 py-1.5 font-semibold rounded-lg transition-all flex items-center gap-2 text-sm ${
                   competition.schedule_feedback_allowed
                     ? 'bg-green-500/20 text-green-300 border border-green-500/50 hover:bg-green-500/30'
                     : 'bg-gray-500/20 text-gray-300 border border-gray-500/50 hover:bg-gray-500/30'
@@ -1965,22 +2010,22 @@ export default function ScheduleV2Page() {
               </button>
             )}
 
-            {/* Fix All Conflicts Button (V1 parity - header button with count) */}
+            {/* Fix All Conflicts */}
             {dayConflictCount > 0 && (
               <button
                 onClick={() => setShowFixAllModal(true)}
-                className="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm"
+                className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 text-sm"
                 title={`${dayConflictCount} conflict${dayConflictCount !== 1 ? 's' : ''} detected`}
               >
                 <span>🔧</span>
-                <span>Fix All Conflicts</span>
-                <span className="px-2 py-0.5 bg-white/20 rounded-md text-xs font-bold min-w-[1.5rem] text-center">
+                <span>Fix Conflicts</span>
+                <span className="px-1.5 py-0.5 bg-white/20 rounded text-xs font-bold">
                   {dayConflictCount}
                 </span>
               </button>
             )}
-            
-            {/* Schedule Selected button */}
+
+            {/* Schedule Selected (contextual) */}
             {selectedRoutineIds.size > 0 && (
               <button
                 onClick={() => {
@@ -1994,13 +2039,13 @@ export default function ScheduleV2Page() {
                   }
                   setSelectedRoutineIds(new Set());
                 }}
-                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors"
               >
-                📥 Schedule {selectedRoutineIds.size} Selected
+                📥 +{selectedRoutineIds.size}
               </button>
             )}
 
-            {/* Unschedule Selected button */}
+            {/* Unschedule Selected (contextual) */}
             {selectedScheduledIds.size > 0 && (
               <button
                 onClick={() => {
@@ -2014,128 +2059,36 @@ export default function ScheduleV2Page() {
                     setLastClickedScheduledRoutineId(null);
                   }
                 }}
-                className="px-3 py-2 bg-red-500/80 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors"
+                className="px-3 py-1.5 bg-red-500/80 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors"
               >
-                ↩️ Unschedule ({selectedScheduledIds.size})
+                ↩️ -{selectedScheduledIds.size}
               </button>
             )}
 
-            {/* Save button (multi-day) */}
+            {/* Save + Discard (when unsaved) */}
             {hasAnyUnsavedChanges && (
               <>
                 <button
                   onClick={handleSaveAllDays}
                   disabled={saveMutation.isPending || isSaving}
-                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                  className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 text-sm"
                 >
-                  💾 Save Schedule
+                  💾 Save
                 </button>
                 <button
                   onClick={handleDiscardChanges}
-                  className="px-3 py-2 bg-red-500/80 hover:bg-red-600 text-white rounded-lg transition-colors text-sm"
+                  className="px-3 py-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-lg transition-colors text-sm"
                 >
-                  ❌ Discard
+                  ❌
                 </button>
-                <span className="text-yellow-300 text-sm font-medium">● Unsaved</span>
+                <span className="text-yellow-300 text-xs font-medium">●</span>
               </>
             )}
-            
-            {/* Refresh button */}
-            <button
-              onClick={() => { refetch(); refetchBlocks(); }}
-              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
-            >
-              🔄
-            </button>
-
-            {/* Reset Day button */}
-            <button
-              onClick={() => {
-                const routineCount = scheduleOrder.filter(id => !id.startsWith('block-')).length;
-                if (confirm(`Clear schedule for ${selectedDate}? This will unschedule all ${routineCount} routines and delete blocks.`)) {
-                  resetDayMutation.mutate({
-                    tenantId: TEST_TENANT_ID,
-                    competitionId: TEST_COMPETITION_ID,
-                    date: selectedDate,
-                  });
-                }
-              }}
-              disabled={resetDayMutation.isPending}
-              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-            >
-              🗑️ Reset Day
-            </button>
-
-            {/* Reset All button */}
-            <button
-              onClick={() => setShowResetAllModal(true)}
-              disabled={resetCompetitionMutation.isPending}
-              className="px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-200 text-sm font-semibold rounded-lg transition-colors border border-orange-600/30 disabled:opacity-50"
-            >
-              ⚠️ Reset All
-            </button>
-            
-            {/* PDF Export button */}
-            <button
-              onClick={handleExportPDF}
-              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
-            >
-              📄 Export PDF
-            </button>
-
-            {/* P1-8: Save & Email Studios (no publish step - live updates) */}
-            <button
-              onClick={async () => {
-                await handleSaveAllDays();
-                setShowSendModal(true);
-              }}
-              className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-200 text-sm font-semibold rounded-lg transition-colors border border-green-500/30"
-              title="Save schedule and email studios"
-            >
-              💾📧 Save & Email Studios
-            </button>
-
-            {/* View Studio Schedule button */}
-            <button
-              onClick={handleViewStudioSchedule}
-              className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-sm font-semibold rounded-lg transition-colors border border-purple-500/30"
-              title="View schedule from a studio's perspective"
-            >
-              <Eye className="h-4 w-4 inline mr-1" />
-              View Studio
-            </button>
-
-            {/* P1-9: Manage Studio Visibility button */}
-            <button
-              onClick={() => setShowVisibilityModal(true)}
-              className="px-3 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 text-sm font-semibold rounded-lg transition-colors border border-orange-500/30"
-              title="Control which studios can view the schedule"
-            >
-              <EyeOff className="h-4 w-4 inline mr-1" />
-              Manage Visibility
-            </button>
-
-            {/* P1-8: Publish button removed - schedules are live */}
           </div>
         </div>
       </div>
 
-      {/* P2-15: Schedule Status Toggle (Tentative vs Final) */}
-      {competition && (
-        <div className="px-6 pt-4 w-full">
-          <ScheduleStatusToggle
-            status={(competition.schedule_state as 'tentative' | 'final') || 'tentative'}
-            onToggle={(newStatus) => {
-              toggleScheduleStatusMutation.mutate({
-                tenantId: TEST_TENANT_ID,
-                competitionId: TEST_COMPETITION_ID,
-                status: newStatus,
-              });
-            }}
-            disabled={toggleScheduleStatusMutation.isPending}
-          />
-        </div>
-      )}
+
 
       {/* Single DndContext wrapping both day tabs/block buttons AND main content */}
       <DndContext
