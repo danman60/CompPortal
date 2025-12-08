@@ -4070,12 +4070,12 @@ export const schedulingRouter = router({
       };
     }),
 
-  // P2-15: Toggle schedule status (Tentative vs Final)
+  // P2-15: Toggle schedule status (Unpublished -> Tentative -> Final)
   toggleScheduleStatus: publicProcedure
     .input(z.object({
       tenantId: z.string().uuid(),
       competitionId: z.string().uuid(),
-      status: z.enum(['tentative', 'final']),
+      status: z.enum(['unpublished', 'tentative', 'final']),
     }))
     .mutation(async ({ input }) => {
       console.log('[toggleScheduleStatus] Setting schedule to:', input.status);

@@ -1929,7 +1929,7 @@ export default function ScheduleV2Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 overflow-x-hidden">
       {/* Saving Progress Overlay */}
       {isSaving && (
         <ScheduleSavingProgress
@@ -1954,7 +1954,7 @@ export default function ScheduleV2Page() {
             {/* Status Badge (Tentative/Final) */}
             {competition && (
               <StatusBadge
-                status={(competition.schedule_state as 'tentative' | 'final') || 'tentative'}
+                status={(competition.schedule_state as 'unpublished' | 'tentative' | 'final') || 'unpublished'}
                 onToggle={(newStatus) => {
                   toggleScheduleStatusMutation.mutate({
                     tenantId: TEST_TENANT_ID,
@@ -2142,7 +2142,7 @@ export default function ScheduleV2Page() {
             {/* Right: Schedule Table */}
             <div className="col-span-2">
               {/* Day Tabs + Block Buttons - Above Schedule Table (V1 layout) */}
-              <div className="flex items-center justify-between gap-4 mb-3 overflow-hidden min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
                 <DayTabs
                   days={competitionDates}
                   activeDay={selectedDate}
@@ -2163,7 +2163,7 @@ export default function ScheduleV2Page() {
                 />
 
                 {/* Draggable Block Buttons - Inline */}
-                <div className="flex gap-3">
+                <div className="flex gap-2 flex-shrink-0">
                   <DraggableBlockCard
                     type="award"
                     onClick={() => handleCreateBlock('award')}
