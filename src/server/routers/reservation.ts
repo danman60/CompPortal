@@ -16,6 +16,7 @@ import {
   renderReservationMoved,
   renderPaymentConfirmed,
   renderInvoiceDelivery,
+  renderSpaceRequestNotification,
   getEmailSubject,
   type ReservationApprovedData,
   type ReservationRejectedData,
@@ -23,6 +24,7 @@ import {
   type ReservationMovedData,
   type PaymentConfirmedData,
   type InvoiceDeliveryData,
+  type SpaceRequestNotificationData,
 } from '@/lib/email-templates';
 import { guardReservationStatus } from '@/lib/guards/statusGuards';
 import { validateReservationCapacity } from '@/lib/validators/businessRules';
@@ -2674,28 +2676,39 @@ ${input.comments}
         },
       });
 
-      // Send email to CD
+      // Send styled email to CD
       const cdEmail = await getUserEmail(cdUser.id);
       if (cdEmail) {
         const portalUrl = await getTenantPortalUrl(
           ctx.tenantId!,
           `/dashboard/reservation-pipeline`
         );
+
+        // Get tenant branding for styled email
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: ctx.tenantId! },
+          select: { branding: true },
+        });
+        const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
+        const emailData: SpaceRequestNotificationData = {
+          studioName: reservation.studios?.name || 'Unknown Studio',
+          competitionName: reservation.competitions?.name || 'Unknown Competition',
+          competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+          currentSpaces: reservation.spaces_confirmed || 0,
+          additionalSpaces: input.additionalSpaces,
+          newTotal: (reservation.spaces_confirmed || 0) + input.additionalSpaces,
+          justification: input.justification,
+          portalUrl,
+          tenantBranding: branding || undefined,
+        };
+
+        const html = await renderSpaceRequestNotification(emailData);
+
         await sendEmail({
           to: cdEmail,
-          subject: `Space Request from ${reservation.studios?.name}`,
-          html: `
-            <h2>Additional Spaces Requested</h2>
-            <p><strong>${reservation.studios?.name}</strong> is requesting additional spaces:</p>
-            <ul>
-              <li><strong>Competition:</strong> ${reservation.competitions?.name} (${reservation.competitions?.year})</li>
-              <li><strong>Current Spaces:</strong> ${reservation.spaces_confirmed || 0}</li>
-              <li><strong>Additional Requested:</strong> ${input.additionalSpaces}</li>
-              <li><strong>New Total:</strong> ${(reservation.spaces_confirmed || 0) + input.additionalSpaces}</li>
-            </ul>
-            ${input.justification ? `<p><strong>Justification:</strong> ${input.justification}</p>` : ''}
-            <p><a href="${portalUrl}">Review Request</a></p>
-          `,
+          subject: `Space Request from ${reservation.studios?.name} - +${input.additionalSpaces} spaces`,
+          html,
         });
       }
 

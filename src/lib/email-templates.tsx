@@ -15,6 +15,7 @@ import MissingMusicReminder from '@/emails/MissingMusicReminder';
 import WelcomeEmail from '@/emails/WelcomeEmail';
 import DailyDigest from '@/emails/DailyDigest';
 import AccountRecovery from '@/emails/AccountRecovery';
+import SpaceRequestNotification from '@/emails/SpaceRequestNotification';
 
 /**
  * Render email templates to HTML
@@ -182,6 +183,18 @@ export interface AccountRecoveryData {
   tenantBranding?: TenantBranding;
 }
 
+export interface SpaceRequestNotificationData {
+  studioName: string;
+  competitionName: string;
+  competitionYear: number;
+  currentSpaces: number;
+  additionalSpaces: number;
+  newTotal: number;
+  justification?: string | null;
+  portalUrl: string;
+  tenantBranding?: TenantBranding;
+}
+
 export interface DailyDigestData {
   userName: string;
   tenantName: string;
@@ -326,6 +339,13 @@ export async function renderDailyDigest(data: DailyDigestData) {
  */
 export async function renderAccountRecovery(data: AccountRecoveryData) {
   return render(<AccountRecovery {...data} />);
+}
+
+/**
+ * Render space request notification email (for CD)
+ */
+export async function renderSpaceRequestNotification(data: SpaceRequestNotificationData) {
+  return render(<SpaceRequestNotification {...data} />);
 }
 
 /**
