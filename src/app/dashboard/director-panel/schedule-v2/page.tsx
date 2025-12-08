@@ -1149,19 +1149,35 @@ export default function ScheduleV2Page() {
   const hasAnyUnsavedChanges = useMemo(() => {
     if (!routinesData) return false;
 
+    // Check for unsaved temp blocks (newly created via drag)
+    if (tempBlocks.size > 0) return true;
+
     return COMPETITION_DATES.some(date => {
       const daySchedule = scheduleByDate[date] || [];
-      const dayRoutinesOnly = daySchedule.filter(id => !id.startsWith('block-'));
 
+      // Check routines
+      const dayRoutinesOnly = daySchedule.filter(id => !id.startsWith('block-'));
       const serverScheduled = routinesData
         .filter(r => r.isScheduled && r.scheduledDateString === date)
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
         .map(r => r.id);
 
       if (dayRoutinesOnly.length !== serverScheduled.length) return true;
-      return dayRoutinesOnly.some((id, i) => id !== serverScheduled[i]);
+      if (dayRoutinesOnly.some((id, i) => id !== serverScheduled[i])) return true;
+
+      // Check blocks (detect block reordering/addition/removal)
+      const dayBlocks = daySchedule.filter(id => id.startsWith('block-'));
+      const serverBlocks = (blocksData || [])
+        .filter(b => b.scheduled_time)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        .map(b => `block-${b.id}`);
+
+      if (dayBlocks.length !== serverBlocks.length) return true;
+      if (dayBlocks.some((id, i) => id !== serverBlocks[i])) return true;
+
+      return false;
     });
-  }, [routinesData, scheduleByDate]);
+  }, [routinesData, scheduleByDate, tempBlocks, blocksData]);
 
   // ===== AUTOSAVE EFFECT (5 minutes) =====
   useEffect(() => {
