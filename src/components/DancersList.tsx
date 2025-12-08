@@ -444,10 +444,7 @@ export default function DancersList() {
             <table className="w-full table-fixed">
               <tbody>
                 {sortedDancers.map((dancer, index) => {
-                  const age = dancer.date_of_birth
-                    ? new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()
-                    : null;
-
+                  // Age is calculated inside the IIFE below using calculateAge for proper UTC handling
                   return (
                   <tr
                     key={dancer.id}

@@ -158,7 +158,7 @@ export default function ConfirmEmailPage() {
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-white/10 text-center">
-          <p className="text-white/50 text-sm">
+          <p className="text-white/50 text-sm" suppressHydrationWarning>
             {tenant?.name || 'CompPortal'} &copy; {new Date().getFullYear()}
           </p>
         </div>
