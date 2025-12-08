@@ -12,6 +12,9 @@ import {
   Edit,
   ClipboardList,
   Clock,
+  PlusCircle,
+  Check,
+  X,
 } from 'lucide-react';
 import type { PipelineExpandedRowProps } from './types';
 
@@ -63,6 +66,46 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                 <Edit className="h-3 w-3" />
                 Adjust Spaces
               </button>
+              {/* Pending Space Request */}
+              {r.pendingAdditionalSpaces && (
+                <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <PlusCircle className="h-4 w-4 text-amber-400" />
+                    <span className="text-xs font-semibold text-amber-300">Pending Space Request</span>
+                  </div>
+                  <div className="space-y-1 mb-3">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-amber-200/70">Requested</span>
+                      <span className="font-medium text-amber-300">+{r.pendingAdditionalSpaces}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-amber-200/70">New Total</span>
+                      <span className="font-medium text-amber-300">{(r.spacesConfirmed || 0) + r.pendingAdditionalSpaces}</span>
+                    </div>
+                    {r.pendingSpacesJustification && (
+                      <p className="text-xs text-amber-200/80 mt-2 italic">&quot;{r.pendingSpacesJustification}&quot;</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => mutations.approveSpaceRequest({ reservationId: r.id })}
+                      disabled={mutations.isApprovingSpaceRequest}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg border border-emerald-500/40"
+                    >
+                      <Check className="h-3 w-3" />
+                      {mutations.isApprovingSpaceRequest ? '...' : 'Approve'}
+                    </button>
+                    <button
+                      onClick={() => mutations.denySpaceRequest({ reservationId: r.id })}
+                      disabled={mutations.isDenyingSpaceRequest}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-red-300 bg-red-500/20 hover:bg-red-500/30 rounded-lg border border-red-500/40"
+                    >
+                      <X className="h-3 w-3" />
+                      {mutations.isDenyingSpaceRequest ? '...' : 'Deny'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

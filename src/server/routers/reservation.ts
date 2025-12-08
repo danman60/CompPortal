@@ -1400,6 +1400,11 @@ export const reservationRouter = router({
         invoicePaid: !!invoice?.paid_at,
         lastAction: r.status === 'approved' ? 'Approved by You' : 'Reservation submitted',
         lastActionDate: r.approved_at || r.requested_at,
+        // Pending space request
+        pendingAdditionalSpaces: r.pending_additional_spaces || null,
+        pendingSpacesJustification: r.pending_spaces_justification || null,
+        pendingSpacesRequestedAt: r.pending_spaces_requested_at || null,
+        pendingSpacesRequestedBy: r.pending_spaces_requested_by || null,
       };
     });
 
@@ -1537,6 +1542,11 @@ export const reservationRouter = router({
             competition_entries: true,
           },
         },
+        // Pending space request fields
+        pending_additional_spaces: true,
+        pending_spaces_justification: true,
+        pending_spaces_requested_at: true,
+        pending_spaces_requested_by: true,
       },
       orderBy: [
         { requested_at: 'desc' },
@@ -1601,6 +1611,11 @@ export const reservationRouter = router({
         // Last action
         lastAction: r.status === 'approved' ? 'Approved' : 'Reservation submitted',
         lastActionDate: r.approved_at || r.requested_at,
+        // Pending space request
+        pendingAdditionalSpaces: r.pending_additional_spaces || null,
+        pendingSpacesJustification: r.pending_spaces_justification || null,
+        pendingSpacesRequestedAt: r.pending_spaces_requested_at || null,
+        pendingSpacesRequestedBy: r.pending_spaces_requested_by || null,
       };
     });
 
@@ -2648,25 +2663,23 @@ ${input.comments}
         });
       }
 
-      // TODO: Create notification for CD (notifications table not yet implemented)
-      // await prisma.notifications.create({
-      //   data: {
-      //     tenant_id: ctx.tenantId!,
-      //     user_id: cdUser.id,
-      //     type: 'space_request',
-      //     title: `Space Request: ${reservation.studios?.name}`,
-      //     message: `${reservation.studios?.name} is requesting ${input.additionalSpaces} additional spaces...`,
-      //     link: `/dashboard/director-panel/reservations/${input.reservationId}`,
-      //     read: false,
-      //   },
-      // });
+      // Store the pending space request on the reservation
+      await prisma.reservations.update({
+        where: { id: input.reservationId },
+        data: {
+          pending_additional_spaces: input.additionalSpaces,
+          pending_spaces_justification: input.justification || null,
+          pending_spaces_requested_at: new Date(),
+          pending_spaces_requested_by: ctx.userId,
+        },
+      });
 
       // Send email to CD
       const cdEmail = await getUserEmail(cdUser.id);
       if (cdEmail) {
         const portalUrl = await getTenantPortalUrl(
           ctx.tenantId!,
-          `/dashboard/director-panel/reservations/${input.reservationId}`
+          `/dashboard/reservation-pipeline`
         );
         await sendEmail({
           to: cdEmail,
@@ -2704,6 +2717,298 @@ ${input.comments}
       return {
         success: true,
         message: 'Your request has been sent to the Competition Director. You will be notified once it is reviewed.',
+      };
+    }),
+
+  // CD/SA approves a pending space request
+  approveSpaceRequest: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Only CD/SA can approve space requests
+      if (isStudioDirector(ctx.userRole)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can approve space requests',
+        });
+      }
+
+      // Get reservation with pending request data
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              owner_id: true,
+            },
+          },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+              year: true,
+            },
+          },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found',
+        });
+      }
+
+      // Verify tenant isolation
+      if (reservation.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot access reservation from another tenant',
+        });
+      }
+
+      // Check there's a pending request
+      if (!reservation.pending_additional_spaces) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No pending space request to approve',
+        });
+      }
+
+      const additionalSpaces = reservation.pending_additional_spaces;
+      const currentSpaces = reservation.spaces_confirmed || 0;
+      const newTotalSpaces = currentSpaces + additionalSpaces;
+
+      // Use capacityService to reserve additional capacity
+      const capacityResult = await capacityService.reserve(
+        reservation.competition_id,
+        additionalSpaces,
+        input.reservationId,
+        ctx.userId!,
+        'space_request_approved'
+      );
+
+      // Update reservation: increase spaces_confirmed and clear pending fields
+      await prisma.reservations.update({
+        where: { id: input.reservationId },
+        data: {
+          spaces_confirmed: newTotalSpaces,
+          pending_additional_spaces: null,
+          pending_spaces_justification: null,
+          pending_spaces_requested_at: null,
+          pending_spaces_requested_by: null,
+          updated_at: new Date(),
+        },
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'space_request_approved',
+        entityType: 'reservation',
+        entityId: input.reservationId,
+        entityName: reservation.studios?.name,
+        details: {
+          previousSpaces: currentSpaces,
+          additionalSpaces,
+          newTotalSpaces,
+          competitionName: reservation.competitions?.name,
+        },
+      });
+
+      // Send notification email to Studio Director
+      const studioOwnerId = reservation.studios?.owner_id;
+      if (studioOwnerId) {
+        const sdEmail = await getUserEmail(studioOwnerId);
+        if (sdEmail) {
+          const portalUrl = await getTenantPortalUrl(
+            ctx.tenantId!,
+            `/dashboard/entries`
+          );
+          await sendEmail({
+            to: sdEmail,
+            subject: `Space Request Approved - ${reservation.competitions?.name}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 24px; text-align: center;">
+                  <h1 style="color: white; margin: 0; font-size: 24px;">Space Request Approved</h1>
+                </div>
+                <div style="padding: 24px; background: #f9fafb;">
+                  <p style="color: #374151; font-size: 16px;">Great news! Your request for additional spaces has been approved.</p>
+                  <div style="background: white; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #e5e7eb;">
+                    <p style="margin: 8px 0; color: #374151;"><strong>Studio:</strong> ${reservation.studios?.name}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Competition:</strong> ${reservation.competitions?.name} (${reservation.competitions?.year})</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Previous Spaces:</strong> ${currentSpaces}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Additional Approved:</strong> ${additionalSpaces}</p>
+                    <p style="margin: 8px 0; color: #10b981; font-weight: bold;"><strong>New Total:</strong> ${newTotalSpaces} spaces</p>
+                  </div>
+                  <p style="color: #374151; font-size: 16px;">You can now create additional entries up to your new allocation.</p>
+                  <div style="text-align: center; margin-top: 24px;">
+                    <a href="${portalUrl}" style="display: inline-block; background: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Manage Your Entries</a>
+                  </div>
+                </div>
+                <div style="padding: 16px; text-align: center; color: #6b7280; font-size: 12px;">
+                  <p>This is an automated notification from CompSync.</p>
+                </div>
+              </div>
+            `,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: `Approved ${additionalSpaces} additional spaces. New total: ${newTotalSpaces}`,
+        previousSpaces: currentSpaces,
+        newTotalSpaces,
+        capacityWarning: capacityResult.exceededBy > 0
+          ? `Warning: Capacity exceeded by ${capacityResult.exceededBy} spaces`
+          : undefined,
+      };
+    }),
+
+  // CD/SA denies a pending space request
+  denySpaceRequest: protectedProcedure
+    .input(
+      z.object({
+        reservationId: z.string().uuid(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Only CD/SA can deny space requests
+      if (isStudioDirector(ctx.userRole)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can deny space requests',
+        });
+      }
+
+      // Get reservation with pending request data
+      const reservation = await prisma.reservations.findUnique({
+        where: { id: input.reservationId },
+        include: {
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              owner_id: true,
+            },
+          },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+              year: true,
+            },
+          },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Reservation not found',
+        });
+      }
+
+      // Verify tenant isolation
+      if (reservation.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot access reservation from another tenant',
+        });
+      }
+
+      // Check there's a pending request
+      if (!reservation.pending_additional_spaces) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No pending space request to deny',
+        });
+      }
+
+      const additionalSpaces = reservation.pending_additional_spaces;
+      const justification = reservation.pending_spaces_justification;
+
+      // Clear pending fields (no capacity changes needed for denial)
+      await prisma.reservations.update({
+        where: { id: input.reservationId },
+        data: {
+          pending_additional_spaces: null,
+          pending_spaces_justification: null,
+          pending_spaces_requested_at: null,
+          pending_spaces_requested_by: null,
+          updated_at: new Date(),
+        },
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId!,
+        tenantId: ctx.tenantId!,
+        action: 'space_request_denied',
+        entityType: 'reservation',
+        entityId: input.reservationId,
+        entityName: reservation.studios?.name,
+        details: {
+          requestedSpaces: additionalSpaces,
+          justification,
+          denialReason: input.reason,
+          competitionName: reservation.competitions?.name,
+        },
+      });
+
+      // Send notification email to Studio Director
+      const studioOwnerId = reservation.studios?.owner_id;
+      if (studioOwnerId) {
+        const sdEmail = await getUserEmail(studioOwnerId);
+        if (sdEmail) {
+          const portalUrl = await getTenantPortalUrl(
+            ctx.tenantId!,
+            `/dashboard/entries`
+          );
+          await sendEmail({
+            to: sdEmail,
+            subject: `Space Request Update - ${reservation.competitions?.name}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%); padding: 24px; text-align: center;">
+                  <h1 style="color: white; margin: 0; font-size: 24px;">Space Request Not Approved</h1>
+                </div>
+                <div style="padding: 24px; background: #f9fafb;">
+                  <p style="color: #374151; font-size: 16px;">We regret to inform you that your request for additional spaces could not be approved at this time.</p>
+                  <div style="background: white; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #e5e7eb;">
+                    <p style="margin: 8px 0; color: #374151;"><strong>Studio:</strong> ${reservation.studios?.name}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Competition:</strong> ${reservation.competitions?.name} (${reservation.competitions?.year})</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Requested:</strong> ${additionalSpaces} additional spaces</p>
+                    ${input.reason ? `<p style="margin: 8px 0; color: #6b7280;"><strong>Reason:</strong> ${input.reason}</p>` : ''}
+                  </div>
+                  <p style="color: #374151; font-size: 16px;">If you have questions, please contact the Competition Director directly.</p>
+                  <div style="text-align: center; margin-top: 24px;">
+                    <a href="${portalUrl}" style="display: inline-block; background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Your Entries</a>
+                  </div>
+                </div>
+                <div style="padding: 16px; text-align: center; color: #6b7280; font-size: 12px;">
+                  <p>This is an automated notification from CompSync.</p>
+                </div>
+              </div>
+            `,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Space request has been denied',
       };
     }),
 

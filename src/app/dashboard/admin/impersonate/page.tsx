@@ -38,9 +38,9 @@ export default function ImpersonationPage() {
       return;
     }
 
-    const user = users?.users.find(u => u.id === selectedUserId);
+    const user = users?.users.find(u => u.id === selectedUserId) as { id: string; first_name?: string; last_name?: string; users?: { email?: string } } | undefined;
     const confirmed = confirm(
-      `Start impersonating ${user?.first_name} ${user?.last_name} (${user?.users.email})?\n\nThis will be logged in the audit trail.`
+      `Start impersonating ${user?.first_name || ''} ${user?.last_name || ''} (${user?.users?.email || user?.id.slice(0, 8)})?\n\nThis will be logged in the audit trail.`
     );
 
     if (!confirmed) return;
@@ -93,9 +93,9 @@ export default function ImpersonationPage() {
                 style={{ color: 'white' }}
               >
                 <option value="" style={{ backgroundColor: '#1e293b', color: 'white' }}>Choose a user...</option>
-                {users?.users.map((user) => (
+                {users?.users.map((user: any) => (
                   <option key={user.id} value={user.id} style={{ backgroundColor: '#1e293b', color: 'white' }}>
-                    {user.first_name} {user.last_name} ({user.users.email}) - {user.role || 'No Role'}
+                    {user.first_name || ''} {user.last_name || ''} ({user.users?.email || user.id.slice(0, 8)}) - {user.role || 'No Role'}
                   </option>
                 ))}
               </select>

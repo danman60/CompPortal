@@ -2547,9 +2547,6 @@ export const invoiceRouter = router({
             select: {
               first_name: true,
               last_name: true,
-              users: {
-                select: { email: true },
-              },
             },
           },
         },

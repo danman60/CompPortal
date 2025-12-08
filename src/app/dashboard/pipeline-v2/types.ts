@@ -67,6 +67,11 @@ export interface PipelineReservation {
   // Last action
   lastAction: string | null;
   lastActionDate: Date | null;
+  // Pending space request
+  pendingAdditionalSpaces: number | null;
+  pendingSpacesJustification: string | null;
+  pendingSpacesRequestedAt: Date | null;
+  pendingSpacesRequestedBy: string | null;
 }
 
 // Competition capacity for overview section
@@ -102,6 +107,9 @@ export interface PipelineMutations {
   adjustSpaces: (input: { id: string; newSpaces: number }) => Promise<void>;
   updateDeposit: (input: { id: string; depositAmount: number; depositPaidAt?: Date }) => Promise<void>;
   reopenSummary: (input: { reservationId: string }) => Promise<void>;
+  // Space request mutations
+  approveSpaceRequest: (input: { reservationId: string }) => Promise<void>;
+  denySpaceRequest: (input: { reservationId: string; reason?: string }) => Promise<void>;
   // Invoice mutations
   createInvoice: (input: { reservationId: string }) => Promise<void>;
   sendInvoice: (input: { invoiceId: string }) => Promise<void>;
@@ -122,6 +130,8 @@ export interface PipelineMutations {
   isVoidingInvoice: boolean;
   isApplyingPayment: boolean;
   isReopeningSummary: boolean;
+  isApprovingSpaceRequest: boolean;
+  isDenyingSpaceRequest: boolean;
 }
 
 // Filter state for pipeline

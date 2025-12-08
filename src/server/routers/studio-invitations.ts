@@ -59,18 +59,16 @@ export const studioInvitationsRouter = router({
             },
           },
         },
-        users_studios_owner_idTousers: {
-          select: {
-            user_profiles: {
-              select: {
-                first_name: true,
-                last_name: true,
-              },
-            },
-          },
-        },
       },
     });
+
+    // Get owner profiles separately for claimed studios
+    const ownerIds = studios.map(s => s.owner_id).filter((id): id is string => id !== null);
+    const ownerProfiles = ownerIds.length > 0 ? await prisma.user_profiles.findMany({
+      where: { id: { in: ownerIds } },
+      select: { id: true, first_name: true, last_name: true },
+    }) : [];
+    const ownerProfileMap = new Map(ownerProfiles.map(p => [p.id, p]));
 
     // Map studios with full status tracking
     const studiosWithDetails = studios.map((studio) => {
@@ -85,7 +83,7 @@ export const studioInvitationsRouter = router({
 
       // Determine statuses
       const isClaimed = studio.owner_id !== null;
-      const userProfile = studio.users_studios_owner_idTousers?.user_profiles;
+      const userProfile = studio.owner_id ? ownerProfileMap.get(studio.owner_id) : null;
       const hasCompletedOnboarding = userProfile?.first_name !== null && userProfile?.first_name !== '';
       const wasInvited = studio.invited_at !== null;
 
@@ -183,18 +181,16 @@ export const studioInvitationsRouter = router({
             },
           },
         },
-        users_studios_owner_idTousers: {
-          select: {
-            user_profiles: {
-              select: {
-                first_name: true,
-                last_name: true,
-              },
-            },
-          },
-        },
       },
     });
+
+    // Get owner profiles separately for claimed studios
+    const ownerIds = studios.map(s => s.owner_id).filter((id): id is string => id !== null);
+    const ownerProfiles = ownerIds.length > 0 ? await prisma.user_profiles.findMany({
+      where: { id: { in: ownerIds } },
+      select: { id: true, first_name: true, last_name: true },
+    }) : [];
+    const ownerProfileMap = new Map(ownerProfiles.map(p => [p.id, p]));
 
     // Map studios with full status tracking
     const studiosWithDetails = studios.map((studio) => {
@@ -209,7 +205,7 @@ export const studioInvitationsRouter = router({
 
       // Determine statuses
       const isClaimed = studio.owner_id !== null;
-      const userProfile = studio.users_studios_owner_idTousers?.user_profiles;
+      const userProfile = studio.owner_id ? ownerProfileMap.get(studio.owner_id) : null;
       const hasCompletedOnboarding = userProfile?.first_name !== null && userProfile?.first_name !== '';
       const wasInvited = studio.invited_at !== null;
 

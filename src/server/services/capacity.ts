@@ -8,7 +8,8 @@ type CapacityChangeReason =
   | 'manual_adjustment'
   | 'cd_adjustment_increase'
   | 'cd_adjustment_decrease'
-  | 'sd_space_increase';
+  | 'sd_space_increase'
+  | 'space_request_approved';
 
 /**
  * Single source of truth for competition capacity management

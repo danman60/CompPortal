@@ -148,9 +148,6 @@ export const studioRouter = router({
         select: {
           first_name: true,
           last_name: true,
-          users: {
-            select: { email: true }
-          }
         },
       });
 
@@ -206,17 +203,30 @@ export const studioRouter = router({
           role: 'competition_director',
         },
         select: {
-          users: {
-            select: { email: true }
-          }
+          id: true,
         },
       });
+
+      // Get CD email from auth.users if available
+      let cdEmail: string | null = null;
+      if (competitionDirector?.id) {
+        const authUser = await prisma.$queryRaw<{ email: string }[]>`
+          SELECT email FROM auth.users WHERE id = ${competitionDirector.id}::uuid LIMIT 1
+        `;
+        cdEmail = authUser[0]?.email || null;
+      }
+
+      // Get claimer's email
+      const authUserClaimer = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${userId}::uuid LIMIT 1
+      `;
+      const claimerEmail = authUserClaimer[0]?.email || 'Unknown';
 
       // Send notification email to Super Admin AND tenant CD
       const { sendEmail } = await import('@/lib/email');
       const emailRecipients = ['danieljohnabrahamson@gmail.com'];
-      if (competitionDirector?.users?.email) {
-        emailRecipients.push(competitionDirector.users.email);
+      if (cdEmail) {
+        emailRecipients.push(cdEmail);
       }
 
       const emailTemplate = `
@@ -239,7 +249,7 @@ export const studioRouter = router({
 
     <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0 0 10px 0; color: #374151;"><strong>Claimed By:</strong> ${userProfile?.first_name || ''} ${userProfile?.last_name || ''}</p>
-      <p style="margin: 0 0 0 0; color: #374151;"><strong>Email:</strong> ${userProfile?.users?.email || 'Unknown'}</p>
+      <p style="margin: 0 0 0 0; color: #374151;"><strong>Email:</strong> ${claimerEmail}</p>
     </div>
 
     <p style="color: #6b7280; font-size: 14px; margin: 20px 0 0 0;">
@@ -596,18 +606,6 @@ export const studioRouter = router({
           updated_at: new Date(),
         },
         include: {
-          users_studios_owner_idTousers: {
-            select: {
-              id: true,
-              email: true,
-              user_profiles: {
-                select: {
-                  first_name: true,
-                  last_name: true,
-                },
-              },
-            },
-          },
           tenants: {
             select: {
               name: true,
@@ -617,6 +615,24 @@ export const studioRouter = router({
           },
         },
       });
+
+      // Fetch owner email from auth.users and profile separately
+      let ownerEmail: string | null = null;
+      let ownerProfile: { first_name: string | null; last_name: string | null } | null = null;
+
+      if (studio.owner_id) {
+        // Get email from auth.users
+        const authUser = await prisma.$queryRaw<{ email: string }[]>`
+          SELECT email FROM auth.users WHERE id = ${studio.owner_id}::uuid LIMIT 1
+        `;
+        ownerEmail = authUser[0]?.email || null;
+
+        // Get profile from user_profiles
+        ownerProfile = await prisma.user_profiles.findUnique({
+          where: { id: studio.owner_id },
+          select: { first_name: true, last_name: true },
+        });
+      }
 
       // Activity logging (non-blocking)
       try {
@@ -636,15 +652,14 @@ export const studioRouter = router({
       }
 
       // Send approval email to studio owner
-      if (studio.users_studios_owner_idTousers?.email && studio.users_studios_owner_idTousers.id) {
+      if (ownerEmail && studio.owner_id) {
         try {
           // Check if studio_approved email preference is enabled
-          const isEnabled = await isEmailEnabled(studio.users_studios_owner_idTousers.id, 'studio_approved');
+          const isEnabled = await isEmailEnabled(studio.owner_id, 'studio_approved');
 
           if (isEnabled) {
-            const profile = studio.users_studios_owner_idTousers.user_profiles;
-            const ownerName = profile && (profile.first_name || profile.last_name)
-              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+            const ownerName = ownerProfile && (ownerProfile.first_name || ownerProfile.last_name)
+              ? `${ownerProfile.first_name || ''} ${ownerProfile.last_name || ''}`.trim()
               : undefined;
 
             const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
@@ -658,7 +673,7 @@ export const studioRouter = router({
             const subject = getEmailSubject('studio-approved', { studioName: studio.name });
 
             await sendEmail({
-              to: studio.users_studios_owner_idTousers.email,
+              to: ownerEmail,
               subject,
               html,
             });
@@ -669,7 +684,7 @@ export const studioRouter = router({
             const welcomeHtml = await renderEmail(
               WelcomeEmail({
                 name: ownerName || 'Studio Owner',
-                email: studio.users_studios_owner_idTousers.email,
+                email: ownerEmail,
                 studioPublicCode: studio.public_code || undefined,
                 dashboardUrl: `${portalUrl}/dashboard`,
                 tenantBranding: {
@@ -681,7 +696,7 @@ export const studioRouter = router({
               })
             );
             await sendEmail({
-              to: studio.users_studios_owner_idTousers.email,
+              to: ownerEmail,
               subject: `Welcome to ${tenantName} - Studio Approved!`,
               html: welcomeHtml,
             });
@@ -718,18 +733,6 @@ export const studioRouter = router({
           updated_at: new Date(),
         },
         include: {
-          users_studios_owner_idTousers: {
-            select: {
-              id: true,
-              email: true,
-              user_profiles: {
-                select: {
-                  first_name: true,
-                  last_name: true,
-                },
-              },
-            },
-          },
           tenants: {
             select: {
               subdomain: true,
@@ -737,6 +740,24 @@ export const studioRouter = router({
           },
         },
       });
+
+      // Fetch owner email from auth.users and profile separately
+      let ownerEmail: string | null = null;
+      let ownerProfile: { first_name: string | null; last_name: string | null } | null = null;
+
+      if (studio.owner_id) {
+        // Get email from auth.users
+        const authUser = await prisma.$queryRaw<{ email: string }[]>`
+          SELECT email FROM auth.users WHERE id = ${studio.owner_id}::uuid LIMIT 1
+        `;
+        ownerEmail = authUser[0]?.email || null;
+
+        // Get profile from user_profiles
+        ownerProfile = await prisma.user_profiles.findUnique({
+          where: { id: studio.owner_id },
+          select: { first_name: true, last_name: true },
+        });
+      }
 
       // Activity logging (non-blocking)
       try {
@@ -757,15 +778,14 @@ export const studioRouter = router({
       }
 
       // Send rejection email to studio owner
-      if (studio.users_studios_owner_idTousers?.email && studio.users_studios_owner_idTousers.id) {
+      if (ownerEmail && studio.owner_id) {
         try {
           // Check if studio_rejected email preference is enabled
-          const isEnabled = await isEmailEnabled(studio.users_studios_owner_idTousers.id, 'studio_rejected');
+          const isEnabled = await isEmailEnabled(studio.owner_id, 'studio_rejected');
 
           if (isEnabled) {
-            const profile = studio.users_studios_owner_idTousers.user_profiles;
-            const ownerName = profile && (profile.first_name || profile.last_name)
-              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+            const ownerName = ownerProfile && (ownerProfile.first_name || ownerProfile.last_name)
+              ? `${ownerProfile.first_name || ''} ${ownerProfile.last_name || ''}`.trim()
               : undefined;
 
             const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
@@ -781,7 +801,7 @@ export const studioRouter = router({
             const subject = getEmailSubject('studio-rejected', { studioName: studio.name });
 
             await sendEmail({
-              to: studio.users_studios_owner_idTousers.email,
+              to: ownerEmail,
               subject,
               html,
             });

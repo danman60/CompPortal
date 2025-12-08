@@ -150,9 +150,9 @@ export default function DigestControlPage() {
                 className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="">-- Select User --</option>
-                {users.map((user) => (
+                {users.map((user: any) => (
                   <option key={user.id} value={user.id}>
-                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.users.email} ({user.tenants?.name || 'Unknown Tenant'})
+                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.id.slice(0, 8)} ({user.tenants?.name || 'Unknown Tenant'})
                   </option>
                 ))}
               </select>
@@ -268,14 +268,14 @@ export default function DigestControlPage() {
           </p>
 
           <div className="space-y-3">
-            {users.map((user) => (
+            {users.map((user: any) => (
               <div
                 key={user.id}
                 className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600"
               >
                 <div>
                   <p className="text-white font-medium">
-                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.users.email}
+                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.id.slice(0, 8)}
                   </p>
                   <p className="text-sm text-gray-400">{user.tenants?.name || 'Unknown Tenant'}</p>
                 </div>

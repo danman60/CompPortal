@@ -33,11 +33,11 @@ export default function UserManagementPage() {
     },
   });
 
-  const rawUsers = data?.users || [];
+  const rawUsers = (data?.users || []) as any[];
   const total = data?.total || 0;
 
   // Sort users client-side
-  const users = [...rawUsers].sort((a, b) => {
+  const users = [...rawUsers].sort((a: any, b: any) => {
     let aValue: any;
     let bValue: any;
 

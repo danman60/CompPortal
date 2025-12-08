@@ -164,6 +164,32 @@ export function usePipelineV2() {
     },
   });
 
+  // Approve space request
+  const approveSpaceRequestMutation = trpc.reservation.approveSpaceRequest.useMutation({
+    onSuccess: async (result) => {
+      toast.success(result.message || 'Space request approved!');
+      if (result.capacityWarning) {
+        toast.error(result.capacityWarning, { duration: 5000 });
+      }
+      await refetch();
+      await refetchCompetitions();
+    },
+    onError: (error) => {
+      toast.error(`Failed to approve space request: ${error.message}`);
+    },
+  });
+
+  // Deny space request
+  const denySpaceRequestMutation = trpc.reservation.denySpaceRequest.useMutation({
+    onSuccess: async () => {
+      toast.success('Space request denied');
+      await refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to deny space request: ${error.message}`);
+    },
+  });
+
   // === MUTATIONS INTERFACE ===
   const mutations: PipelineMutations = {
     approve: async (input) => {
@@ -212,6 +238,13 @@ export function usePipelineV2() {
         notes: input.notes,
       });
     },
+    // Space request mutations
+    approveSpaceRequest: async (input) => {
+      await approveSpaceRequestMutation.mutateAsync(input);
+    },
+    denySpaceRequest: async (input) => {
+      await denySpaceRequestMutation.mutateAsync(input);
+    },
     // Modal openers
     openApprovalModal: (reservation) => setApprovalModalReservation(reservation),
     openSpacesModal: (id) => setSpacesModalReservationId(id),
@@ -226,6 +259,8 @@ export function usePipelineV2() {
     isVoidingInvoice: voidInvoiceMutation.isPending,
     isApplyingPayment: applyPaymentMutation.isPending,
     isReopeningSummary: reopenSummaryMutation.isPending,
+    isApprovingSpaceRequest: approveSpaceRequestMutation.isPending,
+    isDenyingSpaceRequest: denySpaceRequestMutation.isPending,
   };
 
   // === DERIVED DATA ===

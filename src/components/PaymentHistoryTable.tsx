@@ -43,9 +43,10 @@ function formatPaymentMethod(method: string | null): string {
 }
 
 export default function PaymentHistoryTable({ invoiceId }: Props) {
-  const { data: payments, isLoading } = trpc.invoice.getPaymentHistory.useQuery({
+  const { data: paymentsData, isLoading } = trpc.invoice.getPaymentHistory.useQuery({
     invoiceId,
   });
+  const payments = (paymentsData || []) as any[];
 
   if (isLoading) {
     return (

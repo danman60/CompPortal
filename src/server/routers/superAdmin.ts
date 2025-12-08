@@ -53,14 +53,14 @@ const userManagementRouter = router({
       }
 
       if (search) {
+        // Note: email search is handled separately via raw SQL below
         where.OR = [
           { first_name: { contains: search, mode: 'insensitive' } },
           { last_name: { contains: search, mode: 'insensitive' } },
-          { users: { email: { contains: search, mode: 'insensitive' } } },
         ];
       }
 
-      const [users, total] = await Promise.all([
+      const [userProfiles, total] = await Promise.all([
         prisma.user_profiles.findMany({
           where,
           select: {
@@ -78,17 +78,6 @@ const userManagementRouter = router({
                 subdomain: true,
               },
             },
-            users: {
-              select: {
-                email: true,
-                last_sign_in_at: true,
-                _count: {
-                  select: {
-                    studios_studios_owner_idTousers: true,
-                  },
-                },
-              },
-            },
           },
           orderBy: { created_at: 'desc' },
           take: limit,
@@ -96,6 +85,42 @@ const userManagementRouter = router({
         }),
         prisma.user_profiles.count({ where }),
       ]);
+
+      // Fetch auth.users data separately (email, last_sign_in_at)
+      const userIds = userProfiles.map(u => u.id);
+      const authUsersData = userIds.length > 0 ? await prisma.$queryRaw<{
+        id: string;
+        email: string;
+        last_sign_in_at: Date | null;
+      }[]>`
+        SELECT id, email, last_sign_in_at
+        FROM auth.users
+        WHERE id = ANY(${userIds}::uuid[])
+      ` : [];
+      const authUserMap = new Map(authUsersData.map(u => [u.id, u]));
+
+      // Get studio counts per user
+      const studioCounts = userIds.length > 0 ? await prisma.studios.groupBy({
+        by: ['owner_id'],
+        where: { owner_id: { in: userIds } },
+        _count: { id: true },
+      }) : [];
+      const studioCountMap = new Map(studioCounts.map(s => [s.owner_id!, s._count.id]));
+
+      // Merge data
+      const users = userProfiles.map(profile => {
+        const authUser = authUserMap.get(profile.id);
+        return {
+          ...profile,
+          users: {
+            email: authUser?.email || null,
+            last_sign_in_at: authUser?.last_sign_in_at || null,
+            _count: {
+              studios_studios_owner_idTousers: studioCountMap.get(profile.id) || 0,
+            },
+          },
+        };
+      });
 
       return {
         users,
@@ -119,7 +144,7 @@ const userManagementRouter = router({
         throw new Error('Only super admins can change user roles');
       }
 
-      const user = await prisma.user_profiles.update({
+      const userProfile = await prisma.user_profiles.update({
         where: { id: input.userId },
         data: {
           role: input.newRole,
@@ -130,13 +155,14 @@ const userManagementRouter = router({
           first_name: true,
           last_name: true,
           role: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || null;
 
       // Activity logging
       try {
@@ -146,7 +172,7 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users.email,
+            target_user_email: userEmail,
             new_role: input.newRole,
           },
         });
@@ -154,7 +180,11 @@ const userManagementRouter = router({
         logger.error('Failed to log activity (user.role_change)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
-      return user;
+      // Return with merged email for compatibility
+      return {
+        ...userProfile,
+        users: { email: userEmail },
+      };
     }),
 
   // Disable/enable user account
@@ -170,7 +200,7 @@ const userManagementRouter = router({
         throw new Error('Only super admins can toggle user status');
       }
 
-      const user = await prisma.user_profiles.update({
+      const userProfile = await prisma.user_profiles.update({
         where: { id: input.userId },
         data: {
           updated_at: new Date(),
@@ -179,13 +209,14 @@ const userManagementRouter = router({
           id: true,
           first_name: true,
           last_name: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || null;
 
       // Activity logging
       try {
@@ -195,7 +226,7 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users.email,
+            target_user_email: userEmail,
             new_status: input.isActive ? 'active' : 'disabled',
           },
         });
@@ -203,7 +234,10 @@ const userManagementRouter = router({
         logger.error('Failed to log activity (user.toggle_status)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
-      return user;
+      return {
+        ...userProfile,
+        users: { email: userEmail },
+      };
     }),
 
   // Reset user password (sends password reset email via Supabase)
@@ -218,28 +252,33 @@ const userManagementRouter = router({
         throw new Error('Only super admins can reset user passwords');
       }
 
-      // Get user email from user_profiles
-      const user = await prisma.user_profiles.findUnique({
+      // Get user profile
+      const userProfile = await prisma.user_profiles.findUnique({
         where: { id: input.userId },
         select: {
           first_name: true,
           last_name: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
 
-      if (!user || !user.users?.email) {
-        throw new Error('User not found or has no email');
+      if (!userProfile) {
+        throw new Error('User not found');
+      }
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email;
+
+      if (!userEmail) {
+        throw new Error('User has no email');
       }
 
       // Send password reset email via Supabase Admin API
       const { error } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
-        email: user.users.email,
+        email: userEmail,
       });
 
       if (error) {
@@ -255,7 +294,7 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users.email,
+            target_user_email: userEmail,
           },
         });
       } catch (err) {
@@ -264,7 +303,7 @@ const userManagementRouter = router({
 
       return {
         success: true,
-        message: `Password reset email sent to ${user.users.email}`,
+        message: `Password reset email sent to ${userEmail}`,
       };
     }),
 
@@ -280,23 +319,24 @@ const userManagementRouter = router({
         throw new Error('Only super admins can delete user accounts');
       }
 
-      const user = await prisma.user_profiles.findUnique({
+      const userProfile = await prisma.user_profiles.findUnique({
         where: { id: input.userId },
         select: {
           first_name: true,
           last_name: true,
           role: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
 
-      if (!user) {
+      if (!userProfile) {
         throw new Error('User not found');
       }
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || 'unknown';
 
       await prisma.$transaction(async (tx) => {
         // Delete user profile
@@ -320,9 +360,9 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users?.email || 'unknown',
-            target_user_name: `${user.first_name} ${user.last_name}`,
-            target_user_role: user.role,
+            target_user_email: userEmail,
+            target_user_name: `${userProfile.first_name} ${userProfile.last_name}`,
+            target_user_role: userProfile.role,
           },
         });
       } catch (err) {
@@ -331,7 +371,7 @@ const userManagementRouter = router({
 
       return {
         success: true,
-        message: `User ${user.users?.email || 'unknown'} deleted successfully`,
+        message: `User ${userEmail} deleted successfully`,
       };
     }),
 });
@@ -1375,12 +1415,18 @@ const impersonationRouter = router({
       // Get target user info
       const targetUser = await prisma.user_profiles.findUnique({
         where: { id: input.userId },
-        include: { users: true, tenants: true },
+        include: { tenants: true },
       });
 
       if (!targetUser) {
         throw new Error('User not found');
       }
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || null;
 
       // Log impersonation start
       try {
@@ -1392,7 +1438,7 @@ const impersonationRouter = router({
           details: {
             targetUser: {
               id: targetUser.id,
-              email: targetUser.users.email,
+              email: userEmail,
               role: targetUser.role,
               tenant: targetUser.tenants?.name,
             },
@@ -1408,7 +1454,7 @@ const impersonationRouter = router({
         success: true,
         targetUser: {
           id: targetUser.id,
-          email: targetUser.users.email,
+          email: userEmail,
           firstName: targetUser.first_name,
           lastName: targetUser.last_name,
           role: targetUser.role,
