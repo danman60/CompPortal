@@ -1,8 +1,8 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ManualReservationModal from './ManualReservationModal';
 import MoveReservationModal from './MoveReservationModal';
@@ -20,6 +20,8 @@ interface ReservationsListProps {
 
 export default function ReservationsList({ isStudioDirector = false, isCompetitionDirector = false }: ReservationsListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const highlightedReservationId = searchParams.get('expand');
   const utils = trpc.useUtils();
   const { data, isLoading, dataUpdatedAt, refetch } = trpc.reservation.getAll.useQuery({ limit: 100 });
   const { data: studiosData } = trpc.studio.getAll.useQuery();
@@ -343,6 +345,25 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [rejectModalData, rejectionReason]);
+
+  // Scroll to highlighted reservation from URL param
+  useEffect(() => {
+    if (highlightedReservationId && data?.reservations) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const element = document.getElementById(`reservation-${highlightedReservationId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add a pulsing highlight effect
+          element.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+          // Remove highlight after a few seconds
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+          }, 5000);
+        }
+      }, 300);
+    }
+  }, [highlightedReservationId, data?.reservations]);
 
   const handleReduceCapacity = (
     reservationId: string,
@@ -840,6 +861,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             return (
               <div
                 key={reservation.id}
+                id={`reservation-${reservation.id}`}
                 className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col h-full min-h-[400px]"
               >
                 <div className={`grid grid-cols-1 gap-6 ${isStudioDirector ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
@@ -1326,7 +1348,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                 {sortedFilteredReservations.map((reservation) => {
                   const entriesCount = (reservation as any)._count?.competition_entries || 0;
                   return (
-                    <tr key={reservation.id} className="hover:bg-white/5 transition-colors">
+                    <tr key={reservation.id} id={`reservation-${reservation.id}`} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4">
                         <div className="text-white font-semibold">
                           {(reservation as any).studios?.name || 'Unknown Studio'}

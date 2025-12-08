@@ -2681,7 +2681,7 @@ ${input.comments}
       if (cdEmail) {
         const portalUrl = await getTenantPortalUrl(
           ctx.tenantId!,
-          `/dashboard/reservation-pipeline`
+          `/dashboard/reservations?expand=${input.reservationId}`
         );
 
         // Get tenant branding for styled email
