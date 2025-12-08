@@ -796,7 +796,7 @@ function FilterDropdown({
       {isOpen && dropdownPosition && typeof window !== 'undefined' && createPortal(
         <div
           ref={menuRef}
-          className="fixed z-[9999] bg-gray-900 border border-white/20 rounded-lg shadow-xl min-w-[200px] max-h-[300px] overflow-y-auto custom-scrollbar"
+          className="fixed z-[9999] w-fit max-w-[200px] bg-gray-900 border border-white/20 rounded-lg shadow-xl max-h-[300px] overflow-y-auto custom-scrollbar"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -816,7 +816,7 @@ function FilterDropdown({
               }`}
             >
               <span className="mr-2">{selectedIds.includes(option.id) ? '✓' : ' '}</span>
-              {option.label}
+              <span className="truncate">{option.label}</span>
             </button>
           ))}
         </div>,
