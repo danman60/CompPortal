@@ -15,8 +15,8 @@ export default async function Home() {
   const branding = tenant?.branding || {};
   const tenantName = tenant?.name || 'Competition Portal';
   const tagline = (typeof branding === 'object' && branding.tagline) || 'Professional dance competition management platform';
-  const primaryColor = (typeof branding === 'object' && branding.primaryColor) || '#8B5CF6';
-  const secondaryColor = (typeof branding === 'object' && branding.secondaryColor) || '#EC4899';
+  const primaryColor = (typeof branding === 'object' && branding.primaryColor) || '#6366F1';
+  const secondaryColor = (typeof branding === 'object' && branding.secondaryColor) || '#8B5CF6';
 
   // Tenant-specific landing page (e.g., empwr.compsync.net)
   return (

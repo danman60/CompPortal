@@ -239,7 +239,7 @@ function SignupPageContent() {
             <div
               className="h-16 w-16 rounded-2xl flex items-center justify-center"
               style={{
-                background: `linear-gradient(135deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+                background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
               }}
             >
               <span className="text-3xl">✨</span>
@@ -269,7 +269,7 @@ function SignupPageContent() {
                 href="/login"
                 className="block w-full text-center text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold"
                 style={{
-                  background: `linear-gradient(90deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+                  background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
                 }}
               >
                 Go to Login
@@ -323,7 +323,7 @@ function SignupPageContent() {
                 href="/login"
                 className="block w-full text-center text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold"
                 style={{
-                  background: `linear-gradient(90deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+                  background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
                 }}
               >
                 Go to Login
@@ -370,7 +370,7 @@ function SignupPageContent() {
           <div
             className="h-16 w-16 rounded-2xl flex items-center justify-center"
             style={{
-              background: `linear-gradient(135deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
             }}
           >
             <span className="text-3xl">✨</span>
@@ -450,7 +450,7 @@ function SignupPageContent() {
               disabled={loading || tenantLoading}
               className="w-full text-white py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold"
               style={{
-                background: `linear-gradient(90deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+                background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
               }}
             >
               {loading || tenantLoading ? 'Creating account...' : 'Create Account'}

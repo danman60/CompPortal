@@ -47,7 +47,7 @@ export default function LoginPage() {
           <div
             className="h-16 w-16 rounded-2xl flex items-center justify-center"
             style={{
-              background: `linear-gradient(135deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
             }}
           >
             <span className="text-3xl">✨</span>
@@ -109,7 +109,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               style={{
-                background: `linear-gradient(90deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+                background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
               }}
             >
               {loading ? 'Signing in...' : 'Sign In'}
