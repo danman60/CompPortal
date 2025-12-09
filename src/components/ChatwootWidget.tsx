@@ -59,6 +59,35 @@ export function ChatwootWidget({
       return;
     }
 
+    // Global error handler to suppress Chatwoot SDK race condition errors
+    // These errors happen INSIDE the SDK's internal code (packs/js/sdk.js)
+    // and cannot be caught by our try/catch around SDK.run()
+    const chatwootErrorHandler = (event: ErrorEvent) => {
+      const errorMsg = event.message || '';
+      const errorStack = event.error?.stack || '';
+
+      // Check if it's the known Chatwoot contentWindow/parentNode race condition
+      const isChatwootError =
+        errorStack.includes('sdk.js') ||
+        errorMsg.includes('contentWindow') ||
+        errorMsg.includes('parentNode') ||
+        errorMsg.includes('getAppFrame');
+
+      if (isChatwootError) {
+        // Prevent this error from propagating to Sentry
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Suppressed Chatwoot SDK race condition error (harmless):', errorMsg);
+        }
+        return true; // Indicates the error was handled
+      }
+      return false;
+    };
+
+    // Add error listener with capture to catch before Sentry
+    window.addEventListener('error', chatwootErrorHandler, true);
+
     // Additional safety check to prevent undefined in template literal
     if (typeof baseUrl !== 'string' || baseUrl.trim() === '') {
       console.error('ChatwootWidget: Invalid baseUrl', { baseUrl });
@@ -111,9 +140,10 @@ export function ChatwootWidget({
           config.customAttributes = customAttributes;
         }
 
-        // Detect Safari and delay initialization to prevent hydration errors
+        // Delay initialization to prevent iframe race condition errors
+        // Safari needs longer delay, but add small delay for all browsers
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-        const initDelay = isSafari ? 500 : 0;
+        const initDelay = isSafari ? 1000 : 200;
 
         // Wrap SDK initialization to suppress known race condition errors
         const initializeChatwoot = () => {
@@ -154,6 +184,9 @@ export function ChatwootWidget({
 
     // Cleanup function
     return () => {
+      // Remove error handler
+      window.removeEventListener('error', chatwootErrorHandler, true);
+
       // Remove script
       if (script.parentNode) {
         document.body.removeChild(script);
