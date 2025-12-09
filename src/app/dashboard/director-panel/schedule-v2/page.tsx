@@ -1483,6 +1483,18 @@ export default function ScheduleV2Page() {
     return 8 * 60; // Default to 8:00 AM
   };
 
+  // Compute starting entry number for a date based on previous days' routine counts
+  // This ensures global sequential numbering without relying on potentially stale map lookups
+  const getStartingEntryNumber = (targetDate: string): number => {
+    let entryNumber = 100;
+    for (const date of COMPETITION_DATES) {
+      if (date === targetDate) break;
+      const daySchedule = scheduleByDate[date] || [];
+      entryNumber += daySchedule.filter(id => !id.startsWith('block-')).length;
+    }
+    return entryNumber;
+  };
+
   // Save ALL days (V1 parity - multi-day save with progress)
   const handleSaveAllDays = async () => {
     if (!routinesData) return;
@@ -1492,6 +1504,9 @@ export default function ScheduleV2Page() {
     const failedDays: string[] = [];
 
     try {
+      // Running entry counter across all days (global sequential numbering)
+      let runningEntryNumber = 100;
+
       for (let i = 0; i < COMPETITION_DATES.length; i++) {
         const date = COMPETITION_DATES[i];
         const daySchedule = scheduleByDate[date] || [];
@@ -1513,7 +1528,7 @@ export default function ScheduleV2Page() {
 
         // Calculate times with global entry numbers
         let currentMinutes = getDayStartMinutes(date); // Use configured start time
-        const routinesToSave = routineIds.map((id) => {
+        const routinesToSave = routineIds.map((id, index) => {
           const routine = routinesMap.get(id);
           const duration = routine?.duration || 3;
 
@@ -1525,10 +1540,13 @@ export default function ScheduleV2Page() {
 
           return {
             routineId: id,
-            entryNumber: entryNumbersByRoutineId.get(id) ?? 100,
+            entryNumber: runningEntryNumber + index,
             performanceTime: timeString,
           };
         });
+
+        // Update running counter for next day (global sequential numbering)
+        runningEntryNumber += routineIds.length;
 
         try {
           await saveMutation.mutateAsync({
@@ -1563,6 +1581,9 @@ export default function ScheduleV2Page() {
   // Save current day only (quick save)
   const handleSave = async () => {
     const routineIds = scheduleOrder.filter(id => !id.startsWith('block-'));
+
+    // Compute entry numbers at save time (not from potentially stale map)
+    const startingEntry = getStartingEntryNumber(selectedDate);
 
     let currentMinutes = getDayStartMinutes(selectedDate); // Use configured start time
     const routinesToSave = routineIds.map((id) => {
