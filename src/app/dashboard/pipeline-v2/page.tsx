@@ -4,6 +4,7 @@ import { usePipelineV2 } from './usePipelineV2';
 import { PipelineV2 } from './PipelineV2';
 import ApplyPartialPaymentModal from '@/components/ApplyPartialPaymentModal';
 import RecordDepositModal from '@/components/RecordDepositModal';
+import { AdjustSpacesModal } from './AdjustSpacesModal';
 
 export default function PipelineV2Page() {
   const pipelineData = usePipelineV2();
@@ -19,6 +20,13 @@ export default function PipelineV2Page() {
   const depositModalReservation = pipelineData.depositModalReservationId
     ? pipelineData.allReservations.find(
         (r) => r.id === pipelineData.depositModalReservationId
+      )
+    : null;
+
+  // Find the reservation for the spaces modal
+  const spacesModalReservation = pipelineData.spacesModalReservationId
+    ? pipelineData.allReservations.find(
+        (r) => r.id === pipelineData.spacesModalReservationId
       )
     : null;
 
@@ -55,6 +63,24 @@ export default function PipelineV2Page() {
           currentDeposit={depositModalReservation.depositAmount || 0}
           onClose={() => pipelineData.setDepositModalReservationId(null)}
           onSuccess={() => pipelineData.refetch()}
+        />
+      )}
+
+      {/* Adjust Spaces Modal */}
+      {pipelineData.spacesModalReservationId && spacesModalReservation && (
+        <AdjustSpacesModal
+          reservationId={spacesModalReservation.id}
+          studioName={spacesModalReservation.studioName}
+          competitionName={spacesModalReservation.competitionName}
+          currentSpaces={spacesModalReservation.spacesConfirmed}
+          entryCount={spacesModalReservation.entryCount}
+          onClose={() => pipelineData.setSpacesModalReservationId(null)}
+          onSave={async (newSpaces) => {
+            await pipelineData.mutations.adjustSpaces({
+              id: spacesModalReservation.id,
+              newSpaces,
+            });
+          }}
         />
       )}
     </>
