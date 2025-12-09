@@ -110,17 +110,17 @@ function DraggableBlockCard({ type, onClick }: { type: 'award' | 'break' | 'even
         }
       }}
       className={`
-        relative flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg transition-all
+        relative flex-shrink min-w-[100px] 2xl:min-w-[160px] px-2 2xl:px-3 py-2 rounded-lg transition-all
         border-2 flex flex-col justify-center
         cursor-grab active:cursor-grabbing
         ${getStyles()}
       `}
       title="Drag to schedule or click to configure"
     >
-      <div className="font-semibold text-xs mb-1">
+      <div className="font-semibold text-xs mb-0 2xl:mb-1 whitespace-nowrap">
         {getLabel()}
       </div>
-      <div className={`text-xs ${getTextColor()}`}>
+      <div className={`text-xs ${getTextColor()} hidden 2xl:block`}>
         {getDescription()}
       </div>
       <div className="absolute top-1 right-1 opacity-40">
