@@ -100,18 +100,12 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
     description: 'Judge tablet interface',
   },
   {
-    id: 'schedule-v1',
-    href: '/dashboard/director-panel/schedule',
+    id: 'scheduling',
+    href: '/dashboard/scheduling',
     icon: '📅',
-    title: 'Schedule (Classic)',
-    description: 'Original scheduling interface',
-  },
-  {
-    id: 'schedule-v2',
-    href: '/dashboard/director-panel/schedule-v2',
-    icon: '✨',
-    title: 'Schedule V2 (New)',
-    description: 'Enhanced scheduling with undo',
+    title: 'Scheduling',
+    description: '🚧 Under construction',
+    disabled: true,
   },
   {
     id: 'judges',
