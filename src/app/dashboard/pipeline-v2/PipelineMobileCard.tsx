@@ -173,6 +173,9 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               <Edit className="h-3 w-3" />
               Adjust Spaces
             </button>
+            <p className="text-[10px] text-purple-200/40 text-center mt-1">
+              Change allocated space count
+            </p>
           </div>
 
           {/* Summary Info */}
@@ -199,19 +202,24 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               </div>
             )}
             {r.hasSummary && r.displayStatus !== 'paid_complete' && (
-              <button
-                onClick={() => {
-                  if (confirm(`Reopen summary for ${r.studioName}? This will allow them to modify their entry summary.`)) {
-                    mutations.reopenSummary({ reservationId: r.id });
-                  }
-                }}
-                disabled={mutations.isReopeningSummary}
-                title="Allow studio to make changes to their submitted summary"
-                className="w-full mt-2 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
-              >
-                <RefreshCw className="h-3 w-3" />
-                {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    if (confirm(`Reopen summary for ${r.studioName}? This will allow them to modify their entry summary.`)) {
+                      mutations.reopenSummary({ reservationId: r.id });
+                    }
+                  }}
+                  disabled={mutations.isReopeningSummary}
+                  title="Allow studio to make changes to their submitted summary"
+                  className="w-full mt-2 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
+                </button>
+                <p className="text-[10px] text-purple-200/40 text-center mt-1">
+                  Allow studio to modify summary
+                </p>
+              </>
             )}
           </div>
 
@@ -243,40 +251,53 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                 </div>
               </div>
               {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
-                <div className="flex gap-2 pt-2 mt-2 border-t border-white/10">
-                  <button
-                    onClick={() => {
-                      if (confirm(`Send invoice ${r.invoiceNumber || ''} to ${r.contactEmail}?`)) {
-                        mutations.sendInvoice({ invoiceId: r.invoiceId! });
-                      }
-                    }}
-                    disabled={mutations.isSendingInvoice}
-                    title="Email this invoice to the studio"
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg border border-cyan-500/30"
-                  >
-                    <Send className="h-3 w-3" />
-                    {mutations.isSendingInvoice ? '...' : 'Send'}
-                  </button>
-                  <button
-                    onClick={() => mutations.openPaymentModal(r.invoiceId!)}
-                    title="Record a payment on this invoice"
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
-                  >
-                    <DollarSign className="h-3 w-3" />
-                    Payment
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('Void this invoice? This action cannot be undone.')) {
-                        mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' });
-                      }
-                    }}
-                    disabled={mutations.isVoidingInvoice}
-                    title="Cancel this invoice permanently"
-                    className="px-3 py-2 text-xs font-medium text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg border border-red-500/30"
-                  >
-                    <Ban className="h-3 w-3" />
-                  </button>
+                <div className="pt-2 mt-2 border-t border-white/10">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (confirm(`Send invoice ${r.invoiceNumber || ''} to ${r.contactEmail}?`)) {
+                          mutations.sendInvoice({ invoiceId: r.invoiceId! });
+                        }
+                      }}
+                      disabled={mutations.isSendingInvoice}
+                      title="Email this invoice to the studio"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg border border-cyan-500/30"
+                    >
+                      <Send className="h-3 w-3" />
+                      {mutations.isSendingInvoice ? '...' : 'Send'}
+                    </button>
+                    <button
+                      onClick={() => mutations.openPaymentModal(r.invoiceId!)}
+                      title="Record a payment on this invoice"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
+                    >
+                      <DollarSign className="h-3 w-3" />
+                      Payment
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Void this invoice? This action cannot be undone.')) {
+                          mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' });
+                        }
+                      }}
+                      disabled={mutations.isVoidingInvoice}
+                      title="Cancel this invoice permanently"
+                      className="px-3 py-2 text-xs font-medium text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg border border-red-500/30"
+                    >
+                      <Ban className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <p className="flex-1 text-[10px] text-purple-200/40 text-center">
+                      Email invoice
+                    </p>
+                    <p className="flex-1 text-[10px] text-purple-200/40 text-center">
+                      Record payment
+                    </p>
+                    <p className="text-[10px] text-purple-200/40 text-center px-3">
+                      Cancel
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -291,6 +312,9 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               >
                 {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
               </button>
+              <p className="text-[10px] text-purple-200/40 mt-1">
+                Generate from entry summary
+              </p>
             </div>
           ) : null}
 
@@ -311,13 +335,18 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               </span>
             </div>
             {!r.depositPaidAt && r.displayStatus !== 'pending_review' && (
-              <button
-                onClick={() => mutations.openDepositModal(r.id)}
-                title="Mark the deposit as received for this reservation"
-                className="w-full mt-2 px-3 py-2 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
-              >
-                Record Deposit
-              </button>
+              <>
+                <button
+                  onClick={() => mutations.openDepositModal(r.id)}
+                  title="Mark the deposit as received for this reservation"
+                  className="w-full mt-2 px-3 py-2 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
+                >
+                  Record Deposit
+                </button>
+                <p className="text-[10px] text-purple-200/40 text-center mt-1">
+                  Mark deposit as paid
+                </p>
+              </>
             )}
           </div>
 
