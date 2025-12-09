@@ -2265,7 +2265,7 @@ export default function ScheduleV2Page() {
             {/* Right: Schedule Table */}
             <div className="col-span-2">
               {/* Day Tabs + Block Buttons - Above Schedule Table (V1 layout) */}
-              <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 flex-wrap">
                 <DayTabs
                   days={competitionDates}
                   activeDay={selectedDate}
