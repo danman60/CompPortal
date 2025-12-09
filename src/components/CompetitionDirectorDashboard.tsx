@@ -386,7 +386,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
             </Link>
             {/* Pipeline V1 (Classic) */}
             <Link
-              href="/dashboard/reservation-pipeline-v1"
+              href="/dashboard/reservation-pipeline"
               className="flex-1 bg-gradient-to-r from-gray-600 via-gray-700 to-gray-600 hover:from-gray-700 hover:via-gray-800 hover:to-gray-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover-lift text-center"
             >
               <div className="flex items-center justify-center gap-3">
