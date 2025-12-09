@@ -1,16 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
+// Loading fallback for Suspense
+function ConfirmEmailLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white/70">Loading...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Email confirmation page
- * Handles email verification for new signups
- * Tenant-branded confirmation experience
+ * Email confirmation content - uses useSearchParams which requires Suspense
  */
-export default function ConfirmEmailPage() {
+function ConfirmEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { tenant } = useTenantTheme();
@@ -164,5 +176,14 @@ export default function ConfirmEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap in Suspense to handle useSearchParams hydration
+export default function ConfirmEmailPage() {
+  return (
+    <Suspense fallback={<ConfirmEmailLoading />}>
+      <ConfirmEmailContent />
+    </Suspense>
   );
 }

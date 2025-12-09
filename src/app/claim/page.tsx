@@ -1,12 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 import { trpc } from '@/lib/trpc';
 
-export default function ClaimPage() {
+// Loading fallback for Suspense boundary
+function ClaimPageLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 flex items-center justify-center p-6">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+        <p className="text-white text-lg">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main claim page content - uses useSearchParams which requires Suspense
+function ClaimPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { tenant } = useTenantTheme();
@@ -234,5 +247,14 @@ export default function ClaimPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Wrap in Suspense to handle useSearchParams hydration
+export default function ClaimPage() {
+  return (
+    <Suspense fallback={<ClaimPageLoading />}>
+      <ClaimPageContent />
+    </Suspense>
   );
 }

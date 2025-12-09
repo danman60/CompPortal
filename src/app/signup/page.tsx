@@ -1,11 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 import { createClient } from '@/lib/supabase';
+
+// Loading fallback for Suspense
+function SignupPageLoading() {
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white/70">Loading...</p>
+        </div>
+      </div>
+    </main>
+  );
+}
 
 /**
  * Signup Page - CLAIM CODE REQUIRED
@@ -20,7 +34,8 @@ interface SignupFormData {
   confirmPassword: string;
 }
 
-export default function SignupPage() {
+// Content component that uses useSearchParams
+function SignupPageContent() {
   const [formData, setFormData] = useState<SignupFormData>({
     email: '',
     password: '',
@@ -461,5 +476,14 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// Wrap in Suspense to handle useSearchParams hydration
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupPageLoading />}>
+      <SignupPageContent />
+    </Suspense>
   );
 }
