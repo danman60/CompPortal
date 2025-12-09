@@ -778,6 +778,55 @@ export default function ScheduleV2Page() {
   });
 
   // P2-15: Toggle schedule status (Tentative vs Final)
+  // Version History query and mutation
+  const { data: versionHistory, refetch: refetchVersions } = trpc.scheduling.getVersionHistory.useQuery({
+    tenantId: TEST_TENANT_ID,
+    competitionId: TEST_COMPETITION_ID,
+  }, { enabled: !!TEST_COMPETITION_ID });
+
+  const restoreVersionMutation = trpc.scheduling.restoreVersion.useMutation({
+    onSuccess: () => {
+      refetch();
+      refetchBlocks();
+      refetchVersions();
+    },
+  });
+
+  // Version history UI state
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+
+  // Undo handler - restore to previous version
+  const handleUndo = async () => {
+    if (!versionHistory || versionHistory.length < 2) {
+      alert('No previous version to restore');
+      return;
+    }
+    const previousVersion = versionHistory[1]; // [0] is current, [1] is previous
+    const date = new Date(previousVersion.createdAt ?? new Date());
+    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    if (confirm(`Undo to v${previousVersion.versionNumber} from ${dateStr} at ${timeStr}?`)) {
+      restoreVersionMutation.mutate({
+        tenantId: TEST_TENANT_ID,
+        competitionId: TEST_COMPETITION_ID,
+        versionId: previousVersion.id,
+      });
+    }
+  };
+
+  // Ctrl+Z keyboard shortcut for undo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [versionHistory]);
+
   const toggleScheduleStatusMutation = trpc.scheduling.toggleScheduleStatus.useMutation({
     onSuccess: () => {
       toast.success('Schedule status updated');
@@ -2073,6 +2122,71 @@ export default function ScheduleV2Page() {
                 ↩️ -{selectedScheduledIds.size}
               </button>
             )}
+
+            {/* Undo Button */}
+            <button
+              onClick={handleUndo}
+              disabled={!versionHistory || versionHistory.length < 2 || restoreVersionMutation.isPending}
+              className="px-2.5 py-1.5 font-semibold rounded-lg transition-all flex items-center gap-1 text-sm bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-600/50 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Undo (Ctrl+Z)"
+            >
+              ↶
+            </button>
+
+            {/* Version History Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowVersionHistory(!showVersionHistory)}
+                className="px-2.5 py-1.5 font-semibold rounded-lg transition-all flex items-center gap-1 text-sm bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-600/50"
+                title="Version History"
+              >
+                📋 {versionHistory?.length ?? 0}
+              </button>
+
+              {showVersionHistory && (
+                <div className="absolute right-0 top-full mt-1 w-72 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 max-h-[350px] overflow-y-auto">
+                  <div className="p-2 border-b border-gray-700 flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-300">Version History</span>
+                    <button onClick={() => setShowVersionHistory(false)} className="text-gray-400 hover:text-white">✕</button>
+                  </div>
+                  {versionHistory && versionHistory.length > 0 ? (
+                    <div className="py-1">
+                      {versionHistory.slice(0, 10).map((v, index) => {
+                        const date = new Date(v.createdAt ?? new Date());
+                        const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        return (
+                          <div key={v.id} className={`px-3 py-2 flex items-center justify-between hover:bg-gray-700/50 ${index === 0 ? 'bg-blue-500/10' : ''}`}>
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-200">
+                                v{v.versionNumber} {index === 0 && <span className="text-blue-400 text-xs">(current)</span>}
+                              </span>
+                              <span className="text-xs text-gray-400">{dateStr} at {timeStr}</span>
+                            </div>
+                            {index > 0 && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Restore to v${v.versionNumber}?`)) {
+                                    restoreVersionMutation.mutate({ tenantId: TEST_TENANT_ID, competitionId: TEST_COMPETITION_ID, versionId: v.id });
+                                    setShowVersionHistory(false);
+                                  }
+                                }}
+                                disabled={restoreVersionMutation.isPending}
+                                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-50"
+                              >
+                                Restore
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-sm text-gray-400">No versions saved yet</div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Save + Discard (when unsaved) */}
             {hasAnyUnsavedChanges && (

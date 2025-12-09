@@ -392,8 +392,8 @@ export const schedulingRouter = router({
         orderBy: { entry_number: 'asc' },
       });
 
-      // Build snapshot data as JSON array
-      const snapshotData = routinesWithDetails.map(routine => ({
+      // Build snapshot data with routines
+      const routineSnapshots = routinesWithDetails.map(routine => ({
         routineId: routine.id,
         entryNumber: routine.entry_number,
         performanceTime: routine.performance_time ? dateTimeToTimeString(routine.performance_time) : null,
@@ -407,6 +407,28 @@ export const schedulingRouter = router({
         dancerNames: routine.dancer_names,
         isScheduled: routine.is_scheduled,
       }));
+
+      // Fetch blocks for this competition to include in snapshot
+      const blocks = await prisma.schedule_blocks.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: input.tenantId,
+        },
+      });
+
+      // Build combined snapshot with routines AND blocks
+      const snapshotData = {
+        routines: routineSnapshots,
+        blocks: blocks.map(b => ({
+          id: b.id,
+          blockType: b.block_type,
+          scheduledTime: b.scheduled_time?.toISOString() ?? null,
+          scheduleDay: b.schedule_day?.toISOString() ?? null,
+          durationMinutes: b.duration_minutes,
+          title: b.title || '',
+          notes: b.notes ?? undefined,
+        })),
+      };
 
       // Create schedule version snapshot record with incremented minor version
       await prisma.schedule_versions.create({
@@ -3538,6 +3560,127 @@ export const schedulingRouter = router({
         totalStudios: v.total_studios_count ?? 0,
         notesCount: v.notes_count ?? 0,
       }));
+    }),
+
+  // CD: Restore schedule to a previous version (includes routines AND blocks)
+  restoreVersion: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      competitionId: z.string().uuid(),
+      versionId: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      console.log('[restoreVersion] Restoring to version', input.versionId);
+
+      // 1. Get version with snapshot
+      const version = await prisma.schedule_versions.findUnique({
+        where: { id: input.versionId }
+      });
+
+      if (!version) {
+        throw new Error('Version not found');
+      }
+
+      // Type the snapshot data (supports both old format and new format with blocks)
+      type RoutineSnapshot = {
+        routineId: string;
+        performanceTime: string | null;
+        performanceDate: string | null;
+        isScheduled: boolean;
+      };
+      type BlockSnapshot = {
+        id: string;
+        blockType: string;
+        scheduledTime: string | null;
+        scheduleDay: string | null;
+        durationMinutes: number;
+        title: string | null;
+        notes: string | null;
+      };
+      type SnapshotData = RoutineSnapshot[] | {
+        routines: RoutineSnapshot[];
+        blocks?: BlockSnapshot[];
+      };
+
+      const rawSnapshot = version.snapshot_data as SnapshotData;
+
+      // Handle both old (array) and new (object with routines/blocks) formats
+      const snapshot = Array.isArray(rawSnapshot)
+        ? { routines: rawSnapshot, blocks: undefined }
+        : rawSnapshot;
+
+      if (!snapshot.routines || !Array.isArray(snapshot.routines)) {
+        throw new Error('Invalid snapshot data');
+      }
+
+      // 2. Restore in transaction
+      await prisma.$transaction(async (tx) => {
+        // Reset ALL routines for this competition first (handles routines added after snapshot)
+        await tx.competition_entries.updateMany({
+          where: {
+            competition_id: input.competitionId,
+            tenant_id: input.tenantId
+          },
+          data: {
+            is_scheduled: false,
+            performance_time: null,
+            performance_date: null
+          }
+        });
+
+        // Restore each routine from snapshot
+        for (const r of snapshot.routines) {
+          await tx.competition_entries.update({
+            where: {
+              id: r.routineId,
+              tenant_id: input.tenantId
+            },
+            data: {
+              performance_time: r.performanceTime ? timeStringToDateTime(r.performanceTime as TimeString) : null,
+              performance_date: r.performanceDate ? new Date(r.performanceDate) : null,
+              is_scheduled: r.isScheduled ?? false,
+            }
+          });
+        }
+
+        // Restore blocks if present in snapshot
+        if (snapshot.blocks && Array.isArray(snapshot.blocks)) {
+          // Delete all current blocks for this competition
+          await tx.schedule_blocks.deleteMany({
+            where: {
+              competition_id: input.competitionId,
+              tenant_id: input.tenantId
+            }
+          });
+
+          // Recreate blocks from snapshot
+          for (const b of snapshot.blocks) {
+            await tx.schedule_blocks.create({
+              data: {
+                id: b.id,
+                competition_id: input.competitionId,
+                tenant_id: input.tenantId,
+                block_type: b.blockType,
+                scheduled_time: b.scheduledTime ? new Date(b.scheduledTime) : null,
+                schedule_day: b.scheduleDay ? new Date(b.scheduleDay) : null,
+                duration_minutes: b.durationMinutes,
+                title: b.title || '',
+                notes: b.notes ?? undefined,
+              }
+            });
+          }
+          console.log('[restoreVersion] Restored', snapshot.blocks.length, 'blocks');
+        }
+      });
+
+      console.log('[restoreVersion] Restored', snapshot.routines.length, 'routines from v' + version.major_version + '.' + version.minor_version);
+
+      return {
+        success: true,
+        restoredFrom: `v${version.major_version}.${version.minor_version}`,
+        routinesRestored: snapshot.routines.length,
+        blocksRestored: snapshot.blocks?.length ?? 0,
+      };
     }),
 
   // CD: Clear a Studio Director's note
