@@ -941,18 +941,25 @@ export default function ScheduleV2Page() {
 
   // ===== P2-12: COMPUTED: Eligible Awards per Adjudication Block =====
   // For each adjudication block, find award categories where ALL routines are scheduled BEFORE the block
+  // Each category only appears on the FIRST block where it becomes eligible (no duplicates)
   const eligibleAwardsByBlockId = useMemo(() => {
     const result = new Map<string, Array<{ category: string; count: number }>>();
 
-    // First, count total routines per category across all routines
+    // Step 1: Count total routines per category for THIS DAY'S schedule only (not all routines)
     const totalPerCategory = new Map<string, number>();
-    routinesMap.forEach((routine) => {
-      const key = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
-      totalPerCategory.set(key, (totalPerCategory.get(key) || 0) + 1);
+    scheduleOrder.forEach((id) => {
+      if (!id.startsWith('block-')) {
+        const routine = routinesMap.get(id);
+        if (routine) {
+          const key = `${routine.entrySizeName}|${routine.ageGroupName}|${routine.classificationName}`;
+          totalPerCategory.set(key, (totalPerCategory.get(key) || 0) + 1);
+        }
+      }
     });
 
-    // For each position in the schedule, track how many routines of each category have been seen
+    // Step 2: Walk through schedule, tracking seen routines AND awarded categories
     const categoryCountSoFar = new Map<string, number>();
+    const awardedCategories = new Set<string>(); // Categories already shown on previous award blocks
 
     scheduleOrder.forEach((id) => {
       if (id.startsWith('block-')) {
@@ -963,15 +970,17 @@ export default function ScheduleV2Page() {
         if (block?.block_type === 'award') {
           const eligible: Array<{ category: string; count: number }> = [];
 
-          // Check each category - if we have seen all routines in this category, it is eligible
+          // Check each category - eligible if all seen AND not already awarded on earlier block
           totalPerCategory.forEach((total, categoryKey) => {
             const seen = categoryCountSoFar.get(categoryKey) || 0;
-            if (seen === total) {
+            if (seen === total && !awardedCategories.has(categoryKey)) {
               const [size, age, classification] = categoryKey.split('|');
               eligible.push({
                 category: `${age} ${size} ${classification}`,
                 count: total,
               });
+              // Mark as awarded so it won't appear on later blocks
+              awardedCategories.add(categoryKey);
             }
           });
 
