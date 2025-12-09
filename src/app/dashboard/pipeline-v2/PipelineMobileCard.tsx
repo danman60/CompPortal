@@ -99,6 +99,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
             {r.displayStatus === 'pending_review' && (
               <button
                 onClick={(e) => { e.stopPropagation(); mutations.openApprovalModal(r); }}
+                title="Review and approve or reject this reservation"
                 className="px-3 py-1.5 bg-yellow-500/20 text-yellow-300 text-xs font-medium rounded-lg border border-yellow-500/30"
               >
                 Review
@@ -108,6 +109,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               <button
                 onClick={(e) => { e.stopPropagation(); mutations.createInvoice({ reservationId: r.id }); }}
                 disabled={mutations.isCreatingInvoice}
+                title="Generate invoice from entry summary"
                 className="px-3 py-1.5 text-white text-xs font-medium rounded-lg bg-gradient-to-r from-pink-500 to-purple-500"
               >
                 Invoice
@@ -116,6 +118,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
             {r.displayStatus === 'invoice_sent' && r.invoiceId && (
               <button
                 onClick={(e) => { e.stopPropagation(); mutations.openPaymentModal(r.invoiceId!); }}
+                title="Record a payment on this invoice"
                 className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30"
               >
                 Payment
@@ -125,13 +128,14 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               <button
                 onClick={(e) => { e.stopPropagation(); mutations.reopenSummary({ reservationId: r.id }); }}
                 disabled={mutations.isReopeningSummary}
+                title="Reopen summary so studio can fix the issue"
                 className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg"
               >
                 Fix
               </button>
             )}
             {r.displayStatus === 'paid_complete' && (
-              <span className="text-emerald-400 text-xs font-medium">Done ✓</span>
+              <span className="text-emerald-400 text-xs font-medium" title="All payments received">Done ✓</span>
             )}
 
             <button className="p-1 text-purple-300/50">
@@ -163,6 +167,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
             </div>
             <button
               onClick={() => mutations.openSpacesModal(r.id)}
+              title="Modify the number of spaces allocated to this studio"
               className="w-full mt-2 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-purple-200 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20"
             >
               <Edit className="h-3 w-3" />
@@ -195,8 +200,13 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
             )}
             {r.hasSummary && r.displayStatus !== 'paid_complete' && (
               <button
-                onClick={() => mutations.reopenSummary({ reservationId: r.id })}
+                onClick={() => {
+                  if (confirm(`Reopen summary for ${r.studioName}? This will allow them to modify their entry summary.`)) {
+                    mutations.reopenSummary({ reservationId: r.id });
+                  }
+                }}
                 disabled={mutations.isReopeningSummary}
+                title="Allow studio to make changes to their submitted summary"
                 className="w-full mt-2 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
               >
                 <RefreshCw className="h-3 w-3" />
@@ -235,8 +245,13 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
                 <div className="flex gap-2 pt-2 mt-2 border-t border-white/10">
                   <button
-                    onClick={() => mutations.sendInvoice({ invoiceId: r.invoiceId! })}
+                    onClick={() => {
+                      if (confirm(`Send invoice ${r.invoiceNumber || ''} to ${r.contactEmail}?`)) {
+                        mutations.sendInvoice({ invoiceId: r.invoiceId! });
+                      }
+                    }}
                     disabled={mutations.isSendingInvoice}
+                    title="Email this invoice to the studio"
                     className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg border border-cyan-500/30"
                   >
                     <Send className="h-3 w-3" />
@@ -244,14 +259,20 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                   </button>
                   <button
                     onClick={() => mutations.openPaymentModal(r.invoiceId!)}
+                    title="Record a payment on this invoice"
                     className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
                   >
                     <DollarSign className="h-3 w-3" />
                     Payment
                   </button>
                   <button
-                    onClick={() => mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' })}
+                    onClick={() => {
+                      if (confirm('Void this invoice? This action cannot be undone.')) {
+                        mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' });
+                      }
+                    }}
                     disabled={mutations.isVoidingInvoice}
+                    title="Cancel this invoice permanently"
                     className="px-3 py-2 text-xs font-medium text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg border border-red-500/30"
                   >
                     <Ban className="h-3 w-3" />
@@ -265,6 +286,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               <button
                 onClick={() => mutations.createInvoice({ reservationId: r.id })}
                 disabled={mutations.isCreatingInvoice}
+                title="Generate invoice from entry summary"
                 className="w-full px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 rounded-lg"
               >
                 {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
@@ -291,6 +313,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
             {!r.depositPaidAt && r.displayStatus !== 'pending_review' && (
               <button
                 onClick={() => mutations.openDepositModal(r.id)}
+                title="Mark the deposit as received for this reservation"
                 className="w-full mt-2 px-3 py-2 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
               >
                 Record Deposit

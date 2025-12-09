@@ -106,18 +106,20 @@ export function PipelineRow({
           <button
             onClick={() => mutations.openApprovalModal(r)}
             disabled={mutations.isApproving}
+            title="Review and approve or reject this reservation request"
             className="px-3 py-1.5 bg-yellow-500/20 text-yellow-300 text-xs font-medium rounded-lg border border-yellow-500/30 hover:bg-yellow-500/30 transition-colors"
           >
             Review Request
           </button>
         )}
         {r.displayStatus === 'approved' && (
-          <span className="text-purple-200/50 text-xs">Awaiting entries</span>
+          <span className="text-purple-200/50 text-xs" title="Studio is adding entries to their reservation">Awaiting entries</span>
         )}
         {r.displayStatus === 'ready_to_invoice' && (
           <button
             onClick={() => mutations.createInvoice({ reservationId: r.id })}
             disabled={mutations.isCreatingInvoice}
+            title="Generate an invoice from this studio's entry summary"
             className="px-3 py-1.5 text-white text-xs font-medium rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:shadow-lg hover:shadow-pink-500/30 transition-all"
           >
             {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
@@ -126,18 +128,20 @@ export function PipelineRow({
         {r.displayStatus === 'invoice_sent' && r.invoiceId && (
           <button
             onClick={() => mutations.openPaymentModal(r.invoiceId!)}
+            title="Record a partial or full payment on this invoice"
             className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors"
           >
             Record Payment
           </button>
         )}
         {r.displayStatus === 'paid_complete' && (
-          <span className="text-emerald-400 text-xs">Done</span>
+          <span className="text-emerald-400 text-xs" title="All payments received - reservation complete">Done</span>
         )}
         {r.displayStatus === 'needs_attention' && (
           <button
             onClick={() => mutations.reopenSummary({ reservationId: r.id })}
             disabled={mutations.isReopeningSummary}
+            title="Reopen the summary so studio can correct the issue"
             className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors"
           >
             {mutations.isReopeningSummary ? 'Fixing...' : 'Fix Issue'}

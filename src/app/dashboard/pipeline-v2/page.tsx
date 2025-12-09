@@ -3,6 +3,7 @@
 import { usePipelineV2 } from './usePipelineV2';
 import { PipelineV2 } from './PipelineV2';
 import ApplyPartialPaymentModal from '@/components/ApplyPartialPaymentModal';
+import RecordDepositModal from '@/components/RecordDepositModal';
 
 export default function PipelineV2Page() {
   const pipelineData = usePipelineV2();
@@ -11,6 +12,13 @@ export default function PipelineV2Page() {
   const paymentModalReservation = pipelineData.paymentModalInvoiceId
     ? pipelineData.allReservations.find(
         (r) => r.invoiceId === pipelineData.paymentModalInvoiceId
+      )
+    : null;
+
+  // Find the reservation for the deposit modal
+  const depositModalReservation = pipelineData.depositModalReservationId
+    ? pipelineData.allReservations.find(
+        (r) => r.id === pipelineData.depositModalReservationId
       )
     : null;
 
@@ -35,6 +43,17 @@ export default function PipelineV2Page() {
           invoiceId={pipelineData.paymentModalInvoiceId}
           currentBalance={paymentModalReservation.invoiceBalanceRemaining || 0}
           onClose={() => pipelineData.setPaymentModalInvoiceId(null)}
+          onSuccess={() => pipelineData.refetch()}
+        />
+      )}
+
+      {/* Deposit Modal */}
+      {pipelineData.depositModalReservationId && depositModalReservation && (
+        <RecordDepositModal
+          reservationId={pipelineData.depositModalReservationId}
+          studioName={depositModalReservation.studioName}
+          currentDeposit={depositModalReservation.depositAmount || 0}
+          onClose={() => pipelineData.setDepositModalReservationId(null)}
           onSuccess={() => pipelineData.refetch()}
         />
       )}

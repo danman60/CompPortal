@@ -247,7 +247,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
   // Sync custom discount input with current database value
   useEffect(() => {
-    if (discountPercent > 0) {
+    if (typeof discountPercent === 'number' && !isNaN(discountPercent) && discountPercent > 0) {
       setCustomDiscountInput(discountPercent.toFixed(1));
     } else {
       setCustomDiscountInput('');
@@ -390,7 +390,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <div className="bg-black/20 p-4 rounded-lg">
               <div className="text-xs text-gray-400 mb-1">Deposit</div>
               <div className="text-xl font-bold text-white">
-                ${invoice.reservation.depositAmount.toFixed(2)}
+                ${(invoice.reservation?.depositAmount ?? 0).toFixed(2)}
               </div>
             </div>
             <div className="bg-black/20 p-4 rounded-lg">

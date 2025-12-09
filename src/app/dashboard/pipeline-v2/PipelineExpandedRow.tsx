@@ -61,6 +61,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
               </div>
               <button
                 onClick={() => mutations.openSpacesModal(r.id)}
+                title="Modify the number of spaces allocated to this studio"
                 className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-purple-200 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20"
               >
                 <Edit className="h-3 w-3" />
@@ -90,6 +91,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                     <button
                       onClick={() => mutations.approveSpaceRequest({ reservationId: r.id })}
                       disabled={mutations.isApprovingSpaceRequest}
+                      title="Grant the additional spaces requested by this studio"
                       className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg border border-emerald-500/40"
                     >
                       <Check className="h-3 w-3" />
@@ -98,6 +100,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                     <button
                       onClick={() => mutations.denySpaceRequest({ reservationId: r.id })}
                       disabled={mutations.isDenyingSpaceRequest}
+                      title="Reject the request for additional spaces"
                       className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-red-300 bg-red-500/20 hover:bg-red-500/30 rounded-lg border border-red-500/40"
                     >
                       <X className="h-3 w-3" />
@@ -141,8 +144,13 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
               )}
               {r.hasSummary && r.displayStatus !== 'paid_complete' && (
                 <button
-                  onClick={() => mutations.reopenSummary({ reservationId: r.id })}
+                  onClick={() => {
+                    if (confirm(`Reopen summary for ${r.studioName}? This will allow them to modify their entry summary.`)) {
+                      mutations.reopenSummary({ reservationId: r.id });
+                    }
+                  }}
                   disabled={mutations.isReopeningSummary}
+                  title="Allow studio to make changes to their submitted summary"
                   className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
                 >
                   <RefreshCw className="h-3 w-3" />
@@ -184,8 +192,13 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                   {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
                     <>
                       <button
-                        onClick={() => mutations.sendInvoice({ invoiceId: r.invoiceId! })}
+                        onClick={() => {
+                          if (confirm(`Send invoice ${r.invoiceNumber || ''} to ${r.contactEmail}?`)) {
+                            mutations.sendInvoice({ invoiceId: r.invoiceId! });
+                          }
+                        }}
                         disabled={mutations.isSendingInvoice}
+                        title="Email this invoice to the studio contact"
                         className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg border border-cyan-500/30"
                       >
                         <Send className="h-3 w-3" />
@@ -193,14 +206,20 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                       </button>
                       <button
                         onClick={() => mutations.openPaymentModal(r.invoiceId!)}
+                        title="Record a partial or full payment on this invoice"
                         className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
                       >
                         <DollarSign className="h-3 w-3" />
                         Payment
                       </button>
                       <button
-                        onClick={() => mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' })}
+                        onClick={() => {
+                          if (confirm('Void this invoice? This action cannot be undone.')) {
+                            mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' });
+                          }
+                        }}
                         disabled={mutations.isVoidingInvoice}
+                        title="Cancel this invoice permanently"
                         className="px-2 py-1.5 text-xs font-medium text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg border border-red-500/30"
                       >
                         <Ban className="h-3 w-3" />
@@ -216,6 +235,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                   <button
                     onClick={() => mutations.createInvoice({ reservationId: r.id })}
                     disabled={mutations.isCreatingInvoice}
+                    title="Generate an invoice from this studio's entry summary"
                     className="mt-3 w-full px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 rounded-lg shadow-lg shadow-purple-500/25"
                   >
                     {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
@@ -245,6 +265,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
               {!r.depositPaidAt && r.displayStatus !== 'pending_review' && (
                 <button
                   onClick={() => mutations.openDepositModal(r.id)}
+                  title="Mark the deposit as received for this reservation"
                   className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg border border-emerald-500/30"
                 >
                   Record Deposit
