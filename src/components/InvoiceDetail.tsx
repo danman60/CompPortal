@@ -81,6 +81,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [showSubInvoices, setShowSubInvoices] = useState(false);
   const [otherCreditInput, setOtherCreditInput] = useState({ amount: 0, reason: "" });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [customDiscountInput, setCustomDiscountInput] = useState<string>('');
 
   // Get current user role
   const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
@@ -243,6 +244,15 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0; // Percentage discount
   const otherCreditAmount = dbInvoice ? Number(dbInvoice.other_credit_amount || 0) : 0; // Fixed credit
   const discountPercent = currentSubtotal > 0 ? (creditAmount / currentSubtotal) * 100 : 0;
+
+  // Sync custom discount input with current database value
+  useEffect(() => {
+    if (discountPercent > 0) {
+      setCustomDiscountInput(discountPercent.toFixed(1));
+    } else {
+      setCustomDiscountInput('');
+    }
+  }, [discountPercent]);
 
   // Debug logging (safe in useEffect to avoid hydration errors)
   useEffect(() => {
@@ -489,69 +499,57 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         </div>
       </div>
 
-      {/* Discount Buttons - Only for Competition Directors */}
+      {/* Discount Input - Only for Competition Directors */}
       {isCompetitionDirector && (
         <div className="mb-6 flex justify-end">
-          <div className="flex gap-2">
-            <span className="text-gray-300 self-center mr-2">Apply Discount:</span>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-300 mr-2">Discount:</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="0"
+              value={customDiscountInput}
+              onChange={(e) => setCustomDiscountInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && dbInvoice) {
+                  const percent = parseFloat(customDiscountInput) || 0;
+                  if (percent >= 0 && percent <= 100) {
+                    applyDiscountMutation.mutate({
+                      invoiceId: dbInvoice.id,
+                      discountPercentage: percent,
+                    });
+                  }
+                }
+              }}
+              disabled={!dbInvoice || applyDiscountMutation.isPending}
+              className="w-20 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-right disabled:opacity-50"
+            />
+            <span className="text-gray-300">%</span>
             <button
               onClick={() => {
                 if (!dbInvoice) return;
-                const newPercent = Math.abs(discountPercent - 5) < 0.01 ? 0 : 5;
+                const percent = parseFloat(customDiscountInput) || 0;
+                if (percent < 0 || percent > 100) {
+                  toast.error('Discount must be between 0% and 100%');
+                  return;
+                }
                 applyDiscountMutation.mutate({
                   invoiceId: dbInvoice.id,
-                  discountPercentage: newPercent,
+                  discountPercentage: percent,
                 });
               }}
               disabled={!dbInvoice || applyDiscountMutation.isPending}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
-                Math.abs(discountPercent - 5) < 0.01
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-              }`}
+              className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold text-sm hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50"
             >
-              5%
-            </button>
-            <button
-              onClick={() => {
-                if (!dbInvoice) return;
-                const newPercent = Math.abs(discountPercent - 10) < 0.01 ? 0 : 10;
-                applyDiscountMutation.mutate({
-                  invoiceId: dbInvoice.id,
-                  discountPercentage: newPercent,
-                });
-              }}
-              disabled={!dbInvoice || applyDiscountMutation.isPending}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
-                Math.abs(discountPercent - 10) < 0.01
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-              }`}
-            >
-              10%
-            </button>
-            <button
-              onClick={() => {
-                if (!dbInvoice) return;
-                const newPercent = Math.abs(discountPercent - 15) < 0.01 ? 0 : 15;
-                applyDiscountMutation.mutate({
-                  invoiceId: dbInvoice.id,
-                  discountPercentage: newPercent,
-                });
-              }}
-              disabled={!dbInvoice || applyDiscountMutation.isPending}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 ${
-                Math.abs(discountPercent - 15) < 0.01
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-              }`}
-            >
-              15%
+              {applyDiscountMutation.isPending ? 'Applying...' : 'Apply'}
             </button>
             {discountPercent > 0.01 && (
               <button
                 onClick={() => {
                   if (!dbInvoice) return;
+                  setCustomDiscountInput('');
                   applyDiscountMutation.mutate({
                     invoiceId: dbInvoice.id,
                     discountPercentage: 0,
@@ -561,18 +559,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all disabled:opacity-50"
               >
                 Clear
+              </button>
+            )}
+            <button
+              onClick={() => setShowCreditModal(true)}
+              className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg font-semibold text-sm hover:bg-purple-500/30 transition-all ml-4"
+            >
+              Other Credits
             </button>
-          )}
-          <button
-            onClick={() => setShowCreditModal(true)}
-            className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg font-semibold text-sm hover:bg-purple-500/30 transition-all ml-4"
-          >
-            💳 Other Credits
-          </button>
+          </div>
         </div>
-      </div>
-
       )}
+
       {/* Totals */}
       <div className="flex justify-end">
         <div className="w-full md:w-1/2 lg:w-1/3 space-y-2">
