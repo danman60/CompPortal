@@ -2286,7 +2286,7 @@ export default function ScheduleV2Page() {
                 />
 
                 {/* Draggable Block Buttons - Inline */}
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-1 2xl:gap-2 flex-shrink min-w-0">
                   <DraggableBlockCard
                     type="award"
                     onClick={() => handleCreateBlock('award')}
