@@ -215,8 +215,9 @@ function SortableScheduleRow({
   onEdit,
   onUnschedule,
   isSelected,
-  onToggleSelection,
-  eligibleAwards,
+  onToggleSelection,  eligibleAwards,
+  onDismissConflict,
+  onAutoFixSingle,
 }: {
   item: ScheduleItem;
   routine?: RoutineData;
@@ -235,6 +236,8 @@ function SortableScheduleRow({
   isSelected?: boolean;
   onToggleSelection?: (e: React.MouseEvent) => void;
   eligibleAwards?: Array<{ category: string; count: number }>; // P2-12
+  onDismissConflict?: () => void; // P2-conflict-hover
+  onAutoFixSingle?: () => void; // P2-conflict-hover
 }) {
   const {
     attributes,
@@ -244,6 +247,9 @@ function SortableScheduleRow({
     transition,
     isDragging,
   } = useSortable({ id: item.id });
+  // Conflict badge hover state
+  const [showConflictPopup, setShowConflictPopup] = useState(false);
+
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -362,11 +368,46 @@ function SortableScheduleRow({
               </span>
             )}
             {hasConflict && (
-              <span className="inline-flex items-center justify-center w-6 h-5 rounded text-xs"
-                style={{ background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)' }}
-                title={conflictInfo}>
-                ⚠️
-              </span>
+              <div 
+                className="relative"
+                onMouseEnter={() => setShowConflictPopup(true)}
+                onMouseLeave={() => setShowConflictPopup(false)}
+              >
+                <span className="inline-flex items-center justify-center w-6 h-5 rounded text-xs cursor-pointer"
+                  style={{ background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)' }}
+                  title={conflictInfo}>
+                  ⚠️
+                </span>
+                {/* Conflict hover popup */}
+                {showConflictPopup && (
+                  <div 
+                    className="absolute left-0 top-6 z-50 bg-gray-900 border border-red-500/50 rounded-lg shadow-2xl p-2 min-w-[140px]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-xs text-gray-300 mb-2 max-w-[180px] line-clamp-2">{conflictInfo}</div>
+                    <div className="flex gap-1">
+                      {onDismissConflict && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onDismissConflict(); setShowConflictPopup(false); }}
+                          className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+                          title="Dismiss this conflict warning"
+                        >
+                          ✕ Dismiss
+                        </button>
+                      )}
+                      {onAutoFixSingle && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onAutoFixSingle(); setShowConflictPopup(false); }}
+                          className="px-2 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded font-medium transition-colors"
+                          title="Auto-fix this conflict by moving routine"
+                        >
+                          🔧 FIX
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {hasNotes && (
               <span className="inline-flex items-center justify-center w-6 h-5 rounded text-xs"
@@ -455,8 +496,9 @@ function DroppableScheduleTable({
   selectedScheduledIds,
   setSelectedScheduledIds,
   lastClickedScheduledRoutineId,
-  setLastClickedScheduledRoutineId,
-  eligibleAwardsByBlockId,
+  setLastClickedScheduledRoutineId,  eligibleAwardsByBlockId,
+  onDismissConflict,
+  onAutoFixSingle,
 }: {
   scheduleOrder: string[];
   routinesMap: Map<string, RoutineData>;
@@ -474,6 +516,8 @@ function DroppableScheduleTable({
   lastClickedScheduledRoutineId: string | null;
   setLastClickedScheduledRoutineId: React.Dispatch<React.SetStateAction<string | null>>;
   eligibleAwardsByBlockId: Map<string, Array<{ category: string; count: number }>>; // P2-12
+  onDismissConflict: (routineId: string) => void; // P2-conflict-hover
+  onAutoFixSingle: (routineId: string) => void; // P2-conflict-hover
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'schedule-drop-zone' });
 
@@ -523,6 +567,7 @@ function DroppableScheduleTable({
     const block = isBlock ? blocksMap.get(actualId) : undefined;
 
     const duration = routine?.duration || block?.duration_minutes || 0;
+    const hasConflict = !isBlock && conflictsMap.has(actualId);
 
     // P2-11: For blocks (adjudications, breaks, events), start time should be at 5-minute boundary
     if (isBlock && currentMinutes % 5 !== 0) {
@@ -550,7 +595,7 @@ function DroppableScheduleTable({
         entryNumber={thisEntryNumber}
         timeString={timeString}
         hasTrophy={trophyIds.has(actualId)}
-        hasConflict={conflictsMap.has(actualId)}
+        hasConflict={hasConflict}
         conflictInfo={conflictsMap.get(actualId)}
         hasNotes={routine?.has_studio_requests}
         notesText={routine?.scheduling_notes}
@@ -561,6 +606,8 @@ function DroppableScheduleTable({
         isSelected={!isBlock && selectedScheduledIds.has(actualId)}
         onToggleSelection={!isBlock ? (e) => handleScheduledRoutineClick(actualId, e) : undefined}
         eligibleAwards={isBlock ? eligibleAwardsByBlockId.get(actualId) : undefined}
+        onDismissConflict={!isBlock && hasConflict ? () => onDismissConflict(actualId) : undefined}
+        onAutoFixSingle={!isBlock && hasConflict ? () => onAutoFixSingle(actualId) : undefined}
       />
     );
   });
@@ -626,6 +673,7 @@ export default function ScheduleV2Page() {
   // ===== STATE =====
   const [selectedDate, setSelectedDate] = useState('2026-04-11');
   const [scheduleByDate, setScheduleByDate] = useState<Record<string, string[]>>({});
+  const [dismissedConflicts, setDismissedConflicts] = useState<Set<string>>(new Set()); // P2-conflict-hover
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     classifications: [], ageGroups: [], genres: [], groupSizes: [], studios: [], routineAges: [], search: '',
@@ -1099,8 +1147,12 @@ export default function ScheduleV2Page() {
       }
     });
 
+    // Filter out dismissed conflicts
+    for (const routineId of dismissedConflicts) {
+      conflicts.delete(routineId);
+    }
     return conflicts;
-  }, [scheduleOrder, routinesMap, entryNumbersByRoutineId]);
+  }, [scheduleOrder, routinesMap, entryNumbersByRoutineId, dismissedConflicts]);
 
   // ===== COMPUTED: Day Conflict Count =====
   const dayConflictCount = useMemo(() => {
@@ -1547,6 +1599,8 @@ export default function ScheduleV2Page() {
   // Discard changes (V1 parity)
   const handleDiscardChanges = () => {
     setScheduleByDate({});
+    setTempBlocks(new Map()); // Clear temp blocks too (P2-audit)
+    setDismissedConflicts(new Set()); // Clear dismissed conflicts (P2-audit)
     refetchBlocks();
     refetch();
     toast.success('Changes discarded');
@@ -1568,6 +1622,20 @@ export default function ScheduleV2Page() {
   };
 
   const handleUpdateBlock = async (blockId: string, title: string, duration: number) => {
+    // If temp block (not yet saved), update local state only
+    if (blockId.startsWith('temp-')) {
+      setTempBlocks(prev => {
+        const next = new Map(prev);
+        const existing = next.get(blockId);
+        if (existing) {
+          next.set(blockId, { ...existing, title, duration_minutes: duration });
+        }
+        return next;
+      });
+      return;
+    }
+
+    // Otherwise, update in database
     await updateBlockDetailsMutation.mutateAsync({
       blockId,
       title,
@@ -1971,11 +2039,93 @@ export default function ScheduleV2Page() {
       setShowEditStartTimeModal(false);
     } catch (error) {
       console.error('Failed to update start time:', error);
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to update start time: ${msg}`); // P2-audit: Show error to user
+      return; // Don't close modal on error
     }
   };
 
   // Get active item for overlay
   const activeRoutine = activeId && !activeId.startsWith('block-') ? routinesMap.get(activeId) : null;
+
+  // ===== CONFLICT BADGE HANDLERS (P2-conflict-hover) =====
+  
+  // Dismiss a single conflict warning
+  const handleDismissConflict = (routineId: string) => {
+    setDismissedConflicts(prev => {
+      const next = new Set(prev);
+      next.add(routineId);
+      return next;
+    });
+  };
+
+  // Auto-fix a single routine conflict
+  const handleAutoFixSingle = (routineId: string) => {
+    // Build routine data for autoFixRoutineConflict
+    const dayScheduleData = scheduleOrder
+      .filter(id => !id.startsWith('block-'))
+      .map((id, index) => {
+        const routine = routinesMap.get(id);
+        if (!routine) return null;
+        return {
+          id: routine.id,
+          title: routine.title,
+          entryNumber: entryNumbersByRoutineId.get(id) ?? (100 + index),
+          participants: (routine.dancer_names || []).map(name => ({ dancerId: name, dancerName: name })),
+          scheduledDateString: selectedDate,
+        };
+      })
+      .filter(Boolean) as Array<{
+        id: string;
+        title: string;
+        entryNumber?: number;
+        participants: Array<{ dancerId: string; dancerName: string }>;
+        scheduledDateString?: string | null;
+      }>;
+
+    const result = autoFixRoutineConflict(routineId, dayScheduleData);
+
+    if (result.success && result.newSchedule) {
+      // Update schedule order with new positions
+      const newRoutineOrder = result.newSchedule.map(r => r.id);
+      
+      // Rebuild full schedule order with blocks preserved in relative position
+      const blocks = scheduleOrder.filter(id => id.startsWith('block-'));
+      
+      // Simple approach: put blocks at their original relative positions
+      const newOrder: string[] = [];
+      let routineIndex = 0;
+      
+      for (const id of scheduleOrder) {
+        if (id.startsWith('block-')) {
+          newOrder.push(id);
+        } else {
+          if (routineIndex < newRoutineOrder.length) {
+            newOrder.push(newRoutineOrder[routineIndex]);
+            routineIndex++;
+          }
+        }
+      }
+      // Add any remaining routines
+      while (routineIndex < newRoutineOrder.length) {
+        newOrder.push(newRoutineOrder[routineIndex]);
+        routineIndex++;
+      }
+      
+      setScheduleByDate(prev => ({ ...prev, [selectedDate]: newOrder }));
+      // Schedule state automatically tracks unsaved changes
+      
+      // Show feedback
+      if (result.result.movedRoutines.length > 0) {
+        const moved = result.result.movedRoutines[0];
+        console.log(`Auto-fixed: Moved "${moved.routineTitle}" from position ${moved.fromPosition + 1} to ${moved.toPosition + 1}`);
+      }
+    } else if (result.result.unresolvedConflicts.length > 0) {
+      const reason = result.result.unresolvedConflicts[0].reason;
+      console.warn('Could not auto-fix:', reason);
+      toast.error(`Could not auto-fix: ${reason}`); // P2-audit: Show error to user
+    }
+  };
 
   // ===== RENDER =====
   if (isLoading) {
@@ -2312,6 +2462,8 @@ export default function ScheduleV2Page() {
                 dayStartMinutes={getDayStartMinutes(selectedDate)}
                 entryNumbersByRoutineId={entryNumbersByRoutineId}
                 eligibleAwardsByBlockId={eligibleAwardsByBlockId}
+                onDismissConflict={handleDismissConflict}
+                onAutoFixSingle={handleAutoFixSingle}
                 onDeleteBlock={handleDeleteBlock}
                 onEditBlock={(block) => {
                   // Find routine number that comes before this block for auto-population

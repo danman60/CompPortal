@@ -302,24 +302,52 @@ export const schedulingRouter = router({
       }
 
       // Draft state architecture: Save complete final state in one atomic transaction
-      // Two-phase approach to avoid unique constraint violations:
-      // 1. Clear entry numbers for all routines we're about to schedule
+      // Three-phase approach to avoid unique constraint violations:
+      // 0. Validate no duplicate entry numbers in input (catches frontend bugs)
+      // 1. Clear entry numbers that will be used (both this date AND any conflicts on other days)
       // 2. Set new entry numbers and times
+
+      // Phase 0: Validate no duplicate entry numbers in input
+      const entryNumbers = input.routines.map(r => r.entryNumber);
+      const uniqueEntryNumbers = new Set(entryNumbers);
+      if (entryNumbers.length !== uniqueEntryNumbers.size) {
+        const counts = new Map<number, number>();
+        entryNumbers.forEach(n => counts.set(n, (counts.get(n) || 0) + 1));
+        const duplicates = Array.from(counts.entries())
+          .filter(([_, count]) => count > 1)
+          .map(([num, count]) => `#${num}(x${count})`);
+        console.error(`[schedule] DUPLICATE ENTRY NUMBERS on ${input.date}:`, duplicates);
+        throw new Error(`Duplicate entry numbers: ${duplicates.join(', ')}. Frontend entryNumbersByRoutineId bug.`);
+      }
+
       const updates = await prisma.$transaction(async (tx) => {
         const routineIds = input.routines.map(r => r.routineId);
 
-        // Phase 1: Clear entry numbers ONLY for this specific date
-        // CRITICAL: Only clear the date being saved to preserve other days in multi-day schedules
-        // This allows Thursday and Saturday to be saved independently without overwriting each other
+        // Phase 1a: Clear entry numbers for this specific date
         await tx.competition_entries.updateMany({
           where: {
             competition_id: input.competitionId,
             tenant_id: input.tenantId,
-            performance_date: new Date(input.date), // Only clear this date
+            performance_date: new Date(input.date),
           },
           data: {
             entry_number: null,
             is_scheduled: false,
+          },
+        });
+
+        // Phase 1b: Also clear any existing entry_numbers that will be assigned
+        // This handles conflicts when global renumbering assigns numbers already used on other days
+        await tx.competition_entries.updateMany({
+          where: {
+            competition_id: input.competitionId,
+            tenant_id: input.tenantId,
+            entry_number: { in: entryNumbers },
+            // Only clear OTHER routines (not the ones we're about to update)
+            id: { notIn: routineIds },
+          },
+          data: {
+            entry_number: null,
           },
         });
 
