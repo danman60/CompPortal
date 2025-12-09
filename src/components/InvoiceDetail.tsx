@@ -238,7 +238,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   // Calculate subtotal from current line items (editable or display)
   const currentLineItems = isEditingPrices ? editableLineItems : displayLineItems;
   const currentSubtotal = currentLineItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
-  const taxRate = invoice?.summary.taxRate || 0;
+  const taxRate = invoice?.summary?.taxRate || 0;
 
   // Get discounts and credits from database (source of truth)
   const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0; // Percentage discount
@@ -472,7 +472,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                         className="w-24 px-2 py-1 bg-white/10 border border-white/30 rounded text-right text-white"
                       />
                     ) : (
-                      `$${item.entryFee.toFixed(2)}`
+                      `$${(item.entryFee ?? 0).toFixed(2)}`
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-yellow-400">
@@ -486,11 +486,11 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                         className="w-24 px-2 py-1 bg-white/10 border border-white/30 rounded text-right text-white"
                       />
                     ) : (
-                      item.lateFee > 0 ? `$${item.lateFee.toFixed(2)}` : '-'
+                      item.lateFee > 0 ? `$${(item.lateFee ?? 0).toFixed(2)}` : '-'
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-white font-semibold">
-                    ${item.total.toFixed(2)}
+                    ${(item.total ?? 0).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -828,16 +828,16 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               item.category,
               item.sizeCategory,
               item.participantCount,
-              `$${item.entryFee.toFixed(2)}`,
-              `$${item.lateFee.toFixed(2)}`,
-              `$${item.total.toFixed(2)}`
+              `$${(item.entryFee ?? 0).toFixed(2)}`,
+              `$${(item.lateFee ?? 0).toFixed(2)}`,
+              `$${(item.total ?? 0).toFixed(2)}`
             ]);
 
             // Add summary rows
             rows.push([]);
-            rows.push(['', '', '', '', '', '', 'Subtotal:', `$${invoice.summary.subtotal.toFixed(2)}`]);
-            rows.push(['', '', '', '', '', '', `Tax (${invoice.summary.taxRate}%):`, `$${invoice.summary.taxAmount.toFixed(2)}`]);
-            rows.push(['', '', '', '', '', '', 'Total:', `$${invoice.summary.totalAmount.toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', 'Subtotal:', `$${(invoice.summary?.subtotal ?? 0).toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', `Tax (${invoice.summary?.taxRate ?? 0}%):`, `$${(invoice.summary?.taxAmount ?? 0).toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', 'Total:', `$${(invoice.summary?.totalAmount ?? 0).toFixed(2)}`]);
 
             // Convert to CSV
             const csvContent = [headers, ...rows]
