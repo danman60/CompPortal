@@ -54,6 +54,9 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-white truncate">{r.studioName}</h3>
+              {r.isStudioClaimed && (
+                <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded border border-emerald-500/30 flex-shrink-0">CLAIMED</span>
+              )}
               {r.hasIssue && (
                 <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded flex-shrink-0">FIX</span>
               )}

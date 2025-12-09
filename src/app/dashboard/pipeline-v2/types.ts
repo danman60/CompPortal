@@ -72,6 +72,8 @@ export interface PipelineReservation {
   pendingSpacesJustification: string | null;
   pendingSpacesRequestedAt: Date | null;
   pendingSpacesRequestedBy: string | null;
+  // Studio claim status
+  isStudioClaimed: boolean;
 }
 
 // Competition capacity for overview section

@@ -1509,6 +1509,7 @@ export const reservationRouter = router({
             phone: true,
             address1: true,
             created_at: true,
+            owner_id: true,
           },
         },
         competitions: {
@@ -1618,6 +1619,8 @@ export const reservationRouter = router({
         pendingSpacesJustification: r.pending_spaces_justification || null,
         pendingSpacesRequestedAt: r.pending_spaces_requested_at || null,
         pendingSpacesRequestedBy: r.pending_spaces_requested_by || null,
+        // Studio claim status - indicates if studio has an active owner
+        isStudioClaimed: !!r.studios?.owner_id,
       };
     });
 

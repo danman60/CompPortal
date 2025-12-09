@@ -47,6 +47,9 @@ export function PipelineRow({
       <td className="px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="font-medium text-white">{r.studioName}</span>
+          {r.isStudioClaimed && (
+            <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded border border-emerald-500/30">CLAIMED</span>
+          )}
           {r.hasIssue && (
             <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">FIX</span>
           )}
