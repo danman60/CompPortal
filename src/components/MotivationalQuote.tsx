@@ -57,8 +57,13 @@ const QUOTES = [
 ];
 
 export default function MotivationalQuote() {
-  // Random quote on each page load (login)
-  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  // Start with consistent quote to avoid hydration mismatch, then randomize after mount
+  const [quote, setQuote] = useState(QUOTES[0]);
+
+  useEffect(() => {
+    // Pick random quote after hydration is complete
+    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  }, []);
 
   return (
     <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-md rounded-xl border border-purple-400/30 p-4">
