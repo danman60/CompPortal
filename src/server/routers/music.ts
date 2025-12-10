@@ -217,7 +217,7 @@ export const musicRouter = router({
           select: {
             name: true,
             email: true,
-            tenants: { select: { subdomain: true } },
+            tenants: { select: { subdomain: true, branding: true } },
           },
         }),
         prisma.competitions.findUnique({
@@ -278,6 +278,7 @@ export const musicRouter = router({
       const { sendEmail } = await import('@/lib/email');
 
       const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+      const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string } | null;
       const data = {
         studioName: studio.name,
         competitionName: competition.name,
@@ -289,6 +290,7 @@ export const musicRouter = router({
         })),
         portalUrl,
         daysUntilCompetition,
+        tenantBranding: branding || undefined,
       };
 
       const html = await renderMissingMusicReminder(data);
@@ -331,7 +333,7 @@ export const musicRouter = router({
           id: true,
           name: true,
           email: true,
-          tenants: { select: { subdomain: true } },
+          tenants: { select: { subdomain: true, branding: true } },
         },
       });
 
@@ -410,6 +412,7 @@ export const musicRouter = router({
           const { sendEmail } = await import('@/lib/email');
 
           const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+          const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string } | null;
           const data = {
             studioName: studio.name,
             competitionName: competition.name,
@@ -421,6 +424,7 @@ export const musicRouter = router({
             })),
             portalUrl,
             daysUntilCompetition,
+            tenantBranding: branding || undefined,
           };
 
           const html = await renderMissingMusicReminder(data);

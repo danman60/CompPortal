@@ -494,10 +494,10 @@ export const studioRouter = router({
 
       // Send "studio_profile_submitted" email to Competition Directors (non-blocking)
       try {
-        // Get tenant subdomain for URL construction
+        // Get tenant subdomain and branding for URL construction and email styling
         const tenant = await prisma.tenants.findUnique({
           where: { id: ctx.tenantId! },
-          select: { subdomain: true },
+          select: { subdomain: true, branding: true },
         });
 
         if (!tenant) {
@@ -505,6 +505,7 @@ export const studioRouter = router({
         }
 
         const portalUrl = `https://${tenant.subdomain}.compsync.net`;
+        const branding = tenant.branding as { primaryColor?: string; secondaryColor?: string } | null;
 
         // Get all Competition Directors for this tenant
         const competitionDirectors = await prisma.user_profiles.findMany({
@@ -532,6 +533,7 @@ export const studioRouter = router({
             city: studio.city || undefined,
             province: studio.province || undefined,
             portalUrl: `${portalUrl}/dashboard/admin/studios`,
+            tenantBranding: branding || undefined,
           };
 
           const html = await renderStudioProfileSubmitted(emailData);
@@ -663,10 +665,12 @@ export const studioRouter = router({
               : undefined;
 
             const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+            const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string; logo?: string } | null;
             const emailData: StudioApprovedData = {
               studioName: studio.name,
               ownerName,
               portalUrl: `${portalUrl}/dashboard`,
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderStudioApproved(emailData);
@@ -680,7 +684,6 @@ export const studioRouter = router({
 
             // Also send welcome email
             const tenantName = studio.tenants?.name || 'Competition Portal';
-            const branding = studio.tenants?.branding as any;
             const welcomeHtml = await renderEmail(
               WelcomeEmail({
                 name: ownerName || 'Studio Owner',
@@ -736,6 +739,7 @@ export const studioRouter = router({
           tenants: {
             select: {
               subdomain: true,
+              branding: true,
             },
           },
         },
@@ -789,12 +793,14 @@ export const studioRouter = router({
               : undefined;
 
             const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+            const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string } | null;
             const emailData: StudioRejectedData = {
               studioName: studio.name,
               ownerName,
               reason: input.reason,
               portalUrl: `${portalUrl}/dashboard`,
               contactEmail: process.env.CONTACT_EMAIL || 'info@example.com',
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderStudioRejected(emailData);

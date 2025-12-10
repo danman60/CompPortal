@@ -681,6 +681,13 @@ export const invoiceRouter = router({
       // Build tenant-specific URL
       const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
 
+      // Get tenant branding
+      const tenantBrandingData = await prisma.tenants.findUnique({
+        where: { id: ctx.tenantId! },
+        select: { branding: true },
+      });
+      const branding = tenantBrandingData?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
       const emailData: InvoiceDeliveryData = {
         studioName: studio.name,
         competitionName: competition.name,
@@ -689,6 +696,7 @@ export const invoiceRouter = router({
         totalAmount,
         routineCount,
         invoiceUrl: `${baseUrl}/dashboard/invoices/${invoice.id}/${invoice.competition_id}`,
+        tenantBranding: branding || undefined,
       };
 
       const html = await renderInvoiceDelivery(emailData);
@@ -1008,7 +1016,8 @@ export const invoiceRouter = router({
             owner_id: true,
             name: true,
             email: true,
-            tenants: { select: { subdomain: true } },
+            tenant_id: true,
+            tenants: { select: { subdomain: true, branding: true } },
           },
         });
 
@@ -1028,6 +1037,7 @@ export const invoiceRouter = router({
             const totalAmount = Number(updatedInvoice.amount_due || updatedInvoice.total || 0);
 
             const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+            const branding = studio.tenants.branding as { primaryColor?: string; secondaryColor?: string } | null;
             const emailData: InvoiceDeliveryData = {
               studioName: studio.name,
               competitionName: competition.name,
@@ -1036,6 +1046,7 @@ export const invoiceRouter = router({
               totalAmount,
               routineCount,
               invoiceUrl: `${baseUrl}/dashboard/invoices/${updatedInvoice.id}/${updatedInvoice.competition_id}`,
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderInvoiceDelivery(emailData);
@@ -1145,7 +1156,7 @@ export const invoiceRouter = router({
       try {
         const studio = await prisma.studios.findUnique({
           where: { id: invoice.studio_id },
-          select: { owner_id: true, name: true, email: true },
+          select: { owner_id: true, name: true, email: true, tenants: { select: { branding: true } } },
         });
 
         const competition = await prisma.competitions.findUnique({
@@ -1157,6 +1168,7 @@ export const invoiceRouter = router({
           const isEnabled = await isEmailEnabled(studio.owner_id, 'payment_confirmed');
 
           if (isEnabled) {
+            const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string } | null;
             const emailData: PaymentConfirmedData = {
               studioName: studio.name,
               competitionName: competition.name,
@@ -1165,6 +1177,7 @@ export const invoiceRouter = router({
               paymentStatus: 'paid',
               invoiceNumber: invoice.id.substring(0, 8),
               paymentDate: new Date().toISOString(),
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderPaymentConfirmed(emailData);

@@ -511,6 +511,13 @@ export const entryRouter = router({
           },
         });
 
+        // Fetch tenant branding for emails
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: studio.tenant_id },
+          select: { branding: true },
+        });
+        const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
         // Send email to each CD who has this preference enabled
         for (const cd of competitionDirectors) {
           const isEnabled = await isEmailEnabled(cd.id, 'routine_summary_submitted');
@@ -527,6 +534,7 @@ export const entryRouter = router({
             totalFees,
             studioEmail: studio.email || '',
             portalUrl: await getTenantPortalUrl(studio.tenant_id, '/dashboard/routine-summaries'),
+            tenantBranding: branding || undefined,
           };
 
           const html = await renderRoutineSummarySubmitted(emailData);

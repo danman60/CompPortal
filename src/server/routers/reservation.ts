@@ -537,6 +537,13 @@ export const reservationRouter = router({
           select: { email: true },
         });
 
+        // Get tenant branding
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: studio.tenant_id },
+          select: { branding: true },
+        });
+        const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
         // Send email to each CD who has this preference enabled
         for (const cd of competitionDirectors) {
           const isEnabled = await isEmailEnabled(cd.id, 'reservation_submitted');
@@ -552,6 +559,7 @@ export const reservationRouter = router({
             spacesRequested: reservation.spaces_requested,
             studioEmail: studioWithEmail?.email || '',
             portalUrl: await getTenantPortalUrl(studio.tenant_id, '/dashboard/reservation-pipeline'),
+            tenantBranding: branding || undefined,
           };
 
           const html = await renderReservationSubmitted(emailData);
@@ -800,11 +808,17 @@ export const reservationRouter = router({
             console.log('[EMAIL DEBUG] Email preference check', { isEnabled });
 
             if (isEnabled) {
-              // Get tenant_id for URL generation
+              // Get tenant_id and branding for URL generation and email styling
               const reservationTenant = await prisma.reservations.findUnique({
                 where: { id: reservation.id },
                 select: { tenant_id: true },
               });
+
+              const tenantBrandingData = await prisma.tenants.findUnique({
+                where: { id: reservationTenant!.tenant_id },
+                select: { branding: true },
+              });
+              const branding = tenantBrandingData?.branding as { primaryColor?: string; secondaryColor?: string } | null;
 
               const emailData: ReservationApprovedData = {
                 studioName: reservation.studios.name,
@@ -812,6 +826,7 @@ export const reservationRouter = router({
                 competitionYear: reservation.competitions?.year || new Date().getFullYear(),
                 spacesConfirmed: reservation.spaces_confirmed || 0,
                 portalUrl: await getTenantPortalUrl(reservationTenant!.tenant_id, '/dashboard/entries'),
+                tenantBranding: branding || undefined,
               };
 
               const html = await renderReservationApproved(emailData);
@@ -933,11 +948,17 @@ export const reservationRouter = router({
             const isEnabled = await isEmailEnabled(studio.owner_id, 'reservation_rejected');
 
             if (isEnabled) {
-              // Get tenant_id for URL generation
+              // Get tenant_id and branding for URL generation and email styling
               const reservationTenant = await prisma.reservations.findUnique({
                 where: { id: reservation.id },
                 select: { tenant_id: true },
               });
+
+              const tenantBrandingData = await prisma.tenants.findUnique({
+                where: { id: reservationTenant!.tenant_id },
+                select: { branding: true },
+              });
+              const branding = tenantBrandingData?.branding as { primaryColor?: string; secondaryColor?: string } | null;
 
               const emailData: ReservationRejectedData = {
                 studioName: reservation.studios.name,
@@ -946,6 +967,7 @@ export const reservationRouter = router({
                 reason: input.reason,
                 portalUrl: await getTenantPortalUrl(reservationTenant!.tenant_id, '/dashboard/reservations'),
                 contactEmail: reservation.competitions?.contact_email || process.env.EMAIL_FROM || 'info@glowdance.com',
+                tenantBranding: branding || undefined,
               };
 
               const html = await renderReservationRejected(emailData);
@@ -1176,6 +1198,13 @@ export const reservationRouter = router({
             },
           });
 
+          // Get tenant branding
+          const tenantBrandingData = await prisma.tenants.findUnique({
+            where: { id: ctx.tenantId! },
+            select: { branding: true },
+          });
+          const branding = tenantBrandingData?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
           const emailData: PaymentConfirmedData = {
             studioName: reservation.studios.name,
             competitionName: reservation.competitions.name,
@@ -1188,6 +1217,7 @@ export const reservationRouter = router({
               month: 'long',
               day: 'numeric',
             }),
+            tenantBranding: branding || undefined,
           };
 
           const html = await renderPaymentConfirmed(emailData);
