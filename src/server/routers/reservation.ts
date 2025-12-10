@@ -6,7 +6,6 @@ import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
 import { isSuperAdmin } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
-import { EmailService } from '@/lib/services/emailService';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getTenantPortalUrl } from '@/lib/tenant-url';
@@ -18,6 +17,7 @@ import {
   renderPaymentConfirmed,
   renderInvoiceDelivery,
   renderSpaceRequestNotification,
+  renderSummaryReopened,
   getEmailSubject,
   type ReservationApprovedData,
   type ReservationRejectedData,
@@ -26,6 +26,7 @@ import {
   type PaymentConfirmedData,
   type InvoiceDeliveryData,
   type SpaceRequestNotificationData,
+  type SummaryReopenedData,
 } from '@/lib/email-templates';
 import { guardReservationStatus } from '@/lib/guards/statusGuards';
 import { validateReservationCapacity } from '@/lib/validators/businessRules';
@@ -2547,6 +2548,7 @@ ${input.comments}
             select: {
               id: true,
               name: true,
+              year: true,
               tenant_id: true,
             },
           },
@@ -2628,23 +2630,31 @@ ${input.comments}
           // Get tenant info for branding
           const tenant = await prisma.tenants.findUnique({
             where: { id: reservation.competitions.tenant_id },
-            select: { name: true },
+            select: { name: true, branding: true },
           });
 
-          const dashboardUrl = await getTenantPortalUrl(
+          const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+          const portalUrl = await getTenantPortalUrl(
             reservation.competitions.tenant_id,
             '/dashboard/entries'
           );
 
-          await EmailService.sendSummaryReopened({
-            studioEmail: reservation.studios.email,
+          const emailData: SummaryReopenedData = {
             studioName: reservation.studios.name,
-            studioPublicCode: reservation.studios.public_code || undefined,
             competitionName: reservation.competitions.name,
-            competitionId: reservation.competitions.id,
+            competitionYear: reservation.competitions.year || new Date().getFullYear(),
+            portalUrl,
+            tenantBranding: branding || undefined,
+          };
+
+          const html = await renderSummaryReopened(emailData);
+          await sendEmail({
+            to: reservation.studios.email,
+            subject: `Action Required: Summary Reopened - ${reservation.competitions.name}`,
+            html,
+            templateType: 'summary-reopened',
             studioId: reservation.studios.id,
-            tenantName: tenant?.name || undefined,
-            dashboardUrl,
+            competitionId: reservation.competitions.id,
           });
           emailSent = true;
         } catch (emailError) {

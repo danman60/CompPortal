@@ -16,6 +16,7 @@ import WelcomeEmail from '@/emails/WelcomeEmail';
 import DailyDigest from '@/emails/DailyDigest';
 import AccountRecovery from '@/emails/AccountRecovery';
 import SpaceRequestNotification from '@/emails/SpaceRequestNotification';
+import SummaryReopened from '@/emails/SummaryReopened';
 
 /**
  * Render email templates to HTML
@@ -195,6 +196,15 @@ export interface SpaceRequestNotificationData {
   tenantBranding?: TenantBranding;
 }
 
+export interface SummaryReopenedData {
+  studioName: string;
+  competitionName: string;
+  competitionYear: number;
+  reason?: string;
+  portalUrl: string;
+  tenantBranding?: TenantBranding;
+}
+
 export interface DailyDigestData {
   userName: string;
   tenantName: string;
@@ -346,6 +356,13 @@ export async function renderAccountRecovery(data: AccountRecoveryData) {
  */
 export async function renderSpaceRequestNotification(data: SpaceRequestNotificationData) {
   return render(<SpaceRequestNotification {...data} />);
+}
+
+/**
+ * Render summary reopened email (for SD)
+ */
+export async function renderSummaryReopened(data: SummaryReopenedData) {
+  return render(<SummaryReopened {...data} />);
 }
 
 /**
