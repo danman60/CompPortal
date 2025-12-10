@@ -27,6 +27,13 @@ const kpiCards: KPICard[] = [
     hoverBorder: 'hover:border-yellow-400/50',
   },
   {
+    key: 'approved',
+    label: 'Awaiting Submission',
+    getValue: (s) => s.approved,
+    textColor: 'text-orange-400',
+    hoverBorder: 'hover:border-orange-400/50',
+  },
+  {
     key: 'ready_to_invoice',
     label: 'Ready to Invoice',
     getValue: (s) => s.readyToInvoice,
@@ -59,29 +66,45 @@ const kpiCards: KPICard[] = [
 
 export function KPICards({ stats, onFilterClick, activeFilter }: PipelineKPICardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-      {kpiCards.map((card) => {
-        const value = card.getValue(stats);
-        const isActive = activeFilter === card.key;
-        const isClickable = card.key !== null && card.hoverBorder;
-
-        return (
+    <div className="space-y-3">
+      {/* Clear Filter Button - shown when a filter is active */}
+      {activeFilter && (
+        <div className="flex justify-end">
           <button
-            key={card.key || 'total'}
-            onClick={() => isClickable && onFilterClick(isActive ? null : card.key)}
-            className={`glass-card bg-white/10 backdrop-blur-sm rounded-xl p-4 border-2 transition-all ${
-              isClickable ? 'cursor-pointer' : 'cursor-default'
-            } ${
-              isActive
-                ? 'border-white/40 bg-white/20'
-                : `border-white/20 ${card.hoverBorder} ${card.extraBorder || ''}`
-            }`}
+            onClick={() => onFilterClick(null)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 text-white/80 hover:text-white rounded-lg border border-white/20 transition-all"
           >
-            <div className={`text-2xl font-bold ${card.textColor}`}>{value}</div>
-            <div className="text-xs text-purple-200/60 mt-1">{card.label}</div>
+            <span>✕</span>
+            <span>Clear Filter</span>
           </button>
-        );
-      })}
+        </div>
+      )}
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        {kpiCards.map((card) => {
+          const value = card.getValue(stats);
+          const isActive = activeFilter === card.key;
+          const isClickable = card.key !== null && card.hoverBorder;
+
+          return (
+            <button
+              key={card.key || 'total'}
+              onClick={() => isClickable && onFilterClick(isActive ? null : card.key)}
+              className={`glass-card bg-white/10 backdrop-blur-sm rounded-xl p-4 border-2 transition-all ${
+                isClickable ? 'cursor-pointer' : 'cursor-default'
+              } ${
+                isActive
+                  ? 'border-white/40 bg-white/20'
+                  : `border-white/20 ${card.hoverBorder} ${card.extraBorder || ''}`
+              }`}
+            >
+              <div className={`text-2xl font-bold ${card.textColor}`}>{value}</div>
+              <div className="text-xs text-purple-200/60 mt-1">{card.label}</div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

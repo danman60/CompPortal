@@ -45,6 +45,18 @@ export interface InvoiceSentEmailParams {
   tenantName?: string;
 }
 
+export interface SummaryReopenedEmailParams {
+  studioEmail: string;
+  studioName: string;
+  studioPublicCode?: string;
+  competitionName: string;
+  competitionId: string;
+  studioId: string;
+  tenantName?: string;
+  dashboardUrl?: string;
+  reason?: string;
+}
+
 export class EmailService {
   /**
    * Send reservation approval email
@@ -171,6 +183,58 @@ export class EmailService {
         operationName: 'sendInvoice',
         entityType: 'invoice',
         entityId: competitionId,
+        error,
+      });
+
+      // Re-throw so caller knows email failed
+      throw error;
+    }
+  }
+
+  /**
+   * Send summary reopened notification
+   * Notifies studio that their summary has been reopened for editing
+   */
+  static async sendSummaryReopened(params: SummaryReopenedEmailParams) {
+    const { studioEmail, studioName, studioPublicCode, competitionName, competitionId, studioId, tenantName, dashboardUrl, reason } = params;
+    const teamName = tenantName || 'Competition';
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #f97316;">📝 Action Required: Summary Reopened</h2>
+        <p>Hello ${studioName}${studioPublicCode ? ` <span style="color: #9333ea; font-weight: 600;">(Code: ${studioPublicCode})</span>` : ''},</p>
+        <p>Your entry summary for <strong>${competitionName}</strong> has been reopened by the Competition Director.</p>
+        ${reason ? `<div style="background-color: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f97316;"><p style="margin: 0;"><strong>Reason:</strong> ${reason}</p></div>` : ''}
+        <div style="background-color: #fff7ed; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 10px 0;"><strong>What this means:</strong></p>
+          <ul style="margin: 0; padding-left: 20px;">
+            <li>Your previous submission has been reset</li>
+            <li>You can now make changes to your entries</li>
+            <li>Please review and resubmit when ready</li>
+          </ul>
+        </div>
+        ${dashboardUrl ? `<p><a href="${dashboardUrl}" style="display: inline-block; background-color: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Go to Dashboard</a></p>` : ''}
+        <p>If you have any questions about what changes need to be made, please contact the Competition Director.</p>
+        <p>Best regards,<br/>${teamName} Team</p>
+      </div>
+    `;
+
+    try {
+      return await sendEmail({
+        to: studioEmail,
+        subject: `Action Required: Summary Reopened - ${competitionName}`,
+        html,
+        templateType: 'summary-reopened',
+        studioId,
+        competitionId,
+      });
+    } catch (error) {
+      // Track failure for visibility and retry capability
+      await trackFailure({
+        operationType: 'email',
+        operationName: 'sendSummaryReopened',
+        entityType: 'reservation',
+        entityId: studioId,
         error,
       });
 

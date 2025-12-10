@@ -6,6 +6,7 @@ import { logActivity } from '@/lib/activity';
 import { isStudioDirector } from '@/lib/permissions';
 import { isSuperAdmin } from '@/lib/auth-utils';
 import { sendEmail } from '@/lib/email';
+import { EmailService } from '@/lib/services/emailService';
 import { logger } from '@/lib/logger';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getTenantPortalUrl } from '@/lib/tenant-url';
@@ -1433,24 +1434,28 @@ export const reservationRouter = router({
         return 'needs_attention';
       }
 
-      // Check invoice status - treat VOID/VOIDED as no invoice (ready for new invoice)
-      if (invoice) {
-        if (invoice.status === 'PAID') return 'paid_complete';
-        if (invoice.status === 'SENT') return 'invoice_sent';
-        if (invoice.status === 'VOIDED' || invoice.status === 'VOID') {
-          // Voided invoice = treat as ready to create new invoice
-          return 'ready_to_invoice';
-        }
-        if (invoice.status === 'DRAFT') return 'invoice_sent';
-      }
-
-      // Reservation status mapping
+      // Check reservation status FIRST - this takes priority
+      // When summary is reopened (reopenSummary), status is set to 'approved' -> Awaiting Submission
+      // When invoice is voided (voidInvoice), status stays 'summarized' -> Ready to Invoice
       switch (status) {
         case 'pending': return 'pending_review';
-        case 'approved': return 'approved';
+        case 'approved': return 'approved'; // Awaiting Submission from SD (never submitted OR reopened)
         case 'rejected': return 'rejected';
-        case 'summarized': return 'ready_to_invoice';
-        case 'invoiced': return invoice ? 'invoice_sent' : 'needs_attention';
+        case 'summarized':
+          // Summary exists, ready for CD to create invoice
+          return 'ready_to_invoice';
+        case 'invoiced':
+          // Only check invoice status for 'invoiced' reservations
+          if (invoice) {
+            if (invoice.status === 'PAID') return 'paid_complete';
+            if (invoice.status === 'SENT') return 'invoice_sent';
+            if (invoice.status === 'DRAFT') return 'invoice_sent';
+            // VOID/VOIDED with 'invoiced' status = data inconsistency (should have been set back to summarized)
+            if (invoice.status === 'VOIDED' || invoice.status === 'VOID') {
+              return 'needs_attention';
+            }
+          }
+          return 'needs_attention'; // invoiced status but no invoice
         default: return 'needs_attention';
       }
     };
@@ -2521,13 +2526,28 @@ ${input.comments}
         throw new Error('Studio directors cannot reopen summaries');
       }
 
-      // Get reservation with invoice info
+      // Get reservation with invoice, studio, and competition info
       const reservation = await prisma.reservations.findUnique({
         where: { id: input.reservationId },
         include: {
           invoices: {
             where: {
               status: { in: ['DRAFT', 'SENT', 'PENDING'] },
+            },
+          },
+          studios: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              public_code: true,
+            },
+          },
+          competitions: {
+            select: {
+              id: true,
+              name: true,
+              tenant_id: true,
             },
           },
         },
@@ -2601,9 +2621,45 @@ ${input.comments}
         invoicesVoided: reservation.invoices?.length || 0,
       });
 
+      // Send email notification to studio
+      let emailSent = false;
+      if (reservation.studios?.email && reservation.competitions) {
+        try {
+          // Get tenant info for branding
+          const tenant = await prisma.tenants.findUnique({
+            where: { id: reservation.competitions.tenant_id },
+            select: { name: true },
+          });
+
+          const dashboardUrl = await getTenantPortalUrl(
+            reservation.competitions.tenant_id,
+            '/dashboard/entries'
+          );
+
+          await EmailService.sendSummaryReopened({
+            studioEmail: reservation.studios.email,
+            studioName: reservation.studios.name,
+            studioPublicCode: reservation.studios.public_code || undefined,
+            competitionName: reservation.competitions.name,
+            competitionId: reservation.competitions.id,
+            studioId: reservation.studios.id,
+            tenantName: tenant?.name || undefined,
+            dashboardUrl,
+          });
+          emailSent = true;
+        } catch (emailError) {
+          logger.error('Failed to send summary reopened email', {
+            reservationId: input.reservationId,
+            studioEmail: reservation.studios.email,
+            error: emailError instanceof Error ? emailError : new Error(String(emailError)),
+          });
+          // Don't fail the operation if email fails
+        }
+      }
+
       return {
         success: true,
-        message: `Summary reopened. ${reservation.invoices?.length || 0} invoice(s) voided. Studio can now edit entries.`,
+        message: `Summary reopened. ${reservation.invoices?.length || 0} invoice(s) voided. Studio can now edit entries.${emailSent ? ' Notification sent.' : ''}`,
       };
     }),
 

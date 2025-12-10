@@ -13,10 +13,10 @@ const statusConfig: Record<
     borderColor: 'border-yellow-500/50',
   },
   approved: {
-    label: 'Approved',
-    bgColor: 'bg-blue-500/20',
-    textColor: 'text-blue-300',
-    borderColor: 'border-blue-500/50',
+    label: 'Awaiting Submission',
+    bgColor: 'bg-orange-500/20',
+    textColor: 'text-orange-300',
+    borderColor: 'border-orange-500/50',
   },
   ready_to_invoice: {
     label: 'Ready to Invoice',
