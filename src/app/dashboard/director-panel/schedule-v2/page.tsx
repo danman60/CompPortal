@@ -375,7 +375,7 @@ function SortableScheduleRow({
               >
                 <span className="inline-flex items-center justify-center w-6 h-5 rounded text-xs cursor-pointer"
                   style={{ background: 'linear-gradient(135deg, #FF6B6B, #EE5A6F)' }}
-                  title={conflictInfo}>
+                  >
                   ⚠️
                 </span>
                 {/* Conflict hover popup */}
