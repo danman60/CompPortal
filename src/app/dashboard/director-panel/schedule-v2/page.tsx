@@ -276,31 +276,29 @@ function SortableScheduleRow({
         <td className="px-1 py-2 font-mono text-sm text-white/90" style={{ width: '36px' }}>{timeString}</td>
         <td colSpan={7} className="px-2 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="font-semibold text-white">{block.title}</span>
               <span className="text-xs text-white/60">({block.duration_minutes} min)</span>
-            </div>
-            <div className="flex gap-2">
               {onEdit && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit();
                   }}
-                  className="px-2 py-1 text-xs text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 rounded"
+                  className="px-2 py-0.5 text-xs text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 rounded border border-blue-400/30"
                 >
                   ✎ Edit
                 </button>
               )}
-              {onDelete && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                  className="px-2 py-1 text-xs text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded"
-                >
-                  ✕
-                </button>
-              )}
             </div>
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="px-2 py-1 text-xs text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded"
+              >
+                ✕
+              </button>
+            )}
           </div>
           {/* P2-12: Show eligible awards for adjudication blocks */}
           {isAward && eligibleAwards && eligibleAwards.length > 0 && (
