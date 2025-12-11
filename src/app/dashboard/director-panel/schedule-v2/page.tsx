@@ -1730,7 +1730,8 @@ export default function ScheduleV2Page() {
     }
 
     try {
-      const doc = new jsPDF();
+      // Use letter size (8.5x11 inches = 215.9x279.4mm) for US standard paper
+      const doc = new jsPDF({ format: 'letter' });
       const hexToRgb = (hex: string): [number, number, number] => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [99, 102, 241];
@@ -1807,24 +1808,26 @@ export default function ScheduleV2Page() {
         currentY += 15;
 
         // Build table data for this day
+        // Use studio code instead of full name for compact PDF (fits 8.5x11 letter)
         const tableData = dayScheduled.map(r => [
           `#${r.entryNumber || ''}`,
           r.scheduledTimeString || '',
           r.title || '',
-          r.studioName || '',
+          r.studioCode || r.studioName?.substring(0, 8) || '', // Studio code or truncated name
           r.classificationName || '',
-          `${r.duration || 3} min`,
+          `${r.duration || 3}m`,
         ]);
 
-        // Generate table with polished styling
+        // Generate table with polished styling - optimized for 8.5x11 letter paper
+        // Total column width: 14+18+72+22+30+14 = 170mm (fits in ~188mm usable width)
         autoTable(doc, {
           startY: currentY,
-          head: [['Entry', 'Time', 'Routine Title', 'Studio', 'Classification', 'Duration']],
+          head: [['#', 'Time', 'Routine Title', 'Studio', 'Classification', 'Dur']],
           body: tableData,
           theme: 'grid',
           styles: {
-            fontSize: 9,
-            cellPadding: 4,
+            fontSize: 8,
+            cellPadding: 3,
             lineColor: [220, 220, 230],
             lineWidth: 0.1,
             textColor: [40, 40, 60],
@@ -1832,18 +1835,18 @@ export default function ScheduleV2Page() {
           headStyles: {
             fillColor: primaryBrand,
             textColor: [255, 255, 255],
-            fontSize: 10,
+            fontSize: 9,
             fontStyle: 'bold',
             halign: 'left',
-            cellPadding: 5,
+            cellPadding: 4,
           },
           columnStyles: {
-            0: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
-            1: { cellWidth: 22, halign: 'center' },
-            2: { cellWidth: 70, fontStyle: 'bold' },
-            3: { cellWidth: 45 },
-            4: { cellWidth: 32 },
-            5: { cellWidth: 18, halign: 'center' },
+            0: { cellWidth: 14, halign: 'center', fontStyle: 'bold' }, // Entry #
+            1: { cellWidth: 18, halign: 'center' },                    // Time
+            2: { cellWidth: 72, fontStyle: 'bold' },                   // Routine Title
+            3: { cellWidth: 22, halign: 'center' },                    // Studio code
+            4: { cellWidth: 30 },                                      // Classification
+            5: { cellWidth: 14, halign: 'center' },                    // Duration
           },
           alternateRowStyles: {
             fillColor: [248, 248, 252],
@@ -1858,16 +1861,16 @@ export default function ScheduleV2Page() {
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
 
-        // Footer line
+        // Footer line (adjusted for letter paper: 279.4mm height vs A4's 297mm)
         doc.setDrawColor(200, 200, 220);
         doc.setLineWidth(0.5);
-        doc.line(14, 280, 196, 280);
+        doc.line(14, 262, 200, 262); // Letter paper margin
 
         // Footer text
         doc.setFontSize(9);
         doc.setTextColor(120, 120, 140);
-        doc.text(tenant?.name || 'Competition Schedule', 14, 287);
-        doc.text(`Page ${i} of ${pageCount}`, 196, 287, { align: 'right' });
+        doc.text(tenant?.name || 'Competition Schedule', 14, 269);
+        doc.text(`Page ${i} of ${pageCount}`, 200, 269, { align: 'right' });
       }
 
       const filename = `${tenant?.slug || 'schedule'}-full-schedule.pdf`;
