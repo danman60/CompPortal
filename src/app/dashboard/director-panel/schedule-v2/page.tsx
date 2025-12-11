@@ -922,9 +922,10 @@ export default function ScheduleV2Page() {
     (blocksData || []).forEach(b => {
       map.set(b.id, {
         id: b.id,
-        block_type: b.block_type as 'award' | 'break',
+        block_type: b.block_type as 'award' | 'break' | 'event',
         title: b.title,
         duration_minutes: b.duration_minutes,
+        notes: b.notes || null,
       });
     });
     // Add temp blocks (for drag-created blocks not yet in DB)
@@ -1770,10 +1771,10 @@ export default function ScheduleV2Page() {
       let currentY = 65;
       let isFirstDay = true;
 
-      // Loop through all competition dates
+      // Loop through all competition dates - include blocks with notes
       COMPETITION_DATES.forEach((date, dayIndex) => {
-        const dayScheduled = allScheduled.filter(r => r.scheduledDateString === date);
-        if (dayScheduled.length === 0) return;
+        const daySchedule = scheduleByDate[date] || [];
+        if (daySchedule.length === 0) return;
 
         // Add page break between days (except first)
         if (!isFirstDay) {
@@ -1800,29 +1801,73 @@ export default function ScheduleV2Page() {
         doc.setTextColor(...primaryBrand);
         doc.text(dayName, 18, currentY + 3);
 
-        // Routine count badge
+        // Count routines only (not blocks) for header
+        const routineCount = daySchedule.filter((id: string) => !id.startsWith('block-')).length;
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 120);
-        doc.text(`${dayScheduled.length} routines`, 175, currentY + 3);
+        doc.text(`${routineCount} routines`, 175, currentY + 3);
 
         currentY += 15;
 
-        // Build table data for this day
-        // Use studio code instead of full name for compact PDF (fits 8.5x11 letter)
-        const tableData = dayScheduled.map(r => [
-          `#${r.entryNumber || ''}`,
-          r.scheduledTimeString || '',
-          r.title || '',
-          r.studioCode || r.studioName?.substring(0, 8) || '', // Studio code or truncated name
-          r.classificationName || '',
-          `${r.duration || 3}m`,
-        ]);
+        // Build table data for this day - include both routines and blocks
+        // Calculate times based on schedule order
+        const dayStartMin = getDayStartMinutes(date); // 9 AM default
+        let runningTime = dayStartMin;
+
+        const tableData: (string | { content: string; colSpan?: number; styles?: Record<string, unknown> })[][] = [];
+
+        daySchedule.forEach((id: string, idx: number) => {
+          const timeFormatted = (() => {
+            const hour24 = Math.floor(runningTime / 60) % 24;
+            const minute = runningTime % 60;
+            const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+            const ampm = hour24 >= 12 ? 'PM' : 'AM';
+            return `${hour12}:${String(minute).padStart(2, '0')} ${ampm}`;
+          })();
+
+          if (id.startsWith('block-')) {
+            // Block row
+            const blockId = id.replace('block-', '');
+            const block = blocksMap.get(blockId);
+            if (block) {
+              const icon = block.block_type === 'award' ? '🏆' : block.block_type === 'event' ? '🎉' : '☕';
+              const blockText = block.notes
+                ? `${timeFormatted} | ${icon} ${block.title} - ${block.notes} (${block.duration_minutes}m)`
+                : `${timeFormatted} | ${icon} ${block.title} (${block.duration_minutes}m)`;
+              tableData.push([
+                { content: blockText, colSpan: 7, styles: {
+                  fillColor: block.block_type === 'award' ? [255, 251, 235] : block.block_type === 'event' ? [253, 244, 255] : [236, 254, 255],
+                  fontStyle: 'bold',
+                  textColor: block.block_type === 'award' ? [146, 64, 14] : block.block_type === 'event' ? [134, 25, 143] : [14, 116, 144],
+                  halign: 'left',
+                }}
+              ]);
+              runningTime += block.duration_minutes;
+            }
+          } else {
+            // Routine row
+            const routine = routinesMap.get(id);
+            if (routine) {
+              const entryNum = entryNumbersByRoutineId.get(id) || (idx + 1);
+              tableData.push([
+                `#${entryNum}`,
+                timeFormatted,
+                routine.title || '',
+                routine.studioCode || routine.studioName?.substring(0, 8) || '',
+                String(routine.routineAge ?? '-'),
+                routine.classificationName || '',
+                `${routine.duration || 3}m`,
+              ]);
+              runningTime += routine.duration || 3;
+            }
+          }
+        });
 
         // Generate table with polished styling - optimized for 8.5x11 letter paper
-        // Total column width: 14+18+72+22+30+14 = 170mm (fits in ~188mm usable width)
+        // Columns: #(12), Time(20), Title(55), Studio(18), Age(12), Class(30), Dur(12) = 159mm
         autoTable(doc, {
           startY: currentY,
-          head: [['#', 'Time', 'Routine Title', 'Studio', 'Classification', 'Dur']],
+          head: [['#', 'Time', 'Routine Title', 'Studio', 'Age', 'Classification', 'Dur']],
           body: tableData,
           theme: 'grid',
           styles: {
@@ -1841,12 +1886,13 @@ export default function ScheduleV2Page() {
             cellPadding: 4,
           },
           columnStyles: {
-            0: { cellWidth: 14, halign: 'center', fontStyle: 'bold' }, // Entry #
-            1: { cellWidth: 18, halign: 'center' },                    // Time
-            2: { cellWidth: 72, fontStyle: 'bold' },                   // Routine Title
-            3: { cellWidth: 22, halign: 'center' },                    // Studio code
-            4: { cellWidth: 30 },                                      // Classification
-            5: { cellWidth: 14, halign: 'center' },                    // Duration
+            0: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }, // Entry #
+            1: { cellWidth: 20, halign: 'center' },                    // Time
+            2: { cellWidth: 55, fontStyle: 'bold' },                   // Routine Title
+            3: { cellWidth: 18, halign: 'center' },                    // Studio code
+            4: { cellWidth: 12, halign: 'center' },                    // Age
+            5: { cellWidth: 30 },                                      // Classification
+            6: { cellWidth: 12, halign: 'center' },                    // Duration
           },
           alternateRowStyles: {
             fillColor: [248, 248, 252],
