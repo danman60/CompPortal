@@ -2272,6 +2272,17 @@ export default function ScheduleV2Page() {
               isRefreshing={false}
               isSaving={saveMutation.isPending || isSaving}
             />
+
+            {/* Undo Button - Prominent, labeled */}
+            <button
+              onClick={handleUndo}
+              disabled={!versionHistory || versionHistory.length < 2 || restoreVersionMutation.isPending}
+              className="px-4 py-2 font-semibold rounded-lg transition-all flex items-center gap-2 bg-amber-600/80 hover:bg-amber-500 text-white border border-amber-500/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-gray-600/50 disabled:border-gray-500/50 disabled:text-gray-400"
+              title="Undo last change (Ctrl+Z)"
+            >
+              <span className="text-lg">↶</span>
+              <span>Undo</span>
+            </button>
           </div>
 
           {/* Right: Primary Actions */}
@@ -2346,16 +2357,6 @@ export default function ScheduleV2Page() {
                 ↩️ -{selectedScheduledIds.size}
               </button>
             )}
-
-            {/* Undo Button */}
-            <button
-              onClick={handleUndo}
-              disabled={!versionHistory || versionHistory.length < 2 || restoreVersionMutation.isPending}
-              className="px-2.5 py-1.5 font-semibold rounded-lg transition-all flex items-center gap-1 text-sm bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-600/50 disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Undo (Ctrl+Z)"
-            >
-              ↶
-            </button>
 
             {/* Version History Dropdown */}
             <div className="relative">
