@@ -1549,11 +1549,15 @@ export default function ScheduleV2Page() {
         runningEntryNumber += routineIds.length;
 
         try {
+          // Skip snapshot for intermediate days (performance optimization)
+          // Only create snapshot on the final day to capture complete schedule state
+          const isLastDay = i === COMPETITION_DATES.length - 1;
           await saveMutation.mutateAsync({
             tenantId: TEST_TENANT_ID,
             competitionId: TEST_COMPETITION_ID,
             date,
             routines: routinesToSave,
+            skipSnapshot: !isLastDay, // Skip snapshot for all days except the last
           });
           savedDays.push(dayName);
         } catch (error) {

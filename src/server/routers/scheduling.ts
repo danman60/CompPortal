@@ -294,6 +294,7 @@ export const schedulingRouter = router({
         entryNumber: z.number(),
         performanceTime: z.string(), // "08:00:00"
       })),
+      skipSnapshot: z.boolean().optional(), // Skip version snapshot for intermediate saves (performance)
     }))
     .mutation(async ({ input, ctx }) => {
       // Verify tenant context
@@ -351,26 +352,41 @@ export const schedulingRouter = router({
           },
         });
 
-        // Phase 2: Update all routines with their final entry numbers and performance times
-        // Safe to parallelize because Phase 1 already cleared all entry numbers (no unique constraint violations)
-        // Parallel updates (Promise.all) for performance - supports 1000+ routines
-        const finalUpdates = await Promise.all(
-          input.routines.map(({ routineId, entryNumber, performanceTime }) =>
-            tx.competition_entries.update({
-              where: {
-                id: routineId,
-                tenant_id: input.tenantId,
-              },
-              data: {
-                performance_date: new Date(input.date),
-                performance_time: timeStringToDateTime(performanceTime),
-                entry_number: entryNumber,
-                is_scheduled: true,
-                updated_at: new Date(),
-              },
-            })
-          )
-        );
+        // Phase 2: Batch UPDATE all routines in a single SQL statement
+        // Uses UNNEST arrays for PostgreSQL bulk update - dramatically faster than N individual updates
+        // For 100 routines: 1 query instead of 100 queries
+        const performanceDate = new Date(input.date);
+        const updatedAt = new Date();
+
+        // Build arrays for UNNEST batch update
+        const ids = input.routines.map(r => r.routineId);
+        const entryNums = input.routines.map(r => r.entryNumber);
+        const perfTimes = input.routines.map(r => timeStringToDateTime(r.performanceTime));
+
+        // Single batch UPDATE using UNNEST (PostgreSQL)
+        await tx.$executeRaw`
+          UPDATE competition_entries ce
+          SET
+            performance_date = ${performanceDate},
+            performance_time = data.perf_time,
+            entry_number = data.entry_num,
+            is_scheduled = true,
+            updated_at = ${updatedAt}
+          FROM (
+            SELECT
+              UNNEST(${ids}::uuid[]) AS id,
+              UNNEST(${entryNums}::int[]) AS entry_num,
+              UNNEST(${perfTimes}::timestamp[]) AS perf_time
+          ) AS data
+          WHERE ce.id = data.id
+            AND ce.tenant_id = ${input.tenantId}::uuid
+        `;
+
+        // Fetch updated records for return value
+        const finalUpdates = await tx.competition_entries.findMany({
+          where: { id: { in: ids }, tenant_id: input.tenantId },
+          select: { id: true, entry_number: true, performance_time: true, is_scheduled: true },
+        });
 
         return finalUpdates;
       }, {
@@ -381,7 +397,10 @@ export const schedulingRouter = router({
       // Create schedule version snapshot (CSV-style internal backup)
       // This creates a complete snapshot of the schedule for backup/restore purposes
       // Happens AFTER transaction to ensure data is persisted first
+      // OPTIMIZATION: Skip snapshot on intermediate saves (when skipSnapshot=true)
+      // Final save should create snapshot for version history
 
+      if (!input.skipSnapshot) {
       // Get current draft version to increment minor version
       const currentDraft = await prisma.schedule_versions.findFirst({
         where: {
@@ -472,6 +491,7 @@ export const schedulingRouter = router({
           snapshot_data: snapshotData,
         },
       });
+      } // end if (!input.skipSnapshot)
 
       return {
         success: true,
