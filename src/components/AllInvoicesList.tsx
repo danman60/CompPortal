@@ -10,7 +10,6 @@ import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { showUndoToast } from '@/lib/undoToast';
-import PullToRefresh from 'react-pull-to-refresh';
 import { SkeletonTable } from '@/components/Skeleton';
 
 export default function AllInvoicesList() {
@@ -356,13 +355,7 @@ export default function AllInvoicesList() {
     return <SkeletonTable rows={5} />;
   }
 
-  // Pull-to-refresh handler
-  const handleRefresh = async () => {
-    await refetch();
-  };
-
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -809,6 +802,5 @@ export default function AllInvoicesList() {
         </div>
       </div>
     </div>
-    </PullToRefresh>
   );
 }
