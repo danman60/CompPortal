@@ -170,11 +170,11 @@ export function DayTabs({
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 flex-1 min-w-0">
       {/* Day Tabs + Buttons Row */}
       <div className="flex items-stretch gap-3 mb-3">
         {/* Day Tabs with compact background */}
-        <div className="flex gap-2 overflow-x-auto bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+        <div className="flex-1 flex gap-2 overflow-x-auto bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
           {days.map((day) => {
             const isActive = activeDay === day.date;
             const isEditing = editingDay === day.date;
@@ -184,7 +184,7 @@ export function DayTabs({
               <div
                 key={day.date}
                 className={`
-                  flex-shrink-0 min-w-[180px] px-3 py-2 rounded-lg cursor-pointer transition-all
+                  flex-1 min-w-[140px] px-4 py-2.5 rounded-lg cursor-pointer transition-all
                   ${
                     isActive
                       ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-2 border-purple-400 shadow-lg'

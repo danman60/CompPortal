@@ -2488,7 +2488,7 @@ export default function ScheduleV2Page() {
             {/* Right: Schedule Table */}
             <div className="col-span-2">
               {/* Day Tabs + Block Buttons - Above Schedule Table (V1 layout) */}
-              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 flex-wrap">
+              <div className="flex items-center gap-3 mb-3 min-w-0">
                 <DayTabs
                   days={competitionDates}
                   activeDay={selectedDate}
@@ -2509,7 +2509,7 @@ export default function ScheduleV2Page() {
                 />
 
                 {/* Draggable Block Buttons - Inline */}
-                <div className="flex gap-1 2xl:gap-2 flex-shrink min-w-0">
+                <div className="flex gap-2 flex-shrink-0">
                   <DraggableBlockCard
                     type="award"
                     onClick={() => handleCreateBlock('award')}
