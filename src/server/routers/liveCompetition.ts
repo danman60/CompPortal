@@ -1988,5 +1988,157 @@ export const liveCompetitionRouter = router({
       };
     }),
 
+  // ===========================================
+  // TASK 21: SCORE EDIT WITH AUDIT LOG
+  // ===========================================
+
+  /**
+   * Edit a submitted score (CD only)
+   * Creates audit log entry, updates score, recalculates entry score
+   */
+  editScore: publicProcedure
+    .input(z.object({
+      scoreId: z.string(),
+      newValue: z.number().min(60).max(100),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      // Get the existing score
+      const score = await prisma.scores.findFirst({
+        where: { id: input.scoreId, tenant_id: ctx.tenantId },
+        include: { competition_entries: true },
+      });
+
+      if (!score) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Score not found' });
+      }
+
+      const oldValue = score.total_score ? Number(score.total_score) : null;
+
+      // Create audit log entry using raw SQL (table exists in DB but not in Prisma)
+      await prisma.$executeRaw`
+        INSERT INTO score_audit_log (
+          score_id, entry_id, judge_id, tenant_id,
+          previous_score, new_score, edit_type, edit_reason,
+          edited_by, editor_role, edited_at
+        ) VALUES (
+          ${input.scoreId}::uuid,
+          ${score.entry_id}::uuid,
+          ${score.judge_id}::uuid,
+          ${ctx.tenantId}::uuid,
+          ${oldValue},
+          ${input.newValue},
+          'cd_edit',
+          ${input.reason || null},
+          ${ctx.userId || null}::uuid,
+          'cd',
+          NOW()
+        )
+      `;
+
+      // Update the score
+      await prisma.scores.update({
+        where: { id: input.scoreId },
+        data: {
+          total_score: input.newValue,
+          updated_at: new Date(),
+        },
+      });
+
+      // Recalculate entry's calculated_score (average of all judge scores)
+      const allScores = await prisma.scores.findMany({
+        where: { entry_id: score.entry_id, tenant_id: ctx.tenantId },
+      });
+
+      const avgScore = allScores.length > 0
+        ? allScores.reduce((sum, s) => sum + (Number(s.total_score) || 0), 0) / allScores.length
+        : null;
+
+      if (avgScore !== null) {
+        await prisma.competition_entries.update({
+          where: { id: score.entry_id },
+          data: {
+            calculated_score: avgScore,
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      return {
+        success: true,
+        scoreId: input.scoreId,
+        entryId: score.entry_id,
+        oldValue,
+        newValue: input.newValue,
+        newCalculatedScore: avgScore,
+        reason: input.reason,
+      };
+    }),
+
+  /**
+   * Get score edit history
+   * Returns all audit log entries for a score or entry
+   */
+  getScoreHistory: publicProcedure
+    .input(z.object({
+      scoreId: z.string().optional(),
+      entryId: z.string().optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      if (!input.scoreId && !input.entryId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Either scoreId or entryId required' });
+      }
+
+      // Query audit log using raw SQL
+      let history;
+      if (input.scoreId) {
+        history = await prisma.$queryRaw`
+          SELECT
+            id, score_id, entry_id, judge_id,
+            previous_score, new_score, edit_type, edit_reason,
+            edited_by, editor_role, edited_at
+          FROM score_audit_log
+          WHERE score_id = ${input.scoreId}::uuid
+            AND tenant_id = ${ctx.tenantId}::uuid
+          ORDER BY edited_at DESC
+        `;
+      } else {
+        history = await prisma.$queryRaw`
+          SELECT
+            id, score_id, entry_id, judge_id,
+            previous_score, new_score, edit_type, edit_reason,
+            edited_by, editor_role, edited_at
+          FROM score_audit_log
+          WHERE entry_id = ${input.entryId}::uuid
+            AND tenant_id = ${ctx.tenantId}::uuid
+          ORDER BY edited_at DESC
+        `;
+      }
+
+      return {
+        history: history as Array<{
+          id: string;
+          score_id: string;
+          entry_id: string;
+          judge_id: string;
+          previous_score: number | null;
+          new_score: number;
+          edit_type: string;
+          edit_reason: string | null;
+          edited_by: string;
+          editor_role: string;
+          edited_at: Date;
+        }>,
+      };
+    }),
+
 
 });
