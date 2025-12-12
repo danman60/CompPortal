@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Play,
+  Bell,
   Pause,
   SkipBack,
   SkipForward,
@@ -37,7 +38,7 @@ import { trpc } from '@/lib/trpc';
 interface Routine {
   id: string;
   routineId: string;
-  title: string;
+  title: string | null;
   studioName: string;
   category: string;
   dancers: string[];
@@ -55,6 +56,30 @@ interface Judge {
   ready: boolean;
   connected: boolean;
   scoresSubmitted: number;
+}
+
+
+
+interface BreakRequest {
+  id: string;
+  judgeName: string;
+  judgeNumber: number | null;
+  requestedDurationMinutes: number;
+  reason: string | null;
+  status: string;
+  createdAt: Date;
+}
+
+interface ActiveBreak {
+  id: string;
+  breakType: string;
+  title: string | null;
+  reason: string | null;
+  durationMinutes: number;
+  elapsedMinutes: number;
+  remainingMinutes: number;
+  startedAt: Date;
+  scheduledEndTime: Date;
 }
 
 interface CompetitionState {
@@ -82,6 +107,16 @@ export default function CDControlPanelLive() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isConnected, setIsConnected] = useState(true);
 
+  // Break management state (Task #6)
+  const [breakRequests, setBreakRequests] = useState<BreakRequest[]>([]);
+  const [activeBreak, setActiveBreak] = useState<ActiveBreak | null>(null);
+  const [showEmergencyBreakModal, setShowEmergencyBreakModal] = useState(false);
+  const [emergencyBreakDuration, setEmergencyBreakDuration] = useState(5);
+  const [emergencyBreakReason, setEmergencyBreakReason] = useState('');
+  const [breakCountdown, setBreakCountdown] = useState(0);
+
+
+
   // Drag-drop reordering state (Task #5)
   const [draggedRoutine, setDraggedRoutine] = useState<Routine | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -99,7 +134,21 @@ export default function CDControlPanelLive() {
     { enabled: !!competitionId, refetchInterval: 5000 }
   );
 
-  // Update routine status mutation
+  
+
+  // Fetch break requests (Task #6)
+  const { data: breakRequestsData } = trpc.liveCompetition.getBreakRequests.useQuery(
+    { competitionId },
+    { enabled: !!competitionId, refetchInterval: 3000 }
+  );
+
+  // Fetch active break (Task #6)
+  const { data: activeBreakData } = trpc.liveCompetition.getActiveBreak.useQuery(
+    { competitionId },
+    { enabled: !!competitionId, refetchInterval: 1000 }
+  );
+
+// Update routine status mutation
   const updateStatusMutation = trpc.liveCompetition.updateRoutineStatus.useMutation();
 
   // Reorder mutation (Task #5)
@@ -119,7 +168,42 @@ export default function CDControlPanelLive() {
     },
   });
 
-  // Update routines when data loads
+  
+
+  // Break management mutations (Task #6)
+  const approveBreakMutation = trpc.liveCompetition.approveBreak.useMutation({
+    onSuccess: () => {
+      // Refetch break requests
+    },
+  });
+
+  const denyBreakMutation = trpc.liveCompetition.denyBreak.useMutation({
+    onSuccess: () => {
+      // Refetch break requests
+    },
+  });
+
+  const addEmergencyBreakMutation = trpc.liveCompetition.addEmergencyBreak.useMutation({
+    onSuccess: (data) => {
+      setShowEmergencyBreakModal(false);
+      setEmergencyBreakDuration(5);
+      setEmergencyBreakReason('');
+      setCompetitionState(prev => ({ ...prev, status: 'break' }));
+    },
+  });
+
+  const endBreakEarlyMutation = trpc.liveCompetition.endBreakEarly.useMutation({
+    onSuccess: (data) => {
+      setActiveBreak(null);
+      setCompetitionState(prev => ({
+        ...prev,
+        status: 'paused',
+        delayMinutes: Math.max(0, prev.delayMinutes - (data.timeSavedMinutes || 0))
+      }));
+    },
+  });
+
+// Update routines when data loads
   useEffect(() => {
     if (lineupData?.routines) {
       setRoutines(lineupData.routines as Routine[]);
@@ -127,6 +211,39 @@ export default function CDControlPanelLive() {
   }, [lineupData]);
 
   // Update judges when data loads
+  // Update break requests when data loads (Task #6)
+  useEffect(() => {
+    if (breakRequestsData) {
+      setBreakRequests(breakRequestsData as BreakRequest[]);
+    }
+  }, [breakRequestsData]);
+
+  // Update active break when data loads (Task #6)
+  useEffect(() => {
+    if (activeBreakData) {
+      setActiveBreak(activeBreakData as ActiveBreak);
+      setCompetitionState(prev => ({ ...prev, status: 'break' }));
+      setBreakCountdown(activeBreakData.remainingMinutes * 60);
+    } else {
+      setActiveBreak(null);
+      if (competitionState.status === 'break') {
+        setCompetitionState(prev => ({ ...prev, status: 'paused' }));
+      }
+    }
+  }, [activeBreakData]);
+
+  // Break countdown timer (Task #6)
+  useEffect(() => {
+    if (!activeBreak || breakCountdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setBreakCountdown(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeBreak, breakCountdown]);
+
+
   useEffect(() => {
     if (judgesData) {
       setJudges(judgesData as Judge[]);
@@ -204,6 +321,37 @@ export default function CDControlPanelLive() {
   const handleCancelReorder = useCallback(() => {
     setPendingReorder(null);
   }, []);
+
+
+
+  // Break request handlers (Task #6)
+  const handleApproveBreak = useCallback((requestId: string, durationMinutes: number) => {
+    approveBreakMutation.mutate({ requestId, actualDurationMinutes: durationMinutes });
+  }, [approveBreakMutation]);
+
+  const handleDenyBreak = useCallback((requestId: string) => {
+    denyBreakMutation.mutate({ requestId, reason: 'Denied by CD' });
+  }, [denyBreakMutation]);
+
+  const handleAddEmergencyBreak = useCallback(() => {
+    if (!competitionId) return;
+    addEmergencyBreakMutation.mutate({
+      competitionId,
+      durationMinutes: emergencyBreakDuration,
+      reason: emergencyBreakReason || 'Emergency break',
+    });
+  }, [competitionId, emergencyBreakDuration, emergencyBreakReason, addEmergencyBreakMutation]);
+
+  const handleEndBreakEarly = useCallback(() => {
+    if (!activeBreak) return;
+    endBreakEarlyMutation.mutate({ breakId: activeBreak.id });
+  }, [activeBreak, endBreakEarlyMutation]);
+
+  const formatBreakTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
 // Control handlers
   const handleStart = useCallback(() => {
@@ -300,18 +448,19 @@ export default function CDControlPanelLive() {
   }, [competitionState.currentRoutineIndex, currentRoutine, routines]);
 
   const handleAddBreak = useCallback(() => {
-    setCompetitionState((prev) => ({
-      ...prev,
-      status: 'break',
-    }));
+    setShowEmergencyBreakModal(true);
   }, []);
 
   const handleEndBreak = useCallback(() => {
-    setCompetitionState((prev) => ({
-      ...prev,
-      status: 'running',
-    }));
-  }, []);
+    if (activeBreak) {
+      handleEndBreakEarly();
+    } else {
+      setCompetitionState((prev) => ({
+        ...prev,
+        status: 'running',
+      }));
+    }
+  }, [activeBreak, handleEndBreakEarly]);
 
   // Loading state
   if (lineupLoading || judgesLoading) {
@@ -445,12 +594,28 @@ export default function CDControlPanelLive() {
               <>
                 <Coffee className="w-24 h-24 text-yellow-400 mb-6" />
                 <div className="text-4xl font-bold text-white mb-2">BREAK</div>
-                <div className="text-xl text-gray-300">Competition paused</div>
+                {activeBreak && (
+                  <>
+                    <div className="text-6xl font-mono text-yellow-300 mb-4">
+                      {formatBreakTime(breakCountdown)}
+                    </div>
+                    <div className="text-xl text-gray-300 mb-2">
+                      {activeBreak.title || 'Break in progress'}
+                    </div>
+                    {activeBreak.reason && (
+                      <div className="text-sm text-gray-400 mb-4">{activeBreak.reason}</div>
+                    )}
+                  </>
+                )}
+                {!activeBreak && (
+                  <div className="text-xl text-gray-300 mb-4">Competition paused</div>
+                )}
                 <button
                   onClick={handleEndBreak}
-                  className="mt-8 px-8 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl text-lg font-medium transition-colors"
+                  disabled={endBreakEarlyMutation.isPending}
+                  className="mt-4 px-8 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl text-lg font-medium transition-colors disabled:opacity-50"
                 >
-                  End Break
+                  {endBreakEarlyMutation.isPending ? 'Ending...' : 'End Break Early'}
                 </button>
               </>
             ) : currentRoutine ? (
@@ -575,10 +740,115 @@ export default function CDControlPanelLive() {
               </div>
             )}
           </div>
+          {/* Break Requests (Task #6) */}
+          {breakRequests.length > 0 && (
+            <div className="p-3 border-t border-gray-700/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Bell className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-medium text-orange-400">Break Requests</span>
+              </div>
+              <div className="space-y-2">
+                {breakRequests.map((req) => (
+                  <div key={req.id} className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-white">
+                        {req.judgeName}
+                        {req.judgeNumber && <span className="text-gray-400 ml-1">#{req.judgeNumber}</span>}
+                      </span>
+                      <span className="text-orange-300 font-medium">{req.requestedDurationMinutes}m</span>
+                    </div>
+                    {req.reason && (
+                      <div className="text-sm text-gray-400 mb-2">{req.reason}</div>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApproveBreak(req.id, req.requestedDurationMinutes)}
+                        disabled={approveBreakMutation.isPending}
+                        className="flex-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm rounded transition-colors disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleDenyBreak(req.id)}
+                        disabled={denyBreakMutation.isPending}
+                        className="flex-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded transition-colors disabled:opacity-50"
+                      >
+                        Deny
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
       
+      
+      {/* Emergency Break Modal (Task #6) */}
+      {showEmergencyBreakModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Add Emergency Break</h3>
+              <button
+                onClick={() => setShowEmergencyBreakModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm text-gray-400 mb-2">Duration (minutes)</label>
+              <div className="flex gap-2">
+                {[2, 5, 10, 15, 30].map((mins) => (
+                  <button
+                    key={mins}
+                    onClick={() => setEmergencyBreakDuration(mins)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      emergencyBreakDuration === mins
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {mins}m
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm text-gray-400 mb-2">Reason (optional)</label>
+              <input
+                type="text"
+                value={emergencyBreakReason}
+                onChange={(e) => setEmergencyBreakReason(e.target.value)}
+                placeholder="e.g., Technical issue, Judge break"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEmergencyBreakModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddEmergencyBreak}
+                disabled={addEmergencyBreakMutation.isPending}
+                className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {addEmergencyBreakMutation.isPending ? 'Adding...' : 'Start Break'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reorder Confirmation Dialog (Task #5) */}
       {pendingReorder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

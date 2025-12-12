@@ -101,7 +101,7 @@
         "description": "Allow CD to drag/reorder routines with confirmation dialog. Entry numbers stay locked, only time slots change.",
         "details": "- Drag-drop reorder in routine list - Confirmation: \"Are you sure?\" + click to confirm - Entry number stays same (111 stays 111) - Time slots recalculate - Can move routine to different day",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "4"
         ],
@@ -118,7 +118,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T08:37:55.360Z"
+        "updatedAt": "2025-12-12T08:43:40.367Z"
       },
       {
         "id": "6",
@@ -126,7 +126,7 @@
         "description": "Handle judge break requests (2/5/10 min) and CD emergency breaks. Update all subsequent routine times when break inserted.",
         "details": "- Display incoming break requests from judges - Approve/Deny buttons for CD - Emergency break insertion anywhere in schedule - Cascade time updates to all subsequent routines - CD can end break early to recover time",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "4"
         ],
@@ -142,7 +142,8 @@
             "parentTaskId": 6,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T08:43:51.841Z"
       },
       {
         "id": "7",
@@ -764,9 +765,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T08:37:55.361Z",
+      "lastModified": "2025-12-12T08:43:51.842Z",
       "taskCount": 34,
-      "completedCount": 24,
+      "completedCount": 25,
       "tags": [
         "master"
       ]
