@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { MP3DownloadPanel } from '@/components/audio/MP3DownloadPanel';
-import { HardDrive, X } from 'lucide-react';
+import { HardDrive, Maximize, Minimize } from 'lucide-react';
 
 interface RoutineInfo {
   id: string;
@@ -46,6 +46,9 @@ export default function BackstagePage() {
   const [showAudioPanel, setShowAudioPanel] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'connected' | 'syncing' | 'error'>('syncing');
+  const [isKioskMode, setIsKioskMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const escPressTimesRef = useRef<number[]>([]);
 
   const fetchData = useCallback(async () => {
     setSyncStatus('syncing');
@@ -93,6 +96,57 @@ export default function BackstagePage() {
     }, 100);
     return () => clearInterval(timer);
   }, [data?.currentRoutine?.startedAt, data?.currentRoutine?.durationMs]);
+
+  // Kiosk mode: ESC key handler (3 rapid presses to exit)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isKioskMode) {
+        const now = Date.now();
+        escPressTimesRef.current.push(now);
+
+        // Keep only presses within last 1.5 seconds
+        escPressTimesRef.current = escPressTimesRef.current.filter(
+          time => now - time < 1500
+        );
+
+        // Exit kiosk mode if 3 rapid presses
+        if (escPressTimesRef.current.length >= 3) {
+          setIsKioskMode(false);
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          }
+          escPressTimesRef.current = [];
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isKioskMode]);
+
+  // Track fullscreen state changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsKioskMode(true);
+      } else {
+        await document.exitFullscreen();
+        setIsKioskMode(false);
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
+    }
+  };
 
   const formatTime = (ms: number) => {
     const totalSeconds = Math.ceil(ms / 1000);
@@ -168,22 +222,38 @@ export default function BackstagePage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* Back to Test Page link */}
-      <Link
-        href="/game-day-test"
-        className="fixed top-2 left-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs text-white z-50"
-      >
-        Test Page
-      </Link>
+      {/* Back to Test Page link - hidden in kiosk mode */}
+      {!isKioskMode && (
+        <Link
+          href="/game-day-test"
+          className="fixed top-2 left-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs text-white z-50"
+        >
+          Test Page
+        </Link>
+      )}
 
-      {/* Audio Panel Toggle */}
-      <button
-        onClick={() => setShowAudioPanel(!showAudioPanel)}
-        className="fixed top-2 right-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
-      >
-        <HardDrive className="w-3.5 h-3.5" />
-        {showAudioPanel ? 'Hide Audio' : 'Audio Files'}
-      </button>
+      {/* Fullscreen/Kiosk Mode Toggle - hidden in kiosk mode (use ESC x3 to exit) */}
+      {!isKioskMode && (
+        <button
+          onClick={toggleFullscreen}
+          className="fixed top-2 left-24 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
+          title="Enter fullscreen kiosk mode (ESC x3 to exit)"
+        >
+          {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+          {isFullscreen ? 'Exit Fullscreen' : 'Kiosk Mode'}
+        </button>
+      )}
+
+      {/* Audio Panel Toggle - hidden in kiosk mode */}
+      {!isKioskMode && (
+        <button
+          onClick={() => setShowAudioPanel(!showAudioPanel)}
+          className="fixed top-2 right-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
+        >
+          <HardDrive className="w-3.5 h-3.5" />
+          {showAudioPanel ? 'Hide Audio' : 'Audio Files'}
+        </button>
+      )}
 
       {/* Collapsible Audio Download Panel */}
       {showAudioPanel && (

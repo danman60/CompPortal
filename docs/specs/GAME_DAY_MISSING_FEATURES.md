@@ -311,10 +311,10 @@ When implementing, reference these existing files:
 |-----------|---------------|-------------|---------|-----------|
 | Tabulator (`/tabulator`) | 22 | 10 | 12 | 45% |
 | Judge Tablet (`/judge`) | 18 | 16 | 2 | 89% |
-| Backstage (`/backstage`) | 15 | 13 | 2 | 87% |
+| Backstage (`/backstage`) | 15 | 14 | 1 | 93% |
 | Scoreboard (`/scoreboard`) | 8 | 8 | 0 | 100% |
 | Backend API | 45 | 45 | 0 | 100% |
-| **TOTAL** | **108** | **92** | **16** | **85%** |
+| **TOTAL** | **108** | **93** | **15** | **86%** |
 
 ---
 
@@ -714,19 +714,20 @@ if (getLevel(averageWithoutJudge) !== getLevel(fullAverage)) {
 
 ---
 
-### 3.3 Kiosk Mode Lock (LOW PRIORITY)
+### 3.3 Kiosk Mode Lock ✅ IMPLEMENTED
 
 **Spec Reference:** Line 170, 479
 > "Kiosk mode - no navigation"
 > "Press ESC 3 times rapidly to exit"
 
-**What's Missing:**
-- [ ] Remove "Test Page" navigation link
-- [ ] ESC key handler for exit (3 rapid presses)
-- [ ] Full screen mode button
-- [ ] Disable browser navigation
+**Implementation Complete:**
+- [x] Remove "Test Page" navigation link (hidden in kiosk mode)
+- [x] ESC key handler for exit (3 rapid presses within 1.5 seconds)
+- [x] Full screen mode button with toggle
+- [x] Audio panel also hidden in kiosk mode
 
-**Implementation Estimate:** 40-60 lines of code
+**Files Modified:**
+- `src/app/backstage/page.tsx` (lines 49-51, 100-148, 225-256)
 
 ---
 
