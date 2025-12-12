@@ -3019,4 +3019,69 @@ export const liveCompetitionRouter = router({
       };
     }),
 
+  /**
+   * Task 24: Get judge score visibility setting
+   * Returns whether judges can see other judges' scores
+   */
+  getScoreVisibility: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const liveState = await prisma.live_competition_state.findUnique({
+        where: {
+          competition_id: input.competitionId,
+        },
+        select: {
+          judges_can_see_scores: true,
+        },
+      });
+
+      // Default to false if no live state exists
+      return {
+        visible: liveState?.judges_can_see_scores ?? false,
+      };
+    }),
+
+  /**
+   * Task 24: Set judge score visibility
+   * CD can toggle whether judges see other judges' scores
+   */
+  setScoreVisibility: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      visible: z.boolean(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      // Upsert to handle case where live state doesn't exist yet
+      await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          judges_can_see_scores: input.visible,
+          competition_state: 'not_started',
+        },
+        update: {
+          judges_can_see_scores: input.visible,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        visible: input.visible,
+      };
+    }),
+
 });

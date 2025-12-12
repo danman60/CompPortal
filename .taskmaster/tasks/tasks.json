@@ -366,7 +366,7 @@
         "description": "Scan all downloaded MP3s before competition starts. Flag corrupted files. Never skip - pause and alert CD if problem found.",
         "details": "- Scan all MP3s in IndexedDB - Attempt to decode each file - Flag files that fail decode - Report to CD before competition starts - If corrupted during playback: pause, alert CD",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "3"
         ],
@@ -383,7 +383,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T09:42:52.749Z"
+        "updatedAt": "2025-12-12T09:52:59.484Z"
       },
       {
         "id": "16",
@@ -587,7 +587,7 @@
         "description": "Add tRPC endpoint for CD to toggle judge score visibility: setScoreVisibility, getScoreVisibility",
         "details": "setScoreVisibility mutation:\n- Input: competitionId, visible (boolean)\n- Stores in live_competition_state or competition settings\n- When visible=true: judges see other judges' scores\n- When visible=false: judges only see their own score\n- Returns updated setting\n\ngetScoreVisibility query:\n- Input: competitionId\n- Returns current visibility setting\n- Used by Judge UI to show/hide other scores",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "16"
         ],
@@ -603,7 +603,8 @@
             "parentTaskId": 24,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T09:53:20.940Z"
       },
       {
         "id": "25",
@@ -772,9 +773,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T09:42:52.751Z",
+      "lastModified": "2025-12-12T09:53:20.942Z",
       "taskCount": 34,
-      "completedCount": 32,
+      "completedCount": 33,
       "tags": [
         "master"
       ]
