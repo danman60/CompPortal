@@ -1853,8 +1853,8 @@ export default function ScheduleV2Page() {
                 routine.title || '',
                 routine.studioCode || routine.studioName?.substring(0, 8) || '',
                 String(routine.routineAge ?? '-'),
+                routine.entrySizeName || '',
                 routine.classificationName || '',
-                `${routine.duration || 3}m`,
               ]);
               runningTime += routine.duration || 3;
             }
@@ -1862,10 +1862,10 @@ export default function ScheduleV2Page() {
         });
 
         // Generate table with polished styling - optimized for 8.5x11 letter paper
-        // Columns: #(12), Time(20), Title(55), Studio(18), Age(12), Class(30), Dur(12) = 159mm
+        // Columns: #(12), Time(20), Title(48), Studio(18), Age(18), Size(18), Class(25) = 159mm
         autoTable(doc, {
           startY: currentY,
-          head: [['#', 'Time', 'Routine Title', 'Studio', 'Age', 'Classification', 'Dur']],
+          head: [['#', 'Time', 'Routine Title', 'Studio', 'Age', 'Size', 'Classification']],
           body: tableData,
           theme: 'grid',
           styles: {
@@ -1886,11 +1886,11 @@ export default function ScheduleV2Page() {
           columnStyles: {
             0: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }, // Entry #
             1: { cellWidth: 20, halign: 'center' },                    // Time
-            2: { cellWidth: 55, fontStyle: 'bold' },                   // Routine Title
+            2: { cellWidth: 48, fontStyle: 'bold' },                   // Routine Title
             3: { cellWidth: 18, halign: 'center' },                    // Studio code
-            4: { cellWidth: 12, halign: 'center' },                    // Age
-            5: { cellWidth: 30 },                                      // Classification
-            6: { cellWidth: 12, halign: 'center' },                    // Duration
+            4: { cellWidth: 18, halign: 'center' },                    // Age (widened)
+            5: { cellWidth: 18, halign: 'center' },                    // Size (new)
+            6: { cellWidth: 25 },                                      // Classification
           },
           alternateRowStyles: {
             fillColor: [248, 248, 252],
