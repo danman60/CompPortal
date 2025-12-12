@@ -35,6 +35,15 @@ import {
   Star,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import {
+  saveCompetitionState,
+  loadCompetitionState,
+  clearCompetitionState,
+  isStateValid,
+  getCurrentDayString,
+  needsDayTransition,
+  type PersistedCompetitionState,
+} from '@/lib/competitionStorage';
 
 // Types
 interface Routine {
@@ -132,6 +141,10 @@ export default function CDControlPanelLive() {
   const [editingScore, setEditingScore] = useState<RoutineScore | null>(null);
   const [newScoreValue, setNewScoreValue] = useState<number>(0);
   const [scoreEditReason, setScoreEditReason] = useState('');
+
+  // State persistence (Task #14)
+  const [stateRestored, setStateRestored] = useState(false);
+  const [showRestoredBanner, setShowRestoredBanner] = useState(false);
 
 
 
@@ -279,6 +292,78 @@ export default function CDControlPanelLive() {
     return () => clearInterval(timer);
   }, [activeBreak, breakCountdown]);
 
+  // Load persisted state on mount (Task #14)
+  useEffect(() => {
+    if (!competitionId || stateRestored) return;
+
+    const loadPersistedState = async () => {
+      try {
+        const persisted = await loadCompetitionState(competitionId);
+        if (persisted && isStateValid(persisted)) {
+          // Check if we need a day transition
+          if (needsDayTransition(persisted)) {
+            console.log('Day transition detected, clearing old state');
+            await clearCompetitionState(competitionId);
+            return;
+          }
+
+          // Restore the state
+          setCompetitionState({
+            status: persisted.status,
+            currentRoutineIndex: persisted.currentRoutineIndex,
+            startTime: persisted.startTime,
+            pausedAt: persisted.pausedAt,
+            delayMinutes: persisted.delayMinutes,
+          });
+          setBreakCountdown(persisted.breakCountdown);
+          setShowRestoredBanner(true);
+
+          // Auto-hide banner after 5 seconds
+          setTimeout(() => setShowRestoredBanner(false), 5000);
+        }
+        setStateRestored(true);
+      } catch (error) {
+        console.error('Failed to load persisted state:', error);
+        setStateRestored(true);
+      }
+    };
+
+    loadPersistedState();
+  }, [competitionId, stateRestored]);
+
+  // Save state when competition state changes (Task #14)
+  useEffect(() => {
+    if (!competitionId || !stateRestored) return;
+
+    // Build routine statuses map
+    const routineStatuses: Record<string, 'queued' | 'current' | 'completed' | 'skipped'> = {};
+    routines.forEach(r => {
+      routineStatuses[r.id] = r.liveStatus;
+    });
+
+    const stateToSave: PersistedCompetitionState = {
+      competitionId,
+      currentRoutineIndex: competitionState.currentRoutineIndex,
+      status: competitionState.status,
+      startTime: competitionState.startTime,
+      pausedAt: competitionState.pausedAt,
+      delayMinutes: competitionState.delayMinutes,
+      competitionDay: getCurrentDayString(),
+      lastSyncedAt: Date.now(),
+      activeBreakId: activeBreak?.id || null,
+      breakCountdown,
+      routineStatuses,
+    };
+
+    // Debounce saves with setTimeout
+    const saveTimeout = setTimeout(() => {
+      saveCompetitionState(stateToSave).catch(err => {
+        console.error('Failed to save competition state:', err);
+      });
+    }, 500);
+
+    return () => clearTimeout(saveTimeout);
+  }, [competitionId, competitionState, routines, activeBreak, breakCountdown, stateRestored]);
 
   useEffect(() => {
     if (judgesData) {
@@ -590,6 +675,22 @@ export default function CDControlPanelLive() {
           </div>
         </div>
       </header>
+
+      {/* Session Restored Banner (Task #14) */}
+      {showRestoredBanner && (
+        <div className="bg-blue-500/20 border border-blue-500/50 px-4 py-2 mx-4 mt-2 rounded-lg flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-2 text-blue-300">
+            <CheckCircle className="w-4 h-4" />
+            <span className="text-sm">Session restored from previous state</span>
+          </div>
+          <button
+            onClick={() => setShowRestoredBanner(false)}
+            className="text-blue-400 hover:text-blue-200 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Main Content - 3-Panel Layout */}
       <main className="flex h-[calc(100vh-140px)] p-4 gap-4">

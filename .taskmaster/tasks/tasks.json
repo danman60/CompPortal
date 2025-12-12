@@ -314,7 +314,7 @@
         "description": "Allow CD to edit any score after judge submits. Judge can only edit before submit, CD can edit anytime.",
         "details": "- CD sees all scores in control panel - Edit button on each score - Modal to adjust score value - Audit log of score changes - Original score preserved in history",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "4",
           "12"
@@ -332,7 +332,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T09:28:57.053Z"
+        "updatedAt": "2025-12-12T09:36:21.969Z"
       },
       {
         "id": "14",
@@ -340,7 +340,7 @@
         "description": "Competition state persists across days. Close app Saturday night, resume Sunday morning at same point.",
         "details": "- Save current routine index to IndexedDB - Save all scores and state per competition - On app open: restore last state - Handle day transitions (Saturday → Sunday) - Clear state only when competition ends",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "10",
           "11"
@@ -357,7 +357,8 @@
             "parentTaskId": 14,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T09:36:39.332Z"
       },
       {
         "id": "15",
@@ -770,9 +771,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T09:28:57.055Z",
+      "lastModified": "2025-12-12T09:36:39.334Z",
       "taskCount": 34,
-      "completedCount": 30,
+      "completedCount": 31,
       "tags": [
         "master"
       ]
