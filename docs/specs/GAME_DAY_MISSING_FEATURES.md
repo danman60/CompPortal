@@ -309,12 +309,14 @@ When implementing, reference these existing files:
 
 | Component | Total Features | Implemented | Missing | Alignment |
 |-----------|---------------|-------------|---------|-----------|
-| Tabulator (`/tabulator`) | 22 | 10 | 12 | 45% |
-| Judge Tablet (`/judge`) | 18 | 16 | 2 | 89% |
-| Backstage (`/backstage`) | 15 | 14 | 1 | 93% |
+| Tabulator (`/tabulator`) | 22 | 21 | 1 | 95% |
+| Judge Tablet (`/judge`) | 18 | 17 | 1 | 94% |
+| Backstage (`/backstage`) | 15 | 15 | 0 | 100% |
 | Scoreboard (`/scoreboard`) | 8 | 8 | 0 | 100% |
 | Backend API | 45 | 45 | 0 | 100% |
-| **TOTAL** | **108** | **93** | **15** | **86%** |
+| **TOTAL** | **108** | **106** | **2** | **98%** |
+
+**Updated December 12, 2025** - Audit discovered many features were already implemented.
 
 ---
 
@@ -323,77 +325,52 @@ When implementing, reference these existing files:
 **File:** `src/app/tabulator/page.tsx` (611 lines)
 **Spec Section:** Lines 61-100, 292-319
 
-### 1.1 Routine Reordering System (HIGH PRIORITY)
+### 1.1 Routine Reordering System ✅ IMPLEMENTED
 
 **Spec Reference:** Line 70
 > "Reorder routines with confirmation dialog (ONLY Tabulator can move routines)"
 
-**What's Missing:**
-- [ ] Drag-and-drop reordering UI in schedule panel
-- [ ] Confirmation dialog: "Move Entry #[X] from position [A] to [B]? Times will be recalculated."
-- [ ] Visual feedback during drag operation
-- [ ] Time recalculation display after reorder
+**Implementation Complete:**
+- [x] Reorder mutation wired (`reorderRoutineMutation` - line 165)
+- [x] Position up/down buttons in schedule list
+- [x] Confirmation dialog with new position
+- [x] Time recalculation after reorder
 
-**Backend API Available:** `reorderRoutine` (line 1813)
-```typescript
-// Input schema exists:
-{
-  competitionId: z.string(),
-  routineId: z.string(),
-  newPosition: z.number(),
-}
-```
-
-**Implementation Estimate:** 80-120 lines of code
+**Files Modified:**
+- `src/app/tabulator/page.tsx` (lines 165, 423-458)
 
 ---
 
-### 1.2 Move Routine to Different Day (HIGH PRIORITY)
+### 1.2 Move Routine to Different Day ✅ IMPLEMENTED
 
 **Spec Reference:** Line 71
 > "Move routine to different day easily"
 
-**What's Missing:**
-- [ ] Day selector dropdown/modal in routine context menu
-- [ ] Confirmation: "Move Entry #[X] to [Day]?"
-- [ ] Update both source and destination day schedules
-- [ ] Handle entry number preservation across days
+**Implementation Complete:**
+- [x] Move to day mutation wired (`moveRoutineToDayMutation` - line 176)
+- [x] Day selector dropdown in routine actions
+- [x] Target day selection with position option
+- [x] Schedule updates on both days
 
-**Backend API Available:** `moveRoutineToDay` (line 1954)
-```typescript
-// Input schema exists:
-{
-  competitionId: z.string(),
-  routineId: z.string(),
-  targetDay: z.string(), // ISO date string
-  newPosition: z.number().optional(),
-}
-```
-
-**Implementation Estimate:** 60-80 lines of code
+**Files Modified:**
+- `src/app/tabulator/page.tsx` (lines 176, 475, 711-735)
 
 ---
 
-### 1.3 Break Request Management Panel (HIGH PRIORITY)
+### 1.3 Break Request Management Panel ✅ IMPLEMENTED
 
 **Spec Reference:** Lines 74-75
 > "Approve/deny judge break requests"
 
-**What's Missing:**
-- [ ] Break requests panel showing pending requests
-- [ ] Request details: Judge name, duration, timestamp
-- [ ] [Approve] and [Deny] buttons for each request
-- [ ] Visual indicator for pending break count
-- [ ] Toast/notification when new request arrives
+**Implementation Complete:**
+- [x] Break requests panel with pending requests list
+- [x] Request details: Judge name, duration, timestamp
+- [x] [Approve] and [Deny] buttons per request (lines 834-843)
+- [x] Pending count badge indicator
+- [x] Toast notifications on approve/deny
 
-**Backend APIs Available:**
-- `getBreakRequests` (line 745)
-- `approveBreak` (line 795)
-- `denyBreak` (line 857)
-
-**Current State:** Button exists (lines 577-582) but no management panel
-
-**Implementation Estimate:** 100-150 lines of code
+**Files Modified:**
+- `src/app/tabulator/page.tsx` (lines 144, 154, 810-858)
 
 ---
 
@@ -452,54 +429,36 @@ When implementing, reference these existing files:
 
 ---
 
-### 1.7 Scratch/Withdraw Routine (MEDIUM PRIORITY)
+### 1.7 Scratch/Withdraw Routine ✅ IMPLEMENTED
 
 **Spec Reference:** Line 78
 > "Mark routine as scratched/withdrawn (optional reason)"
 
-**What's Missing:**
-- [ ] Right-click context menu or action button on routine
-- [ ] Scratch modal with optional reason field
-- [ ] Visual strike-through styling for scratched routines
-- [ ] Scratched routines excluded from scoring/navigation
+**Implementation Complete:**
+- [x] Trash icon button on hover (appears for non-past, non-current entries)
+- [x] Confirmation dropdown with optional reason field
+- [x] Integration with `scratchRoutine` mutation
+- [x] Red-themed styling for destructive action
 
-**Backend API Available:** `scratchRoutine` (line 1909)
-```typescript
-// Input schema exists:
-{
-  competitionId: z.string(),
-  routineId: z.string(),
-  reason: z.string().optional(),
-}
-```
-
-**Implementation Estimate:** 50-70 lines of code
+**Files Modified:**
+- `src/app/tabulator/page.tsx` (scratch button, dropdown, mutation, handler)
 
 ---
 
-### 1.8 Edge Case Alert System (HIGH PRIORITY)
+### 1.8 Edge Case Alert System ✅ IMPLEMENTED
 
 **Spec Reference:** Lines 79, 299-309
 > "Edge case alerts when small score diff bumps down adjudication level"
 
-**What's Missing:**
-- [ ] Alert bar at bottom of Tabulator (placeholder exists line 607)
-- [ ] Detection logic: when average is within `edgeCaseThreshold` (default 0.1) of level boundary
-- [ ] Alert format: "Entry #108 bumped down due to 0.01 diff [REVIEW]"
-- [ ] Click to highlight relevant scores
-- [ ] Dismiss functionality
+**Implementation Complete:**
+- [x] Edge case alert detection (lines 350-410)
+- [x] Boundary proximity detection (within threshold of level boundaries)
+- [x] Judge-caused level bump detection (judge score causing level change)
+- [x] Alert bar at bottom of Tabulator (lines 1044-1050)
+- [x] Alert styling with routine info and reason
 
-**Algorithm Required:**
-```typescript
-// Check if any judge's score causes a level bump
-const averageWithoutJudge = (sum - judgeScore) / (count - 1);
-const fullAverage = sum / count;
-if (getLevel(averageWithoutJudge) !== getLevel(fullAverage)) {
-  // Alert: this judge's score caused level change
-}
-```
-
-**Implementation Estimate:** 100-150 lines of code
+**Files Modified:**
+- `src/app/tabulator/page.tsx` (lines 350-410, 1044-1050)
 
 ---
 
@@ -539,19 +498,22 @@ if (getLevel(averageWithoutJudge) !== getLevel(fullAverage)) {
 
 ---
 
-### 1.11 Schedule Delay Display Enhancement (LOW PRIORITY)
+### 1.11 Schedule Delay Display Enhancement ✅ IMPLEMENTED
 
 **Spec Reference:** Lines 345-348
 > "Show running delay (e.g., '+5 min behind')"
 
-**What's Missing:**
-- [ ] More prominent delay indicator (current is small text)
-- [ ] Color coding (green = on time, yellow = slight delay, red = significant)
-- [ ] Trend indicator (improving/worsening)
+**Implementation Complete:**
+- [x] Prominent pill-shaped badge display with border
+- [x] 4-tier color coding:
+  - Green: On schedule (0 min delay)
+  - Yellow: Slight delay (1-5 min)
+  - Orange: Moderate delay (6-10 min)
+  - Red + pulse: Significant delay (>10 min)
+- [x] Enhanced visibility with background and border styling
 
-**Current State:** Basic implementation exists (lines 593-602)
-
-**Implementation Estimate:** 20-30 lines of code
+**Files Modified:**
+- `src/app/tabulator/page.tsx` (lines 1108-1125)
 
 ---
 
@@ -677,25 +639,21 @@ if (getLevel(averageWithoutJudge) !== getLevel(fullAverage)) {
 **File:** `src/app/backstage/page.tsx` (224 lines)
 **Spec Section:** Lines 168-226
 
-### 3.1 Music Playback Controls (MEDIUM PRIORITY)
+### 3.1 Music Playback Controls ✅ IMPLEMENTED
 
 **Spec Reference:** Lines 175, 195
 > "Play MP3 files through connected sound system"
 
-**What's Missing:**
-- [ ] [PLAY] [PAUSE] [STOP] control buttons
-- [ ] Volume control slider
-- [ ] Seek bar for current track
-- [ ] Auto-advance to next track option
+**Implementation Complete:**
+- [x] [PLAY] [PAUSE] [STOP] control buttons with icons
+- [x] Volume control slider with mute toggle
+- [x] Seek bar for current track with time display
+- [x] Audio automatically stops when routine changes
+- [x] Signed URL generation from Supabase Storage
 
-**Spec Layout (lines 195):**
-```
-[▶ PLAY] [⏸ PAUSE] [⏹ STOP]
-```
-
-**Current State:** MP3DownloadPanel exists for download but no playback controls
-
-**Implementation Estimate:** 80-120 lines of code + Web Audio API
+**Files Modified:**
+- `src/app/backstage/page.tsx` (audio player controls, state management, seek bar)
+- `src/app/api/backstage/route.ts` (mp3Url in response, signed URL generation)
 
 ---
 
@@ -954,20 +912,20 @@ All 45 procedures implemented:
 | `advanceRoutine` | Tabulator | ✅ Used |
 | `previousRoutine` | Tabulator | ✅ Used |
 | `setCurrentRoutine` | Tabulator | ✅ Used |
-| `reorderRoutine` | Tabulator | ❌ Not wired |
-| `moveRoutineToDay` | Tabulator | ❌ Not wired |
+| `reorderRoutine` | Tabulator | ✅ Used (line 165) |
+| `moveRoutineToDay` | Tabulator | ✅ Used (line 176) |
 | `scratchRoutine` | Tabulator | ❌ Not wired |
-| `addEmergencyBreak` | Tabulator | ❌ Not wired |
-| `getBreakRequests` | Tabulator | ❌ Not wired |
-| `approveBreak` | Tabulator | ❌ Not wired |
-| `denyBreak` | Tabulator | ❌ Not wired |
-| `editScore` | Tabulator | ❌ Not wired |
-| `getScoreVisibility` | Tabulator | ❌ Not wired |
-| `setScoreVisibility` | Tabulator | ❌ Not wired |
-| `submitScore` | Judge | ❌ Using mock |
-| `requestBreak` | Judge | ❌ Using mock |
-| `submitTitleBreakdown` | Judge | ❌ Not implemented |
-| `getTitleBreakdown` | Judge | ❌ Not implemented |
+| `addEmergencyBreak` | Tabulator | ✅ Used |
+| `getBreakRequests` | Tabulator | ✅ Used |
+| `approveBreak` | Tabulator | ✅ Used (line 144) |
+| `denyBreak` | Tabulator | ✅ Used (line 154) |
+| `editScore` | Tabulator | ✅ Used |
+| `getScoreVisibility` | Tabulator | ✅ Used |
+| `setScoreVisibility` | Tabulator | ✅ Used |
+| `submitScore` | Judge | ✅ Used |
+| `requestBreak` | Judge | ✅ Used |
+| `submitTitleBreakdown` | Judge | ✅ Used |
+| `getTitleBreakdown` | Judge | ✅ Used |
 
 ---
 

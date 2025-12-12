@@ -26,6 +26,7 @@ import {
   Eye,
   EyeOff,
   Edit2,
+  Trash2,
 } from 'lucide-react';
 
 // Types
@@ -91,6 +92,8 @@ export default function TabulatorPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [showMoveToDay, setShowMoveToDay] = useState<string | null>(null); // entryId
+  const [showScratch, setShowScratch] = useState<string | null>(null); // entryId for scratch modal
+  const [scratchReason, setScratchReason] = useState('');
   const [showBreakModal, setShowBreakModal] = useState(false);
   const [breakDuration, setBreakDuration] = useState(5); // default 5 minutes
   const [breakPosition, setBreakPosition] = useState<'before' | 'after'>('after');
@@ -222,6 +225,19 @@ export default function TabulatorPage() {
     },
     onError: (err) => {
       toast.error(err.message || 'Failed to edit score');
+    },
+  });
+
+  // Scratch routine mutation
+  const scratchRoutineMutation = trpc.liveCompetition.scratchRoutine.useMutation({
+    onSuccess: () => {
+      toast.success('Routine scratched/withdrawn');
+      refetchLineup();
+      setShowScratch(null);
+      setScratchReason('');
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to scratch routine');
     },
   });
 
@@ -478,6 +494,15 @@ export default function TabulatorPage() {
     });
   };
 
+  // Scratch routine handler
+  const handleScratchRoutine = async () => {
+    if (!showScratch) return;
+    await scratchRoutineMutation.mutateAsync({
+      routineId: showScratch,
+      reason: scratchReason || undefined,
+    });
+  };
+
   // Emergency break handler
   const handleAddBreak = async () => {
     if (!competitionId) return;
@@ -691,11 +716,27 @@ export default function TabulatorPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setShowMoveToDay(showMoveToDay === entry.id ? null : entry.id);
+                                setShowScratch(null);
                               }}
                               className="p-1 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
                               title="Move to another day"
                             >
                               <Calendar className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {/* Scratch/Withdraw button */}
+                          {!isPast && !isCurrent && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowScratch(showScratch === entry.id ? null : entry.id);
+                                setShowMoveToDay(null);
+                                setScratchReason('');
+                              }}
+                              className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Scratch/Withdraw routine"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -731,6 +772,43 @@ export default function TabulatorPage() {
                           >
                             Cancel
                           </button>
+                        </div>
+                      )}
+                      {/* Scratch confirmation dropdown */}
+                      {showScratch === entry.id && (
+                        <div
+                          className="absolute left-full top-0 ml-2 z-50 bg-gray-800 border border-red-600/50 rounded-lg shadow-xl p-3 min-w-56"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="text-xs text-red-400 font-semibold mb-2">Scratch/Withdraw Routine</div>
+                          <div className="text-xs text-gray-400 mb-2">
+                            Entry #{entry.entryNumber} - {entry.title}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Reason (optional)"
+                            value={scratchReason}
+                            onChange={(e) => setScratchReason(e.target.value)}
+                            className="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-500 mb-2"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleScratchRoutine}
+                              disabled={scratchRoutineMutation.isPending}
+                              className="flex-1 px-3 py-1.5 text-sm bg-red-600 hover:bg-red-500 text-white rounded disabled:opacity-50"
+                            >
+                              {scratchRoutineMutation.isPending ? 'Scratching...' : 'Scratch'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowScratch(null);
+                                setScratchReason('');
+                              }}
+                              className="px-3 py-1.5 text-sm text-gray-400 hover:bg-gray-700 rounded"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
                       )}
                     </>
@@ -1027,16 +1105,24 @@ export default function TabulatorPage() {
                 {currentIndex >= 0 ? currentIndex + 1 : '-'} / {schedule.length}
               </span>
             </div>
-            <div className={`text-sm ${
-              (liveState?.scheduleDelayMinutes || 0) > 0
-                ? 'text-yellow-400'
-                : 'text-green-400'
-            }`}>
-              {(liveState?.scheduleDelayMinutes || 0) > 0
-                ? `+${liveState?.scheduleDelayMinutes} min behind`
-                : 'On Schedule'
-              }
-            </div>
+            {(() => {
+              const delay = liveState?.scheduleDelayMinutes || 0;
+              // Color coding: green = on time, yellow = 1-5 min, orange = 6-10 min, red = >10 min
+              const getDelayStyle = () => {
+                if (delay <= 0) return 'bg-green-500/20 text-green-400 border-green-500/30';
+                if (delay <= 5) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+                if (delay <= 10) return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+                return 'bg-red-500/20 text-red-400 border-red-500/30 animate-pulse';
+              };
+              return (
+                <div className={`px-3 py-1 rounded-full text-sm font-medium border ${getDelayStyle()}`}>
+                  {delay <= 0
+                    ? 'On Schedule'
+                    : `+${delay} min behind`
+                  }
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

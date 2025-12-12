@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { MP3DownloadPanel } from '@/components/audio/MP3DownloadPanel';
-import { HardDrive, Maximize, Minimize } from 'lucide-react';
+import { HardDrive, Maximize, Minimize, Play, Pause, Square, Volume2, VolumeX } from 'lucide-react';
 
 interface RoutineInfo {
   id: string;
@@ -15,6 +15,7 @@ interface RoutineInfo {
   durationMs: number;
   startedAt?: string | null;
   state?: string | null;
+  mp3Url?: string | null;
 }
 
 interface UpcomingRoutine {
@@ -49,6 +50,15 @@ export default function BackstagePage() {
   const [isKioskMode, setIsKioskMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const escPressTimesRef = useRef<number[]>([]);
+
+  // Audio playback state
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [currentAudioRoutineId, setCurrentAudioRoutineId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setSyncStatus('syncing');
@@ -133,6 +143,100 @@ export default function BackstagePage() {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
+
+  // Audio playback controls
+  const playAudio = useCallback(() => {
+    if (audioRef.current && data?.currentRoutine?.mp3Url) {
+      // Load new audio if routine changed
+      if (currentAudioRoutineId !== data.currentRoutine.id) {
+        audioRef.current.src = data.currentRoutine.mp3Url;
+        audioRef.current.load();
+        setCurrentAudioRoutineId(data.currentRoutine.id);
+      }
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  }, [data?.currentRoutine?.mp3Url, data?.currentRoutine?.id, currentAudioRoutineId]);
+
+  const pauseAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+      setAudioCurrentTime(0);
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted]);
+
+  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  }, []);
+
+  const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value);
+    setAudioCurrentTime(newTime);
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
+  }, []);
+
+  // Update audio time tracking
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      setAudioCurrentTime(audio.currentTime);
+    };
+
+    const handleLoadedMetadata = () => {
+      setAudioDuration(audio.duration);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, []);
+
+  // Stop audio when routine changes
+  useEffect(() => {
+    if (data?.currentRoutine?.id && currentAudioRoutineId && data.currentRoutine.id !== currentAudioRoutineId) {
+      stopAudio();
+    }
+  }, [data?.currentRoutine?.id, currentAudioRoutineId, stopAudio]);
+
+  const formatAudioTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return mins + ':' + secs.toString().padStart(2, '0');
+  };
 
   const toggleFullscreen = async () => {
     try {
@@ -222,6 +326,9 @@ export default function BackstagePage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+      {/* Hidden audio element for playback */}
+      <audio ref={audioRef} preload="metadata" />
+
       {/* Back to Test Page link - hidden in kiosk mode */}
       {!isKioskMode && (
         <Link
@@ -307,6 +414,83 @@ export default function BackstagePage() {
                 <div className="text-gray-500 text-lg mt-2">of {formatDuration(data.currentRoutine.durationMs)}</div>
               </div>
             </div>
+
+            {/* Audio Player Controls */}
+            {data.currentRoutine.mp3Url && (
+              <div className="w-full max-w-2xl bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center gap-4">
+                  {/* Play/Pause/Stop buttons */}
+                  <div className="flex items-center gap-2">
+                    {isPlaying ? (
+                      <button
+                        onClick={pauseAudio}
+                        className="p-3 bg-blue-600 hover:bg-blue-500 rounded-full transition-colors"
+                        title="Pause"
+                      >
+                        <Pause className="w-6 h-6 text-white" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={playAudio}
+                        className="p-3 bg-green-600 hover:bg-green-500 rounded-full transition-colors"
+                        title="Play"
+                      >
+                        <Play className="w-6 h-6 text-white" />
+                      </button>
+                    )}
+                    <button
+                      onClick={stopAudio}
+                      className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
+                      title="Stop"
+                    >
+                      <Square className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
+
+                  {/* Seek bar */}
+                  <div className="flex-1 flex items-center gap-3">
+                    <span className="text-gray-400 text-sm font-mono w-12">
+                      {formatAudioTime(audioCurrentTime)}
+                    </span>
+                    <input
+                      type="range"
+                      min="0"
+                      max={audioDuration || 0}
+                      value={audioCurrentTime}
+                      onChange={handleSeek}
+                      className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                    <span className="text-gray-400 text-sm font-mono w-12">
+                      {formatAudioTime(audioDuration)}
+                    </span>
+                  </div>
+
+                  {/* Volume control */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={toggleMute}
+                      className="p-2 hover:bg-gray-700 rounded transition-colors"
+                      title={isMuted ? 'Unmute' : 'Mute'}
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-5 h-5 text-gray-400" />
+                      ) : (
+                        <Volume2 className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="w-20 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="text-gray-400 text-4xl">No routine currently performing</div>

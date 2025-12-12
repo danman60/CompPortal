@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createServerSupabaseClient } from '@/lib/supabase-server-client';
 
 // Public API for backstage display - no authentication required
 export async function GET(request: NextRequest) {
@@ -85,6 +86,7 @@ export async function GET(request: NextRequest) {
       age_group: string;
       mp3_duration_ms: number | null;
       schedule_sequence: number | null;
+      music_file_url: string | null;
     }>>`
       SELECT
         e.id,
@@ -94,7 +96,8 @@ export async function GET(request: NextRequest) {
         COALESCE(c.name, 'Unknown') as category,
         COALESCE(ag.name, 'Unknown') as age_group,
         e.mp3_duration_ms,
-        e.schedule_sequence
+        e.schedule_sequence,
+        e.music_file_url
       FROM competition_entries e
       JOIN studios s ON e.studio_id = s.id
       LEFT JOIN dance_categories c ON e.category_id = c.id
@@ -126,6 +129,26 @@ export async function GET(request: NextRequest) {
         const current = todayRoutines[currentIndex];
         const durationMs = current.mp3_duration_ms || 180000; // Default 3 minutes
 
+        // Generate signed URL for current routine's MP3 if available
+        let mp3Url: string | null = null;
+        if (current.music_file_url) {
+          try {
+            const supabase = await createServerSupabaseClient();
+            // Extract path from URL (format: .../music/path/to/file.mp3)
+            const urlParts = current.music_file_url.split('/');
+            const bucketIndex = urlParts.findIndex((p) => p === 'music');
+            if (bucketIndex !== -1) {
+              const filePath = urlParts.slice(bucketIndex + 1).join('/');
+              const { data } = await supabase.storage
+                .from('music')
+                .createSignedUrl(filePath, 3600); // 1 hour expiry
+              mp3Url = data?.signedUrl || null;
+            }
+          } catch (err) {
+            console.error('Failed to create signed URL for MP3:', err);
+          }
+        }
+
         currentRoutine = {
           id: current.id,
           entryNumber: current.entry_number,
@@ -136,6 +159,7 @@ export async function GET(request: NextRequest) {
           durationMs,
           startedAt: state.current_entry_started_at?.toISOString() || null,
           state: state.current_entry_state,
+          mp3Url,
         };
 
         // Get next 4 routines for expanded upcoming list
