@@ -16,7 +16,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Square, SkipForward, Maximize2, Minimize2, Wifi, WifiOff, Music, Volume2, VolumeX } from 'lucide-react';
+import { SkipForward, Maximize2, Minimize2, Wifi, WifiOff, Music } from 'lucide-react';
+import MP3Player, { MP3PlayerHandle } from '@/components/MP3Player';
 
 // Types for competition entries
 interface RoutineEntry {
@@ -45,7 +46,6 @@ interface BackstageState {
 export default function BackstagePage() {
   // State
   const [isKioskMode, setIsKioskMode] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [state, setState] = useState<BackstageState>({
     currentRoutine: null,
     upNextRoutines: [],
@@ -57,7 +57,7 @@ export default function BackstagePage() {
     mp3DownloadProgress: { downloaded: 0, total: 0 },
   });
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mp3PlayerRef = useRef<MP3PlayerHandle | null>(null);
 
   // Demo data for testing (will be replaced with WebSocket data)
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function BackstagePage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Keyboard shortcut for kiosk mode (F11)
+  // Keyboard shortcuts for kiosk mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F11') {
@@ -144,25 +144,32 @@ export default function BackstagePage() {
       // Spacebar to play/pause
       if (e.code === 'Space' && !e.target?.toString().includes('input')) {
         e.preventDefault();
-        handlePlayPause();
+        const player = mp3PlayerRef.current;
+        if (player) {
+          if (player.isPlaying()) {
+            player.pause();
+          } else {
+            player.play();
+          }
+        }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [toggleKioskMode]);
 
-  // Playback controls
-  const handlePlay = () => {
+  // MP3Player event handlers - sync state with WebSocket
+  const handlePlayerPlay = () => {
     setState((prev) => ({ ...prev, isPlaying: true, isPaused: false }));
     // TODO: WebSocket broadcast playback:started
   };
 
-  const handlePause = () => {
+  const handlePlayerPause = () => {
     setState((prev) => ({ ...prev, isPlaying: false, isPaused: true }));
     // TODO: WebSocket broadcast playback:paused
   };
 
-  const handleStop = () => {
+  const handlePlayerStop = () => {
     setState((prev) => ({
       ...prev,
       isPlaying: false,
@@ -172,12 +179,18 @@ export default function BackstagePage() {
     // TODO: WebSocket broadcast playback:ended
   };
 
-  const handlePlayPause = () => {
-    if (state.isPlaying) {
-      handlePause();
-    } else {
-      handlePlay();
-    }
+  const handlePlayerEnd = () => {
+    // Auto-advance to next routine when playback ends
+    handleSkipToNext();
+  };
+
+  const handleTimeUpdate = (currentTime: number, duration: number) => {
+    setState((prev) => ({
+      ...prev,
+      playbackPosition: currentTime * 1000, // Convert to ms
+      playbackDuration: duration * 1000,
+    }));
+    // TODO: WebSocket broadcast playback:position (throttled to 500ms)
   };
 
   const handleSkipToNext = () => {
@@ -195,33 +208,7 @@ export default function BackstagePage() {
     }
   };
 
-  // Simulated playback progress
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (state.isPlaying && state.currentRoutine) {
-      interval = setInterval(() => {
-        setState((prev) => {
-          const newPosition = prev.playbackPosition + 100;
-          if (newPosition >= (prev.currentRoutine?.durationMs || 0)) {
-            // Auto-advance to next routine
-            if (prev.upNextRoutines.length > 0) {
-              const [nextRoutine, ...remaining] = prev.upNextRoutines;
-              return {
-                ...prev,
-                currentRoutine: nextRoutine,
-                upNextRoutines: remaining,
-                playbackPosition: 0,
-                isPlaying: false,
-              };
-            }
-            return { ...prev, isPlaying: false, playbackPosition: prev.currentRoutine?.durationMs || 0 };
-          }
-          return { ...prev, playbackPosition: newPosition };
-        });
-      }, 100);
-    }
-    return () => clearInterval(interval);
-  }, [state.isPlaying, state.currentRoutine]);
+  // Note: Playback progress is now handled by MP3Player component via onTimeUpdate callback
 
   // Format duration as MM:SS
   const formatDuration = (ms: number) => {
@@ -304,65 +291,34 @@ export default function BackstagePage() {
                   </span>
                 </div>
 
-                {/* Progress Bar */}
+                {/* MP3 Player with Controls */}
                 <div className="mb-4">
-                  <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-100"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-400 mt-2">
-                    <span>{formatDuration(state.playbackPosition)}</span>
-                    <span>{formatDuration(state.currentRoutine.durationMs)}</span>
-                  </div>
+                  <MP3Player
+                    ref={mp3PlayerRef}
+                    src={state.currentRoutine.mp3Url}
+                    size="lg"
+                    showControls={true}
+                    showProgress={true}
+                    showTime={true}
+                    onPlay={handlePlayerPlay}
+                    onPause={handlePlayerPause}
+                    onStop={handlePlayerStop}
+                    onEnd={handlePlayerEnd}
+                    onTimeUpdate={handleTimeUpdate}
+                    className="bg-gray-800/50 rounded-xl"
+                  />
                 </div>
 
-                {/* Playback Controls */}
-                <div className="flex items-center justify-center gap-4">
-                  {/* Play/Pause */}
-                  <button
-                    onClick={handlePlayPause}
-                    className={`p-6 rounded-full transition-all duration-200 ${
-                      state.isPlaying
-                        ? 'bg-yellow-500 hover:bg-yellow-400 text-black'
-                        : 'bg-green-500 hover:bg-green-400 text-white'
-                    }`}
-                    title={state.isPlaying ? 'Pause' : 'Play'}
-                  >
-                    {state.isPlaying ? (
-                      <Pause className="w-12 h-12" />
-                    ) : (
-                      <Play className="w-12 h-12" />
-                    )}
-                  </button>
-
-                  {/* Stop */}
-                  <button
-                    onClick={handleStop}
-                    className="p-4 rounded-full bg-red-500 hover:bg-red-400 text-white transition-colors"
-                    title="Stop"
-                  >
-                    <Square className="w-8 h-8" />
-                  </button>
-
-                  {/* Skip to Next */}
+                {/* Skip to Next Button */}
+                <div className="flex items-center justify-center">
                   <button
                     onClick={handleSkipToNext}
-                    className="p-4 rounded-full bg-gray-600 hover:bg-gray-500 text-white transition-colors"
+                    className="px-6 py-3 rounded-full bg-gray-600 hover:bg-gray-500 text-white transition-colors flex items-center gap-2"
                     title="Skip to Next"
                     disabled={state.upNextRoutines.length === 0}
                   >
-                    <SkipForward className="w-8 h-8" />
-                  </button>
-
-                  {/* Mute Toggle */}
-                  <button
-                    onClick={() => setIsMuted(!isMuted)}
-                    className={`p-4 rounded-full transition-colors ${isMuted ? 'bg-gray-600 text-gray-400' : 'bg-gray-700 text-white'}`}
-                    title={isMuted ? 'Unmute' : 'Mute'}
-                  >
-                    {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                    <SkipForward className="w-5 h-5" />
+                    <span>Skip to Next</span>
                   </button>
                 </div>
               </>
@@ -428,8 +384,6 @@ export default function BackstagePage() {
         </div>
       </main>
 
-      {/* Hidden audio element for future use */}
-      <audio ref={audioRef} />
     </div>
   );
 }
