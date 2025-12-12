@@ -2140,5 +2140,150 @@ export const liveCompetitionRouter = router({
       };
     }),
 
+  // ===========================================
+  // TASK 26: TITLE DIVISION SCORING SYSTEM
+  // ===========================================
+
+  /**
+   * Submit title breakdown scores for a Title Division routine
+   * 5 breakdown categories (20 points max each): Technique + 4 configurable
+   */
+  submitTitleBreakdown: publicProcedure
+    .input(z.object({
+      scoreId: z.string(),
+      entryId: z.string(),
+      judgeId: z.string(),
+      techniqueScore: z.number().min(0).max(20),
+      category2Score: z.number().min(0).max(20),
+      category3Score: z.number().min(0).max(20),
+      category4Score: z.number().min(0).max(20),
+      category5Score: z.number().min(0).max(20),
+      // Optional custom labels
+      category2Label: z.string().optional(),
+      category3Label: z.string().optional(),
+      category4Label: z.string().optional(),
+      category5Label: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const totalBreakdown = input.techniqueScore + input.category2Score +
+        input.category3Score + input.category4Score + input.category5Score;
+
+      // Upsert breakdown scores using raw SQL
+      await prisma.$executeRaw`
+        INSERT INTO title_breakdown_scores (
+          tenant_id, score_id, entry_id, judge_id,
+          technique_score, category_2_score, category_3_score,
+          category_4_score, category_5_score,
+          category_2_label, category_3_label, category_4_label, category_5_label,
+          total_breakdown, updated_at
+        ) VALUES (
+          ${ctx.tenantId}::uuid,
+          ${input.scoreId}::uuid,
+          ${input.entryId}::uuid,
+          ${input.judgeId}::uuid,
+          ${input.techniqueScore},
+          ${input.category2Score},
+          ${input.category3Score},
+          ${input.category4Score},
+          ${input.category5Score},
+          ${input.category2Label || 'Execution'},
+          ${input.category3Label || 'Artistry'},
+          ${input.category4Label || 'Choreography'},
+          ${input.category5Label || 'Performance'},
+          ${totalBreakdown},
+          NOW()
+        )
+        ON CONFLICT (score_id, tenant_id) DO UPDATE SET
+          technique_score = EXCLUDED.technique_score,
+          category_2_score = EXCLUDED.category_2_score,
+          category_3_score = EXCLUDED.category_3_score,
+          category_4_score = EXCLUDED.category_4_score,
+          category_5_score = EXCLUDED.category_5_score,
+          category_2_label = EXCLUDED.category_2_label,
+          category_3_label = EXCLUDED.category_3_label,
+          category_4_label = EXCLUDED.category_4_label,
+          category_5_label = EXCLUDED.category_5_label,
+          total_breakdown = EXCLUDED.total_breakdown,
+          updated_at = NOW()
+      `;
+
+      return {
+        success: true,
+        scoreId: input.scoreId,
+        totalBreakdown,
+        maxPossible: 100,
+      };
+    }),
+
+  /**
+   * Get title breakdown scores for a score or entry
+   */
+  getTitleBreakdown: publicProcedure
+    .input(z.object({
+      scoreId: z.string().optional(),
+      entryId: z.string().optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      if (!input.scoreId && !input.entryId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Either scoreId or entryId required' });
+      }
+
+      let breakdowns;
+      if (input.scoreId) {
+        breakdowns = await prisma.$queryRaw`
+          SELECT
+            id, score_id, entry_id, judge_id,
+            technique_score, category_2_score, category_3_score,
+            category_4_score, category_5_score,
+            category_2_label, category_3_label, category_4_label, category_5_label,
+            total_breakdown, created_at, updated_at
+          FROM title_breakdown_scores
+          WHERE score_id = ${input.scoreId}::uuid
+            AND tenant_id = ${ctx.tenantId}::uuid
+        `;
+      } else {
+        breakdowns = await prisma.$queryRaw`
+          SELECT
+            id, score_id, entry_id, judge_id,
+            technique_score, category_2_score, category_3_score,
+            category_4_score, category_5_score,
+            category_2_label, category_3_label, category_4_label, category_5_label,
+            total_breakdown, created_at, updated_at
+          FROM title_breakdown_scores
+          WHERE entry_id = ${input.entryId}::uuid
+            AND tenant_id = ${ctx.tenantId}::uuid
+        `;
+      }
+
+      return {
+        breakdowns: breakdowns as Array<{
+          id: string;
+          score_id: string;
+          entry_id: string;
+          judge_id: string;
+          technique_score: number;
+          category_2_score: number;
+          category_3_score: number;
+          category_4_score: number;
+          category_5_score: number;
+          category_2_label: string;
+          category_3_label: string;
+          category_4_label: string;
+          category_5_label: string;
+          total_breakdown: number;
+          created_at: Date;
+          updated_at: Date;
+        }>,
+      };
+    }),
+
 
 });
