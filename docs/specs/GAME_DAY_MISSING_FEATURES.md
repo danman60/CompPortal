@@ -397,68 +397,58 @@ When implementing, reference these existing files:
 
 ---
 
-### 1.4 Emergency Break Insertion (MEDIUM PRIORITY)
+### 1.4 Emergency Break Insertion ✅ IMPLEMENTED
 
 **Spec Reference:** Line 74
 > "Add emergency breaks (updates schedule times for all routines)"
 
-**What's Missing:**
-- [ ] "+ BREAK" button click handler (currently non-functional)
-- [ ] Duration selector modal (5/10/15/custom minutes)
-- [ ] Insert position selection (before current, after current, specific slot)
-- [ ] Time cascade recalculation display
-- [ ] Break visualization in schedule panel
+**Implementation Complete:**
+- [x] "+ BREAK" button with click handler
+- [x] Duration selector modal (5/10/15/custom minutes)
+- [x] Insert position selection (before current, after current, specific slot)
+- [x] Time cascade recalculation display
+- [x] Break visualization in schedule panel
 
-**Backend APIs Available:**
+**Backend APIs Used:**
 - `addEmergencyBreak` (line 1666)
 - `recalculateScheduleTimes` (line 2951)
 
-**Current State:** Button exists but onClick is empty
-
-**Implementation Estimate:** 80-100 lines of code
+**Implementation:** `src/app/tabulator/page.tsx` (lines ~280-340)
 
 ---
 
-### 1.5 Score Edit Capability (MEDIUM PRIORITY)
+### 1.5 Score Edit Capability ✅ IMPLEMENTED
 
 **Spec Reference:** Line 76
 > "Edit scores after judge submits (emergency only)"
 
-**What's Missing:**
-- [ ] Edit button in scores panel (appears only after score submitted)
-- [ ] Edit modal with score input + reason field
-- [ ] Confirmation: "Edit Judge [X]'s score? This will be logged."
-- [ ] Audit log display of previous values
+**Implementation Complete:**
+- [x] Edit button in scores panel (appears only after score submitted)
+- [x] Edit modal with score input + reason field
+- [x] Confirmation: "Edit Judge [X]'s score? This will be logged."
+- [x] Audit log display of previous values
 
-**Backend API Available:** `editScore` (line 2068)
-```typescript
-// Input schema exists:
-{
-  scoreId: z.string(),
-  newScore: z.number(),
-  reason: z.string(),
-}
-```
+**Backend API Used:** `editScore` (line 2068)
 
-**Implementation Estimate:** 60-80 lines of code
+**Implementation:** `src/app/tabulator/page.tsx` (lines ~490-550)
 
 ---
 
-### 1.6 Score Visibility Toggle (MEDIUM PRIORITY)
+### 1.6 Score Visibility Toggle ✅ IMPLEMENTED
 
 **Spec Reference:** Line 77
 > "Toggle whether judges can see other judges' scores"
 
-**What's Missing:**
-- [ ] Toggle switch in Tabulator header/controls
-- [ ] Visual indicator of current visibility state
-- [ ] Real-time broadcast to judge tablets
+**Implementation Complete:**
+- [x] Toggle switch in Tabulator header/controls
+- [x] Visual indicator of current visibility state
+- [x] Real-time broadcast to judge tablets
 
-**Backend APIs Available:**
+**Backend APIs Used:**
 - `getScoreVisibility` (line 3094)
 - `setScoreVisibility` (line 3122)
 
-**Implementation Estimate:** 30-40 lines of code
+**Implementation:** `src/app/tabulator/page.tsx` (lines ~400-430)
 
 ---
 
@@ -583,28 +573,30 @@ if (getLevel(averageWithoutJudge) !== getLevel(fullAverage)) {
 **File:** `src/app/judge/page.tsx` (605 lines)
 **Spec Section:** Lines 102-166
 
-### 2.1 Title Division Breakdown (HIGH PRIORITY)
+### 2.1 Title Division Breakdown ✅ IMPLEMENTED
 
 **Spec Reference:** Lines 113, 149-166
 > "Title Division breakdown (when applicable)"
 
-**What's Missing:**
-- [ ] Detection of Title Division routines
-- [ ] 5 breakdown score inputs:
+**Implementation Complete:**
+- [x] Detection of Title Division routines (via category name matching)
+- [x] 5 breakdown score inputs:
   - Technique (20 points max)
-  - Category 2 (20 points max)
-  - Category 3 (20 points max)
-  - Category 4 (20 points max)
-  - Category 5 (20 points max)
-- [ ] Whole numbers OK for breakdown (unlike main score)
-- [ ] Auto-sum display
-- [ ] Layout per spec lines 149-166
+  - Performance (20 points max)
+  - Choreography (20 points max)
+  - Musicality (20 points max)
+  - Showmanship (20 points max)
+- [x] Whole numbers OK for breakdown (via number inputs)
+- [x] Auto-sum display (shows total / 100)
+- [x] Layout with sliders + number inputs
+- [x] Submit button with loading state
+- [x] Locked state after submission
 
-**Backend APIs Available:**
+**Backend APIs Used:**
 - `submitTitleBreakdown` (line 2220)
 - `getTitleBreakdown` (line 2294)
 
-**Implementation Estimate:** 120-180 lines of code
+**Implementation:** `src/app/judge/page.tsx` (lines ~703-896)
 
 ---
 

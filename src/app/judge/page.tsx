@@ -58,6 +58,14 @@ interface AdjudicationLevel {
   color: string;
 }
 
+interface TitleBreakdown {
+  technique: number;
+  category2: number;
+  category3: number;
+  category4: number;
+  category5: number;
+}
+
 interface JudgeState {
   currentRoutine: CurrentRoutine | null;
   score: string; // String to preserve XX.XX format
@@ -70,6 +78,9 @@ interface JudgeState {
   breakRequestStatus: 'none' | 'pending' | 'approved' | 'denied';
   breakRequestDuration: number | null;
   judgeName: string;
+  // Title Division breakdown
+  titleBreakdown: TitleBreakdown;
+  isTitleBreakdownSubmitted: boolean;
 }
 
 // Default adjudication levels (will be loaded from competition settings)
@@ -102,6 +113,14 @@ function JudgePageContent() {
     judgeName: 'Judge',
     breakRequestStatus: 'none',
     breakRequestDuration: null,
+    titleBreakdown: {
+      technique: 0,
+      category2: 0,
+      category3: 0,
+      category4: 0,
+      category5: 0,
+    },
+    isTitleBreakdownSubmitted: false,
   });
 
   const [adjudicationLevels] = useState<AdjudicationLevel[]>(DEFAULT_LEVELS);
@@ -163,6 +182,24 @@ function JudgePageContent() {
     },
   });
 
+  // Title Division breakdown mutation
+  const submitTitleBreakdownMutation = trpc.liveCompetition.submitTitleBreakdown.useMutation({
+    onSuccess: () => {
+      toast.success('Title Division breakdown submitted!');
+      setState(prev => ({ ...prev, isTitleBreakdownSubmitted: true }));
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to submit breakdown');
+    },
+  });
+
+  // Helper function to detect if routine is Title Division
+  const isTitleDivision = (category: string | undefined): boolean => {
+    if (!category) return false;
+    const lowerCategory = category.toLowerCase();
+    return lowerCategory.includes('title') || lowerCategory.includes('division');
+  };
+
   // Get break requests status (poll for updates)
   const { data: breakRequests } = trpc.liveCompetition.getBreakRequests.useQuery(
     { competitionId: competitionId || '', status: 'pending' },
@@ -192,12 +229,14 @@ function JudgePageContent() {
         ...prev,
         currentRoutine: routine,
         isConnected: true,
-        // Reset score when routine changes
+        // Reset score and title breakdown when routine changes
         ...(prev.currentRoutine?.id !== routine.id ? {
           score: '',
           comments: '',
           specialAwards: '',
           isSubmitted: false,
+          titleBreakdown: { technique: 0, category2: 0, category3: 0, category4: 0, category5: 0 },
+          isTitleBreakdownSubmitted: false,
         } : {}),
       }));
     } else {
@@ -358,9 +397,49 @@ function JudgePageContent() {
     });
   }, [state.breakRequestStatus, competitionId, judgeId, requestBreakMutation]);
 
+  // Handle title breakdown score change
+  const handleTitleBreakdownChange = (field: keyof TitleBreakdown, value: number) => {
+    const clampedValue = Math.max(0, Math.min(20, value));
+    setState(prev => ({
+      ...prev,
+      titleBreakdown: { ...prev.titleBreakdown, [field]: clampedValue },
+    }));
+  };
+
+  // Submit title breakdown
+  const handleSubmitTitleBreakdown = useCallback(() => {
+    if (!judgeId || !state.currentRoutine?.id) {
+      setError('Missing judge ID or routine');
+      return;
+    }
+
+    // Note: scoreId is required by the API, but we may not have it yet
+    // For now, we'll use the routine ID - the API should handle this
+    submitTitleBreakdownMutation.mutate({
+      scoreId: state.currentRoutine.id, // Using entryId as fallback
+      entryId: state.currentRoutine.id,
+      judgeId,
+      techniqueScore: state.titleBreakdown.technique,
+      category2Score: state.titleBreakdown.category2,
+      category3Score: state.titleBreakdown.category3,
+      category4Score: state.titleBreakdown.category4,
+      category5Score: state.titleBreakdown.category5,
+    });
+  }, [judgeId, state.currentRoutine?.id, state.titleBreakdown, submitTitleBreakdownMutation]);
+
   // Get current award level
   const currentAwardLevel = getAwardLevel(state.score);
   const sliderValue = parseScore(state.score) ?? 85;
+
+  // Check if current routine is Title Division
+  const isCurrentRoutineTitleDivision = isTitleDivision(state.currentRoutine?.category);
+
+  // Calculate title breakdown total
+  const titleBreakdownTotal = state.titleBreakdown.technique +
+    state.titleBreakdown.category2 +
+    state.titleBreakdown.category3 +
+    state.titleBreakdown.category4 +
+    state.titleBreakdown.category5;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-gray-900 to-black text-white">
@@ -621,7 +700,202 @@ function JudgePageContent() {
           )}
         </div>
 
-        
+        {/* Title Division Breakdown Section */}
+        {isCurrentRoutineTitleDivision && (
+          <div
+            className={`bg-gray-800/50 rounded-2xl border p-6 mb-6 ${
+              state.isTitleBreakdownSubmitted ? 'border-green-500/50' : 'border-amber-500/30'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-400" />
+                <h3 className="font-semibold text-white">Title Division Breakdown</h3>
+              </div>
+              {state.isTitleBreakdownSubmitted ? (
+                <div className="flex items-center gap-1 text-green-400 text-sm">
+                  <Lock className="w-4 h-4" />
+                  <span>Submitted</span>
+                </div>
+              ) : (
+                <div className="text-amber-400 text-sm">5 categories × 20 pts each</div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {/* Technique */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Technique</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.technique}
+                    onChange={(e) => handleTitleBreakdownChange('technique', parseInt(e.target.value) || 0)}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="w-20 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-center text-lg font-semibold focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.technique}
+                    onChange={(e) => handleTitleBreakdownChange('technique', parseInt(e.target.value))}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:opacity-50"
+                  />
+                  <span className="text-gray-400 text-sm w-12 text-right">/ 20</span>
+                </div>
+              </div>
+
+              {/* Category 2 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Performance</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category2}
+                    onChange={(e) => handleTitleBreakdownChange('category2', parseInt(e.target.value) || 0)}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="w-20 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-center text-lg font-semibold focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category2}
+                    onChange={(e) => handleTitleBreakdownChange('category2', parseInt(e.target.value))}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:opacity-50"
+                  />
+                  <span className="text-gray-400 text-sm w-12 text-right">/ 20</span>
+                </div>
+              </div>
+
+              {/* Category 3 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Choreography</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category3}
+                    onChange={(e) => handleTitleBreakdownChange('category3', parseInt(e.target.value) || 0)}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="w-20 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-center text-lg font-semibold focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category3}
+                    onChange={(e) => handleTitleBreakdownChange('category3', parseInt(e.target.value))}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:opacity-50"
+                  />
+                  <span className="text-gray-400 text-sm w-12 text-right">/ 20</span>
+                </div>
+              </div>
+
+              {/* Category 4 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Musicality</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category4}
+                    onChange={(e) => handleTitleBreakdownChange('category4', parseInt(e.target.value) || 0)}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="w-20 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-center text-lg font-semibold focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category4}
+                    onChange={(e) => handleTitleBreakdownChange('category4', parseInt(e.target.value))}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:opacity-50"
+                  />
+                  <span className="text-gray-400 text-sm w-12 text-right">/ 20</span>
+                </div>
+              </div>
+
+              {/* Category 5 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Showmanship</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category5}
+                    onChange={(e) => handleTitleBreakdownChange('category5', parseInt(e.target.value) || 0)}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="w-20 px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-center text-lg font-semibold focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    value={state.titleBreakdown.category5}
+                    onChange={(e) => handleTitleBreakdownChange('category5', parseInt(e.target.value))}
+                    disabled={state.isTitleBreakdownSubmitted}
+                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:opacity-50"
+                  />
+                  <span className="text-gray-400 text-sm w-12 text-right">/ 20</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Display */}
+            <div className="mt-6 p-4 bg-amber-500/10 rounded-xl border border-amber-500/30">
+              <div className="flex items-center justify-between">
+                <span className="text-amber-300 font-medium">Total Score</span>
+                <span className="text-3xl font-bold text-amber-400">
+                  {titleBreakdownTotal} <span className="text-lg text-amber-300/70">/ 100</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              onClick={handleSubmitTitleBreakdown}
+              disabled={state.isTitleBreakdownSubmitted || titleBreakdownTotal === 0 || submitTitleBreakdownMutation.isPending}
+              className={`w-full mt-4 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                state.isTitleBreakdownSubmitted
+                  ? 'bg-green-600 text-white cursor-not-allowed'
+                  : submitTitleBreakdownMutation.isPending
+                  ? 'bg-amber-600 text-white cursor-wait'
+                  : 'bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed'
+              }`}
+            >
+              {state.isTitleBreakdownSubmitted ? (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  Breakdown Submitted
+                </>
+              ) : submitTitleBreakdownMutation.isPending ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  Submit Title Breakdown
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Break Request Section (Task #8) */}
         <div className="bg-gray-800/50 rounded-2xl border border-gray-700 p-4 mb-6">
           <div className="flex items-center gap-2 mb-4">

@@ -22,6 +22,10 @@ import {
   Check,
   Calendar,
   ArrowRightLeft,
+  Plus,
+  Eye,
+  EyeOff,
+  Edit2,
 } from 'lucide-react';
 
 // Types
@@ -87,6 +91,12 @@ export default function TabulatorPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [showMoveToDay, setShowMoveToDay] = useState<string | null>(null); // entryId
+  const [showBreakModal, setShowBreakModal] = useState(false);
+  const [breakDuration, setBreakDuration] = useState(5); // default 5 minutes
+  const [breakPosition, setBreakPosition] = useState<'before' | 'after'>('after');
+  const [showScoreEdit, setShowScoreEdit] = useState<string | null>(null); // scoreId
+  const [editScoreValue, setEditScoreValue] = useState<number>(0);
+  const [editScoreReason, setEditScoreReason] = useState('');
 
   // Get active competitions
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -171,6 +181,47 @@ export default function TabulatorPage() {
     },
     onError: (err) => {
       toast.error(err.message || 'Failed to move routine');
+    },
+  });
+
+  // Emergency break mutation
+  const addEmergencyBreakMutation = trpc.liveCompetition.addEmergencyBreak.useMutation({
+    onSuccess: () => {
+      toast.success('Emergency break added');
+      refetchLineup();
+      setShowBreakModal(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to add break');
+    },
+  });
+
+  // Score visibility toggle
+  const { data: scoreVisibility, refetch: refetchScoreVisibility } = trpc.liveCompetition.getScoreVisibility.useQuery(
+    { competitionId: competitionId || '' },
+    { enabled: !!competitionId }
+  );
+
+  const setScoreVisibilityMutation = trpc.liveCompetition.setScoreVisibility.useMutation({
+    onSuccess: () => {
+      toast.success('Score visibility updated');
+      refetchScoreVisibility();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to update visibility');
+    },
+  });
+
+  // Score edit mutation
+  const editScoreMutation = trpc.liveCompetition.editScore.useMutation({
+    onSuccess: () => {
+      toast.success('Score updated');
+      setShowScoreEdit(null);
+      setEditScoreValue(0);
+      setEditScoreReason('');
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to edit score');
     },
   });
 
@@ -425,6 +476,47 @@ export default function TabulatorPage() {
       routineId: showMoveToDay,
       targetDay,
     });
+  };
+
+  // Emergency break handler
+  const handleAddBreak = async () => {
+    if (!competitionId) return;
+    const insertAfter = breakPosition === 'after' ? liveState?.currentEntry?.id : undefined;
+    await addEmergencyBreakMutation.mutateAsync({
+      competitionId,
+      durationMinutes: breakDuration,
+      insertAfterEntryId: insertAfter,
+    });
+  };
+
+  // Score visibility toggle handler
+  const handleToggleScoreVisibility = async () => {
+    if (!competitionId) return;
+    const currentlyVisible = scoreVisibility?.visible ?? false;
+    await setScoreVisibilityMutation.mutateAsync({
+      competitionId,
+      visible: !currentlyVisible,
+    });
+  };
+
+  // Score edit handler
+  const handleEditScore = async () => {
+    if (!showScoreEdit || !editScoreReason) {
+      toast.error('Reason is required for score edits');
+      return;
+    }
+    await editScoreMutation.mutateAsync({
+      scoreId: showScoreEdit,
+      newValue: editScoreValue,
+      reason: editScoreReason,
+    });
+  };
+
+  // Open score edit modal
+  const openScoreEditModal = (scoreId: string, currentScore: number) => {
+    setShowScoreEdit(scoreId);
+    setEditScoreValue(currentScore);
+    setEditScoreReason('');
   };
 
   // Get competition days for move to day dropdown
@@ -777,19 +869,26 @@ export default function TabulatorPage() {
                 <div className="space-y-3 mb-6">
                   {['A', 'B', 'C'].map((letter, i) => {
                     const score = currentScores[i];
+                    const hasScore = score?.score !== null && score?.score !== undefined;
                     return (
-                      <div key={letter} className="flex items-center justify-between">
+                      <div key={letter} className="flex items-center justify-between group">
                         <span className="text-gray-400">Judge {letter}</span>
-                        <span className={`font-mono text-xl ${
-                          score?.score !== null && score?.score !== undefined
-                            ? 'text-white'
-                            : 'text-gray-600'
-                        }`}>
-                          {score?.score !== null && score?.score !== undefined
-                            ? score.score.toFixed(2)
-                            : '--.-'
-                          }
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-mono text-xl ${
+                            hasScore ? 'text-white' : 'text-gray-600'
+                          }`}>
+                            {hasScore ? score.score.toFixed(2) : '--.-'}
+                          </span>
+                          {hasScore && score?.scoreId && (
+                            <button
+                              onClick={() => openScoreEditModal(score.scoreId, score.score || 0)}
+                              className="p-1 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Edit score"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -893,10 +992,30 @@ export default function TabulatorPage() {
             <div className="w-px h-8 bg-gray-700 mx-2" />
 
             <button
+              onClick={() => setShowBreakModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg font-medium transition-colors"
             >
               <Coffee className="w-5 h-5" />
               + BREAK
+            </button>
+
+            {/* Score Visibility Toggle */}
+            <button
+              onClick={handleToggleScoreVisibility}
+              disabled={setScoreVisibilityMutation.isPending}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                scoreVisibility?.visible
+                  ? 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
+                  : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-400'
+              }`}
+              title={scoreVisibility?.visible ? 'Judges CAN see other scores' : 'Judges CANNOT see other scores'}
+            >
+              {scoreVisibility?.visible ? (
+                <Eye className="w-5 h-5" />
+              ) : (
+                <EyeOff className="w-5 h-5" />
+              )}
+              Scores
             </button>
           </div>
 
@@ -950,6 +1069,182 @@ export default function TabulatorPage() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Emergency Break Modal */}
+      {showBreakModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Coffee className="w-5 h-5 text-orange-400" />
+                Add Emergency Break
+              </h2>
+              <button
+                onClick={() => setShowBreakModal(false)}
+                className="p-1 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Duration Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-3">Duration</label>
+                <div className="flex gap-2">
+                  {[5, 10, 15, 20].map((mins) => (
+                    <button
+                      key={mins}
+                      onClick={() => setBreakDuration(mins)}
+                      className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+                        breakDuration === mins
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {mins} min
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Position Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-3">Insert Position</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setBreakPosition('before')}
+                    className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+                      breakPosition === 'before'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Before Current
+                  </button>
+                  <button
+                    onClick={() => setBreakPosition('after')}
+                    className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+                      breakPosition === 'after'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    After Current
+                  </button>
+                </div>
+              </div>
+
+              {/* Current Routine Info */}
+              {liveState?.currentEntry && (
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                  <div className="text-xs text-gray-400 mb-1">Current Routine</div>
+                  <div className="text-white font-medium">
+                    #{liveState.currentEntry.entryNumber} - {liveState.currentEntry.title}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBreakModal(false)}
+                  className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddBreak}
+                  disabled={addEmergencyBreakMutation.isPending}
+                  className="flex-1 py-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {addEmergencyBreakMutation.isPending ? (
+                    <>
+                      <Clock className="w-4 h-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Add Break
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Score Edit Modal */}
+      {showScoreEdit && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-blue-400" />
+                Edit Score
+              </h2>
+              <button
+                onClick={() => setShowScoreEdit(null)}
+                className="p-1 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Score Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">New Score (60-100)</label>
+                <input
+                  type="number"
+                  min={60}
+                  max={100}
+                  step={0.5}
+                  value={editScoreValue}
+                  onChange={(e) => setEditScoreValue(parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-xl font-mono focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Reason (Required) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Reason <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  value={editScoreReason}
+                  onChange={(e) => setEditScoreReason(e.target.value)}
+                  placeholder="Explain why this score is being changed..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  This will be logged in the audit trail.
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowScoreEdit(null)}
+                  className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditScore}
+                  disabled={editScoreMutation.isPending || !editScoreReason.trim()}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+                >
+                  {editScoreMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
