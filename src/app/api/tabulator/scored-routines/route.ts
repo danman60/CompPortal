@@ -58,23 +58,25 @@ export async function GET(request: NextRequest) {
     const rawScores = await prisma.$queryRaw<JudgeScoreRow[]>`
       SELECT
         e.id as entry_id,
-        e.entry_number,
-        e.routine_name,
+        e.entry_number::text as entry_number,
+        e.title as routine_name,
         st.name as studio_name,
-        e.category,
-        e.age_group,
+        COALESCE(c.name, 'Unknown') as category,
+        COALESCE(ag.name, 'Unknown') as age_group,
         COALESCE(u.name, CONCAT('Judge ', j.judge_number::text)) as judge_name,
         j.judge_number,
         s.total_score as score,
         s.scored_at
       FROM competition_entries e
       JOIN studios st ON e.studio_id = st.id
+      LEFT JOIN categories c ON e.category_id = c.id
+      LEFT JOIN age_groups ag ON e.age_group_id = ag.id
       JOIN scores s ON e.id = s.entry_id
       JOIN judges j ON s.judge_id = j.id
       LEFT JOIN users u ON j.user_id = u.id
       WHERE e.competition_id = ${targetCompetitionId}::uuid
         AND s.total_score IS NOT NULL
-      ORDER BY e.entry_number::int, j.judge_number
+      ORDER BY e.entry_number, j.judge_number
     `;
 
     // Group scores by entry

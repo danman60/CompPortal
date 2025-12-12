@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
     }>>`
       SELECT
         e.id,
-        e.entry_number,
-        e.routine_name,
+        e.entry_number::text as entry_number,
+        e.title as routine_name,
         s.name as studio_name
       FROM competition_entries e
       JOIN studios s ON e.studio_id = s.id
       WHERE e.competition_id = ${competitionId}::uuid
         AND e.status != 'cancelled'
-      ORDER BY e.entry_number::int ASC
+      ORDER BY e.entry_number ASC
       LIMIT 100
     `;
 
