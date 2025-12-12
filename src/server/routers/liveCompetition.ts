@@ -430,7 +430,7 @@ export const liveCompetitionRouter = router({
         silver?: [number, number];
         bronze?: [number, number];
       } || {
-        platinum: [95, 100],
+        platinum: [95, 99.99],
         high_gold: [90, 94.9],
         gold: [85, 89.9],
         silver: [80, 84.9],
@@ -2662,7 +2662,7 @@ export const liveCompetitionRouter = router({
           localId: z.string(), // Client-side IndexedDB key for confirmation
           entryId: z.string(),
           judgeId: z.string(),
-          score: z.number().min(0).max(100),
+          score: z.number().min(0).max(99.99),
           comments: z.string().optional(),
           submittedAt: z.string(), // ISO timestamp from client
           clientTimestamp: z.number(), // Unix timestamp for ordering

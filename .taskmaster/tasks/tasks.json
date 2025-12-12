@@ -206,7 +206,7 @@
         "description": "Public scoreboard at /scoreboard/:competitionId showing real-time scores, award levels, category placements, schedule status.",
         "details": "- Route: /scoreboard/:competitionId (public) - Real-time score updates - Award level distribution - Category placements/rankings - Running schedule status (ahead/behind) - Auto-refresh display",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [],
         "priority": "medium",
         "subtasks": [
@@ -221,7 +221,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T08:03:30.635Z"
+        "updatedAt": "2025-12-12T08:18:10.770Z"
       },
       {
         "id": "10",
@@ -278,7 +278,7 @@
         "description": "Update liveCompetition.ts submitScore to validate 60-100 range instead of 0-10. Update calculateScore award level logic.",
         "details": "- submitScore: change z.number().min(0).max(10) to min(60).max(100) - calculateScore: update award level thresholds - Use scoring_ranges from competition settings - Ensure backwards compatibility",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [],
         "priority": "medium",
         "subtasks": [
@@ -302,7 +302,8 @@
             "parentTaskId": 12,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T08:18:28.922Z"
       },
       {
         "id": "13",
@@ -761,9 +762,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T08:03:30.636Z",
+      "lastModified": "2025-12-12T08:18:28.924Z",
       "taskCount": 34,
-      "completedCount": 21,
+      "completedCount": 22,
       "tags": [
         "master"
       ]
