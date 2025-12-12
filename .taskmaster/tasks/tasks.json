@@ -126,7 +126,7 @@
         "description": "Handle judge break requests (2/5/10 min) and CD emergency breaks. Update all subsequent routine times when break inserted.",
         "details": "- Display incoming break requests from judges - Approve/Deny buttons for CD - Emergency break insertion anywhere in schedule - Cascade time updates to all subsequent routines - CD can end break early to recover time",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "4"
         ],
@@ -143,7 +143,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T08:43:51.841Z"
+        "updatedAt": "2025-12-12T08:51:07.147Z"
       },
       {
         "id": "7",
@@ -184,7 +184,7 @@
         "description": "Add break request buttons to judge interface. [2 min] [5 min] [10 min] sends request to CD.",
         "details": "- Three buttons: 2 min, 5 min, 10 min - Request sent to CD control panel - Visual confirmation request was sent - CD approval/denial reflected back to judge",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "7"
         ],
@@ -200,7 +200,8 @@
             "parentTaskId": 8,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T08:51:33.464Z"
       },
       {
         "id": "9",
@@ -765,9 +766,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T08:43:51.842Z",
+      "lastModified": "2025-12-12T08:51:33.465Z",
       "taskCount": 34,
-      "completedCount": 25,
+      "completedCount": 26,
       "tags": [
         "master"
       ]

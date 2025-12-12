@@ -18,6 +18,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Award,
+  Coffee,
+  Clock,
   Send,
   Lock,
   Unlock,
@@ -60,6 +62,8 @@ interface JudgeState {
   isSubmitting: boolean;
   isConnected: boolean;
   judgePosition: 'A' | 'B' | 'C';
+  breakRequestStatus: 'none' | 'pending' | 'approved' | 'denied';
+  breakRequestDuration: number | null;
   judgeName: string;
 }
 
@@ -86,6 +90,8 @@ export default function JudgePage() {
     isConnected: false,
     judgePosition: 'A',
     judgeName: 'Judge A',
+    breakRequestStatus: 'none',
+    breakRequestDuration: null,
   });
 
   const [adjudicationLevels] = useState<AdjudicationLevel[]>(DEFAULT_LEVELS);
@@ -212,6 +218,57 @@ export default function JudgePage() {
       setError(err instanceof Error ? err.message : 'Failed to submit score');
     }
   }, [state.score, state.comments, state.specialAwards, state.isSubmitting, state.isSubmitted]);
+
+  
+
+  // Handle break request (Task #8)
+  const handleBreakRequest = useCallback(async (durationMinutes: number) => {
+    if (state.breakRequestStatus === 'pending') return;
+
+    setState(prev => ({
+      ...prev,
+      breakRequestStatus: 'pending',
+      breakRequestDuration: durationMinutes,
+    }));
+
+    try {
+      // TODO: Call tRPC mutation to request break
+      // await requestBreak.mutateAsync({
+      //   competitionId: currentCompetitionId,
+      //   durationMinutes,
+      //   reason: 'Judge break request',
+      // });
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      setSuccessMessage(`Break request (${durationMinutes}m) sent to CD`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+
+      // Simulate CD response after 5 seconds (for demo)
+      setTimeout(() => {
+        setState(prev => ({
+          ...prev,
+          breakRequestStatus: 'approved', // or 'denied' based on CD response
+        }));
+        setTimeout(() => {
+          setState(prev => ({
+            ...prev,
+            breakRequestStatus: 'none',
+            breakRequestDuration: null,
+          }));
+        }, 5000);
+      }, 5000);
+
+    } catch (err) {
+      setState(prev => ({
+        ...prev,
+        breakRequestStatus: 'none',
+        breakRequestDuration: null,
+      }));
+      setError(err instanceof Error ? err.message : 'Failed to request break');
+    }
+  }, [state.breakRequestStatus]);
 
   // Get current award level
   const currentAwardLevel = getAwardLevel(state.score);
@@ -450,6 +507,65 @@ export default function JudgePage() {
               Score locked. Only the Competition Director can edit.
             </p>
           )}
+        </div>
+
+        
+        {/* Break Request Section (Task #8) */}
+        <div className="bg-gray-800/50 rounded-2xl border border-gray-700 p-4 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Coffee className="w-5 h-5 text-orange-400" />
+            <h3 className="font-medium text-white">Request Break</h3>
+          </div>
+
+          {state.breakRequestStatus === 'pending' ? (
+            <div className="flex items-center justify-center gap-3 py-4 bg-orange-500/10 rounded-xl border border-orange-500/30">
+              <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-orange-300">
+                Awaiting CD approval ({state.breakRequestDuration}m)
+              </span>
+            </div>
+          ) : state.breakRequestStatus === 'approved' ? (
+            <div className="flex items-center justify-center gap-3 py-4 bg-green-500/10 rounded-xl border border-green-500/30">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <span className="text-green-300">Break approved!</span>
+            </div>
+          ) : state.breakRequestStatus === 'denied' ? (
+            <div className="flex items-center justify-center gap-3 py-4 bg-red-500/10 rounded-xl border border-red-500/30">
+              <AlertCircle className="w-5 h-5 text-red-400" />
+              <span className="text-red-300">Break request denied</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => handleBreakRequest(2)}
+                disabled={!state.isConnected}
+                className="py-4 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-1"
+              >
+                <Clock className="w-5 h-5" />
+                <span>2 min</span>
+              </button>
+              <button
+                onClick={() => handleBreakRequest(5)}
+                disabled={!state.isConnected}
+                className="py-4 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-1"
+              >
+                <Clock className="w-5 h-5" />
+                <span>5 min</span>
+              </button>
+              <button
+                onClick={() => handleBreakRequest(10)}
+                disabled={!state.isConnected}
+                className="py-4 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-1"
+              >
+                <Clock className="w-5 h-5" />
+                <span>10 min</span>
+              </button>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500 mt-3 text-center">
+            Break request will be sent to Competition Director for approval
+          </p>
         </div>
 
         {/* Quick Reference - Award Levels */}
