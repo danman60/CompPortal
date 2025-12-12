@@ -81,6 +81,7 @@ export default function TabulatorPage() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
 
   // Get active competitions
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -265,6 +266,79 @@ export default function TabulatorPage() {
     if (score >= 80) return { level: 'HIGH SILVER', color: 'bg-gray-200 text-gray-700' };
     if (score >= 76) return { level: 'SILVER', color: 'bg-gray-100 text-gray-600' };
     return { level: 'BRONZE', color: 'bg-orange-100 text-orange-700' };
+  };
+
+  // Edge case alert detection
+  const LEVEL_BOUNDARIES = [92, 88, 84, 80, 76];
+  const EDGE_THRESHOLD = 0.1;
+
+  interface EdgeCaseAlert {
+    id: string;
+    type: 'boundary' | 'judge_caused';
+    message: string;
+    entryNumber: number;
+    difference: number;
+    judgeName?: string;
+  }
+
+  const edgeCaseAlerts: EdgeCaseAlert[] = [];
+
+  // Only check if we have scores for the current routine
+  if (averageScore !== null && currentScores.length > 0 && liveState?.currentEntry) {
+    const entryNum = liveState.currentEntry.entryNumber;
+
+    // Check if average is near a boundary
+    for (const boundary of LEVEL_BOUNDARIES) {
+      const diff = Math.abs(averageScore - boundary);
+      if (diff <= EDGE_THRESHOLD && diff > 0) {
+        const alertId = `boundary-${entryNum}-${boundary}`;
+        if (!dismissedAlerts.has(alertId)) {
+          const isAbove = averageScore >= boundary;
+          const currentLevel = getAdjudicationLevel(averageScore).level;
+          edgeCaseAlerts.push({
+            id: alertId,
+            type: 'boundary',
+            message: `Entry #${entryNum} is ${isAbove ? 'just above' : 'just below'} ${currentLevel} by ${diff.toFixed(2)} pts`,
+            entryNumber: entryNum,
+            difference: diff,
+          });
+        }
+        break; // Only report closest boundary
+      }
+    }
+
+    // Check if any single judge's score caused a level change
+    const validScores = currentScores.filter(s => s.score !== null && s.score !== undefined);
+    if (validScores.length >= 2) {
+      const sum = validScores.reduce((acc, s) => acc + (s.score || 0), 0);
+
+      for (let i = 0; i < validScores.length; i++) {
+        const judgeScore = validScores[i].score || 0;
+        const avgWithout = (sum - judgeScore) / (validScores.length - 1);
+        const levelWithout = getAdjudicationLevel(avgWithout).level;
+        const currentLevel = getAdjudicationLevel(averageScore).level;
+
+        if (levelWithout !== currentLevel) {
+          const alertId = `judge-${entryNum}-${validScores[i].judgeId}`;
+          if (!dismissedAlerts.has(alertId)) {
+            const diff = Math.abs(averageScore - avgWithout);
+            const direction = averageScore < avgWithout ? 'bumped down' : 'bumped up';
+            edgeCaseAlerts.push({
+              id: alertId,
+              type: 'judge_caused',
+              message: `Entry #${entryNum} ${direction} to ${currentLevel} due to Judge ${['A', 'B', 'C'][i] || i + 1}'s score`,
+              entryNumber: entryNum,
+              difference: diff,
+              judgeName: validScores[i].judgeName || `Judge ${['A', 'B', 'C'][i] || i + 1}`,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  const handleDismissAlert = (alertId: string) => {
+    setDismissedAlerts(prev => new Set([...prev, alertId]));
   };
 
   // Progress percent
@@ -703,8 +777,36 @@ export default function TabulatorPage() {
         </div>
       </div>
 
-      {/* Alert Bar (optional) */}
-      {/* This would show edge case alerts like "Entry #108 bumped down due to 0.01 diff" */}
+      {/* Edge Case Alert Bar */}
+      {edgeCaseAlerts.length > 0 && (
+        <div className="bg-yellow-900/80 border-t border-yellow-600/50">
+          {edgeCaseAlerts.map((alert) => (
+            <div
+              key={alert.id}
+              className="px-4 py-2 flex items-center justify-between border-b border-yellow-700/30 last:border-b-0"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                <span className="text-yellow-100 text-sm font-medium">
+                  {alert.message}
+                </span>
+                {alert.type === 'judge_caused' && (
+                  <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 text-xs">
+                    REVIEW
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => handleDismissAlert(alert.id)}
+                className="p-1 text-yellow-400 hover:text-yellow-200 hover:bg-yellow-800/50 rounded transition-colors"
+                title="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
