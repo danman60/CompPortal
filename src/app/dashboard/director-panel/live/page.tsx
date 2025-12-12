@@ -33,8 +33,16 @@ import {
   X,
   Edit3,
   Star,
+  Search,
+  FileWarning,
+  RefreshCw,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import {
+  mp3Storage,
+  type MP3ScanResult,
+  type MP3ScanSummary,
+} from '@/lib/mp3-storage';
 import {
   saveCompetitionState,
   loadCompetitionState,
@@ -146,7 +154,11 @@ export default function CDControlPanelLive() {
   const [stateRestored, setStateRestored] = useState(false);
   const [showRestoredBanner, setShowRestoredBanner] = useState(false);
 
-
+  // MP3 Pre-Scan state (Task #15)
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState({ scanned: 0, total: 0, currentFile: '' });
+  const [scanResults, setScanResults] = useState<MP3ScanSummary | null>(null);
 
   // Drag-drop reordering state (Task #5)
   const [draggedRoutine, setDraggedRoutine] = useState<Routine | null>(null);
@@ -491,6 +503,29 @@ export default function CDControlPanelLive() {
     });
   }, [editingScore, newScoreValue, scoreEditReason, editScoreMutation]);
 
+  // MP3 Pre-Scan handler (Task #15)
+  const handleStartScan = useCallback(async () => {
+    if (!competitionId || isScanning) return;
+
+    setIsScanning(true);
+    setScanResults(null);
+    setScanProgress({ scanned: 0, total: 0, currentFile: '' });
+
+    try {
+      const results = await mp3Storage.scanCompetitionFiles(
+        competitionId,
+        (scanned, total, currentFile) => {
+          setScanProgress({ scanned, total, currentFile: currentFile || '' });
+        }
+      );
+      setScanResults(results);
+    } catch (error) {
+      console.error('MP3 scan error:', error);
+    } finally {
+      setIsScanning(false);
+    }
+  }, [competitionId, isScanning]);
+
 // Control handlers
   const handleStart = useCallback(() => {
     if (competitionState.status === 'not_started') {
@@ -636,6 +671,15 @@ export default function CDControlPanelLive() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Pre-Scan MP3s Button (Task #15) */}
+          <button
+            onClick={() => setShowScanModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors text-sm"
+          >
+            <Search className="w-4 h-4" />
+            Pre-Scan MP3s
+          </button>
+
           {/* Connection Status */}
           <div
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
@@ -1134,6 +1178,127 @@ export default function CDControlPanelLive() {
                 className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition-colors disabled:opacity-50"
               >
                 {editScoreMutation.isPending ? 'Saving...' : 'Save Score'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MP3 Pre-Scan Modal (Task #15) */}
+      {showScanModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-lg w-full mx-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Search className="w-5 h-5" />
+                MP3 Pre-Scan
+              </h3>
+              <button
+                onClick={() => setShowScanModal(false)}
+                className="text-gray-400 hover:text-white"
+                disabled={isScanning}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-gray-400 text-sm mb-6">
+              Scan all downloaded MP3 files to verify they can be played during competition.
+              Corrupted files will be flagged for re-download.
+            </p>
+
+            {/* Scan Progress */}
+            {isScanning && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between text-sm text-gray-400 mb-2">
+                  <span>Scanning...</span>
+                  <span>{scanProgress.scanned} / {scanProgress.total}</span>
+                </div>
+                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full bg-purple-500 transition-all duration-200"
+                    style={{ width: `${scanProgress.total > 0 ? (scanProgress.scanned / scanProgress.total * 100) : 0}%` }}
+                  />
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {scanProgress.currentFile || 'Preparing...'}
+                </div>
+              </div>
+            )}
+
+            {/* Scan Results */}
+            {scanResults && !isScanning && (
+              <div className="mb-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex-1 bg-green-500/20 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-green-400">{scanResults.validFiles}</div>
+                    <div className="text-xs text-green-300">Valid</div>
+                  </div>
+                  <div className="flex-1 bg-red-500/20 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-red-400">{scanResults.corruptedFiles.length}</div>
+                    <div className="text-xs text-red-300">Corrupted</div>
+                  </div>
+                </div>
+
+                {/* Corrupted Files List */}
+                {scanResults.corruptedFiles.length > 0 && (
+                  <div className="bg-red-500/10 rounded-lg p-3 max-h-48 overflow-y-auto">
+                    <div className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-1">
+                      <FileWarning className="w-4 h-4" />
+                      Corrupted Files:
+                    </div>
+                    {scanResults.corruptedFiles.map((file, idx) => (
+                      <div key={idx} className="text-xs text-gray-400 py-1 border-b border-red-500/20 last:border-0">
+                        <div className="font-medium text-white">{file.filename}</div>
+                        <div className="text-red-300">{file.error}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {scanResults.corruptedFiles.length === 0 && (
+                  <div className="bg-green-500/10 rounded-lg p-4 text-center">
+                    <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                    <div className="text-green-300 font-medium">All files validated successfully!</div>
+                  </div>
+                )}
+
+                <div className="text-xs text-gray-500 mt-2 text-center">
+                  Scan completed in {(scanResults.scanDurationMs / 1000).toFixed(1)}s
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowScanModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                disabled={isScanning}
+              >
+                {scanResults ? 'Close' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleStartScan}
+                disabled={isScanning}
+                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isScanning ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Scanning...
+                  </>
+                ) : scanResults ? (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    Re-Scan
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    Start Scan
+                  </>
+                )}
               </button>
             </div>
           </div>

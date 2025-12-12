@@ -38,6 +38,31 @@ export type DownloadProgressCallback = (
   error?: string
 ) => void;
 
+// Scan result for MP3 validation (Task #15)
+export interface MP3ScanResult {
+  entryId: string;
+  filename: string;
+  isValid: boolean;
+  error?: string;
+  durationMs?: number;
+}
+
+// Scan progress callback (Task #15)
+export type ScanProgressCallback = (
+  scanned: number,
+  total: number,
+  currentFile: string | null,
+  result?: MP3ScanResult
+) => void;
+
+// Scan summary (Task #15)
+export interface MP3ScanSummary {
+  totalScanned: number;
+  validFiles: number;
+  corruptedFiles: MP3ScanResult[];
+  scanDurationMs: number;
+}
+
 // Storage stats
 export interface StorageStats {
   totalFiles: number;
@@ -487,6 +512,171 @@ export class MP3StorageManager {
       transaction.objectStore(STORE_NAME).clear();
       transaction.objectStore(METADATA_STORE).clear();
     });
+  }
+
+  /**
+   * Validate a single MP3 file by attempting to decode it (Task #15)
+   * Uses Web Audio API to verify file is a valid audio file
+   */
+  async validateMP3(blob: Blob): Promise<{ isValid: boolean; error?: string; durationMs?: number }> {
+    // Check minimum file size (empty or too small)
+    if (blob.size < 100) {
+      return { isValid: false, error: 'File is too small (likely empty or corrupted)' };
+    }
+
+    // Check MIME type
+    if (blob.type && !blob.type.includes('audio') && blob.type !== 'application/octet-stream') {
+      return { isValid: false, error: `Invalid MIME type: ${blob.type}` };
+    }
+
+    try {
+      // Convert blob to ArrayBuffer
+      const arrayBuffer = await blob.arrayBuffer();
+
+      // Create AudioContext for decoding
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) {
+        return { isValid: false, error: 'Web Audio API not supported' };
+      }
+
+      const audioContext = new AudioContextClass();
+
+      try {
+        // Attempt to decode the audio data
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const durationMs = Math.round(audioBuffer.duration * 1000);
+
+        // Verify reasonable duration (more than 1 second, less than 20 minutes)
+        if (durationMs < 1000) {
+          return { isValid: false, error: 'Audio duration too short (< 1 second)' };
+        }
+        if (durationMs > 20 * 60 * 1000) {
+          return { isValid: false, error: 'Audio duration too long (> 20 minutes)' };
+        }
+
+        return { isValid: true, durationMs };
+      } finally {
+        // Clean up AudioContext
+        await audioContext.close();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown decode error';
+      return { isValid: false, error: `Failed to decode audio: ${message}` };
+    }
+  }
+
+  /**
+   * Scan a single file by entry ID (Task #15)
+   */
+  async scanFile(entryId: string): Promise<MP3ScanResult> {
+    const metadata = await this.getMetadata(entryId);
+    if (!metadata) {
+      return {
+        entryId,
+        filename: 'Unknown',
+        isValid: false,
+        error: 'File not found in storage',
+      };
+    }
+
+    const blob = await this.getFile(entryId);
+    if (!blob) {
+      return {
+        entryId,
+        filename: metadata.filename,
+        isValid: false,
+        error: 'Blob data not found',
+      };
+    }
+
+    const validation = await this.validateMP3(blob);
+    return {
+      entryId,
+      filename: metadata.filename,
+      isValid: validation.isValid,
+      error: validation.error,
+      durationMs: validation.durationMs,
+    };
+  }
+
+  /**
+   * Get all metadata (helper for scanning) (Task #15)
+   */
+  async getAllMetadata(): Promise<MP3Metadata[]> {
+    await this.init();
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([METADATA_STORE], 'readonly');
+      const store = transaction.objectStore(METADATA_STORE);
+      const request = store.getAll();
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(new Error('Failed to get all metadata'));
+    });
+  }
+
+  /**
+   * Scan all MP3 files for a competition (Task #15)
+   * Returns a summary with valid/corrupted file lists
+   */
+  async scanCompetitionFiles(
+    competitionId: string,
+    onProgress?: ScanProgressCallback
+  ): Promise<MP3ScanSummary> {
+    const startTime = Date.now();
+    const files = await this.getCompetitionFiles(competitionId);
+    const total = files.length;
+    let scanned = 0;
+    const corruptedFiles: MP3ScanResult[] = [];
+
+    for (const metadata of files) {
+      const result = await this.scanFile(metadata.entryId);
+      scanned++;
+
+      if (!result.isValid) {
+        corruptedFiles.push(result);
+      }
+
+      onProgress?.(scanned, total, metadata.filename, result);
+    }
+
+    return {
+      totalScanned: total,
+      validFiles: total - corruptedFiles.length,
+      corruptedFiles,
+      scanDurationMs: Date.now() - startTime,
+    };
+  }
+
+  /**
+   * Scan all stored MP3 files (Task #15)
+   * Use this to validate all files regardless of competition
+   */
+  async scanAllFiles(onProgress?: ScanProgressCallback): Promise<MP3ScanSummary> {
+    const startTime = Date.now();
+    const allMetadata = await this.getAllMetadata();
+    const total = allMetadata.length;
+    let scanned = 0;
+    const corruptedFiles: MP3ScanResult[] = [];
+
+    for (const metadata of allMetadata) {
+      const result = await this.scanFile(metadata.entryId);
+      scanned++;
+
+      if (!result.isValid) {
+        corruptedFiles.push(result);
+      }
+
+      onProgress?.(scanned, total, metadata.filename, result);
+    }
+
+    return {
+      totalScanned: total,
+      validFiles: total - corruptedFiles.length,
+      corruptedFiles,
+      scanDurationMs: Date.now() - startTime,
+    };
   }
 
   /**

@@ -340,7 +340,7 @@
         "description": "Competition state persists across days. Close app Saturday night, resume Sunday morning at same point.",
         "details": "- Save current routine index to IndexedDB - Save all scores and state per competition - On app open: restore last state - Handle day transitions (Saturday → Sunday) - Clear state only when competition ends",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "10",
           "11"
@@ -358,7 +358,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T09:36:39.332Z"
+        "updatedAt": "2025-12-12T09:42:37.177Z"
       },
       {
         "id": "15",
@@ -366,7 +366,7 @@
         "description": "Scan all downloaded MP3s before competition starts. Flag corrupted files. Never skip - pause and alert CD if problem found.",
         "details": "- Scan all MP3s in IndexedDB - Attempt to decode each file - Flag files that fail decode - Report to CD before competition starts - If corrupted during playback: pause, alert CD",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "3"
         ],
@@ -382,7 +382,8 @@
             "parentTaskId": 15,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T09:42:52.749Z"
       },
       {
         "id": "16",
@@ -771,9 +772,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T09:36:39.334Z",
+      "lastModified": "2025-12-12T09:42:52.751Z",
       "taskCount": 34,
-      "completedCount": 31,
+      "completedCount": 32,
       "tags": [
         "master"
       ]
