@@ -69,11 +69,11 @@ export async function GET(request: NextRequest) {
         s.scored_at
       FROM competition_entries e
       JOIN studios st ON e.studio_id = st.id
-      LEFT JOIN categories c ON e.category_id = c.id
+      LEFT JOIN dance_categories c ON e.category_id = c.id
       LEFT JOIN age_groups ag ON e.age_group_id = ag.id
       JOIN scores s ON e.id = s.entry_id
       JOIN judges j ON s.judge_id = j.id
-      LEFT JOIN users u ON j.user_id = u.id
+      LEFT JOIN user_profiles u ON j.user_id = u.id
       WHERE e.competition_id = ${targetCompetitionId}::uuid
         AND s.total_score IS NOT NULL
       ORDER BY e.entry_number, j.judge_number

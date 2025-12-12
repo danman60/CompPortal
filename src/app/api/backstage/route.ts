@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         e.schedule_sequence
       FROM competition_entries e
       JOIN studios s ON e.studio_id = s.id
-      LEFT JOIN categories c ON e.category_id = c.id
+      LEFT JOIN dance_categories c ON e.category_id = c.id
       LEFT JOIN age_groups ag ON e.age_group_id = ag.id
       WHERE e.competition_id = ${targetCompetitionId}::uuid
         AND e.scheduled_day = ${competitionDay}::date
