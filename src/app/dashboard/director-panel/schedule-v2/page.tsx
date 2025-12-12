@@ -737,7 +737,11 @@ export default function ScheduleV2Page() {
     tenantId: TEST_TENANT_ID,
   });
 
-  const saveMutation = trpc.scheduling.schedule.useMutation();
+  const saveMutation = trpc.scheduling.schedule.useMutation({
+    onSuccess: () => {
+      refetchVersions(); // Refresh version history for Undo
+    },
+  });
 
   const createBlockMutation = trpc.scheduling.createScheduleBlock.useMutation({
     onSuccess: (data) => {
