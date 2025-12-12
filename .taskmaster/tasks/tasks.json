@@ -184,7 +184,7 @@
         "description": "Add break request buttons to judge interface. [2 min] [5 min] [10 min] sends request to CD.",
         "details": "- Three buttons: 2 min, 5 min, 10 min - Request sent to CD control panel - Visual confirmation request was sent - CD approval/denial reflected back to judge",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "7"
         ],
@@ -201,7 +201,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T08:51:33.464Z"
+        "updatedAt": "2025-12-12T08:55:47.908Z"
       },
       {
         "id": "9",
@@ -559,7 +559,7 @@
         "description": "Add tRPC endpoint for calculating schedule delay: getScheduleDelay, recalculateScheduleTimes",
         "details": "getScheduleDelay query:\n- Input: competitionId\n- Calculates: planned_time vs actual_time for current routine\n- Returns: delay_minutes (positive=behind, negative=ahead)\n- Factors in: completed routines, breaks taken, current time\n\nrecalculateScheduleTimes mutation:\n- Input: competitionId, startFromRoutineId (optional)\n- Recalculates all performance_time fields\n- Accounts for breaks in schedule_breaks\n- Uses mp3_duration_seconds for each routine\n- Returns updated schedule with new times",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "16"
         ],
@@ -575,7 +575,8 @@
             "parentTaskId": 23,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T08:55:58.236Z"
       },
       {
         "id": "24",
@@ -766,9 +767,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T08:51:33.465Z",
+      "lastModified": "2025-12-12T08:55:58.238Z",
       "taskCount": 34,
-      "completedCount": 26,
+      "completedCount": 27,
       "tags": [
         "master"
       ]

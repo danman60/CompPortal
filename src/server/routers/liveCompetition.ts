@@ -2790,4 +2790,232 @@ export const liveCompetitionRouter = router({
           score: existing[0] || null,
         };
       }),
+
+
+  // ===========================================
+  // TASK 23: SCHEDULE DELAY CALCULATOR
+  // ===========================================
+
+  /**
+   * Get current schedule delay
+   * Calculates planned vs actual time for the current routine
+   */
+  getScheduleDelay: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      // Get live state
+      const liveState = await prisma.live_competition_state.findFirst({
+        where: { competition_id: input.competitionId, tenant_id: ctx.tenantId },
+      });
+
+      if (!liveState || liveState.competition_state === 'not_started') {
+        return {
+          delayMinutes: 0,
+          status: 'not_started',
+          currentEntryId: null,
+          plannedTime: null,
+          actualTime: null,
+          completedCount: 0,
+          totalCount: 0,
+        };
+      }
+
+      // Get competition date for today's routines
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get all routines for today
+      const todayRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          performance_date: today,
+          status: { not: 'withdrawn' },
+        },
+        orderBy: { running_order: 'asc' },
+        select: {
+          id: true,
+          entry_number: true,
+          title: true,
+          running_order: true,
+          performance_time: true,
+          mp3_duration_ms: true,
+          status: true,
+        },
+      });
+
+      const completedCount = todayRoutines.filter(r => r.status === 'scored').length;
+      const totalCount = todayRoutines.length;
+
+      // Find current routine
+      const currentRoutine = liveState.current_entry_id
+        ? todayRoutines.find(r => r.id === liveState.current_entry_id)
+        : todayRoutines.find(r => r.status !== 'scored');
+
+      // Calculate delay based on stored value and current time
+      const storedDelay = liveState.schedule_delay_minutes || 0;
+
+      return {
+        delayMinutes: storedDelay,
+        status: liveState.competition_state,
+        currentEntryId: currentRoutine?.id || null,
+        currentEntryNumber: currentRoutine?.entry_number || null,
+        currentEntryTitle: currentRoutine?.title || null,
+        plannedTime: currentRoutine?.performance_time?.toISOString() || null,
+        actualTime: new Date().toISOString(),
+        completedCount,
+        totalCount,
+        percentComplete: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+      };
+    }),
+
+  /**
+   * Recalculate all schedule times based on current state
+   * Uses mp3_duration_ms and accounts for breaks
+   */
+  recalculateScheduleTimes: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      startFromEntryId: z.string().optional(),
+      competitionDay: z.string().optional(), // ISO date string
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      // Determine which day to recalculate
+      const targetDay = input.competitionDay ? new Date(input.competitionDay) : new Date();
+      targetDay.setHours(0, 0, 0, 0);
+
+      // Get all routines for the day
+      const dayRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          performance_date: targetDay,
+          status: { not: 'withdrawn' },
+        },
+        orderBy: { running_order: 'asc' },
+        select: {
+          id: true,
+          entry_number: true,
+          running_order: true,
+          performance_time: true,
+          mp3_duration_ms: true,
+        },
+      });
+
+      if (dayRoutines.length === 0) {
+        return { success: true, updatedCount: 0, message: 'No routines for this day' };
+      }
+
+      // Find the starting point
+      let startIndex = 0;
+      if (input.startFromEntryId) {
+        const idx = dayRoutines.findIndex(r => r.id === input.startFromEntryId);
+        if (idx >= 0) startIndex = idx;
+      }
+
+      // Get the base time (first routine's time or 9 AM default)
+      const firstRoutine = dayRoutines[0];
+      let baseTime: Date;
+      if (firstRoutine.performance_time) {
+        baseTime = new Date(targetDay);
+        const perfTime = new Date(firstRoutine.performance_time);
+        baseTime.setHours(perfTime.getUTCHours(), perfTime.getUTCMinutes(), 0, 0);
+      } else {
+        baseTime = new Date(targetDay);
+        baseTime.setHours(9, 0, 0, 0); // Default 9 AM start
+      }
+
+      // Calculate cumulative time from start
+      let currentTime = baseTime.getTime();
+      const DEFAULT_DURATION_MS = 3 * 60 * 1000; // 3 minutes default
+      const BUFFER_MS = 30 * 1000; // 30 seconds between routines
+
+      // Calculate time for routines before start point
+      for (let i = 0; i < startIndex; i++) {
+        const routine = dayRoutines[i];
+        const durationMs = routine.mp3_duration_ms || DEFAULT_DURATION_MS;
+        currentTime += durationMs + BUFFER_MS;
+      }
+
+      // Update performance times from start point
+      const updates: { id: string; newTime: Date }[] = [];
+
+      for (let i = startIndex; i < dayRoutines.length; i++) {
+        const routine = dayRoutines[i];
+        const newTime = new Date(currentTime);
+
+        // Only update if time changed
+        updates.push({ id: routine.id, newTime });
+
+        // Calculate duration for next routine
+        const durationMs = routine.mp3_duration_ms || DEFAULT_DURATION_MS;
+        currentTime += durationMs + BUFFER_MS;
+      }
+
+      // Batch update using raw SQL
+      let updatedCount = 0;
+      for (const update of updates) {
+        const timeString = update.newTime.toTimeString().split(' ')[0];
+
+        await prisma.$executeRaw`
+          UPDATE competition_entries
+          SET performance_time = ${timeString}::time,
+              updated_at = NOW()
+          WHERE id = ${update.id}::uuid
+            AND tenant_id = ${ctx.tenantId}::uuid
+        `;
+        updatedCount++;
+      }
+
+      // Calculate new estimated end time
+      const estimatedEndTime = new Date(currentTime);
+
+      return {
+        success: true,
+        updatedCount,
+        firstRoutineTime: baseTime.toISOString(),
+        estimatedEndTime: estimatedEndTime.toISOString(),
+        routinesProcessed: dayRoutines.length,
+      };
+    }),
+
+  /**
+   * Update schedule delay manually (CD adjustment)
+   */
+  updateScheduleDelay: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      delayMinutes: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      await prisma.live_competition_state.update({
+        where: {
+          competition_id: input.competitionId,
+        },
+        data: {
+          schedule_delay_minutes: input.delayMinutes,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        newDelayMinutes: input.delayMinutes,
+      };
+    }),
+
 });
