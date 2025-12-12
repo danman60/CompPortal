@@ -2452,4 +2452,202 @@ export const liveCompetitionRouter = router({
 
         return { success: true, alertId: input.alertId, status };
       }),
+
+    // ============================================
+    // TASK 30: Music Upload System
+    // ============================================
+
+    // Register music file upload (after file uploaded to Supabase Storage)
+    registerMusicUpload: publicProcedure
+      .input(z.object({
+        entryId: z.string(),
+        studioId: z.string(),
+        fileName: z.string(),
+        originalName: z.string().optional(),
+        fileSize: z.number().optional(),
+        durationSeconds: z.number().optional(),
+        storagePath: z.string(),
+        storageBucket: z.string().optional(),
+        uploadedBy: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        const bucket = input.storageBucket || 'music-files';
+
+        // Upsert: if music already exists for this entry, update it
+        await prisma.$executeRaw`
+          INSERT INTO music_files (
+            tenant_id, entry_id, studio_id, file_name, original_name,
+            file_size, duration_seconds, storage_path, storage_bucket,
+            status, uploaded_by, uploaded_at
+          ) VALUES (
+            ${tenantId}::uuid, ${input.entryId}::uuid, ${input.studioId}::uuid,
+            ${input.fileName}, ${input.originalName || null},
+            ${input.fileSize || null}, ${input.durationSeconds || null},
+            ${input.storagePath}, ${bucket},
+            'complete', ${input.uploadedBy || null}::uuid, NOW()
+          )
+          ON CONFLICT (entry_id, tenant_id)
+          DO UPDATE SET
+            file_name = EXCLUDED.file_name,
+            original_name = EXCLUDED.original_name,
+            file_size = EXCLUDED.file_size,
+            duration_seconds = EXCLUDED.duration_seconds,
+            storage_path = EXCLUDED.storage_path,
+            storage_bucket = EXCLUDED.storage_bucket,
+            status = 'complete',
+            uploaded_by = EXCLUDED.uploaded_by,
+            uploaded_at = NOW(),
+            updated_at = NOW()
+        `;
+
+        return { success: true, entryId: input.entryId };
+      }),
+
+    // Get music file for an entry
+    getEntryMusic: publicProcedure
+      .input(z.object({
+        entryId: z.string(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        const music = await prisma.$queryRaw`
+          SELECT * FROM music_files
+          WHERE tenant_id = ${tenantId}::uuid
+            AND entry_id = ${input.entryId}::uuid
+            AND status = 'complete'
+          LIMIT 1
+        ` as any[];
+
+        return { music: music[0] || null };
+      }),
+
+    // Check music status for a studio (all their entries)
+    getStudioMusicStatus: publicProcedure
+      .input(z.object({
+        studioId: z.string(),
+        competitionId: z.string().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        // Get all entries for this studio with their music status
+        const entries = await prisma.$queryRaw`
+          SELECT
+            ce.id as entry_id,
+            ce.entry_number,
+            ce.routine_name,
+            mf.id as music_id,
+            mf.status as music_status,
+            mf.file_name,
+            CASE WHEN mf.status = 'complete' THEN true ELSE false END as has_music
+          FROM competition_entries ce
+          LEFT JOIN music_files mf ON mf.entry_id = ce.id AND mf.tenant_id = ce.tenant_id
+          WHERE ce.tenant_id = ${tenantId}::uuid
+            AND ce.studio_id = ${input.studioId}::uuid
+            AND ce.status != 'cancelled'
+          ORDER BY ce.entry_number
+        ` as any[];
+
+        const totalEntries = entries.length;
+        const entriesWithMusic = entries.filter((e: any) => e.has_music).length;
+        const allMusicUploaded = totalEntries > 0 && entriesWithMusic === totalEntries;
+
+        return {
+          entries,
+          summary: {
+            totalEntries,
+            entriesWithMusic,
+            entriesMissingMusic: totalEntries - entriesWithMusic,
+            allMusicUploaded,
+            percentComplete: totalEntries > 0 ? Math.round((entriesWithMusic / totalEntries) * 100) : 0,
+          },
+        };
+      }),
+
+    // Missing music report for Competition Director
+    getMissingMusicReport: publicProcedure
+      .input(z.object({
+        competitionId: z.string().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        // Get studios with missing music
+        const report = await prisma.$queryRaw`
+          SELECT
+            s.id as studio_id,
+            s.name as studio_name,
+            s.email as studio_email,
+            s.studio_code,
+            COUNT(ce.id) as total_entries,
+            COUNT(mf.id) FILTER (WHERE mf.status = 'complete') as entries_with_music,
+            COUNT(ce.id) - COUNT(mf.id) FILTER (WHERE mf.status = 'complete') as entries_missing_music,
+            ARRAY_AGG(
+              CASE WHEN mf.status IS NULL OR mf.status != 'complete'
+              THEN JSON_BUILD_OBJECT(
+                'entry_id', ce.id,
+                'entry_number', ce.entry_number,
+                'routine_name', ce.routine_name
+              )
+              ELSE NULL END
+            ) FILTER (WHERE mf.status IS NULL OR mf.status != 'complete') as missing_entries
+          FROM studios s
+          JOIN competition_entries ce ON ce.studio_id = s.id AND ce.tenant_id = s.tenant_id
+          LEFT JOIN music_files mf ON mf.entry_id = ce.id AND mf.tenant_id = ce.tenant_id
+          WHERE s.tenant_id = ${tenantId}::uuid
+            AND ce.status != 'cancelled'
+          GROUP BY s.id, s.name, s.email, s.studio_code
+          HAVING COUNT(ce.id) - COUNT(mf.id) FILTER (WHERE mf.status = 'complete') > 0
+          ORDER BY entries_missing_music DESC
+        ` as any[];
+
+        // Summary stats
+        const totalStudiosWithMissing = report.length;
+        const totalMissingFiles = report.reduce((sum: number, s: any) => sum + Number(s.entries_missing_music), 0);
+
+        return {
+          studios: report,
+          summary: {
+            totalStudiosWithMissing,
+            totalMissingFiles,
+          },
+        };
+      }),
+
+    // Delete music file
+    deleteMusicFile: publicProcedure
+      .input(z.object({
+        entryId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        // Get the storage path before deleting (for cleanup)
+        const existing = await prisma.$queryRaw`
+          SELECT storage_path, storage_bucket FROM music_files
+          WHERE tenant_id = ${tenantId}::uuid
+            AND entry_id = ${input.entryId}::uuid
+        ` as any[];
+
+        // Delete the record
+        await prisma.$executeRaw`
+          DELETE FROM music_files
+          WHERE tenant_id = ${tenantId}::uuid
+            AND entry_id = ${input.entryId}::uuid
+        `;
+
+        return {
+          success: true,
+          deletedFile: existing[0] || null,
+          // Note: Caller should also delete from Supabase Storage using the path
+        };
+      }),
 });
