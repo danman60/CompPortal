@@ -17,6 +17,40 @@ import { prisma } from '@/lib/prisma';
 
 export const liveCompetitionRouter = router({
   /**
+   * Get active competitions for tabulator selection
+   */
+  getActiveCompetitions: publicProcedure
+    .query(async ({ ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      const competitions = await prisma.competitions.findMany({
+        where: {
+          tenant_id: ctx.tenantId,
+          status: {
+            in: ['scheduling', 'active', 'in_progress'],
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          competition_start_date: true,
+          competition_end_date: true,
+          status: true,
+        },
+        orderBy: {
+          competition_start_date: 'desc',
+        },
+      });
+
+      return competitions;
+    }),
+
+  /**
    * Get competition lineup with all routines
    */
   getLineup: publicProcedure
@@ -572,6 +606,40 @@ export const liveCompetitionRouter = router({
         success: true,
         competitionId: input.competitionId,
         status: 'active',
+      };
+    }),
+
+  /**
+   * Stop/Pause competition (sets live state to paused)
+   */
+  stopCompetition: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Update live state to paused
+      await prisma.live_competition_state.update({
+        where: {
+          competition_id: input.competitionId,
+        },
+        data: {
+          competition_state: 'paused',
+          paused_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        competitionId: input.competitionId,
+        status: 'paused',
       };
     }),
 

@@ -865,12 +865,175 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": "42",
+        "title": "Tabulator Full Rebuild - Schedule Panel",
+        "description": "Rebuild /tabulator page with 3-panel layout. Left panel: Full schedule of routines for the day with current/next/on-deck highlighting. Drag-drop reorder with confirmation dialog. Entry numbers stay locked.",
+        "details": "Current /tabulator only has label printing. Missing from spec (3.1):\n\nLEFT PANEL - Schedule:\n- Full day's routine list in schedule order\n- Current routine highlighted (blue)\n- Next routine highlighted (yellow)\n- On-deck routine highlighted (subtle)\n- Breaks shown in schedule\n- Drag-drop reorder with confirmation\n- Entry numbers stay locked when reordered\n- Move routine to different day option\n\nLayout per spec lines 83-100:\n+------------------+------------------------+------------------+\n|  SCHEDULE        |    CURRENT ROUTINE     |   SCORES PANEL   |\n|  (Left Panel)    |    (Center Stage)      |   (Right Panel)  |\n|  111 [CURRENT]   |                        |                  |\n|  112 Next Up     |                        |                  |\n|  113 On Deck     |                        |                  |\n|  --- BREAK ---   |                        |                  |\n|  114 Queued      |                        |                  |\n+------------------+------------------------+------------------+",
+        "testStrategy": "",
+        "status": "in-progress",
+        "dependencies": [
+          "4"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2025-12-12T16:51:17.186Z"
+      },
+      {
+        "id": "43",
+        "title": "Tabulator Full Rebuild - Center Stage Panel",
+        "description": "Center panel showing current routine details: entry number, title, studio, category/age, and time remaining from MP3 with progress bar.",
+        "details": "CENTER PANEL - Current Routine:\n- Large entry number display\n- Routine title\n- Studio name\n- Category | Age Group\n- Time remaining progress bar (from MP3 duration)\n- Visual sync with Backstage playback\n\nThis syncs with Backstage audio player state via Realtime.\n\nLayout per spec:\n|    CURRENT ROUTINE     |\n|    (Center Stage)      |\n|   \"Shine Bright\"       |\n|   Studio: Dance Academy|\n|   Entry #111           |\n|                        |\n|   [====|----] 1:42     |\n|   Time Remaining       |",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "4",
+          "39"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "44",
+        "title": "Tabulator Full Rebuild - Scores Panel",
+        "description": "Right panel showing judge scores as they come in (3 columns: A, B, C + average). Adjudication level display. Edit score button (CD only).",
+        "details": "RIGHT PANEL - Live Scores:\n- Judge A score column\n- Judge B score column\n- Judge C score column\n- Calculated average\n- Adjudication level badge\n- Edit button (opens modal, CD only)\n- Real-time updates via WebSocket\n\nLayout per spec:\n|   SCORES PANEL   |\n|  Judge A: 89.06  |\n|  Judge B: 88.50  |\n|  Judge C: 89.25  |\n|  ─────────────── |\n|  AVG: 88.94      |\n|  PLATINUM        |",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "4"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "45",
+        "title": "Tabulator Full Rebuild - Control Bar",
+        "description": "Bottom control bar with Start/Stop competition, Back/Next routine buttons, +Break button, schedule delay indicator.",
+        "details": "CONTROL BAR (Bottom):\n- [START] / [STOP] competition toggle\n- [<< BACK] previous routine\n- [>> NEXT] advance routine\n- [+ BREAK] add emergency break\n- Schedule status: \"Running: +5 min behind\"\n\nLayout per spec lines 96-97:\n+------------------+------------------------+------------------+\n|  CONTROLS                                 |  SCHEDULE STATUS |\n|  [<< BACK] [STOP] [>> NEXT] [+ BREAK]     |  Running: +5 min |\n+------------------+------------------------+------------------+",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "4",
+          "19"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "46",
+        "title": "Tabulator - Judge Status Panel",
+        "description": "Show judges connection status (connected, scoring, break requested). Display pending break requests with approve/deny buttons.",
+        "details": "JUDGE STATUS (part of right panel or separate):\n- Judge A: Connected (green) / Offline (red)\n- Judge B: Scoring... (yellow animated)\n- Judge C: Break Requested (orange)\n\nBREAK REQUESTS:\n- List of pending break requests\n- Judge name, requested duration (2/5/10 min)\n- [Approve] [Deny] buttons\n- Shows in queue order\n\nPer spec line 73-75",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "4",
+          "17"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "47",
+        "title": "Tabulator - Scratch/Withdraw Routine",
+        "description": "Add ability to mark routine as scratched/withdrawn with optional reason. Removes from active lineup, entry number preserved (gap in sequence).",
+        "details": "Per spec line 78:\n- Right-click or button on routine in schedule\n- Opens modal: \"Mark as Scratched/Withdrawn\"\n- Optional reason text field\n- Confirm button\n- Routine removed from active lineup\n- Entry number preserved (shows gap: 111, 113, 114...)\n- Can be undone\n\nUses API from Task 20 (scratchRoutine mutation)",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "4",
+          "20"
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": "48",
+        "title": "Backstage - MP3 Playback Controls",
+        "description": "Add Play/Pause/Stop buttons to Backstage page. Connect to IndexedDB cached MP3s. Show transport controls per spec layout.",
+        "details": "Current /backstage shows timer but NO playback controls.\n\nAdd per spec lines 195, 187-208:\n- [PLAY] button - starts MP3 playback\n- [PAUSE] button - pauses at current position\n- [STOP] button - stops and resets to beginning\n- Progress bar with seek capability\n- Current time / Total duration display\n- Volume control slider\n\nConnect to Task 37 (Backstage Audio Player component)",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "37"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "49",
+        "title": "Backstage - Playlist View (Next 3 Routines)",
+        "description": "Show routine playlist in scheduled order. Display next 3 upcoming routines, not just 1. Include breaks in schedule display.",
+        "details": "Current /backstage only shows 1 next routine.\n\nPer spec lines 172-173, 200-205:\nUP NEXT section should show:\n- #112 - \"Glow\" (Studio B) - 2:58\n- #113 - \"Rise\" (Studio C) - 3:12\n- --- 10 MIN BREAK ---\n- #114 - \"Dreams\" (Studio A) - 2:45\n\nEach entry shows:\n- Entry number\n- Routine name\n- Studio name\n- Duration",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "1"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "50",
+        "title": "Backstage - TV Display Mode Toggle",
+        "description": "Add toggle for TV Display Mode - large format optimized for viewing from distance. Shows time remaining, current routine, next up. No controls.",
+        "details": "Per spec lines 179-180, 210-226:\n\nTV Display Mode layout:\n+----------------------------------------------------------+\n|                                                          |\n|           NOW PERFORMING                                 |\n|                                                          |\n|           Entry #111                                     |\n|           \"Shine Bright\"                                 |\n|           Dance Academy                                  |\n|                                                          |\n|                 1:42                                     |\n|              remaining                                   |\n|                                                          |\n|           UP NEXT: #112 \"Glow\"                          |\n|                                                          |\n+----------------------------------------------------------+\n\n- Toggle button to switch modes\n- Large countdown timer (central)\n- Read-only (no controls visible)\n- Optimized for TV viewing distance",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "29"
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": "51",
+        "title": "Backstage - Kiosk Mode (No Navigation)",
+        "description": "Remove Test Page link and all navigation from Backstage. True kiosk mode with ESC x3 to exit.",
+        "details": "Current /backstage has \"Test Page\" link visible.\n\nPer spec line 170:\n- Route: /backstage (kiosk mode - no navigation)\n- Remove all navigation links\n- No back button\n- Press ESC 3 times rapidly to exit kiosk mode\n- Prevents accidental exit, no mouse needed",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "1"
+        ],
+        "priority": "low",
+        "subtasks": []
+      },
+      {
+        "id": "52",
+        "title": "Judge - Real WebSocket Integration",
+        "description": "Replace demo data in /judge with real WebSocket connection. Subscribe to current routine updates. Real tRPC mutations for score submission.",
+        "details": "Current /judge/page.tsx uses hardcoded demo data (lines 105-123).\n\nReplace with:\n- Subscribe to Supabase Realtime for current routine\n- Get current routine from getLiveState API\n- Use real submitScore tRPC mutation (lines 197-203 are commented out)\n- Real break request API calls\n- Connection status based on actual WebSocket state\n\nDependencies: Task 10 (LAN Sync Infrastructure)",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "7",
+          "10"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "53",
+        "title": "Judge - See Other Judges Scores Toggle",
+        "description": "When CD enables score visibility, judge can see other judges' scores. When disabled, only sees own score. Uses getScoreVisibility API.",
+        "details": "Per spec lines 110, 137-139:\n\n[Show Other Scores] section (if enabled by CD):\n|  A: 89.06  |  B: --  |  C: --  |  AVG: 89.06  |\n\n- Check getScoreVisibility(competitionId) on load\n- If visible=true: Show other judges' scores\n- If visible=false: Hide section entirely\n- Real-time update when CD toggles setting\n\nUses Task 24 API (setScoreVisibility/getScoreVisibility)",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "7",
+          "24"
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T16:18:54.182Z",
-      "taskCount": 41,
+      "lastModified": "2025-12-12T16:51:17.188Z",
+      "taskCount": 53,
       "completedCount": 35,
       "tags": [
         "master"
