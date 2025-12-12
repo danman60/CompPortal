@@ -20,6 +20,8 @@ import {
   Bell,
   X,
   Check,
+  Calendar,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 // Types
@@ -82,6 +84,9 @@ export default function TabulatorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [showMoveToDay, setShowMoveToDay] = useState<string | null>(null); // entryId
 
   // Get active competitions
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -143,6 +148,29 @@ export default function TabulatorPage() {
     },
     onError: (err) => {
       toast.error(err.message || 'Failed to deny break');
+    },
+  });
+
+  // Reorder mutation
+  const reorderRoutineMutation = trpc.liveCompetition.reorderRoutine.useMutation({
+    onSuccess: () => {
+      toast.success('Routine reordered');
+      refetchLineup();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to reorder routine');
+    },
+  });
+
+  // Move to day mutation
+  const moveRoutineToDayMutation = trpc.liveCompetition.moveRoutineToDay.useMutation({
+    onSuccess: () => {
+      toast.success('Routine moved to new day');
+      refetchLineup();
+      setShowMoveToDay(null);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to move routine');
     },
   });
 
@@ -341,6 +369,67 @@ export default function TabulatorPage() {
     setDismissedAlerts(prev => new Set([...prev, alertId]));
   };
 
+  // Drag and drop handlers for reordering
+  const handleDragStart = (e: React.DragEvent, entryId: string) => {
+    setDraggedId(entryId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', entryId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, entryId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedId !== entryId) {
+      setDragOverId(entryId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetEntryId: string) => {
+    e.preventDefault();
+    setDragOverId(null);
+
+    if (!draggedId || !competitionId || draggedId === targetEntryId) {
+      setDraggedId(null);
+      return;
+    }
+
+    // Find target position (1-based)
+    const targetIndex = schedule.findIndex(s => s.id === targetEntryId);
+    if (targetIndex === -1) {
+      setDraggedId(null);
+      return;
+    }
+
+    await reorderRoutineMutation.mutateAsync({
+      competitionId,
+      routineId: draggedId,
+      newPosition: targetIndex + 1, // 1-based position
+    });
+
+    setDraggedId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  // Move to day handler
+  const handleMoveToDay = async (targetDay: string) => {
+    if (!showMoveToDay) return;
+    await moveRoutineToDayMutation.mutateAsync({
+      routineId: showMoveToDay,
+      targetDay,
+    });
+  };
+
+  // Get competition days for move to day dropdown
+  const competitionDays = ['2026-04-11', '2026-04-12', '2026-04-13']; // TODO: Get from competition settings
+
   // Progress percent
   const currentEntry = schedule.find(s => s.id === liveState?.currentEntry?.id);
   const progressPercent = currentEntry
@@ -433,13 +522,25 @@ export default function TabulatorPage() {
               const isNext = nextEntry?.id === entry.id;
               const isOnDeck = onDeckEntry?.id === entry.id;
               const isPast = currentIndex >= 0 && index < currentIndex;
+              const isDraggedOver = dragOverId === entry.id;
+              const isBeingDragged = draggedId === entry.id;
 
               return (
                 <div
                   key={entry.id}
+                  draggable={!entry.isBreak && !isPast}
+                  onDragStart={(e) => handleDragStart(e, entry.id)}
+                  onDragOver={(e) => handleDragOver(e, entry.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, entry.id)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => handleJumpTo(entry.id)}
-                  className={`px-3 py-2 border-b border-gray-700/50 cursor-pointer transition-colors ${
-                    isCurrent
+                  className={`group px-3 py-2 border-b border-gray-700/50 cursor-pointer transition-colors relative ${
+                    isDraggedOver
+                      ? 'bg-blue-500/40 border-t-2 border-t-blue-400'
+                      : isBeingDragged
+                      ? 'opacity-50 bg-gray-700'
+                      : isCurrent
                       ? 'bg-blue-600/30 border-l-4 border-l-blue-500'
                       : isNext
                       ? 'bg-yellow-600/20 border-l-4 border-l-yellow-500'
@@ -460,13 +561,19 @@ export default function TabulatorPage() {
                   ) : (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className={`font-mono text-sm ${
-                          isCurrent ? 'text-blue-300 font-bold'
-                          : isNext ? 'text-yellow-300'
-                          : 'text-gray-400'
-                        }`}>
-                          #{entry.entryNumber}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {/* Drag handle */}
+                          {!isPast && (
+                            <GripVertical className="w-4 h-4 text-gray-600 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity" />
+                          )}
+                          <span className={`font-mono text-sm ${
+                            isCurrent ? 'text-blue-300 font-bold'
+                            : isNext ? 'text-yellow-300'
+                            : 'text-gray-400'
+                          }`}>
+                            #{entry.entryNumber}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-1">
                           {isCurrent && (
                             <span className="text-xs bg-blue-500 px-2 py-0.5 rounded text-white">
@@ -486,6 +593,19 @@ export default function TabulatorPage() {
                           {isPast && (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                           )}
+                          {/* Move to day button */}
+                          {!isPast && !isCurrent && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMoveToDay(showMoveToDay === entry.id ? null : entry.id);
+                              }}
+                              className="p-1 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Move to another day"
+                            >
+                              <Calendar className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className={`text-sm font-medium mt-1 ${
@@ -496,6 +616,31 @@ export default function TabulatorPage() {
                       <div className="text-xs text-gray-500 mt-0.5">
                         {entry.studioName}
                       </div>
+                      {/* Move to day dropdown */}
+                      {showMoveToDay === entry.id && (
+                        <div
+                          className="absolute left-full top-0 ml-2 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-2 min-w-40"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="text-xs text-gray-400 mb-2 px-2">Move to day:</div>
+                          {competitionDays.map((day) => (
+                            <button
+                              key={day}
+                              onClick={() => handleMoveToDay(day)}
+                              disabled={moveRoutineToDayMutation.isPending}
+                              className="w-full px-3 py-1.5 text-left text-sm text-white hover:bg-gray-700 rounded disabled:opacity-50"
+                            >
+                              {new Date(day).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setShowMoveToDay(null)}
+                            className="w-full mt-1 px-3 py-1.5 text-left text-xs text-gray-400 hover:bg-gray-700 rounded"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
