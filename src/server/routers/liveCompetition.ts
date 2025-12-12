@@ -186,7 +186,7 @@ export const liveCompetitionRouter = router({
       competitionId: z.string(),
       routineId: z.string(),
       judgeId: z.string(),
-      score: z.number().min(0).max(10),
+      score: z.number().min(0).max(99.99),
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
