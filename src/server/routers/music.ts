@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { prisma } from '@/lib/prisma';
+import { createServerSupabaseClient } from '@/lib/supabase-server-client';
+
+// Cache for signed URLs (1 hour expiry)
+const urlCache = new Map<string, { url: string; expiry: number }>();
+const URL_CACHE_TTL = 55 * 60 * 1000; // 55 minutes (before 1hr expiry)
 
 /**
  * Music tracking router for monitoring music uploads and sending reminders
@@ -543,4 +548,269 @@ export const musicRouter = router({
 
       return { csv };
     }),
+
+  // ======================================
+  // GAME DAY MP3 ENDPOINTS
+  // ======================================
+
+  /**
+   * Get signed URL for a single MP3 file
+   * Returns cached URL if available, otherwise creates new signed URL
+   */
+  getMP3Url: publicProcedure
+    .input(
+      z.object({
+        entryId: z.string().uuid(),
+      })
+    )
+    .query(async ({ input }) => {
+      // Check cache first
+      const cached = urlCache.get(input.entryId);
+      if (cached && cached.expiry > Date.now()) {
+        const entry = await prisma.competition_entries.findUnique({
+          where: { id: input.entryId },
+          select: { mp3_duration_ms: true },
+        });
+        return {
+          url: cached.url,
+          durationMs: entry?.mp3_duration_ms || null,
+          cached: true,
+        };
+      }
+
+      // Get entry with music URL
+      const entry = await prisma.competition_entries.findUnique({
+        where: { id: input.entryId },
+        select: {
+          id: true,
+          music_file_url: true,
+          mp3_duration_ms: true,
+        },
+      });
+
+      if (!entry) {
+        throw new Error('Entry not found');
+      }
+
+      if (!entry.music_file_url) {
+        throw new Error('No music file uploaded for this entry');
+      }
+
+      // Create signed URL from Supabase
+      const supabase = await createServerSupabaseClient();
+
+      // Extract path from URL (assumes format: bucket/path/to/file.mp3)
+      const urlParts = entry.music_file_url.split('/');
+      const bucketIndex = urlParts.findIndex((p) => p === 'music');
+      const filePath = urlParts.slice(bucketIndex + 1).join('/');
+
+      const { data, error } = await supabase.storage
+        .from('music')
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+      if (error || !data?.signedUrl) {
+        throw new Error(`Failed to create signed URL: ${error?.message || 'Unknown error'}`);
+      }
+
+      // Cache the URL
+      urlCache.set(input.entryId, {
+        url: data.signedUrl,
+        expiry: Date.now() + URL_CACHE_TTL,
+      });
+
+      return {
+        url: data.signedUrl,
+        durationMs: entry.mp3_duration_ms || null,
+        cached: false,
+      };
+    }),
+
+  /**
+   * Get MP3 upload/download status for a competition
+   * Returns count of total, uploaded, and missing files
+   */
+  getMP3Status: publicProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid(),
+      })
+    )
+    .query(async ({ input }) => {
+      const [total, uploaded] = await Promise.all([
+        prisma.competition_entries.count({
+          where: {
+            competition_id: input.competitionId,
+            status: { not: 'cancelled' },
+          },
+        }),
+        prisma.competition_entries.count({
+          where: {
+            competition_id: input.competitionId,
+            status: { not: 'cancelled' },
+            music_file_url: { not: null },
+          },
+        }),
+      ]);
+
+      // Get list of routines missing MP3s
+      const missingRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          status: { not: 'cancelled' },
+          music_file_url: null,
+        },
+        select: {
+          id: true,
+          entry_number: true,
+          title: true,
+          studios: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: { entry_number: 'asc' },
+      });
+
+      return {
+        total,
+        uploaded,
+        missing: total - uploaded,
+        missingRoutines: missingRoutines.map((r) => ({
+          id: r.id,
+          entryNumber: r.entry_number,
+          title: r.title,
+          studioName: r.studios?.name || 'Unknown',
+        })),
+      };
+    }),
+
+  /**
+   * Get all MP3 URLs for a competition (for bulk download)
+   * Used by Backstage for offline prefetch
+   */
+  bulkGetMP3Urls: publicProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid(),
+      })
+    )
+    .query(async ({ input }) => {
+      // Get all entries with music
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          status: { not: 'cancelled' },
+          music_file_url: { not: null },
+        },
+        select: {
+          id: true,
+          entry_number: true,
+          title: true,
+          music_file_url: true,
+          mp3_duration_ms: true,
+          studio_id: true,
+          studios: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: { entry_number: 'asc' },
+      });
+
+      if (entries.length === 0) {
+        return { files: [] };
+      }
+
+      // Create signed URLs for all files
+      const supabase = await createServerSupabaseClient();
+
+      const files = await Promise.all(
+        entries.map(async (entry) => {
+          try {
+            // Check cache first
+            const cached = urlCache.get(entry.id);
+            if (cached && cached.expiry > Date.now()) {
+              return {
+                entryId: entry.id,
+                entryNumber: entry.entry_number,
+                title: entry.title,
+                studioName: entry.studios?.name || 'Unknown',
+                studioId: entry.studio_id,
+                url: cached.url,
+                durationMs: entry.mp3_duration_ms,
+                filePath: entry.music_file_url,
+              };
+            }
+
+            // Extract path from URL
+            const urlParts = (entry.music_file_url || '').split('/');
+            const bucketIndex = urlParts.findIndex((p) => p === 'music');
+            const filePath = urlParts.slice(bucketIndex + 1).join('/');
+
+            const { data, error } = await supabase.storage
+              .from('music')
+              .createSignedUrl(filePath, 3600);
+
+            if (error || !data?.signedUrl) {
+              console.error(`Failed to create signed URL for ${entry.id}:`, error);
+              return null;
+            }
+
+            // Cache the URL
+            urlCache.set(entry.id, {
+              url: data.signedUrl,
+              expiry: Date.now() + URL_CACHE_TTL,
+            });
+
+            return {
+              entryId: entry.id,
+              entryNumber: entry.entry_number,
+              title: entry.title,
+              studioName: entry.studios?.name || 'Unknown',
+              studioId: entry.studio_id,
+              url: data.signedUrl,
+              durationMs: entry.mp3_duration_ms,
+              filePath: entry.music_file_url,
+            };
+          } catch (err) {
+            console.error(`Error processing ${entry.id}:`, err);
+            return null;
+          }
+        })
+      );
+
+      return {
+        files: files.filter((f): f is NonNullable<typeof f> => f !== null),
+      };
+    }),
+
+  /**
+   * Update MP3 duration for an entry
+   * Called after client-side duration extraction
+   */
+  updateMP3Duration: publicProcedure
+    .input(
+      z.object({
+        entryId: z.string().uuid(),
+        durationMs: z.number().min(0),
+      })
+    )
+    .mutation(async ({ input }) => {
+      await prisma.competition_entries.update({
+        where: { id: input.entryId },
+        data: { mp3_duration_ms: input.durationMs },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Clear URL cache (admin utility)
+   */
+  clearUrlCache: publicProcedure.mutation(async () => {
+    urlCache.clear();
+    return { success: true, message: 'URL cache cleared' };
+  }),
 });

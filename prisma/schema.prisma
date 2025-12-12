@@ -629,6 +629,9 @@ model competition_entries {
   music_artist                                                                         String?                            @db.VarChar(255)
   music_duration                                                                       Unsupported("interval")?
   music_file_url                                                                       String?
+  mp3_duration_ms                                                                      Int?
+  mp3_validated                                                                        Boolean?                           @default(false)
+  mp3_validation_error                                                                 String?                            @db.VarChar(255)
   special_requirements                                                                 String?
   entry_fee                                                                            Decimal?                           @db.Decimal(10, 2)
   late_fee                                                                             Decimal?                           @default(0) @db.Decimal(10, 2)
