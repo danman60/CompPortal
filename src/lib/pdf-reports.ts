@@ -1030,3 +1030,183 @@ export function generateDancerInvoicePDF(invoice: {
 
   return doc.output('blob');
 }
+
+/**
+ * Studio Score Printout - All routines with Judge A/B/C scores for a studio
+ * Used for post-competition score distribution
+ */
+export function generateStudioScorePrintout(data: {
+  tenantName?: string;
+  competition: {
+    name: string;
+    dates: string;
+    location?: string;
+  };
+  studio: {
+    name: string;
+    code?: string;
+  };
+  routines: {
+    entryNumber: number;
+    title: string;
+    category: string;
+    ageGroup: string;
+    entryType: string;
+    judgeAScore: number | null;
+    judgeBScore: number | null;
+    judgeCScore: number | null;
+    averageScore: number;
+    awardLevel: string;
+  }[];
+}): Blob {
+  const doc = initPDF(`Studio Score Report - ${data.studio.name}`, data.tenantName || 'Dance Competition');
+
+  let yPos = 40;
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.primary);
+  doc.text(data.competition.name, 15, yPos);
+  yPos += 7;
+
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(data.competition.dates, 15, yPos);
+  if (data.competition.location) {
+    yPos += 5;
+    doc.text(data.competition.location, 15, yPos);
+  }
+  yPos += 12;
+
+  doc.setDrawColor(COLORS.border);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(15, yPos, 180, 20, 3, 3, 'FD');
+
+  yPos += 8;
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.text);
+  doc.text(data.studio.name, 20, yPos);
+  if (data.studio.code) {
+    doc.setFontSize(10);
+    doc.setTextColor(COLORS.textLight);
+    doc.text(`(${data.studio.code})`, 20 + doc.getTextWidth(data.studio.name) + 5, yPos);
+  }
+  yPos += 6;
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.textLight);
+  doc.text(`${data.routines.length} Routines`, 20, yPos);
+  yPos += 15;
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['#', 'Routine', 'Category', 'Judge A', 'Judge B', 'Judge C', 'Average', 'Award']],
+    body: data.routines.map((routine) => [
+      routine.entryNumber.toString(),
+      routine.title,
+      `${routine.category} | ${routine.ageGroup} | ${routine.entryType}`,
+      routine.judgeAScore !== null ? routine.judgeAScore.toFixed(2) : '-',
+      routine.judgeBScore !== null ? routine.judgeBScore.toFixed(2) : '-',
+      routine.judgeCScore !== null ? routine.judgeCScore.toFixed(2) : '-',
+      routine.averageScore.toFixed(2),
+      routine.awardLevel,
+    ]),
+    theme: 'grid',
+    headStyles: {
+      fillColor: COLORS.primary,
+      textColor: '#ffffff',
+      fontSize: 9,
+      fontStyle: 'bold',
+    },
+    styles: {
+      fontSize: 8,
+      cellPadding: 3,
+    },
+    columnStyles: {
+      0: { cellWidth: 12, halign: 'center' },
+      1: { cellWidth: 45 },
+      2: { cellWidth: 35, fontSize: 7 },
+      3: { cellWidth: 18, halign: 'center' },
+      4: { cellWidth: 18, halign: 'center' },
+      5: { cellWidth: 18, halign: 'center' },
+      6: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+      7: { cellWidth: 22, halign: 'center' },
+    },
+  });
+
+  yPos = (doc as any).lastAutoTable.finalY + 15;
+
+  const avgScore = data.routines.length > 0
+    ? data.routines.reduce((sum, r) => sum + r.averageScore, 0) / data.routines.length
+    : 0;
+
+  const awardCounts = data.routines.reduce((acc, r) => {
+    acc[r.awardLevel] = (acc[r.awardLevel] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  doc.setFontSize(11);
+  doc.setTextColor(COLORS.text);
+  doc.text('Summary', 15, yPos);
+  yPos += 8;
+
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.textLight);
+  doc.text('Average Score: ', 15, yPos);
+  doc.setTextColor(COLORS.text);
+  doc.text(avgScore.toFixed(2), 50, yPos);
+  yPos += 6;
+
+  doc.setTextColor(COLORS.textLight);
+  doc.text('Award Breakdown:', 15, yPos);
+  yPos += 5;
+
+  Object.entries(awardCounts).forEach(([level, count]) => {
+    doc.setTextColor(COLORS.text);
+    doc.text(`  ${level}: ${count}`, 15, yPos);
+    yPos += 5;
+  });
+
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    addFooter(doc, i, pageCount, data.tenantName || 'Dance Competition');
+  }
+
+  return doc.output('blob');
+}
+
+export function generateAllStudioScorePrintouts(data: {
+  tenantName?: string;
+  competition: {
+    name: string;
+    dates: string;
+    location?: string;
+  };
+  studios: {
+    name: string;
+    code?: string;
+    routines: {
+      entryNumber: number;
+      title: string;
+      category: string;
+      ageGroup: string;
+      entryType: string;
+      judgeAScore: number | null;
+      judgeBScore: number | null;
+      judgeCScore: number | null;
+      averageScore: number;
+      awardLevel: string;
+    }[];
+  }[];
+}): { studioName: string; blob: Blob }[] {
+  return data.studios.map((studio) => ({
+    studioName: studio.name,
+    blob: generateStudioScorePrintout({
+      tenantName: data.tenantName,
+      competition: data.competition,
+      studio: {
+        name: studio.name,
+        code: studio.code,
+      },
+      routines: studio.routines,
+    }),
+  }));
+}

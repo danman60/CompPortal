@@ -7,6 +7,7 @@ import {
   generateCategoryResultsReport,
   generateJudgeScorecardReport,
   generateCompetitionSummaryReport,
+  generateStudioScorePrintout,
 } from '@/lib/pdf-reports';
 
 /**
@@ -841,6 +842,145 @@ export const reportsRouter = router({
         filename: `summary-${slug}.csv`,
         data: base64Data,
         mimeType: 'text/csv',
+      };
+    }),
+
+
+  /**
+   * Generate Studio Score Printout PDF
+   * Shows all routines for a studio with Judge A/B/C scores
+   * Used for post-competition score distribution
+   */
+  generateStudioScorePrintout: publicProcedure
+    .input(
+      z.object({
+        competition_id: z.string().uuid(),
+        studio_id: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Fetch competition
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competition_id },
+        include: {
+          tenants: {
+            select: { name: true },
+          },
+        },
+      });
+
+      if (!competition) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Competition not found',
+        });
+      }
+
+      // Fetch studio
+      const studio = await prisma.studios.findUnique({
+        where: { id: input.studio_id },
+        select: {
+          id: true,
+          name: true,
+          studio_code: true,
+        },
+      });
+
+      if (!studio) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Studio not found',
+        });
+      }
+
+      // Fetch all entries for this studio in this competition with scores
+      const entries = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competition_id,
+          studio_id: input.studio_id,
+        },
+        include: {
+          dance_categories: { select: { name: true } },
+          age_groups: { select: { name: true } },
+          entry_size_categories: { select: { name: true } },
+          scores: {
+            include: {
+              judges: { select: { judge_number: true } },
+            },
+            orderBy: { created_at: 'asc' },
+          },
+        },
+        orderBy: { entry_number: 'asc' },
+      });
+
+      // Format routines with judge scores
+      const routines = entries.map((entry) => {
+        // Get scores by judge position (A=1, B=2, C=3)
+        const judgeAScore = entry.scores.find(s => s.judges?.judge_number === 1)?.total_score;
+        const judgeBScore = entry.scores.find(s => s.judges?.judge_number === 2)?.total_score;
+        const judgeCScore = entry.scores.find(s => s.judges?.judge_number === 3)?.total_score;
+
+        // Calculate average
+        const validScores = entry.scores.filter(s => s.total_score != null);
+        const avgScore = validScores.length > 0
+          ? validScores.reduce((sum, s) => sum + Number(s.total_score), 0) / validScores.length
+          : 0;
+
+        // Determine award level
+        let awardLevel = 'Not Scored';
+        if (avgScore >= 95) awardLevel = 'Platinum';
+        else if (avgScore >= 90) awardLevel = 'High Gold';
+        else if (avgScore >= 85) awardLevel = 'Gold';
+        else if (avgScore >= 80) awardLevel = 'High Silver';
+        else if (avgScore >= 75) awardLevel = 'Silver';
+        else if (avgScore > 0) awardLevel = 'Bronze';
+
+        return {
+          entryNumber: entry.entry_number || 0,
+          title: entry.title,
+          category: entry.dance_categories?.name || 'Unknown',
+          ageGroup: entry.age_groups?.name || 'Unknown',
+          entryType: entry.entry_size_categories?.name || 'Unknown',
+          judgeAScore: judgeAScore != null ? Number(judgeAScore) : null,
+          judgeBScore: judgeBScore != null ? Number(judgeBScore) : null,
+          judgeCScore: judgeCScore != null ? Number(judgeCScore) : null,
+          averageScore: avgScore,
+          awardLevel,
+        };
+      });
+
+      // Format dates
+      const startDate = competition.competition_start_date
+        ? new Date(competition.competition_start_date).toLocaleDateString()
+        : '';
+      const endDate = competition.competition_end_date
+        ? new Date(competition.competition_end_date).toLocaleDateString()
+        : '';
+      const dates = startDate && endDate ? `${startDate} - ${endDate}` : startDate || 'TBD';
+
+      // Generate PDF
+      const pdfBlob = generateStudioScorePrintout({
+        tenantName: competition.tenants?.name,
+        competition: {
+          name: competition.name,
+          dates,
+          location: competition.venue_address || undefined,
+        },
+        studio: {
+          name: studio.name,
+          code: studio.studio_code || undefined,
+        },
+        routines,
+      });
+
+      const buffer = await pdfBlob.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString('base64');
+      const slug = studio.name.toLowerCase().replace(/s+/g, '-');
+
+      return {
+        filename: `scores-${slug}.pdf`,
+        data: base64,
+        mimeType: 'application/pdf',
       };
     }),
 });
