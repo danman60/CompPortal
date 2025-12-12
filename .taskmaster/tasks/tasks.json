@@ -101,7 +101,7 @@
         "description": "Allow CD to drag/reorder routines with confirmation dialog. Entry numbers stay locked, only time slots change.",
         "details": "- Drag-drop reorder in routine list - Confirmation: \"Are you sure?\" + click to confirm - Entry number stays same (111 stays 111) - Time slots recalculate - Can move routine to different day",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "4"
         ],
@@ -117,7 +117,8 @@
             "parentTaskId": 5,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T08:37:55.360Z"
       },
       {
         "id": "6",
@@ -705,11 +706,11 @@
         "description": "Generate PDF printouts for studios showing all their routines with Judge A/B/C scores, average, and adjudication level. Distributed at end of competition weekend.",
         "details": "Per client (Selena) feedback:\\n- Studios receive printouts of all their scores at end of weekend\\n- Shows Judge A, Judge B, Judge C scores for each routine\\n- Shows calculated average\\n- Shows adjudication level achieved\\n- They will see discrepancies (hence edge case alert system)\\n\\nFormat:\\n- PDF generation per studio\\n- All routines for that studio\\n- Batch generate all studios at once\\n- Print or email option",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [],
         "priority": "medium",
         "subtasks": [],
-        "updatedAt": "2025-12-12T08:23:36.987Z"
+        "updatedAt": "2025-12-12T08:37:33.357Z"
       },
       {
         "id": "32",
@@ -763,9 +764,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T08:23:36.988Z",
+      "lastModified": "2025-12-12T08:37:55.361Z",
       "taskCount": 34,
-      "completedCount": 23,
+      "completedCount": 24,
       "tags": [
         "master"
       ]

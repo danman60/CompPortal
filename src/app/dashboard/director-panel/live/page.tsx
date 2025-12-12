@@ -28,6 +28,8 @@ import {
   WifiOff,
   ChevronRight,
   Music,
+  GripVertical,
+  X,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
@@ -80,6 +82,11 @@ export default function CDControlPanelLive() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isConnected, setIsConnected] = useState(true);
 
+  // Drag-drop reordering state (Task #5)
+  const [draggedRoutine, setDraggedRoutine] = useState<Routine | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pendingReorder, setPendingReorder] = useState<{routine: Routine, newPosition: number} | null>(null);
+
   // Fetch lineup data
   const { data: lineupData, isLoading: lineupLoading } = trpc.liveCompetition.getLineup.useQuery(
     { competitionId },
@@ -94,6 +101,23 @@ export default function CDControlPanelLive() {
 
   // Update routine status mutation
   const updateStatusMutation = trpc.liveCompetition.updateRoutineStatus.useMutation();
+
+  // Reorder mutation (Task #5)
+  const reorderMutation = trpc.liveCompetition.reorderRoutine.useMutation({
+    onSuccess: (data) => {
+      if (data.updatedRoutines) {
+        // Update local routines with new order
+        setRoutines(prev => {
+          const updatedMap = new Map(data.updatedRoutines.map((r: any) => [r.id, r.runningOrder]));
+          return prev.map(r => ({
+            ...r,
+            order: updatedMap.get(r.id) || r.order,
+          })).sort((a, b) => a.order - b.order);
+        });
+      }
+      setPendingReorder(null);
+    },
+  });
 
   // Update routines when data loads
   useEffect(() => {
@@ -136,7 +160,52 @@ export default function CDControlPanelLive() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Control handlers
+  
+  // Drag-drop handlers (Task #5)
+  const handleDragStart = useCallback((e: React.DragEvent, routine: Routine) => {
+    setDraggedRoutine(routine);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', routine.id);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverIndex(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+
+    if (!draggedRoutine) return;
+
+    const newPosition = targetIndex + 1; // running_order is 1-based
+    if (draggedRoutine.order !== newPosition) {
+      setPendingReorder({ routine: draggedRoutine, newPosition });
+    }
+    setDraggedRoutine(null);
+  }, [draggedRoutine]);
+
+  const handleConfirmReorder = useCallback(() => {
+    if (!pendingReorder || !competitionId) return;
+
+    reorderMutation.mutate({
+      competitionId,
+      routineId: pendingReorder.routine.id,
+      newPosition: pendingReorder.newPosition,
+    });
+  }, [pendingReorder, competitionId, reorderMutation]);
+
+  const handleCancelReorder = useCallback(() => {
+    setPendingReorder(null);
+  }, []);
+
+// Control handlers
   const handleStart = useCallback(() => {
     if (competitionState.status === 'not_started') {
       setCompetitionState((prev) => ({
@@ -331,7 +400,14 @@ export default function CDControlPanelLive() {
             {routines.map((routine, index) => (
               <div
                 key={routine.id}
-                className={`p-3 rounded-lg cursor-pointer transition-all ${
+                draggable
+                onDragStart={(e) => handleDragStart(e, routine)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                className={`p-3 rounded-lg cursor-grab active:cursor-grabbing transition-all ${
+                  dragOverIndex === index ? 'ring-2 ring-blue-500 bg-blue-500/20' :
+                  draggedRoutine?.id === routine.id ? 'opacity-50' :
                   index === competitionState.currentRoutineIndex
                     ? 'bg-purple-600/30 border border-purple-500/50'
                     : routine.liveStatus === 'completed'
@@ -339,18 +415,23 @@ export default function CDControlPanelLive() {
                       : 'bg-gray-700/30 hover:bg-gray-700/50 border border-transparent'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-400">#{routine.order}</span>
-                  {routine.liveStatus === 'completed' && (
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                  )}
-                  {index === competitionState.currentRoutineIndex && (
-                    <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded">NOW</span>
-                  )}
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-400">#{routine.order}</span>
+                      {routine.liveStatus === 'completed' && (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      )}
+                      {index === competitionState.currentRoutineIndex && (
+                        <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded">NOW</span>
+                      )}
+                    </div>
+                    <div className="text-white font-medium mt-1 truncate">{routine.title}</div>
+                    <div className="text-sm text-gray-400 truncate">{routine.studioName}</div>
+                    <div className="text-xs text-gray-500 mt-1">{routine.category}</div>
+                  </div>
                 </div>
-                <div className="text-white font-medium mt-1 truncate">{routine.title}</div>
-                <div className="text-sm text-gray-400 truncate">{routine.studioName}</div>
-                <div className="text-xs text-gray-500 mt-1">{routine.category}</div>
               </div>
             ))}
           </div>
@@ -496,6 +577,45 @@ export default function CDControlPanelLive() {
           </div>
         </div>
       </main>
+
+      
+      {/* Reorder Confirmation Dialog (Task #5) */}
+      {pendingReorder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Confirm Reorder</h3>
+              <button
+                onClick={handleCancelReorder}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-300 mb-6">
+              Move <span className="font-semibold text-white">{pendingReorder.routine.title}</span> to position #{pendingReorder.newPosition}?
+            </p>
+            <p className="text-sm text-gray-400 mb-6">
+              Entry number will stay the same (#{pendingReorder.routine.order}), only the running order will change.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelReorder}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReorder}
+                disabled={reorderMutation.isPending}
+                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {reorderMutation.isPending ? 'Moving...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* BOTTOM CONTROLS */}
       <footer className="fixed bottom-0 left-0 right-0 bg-gray-900/95 border-t border-gray-700/50 p-4">
