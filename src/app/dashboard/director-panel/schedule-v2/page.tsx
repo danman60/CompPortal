@@ -1742,6 +1742,22 @@ export default function ScheduleV2Page() {
       const indigoDark: [number, number, number] = [49, 46, 129];   // indigo-900
       const purpleLight: [number, number, number] = [147, 51, 234]; // purple-600
 
+      // Load logo if available
+      let logoDataUrl: string | null = null;
+      if (logo) {
+        try {
+          const response = await fetch(logo);
+          const blob = await response.blob();
+          logoDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.warn('[PDF] Could not load logo:', e);
+        }
+      }
+
       // Elegant header with gradient-style coloring
       doc.setFillColor(...purpleDark);
       doc.rect(0, 0, 210, 55, 'F');
@@ -1749,6 +1765,15 @@ export default function ScheduleV2Page() {
       // Add accent bar
       doc.setFillColor(...purpleLight);
       doc.rect(0, 0, 210, 3, 'F');
+
+      // Add logo to header (right side)
+      if (logoDataUrl) {
+        try {
+          doc.addImage(logoDataUrl, 'PNG', 155, 8, 40, 40);
+        } catch (e) {
+          console.warn('[PDF] Could not add logo to PDF:', e);
+        }
+      }
 
       // Header text
       doc.setTextColor(255, 255, 255);
