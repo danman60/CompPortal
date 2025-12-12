@@ -1589,4 +1589,148 @@ export const liveCompetitionRouter = router({
 
       return { success: true, state: 'completed' };
     }),
+
+  // ===========================================
+  // TASK 18: EMERGENCY BREAK & END EARLY
+  // ===========================================
+
+  addEmergencyBreak: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      durationMinutes: z.number().min(1).max(60),
+      insertAfterEntryId: z.string().optional(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const liveState = await prisma.live_competition_state.findUnique({
+        where: { competition_id: input.competitionId },
+      });
+
+      const activeBreak = await prisma.schedule_breaks.findFirst({
+        where: { competition_id: input.competitionId, tenant_id: ctx.tenantId, status: 'active' },
+      });
+
+      if (activeBreak) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot add break while another break is active' });
+      }
+
+      const emergencyBreak = await prisma.schedule_breaks.create({
+        data: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          insert_after_entry_id: input.insertAfterEntryId || liveState?.current_entry_id || null,
+          duration_minutes: input.durationMinutes,
+          break_type: 'emergency',
+          reason: input.reason || 'Emergency break',
+          title: 'Emergency Break',
+          status: 'active',
+          actual_start_time: new Date(),
+          created_by: ctx.userId || null,
+        },
+      });
+
+      if (liveState) {
+        const currentDelay = liveState.schedule_delay_minutes || 0;
+        await prisma.live_competition_state.update({
+          where: { competition_id: input.competitionId },
+          data: { competition_state: 'break', schedule_delay_minutes: currentDelay + input.durationMinutes, updated_at: new Date() },
+        });
+      }
+
+      return {
+        success: true,
+        breakId: emergencyBreak.id,
+        durationMinutes: input.durationMinutes,
+        newDelayMinutes: (liveState?.schedule_delay_minutes || 0) + input.durationMinutes,
+        startedAt: emergencyBreak.actual_start_time,
+      };
+    }),
+
+  endBreakEarly: publicProcedure
+    .input(z.object({ breakId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const breakRecord = await prisma.schedule_breaks.findFirst({
+        where: { id: input.breakId, tenant_id: ctx.tenantId },
+      });
+
+      if (!breakRecord) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Break not found' });
+      }
+
+      if (breakRecord.status !== 'active') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Break is not active' });
+      }
+
+      const now = new Date();
+      const startTime = breakRecord.actual_start_time || breakRecord.created_at;
+      const actualDurationMs = now.getTime() - startTime.getTime();
+      const actualDurationMinutes = Math.ceil(actualDurationMs / (1000 * 60));
+      const timeSavedMinutes = Math.max(0, breakRecord.duration_minutes - actualDurationMinutes);
+
+      await prisma.schedule_breaks.update({
+        where: { id: input.breakId },
+        data: { status: 'completed', actual_end_time: now, actual_duration_minutes: actualDurationMinutes, updated_at: now },
+      });
+
+      const liveState = await prisma.live_competition_state.findUnique({
+        where: { competition_id: breakRecord.competition_id },
+      });
+
+      if (liveState) {
+        const currentDelay = liveState.schedule_delay_minutes || 0;
+        const newDelay = Math.max(0, currentDelay - timeSavedMinutes);
+        await prisma.live_competition_state.update({
+          where: { competition_id: breakRecord.competition_id },
+          data: { competition_state: 'active', schedule_delay_minutes: newDelay, updated_at: now },
+        });
+      }
+
+      return {
+        success: true,
+        actualDurationMinutes,
+        timeSavedMinutes,
+        newDelayMinutes: Math.max(0, (liveState?.schedule_delay_minutes || 0) - timeSavedMinutes),
+      };
+    }),
+
+  getActiveBreak: publicProcedure
+    .input(z.object({ competitionId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const activeBreak = await prisma.schedule_breaks.findFirst({
+        where: { competition_id: input.competitionId, tenant_id: ctx.tenantId, status: 'active' },
+      });
+
+      if (!activeBreak) return null;
+
+      const now = new Date();
+      const startTime = activeBreak.actual_start_time || activeBreak.created_at;
+      const elapsedMs = now.getTime() - startTime.getTime();
+      const elapsedMinutes = Math.floor(elapsedMs / (1000 * 60));
+      const remainingMinutes = Math.max(0, activeBreak.duration_minutes - elapsedMinutes);
+
+      return {
+        id: activeBreak.id,
+        breakType: activeBreak.break_type,
+        title: activeBreak.title,
+        reason: activeBreak.reason,
+        durationMinutes: activeBreak.duration_minutes,
+        elapsedMinutes,
+        remainingMinutes,
+        startedAt: startTime,
+        scheduledEndTime: new Date(startTime.getTime() + activeBreak.duration_minutes * 60 * 1000),
+      };
+    }),
+
 });
