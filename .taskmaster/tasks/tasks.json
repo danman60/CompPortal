@@ -769,12 +769,107 @@
           }
         ],
         "updatedAt": "2025-12-12T07:58:39.640Z"
+      },
+      {
+        "id": "35",
+        "title": "MP3 Bulk Download System - Manifest API & IndexedDB",
+        "description": "Create API endpoint for MP3 manifest and IndexedDB storage system. Allows backstage device to download 600-800 MP3s the day before competition with progress tracking and verification.",
+        "details": "API: GET /api/audio/manifest?competitionId=xxx&day=2026-04-11\nReturns: { totalFiles, totalSizeBytes, files: [{ entryId, entryNumber, routineName, url, sizeBytes, checksum, durationMs }] }\n\nIndexedDB Schema:\n- entryId, entryNumber, routineName, url\n- expectedSize, actualSize, checksum, checksumVerified\n- status: pending|downloading|complete|failed|retrying\n- blob: Blob (actual MP3 data)\n- downloadedAt, lastError\n\nFeatures:\n- Download with concurrent limit (5 simultaneous)\n- Progress callback (X/Y files, MB downloaded)\n- Checksum verification after each file\n- Retry logic for failed downloads\n- Resume capability after interruption\n- Storage quota check before starting",
+        "testStrategy": "",
+        "status": "in-progress",
+        "dependencies": [
+          "22"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2025-12-12T16:11:19.081Z"
+      },
+      {
+        "id": "36",
+        "title": "MP3 Download UI - Progress & Verification",
+        "description": "Build UI for bulk MP3 download on Backstage view. Shows download progress, verification status, failed file list with retry option.",
+        "details": "UI Components:\n\n1. Download Preparation Panel:\n- Competition/day selector\n- \"Prepare Audio Files\" button\n- Total file count and size estimate\n\n2. Progress View:\n- Overall progress bar (234/678 files - 35%)\n- Current file being downloaded\n- Speed indicator (4.2 MB/s)\n- ETA countdown\n- Downloaded/In Progress/Failed/Pending counts\n\n3. Verification Report:\n- \"All files verified\" green checkmark\n- Failed files list with error reasons\n- \"Retry Failed\" button\n- \"Ignore & Continue\" option\n- \"View Full Report\" detail modal\n\n4. Status Indicators:\n- Download not started (grey)\n- Downloading (blue animated)\n- Complete & verified (green checkmark)\n- Has failures (yellow warning)",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "35"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "37",
+        "title": "Backstage Audio Player - Local Playback",
+        "description": "HTML5 audio player on Backstage that loads MP3s from IndexedDB cache. Play/pause/seek controls, auto-advance to next track, volume control.",
+        "details": "Audio Player Features:\n- Load blob from IndexedDB by entryId\n- Create ObjectURL for playback\n- Play/Pause/Stop buttons\n- Seek scrubber (drag to position)\n- Volume slider with mute toggle\n- Current time / Duration display\n- Auto-advance to next routine on track end\n\nPlaylist Management:\n- Load today's routines in schedule order\n- Current track highlighting\n- Next/Previous track buttons\n- Jump to specific entry number\n\nUI Layout (center of backstage):\n- Large entry number (#142)\n- Routine name and studio\n- Category/age group info\n- Progress bar with time\n- Transport controls\n- \"UP NEXT\" preview\n\nEvents to emit:\n- onPlay(entryId, position)\n- onPause(entryId, position)\n- onSeek(entryId, position)\n- onTrackEnd(entryId)\n- onTrackChange(fromId, toId)",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "35",
+          "36"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "38",
+        "title": "Database Schema - Live Playback State & Commands",
+        "description": "Create database tables for real-time playback sync: live_playback_state for broadcasting position, playback_commands for remote control from Tabulator.",
+        "details": "CREATE TABLE live_playback_state (\n  competition_id UUID PRIMARY KEY REFERENCES competitions(id),\n  current_entry_id UUID REFERENCES competition_entries(id),\n  current_entry_number INTEGER,\n  is_playing BOOLEAN NOT NULL DEFAULT FALSE,\n  position_ms INTEGER NOT NULL DEFAULT 0,\n  duration_ms INTEGER NOT NULL DEFAULT 0,\n  position_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  master_device_id TEXT,\n  master_last_heartbeat TIMESTAMPTZ,\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\n\nCREATE TABLE playback_commands (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  competition_id UUID NOT NULL REFERENCES competitions(id),\n  command TEXT NOT NULL, -- PLAY, PAUSE, SEEK, NEXT, PREV, EMERGENCY_STOP\n  payload JSONB, -- { seekPositionMs: 30000 }\n  source TEXT NOT NULL, -- tabulator, director\n  source_device_id TEXT,\n  status TEXT DEFAULT 'pending', -- pending, processed, rejected\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  processed_at TIMESTAMPTZ,\n  processed_by_device TEXT,\n  expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '5 minutes'\n);\n\nCREATE INDEX idx_playback_commands_pending \nON playback_commands(competition_id, status, created_at)\nWHERE status = 'pending';",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "16"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "39",
+        "title": "Realtime Sync - Backstage State Broadcasting",
+        "description": "Backstage broadcasts playback state via Supabase Realtime every 100ms while playing. All other views subscribe and interpolate position for smooth progress bars.",
+        "details": "Backstage (Master) broadcasts:\n- Channel: playback:{competitionId}\n- Frequency: Every 100ms while playing\n- Payload: { entryId, entryNumber, isPlaying, positionMs, durationMs, serverTime }\n\nAlso updates live_playback_state table every 1s for persistence.\n\nSubscriber (Judge, Scoreboard, other Backstages):\n- Subscribe to playback channel\n- Receive state updates\n- Use client-side interpolation between updates\n\nClient Interpolation Hook:\nfunction usePlaybackSync(competitionId) {\n  // Subscribe to realtime channel\n  // Store last broadcast with serverTime\n  // useAnimationFrame to interpolate:\n  //   currentPos = lastPos + (Date.now() - serverTime)\n  // Return { positionMs, durationMs, isPlaying, progressPercent }\n}\n\nConnection Status:\n- LIVE (green) - receiving broadcasts < 500ms ago\n- DELAYED (yellow) - last broadcast 500ms-3s ago\n- OFFLINE (red) - no broadcast > 3s, using estimate",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "38",
+          "10"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "40",
+        "title": "Tabulator Remote Control - Command Panel",
+        "description": "Add remote control panel to Tabulator view. Can send PLAY/PAUSE/NEXT/PREV/EMERGENCY_STOP commands to Backstage audio player.",
+        "details": "Remote Control Panel UI:\n┌────────────────────────────────────────┐\n│  🎮 AUDIO CONTROL                      │\n├────────────────────────────────────────┤\n│  Now: #142 \"Rhythm Nation\"             │\n│  ████████████░░░░░░░ 1:23 / 3:00       │\n│                                        │\n│  [⏮️]  [⏸️ PAUSE]  [⏭️]               │\n│                                        │\n│  ⚠️ [EMERGENCY STOP]                   │\n└────────────────────────────────────────┘\n\nCommands via Supabase Realtime:\n- Channel: commands:{competitionId}\n- Payload: { type, payload?, source: 'tabulator', timestamp }\n\nAlso insert into playback_commands table for audit trail.\n\nBackstage receives and executes:\n- PLAY: audioElement.play()\n- PAUSE: audioElement.pause()\n- SEEK: audioElement.currentTime = ms/1000\n- NEXT: playNextEntry()\n- PREV: playPrevEntry()\n- EMERGENCY_STOP: pause + reset + show alert\n\nVisual feedback on Tabulator:\n- Command sent indicator\n- Confirmation when processed\n- Error if rejected",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "38",
+          "39"
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "41",
+        "title": "Sync Progress Bars - Judge & Scoreboard Views",
+        "description": "Update Judge tablet and Scoreboard views to show synced progress bar from Backstage audio playback. Read-only display with connection status indicator.",
+        "details": "Use usePlaybackSync() hook from Task 39 in:\n\n1. Judge View (/judge):\n- Add progress bar below current routine display\n- Show time remaining countdown\n- Connection status indicator (synced/delayed/offline)\n- No playback controls (read-only)\n\n2. Scoreboard View (/scoreboard/:id):\n- Add \"Now Playing\" section with progress\n- Large countdown timer display\n- Current routine name/number\n- Connection status\n\n3. Backstage TV Mode (existing):\n- Already has progress bar, update to use synced state\n- Ensure smooth animation with interpolation\n\nVisual States:\n- Synced (green dot): Progress bar animates smoothly\n- Delayed (yellow dot): \"~3s behind\" warning\n- Offline (red dot): Shows \"Using estimate\" with calculated time\n\nFallback when offline:\n- Use current_entry_started_at + duration to estimate\n- Show dashed/grey progress bar style",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          "39"
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T09:57:06.037Z",
-      "taskCount": 34,
+      "lastModified": "2025-12-12T16:11:19.082Z",
+      "taskCount": 41,
       "completedCount": 34,
       "tags": [
         "master"
