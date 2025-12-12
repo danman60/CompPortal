@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import {
   Play,
   Square,
@@ -16,6 +17,9 @@ import {
   Printer,
   GripVertical,
   CheckCircle2,
+  Bell,
+  X,
+  Check,
 } from 'lucide-react';
 
 // Types
@@ -57,6 +61,17 @@ interface LiveState {
   judgesCanSeeScores: boolean;
 }
 
+interface BreakRequest {
+  id: string;
+  judgeId: string;
+  judgeName: string;
+  judgeNumber: number | null;
+  requestedDurationMinutes: number;
+  reason: string | null;
+  status: string;
+  createdAt: Date;
+}
+
 export default function TabulatorPage() {
   // State
   const [competitionId, setCompetitionId] = useState<string | null>(null);
@@ -96,12 +111,39 @@ export default function TabulatorPage() {
     }
   );
 
+  // Get pending break requests
+  const { data: breakRequests, refetch: refetchBreakRequests } = trpc.liveCompetition.getBreakRequests.useQuery(
+    { competitionId: competitionId || '', status: 'pending' },
+    { enabled: !!competitionId, refetchInterval: 3000 }
+  );
+
   // Mutations
   const startCompetition = trpc.liveCompetition.startCompetition.useMutation();
   const stopCompetition = trpc.liveCompetition.stopCompetition.useMutation();
   const advanceRoutine = trpc.liveCompetition.advanceRoutine.useMutation();
   const previousRoutine = trpc.liveCompetition.previousRoutine.useMutation();
   const setCurrentRoutine = trpc.liveCompetition.setCurrentRoutine.useMutation();
+
+  // Break request mutations
+  const approveBreakMutation = trpc.liveCompetition.approveBreak.useMutation({
+    onSuccess: () => {
+      toast.success('Break approved');
+      refetchBreakRequests();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to approve break');
+    },
+  });
+
+  const denyBreakMutation = trpc.liveCompetition.denyBreak.useMutation({
+    onSuccess: () => {
+      toast.success('Break request denied');
+      refetchBreakRequests();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to deny break');
+    },
+  });
 
   // Update state when data changes
   useEffect(() => {
@@ -447,12 +489,69 @@ export default function TabulatorPage() {
           )}
         </div>
 
-        {/* RIGHT PANEL - Scores */}
-        <div className="w-72 bg-gray-800/50 border-l border-gray-700 flex flex-col">
+        {/* RIGHT PANEL - Scores & Break Requests */}
+        <div className="w-80 bg-gray-800/50 border-l border-gray-700 flex flex-col">
+          {/* Break Requests Section */}
+          {breakRequests && breakRequests.length > 0 && (
+            <div className="border-b border-gray-700 bg-orange-900/30">
+              <div className="p-3 border-b border-orange-700/50 bg-orange-900/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-orange-400 animate-pulse" />
+                  <h2 className="font-semibold text-orange-300">BREAK REQUESTS</h2>
+                </div>
+                <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {breakRequests.length}
+                </span>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {breakRequests.map((request: BreakRequest) => (
+                  <div key={request.id} className="p-3 border-b border-orange-700/30 last:border-b-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="text-white font-medium text-sm">
+                          {request.judgeName}
+                          {request.judgeNumber && (
+                            <span className="text-orange-400/80 ml-1">#{request.judgeNumber}</span>
+                          )}
+                        </div>
+                        <div className="text-orange-300 text-sm">
+                          {request.requestedDurationMinutes} min break
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => approveBreakMutation.mutate({ requestId: request.id })}
+                          disabled={approveBreakMutation.isPending}
+                          className="p-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded transition-colors"
+                          title="Approve"
+                        >
+                          <Check className="w-4 h-4 text-white" />
+                        </button>
+                        <button
+                          onClick={() => denyBreakMutation.mutate({ requestId: request.id })}
+                          disabled={denyBreakMutation.isPending}
+                          className="p-1.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded transition-colors"
+                          title="Deny"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                    {request.reason && (
+                      <div className="text-gray-400 text-xs italic">
+                        "{request.reason}"
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="p-3 border-b border-gray-700 bg-gray-800">
             <h2 className="font-semibold text-gray-300">LIVE SCORES</h2>
           </div>
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 overflow-y-auto">
             {liveState?.currentEntry ? (
               <>
                 {/* Judge Scores */}
