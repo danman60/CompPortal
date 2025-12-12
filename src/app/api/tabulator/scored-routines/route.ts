@@ -14,6 +14,43 @@ interface JudgeScoreRow {
   scored_at: Date | null;
 }
 
+interface AdjudicationLevel {
+  name: string;
+  min: number;
+  max: number;
+  color?: string;
+}
+
+interface AdjudicationLevelsConfig {
+  levels: AdjudicationLevel[];
+  edgeCaseThreshold?: number;
+}
+
+// Default fallback levels if tenant has none configured
+const DEFAULT_LEVELS: AdjudicationLevel[] = [
+  { name: 'Platinum', min: 95, max: 99.99 },
+  { name: 'High Gold', min: 90, max: 94.99 },
+  { name: 'Gold', min: 85, max: 89.99 },
+  { name: 'High Silver', min: 80, max: 84.99 },
+  { name: 'Silver', min: 75, max: 79.99 },
+  { name: 'Bronze', min: 0, max: 74.99 },
+];
+
+function getAwardLevel(score: number, levels: AdjudicationLevel[]): { name: string; color?: string } {
+  // Sort by min score descending to check highest first
+  const sortedLevels = [...levels].sort((a, b) => b.min - a.min);
+
+  for (const level of sortedLevels) {
+    if (score >= level.min && score <= level.max) {
+      return { name: level.name, color: level.color };
+    }
+  }
+
+  // Fallback to lowest level or 'Unranked'
+  const lowestLevel = sortedLevels[sortedLevels.length - 1];
+  return lowestLevel ? { name: lowestLevel.name, color: lowestLevel.color } : { name: 'Unranked' };
+}
+
 // Public API for tabulator - no authentication required
 export async function GET(request: NextRequest) {
   try {
@@ -52,6 +89,21 @@ export async function GET(request: NextRequest) {
 
     if (!targetCompetitionId) {
       return NextResponse.json({ routines: [] });
+    }
+
+    // Get tenant's adjudication levels from competition_settings
+    let adjudicationLevels: AdjudicationLevel[] = DEFAULT_LEVELS;
+
+    const settingsResult = await prisma.$queryRaw<Array<{ adjudication_levels: AdjudicationLevelsConfig | null }>>`
+      SELECT cs.adjudication_levels
+      FROM competition_settings cs
+      JOIN competitions c ON cs.tenant_id = c.tenant_id
+      WHERE c.id = ${targetCompetitionId}::uuid
+      LIMIT 1
+    `;
+
+    if (settingsResult.length > 0 && settingsResult[0].adjudication_levels?.levels) {
+      adjudicationLevels = settingsResult[0].adjudication_levels.levels;
     }
 
     // Get all scored entries with individual judge scores
@@ -133,18 +185,14 @@ export async function GET(request: NextRequest) {
         const totalScore = entry.judges.reduce((sum, j) => sum + j.score, 0);
         const averageScore = totalScore / entry.judges.length;
 
-        // Determine award level based on average score
-        let awardLevel = 'Bronze';
-        if (averageScore >= 95) awardLevel = 'Platinum';
-        else if (averageScore >= 90) awardLevel = 'High Gold';
-        else if (averageScore >= 85) awardLevel = 'Gold';
-        else if (averageScore >= 80) awardLevel = 'High Silver';
-        else if (averageScore >= 75) awardLevel = 'Silver';
+        // Determine award level dynamically from tenant configuration
+        const award = getAwardLevel(averageScore, adjudicationLevels);
 
         return {
           ...entry,
           averageScore,
-          awardLevel,
+          awardLevel: award.name,
+          awardColor: award.color,
         };
       })
       .sort((a, b) => a.entryNumber - b.entryNumber); // Sort by entry number
