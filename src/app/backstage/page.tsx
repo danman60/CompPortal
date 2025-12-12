@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { MP3DownloadPanel } from '@/components/audio/MP3DownloadPanel';
+import { HardDrive, X } from 'lucide-react';
 
 interface RoutineInfo {
   id: string;
@@ -18,6 +20,7 @@ interface RoutineInfo {
 interface BackstageData {
   currentRoutine: RoutineInfo | null;
   nextRoutine: Omit<RoutineInfo, 'startedAt' | 'state'> | null;
+  competitionId?: string;
   competitionName: string | null;
   competitionDay?: string;
   isActive: boolean;
@@ -28,6 +31,7 @@ export default function BackstagePage() {
   const [data, setData] = useState<BackstageData | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAudioPanel, setShowAudioPanel] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -95,6 +99,22 @@ export default function BackstagePage() {
   if (!data?.isActive) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-8">
+        {/* Audio Panel Toggle - available even when not active */}
+        <button
+          onClick={() => setShowAudioPanel(!showAudioPanel)}
+          className="fixed top-2 right-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
+        >
+          <HardDrive className="w-3.5 h-3.5" />
+          {showAudioPanel ? 'Hide Audio' : 'Audio Files'}
+        </button>
+
+        {/* Collapsible Audio Download Panel */}
+        {showAudioPanel && (
+          <div className="fixed top-12 right-2 z-40 w-96 max-h-[80vh] overflow-y-auto">
+            <MP3DownloadPanel compact={false} />
+          </div>
+        )}
+
         <div className="text-gray-400 text-4xl mb-4">Competition Not Active</div>
         {data?.competitionName && (
           <div className="text-gray-500 text-2xl">{data.competitionName}</div>
@@ -118,6 +138,26 @@ export default function BackstagePage() {
       >
         Test Page
       </Link>
+
+      {/* Audio Panel Toggle */}
+      <button
+        onClick={() => setShowAudioPanel(!showAudioPanel)}
+        className="fixed top-2 right-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
+      >
+        <HardDrive className="w-3.5 h-3.5" />
+        {showAudioPanel ? 'Hide Audio' : 'Audio Files'}
+      </button>
+
+      {/* Collapsible Audio Download Panel */}
+      {showAudioPanel && (
+        <div className="fixed top-12 right-2 z-40 w-96 max-h-[80vh] overflow-y-auto">
+          <MP3DownloadPanel
+            competitionId={data?.competitionId}
+            day={data?.competitionDay}
+            compact={false}
+          />
+        </div>
+      )}
 
       <div className="bg-gray-800 p-4 text-center border-b border-gray-700">
         <h1 className="text-2xl font-bold text-gray-300">{data.competitionName || 'Competition'}</h1>

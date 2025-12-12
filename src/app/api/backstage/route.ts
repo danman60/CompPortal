@@ -159,6 +159,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       currentRoutine,
       nextRoutine,
+      competitionId: targetCompetitionId,
       competitionName: competition?.name || null,
       competitionDay,
       isActive: true,

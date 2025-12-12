@@ -776,13 +776,13 @@
         "description": "Create API endpoint for MP3 manifest and IndexedDB storage system. Allows backstage device to download 600-800 MP3s the day before competition with progress tracking and verification.",
         "details": "API: GET /api/audio/manifest?competitionId=xxx&day=2026-04-11\nReturns: { totalFiles, totalSizeBytes, files: [{ entryId, entryNumber, routineName, url, sizeBytes, checksum, durationMs }] }\n\nIndexedDB Schema:\n- entryId, entryNumber, routineName, url\n- expectedSize, actualSize, checksum, checksumVerified\n- status: pending|downloading|complete|failed|retrying\n- blob: Blob (actual MP3 data)\n- downloadedAt, lastError\n\nFeatures:\n- Download with concurrent limit (5 simultaneous)\n- Progress callback (X/Y files, MB downloaded)\n- Checksum verification after each file\n- Retry logic for failed downloads\n- Resume capability after interruption\n- Storage quota check before starting",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "22"
         ],
         "priority": "high",
         "subtasks": [],
-        "updatedAt": "2025-12-12T16:11:19.081Z"
+        "updatedAt": "2025-12-12T16:18:43.756Z"
       },
       {
         "id": "36",
@@ -790,12 +790,13 @@
         "description": "Build UI for bulk MP3 download on Backstage view. Shows download progress, verification status, failed file list with retry option.",
         "details": "UI Components:\n\n1. Download Preparation Panel:\n- Competition/day selector\n- \"Prepare Audio Files\" button\n- Total file count and size estimate\n\n2. Progress View:\n- Overall progress bar (234/678 files - 35%)\n- Current file being downloaded\n- Speed indicator (4.2 MB/s)\n- ETA countdown\n- Downloaded/In Progress/Failed/Pending counts\n\n3. Verification Report:\n- \"All files verified\" green checkmark\n- Failed files list with error reasons\n- \"Retry Failed\" button\n- \"Ignore & Continue\" option\n- \"View Full Report\" detail modal\n\n4. Status Indicators:\n- Download not started (grey)\n- Downloading (blue animated)\n- Complete & verified (green checkmark)\n- Has failures (yellow warning)",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "35"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2025-12-12T16:18:54.180Z"
       },
       {
         "id": "37",
@@ -868,9 +869,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T16:11:19.082Z",
+      "lastModified": "2025-12-12T16:18:54.182Z",
       "taskCount": 41,
-      "completedCount": 34,
+      "completedCount": 35,
       "tags": [
         "master"
       ]
