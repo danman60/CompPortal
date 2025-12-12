@@ -17,9 +17,21 @@ interface RoutineInfo {
   state?: string | null;
 }
 
+interface UpcomingRoutine {
+  id: string;
+  entryNumber: string;
+  routineName: string;
+  studioName: string;
+  category: string;
+  ageGroup: string;
+  durationMs: number;
+  isBreak?: boolean;
+}
+
 interface BackstageData {
   currentRoutine: RoutineInfo | null;
   nextRoutine: Omit<RoutineInfo, 'startedAt' | 'state'> | null;
+  upcomingRoutines?: UpcomingRoutine[];
   competitionId?: string;
   competitionName: string | null;
   competitionDay?: string;
@@ -32,13 +44,18 @@ export default function BackstagePage() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [showAudioPanel, setShowAudioPanel] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'connected' | 'syncing' | 'error'>('syncing');
 
   const fetchData = useCallback(async () => {
+    setSyncStatus('syncing');
     try {
       const response = await fetch('/api/backstage');
       if (response.ok) {
         const newData = await response.json();
         setData(newData);
+        setLastSyncTime(new Date());
+        setSyncStatus('connected');
         if (newData.currentRoutine?.startedAt) {
           const startTime = new Date(newData.currentRoutine.startedAt).getTime();
           const serverTime = newData.serverTime ? new Date(newData.serverTime).getTime() : Date.now();
@@ -48,9 +65,12 @@ export default function BackstagePage() {
         } else {
           setTimeRemaining(0);
         }
+      } else {
+        setSyncStatus('error');
       }
     } catch (error) {
       console.error('Failed to fetch backstage data:', error);
+      setSyncStatus('error');
     } finally {
       setIsLoading(false);
     }
@@ -86,6 +106,23 @@ export default function BackstagePage() {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return minutes + ':' + seconds.toString().padStart(2, '0');
+  };
+
+  const formatSyncTime = (date: Date | null) => {
+    if (!date) return 'Never';
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diffSeconds < 5) return 'Just now';
+    if (diffSeconds < 60) return diffSeconds + 's ago';
+    return Math.floor(diffSeconds / 60) + 'm ago';
+  };
+
+  const getSyncStatusColor = () => {
+    switch (syncStatus) {
+      case 'connected': return 'bg-green-500';
+      case 'syncing': return 'bg-yellow-500 animate-pulse';
+      case 'error': return 'bg-red-500';
+    }
   };
 
   if (isLoading) {
@@ -159,9 +196,18 @@ export default function BackstagePage() {
         </div>
       )}
 
-      <div className="bg-gray-800 p-4 text-center border-b border-gray-700">
-        <h1 className="text-2xl font-bold text-gray-300">{data.competitionName || 'Competition'}</h1>
-        <div className="text-gray-500 text-sm">Backstage Monitor</div>
+      <div className="bg-gray-800 p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className={'w-3 h-3 rounded-full ' + getSyncStatusColor()} title={syncStatus} />
+            <span className="text-gray-500 text-xs">{formatSyncTime(lastSyncTime)}</span>
+          </div>
+          <div className="text-center flex-1">
+            <h1 className="text-2xl font-bold text-gray-300">{data.competitionName || 'Competition'}</h1>
+            <div className="text-gray-500 text-sm">Backstage Monitor</div>
+          </div>
+          <div className="w-24" />
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -197,20 +243,33 @@ export default function BackstagePage() {
         )}
       </div>
 
-      {data.nextRoutine && (
-        <div className="bg-gray-800 border-t border-gray-700 p-8">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div>
-              <div className="text-yellow-400 text-xl font-semibold tracking-wider mb-2">UP NEXT</div>
-              <div className="text-white text-3xl md:text-4xl font-bold">
-                #{data.nextRoutine.entryNumber} - {data.nextRoutine.routineName}
-              </div>
-              <div className="text-gray-400 text-xl mt-1">{data.nextRoutine.studioName}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-gray-500 text-lg">{data.nextRoutine.category}</div>
-              <div className="text-gray-500 text-lg">{data.nextRoutine.ageGroup}</div>
-              <div className="text-gray-600 text-sm mt-1">Duration: {formatDuration(data.nextRoutine.durationMs)}</div>
+      {(data.upcomingRoutines?.length ?? 0) > 0 && (
+        <div className="bg-gray-800 border-t border-gray-700 p-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-yellow-400 text-lg font-semibold tracking-wider mb-4">COMING UP</div>
+            <div className="space-y-3">
+              {data.upcomingRoutines?.map((routine, index) => (
+                <div
+                  key={routine.id}
+                  className={'flex items-center justify-between p-4 rounded-lg ' + (index === 0 ? 'bg-gray-700' : 'bg-gray-750 bg-opacity-50')}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={'text-2xl font-bold ' + (index === 0 ? 'text-yellow-400' : 'text-gray-500')}>
+                      {index === 0 ? 'NEXT' : index + 1}
+                    </div>
+                    <div>
+                      <div className={'font-bold ' + (index === 0 ? 'text-white text-xl' : 'text-gray-300 text-lg')}>
+                        #{routine.entryNumber} - {routine.routineName}
+                      </div>
+                      <div className="text-gray-400 text-sm">{routine.studioName}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-gray-500 text-sm">{routine.category} | {routine.ageGroup}</div>
+                    <div className="text-gray-600 text-xs">{formatDuration(routine.durationMs)}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

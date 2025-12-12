@@ -105,9 +105,19 @@ export async function GET(request: NextRequest) {
       ORDER BY e.schedule_sequence ASC NULLS LAST, e.entry_number ASC
     `;
 
-    // Find current and next routines
+    // Find current and upcoming routines
     let currentRoutine = null;
     let nextRoutine = null;
+    const upcomingRoutines: Array<{
+      id: string;
+      entryNumber: string;
+      routineName: string;
+      studioName: string;
+      category: string;
+      ageGroup: string;
+      durationMs: number;
+      isBreak?: boolean;
+    }> = [];
 
     if (state.current_entry_id) {
       const currentIndex = todayRoutines.findIndex(r => r.id === state.current_entry_id);
@@ -128,37 +138,48 @@ export async function GET(request: NextRequest) {
           state: state.current_entry_state,
         };
 
-        // Get next routine
-        if (currentIndex + 1 < todayRoutines.length) {
-          const next = todayRoutines[currentIndex + 1];
-          nextRoutine = {
-            id: next.id,
-            entryNumber: next.entry_number,
-            routineName: next.routine_name,
-            studioName: next.studio_name,
-            category: next.category,
-            ageGroup: next.age_group,
-            durationMs: next.mp3_duration_ms || 180000,
-          };
+        // Get next 4 routines for expanded upcoming list
+        for (let i = currentIndex + 1; i < Math.min(currentIndex + 5, todayRoutines.length); i++) {
+          const routine = todayRoutines[i];
+          upcomingRoutines.push({
+            id: routine.id,
+            entryNumber: routine.entry_number,
+            routineName: routine.routine_name,
+            studioName: routine.studio_name,
+            category: routine.category,
+            ageGroup: routine.age_group,
+            durationMs: routine.mp3_duration_ms || 180000,
+          });
+        }
+
+        // Set first upcoming as nextRoutine for backwards compatibility
+        if (upcomingRoutines.length > 0) {
+          nextRoutine = upcomingRoutines[0];
         }
       }
     } else if (todayRoutines.length > 0) {
-      // No current routine, show first as next
-      const first = todayRoutines[0];
-      nextRoutine = {
-        id: first.id,
-        entryNumber: first.entry_number,
-        routineName: first.routine_name,
-        studioName: first.studio_name,
-        category: first.category,
-        ageGroup: first.age_group,
-        durationMs: first.mp3_duration_ms || 180000,
-      };
+      // No current routine, show first few as upcoming
+      for (let i = 0; i < Math.min(4, todayRoutines.length); i++) {
+        const routine = todayRoutines[i];
+        upcomingRoutines.push({
+          id: routine.id,
+          entryNumber: routine.entry_number,
+          routineName: routine.routine_name,
+          studioName: routine.studio_name,
+          category: routine.category,
+          ageGroup: routine.age_group,
+          durationMs: routine.mp3_duration_ms || 180000,
+        });
+      }
+      if (upcomingRoutines.length > 0) {
+        nextRoutine = upcomingRoutines[0];
+      }
     }
 
     return NextResponse.json({
       currentRoutine,
       nextRoutine,
+      upcomingRoutines,
       competitionId: targetCompetitionId,
       competitionName: competition?.name || null,
       competitionDay,
