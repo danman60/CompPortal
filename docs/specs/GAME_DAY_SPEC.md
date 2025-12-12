@@ -58,63 +58,68 @@ Game Day (also called "At Competition Mode" or "Live Mode") is a dedicated real-
 
 ## 3. User Roles & Interfaces
 
-### 3.1 Competition Director (CD) Control Panel
+### 3.1 Tabulator Control Panel (formerly "CD")
 
 **Location:** `/dashboard/director-panel/live`
 
-**CD Capabilities:**
+**Tabulator Capabilities:**
 - ✅ Start/Stop competition
 - ✅ See time remaining in current routine (from actual MP3)
-- ✅ See judge scores as they come in (running scores + average)
-- ✅ Reorder routines with confirmation dialog
+- ✅ See judge scores as they come in (3 columns: Judge A, B, C + average)
+- ✅ See adjudication level result next to each average
+- ✅ Reorder routines with confirmation dialog (**ONLY Tabulator can move routines**)
 - ✅ Move routine to different day easily
-- ✅ See full length of routines left for day
+- ✅ See full schedule of routines for day
 - ✅ See judges status (connected, scoring, break requested)
 - ✅ Add emergency breaks (updates schedule times for all routines)
 - ✅ Approve/deny judge break requests
-- ✅ Edit scores after judge submits
+- ✅ Edit scores after judge submits (emergency only)
 - ✅ Toggle whether judges can see other judges' scores
 - ✅ Mark routine as scratched/withdrawn (optional reason)
+- ✅ **Edge case alerts** when small score diff bumps down adjudication level
+- ✅ **Print labels** with scores
 
 **Screen Layout:**
 ```
 +------------------+------------------------+------------------+
-|  ROUTINE LIST    |    CURRENT ROUTINE     |   STATUS PANEL   |
+|  SCHEDULE        |    CURRENT ROUTINE     |   SCORES PANEL   |
 |  (Left Panel)    |    (Center Stage)      |   (Right Panel)  |
 |                  |                        |                  |
-|  111 [CURRENT]   |   "Shine Bright"       |  JUDGE STATUS    |
-|  112 Next Up     |   Studio: Dance Academy|  J1: ✓ Scored 82 |
-|  113 On Deck     |   Entry #111           |  J2: ✓ Scored 85 |
-|  --- BREAK ---   |                        |  J3: ⏳ Scoring...|
-|  114 Queued      |   [====|----] 1:42     |                  |
-|                  |   Time Remaining       |  AVG: 83.5       |
+|  111 [CURRENT]   |   "Shine Bright"       |  Judge A: 89.06  |
+|  112 Next Up     |   Studio: Dance Academy|  Judge B: 88.50  |
+|  113 On Deck     |   Entry #111           |  Judge C: 89.25  |
+|  --- BREAK ---   |                        |  ─────────────── |
+|  114 Queued      |   [====|----] 1:42     |  AVG: 88.94      |
+|                  |   Time Remaining       |  PLATINUM        |
 +------------------+------------------------+------------------+
 |  CONTROLS                                 |  SCHEDULE STATUS |
 |  [<< BACK] [STOP] [>> NEXT] [+ BREAK]     |  Running: +5 min |
 +------------------+------------------------+------------------+
-|  BREAK REQUESTS: J2 requests 5 min [APPROVE] [DENY]         |
+|  ⚠️ ALERT: Entry #108 bumped down due to 0.01 diff [REVIEW] |
 +-------------------------------------------------------------+
 ```
 
-### 3.2 Judge Tablet Interface
+### 3.2 Judge Tablet Interface (iPad)
 
 **Location:** `/judge` (authenticated, tracks who scored what)
 
 **Judge Capabilities:**
-- ✅ Score current routine (single overall score)
-- ✅ Edit score **until submitted** (after submit, only CD can edit)
-- ✅ Request breaks: **[2 min] [5 min] [10 min]** buttons (shows to CD)
-- ✅ See other judges' scores (CD toggleable)
-- ✅ Award slider (already built - reuse)
+- ✅ Score current routine (single overall XX.XX score)
+- ✅ Edit score **until submitted** (after submit, only Tabulator can edit)
+- ✅ Request breaks: **[2 min] [5 min] [10 min]** buttons (shows to Tabulator)
+- ✅ See other judges' scores (Tabulator toggleable)
+- ✅ **BOTH input methods:** Slider OR manual number typing
 - ✅ Comments field
+- ✅ **Title Division breakdown** (when applicable)
 
 **Scoring:**
-- **Range: 60-100** (not 0-100)
-- **Single overall score** (not multi-criteria)
-- Titled scoring levels from competition settings
-- Scores save real metadata
+- **Format: XX.XX** (two decimals ALWAYS required)
+- **Valid:** 89.06, 42.67, 98.90, 75.00
+- **Invalid:** 69, 72, 86.6, 89.3
+- **Input:** Manual typing (faster) OR slider (visual)
+- Adjudication levels from competition settings
 
-**Screen Layout:**
+**Screen Layout (Standard Routine):**
 ```
 +------------------------------------------------+
 |  NOW PERFORMING: "Shine Bright" (Entry #111)   |
@@ -122,14 +127,15 @@ Game Day (also called "At Competition Mode" or "Live Mode") is a dedicated real-
 |  Time Remaining: [====|----] 1:42              |
 +------------------------------------------------+
 |                                                |
-|  YOUR SCORE: [==========|----] 82              |
-|              60                100              |
+|  YOUR SCORE: [  89.06  ]  ← Manual input       |
+|              [==========|----] ← OR Slider     |
+|              00.00              99.99          |
 |                                                |
-|  Award Level: HIGH GOLD (80-84)                |
+|  Adjudication Level: PLATINUM (88.00-91.99)   |
 |                                                |
 +------------------------------------------------+
-|  [Show Other Scores] (if enabled by CD)        |
-|  J1: 82  |  J2: --  |  J3: --  |  AVG: 82     |
+|  [Show Other Scores] (if enabled)              |
+|  A: 89.06  |  B: --  |  C: --  |  AVG: 89.06  |
 +------------------------------------------------+
 |  Special Awards: [ ] Judge's Choice            |
 |  Comments: [____________________________]      |
@@ -138,7 +144,24 @@ Game Day (also called "At Competition Mode" or "Live Mode") is a dedicated real-
 +------------------------------------------------+
 |  REQUEST BREAK: [2 min] [5 min] [10 min]       |
 +------------------------------------------------+
-|  Sync: [Connected] | Entry 45 of 120           |
+```
+
+**Screen Layout (Title Division Routine):**
+```
++------------------------------------------------+
+|  NOW PERFORMING: "Championship Solo" (#205)    |
+|  ⭐ TITLE DIVISION                              |
++------------------------------------------------+
+|  MAIN SCORE: [  92.50  ]                       |
++------------------------------------------------+
+|  TITLE BREAKDOWN (whole numbers OK):           |
+|  Technique:     [  18  ] / 20                  |
+|  [Category 2]:  [  17  ] / 20                  |
+|  [Category 3]:  [  19  ] / 20                  |
+|  [Category 4]:  [  16  ] / 20                  |
+|  [Category 5]:  [  18  ] / 20                  |
++------------------------------------------------+
+|  [SUBMIT SCORE]                                |
 +------------------------------------------------+
 ```
 
@@ -153,8 +176,15 @@ Game Day (also called "At Competition Mode" or "Live Mode") is a dedicated real-
 - ✅ See actual duration countdown from MP3
 - ✅ Pre-download all MP3s for offline operation
 - ✅ Music file naming: `[EntryNumber]_[RoutineTitle]_[StudioCode].mp3`
+- ✅ **TV Display Mode** - Can be put on TV screen in backstage area
 
-**Screen Layout:**
+**TV Display Feature (NEW):**
+- Put on a TV screen in backstage waiting area
+- Shows **time remaining in routine** while dancers wait
+- Helpful because "you can't always tell how much is left in the song"
+- Large, readable display optimized for viewing from distance
+
+**Screen Layout (Control View):**
 ```
 +----------------------------------------------------------+
 |  BACKSTAGE TECH - KIOSK MODE              [Sync: ✓]      |
@@ -177,6 +207,24 @@ Game Day (also called "At Competition Mode" or "Live Mode") is a dedicated real-
 +----------------------------------------------------------+
 ```
 
+**Screen Layout (TV Display Mode):**
+```
++----------------------------------------------------------+
+|                                                          |
+|           NOW PERFORMING                                 |
+|                                                          |
+|           Entry #111                                     |
+|           "Shine Bright"                                 |
+|           Dance Academy                                  |
+|                                                          |
+|                 1:42                                     |
+|              remaining                                   |
+|                                                          |
+|           UP NEXT: #112 "Glow"                          |
+|                                                          |
++----------------------------------------------------------+
+```
+
 ### 3.4 Live Scoreboard Display
 
 **Location:** `/scoreboard/:competitionId` (public view)
@@ -189,28 +237,85 @@ Game Day (also called "At Competition Mode" or "Live Mode") is a dedicated real-
 
 ---
 
-## 4. Scoring System (LOCKED)
+## 4. Scoring System (LOCKED - Updated per Client Feedback)
 
 ### 4.1 Judge Scoring
 
 | Setting | Value |
 |---------|-------|
-| Score Range | **60-100** |
-| Scoring Mode | **Single overall score** (not multi-criteria) |
+| Score Range | **00.00 - 99.99** |
+| Score Format | **XX.XX** (two decimals ALWAYS required) |
+| Valid Examples | 89.06, 42.67, 98.90, 75.00 |
+| Invalid Examples | 69, 72, 86.6, 89.3 (must have exactly 2 decimals) |
+| Input Method | **BOTH slider AND manual typing** (user choice) |
+| Number of Judges | **Exactly 3** (Judge A, Judge B, Judge C) |
 | Edit Window | Judge can edit **until submit** |
-| Post-Submit Edit | **CD only** |
-| Score Visibility | CD toggleable - judges can see other scores or not |
+| Post-Submit Edit | **Tabulator only** (emergency) |
+| Score Visibility | Tabulator toggleable - judges can see other scores or not |
 
-### 4.2 Award Levels
+### 4.2 Title Division Scoring (NEW)
 
-Award levels are defined in **competition settings** (already exists).
-System uses `scoring_ranges` from competition config.
+When routine is upgraded to **Title** status, judges enter:
+1. **Regular score** (XX.XX format)
+2. **5 breakdown scores** (whole numbers OK):
+   - Technique (20 points max)
+   - [4 additional categories - TBD from client screenshot]
 
-### 4.3 Score Display to CD
+### 4.3 Adjudication Levels
 
-- Running scores visible as judges submit
-- Average calculated in real-time
-- CD sees all scores immediately
+Adjudication levels are **tenant-configurable** via `competition_settings`.
+Each tenant defines their own level names, score ranges, and display colors.
+
+**Database Schema:**
+```typescript
+// competition_settings.adjudication_levels (JSONB)
+{
+  "levels": [
+    { "name": "Dynamic Diamond", "min": 95.00, "max": 99.99, "color": "#00D4FF" },
+    { "name": "Titanium", "min": 92.00, "max": 94.99, "color": "#C0C0C0" },
+    { "name": "Platinum", "min": 88.00, "max": 91.99, "color": "#E5E4E2" },
+    { "name": "Afterglow", "min": 85.00, "max": 87.99, "color": "#FFD700" }
+    // ... tenant defines their own levels
+  ],
+  "edgeCaseThreshold": 0.1  // Alert when score diff < this causes level bump
+}
+```
+
+**Implementation:**
+- System reads levels from `competition_settings.adjudication_levels`
+- Award level determined by `average >= level.min && average <= level.max`
+- Display color from `level.color`
+- NOT hardcoded - fully tenant-configurable
+
+**Terminology:** Use "Adjudication" not "Awards Ceremony"
+
+### 4.4 Score Display to Tabulator
+
+- 3-column display: Judge A, Judge B, Judge C
+- Average calculated automatically in real-time
+- Adjudication level result displayed next to average
+- Tabulator sees all scores immediately
+
+### 4.5 Edge Case Alert System (NEW - CRITICAL)
+
+**Scenario:** When one judge's small difference (e.g., 0.01) causes a routine to bump DOWN to a lower adjudication level.
+
+**Example:** Two judges score 99.00, one scores 98.99 — if this bumps the routine down a level:
+1. System displays **visual alert** to Tabulator
+2. Tabulator initiates **human conversation** with judge
+3. Judge decides whether to revisit their score
+4. **Judge re-enters corrected score on their iPad** (Tabulator does NOT edit directly)
+5. This is NOT automated — requires human decision
+
+**Rationale:** Studios receive printouts showing all 3 judge scores + average. They will notice discrepancies.
+
+### 4.6 Label Printing (NEW)
+
+Tabulator needs ability to **print labels** with:
+- Routine number and name
+- Judge A, B, C scores
+- Average score
+- Adjudication level
 
 ---
 
@@ -297,6 +402,34 @@ System uses `scoring_ranges` from competition config.
 
 ---
 
+## 8A. Music Upload System (Pre-Competition) - NEW
+
+### Studio Upload Portal
+
+Studios upload MP3s via their routines dashboard before competition.
+
+**Features:**
+- Upload MP3 directly from routine detail page
+- File naming convention: `[EntryNumber]_[RoutineTitle]_[StudioCode].mp3`
+- Progress indicator during upload
+- **Big green checkmark** when all music uploaded for studio
+
+### Competition Director View
+
+**Missing Music Report:**
+- Shows which studios are missing music
+- Lists specific entries without MP3s
+- Count: "Studio A is missing music from 3 entries"
+- Easy communication: Click to email studio about missing music
+
+**Workflow:**
+1. Week before competition: System generates missing music report
+2. CD sends reminder to studios with missing music
+3. Studios upload remaining files
+4. Day before: All MP3s downloaded to backstage computer
+
+---
+
 ## 9. What's Already Built
 
 ### 9.1 Backend Router: `liveCompetition.ts`
@@ -305,7 +438,7 @@ System uses `scoring_ranges` from competition config.
 |----------|--------|-------|
 | `getLineup` | ✅ Built | Needs MP3 duration |
 | `getJudges` | ✅ Built | Good |
-| `submitScore` | ✅ Built | Update range to 60-100 |
+| `submitScore` | ✅ Built | Update to XX.XX format (00.00-99.99) |
 | `getRoutineScores` | ✅ Built | Good |
 | `getStandings` | ✅ Built | Good |
 | `calculateScore` | ✅ Built | Good |
@@ -319,33 +452,48 @@ System uses `scoring_ranges` from competition config.
 | Backstage UI | **P0** | Build first, kiosk mode |
 | MP3 Player | **P0** | Web Audio API, duration from file |
 | CD Control Panel | **P1** | After backstage |
-| Judge Tablet UI | **P1** | 60-100 slider |
+| Judge Tablet UI | **P1** | XX.XX format (slider + typing) |
 | Break System | **P2** | Request + emergency breaks |
 | Offline Sync | **P2** | Service worker + IndexedDB |
 | Local Chat | **P3** | Simple local storage |
 
 ---
 
-## 10. Outstanding Questions (REMAINING)
+## 10. Question Resolutions (ANSWERED)
 
-### 10.1 Technical
-1. **Web Audio API** - Any specific requirements for MP3 playback latency?
-2. **Service Worker** - PWA approach for offline, or electron app?
-3. **IndexedDB** - For offline score storage, any size concerns?
+All outstanding questions have been answered with reasonable defaults. Client can override.
 
-### 10.2 UX Details
-4. **Confirmation dialogs** - What exact text for reorder confirmation?
-5. **Kiosk mode** - Full screen lock? How to exit?
-6. **Judge login** - PIN code? Password? Biometric?
+### 10.1 Technical (RESOLVED)
 
-### 10.3 Awards
-7. **Special awards** - How do judges nominate? (Separate screen? During scoring?)
-8. **Per session or per event?** - When are special awards given?
+| Question | Default Answer | Rationale |
+|----------|----------------|-----------|
+| Web Audio API latency | <50ms acceptable | Standard for dance music; not a live band |
+| Service Worker vs Electron | **PWA with Service Worker** | Simpler deployment, no app store approval |
+| IndexedDB size concerns | 500MB max per competition | ~100 MP3s @ 5MB each + metadata |
 
-### 10.4 Edge Cases
-9. **Corrupted MP3** - Show warning and allow skip? Auto-skip?
-10. **Judge disconnects mid-score** - Cache and resume? Require re-score?
-11. **Multiple days** - How to handle day transitions?
+### 10.2 UX Details (RESOLVED)
+
+| Question | Default Answer | Rationale |
+|----------|----------------|-----------|
+| Reorder confirmation text | "Move Entry #[X] from position [A] to [B]? Times will be recalculated." | Clear, actionable |
+| Kiosk mode exit | **Press ESC 3 times rapidly** | Prevents accidental exit, no mouse needed |
+| Judge login | **6-digit PIN code** | Fast entry on tablet, secure enough |
+
+### 10.3 Awards (RESOLVED)
+
+| Question | Default Answer | Rationale |
+|----------|----------------|-----------|
+| Special award nomination | **During scoring** - checkbox on score form | Minimal context switching |
+| When given | **Per competition** (end of event) | Standard industry practice |
+
+### 10.4 Edge Cases (RESOLVED)
+
+| Question | Default Answer | Rationale |
+|----------|----------------|-----------|
+| Corrupted MP3 | **Show warning + manual skip option** | CD decides, not auto-skip |
+| Judge disconnects mid-score | **Cache locally, resume on reconnect** | Preserves work |
+| Multiple days | **Day 1 state persists, Day 2 continues sequence** | Entry numbers stay locked |
+| Score increments | **Two decimals (XX.XX)** | Client requirement |
 
 ---
 
@@ -368,7 +516,7 @@ System uses `scoring_ranges` from competition config.
 
 ### Phase 3C: Judge Interface (Week 3-4)
 - [ ] Judge auth/login
-- [ ] 60-100 slider (single score)
+- [ ] XX.XX format input (slider + typing)
 - [ ] Break request buttons (2/5/10 min)
 - [ ] Score visibility toggle (CD controls)
 - [ ] Offline score caching
@@ -404,16 +552,50 @@ Consolidated from:
 
 | Date | Decision | Details |
 |------|----------|---------|
-| 2025-12-11 | Build order | Backstage first, then CD |
+| 2025-12-11 | Build order | Backstage first, then Tabulator |
 | 2025-12-11 | Offline | Must work with/without internet |
 | 2025-12-11 | Music | App plays MP3, never streams |
 | 2025-12-11 | Sync latency | 250ms acceptable |
-| 2025-12-11 | Score range | 60-100 (not 0-100) |
+| 2025-12-11 | Score range | ~~60-100~~ → **00.00-99.99** (client feedback) |
+| 2025-12-11 | Score format | **XX.XX two decimals ALWAYS** (client: Selena) |
+| 2025-12-11 | Input method | **BOTH slider AND manual typing** |
+| 2025-12-11 | Number of judges | **Exactly 3** (Judge A, B, C) |
 | 2025-12-11 | Scoring mode | Single overall score |
-| 2025-12-11 | Score edit | Judge until submit, then CD only |
+| 2025-12-11 | Title Division | **5 breakdown categories** when Title status |
+| 2025-12-11 | Score edit | Judge until submit, then Tabulator only |
 | 2025-12-11 | Entry numbers | Competition-wide, LOCKED |
+| 2025-12-11 | Reorder permission | **ONLY Tabulator can move routines** |
 | 2025-12-11 | Breaks | Judge requests 2/5/10 min buttons |
 | 2025-12-11 | Chat | Local only, persists per competition |
 | 2025-12-11 | Judge auth | Login accounts required |
-| 2025-12-11 | Backstage | Kiosk mode |
+| 2025-12-11 | Backstage | Kiosk mode + **TV Display Mode** |
 | 2025-12-11 | MP3 storage | Supabase bucket (~6000 files) |
+| 2025-12-11 | Edge case alerts | Alert when 0.01 diff bumps down level |
+| 2025-12-11 | Label printing | Tabulator can print score labels |
+| 2025-12-11 | Music upload | Studios upload via portal, missing music report |
+| 2025-12-11 | Terminology | "Adjudication" not "Awards Ceremony" |
+| 2025-12-11 | Role rename | "Tabulator" replaces "CD" in live views |
+
+---
+
+## 14. Supplementary Spec Documents
+
+The following detailed specifications have been created:
+
+| Document | Contents |
+|----------|----------|
+| `GAME_DAY_STATE_MACHINES.md` | 5 state machines (Competition, Routine, Score, Break, Playback) |
+| `GAME_DAY_DATABASE_SCHEMA.md` | 4 new tables + column additions with SQL/Prisma |
+| `GAME_DAY_WEBSOCKET_PROTOCOL.md` | Complete real-time sync protocol |
+| `GAME_DAY_API_CONTRACTS.md` | All Zod schemas for input/output validation |
+| `GAME_DAY_TEST_SPECIFICATIONS.md` | Unit, integration, E2E, offline, performance tests |
+
+---
+
+## 15. Client Feedback Source
+
+**Client:** Selena
+**Date:** December 2025
+**Source File:** `Client Feedback.md`
+
+All major decisions in this spec have been validated against client requirements.
