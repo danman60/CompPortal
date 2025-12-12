@@ -1733,4 +1733,260 @@ export const liveCompetitionRouter = router({
       };
     }),
 
+  // ===========================================
+  // TASK 20: ROUTINE REORDER & SCRATCH
+  // ===========================================
+
+  /**
+   * Reorder a routine in the running order
+   * Entry number stays LOCKED, only running_order changes
+   */
+  reorderRoutine: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      routineId: z.string(),
+      newPosition: z.number().min(1),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      // Get the routine to move
+      const routine = await prisma.competition_entries.findFirst({
+        where: { id: input.routineId, tenant_id: ctx.tenantId },
+      });
+
+      if (!routine) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Routine not found' });
+      }
+
+      const currentPosition = routine.running_order || 0;
+      if (currentPosition === input.newPosition) {
+        return { success: true, message: 'No change needed', affectedCount: 0 };
+      }
+
+      // Get all routines for the same day
+      const dayRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          performance_date: routine.performance_date,
+          status: { not: 'withdrawn' },
+        },
+        orderBy: { running_order: 'asc' },
+      });
+
+      // Reorder logic
+      const updates: { id: string; running_order: number }[] = [];
+
+      if (input.newPosition < currentPosition) {
+        // Moving up: shift routines between newPosition and currentPosition down
+        for (const r of dayRoutines) {
+          const order = r.running_order || 0;
+          if (r.id === input.routineId) {
+            updates.push({ id: r.id, running_order: input.newPosition });
+          } else if (order >= input.newPosition && order < currentPosition) {
+            updates.push({ id: r.id, running_order: order + 1 });
+          }
+        }
+      } else {
+        // Moving down: shift routines between currentPosition and newPosition up
+        for (const r of dayRoutines) {
+          const order = r.running_order || 0;
+          if (r.id === input.routineId) {
+            updates.push({ id: r.id, running_order: input.newPosition });
+          } else if (order > currentPosition && order <= input.newPosition) {
+            updates.push({ id: r.id, running_order: order - 1 });
+          }
+        }
+      }
+
+      // Execute updates
+      for (const update of updates) {
+        await prisma.competition_entries.update({
+          where: { id: update.id },
+          data: { running_order: update.running_order, updated_at: new Date() },
+        });
+      }
+
+      // Fetch updated routines
+      const updatedRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          performance_date: routine.performance_date,
+          status: { not: 'withdrawn' },
+        },
+        orderBy: { running_order: 'asc' },
+      });
+
+      return {
+        success: true,
+        affectedCount: updates.length,
+        updatedRoutines: updatedRoutines.map(r => ({
+          id: r.id,
+          entryNumber: r.entry_number,
+          runningOrder: r.running_order,
+          title: r.title,
+        })),
+      };
+    }),
+
+  /**
+   * Scratch/withdraw a routine from the lineup
+   * Entry number preserved (creates gap in sequence)
+   */
+  scratchRoutine: publicProcedure
+    .input(z.object({
+      routineId: z.string(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const routine = await prisma.competition_entries.findFirst({
+        where: { id: input.routineId, tenant_id: ctx.tenantId },
+      });
+
+      if (!routine) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Routine not found' });
+      }
+
+      if (routine.status === 'withdrawn') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Routine already withdrawn' });
+      }
+
+      // Update entry status to withdrawn
+      await prisma.competition_entries.update({
+        where: { id: input.routineId },
+        data: {
+          status: 'withdrawn',
+          scheduling_notes: input.reason ? `Scratched: ${input.reason}` : 'Scratched',
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        routineId: input.routineId,
+        entryNumber: routine.entry_number,
+        reason: input.reason,
+        message: `Routine ${routine.entry_number || routine.id} has been scratched`,
+      };
+    }),
+
+  /**
+   * Move a routine to a different competition day
+   * Recalculates running_order for both source and target days
+   */
+  moveRoutineToDay: publicProcedure
+    .input(z.object({
+      routineId: z.string(),
+      targetDay: z.string(), // ISO date string
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const routine = await prisma.competition_entries.findFirst({
+        where: { id: input.routineId, tenant_id: ctx.tenantId },
+      });
+
+      if (!routine) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Routine not found' });
+      }
+
+      const sourceDay = routine.performance_date;
+      const targetDay = new Date(input.targetDay);
+
+      if (sourceDay && sourceDay.toDateString() === targetDay.toDateString()) {
+        return { success: true, message: 'Already on target day', moved: false };
+      }
+
+      // Get max running_order for target day
+      const targetDayRoutines = await prisma.competition_entries.findMany({
+        where: {
+          competition_id: routine.competition_id,
+          tenant_id: ctx.tenantId,
+          performance_date: targetDay,
+          status: { not: 'withdrawn' },
+        },
+        orderBy: { running_order: 'desc' },
+        take: 1,
+      });
+
+      const newRunningOrder = (targetDayRoutines[0]?.running_order || 0) + 1;
+
+      // Move the routine
+      await prisma.competition_entries.update({
+        where: { id: input.routineId },
+        data: {
+          performance_date: targetDay,
+          running_order: newRunningOrder,
+          updated_at: new Date(),
+        },
+      });
+
+      // Reorder source day to close the gap
+      if (sourceDay) {
+        const sourceDayRoutines = await prisma.competition_entries.findMany({
+          where: {
+            competition_id: routine.competition_id,
+            tenant_id: ctx.tenantId,
+            performance_date: sourceDay,
+            status: { not: 'withdrawn' },
+          },
+          orderBy: { running_order: 'asc' },
+        });
+
+        let order = 1;
+        for (const r of sourceDayRoutines) {
+          if (r.running_order !== order) {
+            await prisma.competition_entries.update({
+              where: { id: r.id },
+              data: { running_order: order, updated_at: new Date() },
+            });
+          }
+          order++;
+        }
+      }
+
+      // Get counts for response
+      const [sourceDayCount, targetDayCount] = await Promise.all([
+        sourceDay ? prisma.competition_entries.count({
+          where: {
+            competition_id: routine.competition_id,
+            tenant_id: ctx.tenantId,
+            performance_date: sourceDay,
+            status: { not: 'withdrawn' },
+          },
+        }) : 0,
+        prisma.competition_entries.count({
+          where: {
+            competition_id: routine.competition_id,
+            tenant_id: ctx.tenantId,
+            performance_date: targetDay,
+            status: { not: 'withdrawn' },
+          },
+        }),
+      ]);
+
+      return {
+        success: true,
+        moved: true,
+        routineId: input.routineId,
+        entryNumber: routine.entry_number,
+        fromDay: sourceDay?.toISOString().split('T')[0],
+        toDay: targetDay.toISOString().split('T')[0],
+        newRunningOrder,
+        sourceDayCount,
+        targetDayCount,
+      };
+    }),
+
+
 });
