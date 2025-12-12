@@ -12,11 +12,14 @@
  * - Comments text field
  * - Special awards nomination field
  * - Submit button (locks score after submission)
- * - WebSocket sync for real-time updates
+ * - Real-time tRPC sync for live updates
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { trpc } from '@/lib/trpc';
+import toast from 'react-hot-toast';
 import {
   Award,
   Coffee,
@@ -80,8 +83,13 @@ const DEFAULT_LEVELS: AdjudicationLevel[] = [
   { name: 'Bronze', min: 70.0, max: 74.99, color: '#CD7F32' },
 ];
 
-export default function JudgePage() {
+function JudgePageContent() {
+  const searchParams = useSearchParams();
+  const judgeId = searchParams.get('judgeId') || '';
+  const competitionIdParam = searchParams.get('competitionId') || '';
+
   // State
+  const [competitionId, setCompetitionId] = useState<string>(competitionIdParam);
   const [state, setState] = useState<JudgeState>({
     currentRoutine: null,
     score: '',
@@ -91,7 +99,7 @@ export default function JudgePage() {
     isSubmitting: false,
     isConnected: false,
     judgePosition: 'A',
-    judgeName: 'Judge A',
+    judgeName: 'Judge',
     breakRequestStatus: 'none',
     breakRequestDuration: null,
   });
@@ -101,26 +109,134 @@ export default function JudgePage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const scoreInputRef = useRef<HTMLInputElement>(null);
 
-  // Demo data for testing (will be replaced with WebSocket data)
-  useEffect(() => {
-    const demoRoutine: CurrentRoutine = {
-      id: '1',
-      entryNumber: 101,
-      title: 'Rise Up',
-      studioName: 'Elite Dance Academy',
-      category: 'Contemporary',
-      ageGroup: 'Teen',
-      size: 'Small Group',
-      dancers: ['Emma Smith', 'Olivia Johnson', 'Sophia Williams', 'Ava Brown', 'Isabella Jones'],
-      durationMs: 180000,
-    };
+  // tRPC queries
+  const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
+    undefined,
+    { enabled: !competitionId, refetchInterval: 30000 }
+  );
 
-    setState((prev) => ({
-      ...prev,
-      currentRoutine: demoRoutine,
-      isConnected: true,
-    }));
-  }, []);
+  // Auto-select first competition if none specified
+  useEffect(() => {
+    if (!competitionId && competitions && competitions.length > 0) {
+      setCompetitionId(competitions[0].id);
+    }
+  }, [competitions, competitionId]);
+
+  // Get live state (current routine)
+  const { data: liveState, isSuccess: liveStateSuccess } = trpc.liveCompetition.getLiveState.useQuery(
+    { competitionId: competitionId || '' },
+    { enabled: !!competitionId, refetchInterval: 1000 }
+  );
+
+  // Get existing scores for current routine (to check if already submitted)
+  const { data: existingScores, refetch: refetchScores } = trpc.liveCompetition.getRoutineScores.useQuery(
+    { routineId: liveState?.currentEntry?.id || '' },
+    { enabled: !!liveState?.currentEntry?.id, refetchInterval: 2000 }
+  );
+
+  // Mutations
+  const submitScoreMutation = trpc.liveCompetition.submitScore.useMutation({
+    onSuccess: () => {
+      toast.success('Score submitted successfully!');
+      setState(prev => ({ ...prev, isSubmitting: false, isSubmitted: true }));
+      refetchScores();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to submit score');
+      setState(prev => ({ ...prev, isSubmitting: false }));
+      setError(err.message || 'Failed to submit score');
+    },
+  });
+
+  const requestBreakMutation = trpc.liveCompetition.requestBreak.useMutation({
+    onSuccess: () => {
+      toast.success('Break request sent to CD');
+      // Status will be updated via polling
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to request break');
+      setState(prev => ({
+        ...prev,
+        breakRequestStatus: 'none',
+        breakRequestDuration: null,
+      }));
+    },
+  });
+
+  // Get break requests status (poll for updates)
+  const { data: breakRequests } = trpc.liveCompetition.getBreakRequests.useQuery(
+    { competitionId: competitionId || '', status: 'pending' },
+    { enabled: !!competitionId && !!judgeId, refetchInterval: 3000 }
+  );
+
+  // Update current routine from live state
+  useEffect(() => {
+    if (liveState?.currentEntry) {
+      const entry = liveState.currentEntry;
+      // Map API response to our CurrentRoutine type
+      // Note: API only returns id, title, entryNumber, runningOrder, studioName, category
+      // We use sensible defaults for fields not in API
+      const routine: CurrentRoutine = {
+        id: entry.id,
+        entryNumber: entry.entryNumber || 0,
+        title: entry.title || 'Untitled',
+        studioName: entry.studioName || 'Unknown Studio',
+        category: entry.category || 'Unknown',
+        ageGroup: 'N/A', // Not in API response
+        size: 'N/A', // Not in API response
+        dancers: [], // Not in API response
+        durationMs: 180000, // Default 3 minutes
+      };
+
+      setState(prev => ({
+        ...prev,
+        currentRoutine: routine,
+        isConnected: true,
+        // Reset score when routine changes
+        ...(prev.currentRoutine?.id !== routine.id ? {
+          score: '',
+          comments: '',
+          specialAwards: '',
+          isSubmitted: false,
+        } : {}),
+      }));
+    } else {
+      setState(prev => ({
+        ...prev,
+        currentRoutine: null,
+        isConnected: liveStateSuccess,
+      }));
+    }
+  }, [liveState, liveStateSuccess]);
+
+  // Check if this judge already submitted for current routine
+  useEffect(() => {
+    if (existingScores?.scores && judgeId && state.currentRoutine) {
+      const myScore = existingScores.scores.find((s) => s.judgeId === judgeId);
+      if (myScore) {
+        setState(prev => ({
+          ...prev,
+          score: myScore.score?.toFixed(2) || '',
+          comments: myScore.comments || '',
+          isSubmitted: true,
+        }));
+      }
+    }
+  }, [existingScores, judgeId, state.currentRoutine?.id]);
+
+  // Update break request status from server
+  useEffect(() => {
+    if (breakRequests && judgeId) {
+      const myRequest = breakRequests.find((r: { judgeId: string }) => r.judgeId === judgeId);
+      if (myRequest) {
+        setState(prev => ({
+          ...prev,
+          breakRequestStatus: myRequest.status as 'pending' | 'approved' | 'denied',
+          breakRequestDuration: myRequest.requestedDurationMinutes,
+        }));
+      }
+    }
+  }, [breakRequests, judgeId]);
 
   // Parse score string to number
   const parseScore = (scoreStr: string): number | null => {
@@ -188,44 +304,45 @@ export default function JudgePage() {
       return;
     }
 
+    if (!judgeId) {
+      setError('No judge ID provided. Please use the link provided by the Competition Director.');
+      return;
+    }
+
+    if (!competitionId || !state.currentRoutine?.id) {
+      setError('No active routine to score');
+      return;
+    }
+
     if (state.isSubmitting || state.isSubmitted) return;
 
     setState((prev) => ({ ...prev, isSubmitting: true }));
     setError(null);
 
-    try {
-      // TODO: Call tRPC mutation to submit score
-      // await submitScore.mutateAsync({
-      //   entryId: state.currentRoutine?.id,
-      //   score,
-      //   comments: state.comments,
-      //   specialAwards: state.specialAwards,
-      // });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setState((prev) => ({
-        ...prev,
-        isSubmitting: false,
-        isSubmitted: true,
-      }));
-
-      setSuccessMessage('Score submitted successfully!');
-      setTimeout(() => setSuccessMessage(null), 3000);
-
-      // TODO: WebSocket broadcast score:submitted
-    } catch (err) {
-      setState((prev) => ({ ...prev, isSubmitting: false }));
-      setError(err instanceof Error ? err.message : 'Failed to submit score');
-    }
-  }, [state.score, state.comments, state.specialAwards, state.isSubmitting, state.isSubmitted]);
+    submitScoreMutation.mutate({
+      competitionId,
+      routineId: state.currentRoutine.id,
+      judgeId,
+      score,
+      notes: state.comments || undefined,
+    });
+  }, [state.score, state.comments, state.currentRoutine, state.isSubmitting, state.isSubmitted, competitionId, judgeId, submitScoreMutation]);
 
   
 
   // Handle break request (Task #8)
-  const handleBreakRequest = useCallback(async (durationMinutes: number) => {
+  const handleBreakRequest = useCallback((durationMinutes: number) => {
     if (state.breakRequestStatus === 'pending') return;
+
+    if (!judgeId) {
+      setError('No judge ID provided');
+      return;
+    }
+
+    if (!competitionId) {
+      setError('No active competition');
+      return;
+    }
 
     setState(prev => ({
       ...prev,
@@ -233,44 +350,13 @@ export default function JudgePage() {
       breakRequestDuration: durationMinutes,
     }));
 
-    try {
-      // TODO: Call tRPC mutation to request break
-      // await requestBreak.mutateAsync({
-      //   competitionId: currentCompetitionId,
-      //   durationMinutes,
-      //   reason: 'Judge break request',
-      // });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setSuccessMessage(`Break request (${durationMinutes}m) sent to CD`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-
-      // Simulate CD response after 5 seconds (for demo)
-      setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          breakRequestStatus: 'approved', // or 'denied' based on CD response
-        }));
-        setTimeout(() => {
-          setState(prev => ({
-            ...prev,
-            breakRequestStatus: 'none',
-            breakRequestDuration: null,
-          }));
-        }, 5000);
-      }, 5000);
-
-    } catch (err) {
-      setState(prev => ({
-        ...prev,
-        breakRequestStatus: 'none',
-        breakRequestDuration: null,
-      }));
-      setError(err instanceof Error ? err.message : 'Failed to request break');
-    }
-  }, [state.breakRequestStatus]);
+    requestBreakMutation.mutate({
+      competitionId,
+      judgeId,
+      requestedDurationMinutes: durationMinutes,
+      reason: 'Judge break request',
+    });
+  }, [state.breakRequestStatus, competitionId, judgeId, requestBreakMutation]);
 
   // Get current award level
   const currentAwardLevel = getAwardLevel(state.score);
@@ -287,6 +373,21 @@ export default function JudgePage() {
         Test Page
       </Link>
 
+      {/* Missing Judge ID Warning */}
+      {!judgeId && (
+        <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-3">
+          <div className="flex items-center gap-2 text-yellow-400">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <div className="font-medium">Demo Mode - No Judge ID</div>
+              <div className="text-sm text-yellow-300/80">
+                Add ?judgeId=YOUR_ID&competitionId=COMP_ID to the URL to enable scoring
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50 bg-gray-900/50">
         <div className="flex items-center gap-3">
@@ -297,8 +398,8 @@ export default function JudgePage() {
             {state.judgePosition}
           </div>
           <div>
-            <div className="font-semibold text-white">{state.judgeName}</div>
-            <div className="text-xs text-gray-400">Judge Position {state.judgePosition}</div>
+            <div className="font-semibold text-white">{judgeId ? `Judge ${judgeId.slice(0, 8)}...` : state.judgeName}</div>
+            <div className="text-xs text-gray-400">{competitionId ? 'Connected to Live Competition' : 'No Competition Selected'}</div>
           </div>
         </div>
 
@@ -601,5 +702,21 @@ export default function JudgePage() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Wrapper with Suspense for useSearchParams
+export default function JudgePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="text-gray-400">Loading Judge Interface...</div>
+        </div>
+      </div>
+    }>
+      <JudgePageContent />
+    </Suspense>
   );
 }
