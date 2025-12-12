@@ -36,6 +36,10 @@ import {
   Music,
   Users,
   ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 // Types
@@ -127,6 +131,8 @@ function JudgePageContent() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const scoreInputRef = useRef<HTMLInputElement>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [showOtherScores, setShowOtherScores] = useState(false);
 
   // tRPC queries
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -276,6 +282,25 @@ function JudgePageContent() {
       }
     }
   }, [breakRequests, judgeId]);
+
+  // Timer for current routine - time remaining display
+  useEffect(() => {
+    if (!liveState?.currentEntryStartedAt || liveState.currentEntryState !== 'performing') {
+      setTimeRemaining(0);
+      return;
+    }
+
+    const startTime = new Date(liveState.currentEntryStartedAt).getTime();
+    const duration = state.currentRoutine?.durationMs || 180000; // Default 3 minutes
+
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, duration - elapsed);
+      setTimeRemaining(remaining);
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [liveState?.currentEntryStartedAt, liveState?.currentEntryState, state.currentRoutine?.durationMs]);
 
   // Parse score string to number
   const parseScore = (scoreStr: string): number | null => {
@@ -441,6 +466,29 @@ function JudgePageContent() {
     state.titleBreakdown.category4 +
     state.titleBreakdown.category5;
 
+  // Format time for display (mm:ss)
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.ceil(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Calculate progress percent for time remaining bar
+  const routineDuration = state.currentRoutine?.durationMs || 180000;
+  const progressPercent = routineDuration > 0
+    ? Math.min(100, ((routineDuration - timeRemaining) / routineDuration) * 100)
+    : 0;
+  const isLowTime = timeRemaining > 0 && timeRemaining < 30000; // Under 30 seconds
+
+  // Check if judges can see other scores (from live state)
+  const judgesCanSeeScores = liveState?.judgesCanSeeScores || false;
+
+  // Get other judges' scores from existingScores
+  const otherJudgesScores = existingScores?.scores?.filter(
+    (s) => s.judgeId !== judgeId
+  ) || [];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-gray-900 to-black text-white">
       {/* Back to Test Page link */}
@@ -529,6 +577,31 @@ function JudgePageContent() {
               <Users className="w-4 h-4" />
               <span>{state.currentRoutine.dancers.length} dancers</span>
             </div>
+
+            {/* Time Remaining Display */}
+            {liveState?.currentEntryState === 'performing' && timeRemaining > 0 && (
+              <div className="mt-4 pt-4 border-t border-indigo-500/30">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm text-indigo-300">
+                    <Clock className="w-4 h-4" />
+                    <span>Time Remaining</span>
+                  </div>
+                  <span className={`font-mono text-lg font-bold tabular-nums ${
+                    isLowTime ? 'text-red-400 animate-pulse' : 'text-white'
+                  }`}>
+                    {formatTime(timeRemaining)}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-100 ${
+                      isLowTime ? 'bg-red-500' : 'bg-indigo-500'
+                    }`}
+                    style={{ width: `${100 - progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-gray-800/50 rounded-2xl border border-gray-700 p-8 mb-6 text-center">
@@ -699,6 +772,97 @@ function JudgePageContent() {
             </p>
           )}
         </div>
+
+        {/* Other Judges' Scores Section */}
+        {state.currentRoutine && (
+          <div className="bg-gray-800/50 rounded-2xl border border-gray-700 mb-6 overflow-hidden">
+            <button
+              onClick={() => setShowOtherScores(!showOtherScores)}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {judgesCanSeeScores ? (
+                  <Eye className="w-5 h-5 text-green-400" />
+                ) : (
+                  <EyeOff className="w-5 h-5 text-gray-500" />
+                )}
+                <span className="font-medium text-white">Other Judges' Scores</span>
+                {!judgesCanSeeScores && (
+                  <span className="text-xs bg-gray-600 text-gray-300 px-2 py-0.5 rounded">
+                    Hidden by CD
+                  </span>
+                )}
+              </div>
+              {showOtherScores ? (
+                <ChevronUp className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+
+            {showOtherScores && (
+              <div className="px-4 pb-4 border-t border-gray-700">
+                {judgesCanSeeScores ? (
+                  <div className="pt-4 space-y-3">
+                    {existingScores?.scores && existingScores.scores.length > 0 ? (
+                      <>
+                        {/* All Judges Scores Display */}
+                        <div className="grid grid-cols-3 gap-3">
+                          {['A', 'B', 'C'].map((letter, idx) => {
+                            const score = existingScores.scores?.[idx];
+                            const hasScore = score?.score !== null && score?.score !== undefined;
+                            const isMyScore = score?.judgeId === judgeId;
+                            return (
+                              <div
+                                key={letter}
+                                className={`text-center p-3 rounded-lg border ${
+                                  isMyScore
+                                    ? 'bg-indigo-500/20 border-indigo-500/50'
+                                    : 'bg-gray-700/30 border-gray-600'
+                                }`}
+                              >
+                                <div className="text-xs text-gray-400 mb-1">
+                                  Judge {letter}
+                                  {isMyScore && <span className="text-indigo-400 ml-1">(You)</span>}
+                                </div>
+                                <div className={`text-xl font-bold font-mono ${
+                                  hasScore ? 'text-white' : 'text-gray-600'
+                                }`}>
+                                  {hasScore ? score.score.toFixed(2) : '--.-'}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Average Display */}
+                        {existingScores.scores.filter(s => s.score !== null).length > 0 && (
+                          <div className="text-center p-3 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg border border-indigo-500/30">
+                            <div className="text-xs text-gray-400 mb-1">AVERAGE</div>
+                            <div className="text-2xl font-bold font-mono text-white">
+                              {(existingScores.scores.reduce((sum, s) => sum + (s.score || 0), 0) / existingScores.scores.filter(s => s.score !== null).length).toFixed(2)}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        No scores submitted yet
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="pt-4 text-center">
+                    <EyeOff className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">
+                      Score visibility is disabled by the Competition Director
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Title Division Breakdown Section */}
         {isCurrentRoutineTitleDivision && (

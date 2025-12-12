@@ -310,11 +310,11 @@ When implementing, reference these existing files:
 | Component | Total Features | Implemented | Missing | Alignment |
 |-----------|---------------|-------------|---------|-----------|
 | Tabulator (`/tabulator`) | 22 | 10 | 12 | 45% |
-| Judge Tablet (`/judge`) | 18 | 13 | 5 | 72% |
+| Judge Tablet (`/judge`) | 18 | 15 | 3 | 83% |
 | Backstage (`/backstage`) | 15 | 11 | 4 | 73% |
 | Scoreboard (`/scoreboard`) | 8 | 8 | 0 | 100% |
 | Backend API | 45 | 45 | 0 | 100% |
-| **TOTAL** | **108** | **87** | **21** | **81%** |
+| **TOTAL** | **108** | **89** | **19** | **82%** |
 
 ---
 
@@ -600,41 +600,39 @@ if (getLevel(averageWithoutJudge) !== getLevel(fullAverage)) {
 
 ---
 
-### 2.2 Other Judges' Scores Display (MEDIUM PRIORITY)
+### 2.2 Other Judges' Scores Display ✅ IMPLEMENTED
 
 **Spec Reference:** Line 110
 > "See other judges' scores (Tabulator toggleable)"
 
-**What's Missing:**
-- [ ] "Show Other Scores" collapsible section
-- [ ] Judge A, B, C scores display (when enabled)
-- [ ] Average calculation display
-- [ ] Respect `judgesCanSeeScores` flag from live state
-- [ ] Real-time updates when other judges submit
+**Implementation Complete:**
+- [x] "Other Judges' Scores" collapsible section with toggle button
+- [x] Judge A, B, C scores display in grid layout
+- [x] Average calculation display with gradient styling
+- [x] Respects `judgesCanSeeScores` flag from live state
+- [x] "Hidden by CD" badge when visibility disabled
+- [x] Highlights current judge's score with "(You)" indicator
+- [x] Real-time updates via polling (2s interval)
 
-**Spec Layout (lines 137-139):**
-```
-[Show Other Scores] (if enabled)
-A: 89.06  |  B: --  |  C: --  |  AVG: 89.06
-```
-
-**Implementation Estimate:** 50-70 lines of code
+**Implementation:** `src/app/judge/page.tsx` (lines 776-864)
 
 ---
 
-### 2.3 Time Remaining Display (MEDIUM PRIORITY)
+### 2.3 Time Remaining Display ✅ IMPLEMENTED
 
 **Spec Reference:** Line 127
 > "Time Remaining: [====|----] 1:42"
 
-**What's Missing:**
-- [ ] Progress bar with time countdown
-- [ ] Sync with current routine's actual MP3 duration
-- [ ] Real-time updates from live state
+**Implementation Complete:**
+- [x] Progress bar with time countdown (100ms interval updates)
+- [x] Sync with current routine's actual MP3 duration via `durationMs`
+- [x] Real-time updates from live state (`currentEntryStartedAt`, `currentEntryState`)
+- [x] Visual countdown timer with mm:ss format (tabular-nums for consistent width)
+- [x] Progress bar shows elapsed time percentage
+- [x] Low time warning (< 30 seconds) with red color and pulse animation
+- [x] Only shows during 'performing' state
 
-**Current State:** No time display in judge UI at all
-
-**Implementation Estimate:** 40-60 lines of code
+**Implementation:** `src/app/judge/page.tsx` (lines 701-731)
 
 ---
 
@@ -904,8 +902,8 @@ All 45 procedures implemented:
 
 | Feature | Component | Effort | API Ready |
 |---------|-----------|--------|-----------|
-| Other judges' scores | Judge | Low | Yes |
-| Time remaining (Judge) | Judge | Low | Yes |
+| ~~Other judges' scores~~ | Judge | ~~Low~~ | ✅ **IMPLEMENTED** |
+| ~~Time remaining (Judge)~~ | Judge | ~~Low~~ | ✅ **IMPLEMENTED** |
 | Score edit capability | Tabulator | Medium | Yes |
 | Score visibility toggle | Tabulator | Low | Yes |
 | Music playback controls | Backstage | High | N/A |
