@@ -587,7 +587,7 @@
         "description": "Add tRPC endpoint for CD to toggle judge score visibility: setScoreVisibility, getScoreVisibility",
         "details": "setScoreVisibility mutation:\n- Input: competitionId, visible (boolean)\n- Stores in live_competition_state or competition settings\n- When visible=true: judges see other judges' scores\n- When visible=false: judges only see their own score\n- Returns updated setting\n\ngetScoreVisibility query:\n- Input: competitionId\n- Returns current visibility setting\n- Used by Judge UI to show/hide other scores",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "16"
         ],
@@ -604,7 +604,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-12-12T09:53:20.940Z"
+        "updatedAt": "2025-12-12T09:57:06.036Z"
       },
       {
         "id": "25",
@@ -773,9 +773,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T09:53:20.942Z",
+      "lastModified": "2025-12-12T09:57:06.037Z",
       "taskCount": 34,
-      "completedCount": 33,
+      "completedCount": 34,
       "tags": [
         "master"
       ]
