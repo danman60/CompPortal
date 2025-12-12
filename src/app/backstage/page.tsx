@@ -319,26 +319,42 @@ export default function BackstagePage() {
             <div className="text-yellow-400 text-lg font-semibold tracking-wider mb-4">COMING UP</div>
             <div className="space-y-3">
               {data.upcomingRoutines?.map((routine, index) => (
-                <div
-                  key={routine.id}
-                  className={'flex items-center justify-between p-4 rounded-lg ' + (index === 0 ? 'bg-gray-700' : 'bg-gray-750 bg-opacity-50')}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={'text-2xl font-bold ' + (index === 0 ? 'text-yellow-400' : 'text-gray-500')}>
-                      {index === 0 ? 'NEXT' : index + 1}
+                routine.isBreak ? (
+                  // Break block styling - orange theme
+                  <div
+                    key={routine.id}
+                    className="flex items-center justify-center p-4 rounded-lg bg-orange-600/20 border border-orange-500/30"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-orange-400 text-2xl font-bold">---</div>
+                      <div className="text-orange-300 text-lg font-semibold tracking-wider">BREAK</div>
+                      <div className="text-orange-400 text-2xl font-bold">---</div>
                     </div>
-                    <div>
-                      <div className={'font-bold ' + (index === 0 ? 'text-white text-xl' : 'text-gray-300 text-lg')}>
-                        #{routine.entryNumber} - {routine.routineName}
+                    <div className="text-orange-400/70 text-sm ml-4">{formatDuration(routine.durationMs)}</div>
+                  </div>
+                ) : (
+                  // Regular routine styling
+                  <div
+                    key={routine.id}
+                    className={'flex items-center justify-between p-4 rounded-lg ' + (index === 0 ? 'bg-gray-700' : 'bg-gray-750 bg-opacity-50')}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={'text-2xl font-bold ' + (index === 0 ? 'text-yellow-400' : 'text-gray-500')}>
+                        {index === 0 ? 'NEXT' : index + 1}
                       </div>
-                      <div className="text-gray-400 text-sm">{routine.studioName}</div>
+                      <div>
+                        <div className={'font-bold ' + (index === 0 ? 'text-white text-xl' : 'text-gray-300 text-lg')}>
+                          #{routine.entryNumber} - {routine.routineName}
+                        </div>
+                        <div className="text-gray-400 text-sm">{routine.studioName}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-gray-500 text-sm">{routine.category} | {routine.ageGroup}</div>
+                      <div className="text-gray-600 text-xs">{formatDuration(routine.durationMs)}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-gray-500 text-sm">{routine.category} | {routine.ageGroup}</div>
-                    <div className="text-gray-600 text-xs">{formatDuration(routine.durationMs)}</div>
-                  </div>
-                </div>
+                )
               ))}
             </div>
           </div>

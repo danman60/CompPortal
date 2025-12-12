@@ -741,10 +741,12 @@ if (getLevel(averageWithoutJudge) !== getLevel(fullAverage)) {
 - [x] Distinct styling for first item ("NEXT" label, larger text)
 - [x] Numbered list (2, 3, 4) for subsequent routines
 - [x] Category/age group and duration for each
+- [x] Break block styling with orange theme (bg-orange-600/20, text-orange-400)
+- [x] Conditional rendering for break vs routine entries
 
 **Files Modified:**
 - `src/app/api/backstage/route.ts` (lines 111-176)
-- `src/app/backstage/page.tsx` (lines 246-276)
+- `src/app/backstage/page.tsx` (lines 316-362)
 
 ---
 
