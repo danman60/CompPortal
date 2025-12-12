@@ -121,6 +121,8 @@ These appear in both USER_TESTING_NOTES.md and FIXES_AND_ENHANCEMENTS.md:
 
 ## 🎬 At Competition Mode (Future Major Feature)
 
+> **CONSOLIDATED SPEC:** See [GAME_DAY_SPEC.md](../specs/GAME_DAY_SPEC.md) for complete spec.
+
 ### Overview
 At Competition Mode is a dedicated live-operation screen used during events.
 Synchronizes all active routines, judges' tablets, and RTMP broadcast overlay in real time.

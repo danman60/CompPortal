@@ -161,6 +161,8 @@ Invoice Generation → Payment → Phase 2 Access Unlocked
 
 ### Phase 3: Game Day (Event Execution) ⚠️ NEEDS CLARIFICATION
 
+> **CONSOLIDATED SPEC:** See [GAME_DAY_SPEC.md](./GAME_DAY_SPEC.md) for complete spec.
+
 **Purpose:** Run live event with audio playback, real-time scoring, and media capture
 
 **Known Requirements:**
