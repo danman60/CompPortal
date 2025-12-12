@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 /**
  * Game Day Comprehensive Test Page
@@ -264,6 +265,45 @@ export default function GameDayTestPage() {
           <span className="text-xs text-gray-500 ml-auto">
             Scored: {tabulatorData.length} | Entries: {entries.length}
           </span>
+        </div>
+      </div>
+
+      {/* Navigation Links to Individual Views */}
+      <div className="bg-gray-800 border-b border-gray-700 px-3 py-2" data-testid="view-nav">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-gray-500 mr-2">Open Full Views:</span>
+          <Link
+            href={`/backstage${competitionId ? `?competitionId=${competitionId}` : ''}`}
+            target="_blank"
+            className="px-2 py-1 bg-purple-700 hover:bg-purple-600 rounded text-white"
+            data-testid="nav-backstage"
+          >
+            Backstage
+          </Link>
+          <Link
+            href={`/judge${competitionId ? `?competitionId=${competitionId}` : ''}`}
+            target="_blank"
+            className="px-2 py-1 bg-green-700 hover:bg-green-600 rounded text-white"
+            data-testid="nav-judge"
+          >
+            Judge
+          </Link>
+          <Link
+            href={`/tabulator${competitionId ? `?competitionId=${competitionId}` : ''}`}
+            target="_blank"
+            className="px-2 py-1 bg-orange-600 hover:bg-orange-500 rounded text-white"
+            data-testid="nav-tabulator"
+          >
+            Tabulator
+          </Link>
+          <Link
+            href={`/scoreboard${competitionId ? `/${competitionId}` : ''}`}
+            target="_blank"
+            className="px-2 py-1 bg-blue-700 hover:bg-blue-600 rounded text-white"
+            data-testid="nav-scoreboard"
+          >
+            Scoreboard
+          </Link>
         </div>
       </div>
 

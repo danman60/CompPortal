@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 
 interface RoutineInfo {
   id: string;
@@ -110,6 +111,14 @@ export default function BackstagePage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+      {/* Back to Test Page link */}
+      <Link
+        href="/game-day-test"
+        className="fixed top-2 left-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs text-white z-50"
+      >
+        Test Page
+      </Link>
+
       <div className="bg-gray-800 p-4 text-center border-b border-gray-700">
         <h1 className="text-2xl font-bold text-gray-300">{data.competitionName || 'Competition'}</h1>
         <div className="text-gray-500 text-sm">Backstage Monitor</div>

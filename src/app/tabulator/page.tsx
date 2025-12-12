@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Printer, RefreshCw, CheckSquare, Square, Search } from 'lucide-react';
+import Link from 'next/link';
 
 interface JudgeScore {
   judgeName: string;
@@ -276,6 +277,14 @@ export default function TabulatorPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-6">
+      {/* Back to Test Page link */}
+      <Link
+        href="/game-day-test"
+        className="fixed top-2 left-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs text-white z-50"
+      >
+        Test Page
+      </Link>
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">

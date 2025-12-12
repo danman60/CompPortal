@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import {
   Award,
   Coffee,
@@ -31,6 +32,7 @@ import {
   AlertCircle,
   Music,
   Users,
+  ArrowLeft,
 } from 'lucide-react';
 
 // Types
@@ -276,6 +278,15 @@ export default function JudgePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-gray-900 to-black text-white">
+      {/* Back to Test Page link */}
+      <Link
+        href="/game-day-test"
+        className="fixed top-2 left-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs text-white z-50 flex items-center gap-1"
+      >
+        <ArrowLeft size={12} />
+        Test Page
+      </Link>
+
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50 bg-gray-900/50">
         <div className="flex items-center gap-3">
