@@ -617,4 +617,374 @@ export const liveCompetitionRouter = router({
         status: 'completed',
       };
     }),
+
+  /**
+   * Request a break (from Judge)
+   */
+  requestBreak: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      judgeId: z.string(),
+      requestedDurationMinutes: z.number().min(5).max(60),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Verify judge belongs to competition
+      const judge = await prisma.judges.findFirst({
+        where: {
+          id: input.judgeId,
+          competition_id: input.competitionId,
+        },
+      });
+
+      if (!judge) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Judge not found in competition',
+        });
+      }
+
+      // Create break request
+      const breakRequest = await prisma.break_requests.create({
+        data: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          judge_id: input.judgeId,
+          requested_duration_minutes: input.requestedDurationMinutes,
+          request_reason: input.reason,
+          status: 'pending',
+        },
+      });
+
+      return {
+        success: true,
+        requestId: breakRequest.id,
+        status: 'pending',
+      };
+    }),
+
+  /**
+   * Get pending break requests (for CD)
+   */
+  getBreakRequests: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      status: z.enum(['pending', 'approved', 'denied', 'completed']).optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      const breakRequests = await prisma.break_requests.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          ...(input.status ? { status: input.status } : {}),
+        },
+        include: {
+          judges: {
+            select: {
+              id: true,
+              name: true,
+              judge_number: true,
+            },
+          },
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
+
+      return breakRequests.map(req => ({
+        id: req.id,
+        judgeId: req.judge_id,
+        judgeName: req.judges?.name || 'Unknown Judge',
+        judgeNumber: req.judges?.judge_number,
+        requestedDurationMinutes: req.requested_duration_minutes,
+        reason: req.request_reason,
+        status: req.status,
+        createdAt: req.created_at,
+        respondedAt: req.responded_at,
+        denyReason: req.deny_reason,
+      }));
+    }),
+
+  /**
+   * Approve a break request (CD action)
+   */
+  approveBreak: publicProcedure
+    .input(z.object({
+      requestId: z.string(),
+      actualDurationMinutes: z.number().min(5).max(60).optional(),
+      insertAfterRoutineId: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Get break request
+      const breakRequest = await prisma.break_requests.findFirst({
+        where: {
+          id: input.requestId,
+          tenant_id: ctx.tenantId,
+          status: 'pending',
+        },
+      });
+
+      if (!breakRequest) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Break request not found or already processed',
+        });
+      }
+
+      // Update break request status
+      await prisma.break_requests.update({
+        where: { id: input.requestId },
+        data: {
+          status: 'approved',
+          responded_at: new Date(),
+        },
+      });
+
+      // Create scheduled break entry
+      const scheduledBreak = await prisma.schedule_breaks.create({
+        data: {
+          tenant_id: ctx.tenantId,
+          competition_id: breakRequest.competition_id,
+          break_request_id: breakRequest.id,
+          duration_minutes: input.actualDurationMinutes || breakRequest.requested_duration_minutes,
+          insert_after_entry_id: input.insertAfterRoutineId,
+          status: 'scheduled',
+        },
+      });
+
+      return {
+        success: true,
+        requestId: input.requestId,
+        breakId: scheduledBreak.id,
+        durationMinutes: scheduledBreak.duration_minutes,
+      };
+    }),
+
+  /**
+   * Deny a break request (CD action)
+   */
+  denyBreak: publicProcedure
+    .input(z.object({
+      requestId: z.string(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Get break request
+      const breakRequest = await prisma.break_requests.findFirst({
+        where: {
+          id: input.requestId,
+          tenant_id: ctx.tenantId,
+          status: 'pending',
+        },
+      });
+
+      if (!breakRequest) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Break request not found or already processed',
+        });
+      }
+
+      // Update break request status
+      await prisma.break_requests.update({
+        where: { id: input.requestId },
+        data: {
+          status: 'denied',
+          deny_reason: input.reason,
+          responded_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        requestId: input.requestId,
+        status: 'denied',
+      };
+    }),
+
+  /**
+   * Get scheduled breaks for a competition
+   */
+  getScheduledBreaks: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      const breaks = await prisma.schedule_breaks.findMany({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+        },
+        include: {
+          break_requests: {
+            include: {
+              judges: {
+                select: {
+                  name: true,
+                  judge_number: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          created_at: 'asc',
+        },
+      });
+
+      return breaks.map(b => ({
+        id: b.id,
+        durationMinutes: b.duration_minutes,
+        insertAfterEntryId: b.insert_after_entry_id,
+        status: b.status,
+        requestedBy: b.break_requests?.judges?.name || 'CD Added',
+        judgeNumber: b.break_requests?.judges?.judge_number,
+        createdAt: b.created_at,
+        startedAt: b.actual_start_time,
+        endedAt: b.actual_end_time,
+      }));
+    }),
+
+  /**
+   * Start a scheduled break
+   */
+  startBreak: publicProcedure
+    .input(z.object({
+      breakId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      await prisma.schedule_breaks.update({
+        where: {
+          id: input.breakId,
+          tenant_id: ctx.tenantId,
+        },
+        data: {
+          status: 'in_progress',
+          actual_start_time: new Date(),
+        },
+      });
+
+      return { success: true, breakId: input.breakId };
+    }),
+
+  /**
+   * End a scheduled break
+   */
+  endBreak: publicProcedure
+    .input(z.object({
+      breakId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      await prisma.schedule_breaks.update({
+        where: {
+          id: input.breakId,
+          tenant_id: ctx.tenantId,
+        },
+        data: {
+          status: 'completed',
+          actual_end_time: new Date(),
+        },
+      });
+
+      // Also mark break request as completed
+      const scheduleBreak = await prisma.schedule_breaks.findUnique({
+        where: { id: input.breakId },
+        select: { break_request_id: true },
+      });
+
+      if (scheduleBreak?.break_request_id) {
+        await prisma.break_requests.update({
+          where: { id: scheduleBreak.break_request_id },
+          data: { status: 'completed' },
+        });
+      }
+
+      return { success: true, breakId: input.breakId };
+    }),
+
+  /**
+   * Add a break directly (CD can add without request)
+   */
+  addBreak: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      durationMinutes: z.number().min(5).max(60),
+      insertAfterRoutineId: z.string().optional(),
+      label: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      const scheduledBreak = await prisma.schedule_breaks.create({
+        data: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          duration_minutes: input.durationMinutes,
+          insert_after_entry_id: input.insertAfterRoutineId,
+          title: input.label,
+          status: 'scheduled',
+        },
+      });
+
+      return {
+        success: true,
+        breakId: scheduledBreak.id,
+        durationMinutes: scheduledBreak.duration_minutes,
+      };
+    }),
 });
