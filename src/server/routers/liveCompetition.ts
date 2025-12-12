@@ -987,4 +987,606 @@ export const liveCompetitionRouter = router({
         durationMinutes: scheduledBreak.duration_minutes,
       };
     }),
+
+  // =============================================
+  // LIVE ROUTINE CONTROL (Task 19)
+  // =============================================
+
+  /**
+   * Get live competition state
+   */
+  getLiveState: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .query(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Get or create live state
+      let liveState = await prisma.live_competition_state.findUnique({
+        where: {
+          competition_id: input.competitionId,
+        },
+        include: {
+          competition_entries: {
+            select: {
+              id: true,
+              title: true,
+              entry_number: true,
+              running_order: true,
+              studios: { select: { name: true } },
+              dance_categories: { select: { name: true } },
+            },
+          },
+          competitions: {
+            select: {
+              name: true,
+              status: true,
+            },
+          },
+        },
+      });
+
+      // If no state exists, return empty state
+      if (!liveState) {
+        return {
+          competitionId: input.competitionId,
+          competitionState: 'not_started',
+          currentEntry: null,
+          currentEntryState: null,
+          playbackState: null,
+          playbackPositionMs: 0,
+          scheduleDelayMinutes: 0,
+          judgesCanSeeScores: false,
+          dayNumber: null,
+          sessionNumber: null,
+          liveModeStartedAt: null,
+          pausedAt: null,
+          lastSyncAt: null,
+        };
+      }
+
+      return {
+        competitionId: liveState.competition_id,
+        competitionState: liveState.competition_state,
+        currentEntry: liveState.competition_entries ? {
+          id: liveState.competition_entries.id,
+          title: liveState.competition_entries.title,
+          entryNumber: liveState.competition_entries.entry_number,
+          runningOrder: liveState.competition_entries.running_order,
+          studioName: liveState.competition_entries.studios?.name,
+          category: liveState.competition_entries.dance_categories?.name,
+        } : null,
+        currentEntryState: liveState.current_entry_state,
+        currentEntryStartedAt: liveState.current_entry_started_at,
+        playbackState: liveState.playback_state,
+        playbackPositionMs: liveState.playback_position_ms || 0,
+        playbackStartedAt: liveState.playback_started_at,
+        scheduleDelayMinutes: liveState.schedule_delay_minutes || 0,
+        originallyScheduledEndTime: liveState.originally_scheduled_end_time,
+        projectedEndTime: liveState.projected_end_time,
+        judgesCanSeeScores: liveState.judges_can_see_scores || false,
+        dayNumber: liveState.day_number,
+        sessionNumber: liveState.session_number,
+        liveModeStartedAt: liveState.live_mode_started_at,
+        liveModeEndedAt: liveState.live_mode_ended_at,
+        pausedAt: liveState.paused_at,
+        lastSyncAt: liveState.last_sync_at,
+      };
+    }),
+
+  /**
+   * Initialize or update live state for a competition
+   */
+  initializeLiveState: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      dayNumber: z.number().optional(),
+      sessionNumber: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Upsert live state
+      const liveState = await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          competition_state: 'ready',
+          day_number: input.dayNumber || 1,
+          session_number: input.sessionNumber || 1,
+        },
+        update: {
+          competition_state: 'ready',
+          day_number: input.dayNumber,
+          session_number: input.sessionNumber,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        stateId: liveState.id,
+        competitionState: liveState.competition_state,
+      };
+    }),
+
+  /**
+   * Set current routine (jump to specific routine)
+   */
+  setCurrentRoutine: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      routineId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Verify routine exists
+      const entry = await prisma.competition_entries.findFirst({
+        where: {
+          id: input.routineId,
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+        },
+        select: {
+          id: true,
+          title: true,
+          entry_number: true,
+          running_order: true,
+        },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Routine not found',
+        });
+      }
+
+      // Update live state
+      const liveState = await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          competition_state: 'active',
+          current_entry_id: input.routineId,
+          current_entry_state: 'ready',
+          current_entry_started_at: new Date(),
+        },
+        update: {
+          current_entry_id: input.routineId,
+          current_entry_state: 'ready',
+          current_entry_started_at: new Date(),
+          competition_state: 'active',
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        currentRoutineId: input.routineId,
+        routineTitle: entry.title,
+        entryNumber: entry.entry_number,
+        runningOrder: entry.running_order,
+      };
+    }),
+
+  /**
+   * Advance to next routine
+   */
+  advanceRoutine: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      markPreviousComplete: z.boolean().default(true),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Get current live state
+      const liveState = await prisma.live_competition_state.findUnique({
+        where: {
+          competition_id: input.competitionId,
+        },
+      });
+
+      if (!liveState?.current_entry_id) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No current routine set',
+        });
+      }
+
+      // Get current routine's running order
+      const currentEntry = await prisma.competition_entries.findUnique({
+        where: { id: liveState.current_entry_id },
+        select: { running_order: true },
+      });
+
+      if (!currentEntry?.running_order) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Current routine has no running order',
+        });
+      }
+
+      // Find next routine by running_order
+      const nextEntry = await prisma.competition_entries.findFirst({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          running_order: { gt: currentEntry.running_order },
+          status: 'registered',
+        },
+        orderBy: {
+          running_order: 'asc',
+        },
+        select: {
+          id: true,
+          title: true,
+          entry_number: true,
+          running_order: true,
+        },
+      });
+
+      if (!nextEntry) {
+        // No more routines, mark competition as completing
+        await prisma.live_competition_state.update({
+          where: { competition_id: input.competitionId },
+          data: {
+            competition_state: 'completing',
+            current_entry_state: 'completed',
+            updated_at: new Date(),
+          },
+        });
+
+        return {
+          success: true,
+          endOfLineup: true,
+          message: 'No more routines in lineup',
+        };
+      }
+
+      // Update live state to next routine
+      await prisma.live_competition_state.update({
+        where: { competition_id: input.competitionId },
+        data: {
+          current_entry_id: nextEntry.id,
+          current_entry_state: 'ready',
+          current_entry_started_at: new Date(),
+          playback_state: null,
+          playback_position_ms: 0,
+          playback_started_at: null,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        endOfLineup: false,
+        currentRoutineId: nextEntry.id,
+        routineTitle: nextEntry.title,
+        entryNumber: nextEntry.entry_number,
+        runningOrder: nextEntry.running_order,
+      };
+    }),
+
+  /**
+   * Go to previous routine
+   */
+  previousRoutine: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Get current live state
+      const liveState = await prisma.live_competition_state.findUnique({
+        where: {
+          competition_id: input.competitionId,
+        },
+      });
+
+      if (!liveState?.current_entry_id) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No current routine set',
+        });
+      }
+
+      // Get current routine's running order
+      const currentEntry = await prisma.competition_entries.findUnique({
+        where: { id: liveState.current_entry_id },
+        select: { running_order: true },
+      });
+
+      if (!currentEntry?.running_order) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Current routine has no running order',
+        });
+      }
+
+      // Find previous routine by running_order
+      const prevEntry = await prisma.competition_entries.findFirst({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          running_order: { lt: currentEntry.running_order },
+          status: 'registered',
+        },
+        orderBy: {
+          running_order: 'desc',
+        },
+        select: {
+          id: true,
+          title: true,
+          entry_number: true,
+          running_order: true,
+        },
+      });
+
+      if (!prevEntry) {
+        return {
+          success: false,
+          atStart: true,
+          message: 'Already at first routine',
+        };
+      }
+
+      // Update live state to previous routine
+      await prisma.live_competition_state.update({
+        where: { competition_id: input.competitionId },
+        data: {
+          current_entry_id: prevEntry.id,
+          current_entry_state: 'ready',
+          current_entry_started_at: new Date(),
+          playback_state: null,
+          playback_position_ms: 0,
+          playback_started_at: null,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        atStart: false,
+        currentRoutineId: prevEntry.id,
+        routineTitle: prevEntry.title,
+        entryNumber: prevEntry.entry_number,
+        runningOrder: prevEntry.running_order,
+      };
+    }),
+
+  /**
+   * Update playback state (playing, paused, stopped)
+   */
+  updatePlaybackState: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      playbackState: z.enum(['playing', 'paused', 'stopped']),
+      positionMs: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      const updateData: Record<string, unknown> = {
+        playback_state: input.playbackState,
+        updated_at: new Date(),
+      };
+
+      if (input.playbackState === 'playing') {
+        updateData.playback_started_at = new Date();
+        if (input.positionMs !== undefined) {
+          updateData.playback_position_ms = input.positionMs;
+        }
+      } else if (input.playbackState === 'paused' || input.playbackState === 'stopped') {
+        if (input.positionMs !== undefined) {
+          updateData.playback_position_ms = input.positionMs;
+        }
+      }
+
+      await prisma.live_competition_state.update({
+        where: { competition_id: input.competitionId },
+        data: updateData,
+      });
+
+      return {
+        success: true,
+        playbackState: input.playbackState,
+        positionMs: input.positionMs,
+      };
+    }),
+
+  /**
+   * Pause the competition (emergency pause)
+   */
+  pauseCompetition: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      await prisma.live_competition_state.update({
+        where: { competition_id: input.competitionId },
+        data: {
+          competition_state: 'paused',
+          paused_at: new Date(),
+          playback_state: 'paused',
+          updated_at: new Date(),
+        },
+      });
+
+      return { success: true, state: 'paused' };
+    }),
+
+  /**
+   * Resume the competition from pause
+   */
+  resumeCompetition: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      await prisma.live_competition_state.update({
+        where: { competition_id: input.competitionId },
+        data: {
+          competition_state: 'active',
+          paused_at: null,
+          updated_at: new Date(),
+        },
+      });
+
+      return { success: true, state: 'active' };
+    }),
+
+  /**
+   * Start live mode for competition
+   */
+  startLiveMode: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      dayNumber: z.number().default(1),
+      sessionNumber: z.number().default(1),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Get first routine
+      const firstEntry = await prisma.competition_entries.findFirst({
+        where: {
+          competition_id: input.competitionId,
+          tenant_id: ctx.tenantId,
+          status: 'registered',
+        },
+        orderBy: {
+          running_order: 'asc',
+        },
+        select: {
+          id: true,
+          title: true,
+          entry_number: true,
+          running_order: true,
+        },
+      });
+
+      // Upsert live state
+      const liveState = await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          competition_state: 'active',
+          current_entry_id: firstEntry?.id || null,
+          current_entry_state: 'ready',
+          day_number: input.dayNumber,
+          session_number: input.sessionNumber,
+          live_mode_started_at: new Date(),
+        },
+        update: {
+          competition_state: 'active',
+          current_entry_id: firstEntry?.id || null,
+          current_entry_state: 'ready',
+          day_number: input.dayNumber,
+          session_number: input.sessionNumber,
+          live_mode_started_at: new Date(),
+          live_mode_ended_at: null,
+          paused_at: null,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        stateId: liveState.id,
+        competitionState: 'active',
+        currentRoutineId: firstEntry?.id,
+        routineTitle: firstEntry?.title,
+      };
+    }),
+
+  /**
+   * End live mode for competition
+   */
+  endLiveMode: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      await prisma.live_competition_state.update({
+        where: { competition_id: input.competitionId },
+        data: {
+          competition_state: 'completed',
+          live_mode_ended_at: new Date(),
+          playback_state: null,
+          updated_at: new Date(),
+        },
+      });
+
+      return { success: true, state: 'completed' };
+    }),
 });

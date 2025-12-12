@@ -679,6 +679,7 @@ model competition_entries {
   scores                                                                               scores[]
   summary_entries                                                                      summary_entries[]
   schedule_version_snapshots                                                           schedule_version_snapshots[]
+  live_competition_state                                                               live_competition_state[]
 
   @@index([age_group_id], map: "idx_competition_entries_age_group_id")
   @@index([category_id], map: "idx_competition_entries_category_id")
@@ -861,6 +862,7 @@ model competitions {
   schedule_versions                 schedule_versions[]
   break_requests                    break_requests[]
   schedule_breaks                   schedule_breaks[]
+  live_competition_state            live_competition_state?
 
   @@index([age_division_settings], map: "idx_competitions_age_settings", type: Gin)
   @@index([competition_start_date, competition_end_date], map: "idx_competitions_dates")
@@ -1579,6 +1581,7 @@ model tenants {
   schedule_version_snapshots        schedule_version_snapshots[]
   break_requests                    break_requests[]
   schedule_breaks                   schedule_breaks[]
+  live_competition_state            live_competition_state[]
 
   @@index([age_division_settings], map: "idx_tenants_age_settings", type: Gin)
   @@index([entry_size_settings], map: "idx_tenants_entry_size_settings", type: Gin)
@@ -2101,5 +2104,39 @@ model schedule_breaks {
 
   @@index([competition_id])
   @@index([break_request_id])
+  @@schema("public")
+}
+
+/// Live competition state for Game Day mode
+model live_competition_state {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competition_id              String    @db.Uuid
+  tenant_id                   String    @db.Uuid
+  competition_state           String    @db.VarChar(50)
+  current_entry_id            String?   @db.Uuid
+  current_entry_state         String?   @db.VarChar(50)
+  current_entry_started_at    DateTime? @db.Timestamptz(6)
+  playback_state              String?   @db.VarChar(50)
+  playback_position_ms        Int?
+  playback_started_at         DateTime? @db.Timestamptz(6)
+  schedule_delay_minutes      Int?      @default(0)
+  originally_scheduled_end_time DateTime? @db.Timestamptz(6)
+  projected_end_time          DateTime? @db.Timestamptz(6)
+  judges_can_see_scores       Boolean?  @default(false)
+  day_number                  Int?
+  session_number              Int?
+  live_mode_started_at        DateTime? @db.Timestamptz(6)
+  live_mode_ended_at          DateTime? @db.Timestamptz(6)
+  paused_at                   DateTime? @db.Timestamptz(6)
+  last_sync_at                DateTime? @db.Timestamptz(6)
+  created_at                  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime  @default(now()) @db.Timestamptz(6)
+
+  competitions        competitions        @relation(fields: [competition_id], references: [id], onDelete: Cascade)
+  tenants             tenants             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  competition_entries competition_entries? @relation(fields: [current_entry_id], references: [id], onDelete: SetNull)
+
+  @@unique([competition_id])
+  @@index([tenant_id])
   @@schema("public")
 }
