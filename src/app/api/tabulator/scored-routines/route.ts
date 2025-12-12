@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         st.name as studio_name,
         COALESCE(c.name, 'Unknown') as category,
         COALESCE(ag.name, 'Unknown') as age_group,
-        COALESCE(u.name, CONCAT('Judge ', j.judge_number::text)) as judge_name,
+        COALESCE(j.name, CONCAT('Judge ', j.judge_number::text)) as judge_name,
         j.judge_number,
         s.total_score as score,
         s.scored_at
@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
       LEFT JOIN age_groups ag ON e.age_group_id = ag.id
       JOIN scores s ON e.id = s.entry_id
       JOIN judges j ON s.judge_id = j.id
-      LEFT JOIN user_profiles u ON j.user_id = u.id
       WHERE e.competition_id = ${targetCompetitionId}::uuid
         AND s.total_score IS NOT NULL
       ORDER BY e.entry_number, j.judge_number
