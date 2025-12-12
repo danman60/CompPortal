@@ -31,6 +31,8 @@ import {
   Music,
   GripVertical,
   X,
+  Edit3,
+  Star,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
@@ -82,6 +84,16 @@ interface ActiveBreak {
   scheduledEndTime: Date;
 }
 
+// Score type for Task 13
+interface RoutineScore {
+  scoreId: string;
+  judgeId: string;
+  judgeName: string;
+  score: number;
+  comments: string | null;
+  timestamp: Date | null;
+}
+
 interface CompetitionState {
   status: 'not_started' | 'running' | 'paused' | 'break' | 'completed';
   currentRoutineIndex: number;
@@ -115,6 +127,12 @@ export default function CDControlPanelLive() {
   const [emergencyBreakReason, setEmergencyBreakReason] = useState('');
   const [breakCountdown, setBreakCountdown] = useState(0);
 
+  // Score editing state (Task #13)
+  const [showScoreEditModal, setShowScoreEditModal] = useState(false);
+  const [editingScore, setEditingScore] = useState<RoutineScore | null>(null);
+  const [newScoreValue, setNewScoreValue] = useState<number>(0);
+  const [scoreEditReason, setScoreEditReason] = useState('');
+
 
 
   // Drag-drop reordering state (Task #5)
@@ -146,6 +164,13 @@ export default function CDControlPanelLive() {
   const { data: activeBreakData } = trpc.liveCompetition.getActiveBreak.useQuery(
     { competitionId },
     { enabled: !!competitionId, refetchInterval: 1000 }
+  );
+
+  // Fetch scores for current routine (Task #13)
+  const currentRoutineId = routines[competitionState.currentRoutineIndex]?.routineId || '';
+  const { data: scoresData, refetch: refetchScores } = trpc.liveCompetition.getRoutineScores.useQuery(
+    { routineId: currentRoutineId },
+    { enabled: !!currentRoutineId, refetchInterval: 5000 }
   );
 
 // Update routine status mutation
@@ -200,6 +225,17 @@ export default function CDControlPanelLive() {
         status: 'paused',
         delayMinutes: Math.max(0, prev.delayMinutes - (data.timeSavedMinutes || 0))
       }));
+    },
+  });
+
+  // Score edit mutation (Task #13)
+  const editScoreMutation = trpc.liveCompetition.editScore.useMutation({
+    onSuccess: () => {
+      setShowScoreEditModal(false);
+      setEditingScore(null);
+      setNewScoreValue(0);
+      setScoreEditReason('');
+      refetchScores();
     },
   });
 
@@ -352,6 +388,23 @@ export default function CDControlPanelLive() {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Score edit handlers (Task #13)
+  const handleOpenScoreEdit = useCallback((score: RoutineScore) => {
+    setEditingScore(score);
+    setNewScoreValue(score.score);
+    setScoreEditReason('');
+    setShowScoreEditModal(true);
+  }, []);
+
+  const handleSaveScoreEdit = useCallback(() => {
+    if (!editingScore) return;
+    editScoreMutation.mutate({
+      scoreId: editingScore.scoreId,
+      newValue: newScoreValue,
+      reason: scoreEditReason || undefined,
+    });
+  }, [editingScore, newScoreValue, scoreEditReason, editScoreMutation]);
 
 // Control handlers
   const handleStart = useCallback(() => {
@@ -740,6 +793,38 @@ export default function CDControlPanelLive() {
               </div>
             )}
           </div>
+          {/* Current Routine Scores (Task #13) */}
+          {scoresData && scoresData.scores.length > 0 && (
+            <div className="p-3 border-t border-gray-700/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm font-medium text-yellow-400">Current Scores</span>
+                {scoresData.averageScore && (
+                  <span className="ml-auto text-white font-bold">
+                    Avg: {scoresData.averageScore.toFixed(1)}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2">
+                {scoresData.scores.map((score: RoutineScore) => (
+                  <div key={score.scoreId} className="p-2 bg-gray-700/30 rounded-lg border border-gray-600/30 flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-white">{score.judgeName}</div>
+                      <div className="text-2xl font-bold text-yellow-300">{score.score.toFixed(1)}</div>
+                    </div>
+                    <button
+                      onClick={() => handleOpenScoreEdit(score)}
+                      className="p-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                      title="Edit score"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Break Requests (Task #6) */}
           {breakRequests.length > 0 && (
             <div className="p-3 border-t border-gray-700/50">
@@ -881,6 +966,73 @@ export default function CDControlPanelLive() {
                 className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors disabled:opacity-50"
               >
                 {reorderMutation.isPending ? 'Moving...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Score Edit Modal (Task #13) */}
+      {showScoreEditModal && editingScore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Edit Score</h3>
+              <button
+                onClick={() => setShowScoreEditModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="text-sm text-gray-400 mb-1">Judge</div>
+              <div className="text-lg font-medium text-white">{editingScore.judgeName}</div>
+            </div>
+
+            <div className="mb-4">
+              <div className="text-sm text-gray-400 mb-1">Original Score</div>
+              <div className="text-2xl font-bold text-yellow-300">{editingScore.score.toFixed(1)}</div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm text-gray-400 mb-2">New Score (60-100)</label>
+              <input
+                type="number"
+                min="60"
+                max="100"
+                step="0.1"
+                value={newScoreValue}
+                onChange={(e) => setNewScoreValue(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-xl font-bold focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm text-gray-400 mb-2">Reason for change (optional)</label>
+              <input
+                type="text"
+                value={scoreEditReason}
+                onChange={(e) => setScoreEditReason(e.target.value)}
+                placeholder="e.g., Correction, Judge request"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowScoreEditModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveScoreEdit}
+                disabled={editScoreMutation.isPending || newScoreValue < 60 || newScoreValue > 100}
+                className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {editScoreMutation.isPending ? 'Saving...' : 'Save Score'}
               </button>
             </div>
           </div>

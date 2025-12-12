@@ -290,6 +290,7 @@ export const liveCompetitionRouter = router({
       }
 
       const scores = entry.scores.map(s => ({
+        scoreId: s.id, // Added for score editing (Task 13)
         judgeId: s.judge_id,
         judgeName: s.judges.name || 'Judge', // Schema has single name field
         score: Number(s.total_score),

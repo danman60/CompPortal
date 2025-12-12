@@ -314,7 +314,7 @@
         "description": "Allow CD to edit any score after judge submits. Judge can only edit before submit, CD can edit anytime.",
         "details": "- CD sees all scores in control panel - Edit button on each score - Modal to adjust score value - Audit log of score changes - Original score preserved in history",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "4",
           "12"
@@ -331,7 +331,8 @@
             "parentTaskId": 13,
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-12-12T09:28:57.053Z"
       },
       {
         "id": "14",
@@ -683,13 +684,13 @@
         "description": "TV-optimized view for backstage waiting area showing time remaining in large format, current routine, and next up.",
         "details": "Per client (Selena) feedback:\\n- 'Really cool' to put on TV screen in backstage area\\n- Shows time remaining in routine while dancers wait\\n- Helpful because 'you can't always tell how much is left in the song'\\n- Large, readable display optimized for viewing from distance\\n\\nUI:\\n- Large countdown timer (central)\\n- Current routine name and entry number\\n- Studio name\\n- 'UP NEXT' routine preview\\n- No controls (read-only display)",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "1"
         ],
         "priority": "medium",
         "subtasks": [],
-        "updatedAt": "2025-12-12T09:17:10.754Z"
+        "updatedAt": "2025-12-12T09:28:40.260Z"
       },
       {
         "id": "30",
@@ -769,9 +770,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T09:17:10.756Z",
+      "lastModified": "2025-12-12T09:28:57.055Z",
       "taskCount": 34,
-      "completedCount": 29,
+      "completedCount": 30,
       "tags": [
         "master"
       ]
