@@ -2285,5 +2285,171 @@ export const liveCompetitionRouter = router({
       };
     }),
 
+    // ============================================
+    // TASK 27: Edge Case Alert System - Score Bumping Detection
+    // ============================================
 
+    // Level thresholds (configurable per competition)
+    // Default: Platinum 95+, High Gold 90-94.99, Gold 85-89.99, High Silver 80-84.99, Silver 75-79.99, Bronze <75
+
+    checkScoreBumpAlert: publicProcedure
+      .input(z.object({
+        entryId: z.string(),
+        scores: z.array(z.object({
+          judgeId: z.string(),
+          judgeName: z.string(),
+          score: z.number(),
+        })).min(3).max(3),
+        levelThresholds: z.array(z.object({
+          name: z.string(),
+          minScore: z.number(),
+        })).optional(),
+        sensitivityThreshold: z.number().optional(), // Default 0.5 - how close to boundary triggers alert
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        // Default level thresholds
+        const thresholds = input.levelThresholds || [
+          { name: 'Platinum', minScore: 95 },
+          { name: 'High Gold', minScore: 90 },
+          { name: 'Gold', minScore: 85 },
+          { name: 'High Silver', minScore: 80 },
+          { name: 'Silver', minScore: 75 },
+          { name: 'Bronze', minScore: 0 },
+        ];
+
+        const sensitivity = input.sensitivityThreshold || 0.5;
+
+        // Helper to get level from score
+        const getLevel = (score: number) => {
+          for (const t of thresholds) {
+            if (score >= t.minScore) return t;
+          }
+          return thresholds[thresholds.length - 1];
+        };
+
+        // Calculate average with all scores
+        const allScores = input.scores.map(s => s.score);
+        const avgWithAll = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+        const levelWithAll = getLevel(avgWithAll);
+
+        const alerts: any[] = [];
+
+        // Check each judge's impact
+        for (const judgeScore of input.scores) {
+          // Average without this judge
+          const otherScores = input.scores.filter(s => s.judgeId !== judgeScore.judgeId).map(s => s.score);
+          const avgWithout = otherScores.reduce((a, b) => a + b, 0) / otherScores.length;
+          const levelWithout = getLevel(avgWithout);
+
+          // Check if this judge caused a level change
+          if (levelWithAll.name !== levelWithout.name) {
+            // Find the threshold crossed
+            const thresholdCrossed = levelWithout.minScore;
+            const scoreDiff = Math.abs(judgeScore.score - (otherScores.reduce((a, b) => a + b, 0) / otherScores.length));
+
+            // Only alert if the diff is small (edge case, not obvious)
+            if (scoreDiff <= 2.0) { // Within 2 points of other judges' average
+              // Create alert in database
+              await prisma.$executeRaw`
+                INSERT INTO score_bump_alerts (
+                  tenant_id, entry_id, judge_id, judge_name,
+                  judge_score, other_scores, average_with, average_without,
+                  score_diff, level_with, level_without, threshold_value, status
+                ) VALUES (
+                  ${tenantId}::uuid, ${input.entryId}::uuid, ${judgeScore.judgeId}::uuid, ${judgeScore.judgeName},
+                  ${judgeScore.score}, ARRAY[${otherScores[0]}, ${otherScores[1]}]::decimal[], ${avgWithAll}, ${avgWithout},
+                  ${scoreDiff}, ${levelWithAll.name}, ${levelWithout.name}, ${thresholdCrossed}, 'active'
+                )
+              `;
+
+              alerts.push({
+                judgeId: judgeScore.judgeId,
+                judgeName: judgeScore.judgeName,
+                judgeScore: judgeScore.score,
+                otherScores,
+                averageWithAll: avgWithAll,
+                averageWithoutJudge: avgWithout,
+                scoreDifference: scoreDiff,
+                levelWithJudge: levelWithAll.name,
+                levelWithoutJudge: levelWithout.name,
+                thresholdCrossed,
+                message: `${judgeScore.judgeName}'s score of ${judgeScore.score} causes level to drop from ${levelWithout.name} to ${levelWithAll.name}. Difference from other judges: ${scoreDiff.toFixed(2)} points.`,
+              });
+            }
+          }
+        }
+
+        return {
+          hasAlert: alerts.length > 0,
+          alerts,
+          summary: {
+            entryId: input.entryId,
+            scores: input.scores,
+            average: avgWithAll,
+            level: levelWithAll.name,
+          },
+        };
+      }),
+
+    getActiveAlerts: publicProcedure
+      .input(z.object({
+        entryId: z.string().optional(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        let alerts;
+        if (input.entryId) {
+          alerts = await prisma.$queryRaw`
+            SELECT * FROM score_bump_alerts
+            WHERE tenant_id = ${tenantId}::uuid
+              AND entry_id = ${input.entryId}::uuid
+              AND status = 'active'
+            ORDER BY created_at DESC
+            LIMIT ${input.limit || 50}
+          `;
+        } else {
+          alerts = await prisma.$queryRaw`
+            SELECT * FROM score_bump_alerts
+            WHERE tenant_id = ${tenantId}::uuid
+              AND status = 'active'
+            ORDER BY created_at DESC
+            LIMIT ${input.limit || 50}
+          `;
+        }
+
+        return { alerts };
+      }),
+
+    dismissAlert: publicProcedure
+      .input(z.object({
+        alertId: z.string(),
+        dismissedBy: z.string(),
+        resolutionNotes: z.string().optional(),
+        newStatus: z.enum(['dismissed', 'resolved']).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        const status = input.newStatus || 'dismissed';
+
+        await prisma.$executeRaw`
+          UPDATE score_bump_alerts
+          SET status = ${status},
+              dismissed_by = ${input.dismissedBy}::uuid,
+              dismissed_at = NOW(),
+              resolution_notes = ${input.resolutionNotes || null},
+              updated_at = NOW()
+          WHERE id = ${input.alertId}::uuid
+            AND tenant_id = ${tenantId}::uuid
+        `;
+
+        return { success: true, alertId: input.alertId, status };
+      }),
 });
