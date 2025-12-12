@@ -2650,4 +2650,144 @@ export const liveCompetitionRouter = router({
           // Note: Caller should also delete from Supabase Storage using the path
         };
       }),
+
+    // ============================================
+    // TASK 11: Offline Score Caching - Server Sync APIs
+    // ============================================
+
+    // Batch sync offline scores to server
+    syncOfflineScores: publicProcedure
+      .input(z.object({
+        scores: z.array(z.object({
+          localId: z.string(), // Client-side IndexedDB key for confirmation
+          entryId: z.string(),
+          judgeId: z.string(),
+          score: z.number().min(0).max(100),
+          comments: z.string().optional(),
+          submittedAt: z.string(), // ISO timestamp from client
+          clientTimestamp: z.number(), // Unix timestamp for ordering
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        const results: { localId: string; serverId: string | null; status: 'synced' | 'duplicate' | 'error'; error?: string }[] = [];
+
+        for (const score of input.scores) {
+          try {
+            // Check if this score already exists (duplicate prevention)
+            const existing = await prisma.$queryRaw`
+              SELECT id FROM scores
+              WHERE tenant_id = ${tenantId}::uuid
+                AND entry_id = ${score.entryId}::uuid
+                AND judge_id = ${score.judgeId}::uuid
+              LIMIT 1
+            ` as any[];
+
+            if (existing.length > 0) {
+              // Already exists - might be from a previous sync
+              results.push({
+                localId: score.localId,
+                serverId: existing[0].id,
+                status: 'duplicate',
+              });
+              continue;
+            }
+
+            // Insert new score
+            const newId = await prisma.$queryRaw`
+              INSERT INTO scores (
+                tenant_id, entry_id, judge_id, score, comments, submitted_at, created_at
+              ) VALUES (
+                ${tenantId}::uuid, ${score.entryId}::uuid, ${score.judgeId}::uuid,
+                ${score.score}, ${score.comments || null},
+                ${score.submittedAt}::timestamptz, NOW()
+              )
+              RETURNING id
+            ` as any[];
+
+            results.push({
+              localId: score.localId,
+              serverId: newId[0]?.id || null,
+              status: 'synced',
+            });
+          } catch (error: any) {
+            results.push({
+              localId: score.localId,
+              serverId: null,
+              status: 'error',
+              error: error.message,
+            });
+          }
+        }
+
+        return {
+          syncedCount: results.filter(r => r.status === 'synced').length,
+          duplicateCount: results.filter(r => r.status === 'duplicate').length,
+          errorCount: results.filter(r => r.status === 'error').length,
+          results,
+        };
+      }),
+
+    // Get sync status for scores (by local IDs or entry IDs)
+    getScoreSyncStatus: publicProcedure
+      .input(z.object({
+        entryIds: z.array(z.string()).optional(),
+        judgeId: z.string().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        let scores;
+        if (input.entryIds && input.entryIds.length > 0) {
+          // Get scores for specific entries
+          scores = await prisma.$queryRaw`
+            SELECT id, entry_id, judge_id, score, submitted_at, created_at
+            FROM scores
+            WHERE tenant_id = ${tenantId}::uuid
+              AND entry_id = ANY(${input.entryIds}::uuid[])
+            ORDER BY created_at DESC
+          `;
+        } else if (input.judgeId) {
+          // Get recent scores for a judge
+          scores = await prisma.$queryRaw`
+            SELECT id, entry_id, judge_id, score, submitted_at, created_at
+            FROM scores
+            WHERE tenant_id = ${tenantId}::uuid
+              AND judge_id = ${input.judgeId}::uuid
+            ORDER BY created_at DESC
+            LIMIT 100
+          `;
+        } else {
+          scores = [];
+        }
+
+        return { scores };
+      }),
+
+    // Check if a specific score exists (for duplicate prevention)
+    checkScoreExists: publicProcedure
+      .input(z.object({
+        entryId: z.string(),
+        judgeId: z.string(),
+      }))
+      .query(async ({ input, ctx }) => {
+        const tenantId = ctx.tenantId;
+        if (!tenantId) throw new Error('Tenant context required');
+
+        const existing = await prisma.$queryRaw`
+          SELECT id, score, submitted_at FROM scores
+          WHERE tenant_id = ${tenantId}::uuid
+            AND entry_id = ${input.entryId}::uuid
+            AND judge_id = ${input.judgeId}::uuid
+          LIMIT 1
+        ` as any[];
+
+        return {
+          exists: existing.length > 0,
+          score: existing[0] || null,
+        };
+      }),
 });
