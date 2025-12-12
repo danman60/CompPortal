@@ -669,13 +669,13 @@
         "description": "Tabulator needs ability to print labels with routine scores: Routine number/name, Judge A/B/C scores, Average, Adjudication level.",
         "details": "Per client (Selena) feedback:\\n- Print labels with scores for each routine\\n- Label content: Routine #, Name, Judge A score, Judge B score, Judge C score, Average, Adjudication Level\\n- Browser print dialog or thermal printer support\\n- Batch print option for multiple routines\\n\\nTBD: Label size, template layout, printer requirements",
         "testStrategy": "",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "4"
         ],
         "priority": "medium",
         "subtasks": [],
-        "updatedAt": "2025-12-12T09:09:55.500Z"
+        "updatedAt": "2025-12-12T09:16:55.725Z"
       },
       {
         "id": "29",
@@ -683,12 +683,13 @@
         "description": "TV-optimized view for backstage waiting area showing time remaining in large format, current routine, and next up.",
         "details": "Per client (Selena) feedback:\\n- 'Really cool' to put on TV screen in backstage area\\n- Shows time remaining in routine while dancers wait\\n- Helpful because 'you can't always tell how much is left in the song'\\n- Large, readable display optimized for viewing from distance\\n\\nUI:\\n- Large countdown timer (central)\\n- Current routine name and entry number\\n- Studio name\\n- 'UP NEXT' routine preview\\n- No controls (read-only display)",
         "testStrategy": "",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "1"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2025-12-12T09:17:10.754Z"
       },
       {
         "id": "30",
@@ -768,9 +769,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-12T09:09:55.502Z",
+      "lastModified": "2025-12-12T09:17:10.756Z",
       "taskCount": 34,
-      "completedCount": 28,
+      "completedCount": 29,
       "tags": [
         "master"
       ]

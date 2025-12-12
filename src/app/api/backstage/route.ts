@@ -1,0 +1,172 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+// Public API for backstage display - no authentication required
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const competitionId = searchParams.get('competitionId');
+
+    // If no competition ID, get the most recent active competition
+    let targetCompetitionId = competitionId;
+
+    if (!targetCompetitionId) {
+      const activeCompetition = await prisma.$queryRaw<Array<{ competition_id: string }>>`
+        SELECT competition_id FROM live_competition_state
+        WHERE is_active = true
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `;
+
+      if (activeCompetition.length > 0) {
+        targetCompetitionId = activeCompetition[0].competition_id;
+      }
+    }
+
+    if (!targetCompetitionId) {
+      return NextResponse.json({
+        currentRoutine: null,
+        nextRoutine: null,
+        competitionName: null,
+        isActive: false,
+      });
+    }
+
+    // Get live competition state
+    const liveState = await prisma.$queryRaw<Array<{
+      current_entry_id: string | null;
+      current_entry_state: string | null;
+      current_entry_started_at: Date | null;
+      is_active: boolean;
+      competition_day: string | null;
+    }>>`
+      SELECT
+        current_entry_id,
+        current_entry_state,
+        current_entry_started_at,
+        is_active,
+        competition_day
+      FROM live_competition_state
+      WHERE competition_id = ${targetCompetitionId}::uuid
+      LIMIT 1
+    `;
+
+    if (!liveState.length || !liveState[0].is_active) {
+      // Get competition name even if not active
+      const comp = await prisma.competitions.findUnique({
+        where: { id: targetCompetitionId },
+        select: { name: true },
+      });
+
+      return NextResponse.json({
+        currentRoutine: null,
+        nextRoutine: null,
+        competitionName: comp?.name || null,
+        isActive: false,
+      });
+    }
+
+    const state = liveState[0];
+    const competitionDay = state.competition_day || new Date().toISOString().split('T')[0];
+
+    // Get competition name
+    const competition = await prisma.competitions.findUnique({
+      where: { id: targetCompetitionId },
+      select: { name: true },
+    });
+
+    // Get today's routines ordered by performance order
+    const todayRoutines = await prisma.$queryRaw<Array<{
+      id: string;
+      entry_number: string;
+      routine_name: string;
+      studio_name: string;
+      category: string;
+      age_group: string;
+      mp3_duration_ms: number | null;
+      performance_order: number | null;
+    }>>`
+      SELECT
+        e.id,
+        e.entry_number,
+        e.routine_name,
+        s.name as studio_name,
+        e.category,
+        e.age_group,
+        e.mp3_duration_ms,
+        e.performance_order
+      FROM competition_entries e
+      JOIN studios s ON e.studio_id = s.id
+      WHERE e.competition_id = ${targetCompetitionId}::uuid
+        AND e.competition_day = ${competitionDay}
+        AND e.status != 'cancelled'
+      ORDER BY e.performance_order ASC NULLS LAST, e.entry_number ASC
+    `;
+
+    // Find current and next routines
+    let currentRoutine = null;
+    let nextRoutine = null;
+
+    if (state.current_entry_id) {
+      const currentIndex = todayRoutines.findIndex(r => r.id === state.current_entry_id);
+
+      if (currentIndex !== -1) {
+        const current = todayRoutines[currentIndex];
+        const durationMs = current.mp3_duration_ms || 180000; // Default 3 minutes
+
+        currentRoutine = {
+          id: current.id,
+          entryNumber: current.entry_number,
+          routineName: current.routine_name,
+          studioName: current.studio_name,
+          category: current.category,
+          ageGroup: current.age_group,
+          durationMs,
+          startedAt: state.current_entry_started_at?.toISOString() || null,
+          state: state.current_entry_state,
+        };
+
+        // Get next routine
+        if (currentIndex + 1 < todayRoutines.length) {
+          const next = todayRoutines[currentIndex + 1];
+          nextRoutine = {
+            id: next.id,
+            entryNumber: next.entry_number,
+            routineName: next.routine_name,
+            studioName: next.studio_name,
+            category: next.category,
+            ageGroup: next.age_group,
+            durationMs: next.mp3_duration_ms || 180000,
+          };
+        }
+      }
+    } else if (todayRoutines.length > 0) {
+      // No current routine, show first as next
+      const first = todayRoutines[0];
+      nextRoutine = {
+        id: first.id,
+        entryNumber: first.entry_number,
+        routineName: first.routine_name,
+        studioName: first.studio_name,
+        category: first.category,
+        ageGroup: first.age_group,
+        durationMs: first.mp3_duration_ms || 180000,
+      };
+    }
+
+    return NextResponse.json({
+      currentRoutine,
+      nextRoutine,
+      competitionName: competition?.name || null,
+      competitionDay,
+      isActive: true,
+      serverTime: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Backstage API error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch backstage data' },
+      { status: 500 }
+    );
+  }
+}
