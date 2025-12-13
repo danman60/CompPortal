@@ -25,6 +25,17 @@ export async function GET(
       return NextResponse.json({ error: 'Competition not found' }, { status: 404 });
     }
 
+    // Check for operating_date from live_competition_state
+    let targetDay: string | null = null;
+    const liveState = await prisma.$queryRaw<Array<{ operating_date: Date | null }>>`
+      SELECT operating_date FROM live_competition_state
+      WHERE competition_id = ${competitionId}::uuid
+      LIMIT 1
+    `;
+    if (liveState.length > 0 && liveState[0].operating_date) {
+      targetDay = new Date(liveState[0].operating_date).toISOString().split('T')[0];
+    }
+
     // Get scored entries with their average scores using raw SQL
     // Since scores table may not be in Prisma schema, use raw query
     const baseQuery = `
@@ -43,6 +54,7 @@ export async function GET(
       JOIN scores sc ON e.id = sc.entry_id
       WHERE e.competition_id = $1
         AND sc.score IS NOT NULL
+        ${targetDay ? `AND e.performance_date = '${targetDay}'::date` : ''}
         ${category !== 'all' ? 'AND e.category = $2' : ''}
       GROUP BY e.id, e.entry_number, e.routine_name, s.name, e.category, e.age_group, e.entry_type
       HAVING COUNT(sc.id) >= 3

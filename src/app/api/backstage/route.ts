@@ -40,13 +40,15 @@ export async function GET(request: NextRequest) {
       current_entry_started_at: Date | null;
       competition_state: string | null;
       day_number: number | null;
+      operating_date: Date | null;
     }>>`
       SELECT
         current_entry_id,
         current_entry_state,
         current_entry_started_at,
         competition_state,
-        day_number
+        day_number,
+        operating_date
       FROM live_competition_state
       WHERE competition_id = ${targetCompetitionId}::uuid
       LIMIT 1
@@ -68,8 +70,10 @@ export async function GET(request: NextRequest) {
     }
 
     const state = liveState[0];
-    // Use today's date for competition day (day_number is just an integer, not a date)
-    const competitionDay = new Date().toISOString().split('T')[0];
+    // Use operating_date if set, otherwise fall back to today's date
+    const competitionDay = state.operating_date 
+      ? new Date(state.operating_date).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
     // Get competition name
     const competition = await prisma.competitions.findUnique({
@@ -104,7 +108,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN dance_categories c ON e.category_id = c.id
       LEFT JOIN age_groups ag ON e.age_group_id = ag.id
       WHERE e.competition_id = ${targetCompetitionId}::uuid
-        AND e.scheduled_day = ${competitionDay}::date
+        AND e.performance_date = ${competitionDay}::date
         AND e.status != 'cancelled'
       ORDER BY e.schedule_sequence ASC NULLS LAST, e.entry_number ASC
     `;

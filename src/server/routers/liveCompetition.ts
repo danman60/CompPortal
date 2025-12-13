@@ -1114,6 +1114,7 @@ export const liveCompetitionRouter = router({
           judgesCanSeeScores: false,
           dayNumber: null,
           sessionNumber: null,
+          operatingDate: null,
           liveModeStartedAt: null,
           pausedAt: null,
           lastSyncAt: null,
@@ -1142,6 +1143,7 @@ export const liveCompetitionRouter = router({
         judgesCanSeeScores: liveState.judges_can_see_scores || false,
         dayNumber: liveState.day_number,
         sessionNumber: liveState.session_number,
+        operatingDate: liveState.operating_date,
         liveModeStartedAt: liveState.live_mode_started_at,
         liveModeEndedAt: liveState.live_mode_ended_at,
         pausedAt: liveState.paused_at,
@@ -1190,6 +1192,48 @@ export const liveCompetitionRouter = router({
         success: true,
         stateId: liveState.id,
         competitionState: liveState.competition_state,
+      };
+    }),
+
+
+  /**
+   * Set operating date for Game Day views
+   * All Game Day pages (Tabulator, Backstage, Scoreboard) will load
+   * routines for this date instead of using the current date.
+   */
+  setOperatingDate: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      operatingDate: z.string().nullable(), // YYYY-MM-DD format or null to use current date
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Tenant ID required',
+        });
+      }
+
+      // Update live state with operating date
+      const liveState = await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          competition_state: 'ready',
+          operating_date: input.operatingDate ? new Date(input.operatingDate) : null,
+        },
+        update: {
+          operating_date: input.operatingDate ? new Date(input.operatingDate) : null,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        operatingDate: liveState.operating_date,
       };
     }),
 

@@ -2125,6 +2125,7 @@ model live_competition_state {
   judges_can_see_scores       Boolean?  @default(false)
   day_number                  Int?
   session_number              Int?
+  operating_date              DateTime? @db.Date
   live_mode_started_at        DateTime? @db.Timestamptz(6)
   live_mode_ended_at          DateTime? @db.Timestamptz(6)
   paused_at                   DateTime? @db.Timestamptz(6)

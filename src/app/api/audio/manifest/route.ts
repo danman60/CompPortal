@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       // Get most recent active competition
       const activeCompetition = await prisma.$queryRaw<Array<{ competition_id: string }>>`
         SELECT competition_id FROM live_competition_state
-        WHERE is_active = true
+        WHERE competition_state = 'active'
         ORDER BY updated_at DESC
         LIMIT 1
       `;
@@ -79,6 +79,19 @@ export async function GET(request: NextRequest) {
       }, { status: 404 });
     }
 
+    // Check for operating_date from live_competition_state
+    let targetDay = day;
+    if (!targetDay) {
+      const liveState = await prisma.$queryRaw<Array<{ operating_date: Date | null }>>`
+        SELECT operating_date FROM live_competition_state
+        WHERE competition_id = ${targetCompetitionId}::uuid
+        LIMIT 1
+      `;
+      if (liveState.length > 0 && liveState[0].operating_date) {
+        targetDay = new Date(liveState[0].operating_date).toISOString().split('T')[0];
+      }
+    }
+
     // Get competition info
     const competition = await prisma.competitions.findUnique({
       where: { id: targetCompetitionId },
@@ -86,7 +99,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Build day filter
-    const dayFilter = day ? `AND e.scheduled_day = '${day}'::date` : '';
+    const dayFilter = day ? `AND e.performance_date = '${day}'::date` : '';
 
     // Get all entries with their MP3 info
     const entries = await prisma.$queryRaw<Array<{
@@ -102,7 +115,7 @@ export async function GET(request: NextRequest) {
       mp3_validated: boolean | null;
       mp3_validation_error: string | null;
       schedule_sequence: number | null;
-      scheduled_day: Date | null;
+      performance_date: Date | null;
     }>>`
       SELECT
         e.id,
@@ -117,15 +130,15 @@ export async function GET(request: NextRequest) {
         COALESCE(e.mp3_validated, false) as mp3_validated,
         e.mp3_validation_error,
         e.schedule_sequence,
-        e.scheduled_day
+        e.performance_date
       FROM competition_entries e
       JOIN studios s ON e.studio_id = s.id
       LEFT JOIN dance_categories c ON e.category_id = c.id
       LEFT JOIN age_groups ag ON e.age_group_id = ag.id
       WHERE e.competition_id = ${targetCompetitionId}::uuid
         AND e.status != 'cancelled'
-        ${day ? Prisma.sql`AND e.scheduled_day = ${day}::date` : Prisma.empty}
-      ORDER BY e.scheduled_day ASC NULLS LAST, e.schedule_sequence ASC NULLS LAST, e.entry_number ASC
+        ${targetDay ? Prisma.sql`AND e.performance_date = ${targetDay}::date` : Prisma.empty}
+      ORDER BY e.performance_date ASC NULLS LAST, e.schedule_sequence ASC NULLS LAST, e.entry_number ASC
     `;
 
     // Generate signed URLs for files in Supabase Storage
@@ -208,7 +221,7 @@ export async function GET(request: NextRequest) {
     const response: ManifestResponse = {
       competitionId: targetCompetitionId,
       competitionName: competition?.name || 'Unknown Competition',
-      day: day || 'all',
+      day: targetDay || 'all',
       totalFiles: files.length,
       filesWithMp3,
       filesMissing,
