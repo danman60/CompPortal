@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!targetCompetitionId) {
       const activeCompetition = await prisma.$queryRaw<Array<{ competition_id: string }>>`
         SELECT competition_id FROM live_competition_state
-        WHERE is_active = true
+        WHERE competition_state = 'active'
         ORDER BY updated_at DESC
         LIMIT 1
       `;
@@ -38,21 +38,21 @@ export async function GET(request: NextRequest) {
       current_entry_id: string | null;
       current_entry_state: string | null;
       current_entry_started_at: Date | null;
-      is_active: boolean;
-      competition_day: string | null;
+      competition_state: string | null;
+      day_number: number | null;
     }>>`
       SELECT
         current_entry_id,
         current_entry_state,
         current_entry_started_at,
-        is_active,
-        competition_day
+        competition_state,
+        day_number
       FROM live_competition_state
       WHERE competition_id = ${targetCompetitionId}::uuid
       LIMIT 1
     `;
 
-    if (!liveState.length || !liveState[0].is_active) {
+    if (!liveState.length || liveState[0].competition_state !== 'active') {
       // Get competition name even if not active
       const comp = await prisma.competitions.findUnique({
         where: { id: targetCompetitionId },
@@ -68,7 +68,8 @@ export async function GET(request: NextRequest) {
     }
 
     const state = liveState[0];
-    const competitionDay = state.competition_day || new Date().toISOString().split('T')[0];
+    // Use today's date for competition day (day_number is just an integer, not a date)
+    const competitionDay = new Date().toISOString().split('T')[0];
 
     // Get competition name
     const competition = await prisma.competitions.findUnique({
