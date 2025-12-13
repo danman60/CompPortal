@@ -73,7 +73,7 @@ export const liveCompetitionRouter = router({
         include: {
           competition_entries: {
             where: {
-              status: 'registered', // Schema uses 'registered' as default status
+              status: { not: 'cancelled' }, // Include all valid entry statuses
             },
             include: {
               studios: true,
@@ -85,7 +85,7 @@ export const liveCompetitionRouter = router({
               },
             },
             orderBy: {
-              running_order: 'asc', // Use running_order field for lineup order
+              running_order: 'asc', // TODO: Change to schedule_sequence when Prisma schema updated
             },
           },
         },
@@ -527,7 +527,7 @@ export const liveCompetitionRouter = router({
         include: {
           competition_entries: {
             where: {
-              status: 'registered',
+              status: { not: 'cancelled' }, // Include all valid entry statuses
             },
             include: {
               scores: true,
