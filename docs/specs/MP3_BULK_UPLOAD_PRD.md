@@ -12,6 +12,237 @@ This feature enables Studio Directors (SDs) to efficiently upload multiple MP3 m
 
 ---
 
+## Design Principles (CompSync App Standards)
+
+This feature must adhere to the established CompSync design language for visual consistency.
+
+### Color Palette
+
+| Usage | Light Mode | Dark Mode | Tailwind Class |
+|-------|------------|-----------|----------------|
+| Primary Brand | Purple/Violet | Purple/Violet | `bg-purple-600`, `text-purple-600` |
+| Primary Hover | Darker purple | Lighter purple | `hover:bg-purple-700` |
+| Success | Green | Green | `bg-green-500`, `text-green-600` |
+| Warning | Amber/Yellow | Amber | `bg-amber-500`, `text-amber-600` |
+| Error | Red | Red | `bg-red-500`, `text-red-600` |
+| Background | Gray-50 | Gray-900 | `bg-gray-50 dark:bg-gray-900` |
+| Card Surface | White | Gray-800 | `bg-white dark:bg-gray-800` |
+| Border | Gray-200 | Gray-700 | `border-gray-200 dark:border-gray-700` |
+| Text Primary | Gray-900 | Gray-100 | `text-gray-900 dark:text-gray-100` |
+| Text Secondary | Gray-600 | Gray-400 | `text-gray-600 dark:text-gray-400` |
+
+### Typography
+
+| Element | Size | Weight | Class |
+|---------|------|--------|-------|
+| Page Title | 2xl/3xl | Bold | `text-2xl font-bold` |
+| Section Header | xl | Semibold | `text-xl font-semibold` |
+| Card Title | lg | Medium | `text-lg font-medium` |
+| Body Text | base | Normal | `text-base` |
+| Small/Helper | sm | Normal | `text-sm text-gray-500` |
+| Entry Number | sm | Medium | `text-sm font-medium text-purple-600` |
+
+### Component Patterns
+
+**Cards:**
+```tsx
+<div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+  {/* Card content */}
+</div>
+```
+
+**Primary Button:**
+```tsx
+<button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+  Upload Files
+</button>
+```
+
+**Secondary Button:**
+```tsx
+<button className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border border-gray-300 transition-colors">
+  Cancel
+</button>
+```
+
+**Ghost Button:**
+```tsx
+<button className="px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors">
+  Skip
+</button>
+```
+
+### Layout Principles
+
+1. **Page Container:** Max width with centered content
+   ```tsx
+   <div className="max-w-6xl mx-auto px-4 py-6">
+   ```
+
+2. **Consistent Spacing:** Use Tailwind's spacing scale
+   - Between sections: `space-y-6` or `gap-6`
+   - Within cards: `p-4` or `p-6`
+   - Between list items: `space-y-2`
+
+3. **Responsive Breakpoints:**
+   - Mobile-first design
+   - `sm:` (640px), `md:` (768px), `lg:` (1024px), `xl:` (1280px)
+
+### Icon Usage
+
+Use **Lucide React** icons consistently:
+```tsx
+import { Upload, Check, AlertTriangle, X, Music, FileAudio } from 'lucide-react';
+
+// Standard icon sizing
+<Upload className="h-5 w-5" />           // Default
+<Check className="h-4 w-4" />            // Small/inline
+<AlertTriangle className="h-6 w-6" />    // Large/emphasized
+```
+
+**Icon + Text Pattern:**
+```tsx
+<button className="flex items-center gap-2">
+  <Upload className="h-4 w-4" />
+  <span>Upload Files</span>
+</button>
+```
+
+### Status Indicators
+
+**Match Status Badges:**
+```tsx
+// Matched (High Confidence)
+<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+  <Check className="h-3 w-3" /> Matched
+</span>
+
+// Needs Review (Low Confidence)
+<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+  <AlertTriangle className="h-3 w-3" /> Review
+</span>
+
+// Unmatched
+<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+  <X className="h-3 w-3" /> Unmatched
+</span>
+```
+
+### Progress Indicators
+
+**Progress Bar:**
+```tsx
+<div className="w-full bg-gray-200 rounded-full h-2">
+  <div
+    className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+    style={{ width: `${percent}%` }}
+  />
+</div>
+```
+
+**Upload Status Row:**
+```tsx
+<div className="flex items-center justify-between py-2 border-b border-gray-100">
+  <div className="flex items-center gap-3">
+    <FileAudio className="h-5 w-5 text-gray-400" />
+    <span className="text-sm font-medium">filename.mp3</span>
+  </div>
+  <span className="text-sm text-green-600">Uploaded</span>
+</div>
+```
+
+### Feedback & Notifications
+
+Use **Sonner toast** for notifications (existing app pattern):
+```tsx
+import { toast } from 'sonner';
+
+// Success
+toast.success('45 files uploaded successfully');
+
+// Error
+toast.error('3 files failed to upload');
+
+// With action
+toast.warning('Low confidence match detected', {
+  action: { label: 'Review', onClick: () => {} }
+});
+```
+
+### Drag & Drop Zone
+
+```tsx
+<div
+  className={cn(
+    "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
+    isDragging
+      ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+      : "border-gray-300 hover:border-gray-400"
+  )}
+>
+  <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+  <p className="text-gray-600">Drag & drop MP3 files here</p>
+  <p className="text-sm text-gray-400 mt-1">or</p>
+  <button className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg">
+    Browse Files
+  </button>
+</div>
+```
+
+### Table Styling
+
+For the file matching list, use consistent table patterns:
+```tsx
+<table className="w-full">
+  <thead className="bg-gray-50 dark:bg-gray-800">
+    <tr>
+      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        File
+      </th>
+      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Match
+      </th>
+    </tr>
+  </thead>
+  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+    {/* rows */}
+  </tbody>
+</table>
+```
+
+### Accessibility Requirements
+
+1. **Focus states:** All interactive elements must have visible focus rings
+   ```tsx
+   className="focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+   ```
+
+2. **ARIA labels:** Provide labels for icon-only buttons
+   ```tsx
+   <button aria-label="Remove file">
+     <X className="h-4 w-4" />
+   </button>
+   ```
+
+3. **Keyboard navigation:** Support Tab, Enter, Space, Escape
+4. **Color contrast:** Minimum 4.5:1 ratio for text
+
+### Animation & Transitions
+
+Use subtle, purposeful animations:
+```tsx
+// Hover transitions
+className="transition-colors duration-150"
+
+// Progress animations
+className="transition-all duration-300"
+
+// Entry animations (for new items)
+className="animate-in fade-in slide-in-from-bottom-2 duration-200"
+```
+
+---
+
 ## Problem Statement
 
 Currently, SDs must upload music files one at a time for each entry. For studios with 50+ entries, this is extremely time-consuming. Additionally, there's no validation to ensure uploaded files meet competition technical requirements.
