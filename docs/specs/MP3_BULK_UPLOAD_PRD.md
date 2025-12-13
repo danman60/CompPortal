@@ -243,6 +243,75 @@ className="animate-in fade-in slide-in-from-bottom-2 duration-200"
 
 ---
 
+## Entry Points & Navigation
+
+**Two ways for SDs to upload music:**
+
+| Method | Location | Use Case |
+|--------|----------|----------|
+| **Single Upload** | Routine Detail view | Upload/replace music for one entry |
+| **Bulk Upload** | Dedicated page at `/dashboard/music-upload` | Upload music for multiple entries at once |
+
+### Routine Detail View (Single Upload)
+
+The existing entry detail panel will include music upload functionality:
+
+**UI Components:**
+- "Upload Music" button when no music file exists
+- "Replace Music" button when music file already exists
+- Current file info display (filename, duration, upload date)
+- Audio preview/playback mini-player
+- "Remove Music" option to delete existing file
+
+**User Flow:**
+1. SD views entry in their entries list
+2. Clicks on entry to open detail view
+3. Scrolls to "Music" section
+4. Clicks "Upload Music" or "Replace Music"
+5. File picker opens (single file selection)
+6. File validates and uploads immediately
+7. Success toast: "Music uploaded for [Entry Title]"
+8. Entry detail updates to show file info and playback
+
+**Validation:**
+- Same client-side validation as bulk upload (file type, duration)
+- Immediate feedback on errors
+
+**Code Location:** Existing `EntryDetailView` component (or similar)
+
+### SD Dashboard Navigation (Bulk Upload)
+
+The bulk upload feature is accessed from the SD dashboard as a dedicated page:
+
+**Dashboard Entry Point:**
+```tsx
+// In SD Dashboard - new card/link
+<Link href="/dashboard/music-upload" className="...">
+  <div className="flex items-center gap-3">
+    <Music className="h-6 w-6 text-purple-600" />
+    <div>
+      <h3 className="font-medium">Bulk Music Upload</h3>
+      <p className="text-sm text-gray-500">
+        Upload music files for multiple entries at once
+      </p>
+    </div>
+  </div>
+</Link>
+```
+
+**Page Location:** `/dashboard/music-upload` 
+**Navigation Context:**
+- Breadcrumb: Dashboard → Bulk Music Upload
+- Back button returns to dashboard
+- "View Entries" link available in summary view
+
+**Access Control:**
+- SD role required
+- Studio filter applies (can only upload to own studio's entries)
+- Tenant isolation enforced
+
+---
+
 ## Problem Statement
 
 Currently, SDs must upload music files one at a time for each entry. For studios with 50+ entries, this is extremely time-consuming. Additionally, there's no validation to ensure uploaded files meet competition technical requirements.
