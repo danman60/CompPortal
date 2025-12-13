@@ -66,6 +66,7 @@ interface LiveState {
   currentEntryStartedAt: string | null;
   scheduleDelayMinutes: number;
   judgesCanSeeScores: boolean;
+  operatingDate: string | null;
 }
 
 interface BreakRequest {
@@ -103,6 +104,7 @@ export default function TabulatorPage() {
   const [showScoreEdit, setShowScoreEdit] = useState<string | null>(null); // scoreId
   const [editScoreValue, setEditScoreValue] = useState<number>(0);
   const [editScoreReason, setEditScoreReason] = useState('');
+  const [showDateSelector, setShowDateSelector] = useState(false);
 
   // Get active competitions
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -243,6 +245,35 @@ export default function TabulatorPage() {
       toast.error(err.message || 'Failed to scratch routine');
     },
   });
+
+  // Set operating date mutation
+  const setOperatingDateMutation = trpc.liveCompetition.setOperatingDate.useMutation({
+    onSuccess: () => {
+      toast.success('Operating date updated');
+      refetchLiveState();
+      refetchLineup();
+      setShowDateSelector(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to set operating date');
+    },
+  });
+
+  // Handler for operating date change
+  const handleSetOperatingDate = (date: string | null) => {
+    if (!competitionId) return;
+    setOperatingDateMutation.mutate({
+      competitionId,
+      operatingDate: date,
+    });
+  };
+
+  // Helper to format operating date for display
+  const getOperatingDateDisplay = () => {
+    if (!liveState?.operatingDate) return 'Today';
+    const date = new Date(liveState.operatingDate);
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
 
   // Update state when data changes
   useEffect(() => {
@@ -622,6 +653,43 @@ export default function TabulatorPage() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {/* Operating Date Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setShowDateSelector(!showDateSelector)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg transition-colors border border-gray-600"
+              title="Select operating date"
+            >
+              <Calendar className="w-4 h-4 text-blue-400" />
+              <span className="text-sm text-gray-200">{getOperatingDateDisplay()}</span>
+            </button>
+            {showDateSelector && (
+              <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50">
+                <div className="p-2">
+                  <div className="text-xs text-gray-400 px-2 py-1 mb-1">Operating Date</div>
+                  <button
+                    onClick={() => handleSetOperatingDate(null)}
+                    className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
+                      !liveState?.operatingDate ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
+                    }`}
+                  >
+                    Today (Auto)
+                  </button>
+                  {competitionDays.map((day) => (
+                    <button
+                      key={day}
+                      onClick={() => handleSetOperatingDate(day)}
+                      className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
+                        liveState?.operatingDate === day ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
+                      }`}
+                    >
+                      {new Date(day + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <button
             onClick={() => { refetchLiveState(); refetchLineup(); }}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
