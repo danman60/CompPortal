@@ -98,13 +98,16 @@ const DEFAULT_LEVELS: AdjudicationLevel[] = [
   { name: 'Bronze', min: 70.0, max: 74.99, color: '#CD7F32' },
 ];
 
+// Default test competition for tester environment
+const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
+
 function JudgePageContent() {
   const searchParams = useSearchParams();
   const judgeId = searchParams.get('judgeId') || '';
   const competitionIdParam = searchParams.get('competitionId') || '';
 
-  // State
-  const [competitionId, setCompetitionId] = useState<string>(competitionIdParam);
+  // State - default to test competition if no param provided
+  const [competitionId, setCompetitionId] = useState<string>(competitionIdParam || DEFAULT_TEST_COMPETITION_ID);
   const [state, setState] = useState<JudgeState>({
     currentRoutine: null,
     score: '',

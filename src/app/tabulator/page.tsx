@@ -79,9 +79,12 @@ interface BreakRequest {
   createdAt: Date;
 }
 
+// Default test competition for tester environment
+const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
+
 export default function TabulatorPage() {
-  // State
-  const [competitionId, setCompetitionId] = useState<string | null>(null);
+  // State - default to test competition
+  const [competitionId, setCompetitionId] = useState<string | null>(DEFAULT_TEST_COMPETITION_ID);
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
   const [liveState, setLiveState] = useState<LiveState | null>(null);
   const [currentScores, setCurrentScores] = useState<JudgeScore[]>([]);
@@ -557,8 +560,11 @@ export default function TabulatorPage() {
   // Loading state
   if (isLoading && !competitions) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading Tabulator...</div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-slate-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="text-gray-300 text-lg font-medium">Loading Tabulator...</div>
+        </div>
       </div>
     );
   }
@@ -566,15 +572,16 @@ export default function TabulatorPage() {
   // Competition selector if no competition selected
   if (!competitionId && competitions) {
     return (
-      <div className="min-h-screen bg-gray-900 p-8">
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-slate-900 to-black p-8">
         <div className="max-w-lg mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8 text-center">Tabulator</h1>
-          <div className="bg-gray-800 rounded-xl p-6">
-            <h2 className="text-xl text-white mb-4">Select Competition</h2>
+          <h1 className="text-3xl font-bold text-white mb-2 text-center">Tabulator</h1>
+          <p className="text-gray-400 text-center mb-8">Competition Control Center</p>
+          <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-2xl p-8 border border-gray-700/50 shadow-xl">
+            <h2 className="text-xl font-semibold text-white mb-6">Select Competition</h2>
             <select
               value={selectedCompetition}
               onChange={(e) => setSelectedCompetition(e.target.value)}
-              className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+              className="w-full p-4 bg-gray-700/50 text-white rounded-xl border border-gray-600 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
             >
               <option value="">Choose a competition...</option>
               {competitions.map((comp: any) => (
@@ -600,23 +607,25 @@ export default function TabulatorPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-gray-800 px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-gray-800 via-slate-800 to-gray-800 px-4 py-3 border-b border-gray-700/50 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">TABULATOR</h1>
-          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">TABULATOR</h1>
+          <div className={`px-3 py-1.5 rounded-full text-sm font-semibold border ${
             liveState?.competitionState === 'active'
-              ? 'bg-green-500/20 text-green-400'
+              ? 'bg-green-500/20 text-green-400 border-green-500/30'
               : liveState?.competitionState === 'paused'
-              ? 'bg-yellow-500/20 text-yellow-400'
-              : 'bg-gray-500/20 text-gray-400'
+              ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+              : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
           }`}>
+            {liveState?.competitionState === 'active' && <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" />}
             {liveState?.competitionState?.toUpperCase() || 'NOT STARTED'}
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={() => { refetchLiveState(); refetchLineup(); }}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg"
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+            title="Refresh data"
           >
             <RefreshCw className="w-5 h-5" />
           </button>
@@ -820,19 +829,22 @@ export default function TabulatorPage() {
         </div>
 
         {/* CENTER PANEL - Current Routine */}
-        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-900">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-gray-900 via-slate-900/50 to-gray-900">
           {liveState?.currentEntry ? (
             <>
-              <div className="text-blue-400 text-lg font-semibold tracking-wider mb-2">
-                NOW PERFORMING
+              <div className="px-4 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded-full mb-4">
+                <span className="text-blue-300 text-sm font-bold tracking-widest uppercase flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                  Now Performing
+                </span>
               </div>
-              <div className="text-gray-400 text-2xl mb-1">
+              <div className="text-gray-400 text-2xl font-light mb-1">
                 Entry #{liveState.currentEntry.entryNumber}
               </div>
-              <div className="text-white text-5xl font-bold text-center mb-3 max-w-2xl">
+              <div className="text-white text-5xl font-bold text-center mb-4 max-w-2xl bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text">
                 {liveState.currentEntry.title}
               </div>
-              <div className="text-gray-300 text-xl mb-2">
+              <div className="text-gray-300 text-xl font-medium mb-1">
                 {liveState.currentEntry.studioName}
               </div>
               <div className="text-gray-500 mb-8">
@@ -841,38 +853,43 @@ export default function TabulatorPage() {
 
               {/* Progress Bar */}
               <div className="w-full max-w-xl">
-                <div className="h-3 bg-gray-700 rounded-full overflow-hidden mb-2">
+                <div className="h-4 bg-gray-700/50 rounded-full overflow-hidden mb-3 shadow-inner">
                   <div
-                    className={`h-full transition-all duration-100 ${
-                      isLowTime ? 'bg-red-500' : 'bg-blue-500'
+                    className={`h-full transition-all duration-100 rounded-full ${
+                      isLowTime
+                        ? 'bg-gradient-to-r from-red-600 to-rose-500 shadow-lg shadow-red-500/30'
+                        : 'bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/30'
                     }`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
                 <div className="text-center">
-                  <div className={`text-6xl font-mono font-bold tabular-nums ${
+                  <div className={`text-7xl font-mono font-bold tabular-nums ${
                     isLowTime ? 'text-red-400 animate-pulse' : 'text-white'
                   }`}>
                     {formatTime(timeRemaining)}
                   </div>
-                  <div className="text-gray-500 text-sm mt-1">TIME REMAINING</div>
+                  <div className="text-gray-500 text-sm mt-2 tracking-wider uppercase">Time Remaining</div>
                 </div>
               </div>
 
               {/* Next Up Preview */}
               {nextEntry && (
-                <div className="mt-8 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                  <div className="text-yellow-400 text-sm font-semibold mb-1">UP NEXT</div>
-                  <div className="text-white font-medium">
+                <div className="mt-10 p-5 bg-gradient-to-br from-yellow-900/20 to-orange-900/20 rounded-2xl border border-yellow-500/20 shadow-lg">
+                  <div className="text-yellow-400 text-xs font-bold tracking-widest uppercase mb-2">Up Next</div>
+                  <div className="text-white font-semibold text-lg">
                     #{nextEntry.entryNumber} - {nextEntry.title}
                   </div>
-                  <div className="text-gray-500 text-sm">{nextEntry.studioName}</div>
+                  <div className="text-gray-400 text-sm mt-1">{nextEntry.studioName}</div>
                 </div>
               )}
             </>
           ) : (
             <div className="text-center">
-              <div className="text-gray-400 text-2xl mb-4">No routine currently performing</div>
+              <div className="w-20 h-20 rounded-full bg-gray-800/50 flex items-center justify-center mx-auto mb-6">
+                <Play className="w-10 h-10 text-gray-600" />
+              </div>
+              <div className="text-gray-400 text-2xl font-light mb-3">No routine currently performing</div>
               <div className="text-gray-600">Use the controls below to start the competition</div>
             </div>
           )}
@@ -1026,14 +1043,14 @@ export default function TabulatorPage() {
       </div>
 
       {/* CONTROL BAR */}
-      <div className="bg-gray-800 border-t border-gray-700 px-4 py-3">
+      <div className="bg-gradient-to-r from-gray-800 via-slate-800 to-gray-800 border-t border-gray-700/50 px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Navigation Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={handleBack}
               disabled={!competitionId || currentIndex <= 0}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gray-700/80 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
             >
               <ChevronLeft className="w-5 h-5" />
               BACK
@@ -1042,7 +1059,7 @@ export default function TabulatorPage() {
             {liveState?.competitionState === 'active' ? (
               <button
                 onClick={handleStop}
-                className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-medium transition-colors"
+                className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 rounded-xl font-bold transition-all shadow-lg hover:shadow-red-500/25 hover:scale-[1.02]"
               >
                 <Square className="w-5 h-5" />
                 STOP
@@ -1051,7 +1068,7 @@ export default function TabulatorPage() {
               <button
                 onClick={handleStart}
                 disabled={!competitionId}
-                className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+                className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold transition-all shadow-lg hover:shadow-green-500/25 hover:scale-[1.02]"
               >
                 <Play className="w-5 h-5" />
                 START
@@ -1061,17 +1078,17 @@ export default function TabulatorPage() {
             <button
               onClick={handleNext}
               disabled={!competitionId || currentIndex >= schedule.length - 1}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold transition-all shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]"
             >
               NEXT
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            <div className="w-px h-8 bg-gray-700 mx-2" />
+            <div className="w-px h-8 bg-gray-600/50 mx-2" />
 
             <button
               onClick={() => setShowBreakModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/30 rounded-xl font-semibold transition-all hover:border-orange-400/50"
             >
               <Coffee className="w-5 h-5" />
               + BREAK
@@ -1081,10 +1098,10 @@ export default function TabulatorPage() {
             <button
               onClick={handleToggleScoreVisibility}
               disabled={setScoreVisibilityMutation.isPending}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all border ${
                 scoreVisibility?.visible
-                  ? 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
-                  : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-400'
+                  ? 'bg-green-500/20 hover:bg-green-500/30 text-green-300 border-green-500/30 hover:border-green-400/50'
+                  : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-400 border-gray-500/30'
               }`}
               title={scoreVisibility?.visible ? 'Judges CAN see other scores' : 'Judges CANNOT see other scores'}
             >

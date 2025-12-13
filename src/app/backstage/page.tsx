@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { MP3DownloadPanel } from '@/components/audio/MP3DownloadPanel';
 import { HardDrive, Maximize, Minimize, Play, Pause, Square, Volume2, VolumeX } from 'lucide-react';
 
+// Default test competition for tester environment
+const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
+
 interface RoutineInfo {
   id: string;
   entryNumber: string;
@@ -63,7 +66,7 @@ export default function BackstagePage() {
   const fetchData = useCallback(async () => {
     setSyncStatus('syncing');
     try {
-      const response = await fetch('/api/backstage');
+      const response = await fetch(`/api/backstage?competitionId=${DEFAULT_TEST_COMPETITION_ID}`);
       if (response.ok) {
         const newData = await response.json();
         setData(newData);
@@ -285,19 +288,22 @@ export default function BackstagePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-4xl">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-slate-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+          <div className="text-gray-300 text-2xl font-light">Loading Backstage...</div>
+        </div>
       </div>
     );
   }
 
   if (!data?.isActive) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-8">
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-slate-900 to-black flex flex-col items-center justify-center p-8">
         {/* Audio Panel Toggle - available even when not active */}
         <button
           onClick={() => setShowAudioPanel(!showAudioPanel)}
-          className="fixed top-2 right-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
+          className="fixed top-2 right-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg text-xs text-white z-50 flex items-center gap-1.5 shadow-lg transition-all"
         >
           <HardDrive className="w-3.5 h-3.5" />
           {showAudioPanel ? 'Hide Audio' : 'Audio Files'}
@@ -310,11 +316,17 @@ export default function BackstagePage() {
           </div>
         )}
 
-        <div className="text-gray-400 text-4xl mb-4">Competition Not Active</div>
+        <div className="w-24 h-24 rounded-full bg-gray-800/50 flex items-center justify-center mx-auto mb-8">
+          <div className="w-16 h-16 rounded-full bg-gray-700/50 animate-pulse" />
+        </div>
+        <div className="text-gray-300 text-4xl font-light mb-4">Competition Not Active</div>
         {data?.competitionName && (
           <div className="text-gray-500 text-2xl">{data.competitionName}</div>
         )}
-        <div className="mt-8 text-gray-600 text-xl">Waiting for competition to start...</div>
+        <div className="mt-8 text-gray-600 text-xl flex items-center gap-3">
+          <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse" />
+          Waiting for competition to start...
+        </div>
       </div>
     );
   }
@@ -325,7 +337,7 @@ export default function BackstagePage() {
   const isLowTime = timeRemaining > 0 && timeRemaining < 30000;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-slate-900 to-black text-white flex flex-col">
       {/* Hidden audio element for playback */}
       <audio ref={audioRef} preload="metadata" />
 
@@ -333,7 +345,7 @@ export default function BackstagePage() {
       {!isKioskMode && (
         <Link
           href="/game-day-test"
-          className="fixed top-2 left-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs text-white z-50"
+          className="fixed top-2 left-2 px-2.5 py-1.5 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-xs text-white z-50 shadow-lg transition-all"
         >
           Test Page
         </Link>
@@ -343,7 +355,7 @@ export default function BackstagePage() {
       {!isKioskMode && (
         <button
           onClick={toggleFullscreen}
-          className="fixed top-2 left-24 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
+          className="fixed top-2 left-24 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg text-xs text-white z-50 flex items-center gap-1.5 shadow-lg transition-all"
           title="Enter fullscreen kiosk mode (ESC x3 to exit)"
         >
           {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
@@ -355,7 +367,7 @@ export default function BackstagePage() {
       {!isKioskMode && (
         <button
           onClick={() => setShowAudioPanel(!showAudioPanel)}
-          className="fixed top-2 right-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white z-50 flex items-center gap-1.5"
+          className="fixed top-2 right-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg text-xs text-white z-50 flex items-center gap-1.5 shadow-lg transition-all"
         >
           <HardDrive className="w-3.5 h-3.5" />
           {showAudioPanel ? 'Hide Audio' : 'Audio Files'}
@@ -373,15 +385,15 @@ export default function BackstagePage() {
         </div>
       )}
 
-      <div className="bg-gray-800 p-4 border-b border-gray-700">
+      <div className="bg-gradient-to-r from-gray-800/80 via-slate-800/80 to-gray-800/80 p-4 border-b border-gray-700/50 shadow-lg">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className={'w-3 h-3 rounded-full ' + getSyncStatusColor()} title={syncStatus} />
+            <div className={'w-3 h-3 rounded-full shadow-lg ' + getSyncStatusColor()} title={syncStatus} />
             <span className="text-gray-500 text-xs">{formatSyncTime(lastSyncTime)}</span>
           </div>
           <div className="text-center flex-1">
-            <h1 className="text-2xl font-bold text-gray-300">{data.competitionName || 'Competition'}</h1>
-            <div className="text-gray-500 text-sm">Backstage Monitor</div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-200 via-white to-gray-200 bg-clip-text text-transparent">{data.competitionName || 'Competition'}</h1>
+            <div className="text-gray-500 text-sm tracking-wider uppercase">Backstage Monitor</div>
           </div>
           <div className="w-24" />
         </div>
@@ -390,41 +402,46 @@ export default function BackstagePage() {
       <div className="flex-1 flex flex-col items-center justify-center p-8">
         {data.currentRoutine ? (
           <>
-            <div className="text-blue-400 text-2xl font-semibold mb-4 tracking-wider">NOW PERFORMING</div>
-            <div className="text-gray-400 text-4xl mb-2">Entry #{data.currentRoutine.entryNumber}</div>
-            <div className="text-white text-6xl md:text-8xl font-bold text-center mb-4 max-w-full px-4">
+            <div className="px-6 py-2 bg-blue-500/20 border border-blue-500/30 rounded-full mb-6">
+              <span className="text-blue-300 text-xl font-bold tracking-widest uppercase flex items-center gap-3">
+                <span className="w-3 h-3 bg-blue-400 rounded-full animate-pulse" />
+                Now Performing
+              </span>
+            </div>
+            <div className="text-gray-400 text-4xl font-light mb-2">Entry #{data.currentRoutine.entryNumber}</div>
+            <div className="text-white text-6xl md:text-8xl font-bold text-center mb-4 max-w-full px-4 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text">
               {data.currentRoutine.routineName}
             </div>
-            <div className="text-gray-300 text-3xl md:text-4xl mb-8">{data.currentRoutine.studioName}</div>
+            <div className="text-gray-300 text-3xl md:text-4xl font-medium mb-8">{data.currentRoutine.studioName}</div>
             <div className="text-gray-500 text-xl mb-12">
               {data.currentRoutine.category} | {data.currentRoutine.ageGroup}
             </div>
             <div className="relative w-full max-w-2xl mb-8">
-              <div className="h-4 bg-gray-700 rounded-full overflow-hidden mb-4">
+              <div className="h-5 bg-gray-700/50 rounded-full overflow-hidden mb-4 shadow-inner">
                 <div
-                  className={"h-full transition-all duration-100 " + (isLowTime ? 'bg-red-500' : 'bg-blue-500')}
+                  className={"h-full transition-all duration-100 rounded-full " + (isLowTime ? 'bg-gradient-to-r from-red-600 to-rose-500 shadow-lg shadow-red-500/30' : 'bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/30')}
                   style={{ width: progressPercent + '%' }}
                 />
               </div>
               <div className="text-center">
-                <div className="text-gray-400 text-xl mb-2">TIME REMAINING</div>
+                <div className="text-gray-500 text-lg mb-3 tracking-wider uppercase">Time Remaining</div>
                 <div className={"text-9xl md:text-[12rem] font-mono font-bold tabular-nums " + (isLowTime ? 'text-red-400 animate-pulse' : 'text-white')}>
                   {formatTime(timeRemaining)}
                 </div>
-                <div className="text-gray-500 text-lg mt-2">of {formatDuration(data.currentRoutine.durationMs)}</div>
+                <div className="text-gray-500 text-lg mt-3">of {formatDuration(data.currentRoutine.durationMs)}</div>
               </div>
             </div>
 
             {/* Audio Player Controls */}
             {data.currentRoutine.mp3Url && (
-              <div className="w-full max-w-2xl bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div className="w-full max-w-2xl bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-2xl p-5 border border-gray-700/50 shadow-xl">
                 <div className="flex items-center gap-4">
                   {/* Play/Pause/Stop buttons */}
                   <div className="flex items-center gap-2">
                     {isPlaying ? (
                       <button
                         onClick={pauseAudio}
-                        className="p-3 bg-blue-600 hover:bg-blue-500 rounded-full transition-colors"
+                        className="p-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-full transition-all shadow-lg hover:shadow-blue-500/25 hover:scale-105"
                         title="Pause"
                       >
                         <Pause className="w-6 h-6 text-white" />
@@ -432,7 +449,7 @@ export default function BackstagePage() {
                     ) : (
                       <button
                         onClick={playAudio}
-                        className="p-3 bg-green-600 hover:bg-green-500 rounded-full transition-colors"
+                        className="p-3.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-full transition-all shadow-lg hover:shadow-green-500/25 hover:scale-105"
                         title="Play"
                       >
                         <Play className="w-6 h-6 text-white" />
@@ -440,16 +457,16 @@ export default function BackstagePage() {
                     )}
                     <button
                       onClick={stopAudio}
-                      className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
+                      className="p-2.5 bg-gray-700/50 hover:bg-gray-600 rounded-full transition-all"
                       title="Stop"
                     >
-                      <Square className="w-5 h-5 text-white" />
+                      <Square className="w-5 h-5 text-gray-300" />
                     </button>
                   </div>
 
                   {/* Seek bar */}
                   <div className="flex-1 flex items-center gap-3">
-                    <span className="text-gray-400 text-sm font-mono w-12">
+                    <span className="text-gray-400 text-sm font-mono w-12 tabular-nums">
                       {formatAudioTime(audioCurrentTime)}
                     </span>
                     <input
@@ -458,9 +475,9 @@ export default function BackstagePage() {
                       max={audioDuration || 0}
                       value={audioCurrentTime}
                       onChange={handleSeek}
-                      className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      className="flex-1 h-2 bg-gray-700/50 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                     />
-                    <span className="text-gray-400 text-sm font-mono w-12">
+                    <span className="text-gray-400 text-sm font-mono w-12 tabular-nums">
                       {formatAudioTime(audioDuration)}
                     </span>
                   </div>
@@ -469,11 +486,11 @@ export default function BackstagePage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={toggleMute}
-                      className="p-2 hover:bg-gray-700 rounded transition-colors"
+                      className="p-2 hover:bg-gray-700/50 rounded-lg transition-colors"
                       title={isMuted ? 'Unmute' : 'Mute'}
                     >
                       {isMuted ? (
-                        <VolumeX className="w-5 h-5 text-gray-400" />
+                        <VolumeX className="w-5 h-5 text-gray-500" />
                       ) : (
                         <Volume2 className="w-5 h-5 text-gray-400" />
                       )}
@@ -485,7 +502,7 @@ export default function BackstagePage() {
                       step="0.1"
                       value={isMuted ? 0 : volume}
                       onChange={handleVolumeChange}
-                      className="w-20 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      className="w-20 h-2 bg-gray-700/50 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                     />
                   </div>
                 </div>
@@ -498,36 +515,36 @@ export default function BackstagePage() {
       </div>
 
       {(data.upcomingRoutines?.length ?? 0) > 0 && (
-        <div className="bg-gray-800 border-t border-gray-700 p-6">
+        <div className="bg-gradient-to-r from-gray-800/80 via-slate-800/80 to-gray-800/80 border-t border-gray-700/50 p-6">
           <div className="max-w-5xl mx-auto">
-            <div className="text-yellow-400 text-lg font-semibold tracking-wider mb-4">COMING UP</div>
+            <div className="text-yellow-400 text-lg font-bold tracking-widest uppercase mb-5">Coming Up</div>
             <div className="space-y-3">
               {data.upcomingRoutines?.map((routine, index) => (
                 routine.isBreak ? (
                   // Break block styling - orange theme
                   <div
                     key={routine.id}
-                    className="flex items-center justify-center p-4 rounded-lg bg-orange-600/20 border border-orange-500/30"
+                    className="flex items-center justify-center p-4 rounded-xl bg-gradient-to-r from-orange-600/20 to-amber-600/20 border border-orange-500/30"
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-orange-400 text-2xl font-bold">---</div>
-                      <div className="text-orange-300 text-lg font-semibold tracking-wider">BREAK</div>
+                      <div className="text-orange-300 text-lg font-bold tracking-widest">BREAK</div>
                       <div className="text-orange-400 text-2xl font-bold">---</div>
                     </div>
-                    <div className="text-orange-400/70 text-sm ml-4">{formatDuration(routine.durationMs)}</div>
+                    <div className="text-orange-400/70 text-sm ml-4 font-mono">{formatDuration(routine.durationMs)}</div>
                   </div>
                 ) : (
                   // Regular routine styling
                   <div
                     key={routine.id}
-                    className={'flex items-center justify-between p-4 rounded-lg ' + (index === 0 ? 'bg-gray-700' : 'bg-gray-750 bg-opacity-50')}
+                    className={'flex items-center justify-between p-4 rounded-xl transition-all ' + (index === 0 ? 'bg-gradient-to-r from-yellow-900/30 to-amber-900/30 border border-yellow-500/20' : 'bg-gray-700/30 hover:bg-gray-700/50')}
                   >
                     <div className="flex items-center gap-4">
                       <div className={'text-2xl font-bold ' + (index === 0 ? 'text-yellow-400' : 'text-gray-500')}>
                         {index === 0 ? 'NEXT' : index + 1}
                       </div>
                       <div>
-                        <div className={'font-bold ' + (index === 0 ? 'text-white text-xl' : 'text-gray-300 text-lg')}>
+                        <div className={'font-semibold ' + (index === 0 ? 'text-white text-xl' : 'text-gray-300 text-lg')}>
                           #{routine.entryNumber} - {routine.routineName}
                         </div>
                         <div className="text-gray-400 text-sm">{routine.studioName}</div>
@@ -535,7 +552,7 @@ export default function BackstagePage() {
                     </div>
                     <div className="text-right">
                       <div className="text-gray-500 text-sm">{routine.category} | {routine.ageGroup}</div>
-                      <div className="text-gray-600 text-xs">{formatDuration(routine.durationMs)}</div>
+                      <div className="text-gray-600 text-xs font-mono">{formatDuration(routine.durationMs)}</div>
                     </div>
                   </div>
                 )
@@ -545,7 +562,8 @@ export default function BackstagePage() {
         </div>
       )}
 
-      <div className="bg-gray-900 p-2 text-center text-gray-600 text-sm border-t border-gray-800">
+      <div className="bg-gray-900/80 p-3 text-center text-gray-600 text-sm border-t border-gray-800/50 flex items-center justify-center gap-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
         Auto-refreshing | {data.competitionDay}
       </div>
     </div>
