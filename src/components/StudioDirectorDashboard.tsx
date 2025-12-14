@@ -30,6 +30,13 @@ interface StudioDirectorDashboardProps {
 // Quick action cards for SD
 const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   {
+    id: 'music',
+    href: '/dashboard/music',
+    icon: '🎵',
+    title: 'Music',
+    description: 'Track & upload music files for routines',
+  },
+  {
     id: 'scheduling',
     href: '#',
     icon: '📅',
