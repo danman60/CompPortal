@@ -1,8 +1,11 @@
 # MP3 Bulk Upload - Product Requirements Document
 
-**Version:** 1.0
-**Date:** December 13, 2025
+**Version:** 1.1
+**Date:** December 14, 2025
 **Status:** Draft
+
+**Changelog:**
+- v1.1 (Dec 14, 2025): Added Phase 5 - Missing MP3 Notification System with CD/SD alerts, automatic reminders, and manual triggers
 
 ---
 
@@ -657,6 +660,398 @@ musicUpload.linkMp3ToEntry: {
 - Resume interrupted uploads
 - Batch operations
 - Keyboard shortcuts
+
+### Phase 5: Notification & Reminder System
+- Missing MP3 detection for all entries
+- CD notifications (studios with missing MP3s summary)
+- SD notifications (individual missing MP3 alerts)
+- Automatic reminder schedule
+- Manual reminder triggers
+- Email notification templates
+
+---
+
+## Missing MP3 Notification System
+
+This section defines the notification and reminder system to help ensure all competition entries have their music files uploaded before the competition.
+
+### Overview
+
+| Role | Notification Type | Purpose |
+|------|------------------|---------|
+| **CD** | Studios Summary | See which studios still have entries missing music files |
+| **SD** | Entry List | See exactly which entries need music uploaded |
+
+### Notification Triggers
+
+#### Automatic Triggers (System-Initiated)
+
+| Trigger | Timing | Recipients | Content |
+|---------|--------|------------|---------|
+| **Competition Created** | 48 hours after competition opens for entries | CDs | "Reminder: Music upload is now available for [Competition Name]" |
+| **Entry Deadline Approaching** | 7 days before entry deadline | SDs with missing MP3s | List of entries needing music |
+| **Entry Deadline Approaching** | 7 days before entry deadline | CDs | Summary of studios with missing MP3s |
+| **48-Hour Warning** | 48 hours before entry deadline | SDs with missing MP3s | URGENT: Entries without music |
+| **24-Hour Final Warning** | 24 hours before entry deadline | SDs with missing MP3s | FINAL: Music required for X entries |
+| **Post-Deadline Report** | 2 hours after entry deadline | CDs only | Complete missing music report |
+
+#### Manual Triggers (CD-Initiated)
+
+| Action | Available To | Effect |
+|--------|--------------|--------|
+| **Send Reminder to All Studios** | CD | Emails all SDs with missing MP3s in their studio |
+| **Send Reminder to Single Studio** | CD | Emails specific SD with their missing entries list |
+| **Download Missing MP3 Report** | CD | Exports CSV/PDF of all entries missing music |
+| **Bulk Mark as Exempt** | CD | Mark entries that don't need music (e.g., a cappella) |
+
+### CD Dashboard: Missing Music View
+
+**Location:** `/dashboard/director-panel/music-status` or tab within existing competition view
+
+**UI Components:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Music Status: 2026 Spring Competition                               │
+├─────────────────────────────────────────────────────────────────────┤
+│  Overview                                                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │
+│  │     147      │  │      23      │  │      12      │               │
+│  │   Entries    │  │  Missing     │  │   Studios    │               │
+│  │   Total      │  │  Music       │  │  Affected    │               │
+│  └──────────────┘  └──────────────┘  └──────────────┘               │
+│                                                                      │
+│  [Send Reminder to All ▼]  [Download Report]  [View by Studio]      │
+├─────────────────────────────────────────────────────────────────────┤
+│  Studios with Missing Music                                          │
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────────┐│
+│  │ Dance Academy Elite                          8 entries missing   ││
+│  │ Last reminder: Never                         [Send Reminder]     ││
+│  │ Entries: #12, #15, #23, #45, #67, #78, #89, #101               ││
+│  └─────────────────────────────────────────────────────────────────┘│
+│  ┌─────────────────────────────────────────────────────────────────┐│
+│  │ Star Performers Studio                       5 entries missing   ││
+│  │ Last reminder: Dec 10, 2025                  [Send Reminder]     ││
+│  │ Entries: #33, #34, #56, #57, #92                                ││
+│  └─────────────────────────────────────────────────────────────────┘│
+│  ┌─────────────────────────────────────────────────────────────────┐│
+│  │ Rhythm & Motion Dance                        10 entries missing  ││
+│  │ Last reminder: Dec 12, 2025                  [Send Reminder]     ││
+│  │ Entries: #5, #6, #7, #8, #9, #10, #25, #26, #27, #28            ││
+│  └─────────────────────────────────────────────────────────────────┘│
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### SD Dashboard: Missing Music Alert
+
+**Location:** SD Dashboard - prominent alert banner + dedicated section
+
+**Alert Banner (when entries missing music):**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ⚠️ 8 entries are missing music files                                │
+│    Upload deadline: December 20, 2025 (5 days remaining)            │
+│    [Upload Music Now]  [View Entries]                               │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Missing Music Section:**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Entries Missing Music Files                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│  Entry #12 - "Firework"              Lyrical / Teen   [Upload]       │
+│  Entry #15 - "Don't Stop Believin'"  Jazz / Junior    [Upload]       │
+│  Entry #23 - "Swan Lake"             Ballet / Senior  [Upload]       │
+│  ...                                                                 │
+│                                                                      │
+│  [Upload All at Once (Bulk Upload)]                                  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Email Notification Templates
+
+#### Template 1: SD - Missing Music Reminder
+
+**Subject:** Action Required: Music files needed for [Competition Name]
+
+```
+Hi [Studio Name],
+
+You have [X] entries in [Competition Name] that still need music files uploaded.
+
+Missing music for:
+• #[EntryNum] - [Entry Title] ([Category] / [Age Group])
+• #[EntryNum] - [Entry Title] ([Category] / [Age Group])
+• ...
+
+⏰ Deadline: [Date] ([X] days remaining)
+
+Upload your music files now:
+[Button: Upload Music Files]
+[Link: https://app.compsync.net/dashboard/music-upload]
+
+Need help? Reply to this email or contact [CD Name] at [CD Email].
+
+Best regards,
+[Competition Name] Team
+```
+
+#### Template 2: SD - 48-Hour Warning
+
+**Subject:** ⚠️ URGENT: Music files due in 48 hours for [Competition Name]
+
+```
+Hi [Studio Name],
+
+This is an urgent reminder that music files are due in 48 hours.
+
+You still have [X] entries without music:
+• #[EntryNum] - [Entry Title]
+• #[EntryNum] - [Entry Title]
+• ...
+
+⏰ Deadline: [Date] at [Time]
+
+Entries without music may not be able to perform at the competition.
+
+[Button: Upload Music Now]
+
+— [Competition Name] Team
+```
+
+#### Template 3: CD - Studios Summary Report
+
+**Subject:** Music Upload Status: [Competition Name]
+
+```
+Hi [CD Name],
+
+Here's your weekly music upload status for [Competition Name]:
+
+📊 Overview:
+• Total entries: [X]
+• With music: [Y] ✓
+• Missing music: [Z] ⚠️
+• Studios affected: [N]
+
+Studios needing music uploads:
+1. [Studio Name] - [X] entries missing
+2. [Studio Name] - [X] entries missing
+3. [Studio Name] - [X] entries missing
+
+[Button: View Full Report]
+[Button: Send Reminders to All]
+
+— CompSync
+```
+
+#### Template 4: CD - Post-Deadline Report
+
+**Subject:** Final Music Upload Report: [Competition Name]
+
+```
+Hi [CD Name],
+
+The entry deadline has passed. Here's the final music upload status:
+
+✅ Complete: [X] entries have music files
+⚠️ Incomplete: [Y] entries missing music
+
+Entries without music:
+[Table: Entry #, Title, Studio, Category]
+
+Options:
+1. Contact studios directly for missing files
+2. Mark entries as exempt (a cappella, etc.)
+3. Request music at check-in
+
+[Button: Download Full Report]
+[Button: Send Final Notice to Studios]
+
+— CompSync
+```
+
+### Database Schema Additions
+
+```sql
+-- Track notification history
+CREATE TABLE mp3_reminder_log (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  competition_id UUID NOT NULL REFERENCES competitions(id),
+  studio_id UUID REFERENCES studios(id),  -- NULL for CD-targeted notifications
+  user_id UUID REFERENCES auth.users(id),
+  notification_type VARCHAR(50) NOT NULL,
+    -- 'automatic_7day', 'automatic_48hour', 'automatic_24hour',
+    -- 'manual_single', 'manual_bulk', 'post_deadline'
+  entries_missing INT NOT NULL,
+  sent_at TIMESTAMPTZ DEFAULT NOW(),
+  email_id VARCHAR(100),  -- From email service for tracking
+  opened_at TIMESTAMPTZ,
+  clicked_at TIMESTAMPTZ,
+  tenant_id UUID NOT NULL REFERENCES tenants(id)
+);
+
+-- Track entries exempt from music requirement
+ALTER TABLE competition_entries ADD COLUMN
+  music_exempt BOOLEAN DEFAULT FALSE,
+  music_exempt_reason VARCHAR(100);  -- 'a_cappella', 'cd_approved', etc.
+```
+
+### API Endpoints
+
+```typescript
+// Get missing music summary for CD
+musicNotification.getMissingMusicSummary: {
+  input: { competitionId: string }
+  output: {
+    totalEntries: number;
+    withMusic: number;
+    missingMusic: number;
+    studioBreakdown: Array<{
+      studioId: string;
+      studioName: string;
+      missingCount: number;
+      entryNumbers: number[];
+      lastReminderAt: Date | null;
+    }>;
+  }
+}
+
+// Send reminder to single studio
+musicNotification.sendStudioReminder: {
+  input: { competitionId: string; studioId: string }
+  output: { success: boolean; emailId: string }
+}
+
+// Send reminders to all studios with missing MP3s
+musicNotification.sendBulkReminders: {
+  input: { competitionId: string }
+  output: {
+    sent: number;
+    failed: number;
+    studioResults: Array<{ studioId: string; success: boolean; error?: string }>
+  }
+}
+
+// Mark entries as music exempt
+musicNotification.markExempt: {
+  input: {
+    entryIds: string[];
+    exempt: boolean;
+    reason?: string
+  }
+  output: { updated: number }
+}
+
+// Get notification history
+musicNotification.getReminderHistory: {
+  input: { competitionId: string; studioId?: string }
+  output: Array<{
+    id: string;
+    type: string;
+    sentAt: Date;
+    entriesMissing: number;
+    opened: boolean;
+    clicked: boolean;
+  }>
+}
+```
+
+### Automatic Reminder Configuration
+
+**Competition Settings Addition:**
+
+```typescript
+// In competition_settings table or competition record
+{
+  musicReminderEnabled: boolean;  // Toggle automatic reminders on/off
+  musicReminderSchedule: {
+    sevenDayReminder: boolean;    // 7 days before deadline
+    fortyEightHourReminder: boolean;  // 48 hours before
+    twentyFourHourReminder: boolean;  // 24 hours before
+    postDeadlineReport: boolean;  // Report after deadline
+  };
+  musicDeadlineOffset: number;    // Hours before entry deadline (default: 0)
+}
+```
+
+**CD Configuration UI:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Automatic Music Reminders                                           │
+├─────────────────────────────────────────────────────────────────────┤
+│  ☑ Enable automatic reminders for missing music                     │
+│                                                                      │
+│  Schedule:                                                          │
+│  ☑ 7 days before deadline - Friendly reminder                       │
+│  ☑ 48 hours before deadline - Urgent warning                        │
+│  ☑ 24 hours before deadline - Final notice                          │
+│  ☑ Send me a report after deadline                                  │
+│                                                                      │
+│  Music deadline: ○ Same as entry deadline                           │
+│                  ○ [X] hours before entry deadline                  │
+│                                                                      │
+│  [Save Settings]                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Cron Job Schedule
+
+```typescript
+// Scheduled tasks for automatic reminders
+// Run daily at 9:00 AM in competition's timezone
+
+async function processMusicReminders() {
+  const competitions = await getActiveCompetitions();
+
+  for (const comp of competitions) {
+    const daysUntilDeadline = getDaysUntil(comp.entryDeadline);
+    const settings = comp.musicReminderSettings;
+
+    // 7-day reminder
+    if (daysUntilDeadline === 7 && settings.sevenDayReminder) {
+      await sendMissingMusicReminders(comp.id, 'automatic_7day');
+    }
+
+    // 48-hour reminder
+    if (daysUntilDeadline === 2 && settings.fortyEightHourReminder) {
+      await sendMissingMusicReminders(comp.id, 'automatic_48hour');
+    }
+
+    // 24-hour reminder
+    if (daysUntilDeadline === 1 && settings.twentyFourHourReminder) {
+      await sendMissingMusicReminders(comp.id, 'automatic_24hour');
+    }
+
+    // Post-deadline report (2 hours after)
+    if (daysUntilDeadline === -1 && settings.postDeadlineReport) {
+      await sendPostDeadlineReport(comp.id);
+    }
+  }
+}
+```
+
+### Success Metrics for Notification System
+
+1. **Reminder Effectiveness:** 50%+ of studios upload after receiving first reminder
+2. **Email Engagement:** 60%+ open rate, 40%+ click rate on reminder emails
+3. **Missing Music Reduction:** <5% of entries missing music at deadline
+4. **CD Time Savings:** Reduce manual follow-up time by 80%
+
+### Edge Cases & Handling
+
+| Scenario | Handling |
+|----------|----------|
+| Studio has no email | Show warning to CD, skip email, log attempt |
+| Entry marked as exempt then re-enabled | Clear exempt status when music uploaded |
+| Competition deadline extended | Recalculate reminder schedule |
+| SD uploads after reminder sent | Track in analytics, don't send duplicate |
+| Studio has 0 entries | Skip from reminder list |
+| All entries have music | Show success badge, no reminders |
 
 ---
 

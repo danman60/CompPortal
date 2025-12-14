@@ -14,6 +14,9 @@ import MissingMusicReminder from '@/emails/MissingMusicReminder';
 import WelcomeEmail from '@/emails/WelcomeEmail';
 import DailyDigest from '@/emails/DailyDigest';
 import AccountRecovery from '@/emails/AccountRecovery';
+import MusicStatusReport from '@/emails/MusicStatusReport';
+import MusicUrgentWarning from '@/emails/MusicUrgentWarning';
+import MusicPostDeadlineReport from '@/emails/MusicPostDeadlineReport';
 
 /**
  * Render email templates to HTML
@@ -170,6 +173,58 @@ export interface AccountRecoveryData {
   tenantBranding?: TenantBranding;
 }
 
+export interface MusicStatusReportData {
+  cdName: string;
+  competitionName: string;
+  competitionYear: number;
+  totalEntries: number;
+  withMusic: number;
+  missingMusic: number;
+  studiosWithMissing: Array<{
+    studioName: string;
+    studioId: string;
+    missingCount: number;
+    entryNumbers: number[];
+    lastReminderAt?: Date | null;
+  }>;
+  portalUrl: string;
+  daysUntilDeadline?: number;
+  tenantBranding?: TenantBranding;
+}
+
+export interface MusicUrgentWarningData {
+  studioName: string;
+  competitionName: string;
+  competitionYear: number;
+  routinesWithoutMusic: Array<{
+    title: string;
+    entryNumber?: number;
+    category: string;
+  }>;
+  portalUrl: string;
+  hoursUntilDeadline: number;
+  deadlineDate: string;
+  deadlineTime: string;
+  tenantBranding?: TenantBranding;
+}
+
+export interface MusicPostDeadlineReportData {
+  cdName: string;
+  competitionName: string;
+  competitionYear: number;
+  totalEntries: number;
+  withMusic: number;
+  missingMusic: number;
+  entriesMissing: Array<{
+    entryNumber: number;
+    title: string;
+    studioName: string;
+    category: string;
+  }>;
+  portalUrl: string;
+  tenantBranding?: TenantBranding;
+}
+
 export interface DailyDigestData {
   userName: string;
   tenantName: string;
@@ -310,10 +365,31 @@ export async function renderAccountRecovery(data: AccountRecoveryData) {
 }
 
 /**
+ * Render music status report email (for CD)
+ */
+export async function renderMusicStatusReport(data: MusicStatusReportData) {
+  return render(<MusicStatusReport {...data} />);
+}
+
+/**
+ * Render music urgent warning email (for SD)
+ */
+export async function renderMusicUrgentWarning(data: MusicUrgentWarningData) {
+  return render(<MusicUrgentWarning {...data} />);
+}
+
+/**
+ * Render music post-deadline report email (for CD)
+ */
+export async function renderMusicPostDeadlineReport(data: MusicPostDeadlineReportData) {
+  return render(<MusicPostDeadlineReport {...data} />);
+}
+
+/**
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music' | 'daily-digest',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music' | 'daily-digest' | 'music-status-report' | 'music-urgent-warning' | 'music-post-deadline',
   data: { [key: string]: any }
 ): string {
   const subjects = {
@@ -330,6 +406,9 @@ export function getEmailSubject(
     'payment-confirmed': `Payment ${data.paymentStatus ? data.paymentStatus.toUpperCase() : 'CONFIRMED'} - ${data.competitionName} (${data.competitionYear})`,
     'missing-music': `⏰ Reminder: Upload Music Files - ${data.competitionName}`,
     'daily-digest': `${data.tenantName} Daily Digest - ${new Date().toLocaleDateString()}`,
+    'music-status-report': `Music Status Report - ${data.competitionName} (${data.competitionYear})`,
+    'music-urgent-warning': `⚠️ URGENT: ${data.hoursUntilDeadline}h Left to Upload Music - ${data.competitionName}`,
+    'music-post-deadline': `Final Music Report - ${data.competitionName} (${data.competitionYear})`,
   };
 
   return subjects[template];
