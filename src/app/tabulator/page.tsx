@@ -638,7 +638,7 @@ export default function TabulatorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+    <div className="h-screen bg-gray-900 text-white flex flex-col overflow-hidden">
       {/* Back to Test Page link */}
       <Link
         href="/game-day-test"
