@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
   Play,
+  Pause,
   Square,
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,12 @@ import {
   EyeOff,
   Edit2,
   Trash2,
+  Link as LinkIcon,
+  Unlink,
+  Radio,
+  Volume2,
+  VolumeX,
+  Music,
 } from 'lucide-react';
 
 // Types
@@ -61,12 +68,20 @@ interface LiveState {
     entryNumber: number;
     studioName: string;
     category: string;
+    musicFileUrl?: string | null;
+    musicDurationMs?: number | null;
   } | null;
   currentEntryState: string | null;
   currentEntryStartedAt: string | null;
   scheduleDelayMinutes: number;
   judgesCanSeeScores: boolean;
   operatingDate: string | null;
+  // Game Day Audio Control fields
+  audioState: 'stopped' | 'playing' | 'paused';
+  audioPositionMs: number;
+  audioStartedAt: string | null;
+  linkedMode: boolean;
+  backstageControlEnabled: boolean;
 }
 
 interface BreakRequest {
@@ -109,6 +124,13 @@ export default function TabulatorPage() {
     // Default to today's date in YYYY-MM-DD format
     return new Date().toISOString().split('T')[0];
   });
+
+  // Game Day Audio Control state
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [localAudioPosition, setLocalAudioPosition] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [audioVolume, setAudioVolume] = useState(1);
+  const [audioEnabled, setAudioEnabled] = useState(false); // Track if user has enabled audio (browser autoplay restriction)
 
   // Get active competitions
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -263,6 +285,44 @@ export default function TabulatorPage() {
     },
   });
 
+  // ============================================
+  // Game Day Audio Control Mutations (PRD Phase 2)
+  // ============================================
+  const setAudioStateMutation = trpc.liveCompetition.setAudioState.useMutation({
+    onSuccess: () => {
+      refetchLiveState();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to update audio state');
+    },
+  });
+
+  const updateAudioPositionMutation = trpc.liveCompetition.updateAudioPosition.useMutation({
+    onError: (err) => {
+      console.error('Failed to sync audio position:', err);
+    },
+  });
+
+  const setLinkedModeMutation = trpc.liveCompetition.setLinkedMode.useMutation({
+    onSuccess: () => {
+      toast.success('Link mode updated');
+      refetchLiveState();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to update link mode');
+    },
+  });
+
+  const setBackstageControlMutation = trpc.liveCompetition.setBackstageControl.useMutation({
+    onSuccess: () => {
+      toast.success('Backstage control updated');
+      refetchLiveState();
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to update backstage control');
+    },
+  });
+
   // Handler for operating date change
   const handleSetOperatingDate = (date: string | null) => {
     if (!competitionId) return;
@@ -365,6 +425,168 @@ export default function TabulatorPage() {
     await stopCompetition.mutateAsync({ competitionId });
     refetchLiveState();
   };
+
+  // ============================================
+  // Game Day Audio Control Handlers (PRD Phase 2)
+  // ============================================
+
+  // Format time for audio display (mm:ss)
+  const formatAudioTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Enable audio (handle browser autoplay restrictions)
+  const handleEnableAudio = () => {
+    setAudioEnabled(true);
+    // Create audio element if it doesn't exist
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.onloadedmetadata = () => {
+        if (audioRef.current) {
+          setAudioDuration(audioRef.current.duration * 1000);
+        }
+      };
+      audioRef.current.ontimeupdate = () => {
+        if (audioRef.current) {
+          setLocalAudioPosition(audioRef.current.currentTime * 1000);
+        }
+      };
+      audioRef.current.onended = () => {
+        // When audio ends, update state to stopped
+        if (competitionId) {
+          setAudioStateMutation.mutate({
+            competitionId,
+            audioState: 'stopped',
+            positionMs: 0,
+          });
+        }
+      };
+    }
+    toast.success('Audio enabled');
+  };
+
+  // Play audio
+  const handleAudioPlay = async () => {
+    if (!competitionId || !audioRef.current) return;
+
+    try {
+      await audioRef.current.play();
+      setAudioStateMutation.mutate({
+        competitionId,
+        audioState: 'playing',
+      });
+    } catch (err) {
+      toast.error('Failed to play audio. Click "Enable Audio" first.');
+    }
+  };
+
+  // Pause audio
+  const handleAudioPause = () => {
+    if (!competitionId || !audioRef.current) return;
+
+    audioRef.current.pause();
+    const currentPosition = audioRef.current.currentTime * 1000;
+    setAudioStateMutation.mutate({
+      competitionId,
+      audioState: 'paused',
+      positionMs: currentPosition,
+    });
+  };
+
+  // Stop audio
+  const handleAudioStop = () => {
+    if (!competitionId || !audioRef.current) return;
+
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+    setLocalAudioPosition(0);
+    setAudioStateMutation.mutate({
+      competitionId,
+      audioState: 'stopped',
+      positionMs: 0,
+    });
+  };
+
+  // Seek audio
+  const handleAudioSeek = (positionMs: number) => {
+    if (!audioRef.current || !competitionId) return;
+
+    audioRef.current.currentTime = positionMs / 1000;
+    setLocalAudioPosition(positionMs);
+    updateAudioPositionMutation.mutate({
+      competitionId,
+      positionMs,
+    });
+  };
+
+  // Toggle linked mode
+  const handleToggleLinkedMode = () => {
+    if (!competitionId) return;
+    setLinkedModeMutation.mutate({
+      competitionId,
+      linked: !liveState?.linkedMode,
+    });
+  };
+
+  // Toggle backstage control
+  const handleToggleBackstageControl = () => {
+    if (!competitionId) return;
+    setBackstageControlMutation.mutate({
+      competitionId,
+      enabled: !liveState?.backstageControlEnabled,
+    });
+  };
+
+  // Sync audio with current entry (load music file)
+  useEffect(() => {
+    if (audioRef.current && liveState?.currentEntry?.musicFileUrl) {
+      audioRef.current.src = liveState.currentEntry.musicFileUrl;
+      audioRef.current.load();
+      // Set duration from entry metadata or detect from audio
+      if (liveState.currentEntry.musicDurationMs) {
+        setAudioDuration(liveState.currentEntry.musicDurationMs);
+      }
+    }
+  }, [liveState?.currentEntry?.id, liveState?.currentEntry?.musicFileUrl]);
+
+  // Sync audio playback state with server state
+  useEffect(() => {
+    if (!audioRef.current || !audioEnabled) return;
+
+    const serverAudioState = liveState?.audioState;
+    const serverPosition = liveState?.audioPositionMs || 0;
+
+    if (serverAudioState === 'playing' && audioRef.current.paused) {
+      audioRef.current.currentTime = serverPosition / 1000;
+      audioRef.current.play().catch(() => {
+        // Autoplay blocked - user needs to interact first
+      });
+    } else if (serverAudioState === 'paused' && !audioRef.current.paused) {
+      audioRef.current.pause();
+    } else if (serverAudioState === 'stopped') {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setLocalAudioPosition(0);
+    }
+  }, [liveState?.audioState, liveState?.audioPositionMs, audioEnabled]);
+
+  // Linked mode: sync audio with tabulation state
+  useEffect(() => {
+    if (!liveState?.linkedMode || !audioRef.current || !audioEnabled) return;
+
+    const competitionState = liveState.competitionState;
+
+    if (competitionState === 'active' && liveState.audioState !== 'playing') {
+      // Competition started, play audio
+      handleAudioPlay();
+    } else if (competitionState === 'idle' && liveState.audioState === 'playing') {
+      // Competition stopped, stop audio
+      handleAudioStop();
+    }
+  }, [liveState?.competitionState, liveState?.linkedMode, audioEnabled]);
 
   const handleNext = async () => {
     if (!competitionId) return;
@@ -1129,10 +1351,12 @@ export default function TabulatorPage() {
       </div>
 
       {/* CONTROL BAR */}
-      <div className="bg-gradient-to-r from-gray-800 via-slate-800 to-gray-800 border-t border-gray-700/50 px-4 py-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-gray-800 via-slate-800 to-gray-800 border-t border-gray-700/50 px-4 py-3">
+        {/* Row 1: Tabulation Controls */}
+        <div className="flex items-center justify-between mb-3">
           {/* Navigation Controls */}
           <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mr-2">TAB</span>
             <button
               onClick={handleBack}
               disabled={!competitionId || currentIndex <= 0}
@@ -1210,7 +1434,6 @@ export default function TabulatorPage() {
             </div>
             {(() => {
               const delay = liveState?.scheduleDelayMinutes || 0;
-              // Color coding: green = on time, yellow = 1-5 min, orange = 6-10 min, red = >10 min
               const getDelayStyle = () => {
                 if (delay <= 0) return 'bg-green-500/20 text-green-400 border-green-500/30';
                 if (delay <= 5) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
@@ -1219,13 +1442,131 @@ export default function TabulatorPage() {
               };
               return (
                 <div className={`px-3 py-1 rounded-full text-sm font-medium border ${getDelayStyle()}`}>
-                  {delay <= 0
-                    ? 'On Schedule'
-                    : `+${delay} min behind`
-                  }
+                  {delay <= 0 ? 'On Schedule' : `+${delay} min behind`}
                 </div>
               );
             })()}
+          </div>
+        </div>
+
+        {/* Row 2: Audio Controls + Link/Backstage Toggles (PRD Phase 2) */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-700/50">
+          {/* Audio Controls Section */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-purple-400 uppercase tracking-wider mr-2">
+              <Music className="w-3.5 h-3.5 inline mr-1" />
+              AUDIO
+            </span>
+
+            {!audioEnabled ? (
+              <button
+                onClick={handleEnableAudio}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 rounded-lg font-semibold transition-all hover:border-purple-400/50"
+              >
+                <Volume2 className="w-4 h-4" />
+                Enable Audio
+              </button>
+            ) : (
+              <>
+                {/* Audio Playback Controls */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleAudioStop}
+                    disabled={liveState?.audioState === 'stopped'}
+                    className="p-2 bg-gray-700/60 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-all"
+                    title="Stop"
+                  >
+                    <Square className="w-4 h-4" />
+                  </button>
+                  {liveState?.audioState === 'playing' ? (
+                    <button
+                      onClick={handleAudioPause}
+                      className="p-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 rounded-lg transition-all"
+                      title="Pause"
+                    >
+                      <Pause className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleAudioPlay}
+                      disabled={!liveState?.currentEntry?.musicFileUrl}
+                      className="p-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-all"
+                      title="Play"
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="text-xs text-gray-400 font-mono w-10">
+                    {formatAudioTime(localAudioPosition)}
+                  </span>
+                  <div className="w-32 h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${
+                        liveState?.audioState === 'playing' ? 'bg-green-500' : 'bg-purple-500'
+                      }`}
+                      style={{
+                        width: `${audioDuration > 0 ? (localAudioPosition / audioDuration) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400 font-mono w-10">
+                    {formatAudioTime(audioDuration)}
+                  </span>
+                </div>
+
+                {/* Audio Status Badge */}
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  liveState?.audioState === 'playing'
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                    : liveState?.audioState === 'paused'
+                    ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                    : 'bg-gray-600/20 text-gray-400 border border-gray-500/30'
+                }`}>
+                  {liveState?.audioState === 'playing' ? 'Playing' : liveState?.audioState === 'paused' ? 'Paused' : 'Stopped'}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Link Mode & Backstage Control Toggles */}
+          <div className="flex items-center gap-3">
+            {/* Link Mode Toggle */}
+            <button
+              onClick={handleToggleLinkedMode}
+              disabled={setLinkedModeMutation.isPending}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all border text-sm ${
+                liveState?.linkedMode
+                  ? 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border-cyan-500/30 hover:border-cyan-400/50'
+                  : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-400 border-gray-500/30'
+              }`}
+              title={liveState?.linkedMode ? 'Audio linked to tabulation - START/STOP controls audio' : 'Audio NOT linked - control independently'}
+            >
+              {liveState?.linkedMode ? (
+                <LinkIcon className="w-4 h-4" />
+              ) : (
+                <Unlink className="w-4 h-4" />
+              )}
+              {liveState?.linkedMode ? 'Linked' : 'Unlinked'}
+            </button>
+
+            {/* Backstage Control Toggle */}
+            <button
+              onClick={handleToggleBackstageControl}
+              disabled={setBackstageControlMutation.isPending}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all border text-sm ${
+                liveState?.backstageControlEnabled
+                  ? 'bg-green-500/20 hover:bg-green-500/30 text-green-300 border-green-500/30 hover:border-green-400/50'
+                  : 'bg-red-500/20 hover:bg-red-500/30 text-red-300 border-red-500/30 hover:border-red-400/50'
+              }`}
+              title={liveState?.backstageControlEnabled ? 'Backstage CAN control audio' : 'Backstage CANNOT control audio'}
+            >
+              <Radio className="w-4 h-4" />
+              Backstage: {liveState?.backstageControlEnabled ? 'ON' : 'OFF'}
+            </button>
           </div>
         </div>
       </div>
