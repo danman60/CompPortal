@@ -126,6 +126,7 @@ export const liveCompetitionRouter = router({
         ).filter(Boolean),
         duration: 180, // Default 3 minutes (duration_seconds field removed)
         order: entry.running_order || index + 1, // Use running_order from schema
+        entryNumber: entry.entry_number || 0, // Actual entry number from database
         liveStatus: 'queued', // Default status (live_status field removed)
       }));
 

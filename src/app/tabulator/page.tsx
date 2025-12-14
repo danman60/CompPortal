@@ -290,7 +290,7 @@ export default function TabulatorPage() {
     if (lineup?.routines) {
       const entries: ScheduleEntry[] = lineup.routines.map((r: any) => ({
         id: r.id,
-        entryNumber: r.order || 0,
+        entryNumber: r.entryNumber || 0,
         title: r.title,
         studioName: r.studioName,
         category: r.category,
