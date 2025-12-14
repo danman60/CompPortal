@@ -285,6 +285,12 @@ export default function TabulatorPage() {
       setLiveState(liveStateData as LiveState);
     }
   }, [liveStateData]);
+// Sync selectedDate with operating date when it changes
+  useEffect(() => {
+    if (liveState?.operatingDate && liveState.operatingDate !== selectedDate) {
+      setSelectedDate(liveState.operatingDate);
+    }
+  }, [liveState?.operatingDate]);
 
   useEffect(() => {
     if (lineup?.routines) {
