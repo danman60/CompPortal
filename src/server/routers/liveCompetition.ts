@@ -1193,12 +1193,12 @@ export const liveCompetitionRouter = router({
         create: {
           tenant_id: ctx.tenantId,
           competition_id: input.competitionId,
-          competition_state: 'ready',
+          competition_state: 'pending',
           day_number: input.dayNumber || 1,
           session_number: input.sessionNumber || 1,
         },
         update: {
-          competition_state: 'ready',
+          competition_state: 'pending',
           day_number: input.dayNumber,
           session_number: input.sessionNumber,
           updated_at: new Date(),
@@ -1239,7 +1239,7 @@ export const liveCompetitionRouter = router({
         create: {
           tenant_id: ctx.tenantId,
           competition_id: input.competitionId,
-          competition_state: 'ready',
+          competition_state: 'pending',
           operating_date: input.operatingDate ? new Date(input.operatingDate) : null,
         },
         update: {
@@ -1302,12 +1302,12 @@ export const liveCompetitionRouter = router({
           competition_id: input.competitionId,
           competition_state: 'active',
           current_entry_id: input.routineId,
-          current_entry_state: 'ready',
+          current_entry_state: 'queued',
           current_entry_started_at: new Date(),
         },
         update: {
           current_entry_id: input.routineId,
-          current_entry_state: 'ready',
+          current_entry_state: 'queued',
           current_entry_started_at: new Date(),
           competition_state: 'active',
           updated_at: new Date(),
@@ -1390,7 +1390,7 @@ export const liveCompetitionRouter = router({
         await prisma.live_competition_state.update({
           where: { competition_id: input.competitionId },
           data: {
-            competition_state: 'completing',
+            competition_state: 'completed',
             current_entry_state: 'completed',
             updated_at: new Date(),
           },
@@ -1408,7 +1408,7 @@ export const liveCompetitionRouter = router({
         where: { competition_id: input.competitionId },
         data: {
           current_entry_id: nextEntry.id,
-          current_entry_state: 'ready',
+          current_entry_state: 'queued',
           current_entry_started_at: new Date(),
           playback_state: null,
           playback_position_ms: 0,
@@ -1501,7 +1501,7 @@ export const liveCompetitionRouter = router({
         where: { competition_id: input.competitionId },
         data: {
           current_entry_id: prevEntry.id,
-          current_entry_state: 'ready',
+          current_entry_state: 'queued',
           current_entry_started_at: new Date(),
           playback_state: null,
           playback_position_ms: 0,
@@ -1665,7 +1665,7 @@ export const liveCompetitionRouter = router({
           competition_id: input.competitionId,
           competition_state: 'active',
           current_entry_id: firstEntry?.id || null,
-          current_entry_state: 'ready',
+          current_entry_state: 'queued',
           day_number: input.dayNumber,
           session_number: input.sessionNumber,
           live_mode_started_at: new Date(),
@@ -1673,7 +1673,7 @@ export const liveCompetitionRouter = router({
         update: {
           competition_state: 'active',
           current_entry_id: firstEntry?.id || null,
-          current_entry_state: 'ready',
+          current_entry_state: 'queued',
           day_number: input.dayNumber,
           session_number: input.sessionNumber,
           live_mode_started_at: new Date(),
@@ -1767,7 +1767,7 @@ export const liveCompetitionRouter = router({
         const currentDelay = liveState.schedule_delay_minutes || 0;
         await prisma.live_competition_state.update({
           where: { competition_id: input.competitionId },
-          data: { competition_state: 'break', schedule_delay_minutes: currentDelay + input.durationMinutes, updated_at: new Date() },
+          data: { competition_state: 'paused', schedule_delay_minutes: currentDelay + input.durationMinutes, updated_at: new Date() },
         });
       }
 
@@ -2944,7 +2944,7 @@ export const liveCompetitionRouter = router({
         where: { competition_id: input.competitionId, tenant_id: ctx.tenantId },
       });
 
-      if (!liveState || liveState.competition_state === 'not_started') {
+      if (!liveState || liveState.competition_state === 'pending') {
         return {
           delayMinutes: 0,
           status: 'not_started',
@@ -3199,7 +3199,7 @@ export const liveCompetitionRouter = router({
           tenant_id: ctx.tenantId,
           competition_id: input.competitionId,
           judges_can_see_scores: input.visible,
-          competition_state: 'not_started',
+          competition_state: 'pending',
         },
         update: {
           judges_can_see_scores: input.visible,

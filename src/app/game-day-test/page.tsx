@@ -20,19 +20,52 @@ import Link from 'next/link';
  * 5. Use "Advance Routine" to move to next entry
  */
 
-// Award level definitions (matching production)
-const AWARD_LEVELS = [
-  { name: 'Dynamic Diamond', min: 95.0, max: 99.99, color: '#00D4FF', bg: 'bg-cyan-100', text: 'text-cyan-800' },
-  { name: 'Titanium', min: 92.0, max: 94.99, color: '#A0A0A0', bg: 'bg-gray-200', text: 'text-gray-700' },
-  { name: 'Platinum', min: 88.0, max: 91.99, color: '#E5E4E2', bg: 'bg-slate-200', text: 'text-slate-800' },
-  { name: 'High Gold', min: 85.0, max: 87.99, color: '#FFD700', bg: 'bg-yellow-200', text: 'text-yellow-800' },
-  { name: 'Gold', min: 80.0, max: 84.99, color: '#DAA520', bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  { name: 'Silver', min: 75.0, max: 79.99, color: '#C0C0C0', bg: 'bg-gray-100', text: 'text-gray-600' },
-  { name: 'Bronze', min: 0, max: 74.99, color: '#CD7F32', bg: 'bg-orange-100', text: 'text-orange-700' },
+// Default test competition for tester environment
+const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
+
+// Default award levels (fallback if API fails)
+const DEFAULT_AWARD_LEVELS = [
+  { name: 'Dynamic Diamond', min: 95.0, max: 99.99, color: '#00D4FF' },
+  { name: 'Titanium', min: 92.0, max: 94.99, color: '#C0C0C0' },
+  { name: 'Platinum', min: 88.0, max: 91.99, color: '#E5E4E2' },
+  { name: 'Afterglow', min: 85.0, max: 87.99, color: '#FFD700' },
+  { name: 'High Gold', min: 82.0, max: 84.99, color: '#DAA520' },
+  { name: 'Gold', min: 78.0, max: 81.99, color: '#FFD700' },
+  { name: 'Silver', min: 72.0, max: 77.99, color: '#C0C0C0' },
+  { name: 'Bronze', min: 65.0, max: 71.99, color: '#CD7F32' },
+  { name: 'Participation', min: 0, max: 64.99, color: '#808080' },
 ];
 
-function getAwardLevel(score: number) {
-  return AWARD_LEVELS.find(a => score >= a.min && score <= a.max) || AWARD_LEVELS[AWARD_LEVELS.length - 1];
+interface AwardLevel {
+  name: string;
+  min: number;
+  max: number;
+  color: string;
+}
+
+// Helper to get Tailwind classes based on award color
+function getAwardClasses(color: string): { bg: string; text: string } {
+  const colorMap: Record<string, { bg: string; text: string }> = {
+    '#00D4FF': { bg: 'bg-cyan-100', text: 'text-cyan-800' },
+    '#C0C0C0': { bg: 'bg-gray-200', text: 'text-gray-700' },
+    '#A0A0A0': { bg: 'bg-gray-200', text: 'text-gray-700' },
+    '#E5E4E2': { bg: 'bg-slate-200', text: 'text-slate-800' },
+    '#FFD700': { bg: 'bg-yellow-200', text: 'text-yellow-800' },
+    '#DAA520': { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    '#CD7F32': { bg: 'bg-orange-100', text: 'text-orange-700' },
+    '#808080': { bg: 'bg-gray-100', text: 'text-gray-600' },
+  };
+  return colorMap[color] || { bg: 'bg-gray-100', text: 'text-gray-700' };
+}
+
+// Get award level for a given score
+function getAwardLevel(score: number, levels: AwardLevel[] = DEFAULT_AWARD_LEVELS): AwardLevel | null {
+  for (const level of levels) {
+    if (score >= level.min && score <= level.max) {
+      return level;
+    }
+  }
+  return null;
 }
 
 function formatTime(ms: number): string {
@@ -91,7 +124,7 @@ interface EntryForScoring {
 
 export default function GameDayTestPage() {
   const searchParams = useSearchParams();
-  const competitionIdFromUrl = searchParams.get('competitionId') || '';
+  const competitionIdFromUrl = searchParams.get('competitionId') || DEFAULT_TEST_COMPETITION_ID;
 
   const [competitionId, setCompetitionId] = useState(competitionIdFromUrl);
   const [backstageData, setBackstageData] = useState<BackstageData | null>(null);
@@ -214,7 +247,10 @@ export default function GameDayTestPage() {
 
   // Get award level for current score input
   const currentScore = parseFloat(scoreValue) || 0;
-  const currentAward = getAwardLevel(currentScore);
+  const rawAward = getAwardLevel(currentScore);
+  const currentAward = rawAward
+    ? { ...rawAward, ...getAwardClasses(rawAward.color) }
+    : { name: 'N/A', min: 0, max: 0, color: '#808080', bg: 'bg-gray-100', text: 'text-gray-600' };
 
   // Filter tabulator data
   const filteredTabulatorData = tabulatorData.filter(r => {
@@ -519,7 +555,7 @@ export default function GameDayTestPage() {
             <div className="bg-gray-800/30 rounded p-3">
               <div className="text-xs text-gray-500 mb-2">Award Levels</div>
               <div className="grid grid-cols-2 gap-1 text-xs">
-                {AWARD_LEVELS.map(level => (
+                {DEFAULT_AWARD_LEVELS.map(level => (
                   <div key={level.name} className="flex justify-between">
                     <span style={{ color: level.color }}>{level.name}</span>
                     <span className="text-gray-500">{level.min}-{level.max}</span>
@@ -574,7 +610,10 @@ export default function GameDayTestPage() {
                   </tr>
                 ) : (
                   filteredTabulatorData.map((routine) => {
-                    const award = getAwardLevel(routine.averageScore);
+                    const rawAward = getAwardLevel(routine.averageScore);
+                    const award = rawAward
+                      ? { ...rawAward, ...getAwardClasses(rawAward.color) }
+                      : { name: 'N/A', min: 0, max: 0, color: '#808080', bg: 'bg-gray-100', text: 'text-gray-600' };
                     // Get scores by judge number
                     const j1 = routine.judges.find(j => j.judgeNumber === 1)?.score;
                     const j2 = routine.judges.find(j => j.judgeNumber === 2)?.score;
