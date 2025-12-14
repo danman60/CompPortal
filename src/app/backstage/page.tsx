@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { MP3DownloadPanel } from '@/components/audio/MP3DownloadPanel';
-import { HardDrive, Maximize, Minimize, Play, Pause, Square, Volume2, VolumeX } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { HardDrive, Maximize, Minimize, Play, Pause, Square, Volume2, VolumeX, Radio } from 'lucide-react';
 
 // Default test competition for tester environment
 const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
@@ -43,7 +45,22 @@ interface BackstageData {
   serverTime?: string;
 }
 
+// Types for Game Day Audio Control sync
+interface LiveState {
+  currentEntryId: string | null;
+  competitionState: 'idle' | 'active' | 'paused';
+  audioState: 'stopped' | 'playing' | 'paused';
+  audioPositionMs: number;
+  audioStartedAt: string | null;
+  linkedMode: boolean;
+  backstageControlEnabled: boolean;
+}
+
 export default function BackstagePage() {
+  const searchParams = useSearchParams();
+  const competitionIdParam = searchParams.get('competitionId');
+  const competitionId = competitionIdParam || DEFAULT_TEST_COMPETITION_ID;
+
   const [data, setData] = useState<BackstageData | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,6 +79,25 @@ export default function BackstagePage() {
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const [currentAudioRoutineId, setCurrentAudioRoutineId] = useState<string | null>(null);
+
+  // Game Day Audio Control - tRPC sync with tabulator
+  const { data: liveState, refetch: refetchLiveState } = trpc.liveCompetition.getLiveState.useQuery(
+    { competitionId },
+    {
+      refetchInterval: 1000, // Real-time sync every second
+      enabled: !!competitionId,
+    }
+  );
+
+  // Audio control mutations for syncing with tabulator
+  const setAudioStateMutation = trpc.liveCompetition.setAudioState.useMutation({
+    onSuccess: () => refetchLiveState(),
+  });
+  const updateAudioPositionMutation = trpc.liveCompetition.updateAudioPosition.useMutation();
+
+  // Cast to typed live state
+  const audioSyncState = liveState as LiveState | undefined;
+  const backstageControlEnabled = audioSyncState?.backstageControlEnabled ?? true;
 
   const fetchData = useCallback(async () => {
     setSyncStatus('syncing');
@@ -147,9 +183,15 @@ export default function BackstagePage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Audio playback controls
+  // Audio playback controls - with database sync
   const playAudio = useCallback(() => {
     if (audioRef.current && data?.currentRoutine?.mp3Url) {
+      // Check if backstage control is enabled
+      if (!backstageControlEnabled) {
+        console.log('Backstage control disabled by tabulator');
+        return;
+      }
+
       // Load new audio if routine changed
       if (currentAudioRoutineId !== data.currentRoutine.id) {
         audioRef.current.src = data.currentRoutine.mp3Url;
@@ -158,24 +200,48 @@ export default function BackstagePage() {
       }
       audioRef.current.play();
       setIsPlaying(true);
+
+      // Sync to database
+      setAudioStateMutation.mutate({
+        competitionId,
+        audioState: 'playing',
+      });
     }
-  }, [data?.currentRoutine?.mp3Url, data?.currentRoutine?.id, currentAudioRoutineId]);
+  }, [data?.currentRoutine?.mp3Url, data?.currentRoutine?.id, currentAudioRoutineId, backstageControlEnabled, competitionId, setAudioStateMutation]);
 
   const pauseAudio = useCallback(() => {
+    if (!backstageControlEnabled) return;
+
     if (audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
+
+      // Sync to database
+      setAudioStateMutation.mutate({
+        competitionId,
+        audioState: 'paused',
+        positionMs: Math.floor(audioRef.current.currentTime * 1000),
+      });
     }
-  }, []);
+  }, [backstageControlEnabled, competitionId, setAudioStateMutation]);
 
   const stopAudio = useCallback(() => {
+    if (!backstageControlEnabled) return;
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       setIsPlaying(false);
       setAudioCurrentTime(0);
+
+      // Sync to database
+      setAudioStateMutation.mutate({
+        competitionId,
+        audioState: 'stopped',
+        positionMs: 0,
+      });
     }
-  }, []);
+  }, [backstageControlEnabled, competitionId, setAudioStateMutation]);
 
   const toggleMute = useCallback(() => {
     if (audioRef.current) {
@@ -234,6 +300,44 @@ export default function BackstagePage() {
       stopAudio();
     }
   }, [data?.currentRoutine?.id, currentAudioRoutineId, stopAudio]);
+
+  // Game Day Audio Control - sync playback state with tabulator
+  useEffect(() => {
+    if (!audioRef.current || !audioSyncState || !data?.currentRoutine?.mp3Url) return;
+
+    const audio = audioRef.current;
+    const dbAudioState = audioSyncState.audioState;
+
+    // Sync playing state from database (tabulator controls)
+    if (dbAudioState === 'playing' && audio.paused) {
+      // Load audio if needed
+      if (currentAudioRoutineId !== data.currentRoutine.id) {
+        audio.src = data.currentRoutine.mp3Url;
+        audio.load();
+        setCurrentAudioRoutineId(data.currentRoutine.id);
+      }
+      // Calculate current position based on server time
+      if (audioSyncState.audioStartedAt) {
+        const serverStartTime = new Date(audioSyncState.audioStartedAt).getTime();
+        const elapsed = Date.now() - serverStartTime;
+        const newPosition = ((audioSyncState.audioPositionMs || 0) + elapsed) / 1000;
+        audio.currentTime = newPosition;
+      }
+      audio.play().catch(console.error);
+      setIsPlaying(true);
+    } else if (dbAudioState === 'paused' && !audio.paused) {
+      audio.pause();
+      if (typeof audioSyncState.audioPositionMs === 'number') {
+        audio.currentTime = audioSyncState.audioPositionMs / 1000;
+      }
+      setIsPlaying(false);
+    } else if (dbAudioState === 'stopped' && (!audio.paused || audio.currentTime > 0)) {
+      audio.pause();
+      audio.currentTime = 0;
+      setIsPlaying(false);
+      setAudioCurrentTime(0);
+    }
+  }, [audioSyncState?.audioState, audioSyncState?.audioPositionMs, audioSyncState?.audioStartedAt, data?.currentRoutine?.mp3Url, data?.currentRoutine?.id, currentAudioRoutineId]);
 
   const formatAudioTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -395,7 +499,16 @@ export default function BackstagePage() {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-200 via-white to-gray-200 bg-clip-text text-transparent">{data.competitionName || 'Competition'}</h1>
             <div className="text-gray-500 text-sm tracking-wider uppercase">Backstage Monitor</div>
           </div>
-          <div className="w-24" />
+          {/* Game Day Audio Control Status Badge */}
+          <div className={`px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-medium ${
+            backstageControlEnabled
+              ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+          }`}>
+            <Radio className="w-3.5 h-3.5" />
+            <div className={`w-1.5 h-1.5 rounded-full ${backstageControlEnabled ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+            {backstageControlEnabled ? 'Controls Active' : 'Disabled by Tabulator'}
+          </div>
         </div>
       </div>
 
