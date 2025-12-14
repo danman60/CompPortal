@@ -40,6 +40,8 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
+  Tablet,
+  Smartphone,
 } from 'lucide-react';
 
 // Types
@@ -136,6 +138,7 @@ function JudgePageContent() {
   const scoreInputRef = useRef<HTMLInputElement>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [showOtherScores, setShowOtherScores] = useState(false);
+  const [deviceMode, setDeviceMode] = useState<'tablet' | 'phone'>('tablet');
 
   // tRPC queries
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -457,7 +460,9 @@ function JudgePageContent() {
 
   // Get current award level
   const currentAwardLevel = getAwardLevel(state.score);
-  const sliderValue = parseScore(state.score) ?? 85;
+  // Slider value defaults to 85, and clamps to min 60 for the slider
+  const rawSliderValue = parseScore(state.score) ?? 85;
+  const sliderValue = Math.max(60, Math.min(100, rawSliderValue));
 
   // Check if current routine is Title Division
   const isCurrentRoutineTitleDivision = isTitleDivision(state.currentRoutine?.category);
@@ -533,19 +538,51 @@ function JudgePageContent() {
           </div>
         </div>
 
-        {/* Connection Status */}
-        <div
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
-            state.isConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-          }`}
-        >
-          {state.isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-          {state.isConnected ? 'Live' : 'Offline'}
+        <div className="flex items-center gap-2">
+          {/* Device Mode Toggle */}
+          <div className="flex items-center bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => setDeviceMode('tablet')}
+              className={`p-2 rounded-md transition-colors ${
+                deviceMode === 'tablet'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+              title="Tablet View"
+            >
+              <Tablet className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setDeviceMode('phone')}
+              className={`p-2 rounded-md transition-colors ${
+                deviceMode === 'phone'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+              title="Phone View"
+            >
+              <Smartphone className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Connection Status */}
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+              state.isConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+            }`}
+          >
+            {state.isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+            {state.isConnected ? 'Live' : 'Offline'}
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="p-4 max-w-2xl mx-auto">
+      {/* Main Content - Adapts to device mode */}
+      <main className={`mx-auto ${
+        deviceMode === 'phone'
+          ? 'p-2 max-w-sm'
+          : 'p-4 max-w-2xl'
+      }`}>
         {/* Current Routine Card */}
         {state.currentRoutine ? (
           <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 rounded-2xl border border-indigo-500/30 p-6 mb-6">
@@ -652,12 +689,12 @@ function JudgePageContent() {
               />
             </div>
 
-            {/* Slider */}
+            {/* Slider - Range 60-100 for practical scoring */}
             <div className="px-2">
               <input
                 type="range"
-                min="0"
-                max="99.99"
+                min="60"
+                max="100"
                 step="0.01"
                 value={sliderValue}
                 onChange={handleSliderChange}
@@ -665,9 +702,9 @@ function JudgePageContent() {
                 className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 disabled:opacity-50"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0.00</span>
-                <span>50.00</span>
-                <span>99.99</span>
+                <span>60.00</span>
+                <span>80.00</span>
+                <span>100.00</span>
               </div>
             </div>
           </div>

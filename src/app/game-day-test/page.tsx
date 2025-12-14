@@ -149,6 +149,9 @@ export default function GameDayTestPage() {
   // Tabulator filter
   const [searchFilter, setSearchFilter] = useState('');
 
+  // Dynamic award levels (fetched from competition settings)
+  const [awardLevels, setAwardLevels] = useState<AwardLevel[]>(DEFAULT_AWARD_LEVELS);
+
   // Update competitionId when URL changes
   useEffect(() => {
     if (competitionIdFromUrl) {
@@ -201,6 +204,15 @@ export default function GameDayTestPage() {
         setEntries(entriesJson.entries || []);
       }
 
+      // Fetch award levels from competition settings
+      const awardLevelsRes = await fetch(`/api/test/get-award-levels?competitionId=${competitionId}`);
+      if (awardLevelsRes.ok) {
+        const awardLevelsJson = await awardLevelsRes.json();
+        if (awardLevelsJson.levels && awardLevelsJson.levels.length > 0) {
+          setAwardLevels(awardLevelsJson.levels);
+        }
+      }
+
       setLastRefresh(new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Refresh error:', error);
@@ -245,9 +257,9 @@ export default function GameDayTestPage() {
     }
   };
 
-  // Get award level for current score input
+  // Get award level for current score input (uses dynamic levels)
   const currentScore = parseFloat(scoreValue) || 0;
-  const rawAward = getAwardLevel(currentScore);
+  const rawAward = getAwardLevel(currentScore, awardLevels);
   const currentAward = rawAward
     ? { ...rawAward, ...getAwardClasses(rawAward.color) }
     : { name: 'N/A', min: 0, max: 0, color: '#808080', bg: 'bg-gray-100', text: 'text-gray-600' };
@@ -551,11 +563,11 @@ export default function GameDayTestPage() {
               </div>
             )}
 
-            {/* Award Levels Reference */}
+            {/* Award Levels Reference (Dynamic) */}
             <div className="bg-gray-800/30 rounded p-3">
               <div className="text-xs text-gray-500 mb-2">Award Levels</div>
               <div className="grid grid-cols-2 gap-1 text-xs">
-                {DEFAULT_AWARD_LEVELS.map(level => (
+                {awardLevels.map(level => (
                   <div key={level.name} className="flex justify-between">
                     <span style={{ color: level.color }}>{level.name}</span>
                     <span className="text-gray-500">{level.min}-{level.max}</span>
@@ -610,7 +622,7 @@ export default function GameDayTestPage() {
                   </tr>
                 ) : (
                   filteredTabulatorData.map((routine) => {
-                    const rawAward = getAwardLevel(routine.averageScore);
+                    const rawAward = getAwardLevel(routine.averageScore, awardLevels);
                     const award = rawAward
                       ? { ...rawAward, ...getAwardClasses(rawAward.color) }
                       : { name: 'N/A', min: 0, max: 0, color: '#808080', bg: 'bg-gray-100', text: 'text-gray-600' };
