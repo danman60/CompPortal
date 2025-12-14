@@ -117,11 +117,10 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
   },
   {
     id: 'music',
-    href: '/dashboard/music-tracking',
+    href: '/dashboard/director-panel/music-status',
     icon: '🎵',
-    title: 'Music Tracking',
-    description: '🚧 Under construction',
-    disabled: true,
+    title: 'Music Status',
+    description: 'Track missing music & send reminders',
   },
   {
     id: 'classification-requests',

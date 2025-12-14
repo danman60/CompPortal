@@ -24,6 +24,8 @@ export function MusicStatusDashboard() {
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<string>('');
   const [expandedStudio, setExpandedStudio] = useState<string | null>(null);
   const [exemptingEntry, setExemptingEntry] = useState<string | null>(null);
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [sendingBulk, setSendingBulk] = useState(false);
 
   // Fetch competitions
   const { data: competitionsData, isLoading: competitionsLoading } = trpc.competition.getAll.useQuery({});
@@ -47,9 +49,85 @@ export function MusicStatusDashboard() {
     },
   });
 
+  const sendReminderMutation = trpc.musicNotification.sendStudioReminder.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Reminder sent! ${data.entriesMissing} entries included.`);
+      refetch();
+      setSendingReminder(null);
+    },
+    onError: (error) => {
+      toast.error(`Failed to send reminder: ${error.message}`);
+      setSendingReminder(null);
+    },
+  });
+
+  const sendBulkMutation = trpc.musicNotification.sendBulkReminders.useMutation({
+    onSuccess: (data) => {
+      if (data.sent > 0) {
+        toast.success(`Sent ${data.sent} reminders. ${data.skipped} studios skipped (no email).`);
+      }
+      if (data.failed > 0) {
+        toast.error(`${data.failed} reminders failed to send.`);
+      }
+      refetch();
+      setSendingBulk(false);
+    },
+    onError: (error) => {
+      toast.error(`Failed to send bulk reminders: ${error.message}`);
+      setSendingBulk(false);
+    },
+  });
+
   const handleExemptEntry = async (entryId: string, exempt: boolean) => {
     setExemptingEntry(entryId);
     await exemptMutation.mutateAsync({ entryId, exempt, reason: 'Marked exempt by CD' });
+  };
+
+  const handleSendReminder = async (studioId: string) => {
+    setSendingReminder(studioId);
+    await sendReminderMutation.mutateAsync({
+      competitionId: selectedCompetitionId,
+      studioId,
+    });
+  };
+
+  const handleSendBulkReminders = async () => {
+    setSendingBulk(true);
+    await sendBulkMutation.mutateAsync({
+      competitionId: selectedCompetitionId,
+    });
+  };
+
+  const handleExportMissingMusic = () => {
+    if (!data) return;
+
+    // Generate CSV content
+    const headers = ['Entry Number', 'Title', 'Studio', 'Category'];
+    const rows = data.studiosWithMissing.flatMap((studio: StudioWithMissing) =>
+      studio.entries.map(entry => [
+        entry.entryNumber ?? '',
+        entry.title,
+        studio.studioName,
+        entry.category,
+      ])
+    );
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `missing-music-${data.competition.name.replace(/\s+/g, '-')}-${data.competition.year}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Export downloaded');
   };
 
   // No competition selected
@@ -280,6 +358,26 @@ export function MusicStatusDashboard() {
                         <span>Reminded {new Date(studio.lastReminderAt).toLocaleDateString()}</span>
                       </div>
                     )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSendReminder(studio.studioId);
+                      }}
+                      disabled={sendingReminder === studio.studioId || !studio.studioEmail}
+                      className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                        studio.studioEmail
+                          ? 'bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30'
+                          : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
+                      } disabled:opacity-50`}
+                      title={studio.studioEmail ? 'Send reminder email' : 'No email address'}
+                    >
+                      {sendingReminder === studio.studioId ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      <span>Send</span>
+                    </button>
                     {expandedStudio === studio.studioId ? (
                       <ChevronUp className="w-5 h-5 text-white/40" />
                     ) : (
@@ -326,12 +424,23 @@ export function MusicStatusDashboard() {
 
           {/* Action Buttons */}
           <div className="p-6 border-t border-white/10 flex flex-wrap gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-white/20 rounded-lg hover:bg-white/10 transition-colors text-white/70">
+            <button
+              onClick={handleExportMissingMusic}
+              className="flex items-center gap-2 px-4 py-2 border border-white/20 rounded-lg hover:bg-white/10 transition-colors text-white/70"
+            >
               <Download className="w-4 h-4" />
               Export Missing Music List
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white">
-              <Send className="w-4 h-4" />
+            <button
+              onClick={handleSendBulkReminders}
+              disabled={sendingBulk}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sendingBulk ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
               Send Reminders to All Studios
             </button>
           </div>
