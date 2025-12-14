@@ -36,6 +36,7 @@ import {
   Search,
   FileWarning,
   RefreshCw,
+  Calendar,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import {
@@ -119,9 +120,16 @@ interface CompetitionState {
   delayMinutes: number;
 }
 
+// Default test competition and date for testing (production: CD selects day)
+const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
+const DEFAULT_TEST_DATE = '2026-04-09';
+
 export default function CDControlPanelLive() {
   const searchParams = useSearchParams();
-  const competitionId = searchParams.get('competitionId') || '';
+  const competitionId = searchParams.get('competitionId') || DEFAULT_TEST_COMPETITION_ID;
+
+  // Selected date for filtering routines (defaults to first test day)
+  const [selectedDate, setSelectedDate] = useState<string>(DEFAULT_TEST_DATE);
 
   // State
   const [competitionState, setCompetitionState] = useState<CompetitionState>({
@@ -165,10 +173,10 @@ export default function CDControlPanelLive() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [pendingReorder, setPendingReorder] = useState<{routine: Routine, newPosition: number} | null>(null);
 
-  // Fetch lineup data
+  // Fetch lineup data (filtered by selected date)
   const { data: lineupData, isLoading: lineupLoading } = trpc.liveCompetition.getLineup.useQuery(
-    { competitionId },
-    { enabled: !!competitionId }
+    { competitionId, performanceDate: selectedDate },
+    { enabled: !!competitionId && !!selectedDate }
   );
 
   // Fetch judges data
@@ -668,6 +676,16 @@ export default function CDControlPanelLive() {
             CD Control Panel
           </div>
           <div className="text-sm text-gray-400">{lineupData?.competitionName || 'Competition'}</div>
+          {/* Date Selector */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300">
+            <Calendar className="w-4 h-4" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent border-none text-blue-300 text-sm focus:outline-none cursor-pointer"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
