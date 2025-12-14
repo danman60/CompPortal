@@ -1,15 +1,86 @@
 # Known Issues & Limitations
 
-**Last Updated**: October 16, 2025
-**Status**: Pre-Testing Sprint
-**Next Review**: After major testing week
+**Last Updated**: December 13, 2025
+**Status**: Phase 2 Scheduling Development
+**Next Review**: Before Phase 2 production launch (Dec 18)
 
 ---
 
-## 🚨 Known Bugs (Being Fixed)
+## 🚨 Known Bugs (To Be Fixed)
 
-### None Currently
-All critical bugs from last sprint have been resolved.
+### 1. "Add Studio with Reservation" Duplicate Check Bug
+**Location:** `reservation.ts:1932-1936`
+**Severity:** Medium
+**Status:** Identified, not yet fixed
+
+**Problem:** Duplicate check only looks at `contact_email` field, not `email` field. Studios with `email` populated but `contact_email = NULL` can create duplicate reservations.
+
+**Impact:** Elite Star Dance Academy affected. Workaround: Manual reservation creation by CD.
+
+**Fix Required:** Update duplicate check to include both `email` and `contact_email` fields.
+
+---
+
+### 2. Router Ordering Inconsistency (Game Day)
+**Location:** `liveCompetition.ts:88`
+**Severity:** Critical (before Game Day)
+**Status:** Identified, not yet fixed
+
+**Problem:** Different Game Day components use different ordering fields:
+- Backstage API: `schedule_sequence ASC, entry_number ASC`
+- Audio Manifest: `performance_date ASC, schedule_sequence ASC`
+- tRPC getLineup: `running_order ASC` (WRONG)
+
+**Impact:** Different views could show different lineup orders.
+
+**Fix Required:** Change `liveCompetition.ts:88` from `running_order` to `schedule_sequence`.
+
+---
+
+### 3. Status Filter Inconsistency (Game Day)
+**Location:** `liveCompetition.ts:76`
+**Severity:** High (before Game Day)
+**Status:** Identified, not yet fixed
+
+**Problem:** tRPC getLineup filters `status: 'registered'` but other APIs filter `status != 'cancelled'`. May exclude valid entries with status 'submitted'.
+
+**Fix Required:** Change to `status: { not: 'cancelled' }`.
+
+---
+
+## ✅ Recently Fixed Bugs (Dec 2025)
+
+### Invoice Calculation Bugs (Session 78)
+**Resolved:** December 6, 2025
+**Details:** `INVOICE_CALCULATION_INCIDENT_DEC06_2025.md`
+
+4 bugs fixed:
+1. `balance_remaining` not initialized on creation (invoice.ts:893-894)
+2. Discount mutations don't update `balance_remaining` (invoice.ts:1249, 1313, 1386)
+3. Partial payment uses wrong base (invoice.ts:2469)
+4. PDF missing `other_credit_amount` display (pdf-reports.ts:908-916)
+
+---
+
+## 🔴 Pre-Launch Data Requirements
+
+### dancer_names Array Denormalization
+**Required Before:** Phase 2 Scheduling Launch (Dec 18)
+**Status:** NOT BACKFILLED on production
+
+**Problem:** `dancer_names[]` on `competition_entries` is only 3-5% populated for production tenants despite `entry_participants` having 99-100% coverage.
+
+**Impact:**
+- Conflict detection fails
+- Backstage display shows blank dancer info
+- Schedule V2 can't show dancer names
+
+**Current State:**
+- EMPWR: 5% populated (needs ~1,311 entries backfilled)
+- Glow: 3% populated (needs ~1,731 entries backfilled)
+- Trigger: ✅ Active for new entries
+
+**Fix:** Run backfill SQL in `PREFLIGHT_SCHEDULING_CHECKLIST.md`
 
 ---
 

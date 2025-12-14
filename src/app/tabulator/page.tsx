@@ -105,6 +105,10 @@ export default function TabulatorPage() {
   const [editScoreValue, setEditScoreValue] = useState<number>(0);
   const [editScoreReason, setEditScoreReason] = useState('');
   const [showDateSelector, setShowDateSelector] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    // Default to today's date in YYYY-MM-DD format
+    return new Date().toISOString().split('T')[0];
+  });
 
   // Get active competitions
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -112,9 +116,9 @@ export default function TabulatorPage() {
     { enabled: true, refetchInterval: 30000 }
   );
 
-  // Get lineup for selected competition
+  // Get lineup for selected competition (filtered by selected date)
   const { data: lineup, refetch: refetchLineup } = trpc.liveCompetition.getLineup.useQuery(
-    { competitionId: competitionId || '' },
+    { competitionId: competitionId || '', performanceDate: selectedDate },
     { enabled: !!competitionId, refetchInterval: 5000 }
   );
 
@@ -705,9 +709,17 @@ export default function TabulatorPage() {
         {/* LEFT PANEL - Schedule */}
         <div className="w-80 bg-gray-800/50 border-r border-gray-700 flex flex-col">
           <div className="p-3 border-b border-gray-700 bg-gray-800">
-            <h2 className="font-semibold text-gray-300">SCHEDULE</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-300">SCHEDULE</h2>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
             <div className="text-xs text-gray-500 mt-1">
-              {schedule.length} routines today
+              {schedule.length} routines for {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">

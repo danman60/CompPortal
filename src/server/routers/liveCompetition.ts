@@ -56,6 +56,7 @@ export const liveCompetitionRouter = router({
   getLineup: publicProcedure
     .input(z.object({
       competitionId: z.string(),
+      performanceDate: z.string().optional(), // YYYY-MM-DD format to filter by day
     }))
     .query(async ({ input, ctx }) => {
       if (!ctx.tenantId) {
@@ -65,6 +66,23 @@ export const liveCompetitionRouter = router({
         });
       }
 
+      // Build the where clause for entries
+      const entriesWhere: Record<string, unknown> = {
+        status: { not: 'cancelled' },
+      };
+
+      // Filter by performance_date if provided (date range for the day)
+      if (input.performanceDate) {
+        const targetDate = new Date(input.performanceDate + 'T00:00:00');
+        const nextDay = new Date(targetDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        entriesWhere.performance_date = {
+          gte: targetDate,
+          lt: nextDay,
+        };
+      }
+
       const competition = await prisma.competitions.findUnique({
         where: {
           id: input.competitionId,
@@ -72,9 +90,7 @@ export const liveCompetitionRouter = router({
         },
         include: {
           competition_entries: {
-            where: {
-              status: { not: 'cancelled' }, // Include all valid entry statuses
-            },
+            where: entriesWhere,
             include: {
               studios: true,
               dance_categories: true, // Include category details
