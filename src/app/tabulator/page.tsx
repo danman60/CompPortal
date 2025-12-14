@@ -909,7 +909,7 @@ export default function TabulatorPage() {
         </div>
 
         {/* CENTER PANEL - Current Routine */}
-        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-gray-900 via-slate-900/50 to-gray-900">
+        <div className="flex-1 flex flex-col items-center pt-8 px-8 bg-gradient-to-b from-gray-900 via-slate-900/50 to-gray-900">
           {liveState?.currentEntry ? (
             <>
               <div className="px-4 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded-full mb-4">
