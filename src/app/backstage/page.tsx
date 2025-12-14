@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { MP3DownloadPanel } from '@/components/audio/MP3DownloadPanel';
 import { trpc } from '@/lib/trpc';
-import { HardDrive, Maximize, Minimize, Play, Pause, Square, Volume2, VolumeX, Radio } from 'lucide-react';
+import { HardDrive, Maximize, Minimize, Play, Pause, Square, Volume2, VolumeX, Radio, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Default test competition for tester environment
 const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
@@ -79,6 +80,12 @@ export default function BackstagePage() {
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const [currentAudioRoutineId, setCurrentAudioRoutineId] = useState<string | null>(null);
+
+  // Network connection status (PRD 10.2)
+  const [isOnline, setIsOnline] = useState(true);
+
+  // Track audio state changes for conflict detection (PRD 10.3)
+  const lastAudioStateRef = useRef<string | null>(null);
 
   // Game Day Audio Control - tRPC sync with tabulator
   const { data: liveState, refetch: refetchLiveState } = trpc.liveCompetition.getLiveState.useQuery(
@@ -182,6 +189,59 @@ export default function BackstagePage() {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
+
+  // Network connection status monitoring (PRD 10.2)
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('Connection restored');
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error('Connection lost - some features may not work');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Check initial state
+    setIsOnline(navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Detect audio state changes from tabulator (PRD 10.3 - Concurrent Control Conflicts)
+  useEffect(() => {
+    if (!audioSyncState?.audioState) return;
+
+    const currentState = audioSyncState.audioState;
+    const previousState = lastAudioStateRef.current;
+
+    // Skip if no previous state or state hasn't changed
+    if (previousState === null || previousState === currentState) {
+      lastAudioStateRef.current = currentState;
+      return;
+    }
+
+    // Check if local state differs from server state (tabulator made a change)
+    if (audioRef.current) {
+      const localPlaying = !audioRef.current.paused;
+      const serverPlaying = currentState === 'playing';
+
+      // If they differ, it means tabulator changed the state
+      if (localPlaying !== serverPlaying) {
+        toast('Audio state changed by Tabulator', {
+          icon: '🎵',
+          duration: 3000,
+        });
+      }
+    }
+
+    lastAudioStateRef.current = currentState;
+  }, [audioSyncState?.audioState]);
 
   // Audio playback controls - with database sync
   const playAudio = useCallback(() => {
@@ -438,12 +498,37 @@ export default function BackstagePage() {
   const progressPercent = data.currentRoutine
     ? Math.min(100, ((data.currentRoutine.durationMs - timeRemaining) / data.currentRoutine.durationMs) * 100)
     : 0;
+
+  // Timer color coding (PRD 5.5): Green >30s, Yellow 10-30s, Red <10s (flashing)
+  const timeRemainingSeconds = Math.ceil(timeRemaining / 1000);
+  const timerColorClass = timeRemainingSeconds > 30
+    ? 'text-green-400' // Green: >30 seconds
+    : timeRemainingSeconds > 10
+      ? 'text-yellow-400' // Yellow: 10-30 seconds
+      : 'text-red-400 animate-pulse'; // Red (flashing): <10 seconds
+  const progressColorClass = timeRemainingSeconds > 30
+    ? 'bg-gradient-to-r from-green-600 to-emerald-500 shadow-lg shadow-green-500/30'
+    : timeRemainingSeconds > 10
+      ? 'bg-gradient-to-r from-yellow-600 to-amber-500 shadow-lg shadow-yellow-500/30'
+      : 'bg-gradient-to-r from-red-600 to-rose-500 shadow-lg shadow-red-500/30';
   const isLowTime = timeRemaining > 0 && timeRemaining < 30000;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-slate-900 to-black text-white flex flex-col">
+      {/* Toast notifications for conflict alerts */}
+      <Toaster position="top-center" />
+
       {/* Hidden audio element for playback */}
       <audio ref={audioRef} preload="metadata" />
+
+      {/* Network disconnection banner (PRD 10.2) */}
+      {!isOnline && (
+        <div className="bg-red-600 text-white px-4 py-2 flex items-center justify-center gap-2 animate-pulse fixed top-0 left-0 right-0 z-50">
+          <AlertCircle className="w-5 h-5" />
+          <span className="font-semibold">Disconnected</span>
+          <span className="text-red-100">- Connection lost. Some features may not work until connection is restored.</span>
+        </div>
+      )}
 
       {/* Back to Test Page link - hidden in kiosk mode */}
       {!isKioskMode && (
@@ -532,13 +617,13 @@ export default function BackstagePage() {
             <div className="relative w-full max-w-2xl mb-8">
               <div className="h-5 bg-gray-700/50 rounded-full overflow-hidden mb-4 shadow-inner">
                 <div
-                  className={"h-full transition-all duration-100 rounded-full " + (isLowTime ? 'bg-gradient-to-r from-red-600 to-rose-500 shadow-lg shadow-red-500/30' : 'bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/30')}
+                  className={"h-full transition-all duration-100 rounded-full " + progressColorClass}
                   style={{ width: progressPercent + '%' }}
                 />
               </div>
               <div className="text-center">
                 <div className="text-gray-500 text-lg mb-3 tracking-wider uppercase">Time Remaining</div>
-                <div className={"text-9xl md:text-[12rem] font-mono font-bold tabular-nums " + (isLowTime ? 'text-red-400 animate-pulse' : 'text-white')}>
+                <div className={"text-9xl md:text-[12rem] font-mono font-bold tabular-nums " + timerColorClass}>
                   {formatTime(timeRemaining)}
                 </div>
                 <div className="text-gray-500 text-lg mt-3">of {formatDuration(data.currentRoutine.durationMs)}</div>

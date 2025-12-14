@@ -34,6 +34,9 @@ import {
   Volume2,
   VolumeX,
   Music,
+  SkipForward,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 
 // Types
@@ -131,6 +134,9 @@ export default function TabulatorPage() {
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioVolume, setAudioVolume] = useState(1);
   const [audioEnabled, setAudioEnabled] = useState(false); // Track if user has enabled audio (browser autoplay restriction)
+  const [autoNextEnabled, setAutoNextEnabled] = useState(false); // Auto-advance to next routine when timer ends
+  const [isOnline, setIsOnline] = useState(true); // Network connection status
+  const lastAudioStateRef = useRef<string | null>(null); // Track last audio state for conflict detection
 
   // Get active competitions
   const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
@@ -588,6 +594,69 @@ export default function TabulatorPage() {
     }
   }, [liveState?.competitionState, liveState?.linkedMode, audioEnabled]);
 
+  // Network connection status monitoring
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('Connection restored');
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error('Connection lost - some features may not work');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Set initial state
+    setIsOnline(navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Detect audio state changes from backstage (conflict detection)
+  useEffect(() => {
+    if (!liveState?.audioState) return;
+
+    const currentState = liveState.audioState;
+    const previousState = lastAudioStateRef.current;
+
+    // Skip if this is the first render or if state didn't change
+    if (previousState === null || previousState === currentState) {
+      lastAudioStateRef.current = currentState;
+      return;
+    }
+
+    // Check if this change was from another source (backstage)
+    // We detect this by checking if the audio element state doesn't match server state
+    if (audioRef.current && audioEnabled) {
+      const localPlaying = !audioRef.current.paused;
+      const serverPlaying = currentState === 'playing';
+
+      // If local state doesn't match server state, show conflict toast
+      if (localPlaying !== serverPlaying) {
+        toast('Audio state changed by Backstage', {
+          icon: '🎵',
+          duration: 3000,
+        });
+      }
+    }
+
+    lastAudioStateRef.current = currentState;
+  }, [liveState?.audioState, audioEnabled]);
+
+  // Auto-advance to next routine when timer ends
+  useEffect(() => {
+    if (!autoNextEnabled || !competitionId) return;
+    if (timeRemaining === 0 && liveState?.currentEntryState === 'performing') {
+      // Timer hit zero, advance to next
+      handleNext();
+    }
+  }, [timeRemaining, autoNextEnabled, liveState?.currentEntryState, competitionId]);
+
   const handleNext = async () => {
     if (!competitionId) return;
     await advanceRoutine.mutateAsync({ competitionId });
@@ -861,6 +930,15 @@ export default function TabulatorPage() {
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col overflow-hidden">
+      {/* Network Disconnection Banner (PRD 10.2) */}
+      {!isOnline && (
+        <div className="bg-red-600 text-white px-4 py-2 flex items-center justify-center gap-2 animate-pulse">
+          <AlertCircle className="w-5 h-5" />
+          <span className="font-semibold">Disconnected</span>
+          <span className="text-red-100">- Connection lost. Some features may not work until connection is restored.</span>
+        </div>
+      )}
+
       {/* Back to Test Page link */}
       <Link
         href="/game-day-test"
@@ -1466,6 +1544,12 @@ export default function TabulatorPage() {
                 <Volume2 className="w-4 h-4" />
                 Enable Audio
               </button>
+            ) : !liveState?.currentEntry?.musicFileUrl ? (
+              /* No Music File Message (PRD 10.1) */
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-700/40 rounded-lg border border-gray-600/50">
+                <VolumeX className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-400 text-sm">No music file uploaded</span>
+              </div>
             ) : (
               <>
                 {/* Audio Playback Controls */}
@@ -1489,8 +1573,7 @@ export default function TabulatorPage() {
                   ) : (
                     <button
                       onClick={handleAudioPlay}
-                      disabled={!liveState?.currentEntry?.musicFileUrl}
-                      className="p-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-all"
+                      className="p-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg transition-all"
                       title="Play"
                     >
                       <Play className="w-4 h-4" />
@@ -1498,23 +1581,54 @@ export default function TabulatorPage() {
                   )}
                 </div>
 
-                {/* Progress Bar */}
+                {/* Clickable Progress Bar with Color Coding (PRD 5.5) */}
                 <div className="flex items-center gap-2 ml-2">
-                  <span className="text-xs text-gray-400 font-mono w-10">
+                  <span className={`text-xs font-mono w-10 ${
+                    /* Timer color coding: green >30s, yellow 10-30s, red <10s */
+                    audioDuration - localAudioPosition > 30000 ? 'text-green-400' :
+                    audioDuration - localAudioPosition > 10000 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
                     {formatAudioTime(localAudioPosition)}
                   </span>
-                  <div className="w-32 h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="w-32 h-3 bg-gray-700/50 rounded-full overflow-hidden cursor-pointer relative group"
+                    onClick={(e) => {
+                      if (audioDuration > 0) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const percent = x / rect.width;
+                        const newPosition = percent * audioDuration;
+                        handleAudioSeek(newPosition);
+                      }
+                    }}
+                    title="Click to seek"
+                  >
                     <div
                       className={`h-full transition-all ${
+                        /* Progress bar color coding */
+                        audioDuration - localAudioPosition < 10000 ? 'bg-red-500 animate-pulse' :
+                        audioDuration - localAudioPosition < 30000 ? 'bg-yellow-500' :
                         liveState?.audioState === 'playing' ? 'bg-green-500' : 'bg-purple-500'
                       }`}
                       style={{
                         width: `${audioDuration > 0 ? (localAudioPosition / audioDuration) * 100 : 0}%`,
                       }}
                     />
+                    {/* Scrubber handle */}
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{
+                        left: `calc(${audioDuration > 0 ? (localAudioPosition / audioDuration) * 100 : 0}% - 6px)`,
+                      }}
+                    />
                   </div>
-                  <span className="text-xs text-gray-400 font-mono w-10">
-                    {formatAudioTime(audioDuration)}
+                  <span className={`text-xs font-mono w-10 ${
+                    audioDuration - localAudioPosition > 30000 ? 'text-green-400' :
+                    audioDuration - localAudioPosition > 10000 ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>
+                    {formatAudioTime(audioDuration - localAudioPosition)}
                   </span>
                 </div>
 
@@ -1532,8 +1646,22 @@ export default function TabulatorPage() {
             )}
           </div>
 
-          {/* Link Mode & Backstage Control Toggles */}
+          {/* Link Mode, Backstage Control & Auto-Next Toggles */}
           <div className="flex items-center gap-3">
+            {/* Auto-Next Toggle (PRD 5.1) */}
+            <button
+              onClick={() => setAutoNextEnabled(!autoNextEnabled)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all border text-sm ${
+                autoNextEnabled
+                  ? 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30 hover:border-blue-400/50'
+                  : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-400 border-gray-500/30'
+              }`}
+              title={autoNextEnabled ? 'Auto-advance to next routine when timer reaches 0' : 'Manual advancement only'}
+            >
+              <SkipForward className="w-4 h-4" />
+              Auto-Next: {autoNextEnabled ? 'ON' : 'OFF'}
+            </button>
+
             {/* Link Mode Toggle */}
             <button
               onClick={handleToggleLinkedMode}

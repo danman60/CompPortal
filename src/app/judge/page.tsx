@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
@@ -42,6 +42,8 @@ import {
   EyeOff,
   Tablet,
   Smartphone,
+  UserCircle,
+  LogOut,
 } from 'lucide-react';
 
 // Types
@@ -103,10 +105,24 @@ const DEFAULT_LEVELS: AdjudicationLevel[] = [
 // Default test competition for tester environment
 const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
 
+// Test judge IDs for 1-click auth (testing only)
+const TEST_JUDGES = [
+  { id: 'test-judge-1', name: 'Judge 1', position: 'A', color: '#6366F1' },
+  { id: 'test-judge-2', name: 'Judge 2', position: 'B', color: '#8B5CF6' },
+  { id: 'test-judge-3', name: 'Judge 3', position: 'C', color: '#EC4899' },
+];
+
 function JudgePageContent() {
   const searchParams = useSearchParams();
-  const judgeId = searchParams.get('judgeId') || '';
+  const router = useRouter();
+  const judgeIdParam = searchParams.get('judgeId') || '';
   const competitionIdParam = searchParams.get('competitionId') || '';
+
+  // Test judge state - allows 1-click auth without URL manipulation
+  const [activeTestJudge, setActiveTestJudge] = useState<typeof TEST_JUDGES[0] | null>(null);
+
+  // Use activeTestJudge if selected, otherwise fall back to URL param
+  const judgeId = activeTestJudge?.id || judgeIdParam;
 
   // State - default to test competition if no param provided
   const [competitionId, setCompetitionId] = useState<string>(competitionIdParam || DEFAULT_TEST_COMPETITION_ID);
@@ -508,18 +524,64 @@ function JudgePageContent() {
         Test Page
       </Link>
 
-      {/* Missing Judge ID Warning */}
+      {/* 1-Click Test Judge Authentication Panel */}
       {!judgeId && (
-        <div className="bg-yellow-500/20 border-b border-yellow-500/30 px-4 py-3">
-          <div className="flex items-center gap-2 text-yellow-400">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <div>
-              <div className="font-medium">Demo Mode - No Judge ID</div>
-              <div className="text-sm text-yellow-300/80">
-                Add ?judgeId=YOUR_ID&competitionId=COMP_ID to the URL to enable scoring
+        <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border-b border-indigo-500/30 px-4 py-6">
+          <div className="max-w-md mx-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <UserCircle className="w-8 h-8 text-indigo-400" />
+              <div>
+                <h2 className="text-lg font-semibold text-white">Test Judge Login</h2>
+                <p className="text-sm text-indigo-300">Select a judge to start scoring</p>
               </div>
             </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {TEST_JUDGES.map((judge) => (
+                <button
+                  key={judge.id}
+                  onClick={() => {
+                    setActiveTestJudge(judge);
+                    toast.success(`Logged in as ${judge.name}`);
+                  }}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-white/20 bg-white/5 hover:bg-white/10 hover:border-indigo-400 transition-all"
+                  style={{ borderColor: `${judge.color}40` }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg"
+                    style={{ backgroundColor: judge.color }}
+                  >
+                    {judge.position}
+                  </div>
+                  <span className="text-white font-medium">{judge.name}</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-xs text-center text-gray-500 mt-4">
+              Testing mode - judges will sign in via TENANT.compsync.net in production
+            </p>
           </div>
+        </div>
+      )}
+
+      {/* Active Test Judge Indicator */}
+      {activeTestJudge && (
+        <div className="bg-green-500/10 border-b border-green-500/30 px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-green-400">
+            <CheckCircle className="w-4 h-4" />
+            <span className="text-sm">Logged in as <strong>{activeTestJudge.name}</strong> (Test Mode)</span>
+          </div>
+          <button
+            onClick={() => {
+              setActiveTestJudge(null);
+              toast('Logged out', { icon: '👋' });
+            }}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded text-gray-300 transition-colors"
+          >
+            <LogOut className="w-3 h-3" />
+            Switch Judge
+          </button>
         </div>
       )}
 
@@ -528,12 +590,14 @@ function JudgePageContent() {
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold"
-            style={{ backgroundColor: '#6366F1' }}
+            style={{ backgroundColor: activeTestJudge?.color || '#6366F1' }}
           >
-            {state.judgePosition}
+            {activeTestJudge?.position || state.judgePosition}
           </div>
           <div>
-            <div className="font-semibold text-white">{judgeId ? `Judge ${judgeId.slice(0, 8)}...` : state.judgeName}</div>
+            <div className="font-semibold text-white">
+              {activeTestJudge?.name || (judgeId ? `Judge ${judgeId.slice(0, 8)}...` : state.judgeName)}
+            </div>
             <div className="text-xs text-gray-400">{competitionId ? 'Connected to Live Competition' : 'No Competition Selected'}</div>
           </div>
         </div>
