@@ -1135,6 +1135,12 @@ export const liveCompetitionRouter = router({
           liveModeStartedAt: null,
           pausedAt: null,
           lastSyncAt: null,
+          // Audio control fields (Game Day Audio PRD)
+          audioState: 'stopped' as const,
+          audioPositionMs: 0,
+          audioStartedAt: null,
+          linkedMode: true,
+          backstageControlEnabled: true,
         };
       }
 
@@ -1165,6 +1171,12 @@ export const liveCompetitionRouter = router({
         liveModeEndedAt: liveState.live_mode_ended_at,
         pausedAt: liveState.paused_at,
         lastSyncAt: liveState.last_sync_at,
+        // Audio control fields (Game Day Audio PRD)
+        audioState: liveState.audio_state || 'stopped',
+        audioPositionMs: liveState.audio_position_ms || 0,
+        audioStartedAt: liveState.audio_started_at,
+        linkedMode: liveState.linked_mode ?? true,
+        backstageControlEnabled: liveState.backstage_control_enabled ?? true,
       };
     }),
 
@@ -3210,6 +3222,178 @@ export const liveCompetitionRouter = router({
       return {
         success: true,
         visible: input.visible,
+      };
+    }),
+
+  // ============================================
+  // Game Day Audio Control System (PRD Phase 1)
+  // ============================================
+
+  /**
+   * Set audio playback state
+   * Controls: stopped, playing, paused
+   * PRD Section 5.2 - Audio Playback Controls
+   */
+  setAudioState: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      audioState: z.enum(['stopped', 'playing', 'paused']),
+      positionMs: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      const updateData: Record<string, unknown> = {
+        audio_state: input.audioState,
+        updated_at: new Date(),
+      };
+
+      // When playing, record the start time
+      if (input.audioState === 'playing') {
+        updateData.audio_started_at = new Date();
+      }
+
+      // When stopped, reset position to 0
+      if (input.audioState === 'stopped') {
+        updateData.audio_position_ms = 0;
+        updateData.audio_started_at = null;
+      }
+
+      // If position provided (for pause/resume), save it
+      if (input.positionMs !== undefined) {
+        updateData.audio_position_ms = input.positionMs;
+      }
+
+      await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          audio_state: input.audioState,
+          audio_position_ms: input.positionMs || 0,
+          audio_started_at: input.audioState === 'playing' ? new Date() : null,
+          competition_state: 'pending',
+        },
+        update: updateData,
+      });
+
+      return {
+        success: true,
+        audioState: input.audioState,
+      };
+    }),
+
+  /**
+   * Update audio position (for seek operations)
+   * PRD Section 5.2 - SEEK control
+   */
+  updateAudioPosition: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      positionMs: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          audio_position_ms: input.positionMs,
+          competition_state: 'pending',
+        },
+        update: {
+          audio_position_ms: input.positionMs,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        positionMs: input.positionMs,
+      };
+    }),
+
+  /**
+   * Toggle linked mode
+   * When ON: tabulation controls sync with audio playback
+   * PRD Section 5.3 - Link Mode Toggle
+   */
+  setLinkedMode: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      linked: z.boolean(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          linked_mode: input.linked,
+          competition_state: 'pending',
+        },
+        update: {
+          linked_mode: input.linked,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        linked: input.linked,
+      };
+    }),
+
+  /**
+   * Toggle backstage control enabled
+   * When disabled, backstage station cannot control audio
+   * PRD Section 5.4 - Backstage Control Toggle
+   */
+  setBackstageControl: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+      enabled: z.boolean(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.tenantId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Tenant ID required' });
+      }
+
+      await prisma.live_competition_state.upsert({
+        where: {
+          competition_id: input.competitionId,
+        },
+        create: {
+          tenant_id: ctx.tenantId,
+          competition_id: input.competitionId,
+          backstage_control_enabled: input.enabled,
+          competition_state: 'pending',
+        },
+        update: {
+          backstage_control_enabled: input.enabled,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        enabled: input.enabled,
       };
     }),
 
