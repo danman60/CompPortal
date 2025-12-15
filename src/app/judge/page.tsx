@@ -91,15 +91,15 @@ interface JudgeState {
   isTitleBreakdownSubmitted: boolean;
 }
 
-// Default adjudication levels (will be loaded from competition settings)
+// Default adjudication levels matching EMPWR scoring system
+// These are used as fallback when competition settings aren't loaded
 const DEFAULT_LEVELS: AdjudicationLevel[] = [
-  { name: 'Dynamic Diamond', min: 95.0, max: 99.99, color: '#00D4FF' },
-  { name: 'Titanium', min: 92.0, max: 94.99, color: '#C0C0C0' },
-  { name: 'Platinum', min: 88.0, max: 91.99, color: '#E5E4E2' },
-  { name: 'High Gold', min: 85.0, max: 87.99, color: '#FFD700' },
-  { name: 'Gold', min: 80.0, max: 84.99, color: '#DAA520' },
-  { name: 'Silver', min: 75.0, max: 79.99, color: '#C0C0C0' },
-  { name: 'Bronze', min: 70.0, max: 74.99, color: '#CD7F32' },
+  { name: 'Pandora', min: 96.0, max: 100, color: '#9966CC' },
+  { name: 'Platinum', min: 93.0, max: 95.99, color: '#E5E4E2' },
+  { name: 'Titanium', min: 90.0, max: 92.99, color: '#878681' },
+  { name: 'Gold', min: 87.0, max: 89.99, color: '#FFD700' },
+  { name: 'Silver', min: 84.0, max: 86.99, color: '#C0C0C0' },
+  { name: 'Bronze', min: 0, max: 83.99, color: '#CD7F32' },
 ];
 
 // Default test competition for tester environment
