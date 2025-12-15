@@ -343,9 +343,10 @@ export default function TabulatorPage() {
   };
 
   // Helper to format operating date for display
+  // Uses selectedDate (local state) to ensure consistency between top bar and left panel
   const getOperatingDateDisplay = () => {
-    if (!liveState?.operatingDate) return 'Today';
-    const date = new Date(liveState.operatingDate);
+    if (!selectedDate) return 'Today';
+    const date = new Date(selectedDate + 'T12:00:00');
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
@@ -902,7 +903,8 @@ export default function TabulatorPage() {
   };
 
   // Get competition days for move to day dropdown
-  const competitionDays = ['2026-04-11', '2026-04-12', '2026-04-13']; // TODO: Get from competition settings
+  // Tester competition dates: April 9-12, 2026 (data has entries on all 4 days)
+  const competitionDays = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12']; // TODO: Get from competition settings
 
   // Progress percent
   const currentEntry = schedule.find(s => s.id === liveState?.currentEntry?.id);
@@ -1002,7 +1004,7 @@ export default function TabulatorPage() {
                   <button
                     onClick={() => handleSetOperatingDate(null)}
                     className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
-                      !liveState?.operatingDate ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
+                      !selectedDate || !competitionDays.includes(selectedDate) ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
                     }`}
                   >
                     Today (Auto)
@@ -1012,7 +1014,7 @@ export default function TabulatorPage() {
                       key={day}
                       onClick={() => handleSetOperatingDate(day)}
                       className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
-                        liveState?.operatingDate === day ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
+                        selectedDate === day ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
                       }`}
                     >
                       {new Date(day + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
