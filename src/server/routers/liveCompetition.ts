@@ -1702,6 +1702,7 @@ export const liveCompetitionRouter = router({
           competition_state: 'active',
           current_entry_id: firstEntry?.id || null,
           current_entry_state: 'performing',
+          current_entry_started_at: new Date(), // Required for timer to work
           day_number: input.dayNumber,
           session_number: input.sessionNumber,
           live_mode_started_at: new Date(),
@@ -1710,6 +1711,7 @@ export const liveCompetitionRouter = router({
           competition_state: 'active',
           current_entry_id: firstEntry?.id || null,
           current_entry_state: 'performing',
+          current_entry_started_at: new Date(), // Required for timer to work
           day_number: input.dayNumber,
           session_number: input.sessionNumber,
           live_mode_started_at: new Date(),
