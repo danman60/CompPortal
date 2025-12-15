@@ -12,15 +12,14 @@ export async function GET(request: NextRequest) {
     let targetCompetitionId = competitionId;
 
     if (!targetCompetitionId) {
-      const activeCompetition = await prisma.$queryRaw<Array<{ competition_id: string }>>`
-        SELECT competition_id FROM live_competition_state
-        WHERE competition_state = 'active'
-        ORDER BY updated_at DESC
-        LIMIT 1
-      `;
+      const activeCompetition = await prisma.live_competition_state.findFirst({
+        where: { competition_state: 'active' },
+        orderBy: { updated_at: 'desc' },
+        select: { competition_id: true },
+      });
 
-      if (activeCompetition.length > 0) {
-        targetCompetitionId = activeCompetition[0].competition_id;
+      if (activeCompetition) {
+        targetCompetitionId = activeCompetition.competition_id;
       }
     }
 
@@ -34,27 +33,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Get live competition state
-    const liveState = await prisma.$queryRaw<Array<{
-      current_entry_id: string | null;
-      current_entry_state: string | null;
-      current_entry_started_at: Date | null;
-      competition_state: string | null;
-      day_number: number | null;
-      operating_date: Date | null;
-    }>>`
-      SELECT
-        current_entry_id,
-        current_entry_state,
-        current_entry_started_at,
-        competition_state,
-        day_number,
-        operating_date
-      FROM live_competition_state
-      WHERE competition_id = ${targetCompetitionId}::uuid
-      LIMIT 1
-    `;
+    const liveStateRecord = await prisma.live_competition_state.findUnique({
+      where: { competition_id: targetCompetitionId },
+      select: {
+        current_entry_id: true,
+        current_entry_state: true,
+        current_entry_started_at: true,
+        competition_state: true,
+        day_number: true,
+        operating_date: true,
+      },
+    });
 
-    if (!liveState.length || liveState[0].competition_state !== 'active') {
+    if (!liveStateRecord || liveStateRecord.competition_state !== 'active') {
       // Get competition name even if not active
       const comp = await prisma.competitions.findUnique({
         where: { id: targetCompetitionId },
@@ -69,10 +60,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const state = liveState[0];
     // Use operating_date if set, otherwise fall back to today's date
-    const competitionDay = state.operating_date 
-      ? new Date(state.operating_date).toISOString().split('T')[0]
+    const competitionDay = liveStateRecord.operating_date
+      ? new Date(liveStateRecord.operating_date).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0];
 
     // Get competition name
@@ -127,8 +117,8 @@ export async function GET(request: NextRequest) {
       isBreak?: boolean;
     }> = [];
 
-    if (state.current_entry_id) {
-      const currentIndex = todayRoutines.findIndex(r => r.id === state.current_entry_id);
+    if (liveStateRecord.current_entry_id) {
+      const currentIndex = todayRoutines.findIndex(r => r.id === liveStateRecord.current_entry_id);
 
       if (currentIndex !== -1) {
         const current = todayRoutines[currentIndex];
@@ -162,8 +152,8 @@ export async function GET(request: NextRequest) {
           category: current.category,
           ageGroup: current.age_group,
           durationMs,
-          startedAt: state.current_entry_started_at?.toISOString() || null,
-          state: state.current_entry_state,
+          startedAt: liveStateRecord.current_entry_started_at?.toISOString() || null,
+          state: liveStateRecord.current_entry_state,
           mp3Url,
         };
 

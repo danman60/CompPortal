@@ -1035,7 +1035,7 @@ export default function TabulatorPage() {
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-300">SCHEDULE</h2>
               <span className="text-xs text-gray-400">
-                {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Select date'}
               </span>
             </div>
             <div className="text-xs text-gray-500 mt-1">
