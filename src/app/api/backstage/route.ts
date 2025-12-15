@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       select: { name: true },
     });
 
-    // Get today's routines ordered by schedule_sequence
+    // Get today's routines ordered by running_order (same as tabulator lineup)
     const todayRoutines = await prisma.$queryRaw<Array<{
       id: string;
       entry_number: string;
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       category: string;
       age_group: string;
       mp3_duration_ms: number | null;
-      schedule_sequence: number | null;
+      running_order: number | null;
       music_file_url: string | null;
     }>>`
       SELECT
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
         COALESCE(c.name, 'Unknown') as category,
         COALESCE(ag.name, 'Unknown') as age_group,
         e.mp3_duration_ms,
-        e.schedule_sequence,
+        e.running_order,
         e.music_file_url
       FROM competition_entries e
       JOIN studios s ON e.studio_id = s.id
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       WHERE e.competition_id = ${targetCompetitionId}::uuid
         AND e.performance_date = ${competitionDay}::date
         AND e.status != 'cancelled'
-      ORDER BY e.schedule_sequence ASC NULLS LAST, e.entry_number ASC
+      ORDER BY e.running_order ASC NULLS LAST, e.entry_number ASC
     `;
 
     // Find current and upcoming routines

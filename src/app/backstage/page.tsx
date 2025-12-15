@@ -72,6 +72,13 @@ export default function BackstagePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const escPressTimesRef = useRef<number[]>([]);
 
+  // Track synced start time to prevent timer glitch on re-fetch
+  const syncedStartTimeRef = useRef<{ routineId: string | null; startedAt: string | null; localOffset: number }>({
+    routineId: null,
+    startedAt: null,
+    localOffset: 0,
+  });
+
   // Audio playback state
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -115,15 +122,33 @@ export default function BackstagePage() {
         setData(newData);
         setLastSyncTime(new Date());
         setSyncStatus('connected');
-        if (newData.currentRoutine?.startedAt) {
-          const startTime = new Date(newData.currentRoutine.startedAt).getTime();
-          const serverTime = newData.serverTime ? new Date(newData.serverTime).getTime() : Date.now();
-          const elapsed = serverTime - startTime;
-          const remaining = Math.max(0, newData.currentRoutine.durationMs - elapsed);
-          setTimeRemaining(remaining);
-        } else {
-          setTimeRemaining(0);
+
+        // Only recalculate time when routine or startedAt CHANGES to prevent timer glitch
+        const currentRoutineId = newData.currentRoutine?.id ?? null;
+        const currentStartedAt = newData.currentRoutine?.startedAt ?? null;
+        const synced = syncedStartTimeRef.current;
+
+        if (currentRoutineId !== synced.routineId || currentStartedAt !== synced.startedAt) {
+          // New routine or new start time - calculate offset from server time
+          if (newData.currentRoutine?.startedAt) {
+            const startTime = new Date(newData.currentRoutine.startedAt).getTime();
+            const serverTime = newData.serverTime ? new Date(newData.serverTime).getTime() : Date.now();
+            const elapsed = serverTime - startTime;
+            const remaining = Math.max(0, newData.currentRoutine.durationMs - elapsed);
+            setTimeRemaining(remaining);
+
+            // Store the local offset so timer can continue smoothly
+            syncedStartTimeRef.current = {
+              routineId: currentRoutineId,
+              startedAt: currentStartedAt,
+              localOffset: Date.now() - serverTime,
+            };
+          } else {
+            setTimeRemaining(0);
+            syncedStartTimeRef.current = { routineId: null, startedAt: null, localOffset: 0 };
+          }
         }
+        // If same routine, don't recalculate - let local timer handle it smoothly
       } else {
         setSyncStatus('error');
       }

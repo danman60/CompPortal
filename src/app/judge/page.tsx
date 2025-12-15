@@ -672,62 +672,71 @@ function JudgePageContent() {
         {/* Current Routine Card */}
         {state.currentRoutine ? (
           <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 rounded-2xl border border-indigo-500/30 p-6 mb-6">
-            <div className="text-sm font-medium text-indigo-300 mb-2">NOW SCORING</div>
+            <div className="flex items-start justify-between gap-4">
+              {/* Left side - Routine info */}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-indigo-300 mb-2">NOW SCORING</div>
 
-            {/* Entry Number */}
-            <div className="text-6xl font-bold text-white mb-2">
-              #{state.currentRoutine.entryNumber}
-            </div>
+                {/* Entry Number */}
+                <div className="text-6xl font-bold text-white mb-2">
+                  #{state.currentRoutine.entryNumber}
+                </div>
 
-            {/* Title */}
-            <h1 className="text-2xl font-bold text-white mb-1">{state.currentRoutine.title}</h1>
+                {/* Title */}
+                <h1 className="text-2xl font-bold text-white mb-1">{state.currentRoutine.title}</h1>
 
-            {/* Studio */}
-            <div className="text-lg text-gray-300 mb-3">{state.currentRoutine.studioName}</div>
+                {/* Studio */}
+                <div className="text-lg text-gray-300 mb-3">{state.currentRoutine.studioName}</div>
 
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span className="px-3 py-1 bg-indigo-500/30 rounded-full text-indigo-200 text-sm">
-                {state.currentRoutine.category}
-              </span>
-              <span className="px-3 py-1 bg-purple-500/30 rounded-full text-purple-200 text-sm">
-                {state.currentRoutine.ageGroup}
-              </span>
-              <span className="px-3 py-1 bg-pink-500/30 rounded-full text-pink-200 text-sm">
-                {state.currentRoutine.size}
-              </span>
-            </div>
-
-            {/* Dancers */}
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Users className="w-4 h-4" />
-              <span>{state.currentRoutine.dancers.length} dancers</span>
-            </div>
-
-            {/* Time Remaining Display */}
-            {liveState?.currentEntryState === 'performing' && timeRemaining > 0 && (
-              <div className="mt-4 pt-4 border-t border-indigo-500/30">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-sm text-indigo-300">
-                    <Clock className="w-4 h-4" />
-                    <span>Time Remaining</span>
-                  </div>
-                  <span className={`font-mono text-lg font-bold tabular-nums ${
-                    isLowTime ? 'text-red-400 animate-pulse' : 'text-white'
-                  }`}>
-                    {formatTime(timeRemaining)}
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="px-3 py-1 bg-indigo-500/30 rounded-full text-indigo-200 text-sm">
+                    {state.currentRoutine.category}
+                  </span>
+                  <span className="px-3 py-1 bg-purple-500/30 rounded-full text-purple-200 text-sm">
+                    {state.currentRoutine.ageGroup}
+                  </span>
+                  <span className="px-3 py-1 bg-pink-500/30 rounded-full text-pink-200 text-sm">
+                    {state.currentRoutine.size}
                   </span>
                 </div>
-                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-100 ${
-                      isLowTime ? 'bg-red-500' : 'bg-indigo-500'
-                    }`}
-                    style={{ width: `${100 - progressPercent}%` }}
-                  />
+
+                {/* Dancers */}
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Users className="w-4 h-4" />
+                  <span>{state.currentRoutine.dancers.length} dancers</span>
                 </div>
               </div>
-            )}
+
+              {/* Right side - Prominent Timer (always visible when routine is performing) */}
+              {liveState?.currentEntryState === 'performing' && (
+                <div className="flex flex-col items-center justify-center bg-gray-900/60 rounded-xl px-4 py-3 border border-indigo-500/20">
+                  <div className="flex items-center gap-1.5 text-xs text-indigo-300 mb-1">
+                    <Clock className="w-3 h-3" />
+                    <span>TIME</span>
+                  </div>
+                  <div className={`font-mono text-3xl font-bold tabular-nums ${
+                    timeRemaining <= 0
+                      ? 'text-gray-500'
+                      : isLowTime
+                        ? 'text-red-400 animate-pulse'
+                        : 'text-white'
+                  }`}>
+                    {timeRemaining > 0 ? formatTime(timeRemaining) : '0:00'}
+                  </div>
+                  {timeRemaining > 0 && (
+                    <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mt-2">
+                      <div
+                        className={`h-full transition-all duration-100 ${
+                          isLowTime ? 'bg-red-500' : 'bg-indigo-500'
+                        }`}
+                        style={{ width: `${100 - progressPercent}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="bg-gray-800/50 rounded-2xl border border-gray-700 p-8 mb-6 text-center">
