@@ -158,40 +158,31 @@ function JudgePageContent() {
   const [deviceMode, setDeviceMode] = useState<'tablet' | 'phone'>('tablet');
 
   // tRPC queries
-  const { data: competitions } = trpc.liveCompetition.getActiveCompetitions.useQuery(
-    undefined,
-    { enabled: !competitionId, refetchInterval: 30000 }
+  // Fetch competition settings directly by ID (no tenant context required)
+  const { data: competitionSettings } = trpc.liveCompetition.getCompetitionSettings.useQuery(
+    { competitionId: competitionId || '' },
+    { enabled: !!competitionId }
   );
-
-  // Auto-select first competition if none specified
-  useEffect(() => {
-    if (!competitionId && competitions && competitions.length > 0) {
-      setCompetitionId(competitions[0].id);
-    }
-  }, [competitions, competitionId]);
 
   // Load scoring tiers from competition settings
   useEffect(() => {
-    if (competitionId && competitions) {
-      const selectedComp = competitions.find(c => c.id === competitionId);
-      if (selectedComp?.scoring_system_settings) {
-        const settings = selectedComp.scoring_system_settings as Record<string, unknown>;
-        const awardTiers = settings.award_tiers as Array<{ name: string; minScore: number; maxScore: number; color: string }> | undefined;
-        if (awardTiers && Array.isArray(awardTiers) && awardTiers.length > 0) {
-          // Convert DB format (minScore/maxScore) to UI format (min/max)
-          const levels: AdjudicationLevel[] = awardTiers.map(tier => ({
-            name: tier.name,
-            min: tier.minScore,
-            max: tier.maxScore,
-            color: tier.color,
-          }));
-          // Sort by min score descending (highest first)
-          levels.sort((a, b) => b.min - a.min);
-          setAdjudicationLevels(levels);
-        }
+    if (competitionSettings?.scoring_system_settings) {
+      const settings = competitionSettings.scoring_system_settings as Record<string, unknown>;
+      const awardTiers = settings.award_tiers as Array<{ name: string; minScore: number; maxScore: number; color: string }> | undefined;
+      if (awardTiers && Array.isArray(awardTiers) && awardTiers.length > 0) {
+        // Convert DB format (minScore/maxScore) to UI format (min/max)
+        const levels: AdjudicationLevel[] = awardTiers.map(tier => ({
+          name: tier.name,
+          min: tier.minScore,
+          max: tier.maxScore,
+          color: tier.color,
+        }));
+        // Sort by min score descending (highest first)
+        levels.sort((a, b) => b.min - a.min);
+        setAdjudicationLevels(levels);
       }
     }
-  }, [competitionId, competitions]);
+  }, [competitionSettings]);
   // Get live state (current routine)
   const { data: liveState, isSuccess: liveStateSuccess } = trpc.liveCompetition.getLiveState.useQuery(
     { competitionId: competitionId || '' },

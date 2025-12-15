@@ -52,6 +52,34 @@ export const liveCompetitionRouter = router({
     }),
 
   /**
+   * Get competition settings by ID (no tenant required)
+   * Used by judge interface for scoring tier display
+   */
+  getCompetitionSettings: publicProcedure
+    .input(z.object({
+      competitionId: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        select: {
+          id: true,
+          name: true,
+          scoring_system_settings: true,
+        },
+      });
+
+      if (!competition) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Competition not found',
+        });
+      }
+
+      return competition;
+    }),
+
+  /**
    * Get competition lineup with all routines
    */
   getLineup: publicProcedure
