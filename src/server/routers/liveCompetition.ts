@@ -85,7 +85,7 @@ export const liveCompetitionRouter = router({
   getLineup: publicProcedure
     .input(z.object({
       competitionId: z.string(),
-      performanceDate: z.string().optional(), // YYYY-MM-DD format to filter by day
+      performanceDate: z.union([z.string(), z.date()]).optional(), // Accept both string and Date
     }))
     .query(async ({ input, ctx }) => {
       // Build the where clause for entries
@@ -95,7 +95,15 @@ export const liveCompetitionRouter = router({
 
       // Filter by performance_date if provided (date range for the day)
       if (input.performanceDate) {
-        const targetDate = new Date(input.performanceDate + 'T00:00:00');
+        // Handle both string (YYYY-MM-DD) and Date object inputs
+        let targetDate: Date;
+        if (typeof input.performanceDate === 'string') {
+          targetDate = new Date(input.performanceDate + 'T00:00:00');
+        } else {
+          // It's already a Date object - normalize to start of day
+          targetDate = new Date(input.performanceDate);
+          targetDate.setHours(0, 0, 0, 0);
+        }
         const nextDay = new Date(targetDate);
         nextDay.setDate(nextDay.getDate() + 1);
 
@@ -1393,29 +1401,35 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // Get current routine's running order
+      // Get current routine's ordering info (running_order or entry_number)
       const currentEntry = await prisma.competition_entries.findUnique({
         where: { id: liveState.current_entry_id },
-        select: { running_order: true },
+        select: { running_order: true, entry_number: true },
       });
 
-      if (!currentEntry?.running_order) {
+      // Use running_order, fallback to entry_number
+      const currentOrder = currentEntry?.running_order ?? currentEntry?.entry_number ?? null;
+
+      if (!currentOrder) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Current routine has no running order',
+          message: 'Current routine has no running order or entry number',
         });
       }
 
-      // Find next routine by running_order
+      // Determine which field to use for ordering
+      const orderField = currentEntry?.running_order ? 'running_order' : 'entry_number';
+
+      // Find next routine by the ordering field
       const nextEntry = await prisma.competition_entries.findFirst({
         where: {
           competition_id: input.competitionId,
           tenant_id: ctx.tenantId,
-          running_order: { gt: currentEntry.running_order },
+          [orderField]: { gt: currentOrder },
           status: 'registered',
         },
         orderBy: {
-          running_order: 'asc',
+          [orderField]: 'asc',
         },
         select: {
           id: true,
@@ -1496,29 +1510,35 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // Get current routine's running order
+      // Get current routine's ordering info (running_order or entry_number)
       const currentEntry = await prisma.competition_entries.findUnique({
         where: { id: liveState.current_entry_id },
-        select: { running_order: true },
+        select: { running_order: true, entry_number: true },
       });
 
-      if (!currentEntry?.running_order) {
+      // Use running_order, fallback to entry_number
+      const currentOrder = currentEntry?.running_order ?? currentEntry?.entry_number ?? null;
+
+      if (!currentOrder) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Current routine has no running order',
+          message: 'Current routine has no running order or entry number',
         });
       }
 
-      // Find previous routine by running_order
+      // Determine which field to use for ordering
+      const orderField = currentEntry?.running_order ? 'running_order' : 'entry_number';
+
+      // Find previous routine by the ordering field
       const prevEntry = await prisma.competition_entries.findFirst({
         where: {
           competition_id: input.competitionId,
           tenant_id: ctx.tenantId,
-          running_order: { lt: currentEntry.running_order },
+          [orderField]: { lt: currentOrder },
           status: 'registered',
         },
         orderBy: {
-          running_order: 'desc',
+          [orderField]: 'desc',
         },
         select: {
           id: true,
