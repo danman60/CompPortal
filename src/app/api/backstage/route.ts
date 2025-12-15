@@ -167,8 +167,8 @@ export async function GET(request: NextRequest) {
           mp3Url,
         };
 
-        // Get next 4 routines for expanded upcoming list
-        for (let i = currentIndex + 1; i < Math.min(currentIndex + 5, todayRoutines.length); i++) {
+        // Get next 10 routines for expanded upcoming list
+        for (let i = currentIndex + 1; i < Math.min(currentIndex + 11, todayRoutines.length); i++) {
           const routine = todayRoutines[i];
           upcomingRoutines.push({
             id: routine.id,
@@ -187,8 +187,8 @@ export async function GET(request: NextRequest) {
         }
       }
     } else if (todayRoutines.length > 0) {
-      // No current routine, show first few as upcoming
-      for (let i = 0; i < Math.min(4, todayRoutines.length); i++) {
+      // No current routine, show first 10 as upcoming
+      for (let i = 0; i < Math.min(10, todayRoutines.length); i++) {
         const routine = todayRoutines[i];
         upcomingRoutines.push({
           id: routine.id,
