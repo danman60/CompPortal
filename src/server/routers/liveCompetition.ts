@@ -1386,41 +1386,21 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // Get current routine's ordering info (running_order or entry_number)
-      const currentEntry = await prisma.competition_entries.findUnique({
-        where: { id: liveState.current_entry_id },
-        select: { running_order: true, entry_number: true },
-      });
-
-      // Use running_order, fallback to entry_number
-      const currentOrder = currentEntry?.running_order ?? currentEntry?.entry_number ?? null;
-
-      if (!currentOrder) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Current routine has no running order or entry number',
-        });
-      }
-
-      // Determine which field to use for ordering
-      const orderField = currentEntry?.running_order ? 'running_order' : 'entry_number';
-
-      // Build tenant-agnostic where clause for next entry
+      // Get ALL entries in the SAME order as getLineup (running_order ASC)
+      // This ensures Next/Prev follow the exact lineup panel order
       const entriesWhere: Record<string, unknown> = {
         competition_id: input.competitionId,
-        [orderField]: { gt: currentOrder },
         status: 'registered',
       };
       if (ctx.tenantId) {
         entriesWhere.tenant_id = ctx.tenantId;
       }
 
-      // Find next routine by the ordering field
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const nextEntry = await prisma.competition_entries.findFirst({
+      const allEntries = await prisma.competition_entries.findMany({
         where: entriesWhere as any,
         orderBy: {
-          [orderField]: 'asc',
+          running_order: 'asc', // Same ordering as getLineup
         },
         select: {
           id: true,
@@ -1429,6 +1409,19 @@ export const liveCompetitionRouter = router({
           running_order: true,
         },
       });
+
+      // Find current entry's index in the lineup
+      const currentIndex = allEntries.findIndex(e => e.id === liveState.current_entry_id);
+
+      if (currentIndex === -1) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Current routine not found in lineup',
+        });
+      }
+
+      // Get next entry in the lineup sequence
+      const nextEntry = allEntries[currentIndex + 1] || null;
 
       if (!nextEntry) {
         // No more routines, mark competition as completing
@@ -1494,41 +1487,21 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // Get current routine's ordering info (running_order or entry_number)
-      const currentEntry = await prisma.competition_entries.findUnique({
-        where: { id: liveState.current_entry_id },
-        select: { running_order: true, entry_number: true },
-      });
-
-      // Use running_order, fallback to entry_number
-      const currentOrder = currentEntry?.running_order ?? currentEntry?.entry_number ?? null;
-
-      if (!currentOrder) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Current routine has no running order or entry number',
-        });
-      }
-
-      // Determine which field to use for ordering
-      const orderField = currentEntry?.running_order ? 'running_order' : 'entry_number';
-
-      // Build tenant-agnostic where clause for previous entry
+      // Get ALL entries in the SAME order as getLineup (running_order ASC)
+      // This ensures Next/Prev follow the exact lineup panel order
       const entriesWhere: Record<string, unknown> = {
         competition_id: input.competitionId,
-        [orderField]: { lt: currentOrder },
         status: 'registered',
       };
       if (ctx.tenantId) {
         entriesWhere.tenant_id = ctx.tenantId;
       }
 
-      // Find previous routine by the ordering field
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const prevEntry = await prisma.competition_entries.findFirst({
+      const allEntries = await prisma.competition_entries.findMany({
         where: entriesWhere as any,
         orderBy: {
-          [orderField]: 'desc',
+          running_order: 'asc', // Same ordering as getLineup
         },
         select: {
           id: true,
@@ -1537,6 +1510,19 @@ export const liveCompetitionRouter = router({
           running_order: true,
         },
       });
+
+      // Find current entry's index in the lineup
+      const currentIndex = allEntries.findIndex(e => e.id === liveState.current_entry_id);
+
+      if (currentIndex === -1) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Current routine not found in lineup',
+        });
+      }
+
+      // Get previous entry in the lineup sequence (index - 1)
+      const prevEntry = currentIndex > 0 ? allEntries[currentIndex - 1] : null;
 
       if (!prevEntry) {
         return {
