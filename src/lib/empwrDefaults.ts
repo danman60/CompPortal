@@ -68,15 +68,18 @@ export const EMPWR_DANCE_CATEGORIES = {
 };
 
 export const EMPWR_SCORING_SYSTEM = {
+  scoring_scale: 100,
+  scoring_type: 'average',
+  number_of_judges: 3,
   tiers: [
-    { name: 'Bronze', minScore: 0, maxScore: 84, color: '#CD7F32' },
+    { name: 'Bronze', minScore: 0, maxScore: 83.99, color: '#CD7F32' },
     { name: 'Silver', minScore: 84, maxScore: 86.99, color: '#C0C0C0' },
     { name: 'Gold', minScore: 87, maxScore: 89.99, color: '#FFD700' },
     { name: 'Titanium', minScore: 90, maxScore: 92.99, color: '#878681' },
     { name: 'Platinum', minScore: 93, maxScore: 95.99, color: '#E5E4E2' },
     { name: 'Pandora', minScore: 96, maxScore: 100, color: '#9966CC' },
   ],
-  description: 'Score ranges for award levels',
+  description: 'EMPWR uses 100-point scale (per judge average). Bronze is 84.00 and under.',
 };
 
 export const EMPWR_ENTRY_SIZE_CATEGORIES = {

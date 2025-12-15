@@ -368,12 +368,20 @@ function JudgePageContent() {
   };
 
   // Get award level based on score
+  // For sum-based scoring (tiers > 100, like Glow), multiply individual score by 3
   const getAwardLevel = (scoreStr: string): AdjudicationLevel | null => {
     const score = parseScore(scoreStr);
     if (score === null) return null;
 
+    // Detect if tiers are sum-based (max > 100) vs per-judge average (max <= 100)
+    const maxTierScore = Math.max(...adjudicationLevels.map(l => l.max));
+    const isSumBased = maxTierScore > 100;
+
+    // For sum-based scoring, multiply individual score by 3 to approximate total
+    const compareScore = isSumBased ? score * 3 : score;
+
     for (const level of adjudicationLevels) {
-      if (score >= level.min && score <= level.max) {
+      if (compareScore >= level.min && compareScore <= level.max) {
         return level;
       }
     }

@@ -41,6 +41,7 @@ export const liveCompetitionRouter = router({
           competition_start_date: true,
           competition_end_date: true,
           status: true,
+          scoring_system_settings: true,
         },
         orderBy: {
           competition_start_date: 'desc',
