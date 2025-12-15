@@ -356,9 +356,14 @@ export default function TabulatorPage() {
     }
   }, [liveStateData]);
 // Sync selectedDate with operating date when it changes
+  // Must normalize to YYYY-MM-DD format for line 1038's date string concatenation
   useEffect(() => {
-    if (liveState?.operatingDate && liveState.operatingDate !== selectedDate) {
-      setSelectedDate(liveState.operatingDate);
+    if (liveState?.operatingDate) {
+      // Extract YYYY-MM-DD from ISO string to avoid "2026-04-10T00:00:00.000ZT12:00:00" bug
+      const dateOnly = new Date(liveState.operatingDate).toISOString().split('T')[0];
+      if (dateOnly !== selectedDate) {
+        setSelectedDate(dateOnly);
+      }
     }
   }, [liveState?.operatingDate]);
 
