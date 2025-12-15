@@ -288,6 +288,75 @@ reorderRoutine: publicProcedure
 | Tester data | running_order NULL | Backfill for immediate testing |
 | Finalize button | EXISTS (tentative/final toggle) | Already implemented |
 
+---
+
+## Operating Date / Current Entry Sync (IMPLEMENTED)
+
+### Problem Discovered
+
+When `setOperatingDate` was called to change the operating day:
+1. `operating_date` was updated (e.g., to April 11)
+2. `current_entry_id` was NOT updated (stayed pointing to April 10 entry)
+3. Result: Tabulator showed left panel from April 11 but "NOW PERFORMING" from April 10
+
+### Root Cause
+
+The `setOperatingDate` mutation (lines 1261-1295) only updated `operating_date` without resetting `current_entry_id`.
+
+### Fix Applied (Session Dec 15, 2025, REFINED)
+
+**File:** `src/server/routers/liveCompetition.ts` (lines 1274-1353)
+
+**Key Insight:** `operating_date` is a VIEW filter (which day to show), `current_entry_id` is the PLAYHEAD (which routine is performing). These are independent concepts but must stay in sync.
+
+The `setOperatingDate` mutation now uses **smart reset logic**:
+
+1. **Check current entry's date** - See if `current_entry_id` is already on the target date
+2. **Only reset on cross-day mismatch** - If current entry is on a different day, reset to first entry of target day
+3. **Preserve position otherwise** - If current entry is already on target day, keep it
+
+**Use Cases:**
+| Scenario | Current Entry | Target Date | Action |
+|----------|---------------|-------------|--------|
+| Start new day | April 10 entry | April 11 | RESET to first April 11 entry |
+| Accidental click (same day) | April 11 entry | April 11 | PRESERVE position |
+| No current entry | NULL | April 11 | SET to first April 11 entry |
+
+```typescript
+// Check if current entry exists and what date it's on
+let currentEntryDate: string | null = null;
+if (existingState?.current_entry_id) {
+  const currentEntry = await prisma.competition_entries.findUnique({
+    where: { id: existingState.current_entry_id },
+    select: { performance_date: true },
+  });
+  if (currentEntry?.performance_date) {
+    currentEntryDate = new Date(currentEntry.performance_date).toISOString().split('T')[0];
+  }
+}
+
+// Only reset if cross-day mismatch
+const needsReset = !currentEntryDate || currentEntryDate !== targetDate;
+
+// Update live state - Only reset current_entry fields if we're changing days
+update: {
+  operating_date: input.operatingDate ? new Date(input.operatingDate) : null,
+  ...(needsReset && {
+    current_entry_id: newCurrentEntryId,
+    current_entry_state: null,
+    current_entry_started_at: null,
+  }),
+  updated_at: new Date(),
+}
+```
+
+### Prevention Mechanism
+
+This ensures:
+- **Cross-day protection:** Cannot show "NOW PERFORMING" from different day than lineup
+- **Position preservation:** Mid-day clicks on same day don't lose progress
+- **Returns `didReset` flag** so UI can inform operator if position changed
+
 ## Files to Modify
 
 1. `src/server/routers/scheduling.ts:367-383` - Add running_order to batch update

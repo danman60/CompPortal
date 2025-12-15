@@ -1271,7 +1271,54 @@ export const liveCompetitionRouter = router({
         });
       }
 
-      // Update live state with operating date
+      // Determine the target date
+      const targetDate = input.operatingDate
+        ? new Date(input.operatingDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+
+      // Get current live state to check if current_entry_id is on the target date
+      const existingState = await prisma.live_competition_state.findUnique({
+        where: { competition_id: input.competitionId },
+        select: { current_entry_id: true },
+      });
+
+      // Check if current entry exists and what date it's on
+      let currentEntryDate: string | null = null;
+      if (existingState?.current_entry_id) {
+        const currentEntry = await prisma.competition_entries.findUnique({
+          where: { id: existingState.current_entry_id },
+          select: { performance_date: true },
+        });
+        if (currentEntry?.performance_date) {
+          currentEntryDate = new Date(currentEntry.performance_date).toISOString().split('T')[0];
+        }
+      }
+
+      // Only reset current_entry_id if it's from a DIFFERENT day than the target
+      // This preserves position when clicking same day, but prevents cross-day mismatch
+      const needsReset = !currentEntryDate || currentEntryDate !== targetDate;
+
+      let newCurrentEntryId = existingState?.current_entry_id ?? null;
+      if (needsReset) {
+        // Find first entry on the new operating_date
+        const firstEntryOnDate = await prisma.competition_entries.findFirst({
+          where: {
+            competition_id: input.competitionId,
+            tenant_id: ctx.tenantId,
+            performance_date: new Date(targetDate),
+            status: { not: 'cancelled' },
+          },
+          orderBy: [
+            { running_order: 'asc' },
+            { entry_number: 'asc' },
+          ],
+          select: { id: true },
+        });
+        newCurrentEntryId = firstEntryOnDate?.id ?? null;
+      }
+
+      // Update live state
+      // Only reset current_entry fields if we're changing the current entry
       const liveState = await prisma.live_competition_state.upsert({
         where: {
           competition_id: input.competitionId,
@@ -1281,9 +1328,18 @@ export const liveCompetitionRouter = router({
           competition_id: input.competitionId,
           competition_state: 'pending',
           operating_date: input.operatingDate ? new Date(input.operatingDate) : null,
+          current_entry_id: newCurrentEntryId,
+          current_entry_state: null,
+          current_entry_started_at: null,
         },
         update: {
           operating_date: input.operatingDate ? new Date(input.operatingDate) : null,
+          // Only update these if we're resetting
+          ...(needsReset && {
+            current_entry_id: newCurrentEntryId,
+            current_entry_state: null,
+            current_entry_started_at: null,
+          }),
           updated_at: new Date(),
         },
       });
@@ -1291,6 +1347,8 @@ export const liveCompetitionRouter = router({
       return {
         success: true,
         operatingDate: liveState.operating_date,
+        currentEntryId: liveState.current_entry_id,
+        didReset: needsReset,
       };
     }),
 
