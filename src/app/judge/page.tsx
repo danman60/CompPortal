@@ -106,10 +106,11 @@ const DEFAULT_LEVELS: AdjudicationLevel[] = [
 const DEFAULT_TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
 
 // Test judge IDs for 1-click auth (testing only)
+// Using valid UUIDs so Prisma can store them in the scores table
 const TEST_JUDGES = [
-  { id: 'test-judge-1', name: 'Judge 1', position: 'A', color: '#6366F1' },
-  { id: 'test-judge-2', name: 'Judge 2', position: 'B', color: '#8B5CF6' },
-  { id: 'test-judge-3', name: 'Judge 3', position: 'C', color: '#EC4899' },
+  { id: '11111111-1111-1111-1111-111111111111', name: 'Judge 1', position: 'A', color: '#6366F1' },
+  { id: '22222222-2222-2222-2222-222222222222', name: 'Judge 2', position: 'B', color: '#8B5CF6' },
+  { id: '33333333-3333-3333-3333-333333333333', name: 'Judge 3', position: 'C', color: '#EC4899' },
 ];
 
 function JudgePageContent() {
@@ -148,7 +149,7 @@ function JudgePageContent() {
     isTitleBreakdownSubmitted: false,
   });
 
-  const [adjudicationLevels] = useState<AdjudicationLevel[]>(DEFAULT_LEVELS);
+  const [adjudicationLevels, setAdjudicationLevels] = useState<AdjudicationLevel[]>(DEFAULT_LEVELS);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const scoreInputRef = useRef<HTMLInputElement>(null);
@@ -169,6 +170,28 @@ function JudgePageContent() {
     }
   }, [competitions, competitionId]);
 
+  // Load scoring tiers from competition settings
+  useEffect(() => {
+    if (competitionId && competitions) {
+      const selectedComp = competitions.find(c => c.id === competitionId);
+      if (selectedComp?.scoring_system_settings) {
+        const settings = selectedComp.scoring_system_settings as Record<string, unknown>;
+        const awardTiers = settings.award_tiers as Array<{ name: string; minScore: number; maxScore: number; color: string }> | undefined;
+        if (awardTiers && Array.isArray(awardTiers) && awardTiers.length > 0) {
+          // Convert DB format (minScore/maxScore) to UI format (min/max)
+          const levels: AdjudicationLevel[] = awardTiers.map(tier => ({
+            name: tier.name,
+            min: tier.minScore,
+            max: tier.maxScore,
+            color: tier.color,
+          }));
+          // Sort by min score descending (highest first)
+          levels.sort((a, b) => b.min - a.min);
+          setAdjudicationLevels(levels);
+        }
+      }
+    }
+  }, [competitionId, competitions]);
   // Get live state (current routine)
   const { data: liveState, isSuccess: liveStateSuccess } = trpc.liveCompetition.getLiveState.useQuery(
     { competitionId: competitionId || '' },

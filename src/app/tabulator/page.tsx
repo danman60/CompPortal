@@ -332,6 +332,10 @@ export default function TabulatorPage() {
   // Handler for operating date change
   const handleSetOperatingDate = (date: string | null) => {
     if (!competitionId) return;
+    // Immediately update selectedDate for faster UI feedback
+    const newDate = date || new Date().toISOString().split('T')[0];
+    setSelectedDate(newDate);
+    setShowDateSelector(false);
     setOperatingDateMutation.mutate({
       competitionId,
       operatingDate: date,
@@ -401,15 +405,28 @@ export default function TabulatorPage() {
     return () => clearInterval(timer);
   }, [liveState?.currentEntryStartedAt, liveState?.currentEntryState, liveState?.currentEntry?.id, schedule]);
 
-  // Set competition when selected
+  // Auto-select competition based on selected date
   useEffect(() => {
-    if (selectedCompetition) {
-      setCompetitionId(selectedCompetition);
-    } else if (competitions?.length === 1) {
-      setCompetitionId(competitions[0].id);
-      setSelectedCompetition(competitions[0].id);
+    if (competitions && competitions.length > 0 && selectedDate) {
+      // Find competition that includes the selected date
+      const matchingComp = competitions.find((comp) => {
+        if (!comp.competition_start_date || !comp.competition_end_date) return false;
+        // Convert Date to string for comparison
+        const startDate = new Date(comp.competition_start_date).toISOString().split('T')[0];
+        const endDate = new Date(comp.competition_end_date).toISOString().split('T')[0];
+        return selectedDate >= startDate && selectedDate <= endDate;
+      });
+
+      if (matchingComp) {
+        setCompetitionId(matchingComp.id);
+        setSelectedCompetition(matchingComp.id);
+      } else if (competitions.length === 1) {
+        // Fallback to first competition if no date match
+        setCompetitionId(competitions[0].id);
+        setSelectedCompetition(competitions[0].id);
+      }
     }
-  }, [selectedCompetition, competitions]);
+  }, [selectedDate, competitions]);
 
   // Format time
   const formatTime = (ms: number) => {
@@ -1017,15 +1034,12 @@ export default function TabulatorPage() {
           <div className="p-3 border-b border-gray-700 bg-gray-800">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-300">SCHEDULE</h2>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <span className="text-xs text-gray-400">
+                {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </span>
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {schedule.length} routines for {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              {schedule.length} routines
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
