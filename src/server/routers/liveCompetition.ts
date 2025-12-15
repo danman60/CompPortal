@@ -88,13 +88,6 @@ export const liveCompetitionRouter = router({
       performanceDate: z.string().optional(), // YYYY-MM-DD format to filter by day
     }))
     .query(async ({ input, ctx }) => {
-      if (!ctx.tenantId) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Tenant ID required',
-        });
-      }
-
       // Build the where clause for entries
       const entriesWhere: Record<string, unknown> = {
         status: { not: 'cancelled' },
@@ -112,11 +105,17 @@ export const liveCompetitionRouter = router({
         };
       }
 
+      // Build where clause - use tenant context if available, otherwise just competitionId
+      // This allows the procedure to work from tester site without subdomain tenant context
+      const whereClause: { id: string; tenant_id?: string } = {
+        id: input.competitionId,
+      };
+      if (ctx.tenantId) {
+        whereClause.tenant_id = ctx.tenantId;
+      }
+
       const competition = await prisma.competitions.findUnique({
-        where: {
-          id: input.competitionId,
-          tenant_id: ctx.tenantId,
-        },
+        where: whereClause,
         include: {
           competition_entries: {
             where: entriesWhere,
@@ -644,14 +643,14 @@ export const liveCompetitionRouter = router({
       await prisma.competitions.update({
         where: { id: input.competitionId },
         data: {
-          status: 'active', // active | pending | completed
+          status: 'in_progress', // valid status per competitions_status_check constraint
         },
       });
 
       return {
         success: true,
         competitionId: input.competitionId,
-        status: 'active',
+        status: 'in_progress',
       };
     }),
 
