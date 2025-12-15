@@ -324,7 +324,7 @@ export const schedulingRouter = router({
       const updates = await prisma.$transaction(async (tx) => {
         const routineIds = input.routines.map(r => r.routineId);
 
-        // Phase 1a: Clear entry numbers for this specific date
+        // Phase 1a: Clear entry numbers and running_order for this specific date
         await tx.competition_entries.updateMany({
           where: {
             competition_id: input.competitionId,
@@ -333,6 +333,7 @@ export const schedulingRouter = router({
           },
           data: {
             entry_number: null,
+            running_order: null,
             is_scheduled: false,
           },
         });
@@ -362,21 +363,26 @@ export const schedulingRouter = router({
         const ids = input.routines.map(r => r.routineId);
         const entryNums = input.routines.map(r => r.entryNumber);
         const perfTimes = input.routines.map(r => timeStringToDateTime(r.performanceTime));
+        // running_order = position in array (1-indexed) - used by Game Day for lineup order
+        const runningOrders = input.routines.map((_, index) => index + 1);
 
         // Single batch UPDATE using UNNEST (PostgreSQL)
+        // Includes running_order for Game Day pages (tabulator, backstage, judge panels)
         await tx.$executeRaw`
           UPDATE competition_entries ce
           SET
             performance_date = ${performanceDate},
             performance_time = data.perf_time,
             entry_number = data.entry_num,
+            running_order = data.running_ord,
             is_scheduled = true,
             updated_at = ${updatedAt}
           FROM (
             SELECT
               UNNEST(${ids}::uuid[]) AS id,
               UNNEST(${entryNums}::int[]) AS entry_num,
-              UNNEST(${perfTimes}::timestamp[]) AS perf_time
+              UNNEST(${perfTimes}::timestamp[]) AS perf_time,
+              UNNEST(${runningOrders}::int[]) AS running_ord
           ) AS data
           WHERE ce.id = data.id
             AND ce.tenant_id = ${input.tenantId}::uuid
