@@ -626,18 +626,16 @@ export const liveCompetitionRouter = router({
       competitionId: z.string(),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.tenantId) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Tenant ID required',
-        });
+      // Build where clause - tenant-agnostic for tester site
+      const whereClause: { id: string; tenant_id?: string } = {
+        id: input.competitionId,
+      };
+      if (ctx.tenantId) {
+        whereClause.tenant_id = ctx.tenantId;
       }
 
       const competition = await prisma.competitions.findUnique({
-        where: {
-          id: input.competitionId,
-          tenant_id: ctx.tenantId,
-        },
+        where: whereClause,
       });
 
       if (!competition) {
@@ -669,14 +667,8 @@ export const liveCompetitionRouter = router({
     .input(z.object({
       competitionId: z.string(),
     }))
-    .mutation(async ({ input, ctx }) => {
-      if (!ctx.tenantId) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Tenant ID required',
-        });
-      }
-
+    .mutation(async ({ input }) => {
+      // Tenant-agnostic for tester site - live_competition_state uses competition_id only
       // Update live state to paused
       await prisma.live_competition_state.update({
         where: {
@@ -1380,13 +1372,6 @@ export const liveCompetitionRouter = router({
       markPreviousComplete: z.boolean().default(true),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.tenantId) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Tenant ID required',
-        });
-      }
-
       // Get current live state
       const liveState = await prisma.live_competition_state.findUnique({
         where: {
@@ -1420,14 +1405,20 @@ export const liveCompetitionRouter = router({
       // Determine which field to use for ordering
       const orderField = currentEntry?.running_order ? 'running_order' : 'entry_number';
 
+      // Build tenant-agnostic where clause for next entry
+      const entriesWhere: Record<string, unknown> = {
+        competition_id: input.competitionId,
+        [orderField]: { gt: currentOrder },
+        status: 'registered',
+      };
+      if (ctx.tenantId) {
+        entriesWhere.tenant_id = ctx.tenantId;
+      }
+
       // Find next routine by the ordering field
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const nextEntry = await prisma.competition_entries.findFirst({
-        where: {
-          competition_id: input.competitionId,
-          tenant_id: ctx.tenantId,
-          [orderField]: { gt: currentOrder },
-          status: 'registered',
-        },
+        where: entriesWhere as any,
         orderBy: {
           [orderField]: 'asc',
         },
@@ -1489,14 +1480,7 @@ export const liveCompetitionRouter = router({
       competitionId: z.string(),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.tenantId) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Tenant ID required',
-        });
-      }
-
-      // Get current live state
+      // Get current live state (tenant-agnostic for tester site)
       const liveState = await prisma.live_competition_state.findUnique({
         where: {
           competition_id: input.competitionId,
@@ -1529,14 +1513,20 @@ export const liveCompetitionRouter = router({
       // Determine which field to use for ordering
       const orderField = currentEntry?.running_order ? 'running_order' : 'entry_number';
 
+      // Build tenant-agnostic where clause for previous entry
+      const entriesWhere: Record<string, unknown> = {
+        competition_id: input.competitionId,
+        [orderField]: { lt: currentOrder },
+        status: 'registered',
+      };
+      if (ctx.tenantId) {
+        entriesWhere.tenant_id = ctx.tenantId;
+      }
+
       // Find previous routine by the ordering field
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const prevEntry = await prisma.competition_entries.findFirst({
-        where: {
-          competition_id: input.competitionId,
-          tenant_id: ctx.tenantId,
-          [orderField]: { lt: currentOrder },
-          status: 'registered',
-        },
+        where: entriesWhere as any,
         orderBy: {
           [orderField]: 'desc',
         },
