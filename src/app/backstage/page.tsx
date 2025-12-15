@@ -631,11 +631,13 @@ export default function BackstagePage() {
                 Now Performing
               </span>
             </div>
-            <div className="text-gray-400 text-4xl font-light mb-2">Entry #{data.currentRoutine.entryNumber}</div>
-            <div className="text-white text-6xl md:text-8xl font-bold text-center mb-4 max-w-full px-4 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text">
+            <div className="text-white text-7xl md:text-9xl font-bold mb-4 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+              #{data.currentRoutine.entryNumber}
+            </div>
+            <div className="text-gray-300 text-3xl md:text-4xl font-medium text-center mb-2 max-w-full px-4">
               {data.currentRoutine.routineName}
             </div>
-            <div className="text-gray-300 text-3xl md:text-4xl font-medium mb-8">{data.currentRoutine.studioName}</div>
+            <div className="text-gray-400 text-2xl md:text-3xl font-light mb-8">{data.currentRoutine.studioName}</div>
             <div className="text-gray-500 text-xl mb-12">
               {data.currentRoutine.category} | {data.currentRoutine.ageGroup}
             </div>
