@@ -21,7 +21,9 @@ import {
   validateEntrySizeCategory,
   validateMinimumParticipants,
   validateMaximumParticipants,
-  validateFeeRange
+  validateFeeRange,
+  validateImprovSoloOnly,
+  getImprovFeeOverride
 } from '@/lib/validators/businessRules';
 
 /**
@@ -1183,6 +1185,11 @@ export const entryRouter = router({
       // Validate maximum participants limit
       validateMaximumParticipants(participantCount);
 
+      // Validate IMPROV is solo-only (Glow tenant requirement)
+      if (data.classification_id) {
+        await validateImprovSoloOnly(data.classification_id, participantCount);
+      }
+
       // Create entry with participants using two-step pattern
       // See docs/PRISMA_BEST_PRACTICES.md - nested creates cause NULL FK violations
       // Step 1: Build entry data WITHOUT nested creates (use scalar FKs)
@@ -1280,6 +1287,19 @@ export const entryRouter = router({
             finalEntryFee += extendedTimeFee;
           }
 
+          finalTotalFee = finalEntryFee + (late_fee || 0);
+        }
+      }
+
+      // IMPROV fee override - flat $110 regardless of other fees (Glow tenant)
+      if (data.classification_id) {
+        const improvFee = await getImprovFeeOverride(data.classification_id);
+        if (improvFee !== null) {
+          finalEntryFee = improvFee;
+          // Add title upgrade fee on top of IMPROV fee if applicable
+          if (data.is_title_upgrade) {
+            finalEntryFee += 30;
+          }
           finalTotalFee = finalEntryFee + (late_fee || 0);
         }
       }

@@ -438,6 +438,17 @@ export function AutoCalculatedSection({
                 ⚠️ This selection requires CD approval before summary submission
               </p>
             )}
+            {/* IMPROV Solo-Only Warning */}
+            {classificationId && classifications.find(c => c.id === classificationId)?.name.toLowerCase() === 'improv' && selectedDancerCount > 1 && (
+              <div className="mt-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+                <p className="text-sm text-red-300 font-semibold">
+                  ⚠️ Improv is solo-only
+                </p>
+                <p className="text-xs text-red-400 mt-1">
+                  Improv entries can only have 1 dancer. Please remove dancers or select a different classification.
+                </p>
+              </div>
+            )}
         </div>
       </div>
     </div>
