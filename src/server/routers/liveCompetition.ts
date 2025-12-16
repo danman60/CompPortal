@@ -876,6 +876,30 @@ export const liveCompetitionRouter = router({
         },
       });
 
+      // Get the live competition state to determine position_in_day and day_number
+      const liveState = await prisma.live_competition_state.findUnique({
+        where: { competition_id: breakRequest.competition_id },
+        select: {
+          current_entry_id: true,
+          operating_date: true,
+          day_number: true,
+        },
+      });
+
+      // Determine position_in_day based on insertAfterRoutineId or current entry
+      let positionInDay = 1;
+      const targetEntryId = input.insertAfterRoutineId || liveState?.current_entry_id;
+
+      if (targetEntryId) {
+        const targetEntry = await prisma.competition_entries.findUnique({
+          where: { id: targetEntryId },
+          select: { running_order: true },
+        });
+        if (targetEntry?.running_order) {
+          positionInDay = targetEntry.running_order;
+        }
+      }
+
       // Create scheduled break entry
       const scheduledBreak = await prisma.schedule_breaks.create({
         data: {
@@ -884,6 +908,8 @@ export const liveCompetitionRouter = router({
           break_request_id: breakRequest.id,
           duration_minutes: input.actualDurationMinutes || breakRequest.requested_duration_minutes,
           insert_after_entry_id: input.insertAfterRoutineId,
+          position_in_day: positionInDay,
+          day_number: liveState?.day_number || 1,
           status: 'scheduled',
         },
       });
