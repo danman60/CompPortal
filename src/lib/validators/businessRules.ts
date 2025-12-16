@@ -429,14 +429,14 @@ export async function getImprovFeeOverride(
 }
 
 /**
- * Validate IMPROV classification requires Solo size category
+ * Validate IMPROV classification requires Improv size category
  *
- * IMPROV entries must use the "Solo" entry size category.
- * This enforces the linkage between IMPROV classification and Solo group size.
+ * IMPROV entries must use the "Improv" entry size category.
+ * This enforces the linkage between IMPROV classification and Improv group size.
  *
  * @param classificationId - ID of the classification to check
  * @param entrySizeCategoryId - ID of the selected entry size category
- * @throws {Error} If classification is Improv but size category is not Solo
+ * @throws {Error} If classification is Improv but size category is not Improv
  */
 export async function validateImprovGroupSize(
   classificationId: string,
@@ -457,7 +457,7 @@ export async function validateImprovGroupSize(
   if (classification.name.toLowerCase() === 'improv') {
     if (!entrySizeCategoryId) {
       throw new Error(
-        'Improv entries must have a size category assigned (Solo required).'
+        'Improv entries must have a size category assigned (Improv size required).'
       );
     }
 
@@ -466,9 +466,9 @@ export async function validateImprovGroupSize(
       select: { name: true },
     });
 
-    if (!sizeCategory || sizeCategory.name !== 'Solo') {
+    if (!sizeCategory || sizeCategory.name !== 'Improv') {
       throw new Error(
-        `Improv entries must use Solo entry size category. Got: ${sizeCategory?.name || 'unknown'}`
+        `Improv entries must use Improv entry size category. Got: ${sizeCategory?.name || 'unknown'}`
       );
     }
   }

@@ -280,21 +280,21 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
     lookups
   ]);
 
-  // IMPROV Auto-Lock: Lock size category to Solo when Improv classification selected (Glow tenant)
+  // IMPROV Auto-Lock: Lock size category to Improv when Improv classification selected (Glow tenant)
   useEffect(() => {
     if (!lookups) return;
 
     const improvClass = lookups.classifications.find(c => c.name.toLowerCase() === 'improv');
-    const soloSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Solo');
+    const improvSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Improv');
     const isImprovSelected = improvClass && formHook.form.classification_id === improvClass.id;
 
-    // If Improv classification selected → lock size category to Solo
+    // If Improv classification selected → lock size category to Improv
     if (isImprovSelected) {
-      if (soloSizeCategory && formHook.form.size_category_override !== soloSizeCategory.id) {
-        formHook.updateField('size_category_override', soloSizeCategory.id);
+      if (improvSizeCategory && formHook.form.size_category_override !== improvSizeCategory.id) {
+        formHook.updateField('size_category_override', improvSizeCategory.id);
       }
     }
-    // Note: We don't clear Solo when switching away from Improv since Solo is a valid choice for other classifications
+    // Note: We don't clear Improv size when switching away since it's specific to Improv classification
   }, [
     formHook.form.classification_id,
     formHook.form.size_category_override,
