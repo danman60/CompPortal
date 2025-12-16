@@ -414,6 +414,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
             </div>
             <div className="flex flex-col gap-2 text-xs">
               {pendingCount > 0 && (
+                <Link href="/dashboard/pipeline-v2?status=pending_review" className="block">
                 <div className="bg-gradient-to-r from-yellow-500/15 to-yellow-600/10 border border-yellow-400/40 text-yellow-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-yellow-500/20 hover:to-yellow-600/15 transition-all shadow-sm">
                   <div className="flex items-center justify-center bg-yellow-500/30 rounded-full w-7 h-7 flex-shrink-0">
                     <svg className="w-4 h-4 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -425,8 +426,10 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
                     <div className="text-yellow-300/70 text-[10px] mt-0.5">Action required</div>
                   </div>
                 </div>
+                </Link>
               )}
               {summarizedCount > 0 && (
+                <Link href="/dashboard/routine-summaries" className="block">
                 <div className="bg-gradient-to-r from-blue-500/15 to-blue-600/10 border border-blue-400/40 text-blue-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-blue-500/20 hover:to-blue-600/15 transition-all shadow-sm">
                   <div className="flex items-center justify-center bg-blue-500/30 rounded-full w-7 h-7 flex-shrink-0">
                     <svg className="w-4 h-4 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -438,8 +441,10 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
                     <div className="text-blue-300/70 text-[10px] mt-0.5">Ready to invoice</div>
                   </div>
                 </div>
+                </Link>
               )}
               {draftInvoicesCount > 0 && (
+                <Link href="/dashboard/invoices/all?status=DRAFT" className="block">
                 <div className="bg-gradient-to-r from-orange-500/15 to-orange-600/10 border border-orange-400/40 text-orange-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-orange-500/20 hover:to-orange-600/15 transition-all shadow-sm">
                   <div className="flex items-center justify-center bg-orange-500/30 rounded-full w-7 h-7 flex-shrink-0">
                     <svg className="w-4 h-4 text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -451,6 +456,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
                     <div className="text-orange-300/70 text-[10px] mt-0.5">Not yet sent to studios</div>
                   </div>
                 </div>
+                </Link>
               )}
             </div>
           </div>

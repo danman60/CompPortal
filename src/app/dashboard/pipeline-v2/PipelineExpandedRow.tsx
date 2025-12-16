@@ -15,7 +15,9 @@ import {
   PlusCircle,
   Check,
   X,
+  Eye,
 } from 'lucide-react';
+import Link from 'next/link';
 import type { PipelineExpandedRowProps } from './types';
 
 export function PipelineExpandedRow({ reservation, mutations }: PipelineExpandedRowProps) {
@@ -189,6 +191,15 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                   </span>
                 </div>
                 <div className="flex gap-2 pt-2 border-t border-white/10">
+                  {/* View Invoice - always available */}
+                  <Link
+                    href={`/dashboard/invoices/${r.invoiceId}`}
+                    title="View full invoice details"
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg border border-purple-500/30"
+                  >
+                    <Eye className="h-3 w-3" />
+                    View
+                  </Link>
                   {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
                     <>
                       <button

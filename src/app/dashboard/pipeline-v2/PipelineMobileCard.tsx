@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, DollarSign, FileText, Edit, Send, RefreshCw, Ban, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, DollarSign, FileText, Edit, Send, RefreshCw, Ban, AlertTriangle, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { StatusBadge } from './StatusBadge';
 import { BeadProgress } from './BeadProgress';
 import type { PipelineReservation, PipelineMutations } from './types';
+import Link from 'next/link';
 
 interface PipelineMobileCardProps {
   reservation: PipelineReservation;
@@ -250,6 +251,15 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                   </div>
                 </div>
               </div>
+                  {/* View Invoice - always available */}
+                  <Link
+                    href={`/dashboard/invoices/${r.invoiceId}`}
+                    title="View full invoice details"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg border border-purple-500/30"
+                  >
+                    <Eye className="h-3 w-3" />
+                    View
+                  </Link>
               {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
                 <div className="pt-2 mt-2 border-t border-white/10">
                   <div className="flex gap-2">

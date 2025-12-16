@@ -877,7 +877,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Other Credits Modal */}
       {showCreditModal && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full mb-4">
             <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
             <p className="text-sm text-gray-400 mb-4">
@@ -950,7 +950,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Sub-Invoices View */}
       {showSubInvoices && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="w-full max-w-6xl mb-4 max-h-[90vh] overflow-y-auto">
             <SubInvoiceList
               parentInvoiceId={dbInvoice.id}

@@ -1,4 +1,6 @@
 'use client';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 import { CollapsibleSection } from './CollapsibleSection';
 import { KPICards } from './KPICards';
@@ -53,7 +55,16 @@ export function PipelineV2({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
+              <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft className="h-5 w-5 text-white" />
+              </Link>
               <h1 className="text-2xl font-bold text-white">Studio Pipeline</h1>
+            </div>
               <p className="text-sm text-purple-200/60 mt-1">
                 {allReservations.length} studios across {competitions.length} competitions
               </p>
