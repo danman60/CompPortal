@@ -1159,6 +1159,7 @@ export const liveCompetitionRouter = router({
               title: true,
               entry_number: true,
               running_order: true,
+              performance_time: true, // For drift calculation
               studios: { select: { name: true } },
               dance_categories: { select: { name: true } },
             },
@@ -1195,6 +1196,52 @@ export const liveCompetitionRouter = router({
           audioStartedAt: null,
           linkedMode: true,
           backstageControlEnabled: true,
+          // Schedule drift tracking
+          scheduleDrift: null,
+        };
+      }
+
+      // Calculate schedule drift: compare scheduled time vs actual start time
+      let scheduleDriftData: {
+        minutes: number;
+        status: 'ahead' | 'behind' | 'on-track';
+        severity: 'green' | 'yellow' | 'orange' | 'red';
+        lastResetAt: Date | null;
+      } | null = null;
+
+      if (liveState.current_entry_started_at && liveState.competition_entries?.performance_time) {
+        const scheduledTime = new Date(liveState.competition_entries.performance_time);
+        const actualStartTime = new Date(liveState.current_entry_started_at);
+        
+        // Calculate drift in minutes (positive = behind, negative = ahead)
+        const driftMs = actualStartTime.getTime() - scheduledTime.getTime();
+        const driftMinutes = Math.round(driftMs / 60000);
+        
+        // Check for most recent completed adjudication block to reset drift
+        const lastAdjudication = await prisma.schedule_breaks.findFirst({
+          where: {
+            competition_id: input.competitionId,
+            break_type: 'adjudication',
+            status: 'completed',
+          },
+          orderBy: { actual_end_time: 'desc' },
+          select: { actual_end_time: true },
+        });
+        
+        // Determine status and severity
+        const absMinutes = Math.abs(driftMinutes);
+        const status: 'ahead' | 'behind' | 'on-track' = 
+          absMinutes <= 5 ? 'on-track' : driftMinutes > 0 ? 'behind' : 'ahead';
+        const severity: 'green' | 'yellow' | 'orange' | 'red' = 
+          absMinutes <= 5 ? 'green' :
+          absMinutes <= 15 ? 'yellow' :
+          absMinutes <= 30 ? 'orange' : 'red';
+        
+        scheduleDriftData = {
+          minutes: driftMinutes,
+          status,
+          severity,
+          lastResetAt: lastAdjudication?.actual_end_time || null,
         };
       }
 
@@ -1231,6 +1278,8 @@ export const liveCompetitionRouter = router({
         audioStartedAt: liveState.audio_started_at,
         linkedMode: liveState.linked_mode ?? true,
         backstageControlEnabled: liveState.backstage_control_enabled ?? true,
+        // Schedule drift tracking
+        scheduleDrift: scheduleDriftData,
       };
     }),
 
