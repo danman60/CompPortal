@@ -1560,6 +1560,9 @@ export const reservationRouter = router({
           },
         },
         invoices: {
+          where: {
+            status: { notIn: ['VOIDED', 'VOID'] },
+          },
           select: {
             id: true,
             total: true,
@@ -1568,6 +1571,7 @@ export const reservationRouter = router({
             balance_remaining: true,
             paid_at: true,
           },
+          orderBy: { created_at: 'desc' },
           take: 1,
         },
         summaries: {
