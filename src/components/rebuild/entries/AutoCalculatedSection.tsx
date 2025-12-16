@@ -300,6 +300,14 @@ export function AutoCalculatedSection({
               )}
             </div>
           </div>
+          {/* IMPROV Size Category Lock Notice */}
+          {classificationId && classifications.find(c => c.id === classificationId)?.name.toLowerCase() === 'improv' && (
+            <div className="mt-2 p-2 bg-pink-500/10 border border-pink-500/30 rounded-lg">
+              <p className="text-xs text-pink-300">
+                🎭 <strong>Improv requires Solo</strong> - Size category is locked to Solo for Improv entries ($110 flat fee)
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Classification - Always visible */}

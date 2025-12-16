@@ -23,6 +23,7 @@ import {
   validateMaximumParticipants,
   validateFeeRange,
   validateImprovSoloOnly,
+  validateImprovGroupSize,
   getImprovFeeOverride
 } from '@/lib/validators/businessRules';
 
@@ -1188,6 +1189,8 @@ export const entryRouter = router({
       // Validate IMPROV is solo-only (Glow tenant requirement)
       if (data.classification_id) {
         await validateImprovSoloOnly(data.classification_id, participantCount);
+        // Validate IMPROV requires Solo size category
+        await validateImprovGroupSize(data.classification_id, entrySizeCategoryId || null);
       }
 
       // Create entry with participants using two-step pattern

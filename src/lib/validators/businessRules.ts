@@ -427,3 +427,49 @@ export async function getImprovFeeOverride(
 
   return null;
 }
+
+/**
+ * Validate IMPROV classification requires Solo size category
+ *
+ * IMPROV entries must use the "Solo" entry size category.
+ * This enforces the linkage between IMPROV classification and Solo group size.
+ *
+ * @param classificationId - ID of the classification to check
+ * @param entrySizeCategoryId - ID of the selected entry size category
+ * @throws {Error} If classification is Improv but size category is not Solo
+ */
+export async function validateImprovGroupSize(
+  classificationId: string,
+  entrySizeCategoryId: string | null
+): Promise<void> {
+  if (!classificationId) return;
+
+  const classification = await prisma.classifications.findUnique({
+    where: { id: classificationId },
+    select: { name: true },
+  });
+
+  if (!classification) {
+    return; // Classification not found - let other validation handle it
+  }
+
+  // Check if this is an Improv classification (case-insensitive)
+  if (classification.name.toLowerCase() === 'improv') {
+    if (!entrySizeCategoryId) {
+      throw new Error(
+        'Improv entries must have a size category assigned (Solo required).'
+      );
+    }
+
+    const sizeCategory = await prisma.entry_size_categories.findUnique({
+      where: { id: entrySizeCategoryId },
+      select: { name: true },
+    });
+
+    if (!sizeCategory || sizeCategory.name !== 'Solo') {
+      throw new Error(
+        `Improv entries must use Solo entry size category. Got: ${sizeCategory?.name || 'unknown'}`
+      );
+    }
+  }
+}

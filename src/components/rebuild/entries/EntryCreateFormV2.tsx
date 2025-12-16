@@ -280,6 +280,27 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
     lookups
   ]);
 
+  // IMPROV Auto-Lock: Lock size category to Solo when Improv classification selected (Glow tenant)
+  useEffect(() => {
+    if (!lookups) return;
+
+    const improvClass = lookups.classifications.find(c => c.name.toLowerCase() === 'improv');
+    const soloSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Solo');
+    const isImprovSelected = improvClass && formHook.form.classification_id === improvClass.id;
+
+    // If Improv classification selected → lock size category to Solo
+    if (isImprovSelected) {
+      if (soloSizeCategory && formHook.form.size_category_override !== soloSizeCategory.id) {
+        formHook.updateField('size_category_override', soloSizeCategory.id);
+      }
+    }
+    // Note: We don't clear Solo when switching away from Improv since Solo is a valid choice for other classifications
+  }, [
+    formHook.form.classification_id,
+    formHook.form.size_category_override,
+    lookups
+  ]);
+
   // Pre-fill form from existing entry if in edit mode
   useEffect(() => {
     if (!isEditMode || !existingEntry || !dancers.length || !eventStartDate) return;
