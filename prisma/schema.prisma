@@ -401,6 +401,7 @@ model users {
   competitions_competitions_schedule_published_byTousers       competitions[]         @relation("competitions_schedule_published_byTousers")
   documents                                                    documents[]
   judges                                                       judges[]
+  mp3_reminder_log                                             mp3_reminder_log[]
   reservations_reservations_approved_byTousers                 reservations[]         @relation("reservations_approved_byTousers")
   reservations_reservations_payment_confirmed_byTousers        reservations[]         @relation("reservations_payment_confirmed_byTousers")
   reservations_reservations_pending_spaces_requested_byTousers reservations[]         @relation("reservations_pending_spaces_requested_byTousers")
@@ -408,7 +409,6 @@ model users {
   routine_notes_routine_notes_created_byTousers                routine_notes[]        @relation("routine_notes_created_byTousers")
   schedule_conflicts                                           schedule_conflicts[]
   studios_studios_code_assigned_byTousers                      studios[]              @relation("studios_code_assigned_byTousers")
-  studios_studios_owner_idTousers                              studios[]              @relation("studios_owner_idTousers")
   studios_studios_verified_byTousers                           studios[]              @relation("studios_verified_byTousers")
   user_feedback_user_feedback_reviewed_byTousers               user_feedback[]        @relation("user_feedback_reviewed_byTousers")
   user_feedback_user_feedback_user_idTousers                   user_feedback[]        @relation("user_feedback_user_idTousers")
@@ -668,6 +668,15 @@ model competition_entries {
   version_created                                                                      Int?                               @default(0)
   version_last_modified                                                                Int?                               @default(0)
   sd_note_version                                                                      Int?
+  live_status                                                                          String?                            @default("queued") @db.VarChar(20)
+  scratched_reason                                                                     String?                            @db.VarChar(255)
+  scratched_at                                                                         DateTime?                          @db.Timestamptz(6)
+  scratched_by                                                                         String?                            @db.Uuid
+  mp3_duration_ms                                                                      Int?
+  mp3_validated                                                                        Boolean?                           @default(false)
+  mp3_validation_error                                                                 String?                            @db.VarChar(255)
+  music_exempt                                                                         Boolean?                           @default(false)
+  music_exempt_reason                                                                  String?                            @db.VarChar(100)
   awards                                                                               awards[]
   classification_exception_requests                                                    classification_exception_requests?
   age_groups                                                                           age_groups                         @relation(fields: [age_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -680,16 +689,22 @@ model competition_entries {
   competition_entries_competition_entries_previous_entry_idTocompetition_entries       competition_entries?               @relation("competition_entries_previous_entry_idTocompetition_entries", fields: [previous_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   other_competition_entries_competition_entries_previous_entry_idTocompetition_entries competition_entries[]              @relation("competition_entries_previous_entry_idTocompetition_entries")
   reservations                                                                         reservations?                      @relation(fields: [reservation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_profiles                                                                        user_profiles?                     @relation(fields: [scratched_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   competition_sessions                                                                 competition_sessions?              @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   studios                                                                              studios                            @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                                                                              tenants                            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   documents                                                                            documents[]
   entry_participants                                                                   entry_participants[]
+  live_competition_state                                                               live_competition_state[]
+  media_packages                                                                       media_packages[]
   rankings                                                                             rankings[]
   routine_notes                                                                        routine_notes[]
+  schedule_breaks                                                                      schedule_breaks[]
   schedule_version_snapshots                                                           schedule_version_snapshots[]
+  score_audit_log                                                                      score_audit_log[]
   scores                                                                               scores[]
   summary_entries                                                                      summary_entries[]
+  title_breakdown_scores                                                               title_breakdown_scores[]
 
   @@index([age_group_id], map: "idx_competition_entries_age_group_id")
   @@index([category_id], map: "idx_competition_entries_category_id")
@@ -707,6 +722,7 @@ model competition_entries {
   @@index([studio_id], map: "idx_entries_studio")
   @@index([tenant_id], map: "idx_entries_tenant")
   @@index([is_scheduled], map: "idx_competition_entries_is_scheduled")
+  @@index([competition_id, live_status], map: "idx_entries_live_status")
   @@schema("public")
 }
 
@@ -783,15 +799,17 @@ model competition_sessions {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model competition_settings {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  setting_category String
-  setting_key      String
-  setting_value    Json
-  display_order    Int      @default(0)
-  is_active        Boolean  @default(true)
-  created_at       DateTime @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime @default(now()) @db.Timestamptz(6)
-  deprecated       Boolean? @default(false)
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  setting_category        String
+  setting_key             String
+  setting_value           Json
+  display_order           Int      @default(0)
+  is_active               Boolean  @default(true)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @db.Timestamptz(6)
+  deprecated              Boolean? @default(false)
+  adjudication_levels     Json?    @default("{\"levels\": [{\"max\": 99.99, \"min\": 95.00, \"name\": \"Dynamic Diamond\", \"color\": \"#00D4FF\"}, {\"max\": 94.99, \"min\": 92.00, \"name\": \"Titanium\", \"color\": \"#C0C0C0\"}, {\"max\": 91.99, \"min\": 88.00, \"name\": \"Platinum\", \"color\": \"#E5E4E2\"}, {\"max\": 87.99, \"min\": 85.00, \"name\": \"Afterglow\", \"color\": \"#FFD700\"}, {\"max\": 84.99, \"min\": 82.00, \"name\": \"High Gold\", \"color\": \"#DAA520\"}, {\"max\": 81.99, \"min\": 78.00, \"name\": \"Gold\", \"color\": \"#FFD700\"}, {\"max\": 77.99, \"min\": 72.00, \"name\": \"Silver\", \"color\": \"#C0C0C0\"}, {\"max\": 71.99, \"min\": 65.00, \"name\": \"Bronze\", \"color\": \"#CD7F32\"}, {\"max\": 64.99, \"min\": 0.00, \"name\": \"Participation\", \"color\": \"#808080\"}], \"edgeCaseThreshold\": 0.1}")
+  music_reminder_settings Json?    @default("{\"enabled\": true, \"sevenDayReminder\": true, \"postDeadlineReport\": true, \"musicDeadlineOffset\": 0, \"fortyEightHourReminder\": true, \"twentyFourHourReminder\": true}")
 
   @@unique([setting_category, setting_key], map: "competition_settings_category_key_unique")
   @@index([is_active], map: "idx_competition_settings_active")
@@ -853,8 +871,14 @@ model competitions {
   schedule_published_by                           String?                             @db.Uuid
   schedule_feedback_allowed                       Boolean                             @default(false)
   schedule_hidden_studios                         String[]                            @default([]) @db.Uuid
+  live_mode_started_at                            DateTime?                           @db.Timestamptz(6)
+  live_mode_ended_at                              DateTime?                           @db.Timestamptz(6)
+  entry_number_start                              Int?                                @default(100)
+  entry_numbers_locked                            Boolean?                            @default(false)
+  entry_numbers_locked_at                         DateTime?                           @db.Timestamptz(6)
   age_change_tracking                             age_change_tracking[]
   awards                                          awards[]
+  break_requests                                  break_requests[]
   capacity_ledger                                 capacity_ledger[]
   classification_exception_requests               classification_exception_requests[]
   competition_entries                             competition_entries[]
@@ -869,9 +893,13 @@ model competitions {
   email_logs                                      email_logs[]
   invoices                                        invoices[]
   judges                                          judges[]
+  live_competition_state                          live_competition_state?
+  media_packages                                  media_packages[]
+  mp3_reminder_log                                mp3_reminder_log[]
   rankings                                        rankings[]
   reservations                                    reservations[]
   schedule_blocks                                 schedule_blocks[]
+  schedule_breaks                                 schedule_breaks[]
   schedule_conflicts                              schedule_conflicts[]
   schedule_versions                               schedule_versions[]
   title_rounds                                    title_rounds[]
@@ -953,6 +981,7 @@ model dancers {
   studios                 studios               @relation(fields: [studio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tenants                 tenants               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   entry_participants      entry_participants[]
+  media_access_logs       media_access_logs[]
   schedule_conflicts      schedule_conflicts[]
 
   @@index([date_of_birth], map: "idx_dancers_age")
@@ -1231,32 +1260,42 @@ model invoice_payments {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model judges {
-  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id             String?       @db.Uuid
-  competition_id      String?       @db.Uuid
-  name                String        @db.VarChar(255)
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String?           @db.Uuid
+  competition_id      String?           @db.Uuid
+  name                String            @db.VarChar(255)
   credentials         String?
-  specialization      String?       @db.VarChar(100)
+  specialization      String?           @db.VarChar(100)
   years_judging       Int?
-  certification_level String?       @db.VarChar(50)
+  certification_level String?           @db.VarChar(50)
   judge_number        Int?
-  panel_assignment    String?       @db.VarChar(100)
-  sessions            Json?         @default("[]")
-  email               String?       @db.VarChar(255)
-  phone               String?       @db.VarChar(50)
-  confirmed           Boolean?      @default(false)
-  checked_in          Boolean?      @default(false)
-  created_at          DateTime?     @default(now()) @db.Timestamp(6)
-  tenant_id           String        @db.Uuid
-  tenants             tenants       @relation(fields: [tenant_id], references: [id], onUpdate: NoAction, map: "fk_judges_tenant")
-  competitions        competitions? @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users               users?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  panel_assignment    String?           @db.VarChar(100)
+  sessions            Json?             @default("[]")
+  email               String?           @db.VarChar(255)
+  phone               String?           @db.VarChar(50)
+  confirmed           Boolean?          @default(false)
+  checked_in          Boolean?          @default(false)
+  created_at          DateTime?         @default(now()) @db.Timestamp(6)
+  tenant_id           String            @db.Uuid
+  pin_code            String?           @db.VarChar(6)
+  judge_position      String?           @db.VarChar(1)
+  last_seen_at        DateTime?         @db.Timestamptz(6)
+  current_status      String?           @default("offline") @db.VarChar(20)
+  device_id           String?           @db.VarChar(255)
+  session_token       String?           @db.VarChar(255)
+  break_requests      break_requests[]
+  tenants             tenants           @relation(fields: [tenant_id], references: [id], onUpdate: NoAction, map: "fk_judges_tenant")
+  competitions        competitions?     @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               users?            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  score_audit_log     score_audit_log[]
   scores              scores[]
 
   @@index([competition_id], map: "idx_judges_competition_id")
   @@index([tenant_id], map: "idx_judges_tenant")
   @@index([tenant_id, competition_id], map: "idx_judges_tenant_competition")
   @@index([user_id], map: "idx_judges_user_id")
+  @@index([competition_id, judge_position], map: "idx_judges_position")
+  @@index([competition_id, current_status], map: "idx_judges_status")
   @@schema("public")
 }
 
@@ -1388,6 +1427,10 @@ model scores {
   created_at            DateTime?           @default(now()) @db.Timestamptz(6)
   updated_at            DateTime?           @default(now()) @db.Timestamptz(6)
   tenant_id             String              @db.Uuid
+  status                String?             @default("draft") @db.VarChar(20)
+  submitted_at          DateTime?           @db.Timestamptz(6)
+  finalized_at          DateTime?           @db.Timestamptz(6)
+  score_audit_log       score_audit_log[]
   tenants               tenants             @relation(fields: [tenant_id], references: [id], onUpdate: NoAction, map: "fk_scores_tenant")
   competition_entries   competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   judges                judges              @relation(fields: [judge_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -1398,6 +1441,7 @@ model scores {
   @@index([judge_id], map: "idx_scores_judge")
   @@index([tenant_id], map: "idx_scores_tenant")
   @@index([tenant_id, entry_id], map: "idx_scores_tenant_entry")
+  @@index([status], map: "idx_scores_status")
   @@schema("public")
 }
 
@@ -1477,10 +1521,10 @@ model studios {
   documents                             documents[]
   email_logs                            email_logs[]
   invoices                              invoices[]
+  mp3_reminder_log                      mp3_reminder_log[]
   reservations                          reservations[]
   routine_import_sessions               routine_import_sessions[]
   users_studios_code_assigned_byTousers users?                              @relation("studios_code_assigned_byTousers", fields: [code_assigned_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_studios_owner_idTousers         users?                              @relation("studios_owner_idTousers", fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tenants                               tenants                             @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   users_studios_verified_byTousers      users?                              @relation("studios_verified_byTousers", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -1581,6 +1625,7 @@ model tenants {
   age_groups                        age_groups[]
   award_types                       award_types[]
   awards                            awards[]
+  break_requests                    break_requests[]
   capacity_ledger                   capacity_ledger[]
   classification_exception_requests classification_exception_requests[]
   classifications                   classifications[]
@@ -1601,16 +1646,25 @@ model tenants {
   invoice_payments                  invoice_payments[]
   invoices                          invoices[]
   judges                            judges[]
+  live_competition_state            live_competition_state[]
+  media_access_logs                 media_access_logs[]
+  media_packages                    media_packages[]
+  mp3_reminder_log                  mp3_reminder_log[]
+  music_files                       music_files[]
   rankings                          rankings[]
   reservations                      reservations[]
   schedule_blocks                   schedule_blocks[]
+  schedule_breaks                   schedule_breaks[]
   schedule_versions                 schedule_versions[]
+  score_audit_log                   score_audit_log[]
+  score_bump_alerts                 score_bump_alerts[]
   scores                            scores[]
   scoring_tiers                     scoring_tiers[]
   studios                           studios[]
   sub_invoices                      sub_invoices[]
   summaries                         summaries[]
   summary_entries                   summary_entries[]
+  title_breakdown_scores            title_breakdown_scores[]
   title_rounds                      title_rounds[]
   user_feedback                     user_feedback[]
   user_profiles                     user_profiles[]
@@ -1691,10 +1745,14 @@ model user_profiles {
   login_count                                                                                     Int                                 @default(0)
   last_feedback_prompt_at                                                                         DateTime?                           @db.Timestamptz(6)
   activity_logs                                                                                   activity_logs[]
+  break_requests                                                                                  break_requests[]
   classification_exception_requests_classification_exception_requests_created_byTouser_profiles   classification_exception_requests[] @relation("classification_exception_requests_created_byTouser_profiles")
   classification_exception_requests_classification_exception_requests_responded_byTouser_profiles classification_exception_requests[] @relation("classification_exception_requests_responded_byTouser_profiles")
+  competition_entries                                                                             competition_entries[]
   email_preferences                                                                               email_preferences[]
   invoice_payments                                                                                invoice_payments[]
+  schedule_breaks                                                                                 schedule_breaks[]
+  score_audit_log                                                                                 score_audit_log[]
   two_factor_audit_log                                                                            two_factor_audit_log[]
   tenants                                                                                         tenants?                            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
@@ -2045,6 +2103,347 @@ model schedule_versions {
   @@index([snapshot_data], map: "idx_schedule_versions_snapshot_data", type: Gin)
   @@index([status], map: "idx_schedule_versions_status")
   @@index([tenant_id], map: "idx_schedule_versions_tenant")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model oauth_client_states {
+  id            String   @id @db.Uuid
+  provider_type String
+  code_verifier String?
+  created_at    DateTime @db.Timestamptz(6)
+
+  @@index([created_at], map: "idx_oauth_client_states_created_at")
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model break_requests {
+  id                         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competition_id             String            @db.Uuid
+  judge_id                   String            @db.Uuid
+  tenant_id                  String            @db.Uuid
+  requested_duration_minutes Int
+  status                     String            @default("pending") @db.VarChar(20)
+  responded_by               String?           @db.Uuid
+  responded_at               DateTime?         @db.Timestamptz(6)
+  deny_reason                String?           @db.VarChar(255)
+  scheduled_start_time       DateTime?         @db.Timestamptz(6)
+  actual_start_time          DateTime?         @db.Timestamptz(6)
+  actual_end_time            DateTime?         @db.Timestamptz(6)
+  actual_duration_minutes    Int?
+  requested_at               DateTime?         @default(now()) @db.Timestamptz(6)
+  created_at                 DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime?         @default(now()) @db.Timestamptz(6)
+  request_reason             String?           @db.VarChar(500)
+  competitions               competitions      @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  judges                     judges            @relation(fields: [judge_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_profiles              user_profiles?    @relation(fields: [responded_by], references: [id], onUpdate: NoAction)
+  tenants                    tenants           @relation(fields: [tenant_id], references: [id], onUpdate: NoAction)
+  schedule_breaks            schedule_breaks[]
+
+  @@index([competition_id], map: "idx_break_requests_competition")
+  @@index([judge_id], map: "idx_break_requests_judge")
+  @@index([status], map: "idx_break_requests_status")
+  @@index([tenant_id], map: "idx_break_requests_tenant")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model live_competition_state {
+  id                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competition_id                String               @unique(map: "unique_competition_state") @db.Uuid
+  tenant_id                     String               @db.Uuid
+  competition_state             String               @default("pending") @db.VarChar(20)
+  current_entry_id              String?              @db.Uuid
+  current_entry_state           String?              @default("queued") @db.VarChar(20)
+  current_entry_started_at      DateTime?            @db.Timestamptz(6)
+  playback_state                String?              @default("idle") @db.VarChar(20)
+  playback_position_ms          Int?                 @default(0)
+  playback_started_at           DateTime?            @db.Timestamptz(6)
+  schedule_delay_minutes        Int?                 @default(0)
+  originally_scheduled_end_time DateTime?            @db.Timestamptz(6)
+  projected_end_time            DateTime?            @db.Timestamptz(6)
+  judges_can_see_scores         Boolean?             @default(false)
+  day_number                    Int?                 @default(1)
+  session_number                Int?                 @default(1)
+  live_mode_started_at          DateTime?            @db.Timestamptz(6)
+  live_mode_ended_at            DateTime?            @db.Timestamptz(6)
+  paused_at                     DateTime?            @db.Timestamptz(6)
+  last_sync_at                  DateTime?            @default(now()) @db.Timestamptz(6)
+  created_at                    DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at                    DateTime?            @default(now()) @db.Timestamptz(6)
+  operating_date                DateTime?            @db.Date
+  audio_state                   String?              @default("stopped")
+  audio_position_ms             Int?                 @default(0)
+  audio_started_at              DateTime?            @db.Timestamptz(6)
+  linked_mode                   Boolean?             @default(true)
+  backstage_control_enabled     Boolean?             @default(true)
+  competitions                  competitions         @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  competition_entries           competition_entries? @relation(fields: [current_entry_id], references: [id], onUpdate: NoAction)
+  tenants                       tenants              @relation(fields: [tenant_id], references: [id], onUpdate: NoAction)
+
+  @@index([competition_id], map: "idx_live_state_competition")
+  @@index([current_entry_id], map: "idx_live_state_current_entry")
+  @@index([tenant_id], map: "idx_live_state_tenant")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model media_access_logs {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String          @db.Uuid
+  media_package_id String?         @db.Uuid
+  dancer_id        String?         @db.Uuid
+  access_type      String
+  ip_address       String?         @db.Inet
+  user_agent       String?
+  accessed_at      DateTime?       @default(now()) @db.Timestamptz(6)
+  dancers          dancers?        @relation(fields: [dancer_id], references: [id], onUpdate: NoAction)
+  media_packages   media_packages? @relation(fields: [media_package_id], references: [id], onUpdate: NoAction)
+  tenants          tenants         @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([accessed_at], map: "idx_media_access_logs_accessed")
+  @@index([dancer_id], map: "idx_media_access_logs_dancer")
+  @@index([media_package_id], map: "idx_media_access_logs_package")
+  @@index([tenant_id], map: "idx_media_access_logs_tenant")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model media_packages {
+  id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String               @db.Uuid
+  competition_id         String               @db.Uuid
+  entry_id               String?              @db.Uuid
+  entry_number           Int
+  status                 String               @default("pending")
+  performance_video_url  String?
+  judge1_video_url       String?
+  judge2_video_url       String?
+  judge3_video_url       String?
+  video_duration_seconds Int?
+  video_start_timestamp  DateTime?            @db.Timestamptz(6)
+  video_end_timestamp    DateTime?            @db.Timestamptz(6)
+  photo_count            Int?                 @default(0)
+  created_at             DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?            @default(now()) @db.Timestamptz(6)
+  media_access_logs      media_access_logs[]
+  competitions           competitions         @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  competition_entries    competition_entries? @relation(fields: [entry_id], references: [id], onUpdate: NoAction)
+  tenants                tenants              @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  media_photos           media_photos[]
+
+  @@unique([competition_id, entry_number])
+  @@index([competition_id], map: "idx_media_packages_competition")
+  @@index([entry_id], map: "idx_media_packages_entry")
+  @@index([competition_id, entry_number], map: "idx_media_packages_entry_number")
+  @@index([status], map: "idx_media_packages_status")
+  @@index([tenant_id], map: "idx_media_packages_tenant")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model media_photos {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  media_package_id String         @db.Uuid
+  storage_url      String
+  filename         String
+  file_size_bytes  Int?
+  captured_at      DateTime?      @db.Timestamptz(6)
+  sort_order       Int?           @default(0)
+  thumbnail_url    String?
+  created_at       DateTime?      @default(now()) @db.Timestamptz(6)
+  media_packages   media_packages @relation(fields: [media_package_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([captured_at], map: "idx_media_photos_captured")
+  @@index([media_package_id], map: "idx_media_photos_package")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mp3_reminder_log {
+  id                String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  competition_id    String       @db.Uuid
+  studio_id         String?      @db.Uuid
+  user_id           String?      @db.Uuid
+  notification_type String       @db.VarChar(50)
+  entries_missing   Int          @default(0)
+  sent_at           DateTime?    @default(now()) @db.Timestamptz(6)
+  email_id          String?      @db.VarChar(100)
+  opened_at         DateTime?    @db.Timestamptz(6)
+  clicked_at        DateTime?    @db.Timestamptz(6)
+  tenant_id         String       @db.Uuid
+  created_at        DateTime?    @default(now()) @db.Timestamptz(6)
+  competitions      competitions @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  studios           studios?     @relation(fields: [studio_id], references: [id], onUpdate: NoAction)
+  tenants           tenants      @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users?       @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+
+  @@index([competition_id], map: "idx_mp3_reminder_log_competition")
+  @@index([sent_at(sort: Desc)], map: "idx_mp3_reminder_log_sent_at")
+  @@index([studio_id], map: "idx_mp3_reminder_log_studio")
+  @@index([tenant_id], map: "idx_mp3_reminder_log_tenant")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model music_files {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
+  entry_id         String    @db.Uuid
+  studio_id        String    @db.Uuid
+  file_name        String    @db.VarChar(255)
+  original_name    String?   @db.VarChar(255)
+  file_size        BigInt?
+  duration_seconds Int?
+  storage_path     String    @db.VarChar(500)
+  storage_bucket   String?   @default("music-files") @db.VarChar(100)
+  status           String?   @default("pending") @db.VarChar(20)
+  uploaded_by      String?   @db.Uuid
+  uploaded_at      DateTime? @db.Timestamptz(6)
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
+  tenants          tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([entry_id, tenant_id], map: "idx_music_files_unique_entry")
+  @@index([tenant_id, status], map: "idx_music_files_status")
+  @@index([tenant_id, studio_id], map: "idx_music_files_studio")
+  @@index([tenant_id, entry_id], map: "idx_music_files_tenant_entry")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model schedule_breaks {
+  id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competition_id          String               @db.Uuid
+  tenant_id               String               @db.Uuid
+  insert_after_entry_id   String?              @db.Uuid
+  day_number              Int                  @default(1)
+  position_in_day         Int
+  duration_minutes        Int
+  break_type              String               @default("emergency") @db.VarChar(20)
+  reason                  String?              @db.VarChar(255)
+  title                   String?              @db.VarChar(100)
+  status                  String               @default("scheduled") @db.VarChar(20)
+  scheduled_start_time    DateTime?            @db.Timestamptz(6)
+  actual_start_time       DateTime?            @db.Timestamptz(6)
+  actual_end_time         DateTime?            @db.Timestamptz(6)
+  actual_duration_minutes Int?
+  created_by              String?              @db.Uuid
+  break_request_id        String?              @db.Uuid
+  created_at              DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime?            @default(now()) @db.Timestamptz(6)
+  break_requests          break_requests?      @relation(fields: [break_request_id], references: [id], onUpdate: NoAction)
+  competitions            competitions         @relation(fields: [competition_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_profiles           user_profiles?       @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  competition_entries     competition_entries? @relation(fields: [insert_after_entry_id], references: [id], onUpdate: NoAction)
+  tenants                 tenants              @relation(fields: [tenant_id], references: [id], onUpdate: NoAction)
+
+  @@index([competition_id], map: "idx_schedule_breaks_competition")
+  @@index([competition_id, day_number], map: "idx_schedule_breaks_day")
+  @@index([competition_id, day_number, position_in_day], map: "idx_schedule_breaks_position")
+  @@index([tenant_id], map: "idx_schedule_breaks_tenant")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model score_audit_log {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  score_id            String              @db.Uuid
+  entry_id            String              @db.Uuid
+  judge_id            String              @db.Uuid
+  tenant_id           String              @db.Uuid
+  previous_score      Decimal?            @db.Decimal(6, 2)
+  new_score           Decimal             @db.Decimal(6, 2)
+  edit_type           String              @db.VarChar(20)
+  edit_reason         String?             @db.VarChar(255)
+  edited_by           String              @db.Uuid
+  editor_role         String              @db.VarChar(20)
+  edited_at           DateTime?           @default(now()) @db.Timestamptz(6)
+  user_profiles       user_profiles       @relation(fields: [edited_by], references: [id], onUpdate: NoAction)
+  competition_entries competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  judges              judges              @relation(fields: [judge_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  scores              scores              @relation(fields: [score_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants             tenants             @relation(fields: [tenant_id], references: [id], onUpdate: NoAction)
+
+  @@index([edited_at(sort: Desc)], map: "idx_score_audit_edited_at")
+  @@index([edited_by], map: "idx_score_audit_editor")
+  @@index([entry_id], map: "idx_score_audit_entry")
+  @@index([judge_id], map: "idx_score_audit_judge")
+  @@index([score_id], map: "idx_score_audit_score")
+  @@index([tenant_id], map: "idx_score_audit_tenant")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model score_bump_alerts {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id        String    @db.Uuid
+  entry_id         String    @db.Uuid
+  judge_id         String    @db.Uuid
+  judge_name       String?   @db.VarChar(100)
+  judge_score      Decimal   @db.Decimal(5, 2)
+  other_scores     Decimal[] @db.Decimal(5, 2)
+  average_with     Decimal   @db.Decimal(5, 2)
+  average_without  Decimal   @db.Decimal(5, 2)
+  score_diff       Decimal   @db.Decimal(5, 2)
+  level_with       String    @db.VarChar(50)
+  level_without    String    @db.VarChar(50)
+  threshold_value  Decimal   @db.Decimal(5, 2)
+  status           String?   @default("active") @db.VarChar(20)
+  dismissed_by     String?   @db.Uuid
+  dismissed_at     DateTime? @db.Timestamptz(6)
+  resolution_notes String?
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
+  tenants          tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([entry_id], map: "idx_score_bump_alerts_entry")
+  @@index([tenant_id, status], map: "idx_score_bump_alerts_tenant_status")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model title_breakdown_scores {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String              @db.Uuid
+  score_id            String              @db.Uuid
+  entry_id            String              @db.Uuid
+  judge_id            String              @db.Uuid
+  technique_score     Int?
+  category_2_score    Int?
+  category_3_score    Int?
+  category_4_score    Int?
+  category_5_score    Int?
+  category_2_label    String?             @default("Execution") @db.VarChar(50)
+  category_3_label    String?             @default("Artistry") @db.VarChar(50)
+  category_4_label    String?             @default("Choreography") @db.VarChar(50)
+  category_5_label    String?             @default("Performance") @db.VarChar(50)
+  total_breakdown     Int?
+  created_at          DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?           @default(now()) @db.Timestamptz(6)
+  competition_entries competition_entries @relation(fields: [entry_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants             tenants             @relation(fields: [tenant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([score_id, tenant_id])
+  @@index([entry_id], map: "idx_title_breakdown_entry_id")
+  @@index([score_id], map: "idx_title_breakdown_score_id")
+  @@index([tenant_id], map: "idx_title_breakdown_tenant_id")
   @@schema("public")
 }
 
