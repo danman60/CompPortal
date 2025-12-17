@@ -875,10 +875,10 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         <p className="mt-2">For questions about this invoice, please contact the competition organizers.</p>
       </div>
 
-      {/* Other Credits Modal */}
+      {/* Other Credits Modal - positioned at top for visibility on long invoices */}
       {showCreditModal && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto">
+          <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
             <p className="text-sm text-gray-400 mb-4">
               Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
@@ -948,10 +948,10 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         />
       )}
 
-      {/* Sub-Invoices View */}
+      {/* Sub-Invoices View - positioned at top for visibility on long invoices */}
       {showSubInvoices && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-6xl mb-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-10 overflow-y-auto">
+          <div className="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
             <SubInvoiceList
               parentInvoiceId={dbInvoice.id}
               onBack={() => setShowSubInvoices(false)}
