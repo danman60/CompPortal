@@ -561,6 +561,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         special_requirements: formHook.form.special_requirements || undefined,
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
+        routine_age: formHook.effectiveAge ?? undefined, // Fix: was missing from CSV import mode
         is_title_upgrade: formHook.form.is_title_upgrade,
         extended_time_requested: formHook.form.extended_time_requested,
         routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
@@ -685,6 +686,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
         is_title_upgrade: formHook.form.is_title_upgrade,
+        routine_age: formHook.effectiveAge ?? undefined, // Fix: was missing from CSV import mode
         extended_time_requested: formHook.form.extended_time_requested,
         routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
         routine_length_seconds: formHook.form.extended_time_requested ? formHook.form.routine_length_seconds : undefined,
