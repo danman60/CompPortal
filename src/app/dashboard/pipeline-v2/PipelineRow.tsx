@@ -105,7 +105,19 @@ export function PipelineRow({
 
       {/* Action - centered like mockup */}
       <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-        {r.displayStatus === 'pending_review' && (
+        {/* Pending space request - highest priority action */}
+        {r.pendingAdditionalSpaces && r.pendingAdditionalSpaces > 0 && (
+          <button
+            onClick={() => mutations.approveSpaceRequest({ reservationId: r.id })}
+            disabled={mutations.isApprovingSpaceRequest}
+            title={`Approve +${r.pendingAdditionalSpaces} additional spaces for ${r.studioName}`}
+            className="px-3 py-1.5 bg-amber-500/20 text-amber-300 text-xs font-medium rounded-lg border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+          >
+            {mutations.isApprovingSpaceRequest ? 'Approving...' : `Approve +${r.pendingAdditionalSpaces}`}
+          </button>
+        )}
+        {/* Regular status actions (only show if no pending space request) */}
+        {!r.pendingAdditionalSpaces && r.displayStatus === 'pending_review' && (
           <button
             onClick={() => mutations.openApprovalModal(r)}
             disabled={mutations.isApproving}
@@ -115,10 +127,10 @@ export function PipelineRow({
             Review Request
           </button>
         )}
-        {r.displayStatus === 'approved' && (
+        {!r.pendingAdditionalSpaces && r.displayStatus === 'approved' && (
           <span className="text-purple-200/50 text-xs" title="Studio is adding entries to their reservation">Awaiting entries</span>
         )}
-        {r.displayStatus === 'ready_to_invoice' && (
+        {!r.pendingAdditionalSpaces && r.displayStatus === 'ready_to_invoice' && (
           <button
             onClick={() => mutations.createInvoice({ reservationId: r.id })}
             disabled={mutations.isCreatingInvoice}
@@ -128,7 +140,7 @@ export function PipelineRow({
             {mutations.isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
           </button>
         )}
-        {r.displayStatus === 'invoice_sent' && r.invoiceId && (
+        {!r.pendingAdditionalSpaces && r.displayStatus === 'invoice_sent' && r.invoiceId && (
           <button
             onClick={() => mutations.openPaymentModal(r.invoiceId!)}
             title="Record a partial or full payment on this invoice"
@@ -137,10 +149,10 @@ export function PipelineRow({
             Record Payment
           </button>
         )}
-        {r.displayStatus === 'paid_complete' && (
+        {!r.pendingAdditionalSpaces && r.displayStatus === 'paid_complete' && (
           <span className="text-emerald-400 text-xs" title="All payments received - reservation complete">Done</span>
         )}
-        {r.displayStatus === 'needs_attention' && (
+        {!r.pendingAdditionalSpaces && r.displayStatus === 'needs_attention' && (
           <button
             onClick={() => mutations.reopenSummary({ reservationId: r.id })}
             disabled={mutations.isReopeningSummary}

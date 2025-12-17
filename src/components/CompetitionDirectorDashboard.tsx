@@ -464,7 +464,7 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
                 </Link>
               )}
               {pendingSpaceRequestsCount > 0 && (
-                <Link href="/dashboard/pipeline-v2" className="block">
+                <Link href="/dashboard/reservation-pipeline" className="block">
                 <div className="bg-gradient-to-r from-amber-500/15 to-amber-600/10 border border-amber-400/40 text-amber-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-amber-500/20 hover:to-amber-600/15 transition-all shadow-sm">
                   <div className="flex items-center justify-center bg-amber-500/30 rounded-full w-7 h-7 flex-shrink-0">
                     <svg className="w-4 h-4 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
