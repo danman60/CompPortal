@@ -285,27 +285,30 @@ export function AutoCalculatedSection({
             </div>
           </div>
 
-          {/* Auto-Detected Display (Read-Only) */}
-          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-            <div className="text-sm text-green-300">
-              {inferredSizeCategory ? (
-                <>
-                  <span className="font-semibold">Detected: {inferredSizeCategory.name}</span>
-                  <span className="text-green-400 ml-2">
-                    ({selectedDancerCount} dancer{selectedDancerCount !== 1 ? 's' : ''})
-                  </span>
-                </>
-              ) : (
-                <span className="text-white/60">Select dancers to auto-detect</span>
-              )}
+          {/* Size Category Display - Shows Improv when locked, otherwise shows detected */}
+          {sizeCategoryOverride && sizeCategories.find(c => c.id === sizeCategoryOverride)?.name === 'Improv' ? (
+            <div className="p-3 bg-pink-500/20 border border-pink-500/40 rounded-lg">
+              <div className="text-sm text-pink-300">
+                <span className="font-semibold">🎭 Improv</span>
+                <span className="text-pink-400 ml-2">
+                  ($110 flat fee - locked by style selection)
+                </span>
+              </div>
             </div>
-          </div>
-          {/* IMPROV Size Category Lock Notice */}
-          {sizeCategoryOverride && sizeCategories.find(c => c.id === sizeCategoryOverride)?.name === 'Improv' && (
-            <div className="mt-2 p-2 bg-pink-500/10 border border-pink-500/30 rounded-lg">
-              <p className="text-xs text-pink-300">
-                🎭 <strong>Improv</strong> - Size category locked to Improv ($110 flat fee)
-              </p>
+          ) : (
+            <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <div className="text-sm text-green-300">
+                {inferredSizeCategory ? (
+                  <>
+                    <span className="font-semibold">Detected: {inferredSizeCategory.name}</span>
+                    <span className="text-green-400 ml-2">
+                      ({selectedDancerCount} dancer{selectedDancerCount !== 1 ? 's' : ''})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-white/60">Select dancers to auto-detect</span>
+                )}
+              </div>
             </div>
           )}
         </div>
