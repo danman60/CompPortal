@@ -301,7 +301,7 @@ export function AutoCalculatedSection({
             </div>
           </div>
           {/* IMPROV Size Category Lock Notice */}
-          {classificationId && classifications.find(c => c.id === classificationId)?.name.toLowerCase() === 'improv' && (
+          {sizeCategoryOverride && sizeCategories.find(c => c.id === sizeCategoryOverride)?.name === 'Improv' && (
             <div className="mt-2 p-2 bg-pink-500/10 border border-pink-500/30 rounded-lg">
               <p className="text-xs text-pink-300">
                 🎭 <strong>Improv</strong> - Size category locked to Improv ($110 flat fee)
@@ -447,13 +447,13 @@ export function AutoCalculatedSection({
               </p>
             )}
             {/* IMPROV Solo-Only Warning */}
-            {classificationId && classifications.find(c => c.id === classificationId)?.name.toLowerCase() === 'improv' && selectedDancerCount > 1 && (
+            {sizeCategoryOverride && sizeCategories.find(c => c.id === sizeCategoryOverride)?.name === 'Improv' && selectedDancerCount > 1 && (
               <div className="mt-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
                 <p className="text-sm text-red-300 font-semibold">
                   ⚠️ Improv is solo-only
                 </p>
                 <p className="text-xs text-red-400 mt-1">
-                  Improv entries can only have 1 dancer. Please remove dancers or select a different classification.
+                  Improv entries can only have 1 dancer. Please remove dancers or select a different style.
                 </p>
               </div>
             )}

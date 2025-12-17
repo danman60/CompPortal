@@ -280,23 +280,29 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
     lookups
   ]);
 
-  // IMPROV Auto-Lock: Lock size category to Improv when Improv classification selected (Glow tenant)
+  // IMPROV Auto-Lock: Bidirectional link between Improv style and Improv size category
   useEffect(() => {
     if (!lookups) return;
 
-    const improvClass = lookups.classifications.find(c => c.name.toLowerCase() === 'improv');
+    const improvStyle = lookups.categories.find(c => c.name.toLowerCase() === 'improv');
     const improvSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Improv');
-    const isImprovSelected = improvClass && formHook.form.classification_id === improvClass.id;
 
-    // If Improv classification selected → lock size category to Improv
-    if (isImprovSelected) {
-      if (improvSizeCategory && formHook.form.size_category_override !== improvSizeCategory.id) {
-        formHook.updateField('size_category_override', improvSizeCategory.id);
-      }
+    if (!improvStyle || !improvSizeCategory) return;
+
+    const isImprovStyleSelected = formHook.form.category_id === improvStyle.id;
+    const isImprovSizeSelected = formHook.form.size_category_override === improvSizeCategory.id;
+
+    // If Improv style selected → auto-select Improv size category
+    if (isImprovStyleSelected && formHook.form.size_category_override !== improvSizeCategory.id) {
+      formHook.updateField('size_category_override', improvSizeCategory.id);
     }
-    // Note: We don't clear Improv size when switching away since it's specific to Improv classification
+
+    // If Improv size category selected → auto-select Improv style
+    if (isImprovSizeSelected && formHook.form.category_id !== improvStyle.id) {
+      formHook.updateField('category_id', improvStyle.id);
+    }
   }, [
-    formHook.form.classification_id,
+    formHook.form.category_id,
     formHook.form.size_category_override,
     lookups
   ]);
