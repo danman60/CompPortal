@@ -47,11 +47,10 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   },
   {
     id: 'media',
-    href: '#',
-    icon: '📹',
-    title: 'Media & Livestream',
-    description: 'Access photos, videos, and live coverage',
-    disabled: true,
+    href: '/dashboard/media',
+    icon: '📸',
+    title: 'Media & Photos',
+    description: 'Access photos and videos from competitions',
   },
 ];
 
