@@ -53,6 +53,9 @@ export function PipelineRow({
           {r.hasIssue && (
             <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">FIX</span>
           )}
+          {r.pendingAdditionalSpaces && r.pendingAdditionalSpaces > 0 && (
+            <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-bold rounded border border-amber-500/30" title={`Requesting +${r.pendingAdditionalSpaces} spaces`}>+{r.pendingAdditionalSpaces} REQ</span>
+          )}
         </div>
         <div className="text-xs text-purple-200/50">
           {r.studioCity}, {r.studioProvince} {r.studioCode && `• ${r.studioCode}`}

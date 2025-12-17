@@ -2779,43 +2779,7 @@ ${input.comments}
         },
       });
 
-      // Send styled email to CD
-      const cdEmail = await getUserEmail(cdUser.id);
-      if (cdEmail) {
-        const portalUrl = await getTenantPortalUrl(
-          ctx.tenantId!,
-          `/dashboard/reservations?expand=${input.reservationId}`
-        );
-
-        // Get tenant branding for styled email
-        const tenant = await prisma.tenants.findUnique({
-          where: { id: ctx.tenantId! },
-          select: { branding: true },
-        });
-        const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string } | null;
-
-        const emailData: SpaceRequestNotificationData = {
-          studioName: reservation.studios?.name || 'Unknown Studio',
-          competitionName: reservation.competitions?.name || 'Unknown Competition',
-          competitionYear: reservation.competitions?.year || new Date().getFullYear(),
-          currentSpaces: reservation.spaces_confirmed || 0,
-          additionalSpaces: input.additionalSpaces,
-          newTotal: (reservation.spaces_confirmed || 0) + input.additionalSpaces,
-          justification: input.justification,
-          portalUrl,
-          tenantBranding: branding || undefined,
-        };
-
-        const html = await renderSpaceRequestNotification(emailData);
-
-        await sendEmail({
-          to: cdEmail,
-          subject: `Space Request from ${reservation.studios?.name} - +${input.additionalSpaces} spaces`,
-          html,
-        });
-      }
-
-      // Log activity
+      // Log activity FIRST (before email, so it always runs even if email fails)
       await logActivity({
         userId: ctx.userId!,
         tenantId: ctx.tenantId!,
@@ -2830,9 +2794,53 @@ ${input.comments}
         },
       });
 
+      // Send styled email to CD (wrapped in try-catch so email failure doesn't break the mutation)
+      let emailSent = false;
+      try {
+        const cdEmail = await getUserEmail(cdUser.id);
+        if (cdEmail) {
+          const portalUrl = await getTenantPortalUrl(
+            ctx.tenantId!,
+            `/dashboard/reservations?expand=${input.reservationId}`
+          );
+
+          // Get tenant branding for styled email
+          const tenant = await prisma.tenants.findUnique({
+            where: { id: ctx.tenantId! },
+            select: { branding: true },
+          });
+          const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
+          const emailData: SpaceRequestNotificationData = {
+            studioName: reservation.studios?.name || 'Unknown Studio',
+            competitionName: reservation.competitions?.name || 'Unknown Competition',
+            competitionYear: reservation.competitions?.year || new Date().getFullYear(),
+            currentSpaces: reservation.spaces_confirmed || 0,
+            additionalSpaces: input.additionalSpaces,
+            newTotal: (reservation.spaces_confirmed || 0) + input.additionalSpaces,
+            justification: input.justification,
+            portalUrl,
+            tenantBranding: branding || undefined,
+          };
+
+          const html = await renderSpaceRequestNotification(emailData);
+
+          await sendEmail({
+            to: cdEmail,
+            subject: `Space Request from ${reservation.studios?.name} - +${input.additionalSpaces} spaces`,
+            html,
+          });
+          emailSent = true;
+        }
+      } catch (emailError) {
+        // Log error but don't fail the mutation - the request was still recorded
+        console.error('Failed to send space request email notification:', emailError);
+      }
+
       return {
         success: true,
         message: 'Your request has been sent to the Competition Director. You will be notified once it is reviewed.',
+        emailSent,
       };
     }),
 

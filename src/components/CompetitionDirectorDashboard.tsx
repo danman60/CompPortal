@@ -177,7 +177,12 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
     ? invoicesData.invoices.filter((inv: any) => inv.invoiceStatus === 'DRAFT').length
     : 0;
 
-  const badgeCount = pendingCount + summarizedCount + draftInvoicesCount;
+  // Count pending space requests (studios requesting additional spaces)
+  const pendingSpaceRequestsCount = reservations?.reservations
+    ? reservations.reservations.filter((r: any) => r.pendingAdditionalSpaces && r.pendingAdditionalSpaces > 0).length
+    : 0;
+
+  const badgeCount = pendingCount + summarizedCount + draftInvoicesCount + pendingSpaceRequestsCount;
 
   // Handle pipeline click
   const handlePipelineClick = () => {
@@ -454,6 +459,21 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
                   <div className="flex-1">
                     <div className="text-orange-200 font-bold">{draftInvoicesCount} Unsent Invoice{draftInvoicesCount !== 1 ? 's' : ''}</div>
                     <div className="text-orange-300/70 text-[10px] mt-0.5">Not yet sent to studios</div>
+                  </div>
+                </div>
+                </Link>
+              )}
+              {pendingSpaceRequestsCount > 0 && (
+                <Link href="/dashboard/pipeline-v2" className="block">
+                <div className="bg-gradient-to-r from-amber-500/15 to-amber-600/10 border border-amber-400/40 text-amber-100 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-3 hover:from-amber-500/20 hover:to-amber-600/15 transition-all shadow-sm">
+                  <div className="flex items-center justify-center bg-amber-500/30 rounded-full w-7 h-7 flex-shrink-0">
+                    <svg className="w-4 h-4 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-amber-200 font-bold">{pendingSpaceRequestsCount} Space Request{pendingSpaceRequestsCount !== 1 ? 's' : ''}</div>
+                    <div className="text-amber-300/70 text-[10px] mt-0.5">Studios requesting additional spaces</div>
                   </div>
                 </div>
                 </Link>
