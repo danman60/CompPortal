@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { trpc } from '@/lib/trpc';
 import toast from 'react-hot-toast';
 
@@ -25,6 +26,12 @@ export default function ApplyPartialPaymentModal({
   const [referenceNumber, setReferenceNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const applyPaymentMutation = trpc.invoice.applyPartialPayment.useMutation();
 
@@ -67,8 +74,10 @@ export default function ApplyPartialPaymentModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/50 backdrop-blur-sm">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-sm">
       <div className="min-h-full flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-xl max-w-md w-full max-h-[85vh] overflow-y-auto">
         {/* Header */}
@@ -189,6 +198,7 @@ export default function ApplyPartialPaymentModal({
         </form>
       </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

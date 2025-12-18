@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { trpc } from '@/lib/trpc';
 import { generateInvoicePDF } from '@/lib/pdf-reports';
 import toast from 'react-hot-toast';
@@ -82,6 +83,13 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const [otherCreditInput, setOtherCreditInput] = useState({ amount: 0, reason: "" });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [customDiscountInput, setCustomDiscountInput] = useState<string>('');
+  const [portalMounted, setPortalMounted] = useState(false);
+
+  // Portal mount for SSR safety
+  useEffect(() => {
+    setPortalMounted(true);
+    return () => setPortalMounted(false);
+  }, []);
 
   // Get current user role
   const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
@@ -878,66 +886,67 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         <p className="mt-2">For questions about this invoice, please contact the competition organizers.</p>
       </div>
 
-      {/* Other Credits Modal - centered in viewport */}
-      {showCreditModal && dbInvoice && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm">
+      {/* Other Credits Modal - rendered via Portal to document.body */}
+      {showCreditModal && dbInvoice && portalMounted && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-sm">
           <div className="min-h-full flex items-center justify-center p-4">
             <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-blue-300 text-sm mb-2">Credit Amount ($)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={otherCreditInput.amount}
-                  onChange={(e) => setOtherCreditInput({ ...otherCreditInput, amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
-                  placeholder={otherCreditAmount > 0 ? `Current: $${otherCreditAmount.toFixed(2)}` : 'Enter amount'}
-                />
+              <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-blue-300 text-sm mb-2">Credit Amount ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={otherCreditInput.amount}
+                    onChange={(e) => setOtherCreditInput({ ...otherCreditInput, amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+                    placeholder={otherCreditAmount > 0 ? `Current: ${otherCreditAmount.toFixed(2)}` : 'Enter amount'}
+                  />
+                </div>
+                <div>
+                  <label className="block text-blue-300 text-sm mb-2">Reason (Optional)</label>
+                  <input
+                    type="text"
+                    value={otherCreditInput.reason}
+                    onChange={(e) => setOtherCreditInput({ ...otherCreditInput, reason: e.target.value })}
+                    placeholder={dbInvoice.other_credit_reason || "e.g., Loyalty credit, Refund, Compensation"}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-blue-300 text-sm mb-2">Reason (Optional)</label>
-                <input
-                  type="text"
-                  value={otherCreditInput.reason}
-                  onChange={(e) => setOtherCreditInput({ ...otherCreditInput, reason: e.target.value })}
-                  placeholder={dbInvoice.other_credit_reason || "e.g., Loyalty credit, Refund, Compensation"}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
-                />
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => {
+                    applyCustomCreditMutation.mutate({
+                      invoiceId: dbInvoice.id,
+                      creditAmount: otherCreditInput.amount,
+                      creditReason: otherCreditInput.reason || undefined,
+                    });
+                  }}
+                  disabled={applyCustomCreditMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold disabled:opacity-50"
+                >
+                  {applyCustomCreditMutation.isPending ? 'Saving...' : 'Save Credit'}
+                </button>
+                <button
+                  onClick={() => {
+                    setOtherCreditInput({ amount: 0, reason: "" });
+                    setShowCreditModal(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={() => {
-                  applyCustomCreditMutation.mutate({
-                    invoiceId: dbInvoice.id,
-                    creditAmount: otherCreditInput.amount,
-                    creditReason: otherCreditInput.reason || undefined,
-                  });
-                }}
-                disabled={applyCustomCreditMutation.isPending}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold disabled:opacity-50"
-              >
-                {applyCustomCreditMutation.isPending ? 'Saving...' : 'Save Credit'}
-              </button>
-              <button
-                onClick={() => {
-                  setOtherCreditInput({ amount: 0, reason: "" });
-                  setShowCreditModal(false);
-                }}
-                className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors border border-white/20"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Split Invoice Wizard Modal */}
@@ -953,18 +962,19 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         />
       )}
 
-      {/* Sub-Invoices View - centered in viewport */}
-      {showSubInvoices && dbInvoice && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm">
+      {/* Sub-Invoices View - rendered via Portal to document.body */}
+      {showSubInvoices && dbInvoice && portalMounted && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-sm">
           <div className="min-h-full flex items-center justify-center p-4">
             <div className="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
-            <SubInvoiceList
-              parentInvoiceId={dbInvoice.id}
-              onBack={() => setShowSubInvoices(false)}
-            />
+              <SubInvoiceList
+                parentInvoiceId={dbInvoice.id}
+                onBack={() => setShowSubInvoices(false)}
+              />
+            </div>
           </div>
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Apply Partial Payment Modal */}
