@@ -703,7 +703,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 {isStudioDirector ? (
                   // Studio Directors see read-only status (payment happens externally)
                   <div className="flex-1 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 px-6 py-3 rounded-lg font-semibold text-center">
-                    📋 Invoice Sent - Payment will be confirmed by competition staff after external payment received (e-transfer, check, etc.)
+                    📋 Invoice Sent - Awaiting payment
                   </div>
                 ) : (
                   // Competition Directors can record partial payments or mark as fully paid

@@ -978,8 +978,9 @@ export const invoiceRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
       }
 
-      if (invoice.status !== 'DRAFT') {
-        throw new Error('Can only send invoices with DRAFT status');
+      // Only block voided invoices - allow re-sending DRAFT, SENT, or PAID invoices
+      if (invoice.status === 'VOIDED') {
+        throw new Error('Invoice has been voided. Create a new invoice to send.');
       }
 
       const updatedInvoice = await prisma.invoices.update({
