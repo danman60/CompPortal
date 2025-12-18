@@ -14,7 +14,7 @@ export type DisplayStatus =
   | 'rejected';
 
 // Raw reservation status from database
-export type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'summarized' | 'invoiced';
+export type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'summarized' | 'invoiced' | 'closed';
 
 // Invoice status from database
 export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'UNPAID' | 'VOIDED' | null;

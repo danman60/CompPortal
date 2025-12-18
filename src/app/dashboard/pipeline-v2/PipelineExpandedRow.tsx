@@ -144,7 +144,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                   </div>
                 </div>
               )}
-              {r.hasSummary && r.displayStatus !== 'paid_complete' && (
+              {r.hasSummary && (
                 <button
                   onClick={() => {
                     if (confirm(`Reopen summary for ${r.studioName}? This will allow them to modify their entry summary.`)) {
@@ -200,7 +200,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                     <Eye className="h-3 w-3" />
                     View
                   </Link>
-                  {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
+                  {r.invoiceStatus !== 'VOIDED' && (
                     <>
                       <button
                         onClick={() => {

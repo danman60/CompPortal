@@ -202,7 +202,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                 </div>
               </div>
             )}
-            {r.hasSummary && r.displayStatus !== 'paid_complete' && (
+            {r.hasSummary && (
               <>
                 <button
                   onClick={() => {
@@ -260,7 +260,7 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                     <Eye className="h-3 w-3" />
                     View
                   </Link>
-              {r.invoiceStatus !== 'PAID' && r.invoiceStatus !== 'VOIDED' && (
+              {r.invoiceStatus !== 'VOIDED' && (
                 <div className="pt-2 mt-2 border-t border-white/10">
                   <div className="flex gap-2">
                     <button

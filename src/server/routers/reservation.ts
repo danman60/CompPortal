@@ -2567,7 +2567,7 @@ ${input.comments}
         include: {
           invoices: {
             where: {
-              status: { in: ['DRAFT', 'SENT', 'PENDING'] },
+              status: { in: ['DRAFT', 'SENT', 'PENDING', 'PAID'] },
             },
           },
           studios: {
@@ -2595,8 +2595,8 @@ ${input.comments}
 
       // Guard: Only allow reopening from 'summarized' or 'invoiced' status
       guardReservationStatus(
-        reservation.status as 'pending' | 'approved' | 'rejected' | 'summarized' | 'invoiced',
-        ['summarized', 'invoiced'],
+        reservation.status as 'pending' | 'approved' | 'rejected' | 'summarized' | 'invoiced' | 'closed',
+        ['summarized', 'invoiced', 'closed'],
         'reopen summary'
       );
 
