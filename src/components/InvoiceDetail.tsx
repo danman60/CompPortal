@@ -283,6 +283,9 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   const balanceDue = dbInvoice && dbInvoice.amount_due
     ? parseFloat(dbInvoice.amount_due.toString())
     : Math.max(0, calculatedTotal - depositAmount);
+  const amountPaid = dbInvoice?.amount_paid ? parseFloat(dbInvoice.amount_paid.toString()) : 0;
+  const balanceRemaining = dbInvoice?.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : balanceDue;
+  const hasPayments = amountPaid > 0;
 
   if (isLoading) {
     return (
@@ -324,11 +327,18 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-400 mb-1">Balance Due</div>
-          <div className="text-4xl font-bold text-green-400">
-            ${balanceDue.toFixed(2)}
+          <div className="text-sm text-gray-400 mb-1">
+            {hasPayments ? 'Balance Remaining' : 'Balance Due'}
           </div>
-          {discountPercent > 0 && (
+          <div className="text-4xl font-bold text-green-400">
+            ${(hasPayments ? balanceRemaining : balanceDue).toFixed(2)}
+          </div>
+          {hasPayments && (
+            <div className="text-xs text-blue-400 mt-1">
+              ${amountPaid.toFixed(2)} paid
+            </div>
+          )}
+          {discountPercent > 0 && !hasPayments && (
             <div className="text-xs text-green-400 mt-1">
               ({discountPercent.toFixed(1)}% discount applied)
             </div>
@@ -875,9 +885,9 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         <p className="mt-2">For questions about this invoice, please contact the competition organizers.</p>
       </div>
 
-      {/* Other Credits Modal - positioned at top for visibility on long invoices */}
+      {/* Other Credits Modal - centered in viewport */}
       {showCreditModal && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
             <p className="text-sm text-gray-400 mb-4">
@@ -948,9 +958,9 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         />
       )}
 
-      {/* Sub-Invoices View - positioned at top for visibility on long invoices */}
+      {/* Sub-Invoices View - centered in viewport */}
       {showSubInvoices && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-10 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
             <SubInvoiceList
               parentInvoiceId={dbInvoice.id}

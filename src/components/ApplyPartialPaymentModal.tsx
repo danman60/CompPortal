@@ -68,8 +68,8 @@ export default function ApplyPartialPaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-[60] p-4 pt-20 overflow-y-auto">
-      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto mb-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4 overflow-y-auto">
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-xl max-w-md w-full max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="p-6 border-b border-white/10">
           <h2 className="text-xl font-bold text-white">Apply Partial Payment</h2>
