@@ -643,41 +643,34 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             </div>
           )}
 
-          {/* Balance Due (after deposit, before payments) */}
-          {depositAmount > 0 && (
+          {/* When payments exist: show Balance Remaining as primary */}
+          {hasPayments ? (
+            <>
+              {/* Original balance (smaller, secondary) */}
+              <div className="flex justify-between py-2 border-b border-white/10">
+                <span className="text-gray-400">Original Balance:</span>
+                <span className="text-gray-300">${balanceDue.toFixed(2)}</span>
+              </div>
+              {/* Amount paid */}
+              <div className="flex justify-between py-2 border-b border-white/10">
+                <span className="text-blue-400">Amount Paid:</span>
+                <span className="text-blue-400">-${amountPaid.toFixed(2)}</span>
+              </div>
+              {/* Balance Remaining - PRIMARY display */}
+              <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
+                <span className="text-white font-bold text-lg">BALANCE REMAINING</span>
+                <span className="text-green-400 font-bold text-2xl">
+                  ${balanceRemaining.toFixed(2)}
+                </span>
+              </div>
+            </>
+          ) : (
+            /* No payments: show Balance Due as primary */
             <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
               <span className="text-white font-bold text-lg">BALANCE DUE</span>
               <span className="text-green-400 font-bold text-2xl">
                 ${balanceDue.toFixed(2)}
               </span>
-            </div>
-          )}
-
-          {/* If no deposit, just show total as balance due */}
-          {depositAmount === 0 && (
-            <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
-              <span className="text-white font-bold text-lg">BALANCE DUE</span>
-              <span className="text-green-400 font-bold text-2xl">
-                ${balanceDue.toFixed(2)}
-              </span>
-            </div>
-          )}
-
-          {/* Payment Summary (show ONLY if partial payments have been applied) */}
-          {dbInvoice && dbInvoice.amount_paid && parseFloat(dbInvoice.amount_paid.toString()) > 0 && (
-            <div className="mt-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-purple-300">Amount Paid:</span>
-                <span className="text-purple-200 font-semibold">
-                  ${parseFloat(dbInvoice.amount_paid.toString()).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm border-t border-purple-500/20 pt-2">
-                <span className="text-purple-300 font-semibold">Balance Remaining:</span>
-                <span className="text-purple-100 font-bold text-lg">
-                  ${(dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : balanceDue).toFixed(2)}
-                </span>
-              </div>
             </div>
           )}
         </div>
@@ -887,8 +880,9 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Other Credits Modal - centered in viewport */}
       {showCreditModal && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm">
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
             <p className="text-sm text-gray-400 mb-4">
               Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
@@ -942,6 +936,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               </button>
             </div>
           </div>
+          </div>
         </div>
       )}
 
@@ -960,12 +955,14 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
       {/* Sub-Invoices View - centered in viewport */}
       {showSubInvoices && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm">
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
             <SubInvoiceList
               parentInvoiceId={dbInvoice.id}
               onBack={() => setShowSubInvoices(false)}
             />
+          </div>
           </div>
         </div>
       )}
