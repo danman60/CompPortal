@@ -58,10 +58,8 @@ import autoTable from 'jspdf-autotable';
 import { autoFixRoutineConflict, autoFixDayConflicts, autoFixWeekendConflicts } from '@/lib/conflictAutoFix';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
-// Constants
+// Constants - Tenant ID will come from subdomain once merged to main
 const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
-const TEST_COMPETITION_ID = '1b786221-8f8e-413f-b532-06fa20a2ff63';
-const COMPETITION_DATES = ['2026-04-09', '2026-04-10', '2026-04-11', '2026-04-12'];
 
 // ===================== COMPONENTS =====================
 
@@ -669,7 +667,9 @@ function DroppableScheduleTable({
 // ===================== MAIN PAGE =====================
 export default function ScheduleV2Page() {
   // ===== STATE =====
-  const [selectedDate, setSelectedDate] = useState('2026-04-11');
+  // Competition selector - dynamically selectable by CD
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [scheduleByDate, setScheduleByDate] = useState<Record<string, string[]>>({});
   const [dismissedConflicts, setDismissedConflicts] = useState<Set<string>>(new Set()); // P2-conflict-hover
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -720,22 +720,83 @@ export default function ScheduleV2Page() {
   );
 
   // ===== DATA FETCHING =====
+  // Fetch all competitions for this tenant (for the dropdown selector)
+  const { data: competitionsData, isLoading: isLoadingCompetitions } = trpc.competition.getAll.useQuery();
+
+  // Get selected competition details (includes dates)
+  const { data: competition, refetch: refetchCompetition } = trpc.competition.getById.useQuery(
+    { id: selectedCompetitionId! },
+    { enabled: !!selectedCompetitionId }
+  );
+
+  // Derive competition date strings from selected competition
+  const competitionDateStrings = useMemo(() => {
+    if (!competition?.competition_start_date || !competition?.competition_end_date) return [];
+    const dates: string[] = [];
+    const start = new Date(competition.competition_start_date);
+    const end = new Date(competition.competition_end_date);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    return dates;
+  }, [competition?.competition_start_date, competition?.competition_end_date]);
+
+  // Auto-select first competition if none selected
+  useEffect(() => {
+    const competitions = competitionsData?.competitions;
+    if (!selectedCompetitionId && competitions && competitions.length > 0) {
+      setSelectedCompetitionId(competitions[0].id);
+    }
+  }, [competitionsData, selectedCompetitionId]);
+
+  // Auto-select first date when competition dates change
+  useEffect(() => {
+    if (competitionDateStrings.length > 0 && (!selectedDate || !competitionDateStrings.includes(selectedDate))) {
+      setSelectedDate(competitionDateStrings[0]);
+    }
+  }, [competitionDateStrings, selectedDate]);
+
   const { data: routinesData, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
-    competitionId: TEST_COMPETITION_ID,
+    competitionId: selectedCompetitionId!,
     tenantId: TEST_TENANT_ID,
-  });
+  }, { enabled: !!selectedCompetitionId });
 
   const { data: blocksData, refetch: refetchBlocks } = trpc.scheduling.getScheduleBlocks.useQuery({
-    competitionId: TEST_COMPETITION_ID,
+    competitionId: selectedCompetitionId!,
     tenantId: TEST_TENANT_ID,
     date: selectedDate,
-  });
+  }, { enabled: !!selectedCompetitionId && !!selectedDate });
 
   // Day start times (V1 parity - affects first routine time)
   const { data: dayStartTimes, refetch: refetchDayStartTimes } = trpc.scheduling.getDayStartTimes.useQuery({
-    competitionId: TEST_COMPETITION_ID,
+    competitionId: selectedCompetitionId!,
     tenantId: TEST_TENANT_ID,
-  });
+  }, { enabled: !!selectedCompetitionId });
+
+  // Transform date strings to CompetitionDay format for DayTabs
+  const competitionDates = useMemo(() => {
+    return competitionDateStrings.map(date => {
+      const daySchedule = scheduleByDate[date] || [];
+      const savedRoutines = daySchedule.filter(id => !id.startsWith('block-'));
+      // Find start time from array
+      const storedStartTime = dayStartTimes?.find((dst: any) => dst.date === date)?.start_time;
+      // Convert Date to string if needed (database might return Date object)
+      let startTimeStr = '08:00:00';
+      if (storedStartTime) {
+        if (typeof storedStartTime === 'string') {
+          startTimeStr = storedStartTime;
+        } else if (storedStartTime instanceof Date) {
+          startTimeStr = storedStartTime.toTimeString().substring(0, 8);
+        }
+      }
+      return {
+        date,
+        routineCount: savedRoutines.length,
+        savedRoutineCount: savedRoutines.length, // Same for now since we only count saved
+        startTime: startTimeStr,
+      };
+    });
+  }, [competitionDateStrings, scheduleByDate, dayStartTimes]);
 
   const saveMutation = trpc.scheduling.schedule.useMutation({
     onSuccess: () => {
@@ -781,12 +842,10 @@ export default function ScheduleV2Page() {
   });
 
   // Additional queries for V1 feature parity
-  const { data: competition } = trpc.competition.getById.useQuery({ id: TEST_COMPETITION_ID });
-
   const { data: allStudios } = trpc.studioInvitations.getStudiosForCD.useQuery();
 
   const { data: studioCodeData } = trpc.scheduling.getUnassignedStudioCodes.useQuery({
-    competitionId: TEST_COMPETITION_ID,
+    competitionId: selectedCompetitionId!,
     tenantId: TEST_TENANT_ID,
   });
 
@@ -831,8 +890,8 @@ export default function ScheduleV2Page() {
   // Version History query and mutation
   const { data: versionHistory, refetch: refetchVersions } = trpc.scheduling.getVersionHistory.useQuery({
     tenantId: TEST_TENANT_ID,
-    competitionId: TEST_COMPETITION_ID,
-  }, { enabled: !!TEST_COMPETITION_ID });
+    competitionId: selectedCompetitionId!,
+  }, { enabled: !!selectedCompetitionId! });
 
   const restoreVersionMutation = trpc.scheduling.restoreVersion.useMutation({
     onSuccess: () => {
@@ -859,7 +918,7 @@ export default function ScheduleV2Page() {
     if (confirm(`Undo to v${previousVersion.versionNumber} from ${dateStr} at ${timeStr}?`)) {
       restoreVersionMutation.mutate({
         tenantId: TEST_TENANT_ID,
-        competitionId: TEST_COMPETITION_ID,
+        competitionId: selectedCompetitionId!,
         versionId: previousVersion.id,
       });
     }
@@ -880,7 +939,7 @@ export default function ScheduleV2Page() {
   const toggleScheduleStatusMutation = trpc.scheduling.toggleScheduleStatus.useMutation({
     onSuccess: () => {
       toast.success('Schedule status updated');
-      utils.competition.getById.invalidate({ id: TEST_COMPETITION_ID });
+      utils.competition.getById.invalidate({ id: selectedCompetitionId! });
     },
     onError: (err) => toast.error(`Failed to update status: ${err.message}`),
   });
@@ -946,7 +1005,7 @@ export default function ScheduleV2Page() {
 
     const allSchedules: Record<string, string[]> = {};
 
-    COMPETITION_DATES.forEach(date => {
+    competitionDateStrings.forEach(date => {
       const scheduled = routinesData
         .filter(r => r.isScheduled && r.scheduledDateString === date)
         .sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0))
@@ -1107,7 +1166,7 @@ export default function ScheduleV2Page() {
     const map = new Map<string, number>();
     let entryNumber = 100;
 
-    COMPETITION_DATES.forEach(date => {
+    competitionDateStrings.forEach(date => {
       const daySchedule = scheduleByDate[date] || [];
       daySchedule.forEach(id => {
         if (!id.startsWith('block-')) {
@@ -1117,7 +1176,7 @@ export default function ScheduleV2Page() {
     });
 
     return map;
-  }, [scheduleByDate]);
+  }, [competitionDateStrings, scheduleByDate]);
 
   // ===== COMPUTED: Conflicts =====
   const conflictsMap = useMemo(() => {
@@ -1217,32 +1276,8 @@ export default function ScheduleV2Page() {
     };
   }, [routinesData]);
 
-  // ===== COMPUTED: Day Tabs Data =====
-  const competitionDates = useMemo(() => {
-    return COMPETITION_DATES.map(date => {
-      // Get stored start time for this date
-      const storedStartTime = dayStartTimes?.find((dst: any) => {
-        const dstDate = new Date(dst.date);
-        const targetDate = new Date(date);
-        return dstDate.getTime() === targetDate.getTime();
-      });
-
-      let startTime = '08:00:00';
-      if (storedStartTime?.start_time) {
-        const timeValue = new Date(storedStartTime.start_time);
-        const hours = String(timeValue.getUTCHours()).padStart(2, '0');
-        const minutes = String(timeValue.getUTCMinutes()).padStart(2, '0');
-        startTime = `${hours}:${minutes}:00`;
-      }
-
-      return {
-        date,
-        startTime,
-        routineCount: (scheduleByDate[date] || []).filter(id => !id.startsWith('block-')).length,
-        savedRoutineCount: (routinesData || []).filter(r => r.isScheduled && r.scheduledDateString === date).length,
-      };
-    });
-  }, [scheduleByDate, routinesData, dayStartTimes]);
+  // Note: dayTabsData computed fields (startTime, routineCount, savedRoutineCount) removed
+  // as they were unused. competitionDates is now derived from competition start/end dates.
 
   // ===== COMPUTED: Has Changes (Current Day) =====
   const hasChanges = useMemo(() => {
@@ -1266,7 +1301,7 @@ export default function ScheduleV2Page() {
     // Check for unsaved temp blocks (newly created via drag)
     if (tempBlocks.size > 0) return true;
 
-    return COMPETITION_DATES.some(date => {
+    return competitionDateStrings.some(date => {
       const daySchedule = scheduleByDate[date] || [];
 
       // Check routines
@@ -1490,7 +1525,7 @@ export default function ScheduleV2Page() {
   // This ensures global sequential numbering without relying on potentially stale map lookups
   const getStartingEntryNumber = (targetDate: string): number => {
     let entryNumber = 100;
-    for (const date of COMPETITION_DATES) {
+    for (const date of competitionDateStrings) {
       if (date === targetDate) break;
       const daySchedule = scheduleByDate[date] || [];
       entryNumber += daySchedule.filter(id => !id.startsWith('block-')).length;
@@ -1510,8 +1545,8 @@ export default function ScheduleV2Page() {
       // Running entry counter across all days (global sequential numbering)
       let runningEntryNumber = 100;
 
-      for (let i = 0; i < COMPETITION_DATES.length; i++) {
-        const date = COMPETITION_DATES[i];
+      for (let i = 0; i < competitionDateStrings.length; i++) {
+        const date = competitionDateStrings[i];
         const daySchedule = scheduleByDate[date] || [];
         const routineIds = daySchedule.filter(id => !id.startsWith('block-'));
 
@@ -1519,7 +1554,7 @@ export default function ScheduleV2Page() {
         const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         setSaveProgress({
           current: i + 1,
-          total: COMPETITION_DATES.length,
+          total: competitionDateStrings.length,
           currentDayName: dayName,
         });
 
@@ -1554,10 +1589,10 @@ export default function ScheduleV2Page() {
         try {
           // Skip snapshot for intermediate days (performance optimization)
           // Only create snapshot on the final day to capture complete schedule state
-          const isLastDay = i === COMPETITION_DATES.length - 1;
+          const isLastDay = i === competitionDates.length - 1;
           await saveMutation.mutateAsync({
             tenantId: TEST_TENANT_ID,
-            competitionId: TEST_COMPETITION_ID,
+            competitionId: selectedCompetitionId!,
             date,
             routines: routinesToSave,
             skipSnapshot: !isLastDay, // Skip snapshot for all days except the last
@@ -1613,7 +1648,7 @@ export default function ScheduleV2Page() {
     try {
       await saveMutation.mutateAsync({
         tenantId: TEST_TENANT_ID,
-        competitionId: TEST_COMPETITION_ID,
+        competitionId: selectedCompetitionId!,
         date: selectedDate,
         routines: routinesToSave,
       });
@@ -1639,7 +1674,7 @@ export default function ScheduleV2Page() {
     const newState = !competition?.schedule_feedback_allowed;
     toggleFeedbackMutation.mutate({
       tenantId: TEST_TENANT_ID,
-      competitionId: TEST_COMPETITION_ID,
+      competitionId: selectedCompetitionId!,
       enabled: newState,
     });
   };
@@ -1701,7 +1736,7 @@ export default function ScheduleV2Page() {
   };
 
   const handleSelectStudio = (studioId: string, studioName: string) => {
-    const url = `/dashboard/schedules/${TEST_COMPETITION_ID}?tenantId=${TEST_TENANT_ID}&studioId=${studioId}`;
+    const url = `/dashboard/schedules/${selectedCompetitionId!}?tenantId=${TEST_TENANT_ID}&studioId=${studioId}`;
     toast.success(`Opening schedule for ${studioName}`);
     router.push(url);
     setShowStudioPickerModal(false);
@@ -1799,7 +1834,7 @@ export default function ScheduleV2Page() {
       let isFirstDay = true;
 
       // Loop through all competition dates - include blocks with notes
-      COMPETITION_DATES.forEach((date, dayIndex) => {
+      competitionDateStrings.forEach((date, dayIndex) => {
         const daySchedule = scheduleByDate[date] || [];
         if (daySchedule.length === 0) return;
 
@@ -2017,7 +2052,7 @@ export default function ScheduleV2Page() {
     const scheduleByDateWithParticipants: Record<string, any[]> = {};
     const conflictsByDate: Record<string, any[]> = {};
 
-    COMPETITION_DATES.forEach(date => {
+    competitionDateStrings.forEach(date => {
       const daySchedule = (scheduleByDate[date] || []).filter(id => !id.startsWith('block-')).map(id => {
         const routine = routinesMap.get(id);
         if (!routine) return null;
@@ -2104,7 +2139,7 @@ export default function ScheduleV2Page() {
 
     // Reload draft from database
     const updatedRoutines = await utils.scheduling.getRoutines.fetch({
-      competitionId: TEST_COMPETITION_ID,
+      competitionId: selectedCompetitionId!,
       tenantId: TEST_TENANT_ID,
     });
 
@@ -2133,7 +2168,7 @@ export default function ScheduleV2Page() {
     try {
       await updateDayStartTimeMutation.mutateAsync({
         tenantId: TEST_TENANT_ID,
-        competitionId: TEST_COMPETITION_ID,
+        competitionId: selectedCompetitionId!,
         date: editingDate,
         newStartTime: `${editingStartTime}:00`, // Convert HH:mm to HH:mm:ss
       });
@@ -2251,12 +2286,44 @@ export default function ScheduleV2Page() {
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 border-b border-purple-500/30 px-6 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            {/* P1-8: No version UI - live updates only */}
-            <h1 className="text-xl font-bold text-white">Schedule V2</h1>
-            <p className="text-sm text-purple-100 mt-1">
-              {competition?.name || 'Test Competition'} • {selectedDate} • {scheduleOrder.filter(id => !id.startsWith('block-')).length} scheduled
-            </p>
+          <div className="flex items-center gap-4">
+            {/* Competition Selector */}
+            <div className="flex flex-col">
+              <label className="text-xs text-purple-200 mb-1">Competition</label>
+              <select
+                value={selectedCompetitionId || ''}
+                onChange={(e) => {
+                  const newCompId = e.target.value;
+                  if (newCompId && newCompId !== selectedCompetitionId) {
+                    setSelectedCompetitionId(newCompId);
+                    // Reset local state when switching competitions
+                    setScheduleByDate({});
+                    setSelectedDate('');
+                  }
+                }}
+                disabled={isLoadingCompetitions}
+                className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/30 min-w-[200px]"
+              >
+                {isLoadingCompetitions ? (
+                  <option value="">Loading...</option>
+                ) : competitionsData?.competitions?.length === 0 ? (
+                  <option value="">No competitions found</option>
+                ) : (
+                  competitionsData?.competitions?.map((comp) => (
+                    <option key={comp.id} value={comp.id} className="bg-purple-900 text-white">
+                      {comp.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            <div>
+              {/* P1-8: No version UI - live updates only */}
+              <h1 className="text-xl font-bold text-white">Schedule V2</h1>
+              <p className="text-sm text-purple-100 mt-1">
+                {selectedDate} • {scheduleOrder.filter(id => !id.startsWith('block-')).length} scheduled
+              </p>
+            </div>
           </div>
           {/* Center: Status Badge + Actions Dropdown */}
           <div className="flex items-center gap-3">
@@ -2267,7 +2334,7 @@ export default function ScheduleV2Page() {
                 onToggle={(newStatus) => {
                   toggleScheduleStatusMutation.mutate({
                     tenantId: TEST_TENANT_ID,
-                    competitionId: TEST_COMPETITION_ID,
+                    competitionId: selectedCompetitionId!,
                     status: newStatus,
                   });
                 }}
@@ -2290,7 +2357,7 @@ export default function ScheduleV2Page() {
                 if (confirm(`Clear schedule for ${selectedDate}? This will unschedule all ${routineCount} routines and delete blocks.`)) {
                   resetDayMutation.mutate({
                     tenantId: TEST_TENANT_ID,
-                    competitionId: TEST_COMPETITION_ID,
+                    competitionId: selectedCompetitionId!,
                     date: selectedDate,
                   });
                 }
@@ -2419,7 +2486,7 @@ export default function ScheduleV2Page() {
                               <button
                                 onClick={() => {
                                   if (confirm(`Restore to v${v.versionNumber}?`)) {
-                                    restoreVersionMutation.mutate({ tenantId: TEST_TENANT_ID, competitionId: TEST_COMPETITION_ID, versionId: v.id });
+                                    restoreVersionMutation.mutate({ tenantId: TEST_TENANT_ID, competitionId: selectedCompetitionId!, versionId: v.id });
                                     setShowVersionHistory(false);
                                   }
                                 }}
@@ -2522,14 +2589,14 @@ export default function ScheduleV2Page() {
                   days={competitionDates}
                   activeDay={selectedDate}
                   onDayChange={(date) => setSelectedDate(date)}
-                  competitionId={TEST_COMPETITION_ID}
+                  competitionId={selectedCompetitionId!}
                   tenantId={TEST_TENANT_ID}
                   onStartTimeUpdated={handleStartTimeUpdated}
                   onResetDay={() => {
                     if (confirm(`Reset schedule for ${selectedDate}?`)) {
                       resetDayMutation.mutate({
                         tenantId: TEST_TENANT_ID,
-                        competitionId: TEST_COMPETITION_ID,
+                        competitionId: selectedCompetitionId!,
                         date: selectedDate,
                       });
                     }
@@ -2640,7 +2707,7 @@ export default function ScheduleV2Page() {
           setShowBlockModal(false);
           setEditingBlock(null);
         }}
-        competitionId={TEST_COMPETITION_ID}
+        competitionId={selectedCompetitionId!}
         tenantId={TEST_TENANT_ID}
         mode={editingBlock ? "edit" : "create"}
         initialBlock={editingBlock ? {
@@ -2657,7 +2724,7 @@ export default function ScheduleV2Page() {
           } else {
             // Create block via mutation
             await createBlockMutation.mutateAsync({
-              competitionId: TEST_COMPETITION_ID,
+              competitionId: selectedCompetitionId!,
               tenantId: TEST_TENANT_ID,
               blockType: block.type,
               title: block.title,
@@ -2675,7 +2742,7 @@ export default function ScheduleV2Page() {
       <AssignStudioCodesModal
         isOpen={showStudioCodeModal}
         onClose={() => setShowStudioCodeModal(false)}
-        competitionId={TEST_COMPETITION_ID}
+        competitionId={selectedCompetitionId!}
         tenantId={TEST_TENANT_ID}
         onAssignComplete={() => {
           setShowStudioCodeModal(false);
@@ -2687,7 +2754,7 @@ export default function ScheduleV2Page() {
       <SendToStudiosModal
         open={showSendModal}
         onClose={() => setShowSendModal(false)}
-        competitionId={TEST_COMPETITION_ID}
+        competitionId={selectedCompetitionId!}
         tenantId={TEST_TENANT_ID}
         onSuccess={() => {
           refetch(); // Refresh schedule data
@@ -2703,7 +2770,7 @@ export default function ScheduleV2Page() {
       <ManageStudioVisibilityModal
         open={showVisibilityModal}
         onClose={() => setShowVisibilityModal(false)}
-        competitionId={TEST_COMPETITION_ID}
+        competitionId={selectedCompetitionId!}
         tenantId={TEST_TENANT_ID}
       />
 
@@ -2773,7 +2840,7 @@ export default function ScheduleV2Page() {
         onConfirm={() => {
           resetCompetitionMutation.mutate({
             tenantId: TEST_TENANT_ID,
-            competitionId: TEST_COMPETITION_ID,
+            competitionId: selectedCompetitionId!,
           }, {
             onSuccess: () => setShowResetAllModal(false),
           });
