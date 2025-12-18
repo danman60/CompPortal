@@ -2352,6 +2352,7 @@ export default function ScheduleV2Page() {
               }}
               onViewStudioSchedule={handleViewStudioSchedule}
               onManageVisibility={() => setShowVisibilityModal(true)}
+              onAssignStudioCodes={() => setShowStudioCodeModal(true)}
               onResetDay={() => {
                 const routineCount = scheduleOrder.filter(id => !id.startsWith('block-')).length;
                 if (confirm(`Clear schedule for ${selectedDate}? This will unschedule all ${routineCount} routines and delete blocks.`)) {

@@ -11,6 +11,7 @@ import {
   EyeOff,
   RotateCcw,
   Trash2,
+  Tag,
 } from 'lucide-react';
 
 /**
@@ -26,6 +27,7 @@ interface ActionsDropdownProps {
   onSaveAndEmail: () => void;
   onViewStudioSchedule: () => void;
   onManageVisibility: () => void;
+  onAssignStudioCodes: () => void;
   onResetDay: () => void;
   onResetAll: () => void;
   isRefreshing?: boolean;
@@ -39,6 +41,7 @@ export function ActionsDropdown({
   onSaveAndEmail,
   onViewStudioSchedule,
   onManageVisibility,
+  onAssignStudioCodes,
   onResetDay,
   onResetAll,
   isRefreshing = false,
@@ -153,6 +156,22 @@ export function ActionsDropdown({
                 >
                   <EyeOff className="h-4 w-4" />
                   Manage Visibility
+                </button>
+              )}
+            </MenuItem>
+
+            {/* Assign Studio Codes */}
+            <MenuItem>
+              {({ active }) => (
+                <button
+                  onClick={onAssignStudioCodes}
+                  className={`
+                    ${active ? 'bg-gray-700' : ''}
+                    flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-200
+                  `}
+                >
+                  <Tag className="h-4 w-4" />
+                  Assign Studio Codes
                 </button>
               )}
             </MenuItem>
