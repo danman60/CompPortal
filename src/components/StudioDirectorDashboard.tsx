@@ -35,6 +35,7 @@ const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
     icon: '📅',
     title: 'Scheduling',
     description: 'View your competition schedule',
+    disabled: true,
   },
   {
     id: 'marks',
