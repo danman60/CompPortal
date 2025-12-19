@@ -277,10 +277,23 @@ export const entryRouter = router({
       const unusedSpaces = originalSpaces - routineCount;
 
       // 🐛 FIX: Validate capacity before attempting database insert (graceful error)
-      if (unusedSpaces < 0) {
+      // Allow 5-routine tolerance for edge cases (race conditions, data sync issues)
+      const OVERAGE_TOLERANCE = 5;
+      if (unusedSpaces < -OVERAGE_TOLERANCE) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Cannot submit summary: You have ${routineCount} active routines but only ${originalSpaces} approved spaces. Please withdraw ${Math.abs(unusedSpaces)} routines or request additional spaces from the Competition Director.`,
+        });
+      }
+
+      // Log warning if over capacity but within tolerance (for tracking)
+      if (unusedSpaces < 0) {
+        logger.warn('⚠️ Summary submission with overage (within tolerance)', {
+          studioId,
+          competitionId,
+          routineCount,
+          approvedSpaces: originalSpaces,
+          overage: Math.abs(unusedSpaces),
         });
       }
 
