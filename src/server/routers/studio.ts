@@ -947,4 +947,41 @@ export const studioRouter = router({
         spacesRefunded: totalRefunded,
       };
     }),
+
+  // Get studios with entries for a specific competition (for scheduler)
+  getStudiosForCompetition: publicProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid(),
+        tenantId: z.string().uuid(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { competitionId, tenantId } = input;
+      const studios = await prisma.studios.findMany({
+        where: {
+          tenant_id: tenantId,
+          competition_entries: {
+            some: { competition_id: competitionId },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              competition_entries: {
+                where: { competition_id: competitionId },
+              },
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      });
+      return studios.map((studio) => ({
+        id: studio.id,
+        name: studio.name,
+        entryCount: studio._count.competition_entries,
+      }));
+    }),
 });
