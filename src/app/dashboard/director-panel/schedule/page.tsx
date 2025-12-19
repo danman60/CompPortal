@@ -41,6 +41,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { RoutinePool, FilterState } from '@/components/scheduling/RoutinePool';
+import { RoutineEditModal } from '@/components/scheduling/RoutineEditModal';
 import { DayTabs } from '@/components/scheduling/DayTabs';
 import { ScheduleBlockModal } from '@/components/ScheduleBlockModal';
 import { SendToStudiosModal } from '@/components/scheduling/SendToStudiosModal';
@@ -689,6 +690,7 @@ export default function ScheduleV2Page() {
   const [showResetAllModal, setShowResetAllModal] = useState(false);
   const [showFixAllModal, setShowFixAllModal] = useState(false);
   const [showStudioPickerModal, setShowStudioPickerModal] = useState(false);
+  const [editingRoutineId, setEditingRoutineId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0, currentDayName: '' });
   const [selectedScheduledIds, setSelectedScheduledIds] = useState<Set<string>>(new Set());
@@ -2579,6 +2581,7 @@ export default function ScheduleV2Page() {
                 filterOptions={filterOptions}
                 onSelectAll={handleSelectAll}
                 onDeselectAll={handleDeselectAll}
+                onEditClick={(routineId) => setEditingRoutineId(routineId)}
               />
             </div>
 
@@ -2775,6 +2778,17 @@ export default function ScheduleV2Page() {
         tenantId={tenantId}
       />
 
+      {/* Routine Edit Modal - CD Admin Override */}
+      <RoutineEditModal
+        isOpen={!!editingRoutineId}
+        onClose={() => setEditingRoutineId(null)}
+        routineId={editingRoutineId}
+        tenantId={tenantId}
+        onSaved={() => {
+          refetch(); // Refresh schedule data after edit
+        }}
+      />
+
       {/* Fix All Conflicts Modal (V1 parity - Day vs Weekend) */}
       <Modal
         isOpen={showFixAllModal}
@@ -2930,9 +2944,11 @@ function DroppableUnscheduledPool({
   filterOptions,
   onSelectAll,
   onDeselectAll,
+  onEditClick,
 }: {
   routines: any[];
   selectedIds: Set<string>;
+  onEditClick?: (routineId: string) => void;
   onToggleSelection: (id: string, shift: boolean) => void;
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
@@ -2977,6 +2993,7 @@ function DroppableUnscheduledPool({
         onDeselectAll={onDeselectAll}
         routineNotes={routineNotes}
         routineNotesText={routineNotesText}
+        onEditClick={onEditClick}
       />
     </div>
   );

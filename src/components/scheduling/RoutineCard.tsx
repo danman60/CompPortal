@@ -58,6 +58,7 @@ interface RoutineCardProps {
   isDraggingAnything?: boolean; // Is any item being dragged?
   onRequestClick?: (routineId: string) => void; // Studio request callback
   onNoteClick?: (routineId: string, routineTitle: string) => void; // CD note callback
+  onEditClick?: (routineId: string) => void; // CD edit modal callback
   // Visual indicators (Session 58)
   hasConflict?: boolean; // Red badge if routine has scheduling conflicts
   conflictSeverity?: 'critical' | 'error' | 'warning'; // Conflict severity level
@@ -76,6 +77,7 @@ export function RoutineCard({
   isDraggingAnything = false,
   onRequestClick,
   onNoteClick,
+  onEditClick,
   hasConflict = false,
   conflictSeverity = 'warning',
   hasNotes = false,
@@ -260,18 +262,34 @@ export function RoutineCard({
         </button>
       )}
 
-      {/* CD Note Button (for Competition Directors) */}
-      {viewMode === 'cd' && onNoteClick && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent drag from triggering
-            onNoteClick(routine.id, routine.title);
-          }}
-          className="mt-3 w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors font-medium"
-          data-action="add-note"
-        >
-          📝 {hasNotes ? 'View/Add Note' : 'Add Private Note'}
-        </button>
+      {/* CD Buttons (for Competition Directors) */}
+      {viewMode === 'cd' && (onNoteClick || onEditClick) && (
+        <div className="mt-3 flex gap-2" style={{ pointerEvents: isDraggingAnything ? 'none' : 'auto' }}>
+          {onEditClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditClick(routine.id);
+              }}
+              className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white text-sm rounded-lg transition-colors font-medium"
+              data-action="edit-routine"
+            >
+              ✏️ Edit
+            </button>
+          )}
+          {onNoteClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onNoteClick(routine.id, routine.title);
+              }}
+              className="flex-1 px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors font-medium border border-white/20"
+              data-action="add-note"
+            >
+              📝 Note
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

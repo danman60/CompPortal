@@ -44,6 +44,7 @@ interface RoutinePoolProps {
   isDraggingAnything?: boolean;
   onRequestClick?: (routineId: string) => void;
   onNoteClick?: (routineId: string, routineTitle: string) => void;
+  onEditClick?: (routineId: string) => void; // CD edit modal callback
   // Visual indicators (Session 58)
   conflicts?: Array<{ routine1Id: string; routine2Id: string; severity: 'critical' | 'error' | 'warning' }>;
   trophyHelper?: Array<{ routineId: string }>;
@@ -120,7 +121,7 @@ function SortableHeader({
 }
 
 // Draggable Table Row
-function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity, hasNotes, noteText, hasAgeChange, isLastRoutine, isSelected, isCompeting, onToggleSelection }: {
+function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity, hasNotes, noteText, hasAgeChange, isLastRoutine, isSelected, isCompeting, onToggleSelection, onEditClick }: {
   routine: Routine;
   viewMode: ViewMode;
   hasConflict: boolean;
@@ -132,6 +133,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
   isSelected: boolean;
   isCompeting: boolean; // P2-16: Highlight routines that share dancers with selected
   onToggleSelection?: (routineId: string, shiftKey: boolean) => void;
+  onEditClick?: (routineId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: routine.id,
@@ -161,6 +163,8 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
       {...attributes}
       {...listeners}
       className={rowClasses}
+      onDoubleClick={() => onEditClick?.(routine.id)}
+      title="Double-click to edit routine"
     >
       {/* Checkbox */}
       <td className="px-1 py-2 align-middle">
@@ -242,6 +246,7 @@ export function RoutinePool({
   isDraggingAnything = false,
   onRequestClick,
   onNoteClick,
+  onEditClick,
   conflicts = [],
   trophyHelper = [],
   ageChanges = [],
@@ -666,6 +671,7 @@ export function RoutinePool({
                     isSelected={selectedRoutineIds.has(routine.id)}
                     isCompeting={competingRoutineIds.has(routine.id)}
                     onToggleSelection={onToggleSelection}
+                    onEditClick={onEditClick}
                   />
                 ))}
               </tbody>
@@ -685,6 +691,7 @@ export function RoutinePool({
               isDraggingAnything={isDraggingAnything}
               onRequestClick={onRequestClick}
               onNoteClick={onNoteClick}
+              onEditClick={onEditClick}
               hasConflict={hasConflict(routine.id)}
               conflictSeverity={getConflictSeverity(routine.id)}
               hasNotes={routineNotes[routine.id] || false}
