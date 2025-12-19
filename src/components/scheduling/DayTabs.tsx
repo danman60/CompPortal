@@ -112,6 +112,8 @@ export function DayTabs({
 }: DayTabsProps) {
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [editedTime, setEditedTime] = useState<string>('');
+  // Local state to track updated start times (for immediate UI update before refetch completes)
+  const [localStartTimeOverrides, setLocalStartTimeOverrides] = useState<Record<string, string>>({});
 
   const updateDayStartTimeMutation = trpc.scheduling.updateDayStartTime.useMutation({
     onError: (error) => {
@@ -121,8 +123,9 @@ export function DayTabs({
 
   const handleEditClick = (day: CompetitionDay) => {
     setEditingDay(day.date);
-    // Convert HH:mm:ss to HH:mm for input
-    setEditedTime(day.startTime.substring(0, 5));
+    // Convert HH:mm:ss to HH:mm for input (use local override if available)
+    const currentStartTime = localStartTimeOverrides[day.date] || day.startTime;
+    setEditedTime(currentStartTime.substring(0, 5));
   };
 
   const handleSaveClick = async (day: CompetitionDay) => {
@@ -149,6 +152,12 @@ export function DayTabs({
         date: day.date,
         newStartTime: fullTime,
       });
+
+      // Immediately update local state for instant UI feedback
+      setLocalStartTimeOverrides(prev => ({
+        ...prev,
+        [day.date]: fullTime,
+      }));
 
       // Notify parent of time change (for draft state recalculation)
       await onStartTimeUpdated?.(day.date, fullTime);
@@ -235,7 +244,7 @@ export function DayTabs({
                   ) : (
                     <>
                       <span className={isActive ? 'text-white/90' : 'text-white/70'}>
-                        {day.startTime.substring(0, 5)}
+                        {(localStartTimeOverrides[day.date] || day.startTime).substring(0, 5)}
                         {day.endTime && ` - ${day.endTime.substring(0, 5)}`}
                       </span>
                       {/* Always show edit button to allow setting start time */}
