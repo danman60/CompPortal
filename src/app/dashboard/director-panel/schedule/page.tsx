@@ -58,8 +58,7 @@ import autoTable from 'jspdf-autotable';
 import { autoFixRoutineConflict, autoFixDayConflicts, autoFixWeekendConflicts } from '@/lib/conflictAutoFix';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 
-// Constants - Tenant ID will come from subdomain once merged to main
-const TEST_TENANT_ID = '00000000-0000-0000-0000-000000000003';
+// Tenant ID comes from subdomain via useTenantTheme()
 
 // ===================== COMPONENTS =====================
 
@@ -710,6 +709,7 @@ export default function ScheduleV2Page() {
 
   // Tenant branding
   const { tenant, primaryColor, logo } = useTenantTheme();
+  const tenantId = tenant?.id || '';
 
   // Current day's schedule
   const scheduleOrder = scheduleByDate[selectedDate] || [];
@@ -758,19 +758,19 @@ export default function ScheduleV2Page() {
 
   const { data: routinesData, isLoading, refetch } = trpc.scheduling.getRoutines.useQuery({
     competitionId: selectedCompetitionId!,
-    tenantId: TEST_TENANT_ID,
+    tenantId: tenantId,
   }, { enabled: !!selectedCompetitionId });
 
   const { data: blocksData, refetch: refetchBlocks } = trpc.scheduling.getScheduleBlocks.useQuery({
     competitionId: selectedCompetitionId!,
-    tenantId: TEST_TENANT_ID,
+    tenantId: tenantId,
     date: selectedDate,
   }, { enabled: !!selectedCompetitionId && !!selectedDate });
 
   // Day start times (V1 parity - affects first routine time)
   const { data: dayStartTimes, refetch: refetchDayStartTimes } = trpc.scheduling.getDayStartTimes.useQuery({
     competitionId: selectedCompetitionId!,
-    tenantId: TEST_TENANT_ID,
+    tenantId: tenantId,
   }, { enabled: !!selectedCompetitionId });
 
   // Transform date strings to CompetitionDay format for DayTabs
@@ -846,7 +846,7 @@ export default function ScheduleV2Page() {
 
   const { data: studioCodeData } = trpc.scheduling.getUnassignedStudioCodes.useQuery({
     competitionId: selectedCompetitionId!,
-    tenantId: TEST_TENANT_ID,
+    tenantId: tenantId,
   });
 
   // Update day start time mutation (V1 parity - recalculates all routine times)
@@ -889,7 +889,7 @@ export default function ScheduleV2Page() {
   // P2-15: Toggle schedule status (Tentative vs Final)
   // Version History query and mutation
   const { data: versionHistory, refetch: refetchVersions } = trpc.scheduling.getVersionHistory.useQuery({
-    tenantId: TEST_TENANT_ID,
+    tenantId: tenantId,
     competitionId: selectedCompetitionId!,
   }, { enabled: !!selectedCompetitionId! });
 
@@ -917,7 +917,7 @@ export default function ScheduleV2Page() {
 
     if (confirm(`Undo to v${previousVersion.versionNumber} from ${dateStr} at ${timeStr}?`)) {
       restoreVersionMutation.mutate({
-        tenantId: TEST_TENANT_ID,
+        tenantId: tenantId,
         competitionId: selectedCompetitionId!,
         versionId: previousVersion.id,
       });
@@ -1591,7 +1591,7 @@ export default function ScheduleV2Page() {
           // Only create snapshot on the final day to capture complete schedule state
           const isLastDay = i === competitionDates.length - 1;
           await saveMutation.mutateAsync({
-            tenantId: TEST_TENANT_ID,
+            tenantId: tenantId,
             competitionId: selectedCompetitionId!,
             date,
             routines: routinesToSave,
@@ -1647,7 +1647,7 @@ export default function ScheduleV2Page() {
 
     try {
       await saveMutation.mutateAsync({
-        tenantId: TEST_TENANT_ID,
+        tenantId: tenantId,
         competitionId: selectedCompetitionId!,
         date: selectedDate,
         routines: routinesToSave,
@@ -1673,7 +1673,7 @@ export default function ScheduleV2Page() {
   const handleToggleFeedback = () => {
     const newState = !competition?.schedule_feedback_allowed;
     toggleFeedbackMutation.mutate({
-      tenantId: TEST_TENANT_ID,
+      tenantId: tenantId,
       competitionId: selectedCompetitionId!,
       enabled: newState,
     });
@@ -1736,7 +1736,7 @@ export default function ScheduleV2Page() {
   };
 
   const handleSelectStudio = (studioId: string, studioName: string) => {
-    const url = `/dashboard/schedules/${selectedCompetitionId!}?tenantId=${TEST_TENANT_ID}&studioId=${studioId}`;
+    const url = `/dashboard/schedules/${selectedCompetitionId!}?tenantId=${tenantId}&studioId=${studioId}`;
     toast.success(`Opening schedule for ${studioName}`);
     router.push(url);
     setShowStudioPickerModal(false);
@@ -2140,7 +2140,7 @@ export default function ScheduleV2Page() {
     // Reload draft from database
     const updatedRoutines = await utils.scheduling.getRoutines.fetch({
       competitionId: selectedCompetitionId!,
-      tenantId: TEST_TENANT_ID,
+      tenantId: tenantId,
     });
 
     const serverScheduled = updatedRoutines
@@ -2167,7 +2167,7 @@ export default function ScheduleV2Page() {
 
     try {
       await updateDayStartTimeMutation.mutateAsync({
-        tenantId: TEST_TENANT_ID,
+        tenantId: tenantId,
         competitionId: selectedCompetitionId!,
         date: editingDate,
         newStartTime: `${editingStartTime}:00`, // Convert HH:mm to HH:mm:ss
@@ -2333,7 +2333,7 @@ export default function ScheduleV2Page() {
                 status={(competition.schedule_state as 'unpublished' | 'tentative' | 'final') || 'unpublished'}
                 onToggle={(newStatus) => {
                   toggleScheduleStatusMutation.mutate({
-                    tenantId: TEST_TENANT_ID,
+                    tenantId: tenantId,
                     competitionId: selectedCompetitionId!,
                     status: newStatus,
                   });
@@ -2357,7 +2357,7 @@ export default function ScheduleV2Page() {
                 const routineCount = scheduleOrder.filter(id => !id.startsWith('block-')).length;
                 if (confirm(`Clear schedule for ${selectedDate}? This will unschedule all ${routineCount} routines and delete blocks.`)) {
                   resetDayMutation.mutate({
-                    tenantId: TEST_TENANT_ID,
+                    tenantId: tenantId,
                     competitionId: selectedCompetitionId!,
                     date: selectedDate,
                   });
@@ -2487,7 +2487,7 @@ export default function ScheduleV2Page() {
                               <button
                                 onClick={() => {
                                   if (confirm(`Restore to v${v.versionNumber}?`)) {
-                                    restoreVersionMutation.mutate({ tenantId: TEST_TENANT_ID, competitionId: selectedCompetitionId!, versionId: v.id });
+                                    restoreVersionMutation.mutate({ tenantId: tenantId, competitionId: selectedCompetitionId!, versionId: v.id });
                                     setShowVersionHistory(false);
                                   }
                                 }}
@@ -2591,12 +2591,12 @@ export default function ScheduleV2Page() {
                   activeDay={selectedDate}
                   onDayChange={(date) => setSelectedDate(date)}
                   competitionId={selectedCompetitionId!}
-                  tenantId={TEST_TENANT_ID}
+                  tenantId={tenantId}
                   onStartTimeUpdated={handleStartTimeUpdated}
                   onResetDay={() => {
                     if (confirm(`Reset schedule for ${selectedDate}?`)) {
                       resetDayMutation.mutate({
-                        tenantId: TEST_TENANT_ID,
+                        tenantId: tenantId,
                         competitionId: selectedCompetitionId!,
                         date: selectedDate,
                       });
@@ -2709,7 +2709,7 @@ export default function ScheduleV2Page() {
           setEditingBlock(null);
         }}
         competitionId={selectedCompetitionId!}
-        tenantId={TEST_TENANT_ID}
+        tenantId={tenantId}
         mode={editingBlock ? "edit" : "create"}
         initialBlock={editingBlock ? {
           id: editingBlock.id,
@@ -2726,7 +2726,7 @@ export default function ScheduleV2Page() {
             // Create block via mutation
             await createBlockMutation.mutateAsync({
               competitionId: selectedCompetitionId!,
-              tenantId: TEST_TENANT_ID,
+              tenantId: tenantId,
               blockType: block.type,
               title: block.title,
               durationMinutes: block.duration,
@@ -2744,7 +2744,7 @@ export default function ScheduleV2Page() {
         isOpen={showStudioCodeModal}
         onClose={() => setShowStudioCodeModal(false)}
         competitionId={selectedCompetitionId!}
-        tenantId={TEST_TENANT_ID}
+        tenantId={tenantId}
         onAssignComplete={() => {
           setShowStudioCodeModal(false);
           refetch();
@@ -2756,7 +2756,7 @@ export default function ScheduleV2Page() {
         open={showSendModal}
         onClose={() => setShowSendModal(false)}
         competitionId={selectedCompetitionId!}
-        tenantId={TEST_TENANT_ID}
+        tenantId={tenantId}
         onSuccess={() => {
           refetch(); // Refresh schedule data
         }}
@@ -2772,7 +2772,7 @@ export default function ScheduleV2Page() {
         open={showVisibilityModal}
         onClose={() => setShowVisibilityModal(false)}
         competitionId={selectedCompetitionId!}
-        tenantId={TEST_TENANT_ID}
+        tenantId={tenantId}
       />
 
       {/* Fix All Conflicts Modal (V1 parity - Day vs Weekend) */}
@@ -2840,7 +2840,7 @@ export default function ScheduleV2Page() {
         onClose={() => setShowResetAllModal(false)}
         onConfirm={() => {
           resetCompetitionMutation.mutate({
-            tenantId: TEST_TENANT_ID,
+            tenantId: tenantId,
             competitionId: selectedCompetitionId!,
           }, {
             onSuccess: () => setShowResetAllModal(false),
