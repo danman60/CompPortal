@@ -117,6 +117,7 @@ const entryInputSchema = z.object({
   routine_length_seconds: z.number().int().min(0).max(59).optional(),
   scheduling_notes: z.string().optional(),
   routine_age: z.number().int().min(5).max(99).optional(), // Final selected age for routine
+  age_changed: z.boolean().optional(), // True if SD intentionally bumped age +1
   participants: z.array(entryParticipantSchema).optional(),
 });
 

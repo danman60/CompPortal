@@ -473,6 +473,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
         routine_age: formHook.effectiveAge, // Final selected age (calculated or +1)
+        age_changed: formHook.form.age_override !== null, // Track intentional +1 bumps
         is_title_upgrade: formHook.form.is_title_upgrade,
         // Phase 2 spec lines 324-373: Extended time fields
         extended_time_requested: formHook.form.extended_time_requested,
@@ -568,6 +569,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
         routine_age: formHook.effectiveAge ?? undefined, // Fix: was missing from CSV import mode
+        age_changed: formHook.form.age_override !== null, // Track intentional +1 bumps
         is_title_upgrade: formHook.form.is_title_upgrade,
         extended_time_requested: formHook.form.extended_time_requested,
         routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
@@ -693,6 +695,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
         is_title_upgrade: formHook.form.is_title_upgrade,
         routine_age: formHook.effectiveAge ?? undefined, // Fix: was missing from CSV import mode
+        age_changed: formHook.form.age_override !== null, // Track intentional +1 bumps
         extended_time_requested: formHook.form.extended_time_requested,
         routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
         routine_length_seconds: formHook.form.extended_time_requested ? formHook.form.routine_length_seconds : undefined,
