@@ -98,7 +98,16 @@ export function usePipelineV2() {
     },
   });
 
-  // reopenSummary mutation removed - feature disabled
+  // Reopen summary (allow studio to make edits)
+  const reopenSummaryMutation = trpc.reservation.reopenSummary.useMutation({
+    onSuccess: async () => {
+      toast.success('Summary reopened - studio can now make changes');
+      await refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reopen summary: ${error.message}`);
+    },
+  });
 
   // Create invoice
   const createInvoiceMutation = trpc.invoice.createFromReservation.useMutation({
@@ -202,7 +211,12 @@ export function usePipelineV2() {
         paymentDate: input.depositPaidAt?.toISOString(),
       });
     },
-    // reopenSummary removed - feature disabled
+    reopenSummary: async (input) => {
+      await reopenSummaryMutation.mutateAsync({
+        reservationId: input.reservationId,
+        sendEmail: input.sendEmail,
+      });
+    },
     createInvoice: async (input) => {
       await createInvoiceMutation.mutateAsync(input);
     },
@@ -249,6 +263,7 @@ export function usePipelineV2() {
     isApplyingPayment: applyPaymentMutation.isPending,
     isApprovingSpaceRequest: approveSpaceRequestMutation.isPending,
     isDenyingSpaceRequest: denySpaceRequestMutation.isPending,
+    isReopeningSummary: reopenSummaryMutation.isPending,
   };
 
   // === DERIVED DATA ===

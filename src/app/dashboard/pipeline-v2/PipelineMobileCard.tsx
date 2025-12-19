@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, DollarSign, FileText, Edit, Send, Ban, Eye } from 'lucide-react';
+import { ChevronDown, ChevronUp, DollarSign, FileText, Edit, Send, Ban, Eye, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { StatusBadge } from './StatusBadge';
 import { BeadProgress } from './BeadProgress';
@@ -216,6 +216,32 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                 <span className="text-purple-200/50">Submitted</span>
                 <span className="text-white">{formatDate(r.summarySubmittedAt)}</span>
               </div>
+            )}
+            {r.hasSummary && (
+              <>
+                <button
+                  onClick={() => {
+                    showConfirm({
+                      title: 'Reopen Summary for Edits',
+                      message: `Allow ${r.studioName} to modify their entry summary?`,
+                      detail: 'The studio will be able to add, edit, or remove entries. They will need to resubmit when finished.',
+                      confirmText: 'Reopen Summary',
+                      variant: 'warning',
+                      showEmailOption: true,
+                      action: (sendEmail) => mutations.reopenSummary({ reservationId: r.id, sendEmail }),
+                    });
+                  }}
+                  disabled={mutations.isReopeningSummary}
+                  title="Allow studio to make changes to their submitted summary"
+                  className="w-full mt-2 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
+                </button>
+                <p className="text-[10px] text-purple-200/40 text-center mt-1">
+                  Allow studio to modify entries
+                </p>
+              </>
             )}
           </div>
 

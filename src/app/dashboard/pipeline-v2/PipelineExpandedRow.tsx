@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { format } from 'date-fns';
 import {
   DollarSign,
@@ -14,12 +15,50 @@ import {
   Check,
   X,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
+import { ConfirmDialog, type ConfirmVariant } from './ConfirmDialog';
 import type { PipelineExpandedRowProps } from './types';
+
+// Confirmation dialog state type
+interface ConfirmState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  detail?: string;
+  confirmText: string;
+  variant: ConfirmVariant;
+  showEmailOption?: boolean;
+  action: ((sendEmail: boolean) => void) | null;
+}
 
 export function PipelineExpandedRow({ reservation, mutations }: PipelineExpandedRowProps) {
   const r = reservation;
+  const [confirm, setConfirm] = useState<ConfirmState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    variant: 'info',
+    action: null,
+  });
+
+  // Helper to show confirmation dialog
+  const showConfirm = (config: Omit<ConfirmState, 'isOpen'>) => {
+    setConfirm({ ...config, isOpen: true });
+  };
+
+  const closeConfirm = () => {
+    setConfirm((prev) => ({ ...prev, isOpen: false, action: null }));
+  };
+
+  const handleConfirm = (sendEmail: boolean) => {
+    if (confirm.action) {
+      confirm.action(sendEmail);
+    }
+    closeConfirm();
+  };
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null) return '-';
@@ -131,6 +170,27 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                   <span className="font-medium text-white">{formatDate(r.summarySubmittedAt)}</span>
                 </div>
               )}
+              {r.hasSummary && (
+                <button
+                  onClick={() => {
+                    showConfirm({
+                      title: 'Reopen Summary for Edits',
+                      message: `Allow ${r.studioName} to modify their entry summary?`,
+                      detail: 'The studio will be able to add, edit, or remove entries. They will need to resubmit when finished.',
+                      confirmText: 'Reopen Summary',
+                      variant: 'warning',
+                      showEmailOption: true,
+                      action: (sendEmail) => mutations.reopenSummary({ reservationId: r.id, sendEmail }),
+                    });
+                  }}
+                  disabled={mutations.isReopeningSummary}
+                  title="Allow studio to make changes to their submitted summary"
+                  className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -176,7 +236,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                     <>
                       <button
                         onClick={() => {
-                          if (confirm(`Send invoice ${r.invoiceNumber || ''} to ${r.contactEmail}?`)) {
+                          if (window.confirm(`Send invoice ${r.invoiceNumber || ''} to ${r.contactEmail}?`)) {
                             mutations.sendInvoice({ invoiceId: r.invoiceId! });
                           }
                         }}
@@ -197,7 +257,7 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Void this invoice? This action cannot be undone.')) {
+                          if (window.confirm('Void this invoice? This action cannot be undone.')) {
                             mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' });
                           }
                         }}
@@ -275,6 +335,20 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
             )}
           </div>
         </div>
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={confirm.isOpen}
+          title={confirm.title}
+          message={confirm.message}
+          detail={confirm.detail}
+          confirmText={confirm.confirmText}
+          variant={confirm.variant}
+          showEmailOption={confirm.showEmailOption}
+          isLoading={mutations.isReopeningSummary}
+          onConfirm={handleConfirm}
+          onCancel={closeConfirm}
+        />
       </td>
     </tr>
   );

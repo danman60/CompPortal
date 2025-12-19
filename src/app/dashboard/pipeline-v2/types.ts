@@ -107,7 +107,7 @@ export interface PipelineMutations {
   reject: (input: { id: string; reason?: string }) => Promise<void>;
   adjustSpaces: (input: { id: string; newSpaces: number }) => Promise<void>;
   updateDeposit: (input: { id: string; depositAmount: number; depositPaidAt?: Date }) => Promise<void>;
-  // reopenSummary removed - feature disabled
+  reopenSummary: (input: { reservationId: string; sendEmail?: boolean }) => Promise<void>;
   // Space request mutations
   approveSpaceRequest: (input: { reservationId: string }) => Promise<void>;
   denySpaceRequest: (input: { reservationId: string; reason?: string }) => Promise<void>;
@@ -132,6 +132,7 @@ export interface PipelineMutations {
   isApplyingPayment: boolean;
   isApprovingSpaceRequest: boolean;
   isDenyingSpaceRequest: boolean;
+  isReopeningSummary: boolean;
 }
 
 // Filter state for pipeline
