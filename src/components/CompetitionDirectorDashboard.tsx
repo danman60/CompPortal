@@ -101,11 +101,10 @@ const CD_DASHBOARD_CARDS: DashboardCard[] = [
   },
   {
     id: 'scheduling',
-    href: '/dashboard/scheduling',
+    href: '/dashboard/director-panel/schedule',
     icon: '📅',
     title: 'Scheduling',
-    description: '🚧 Under construction',
-    disabled: true,
+    description: 'Build and manage competition schedules',
   },
   {
     id: 'judges',

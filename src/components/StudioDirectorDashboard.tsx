@@ -31,11 +31,10 @@ interface StudioDirectorDashboardProps {
 const STUDIO_DIRECTOR_CARDS: DashboardCard[] = [
   {
     id: 'scheduling',
-    href: '#',
+    href: '/dashboard/schedules',
     icon: '📅',
     title: 'Scheduling',
     description: 'View your competition schedule',
-    disabled: true,
   },
   {
     id: 'marks',
