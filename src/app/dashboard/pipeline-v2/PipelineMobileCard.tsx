@@ -1,12 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, DollarSign, FileText, Edit, Send, RefreshCw, Ban, AlertTriangle, Eye } from 'lucide-react';
+import { ChevronDown, ChevronUp, DollarSign, FileText, Edit, Send, Ban, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { StatusBadge } from './StatusBadge';
 import { BeadProgress } from './BeadProgress';
+import { ConfirmDialog, type ConfirmVariant } from './ConfirmDialog';
 import type { PipelineReservation, PipelineMutations } from './types';
 import Link from 'next/link';
+
+// Confirmation dialog state type
+interface ConfirmState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  detail?: string;
+  confirmText: string;
+  variant: ConfirmVariant;
+  showEmailOption?: boolean;
+  action: ((sendEmail: boolean) => void) | null;
+}
 
 interface PipelineMobileCardProps {
   reservation: PipelineReservation;
@@ -15,7 +28,31 @@ interface PipelineMobileCardProps {
 
 export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    variant: 'info',
+    action: null,
+  });
   const r = reservation;
+
+  // Helper to show confirmation dialog
+  const showConfirm = (config: Omit<ConfirmState, 'isOpen'>) => {
+    setConfirm({ ...config, isOpen: true });
+  };
+
+  const closeConfirm = () => {
+    setConfirm((prev) => ({ ...prev, isOpen: false, action: null }));
+  };
+
+  const handleConfirm = (sendEmail: boolean) => {
+    if (confirm.action) {
+      confirm.action(sendEmail);
+    }
+    closeConfirm();
+  };
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null) return '-';
@@ -37,7 +74,6 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
 
   // Determine card styling based on status
   const getCardBorder = () => {
-    if (r.displayStatus === 'needs_attention') return 'border-red-500/50';
     if (r.displayStatus === 'paid_complete') return 'border-emerald-500/30';
     if (r.displayStatus === 'pending_review') return 'border-yellow-500/30';
     return 'border-white/10';
@@ -57,9 +93,6 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
               <h3 className="font-semibold text-white truncate">{r.studioName}</h3>
               {r.isStudioClaimed && (
                 <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded border border-emerald-500/30 flex-shrink-0">CLAIMED</span>
-              )}
-              {r.hasIssue && (
-                <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded flex-shrink-0">FIX</span>
               )}
             </div>
             <p className="text-xs text-purple-200/50 truncate mt-0.5">
@@ -125,16 +158,6 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                 Payment
               </button>
             )}
-            {r.displayStatus === 'needs_attention' && (
-              <button
-                onClick={(e) => { e.stopPropagation(); mutations.reopenSummary({ reservationId: r.id }); }}
-                disabled={mutations.isReopeningSummary}
-                title="Reopen summary so studio can fix the issue"
-                className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg"
-              >
-                Fix
-              </button>
-            )}
             {r.displayStatus === 'paid_complete' && (
               <span className="text-emerald-400 text-xs font-medium" title="All payments received">Done ✓</span>
             )}
@@ -194,34 +217,6 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                 <span className="text-white">{formatDate(r.summarySubmittedAt)}</span>
               </div>
             )}
-            {r.hasIssue && (
-              <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg mt-2">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
-                  <p className="text-xs text-amber-200">{r.hasIssue}</p>
-                </div>
-              </div>
-            )}
-            {r.hasSummary && (
-              <>
-                <button
-                  onClick={() => {
-                    if (confirm(`Reopen summary for ${r.studioName}? This will allow them to modify their entry summary.`)) {
-                      mutations.reopenSummary({ reservationId: r.id });
-                    }
-                  }}
-                  disabled={mutations.isReopeningSummary}
-                  title="Allow studio to make changes to their submitted summary"
-                  className="w-full mt-2 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
-                </button>
-                <p className="text-[10px] text-purple-200/40 text-center mt-1">
-                  Allow studio to modify summary
-                </p>
-              </>
-            )}
           </div>
 
           {/* Invoice Info */}
@@ -265,9 +260,14 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        if (confirm(`Send invoice ${r.invoiceNumber || ''} to ${r.contactEmail}?`)) {
-                          mutations.sendInvoice({ invoiceId: r.invoiceId! });
-                        }
+                        showConfirm({
+                          title: 'Send Invoice',
+                          message: `Email invoice to ${r.studioName}?`,
+                          detail: `Invoice ${r.invoiceNumber || ''} will be sent to ${r.contactEmail}`,
+                          confirmText: 'Send Email',
+                          variant: 'info',
+                          action: (_sendEmail) => mutations.sendInvoice({ invoiceId: r.invoiceId! }),
+                        });
                       }}
                       disabled={mutations.isSendingInvoice}
                       title="Email this invoice to the studio"
@@ -286,9 +286,14 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
                     </button>
                     <button
                       onClick={() => {
-                        if (confirm('Void this invoice? This action cannot be undone.')) {
-                          mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' });
-                        }
+                        showConfirm({
+                          title: 'Void Invoice',
+                          message: 'Are you sure you want to void this invoice?',
+                          detail: `Invoice ${r.invoiceNumber || ''} will be permanently cancelled. You will need to create a new invoice if needed.`,
+                          confirmText: 'Void Invoice',
+                          variant: 'danger',
+                          action: (_sendEmail) => mutations.voidInvoice({ invoiceId: r.invoiceId!, reason: 'Voided by CD' }),
+                        });
                       }}
                       disabled={mutations.isVoidingInvoice}
                       title="Cancel this invoice permanently"
@@ -369,6 +374,19 @@ export function PipelineMobileCard({ reservation, mutations }: PipelineMobileCar
           )}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirm.isOpen}
+        title={confirm.title}
+        message={confirm.message}
+        detail={confirm.detail}
+        confirmText={confirm.confirmText}
+        variant={confirm.variant}
+        showEmailOption={confirm.showEmailOption}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

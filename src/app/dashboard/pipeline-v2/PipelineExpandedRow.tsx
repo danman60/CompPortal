@@ -5,9 +5,7 @@ import {
   DollarSign,
   FileText,
   Calendar,
-  AlertTriangle,
   Send,
-  RefreshCw,
   Ban,
   Edit,
   ClipboardList,
@@ -132,32 +130,6 @@ export function PipelineExpandedRow({ reservation, mutations }: PipelineExpanded
                   <span className="text-purple-200/60">Submitted</span>
                   <span className="font-medium text-white">{formatDate(r.summarySubmittedAt)}</span>
                 </div>
-              )}
-              {r.hasIssue && (
-                <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg mt-2">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-amber-300">Issue Detected</p>
-                      <p className="text-xs text-amber-200/80 mt-0.5">{r.hasIssue}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {r.hasSummary && (
-                <button
-                  onClick={() => {
-                    if (confirm(`Reopen summary for ${r.studioName}? This will allow them to modify their entry summary.`)) {
-                      mutations.reopenSummary({ reservationId: r.id });
-                    }
-                  }}
-                  disabled={mutations.isReopeningSummary}
-                  title="Allow studio to make changes to their submitted summary"
-                  className="mt-2 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg border border-amber-500/30"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  {mutations.isReopeningSummary ? 'Reopening...' : 'Reopen for Edits'}
-                </button>
               )}
             </div>
           </div>

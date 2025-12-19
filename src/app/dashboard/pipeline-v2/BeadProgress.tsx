@@ -17,8 +17,6 @@ function getStepFromStatus(status: DisplayStatus): number {
       return 2; // Third bead active
     case 'paid_complete':
       return 3; // All beads complete
-    case 'needs_attention':
-      return 1; // Show at entries stage with error
     default:
       return -1;
   }
@@ -29,7 +27,7 @@ const steps = ['Approved', 'Entries', 'Invoice', 'Paid'];
 
 export function BeadProgress({ status, hasIssue }: PipelineBeadProgressProps) {
   const currentStep = getStepFromStatus(status);
-  const isError = hasIssue !== null || status === 'needs_attention';
+  const isError = hasIssue !== null;
   const isPending = status === 'pending_review';
 
   return (

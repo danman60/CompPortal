@@ -36,12 +36,6 @@ const statusConfig: Record<
     textColor: 'text-emerald-300',
     borderColor: 'border-emerald-500/50',
   },
-  needs_attention: {
-    label: 'Needs Attention',
-    bgColor: 'bg-red-500/20',
-    textColor: 'text-red-300',
-    borderColor: 'border-red-500/50',
-  },
   rejected: {
     label: 'Rejected',
     bgColor: 'bg-gray-500/20',

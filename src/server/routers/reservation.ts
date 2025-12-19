@@ -2553,6 +2553,7 @@ ${input.comments}
     .input(
       z.object({
         reservationId: z.string().uuid(),
+        sendEmail: z.boolean().default(true), // CD can optionally skip email notification
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -2655,11 +2656,12 @@ ${input.comments}
         studioName: updated.studios?.name,
         userId: ctx.userId,
         invoicesVoided: reservation.invoices?.length || 0,
+        sendEmail: input.sendEmail,
       });
 
-      // Send email notification to studio
+      // Send email notification to studio (optional - CD can skip)
       let emailSent = false;
-      if (reservation.studios?.email && reservation.competitions) {
+      if (input.sendEmail && reservation.studios?.email && reservation.competitions) {
         try {
           // Get tenant info for branding
           const tenant = await prisma.tenants.findUnique({

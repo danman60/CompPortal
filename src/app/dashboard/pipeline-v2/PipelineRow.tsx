@@ -18,9 +18,7 @@ export function PipelineRow({
   const balanceDue = r.invoiceBalanceRemaining ?? (r.invoiceAmount ? r.invoiceAmount - (r.invoiceAmountPaid || 0) : 0);
 
   // Determine row background based on status
-  const rowBg = r.displayStatus === 'needs_attention'
-    ? 'hover:bg-red-500/5'
-    : r.displayStatus === 'paid_complete'
+  const rowBg = r.displayStatus === 'paid_complete'
     ? 'bg-emerald-500/5 hover:bg-emerald-500/10'
     : 'hover:bg-white/5';
 
@@ -49,9 +47,6 @@ export function PipelineRow({
           <span className="font-medium text-white">{r.studioName}</span>
           {r.isStudioClaimed && (
             <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded border border-emerald-500/30">CLAIMED</span>
-          )}
-          {r.hasIssue && (
-            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">FIX</span>
           )}
           {r.pendingAdditionalSpaces && r.pendingAdditionalSpaces > 0 && (
             <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-bold rounded border border-amber-500/30" title={`Requesting +${r.pendingAdditionalSpaces} spaces`}>+{r.pendingAdditionalSpaces} REQ</span>
@@ -151,16 +146,6 @@ export function PipelineRow({
         )}
         {!r.pendingAdditionalSpaces && r.displayStatus === 'paid_complete' && (
           <span className="text-emerald-400 text-xs" title="All payments received - reservation complete">Done</span>
-        )}
-        {!r.pendingAdditionalSpaces && r.displayStatus === 'needs_attention' && (
-          <button
-            onClick={() => mutations.reopenSummary({ reservationId: r.id })}
-            disabled={mutations.isReopeningSummary}
-            title="Reopen the summary so studio can correct the issue"
-            className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors"
-          >
-            {mutations.isReopeningSummary ? 'Fixing...' : 'Fix Issue'}
-          </button>
         )}
       </td>
 

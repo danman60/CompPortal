@@ -54,14 +54,6 @@ const kpiCards: KPICard[] = [
     textColor: 'text-emerald-400',
     hoverBorder: '',
   },
-  {
-    key: 'needs_attention',
-    label: 'Needs Attention',
-    getValue: (s) => s.needsAttention,
-    textColor: 'text-red-400',
-    hoverBorder: 'hover:border-red-400/50',
-    extraBorder: 'border-red-400/30',
-  },
 ];
 
 export function KPICards({ stats, onFilterClick, activeFilter }: PipelineKPICardsProps) {
@@ -81,7 +73,7 @@ export function KPICards({ stats, onFilterClick, activeFilter }: PipelineKPICard
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpiCards.map((card) => {
           const value = card.getValue(stats);
           const isActive = activeFilter === card.key;

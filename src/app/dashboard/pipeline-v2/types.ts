@@ -10,7 +10,6 @@ export type DisplayStatus =
   | 'ready_to_invoice'
   | 'invoice_sent'
   | 'paid_complete'
-  | 'needs_attention'
   | 'rejected';
 
 // Raw reservation status from database
@@ -108,7 +107,7 @@ export interface PipelineMutations {
   reject: (input: { id: string; reason?: string }) => Promise<void>;
   adjustSpaces: (input: { id: string; newSpaces: number }) => Promise<void>;
   updateDeposit: (input: { id: string; depositAmount: number; depositPaidAt?: Date }) => Promise<void>;
-  reopenSummary: (input: { reservationId: string }) => Promise<void>;
+  // reopenSummary removed - feature disabled
   // Space request mutations
   approveSpaceRequest: (input: { reservationId: string }) => Promise<void>;
   denySpaceRequest: (input: { reservationId: string; reason?: string }) => Promise<void>;
@@ -131,7 +130,6 @@ export interface PipelineMutations {
   isMarkingPaid: boolean;
   isVoidingInvoice: boolean;
   isApplyingPayment: boolean;
-  isReopeningSummary: boolean;
   isApprovingSpaceRequest: boolean;
   isDenyingSpaceRequest: boolean;
 }
@@ -161,7 +159,6 @@ export interface PipelineStats {
   readyToInvoice: number;
   awaitingPayment: number;
   paidComplete: number;
-  needsAttention: number;
 }
 
 // Props for various components

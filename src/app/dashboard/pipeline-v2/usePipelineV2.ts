@@ -98,16 +98,7 @@ export function usePipelineV2() {
     },
   });
 
-  // Reopen summary (reset to approved)
-  const reopenSummaryMutation = trpc.reservation.reopenSummary.useMutation({
-    onSuccess: async () => {
-      toast.success('Summary reopened for edits');
-      await refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to reopen summary: ${error.message}`);
-    },
-  });
+  // reopenSummary mutation removed - feature disabled
 
   // Create invoice
   const createInvoiceMutation = trpc.invoice.createFromReservation.useMutation({
@@ -211,9 +202,7 @@ export function usePipelineV2() {
         paymentDate: input.depositPaidAt?.toISOString(),
       });
     },
-    reopenSummary: async (input) => {
-      await reopenSummaryMutation.mutateAsync(input);
-    },
+    // reopenSummary removed - feature disabled
     createInvoice: async (input) => {
       await createInvoiceMutation.mutateAsync(input);
     },
@@ -258,7 +247,6 @@ export function usePipelineV2() {
     isMarkingPaid: markAsPaidMutation.isPending,
     isVoidingInvoice: voidInvoiceMutation.isPending,
     isApplyingPayment: applyPaymentMutation.isPending,
-    isReopeningSummary: reopenSummaryMutation.isPending,
     isApprovingSpaceRequest: approveSpaceRequestMutation.isPending,
     isDenyingSpaceRequest: denySpaceRequestMutation.isPending,
   };
@@ -297,13 +285,18 @@ export function usePipelineV2() {
     });
 
     // Merge with full competition data if available
+    // Use total_reservation_tokens for capacity (synced with available_reservation_tokens)
     if (competitionsData?.competitions) {
-      competitionsData.competitions.forEach((c: { id: string; venue_capacity: number | null }) => {
+      competitionsData.competitions.forEach((c: { id: string; total_reservation_tokens: number | null; available_reservation_tokens: number | null; venue_capacity: number | null }) => {
         const existing = compMap.get(c.id);
-        if (existing && c.venue_capacity) {
-          existing.totalCapacity = c.venue_capacity;
-          existing.remaining = c.venue_capacity - existing.used;
-          existing.percentage = Math.round((existing.used / c.venue_capacity) * 100);
+        if (existing) {
+          // Use total_reservation_tokens as primary capacity metric
+          const totalCapacity = c.total_reservation_tokens || c.venue_capacity || 600;
+          const availableTokens = c.available_reservation_tokens ?? totalCapacity;
+          existing.totalCapacity = totalCapacity;
+          existing.used = totalCapacity - availableTokens; // Calculate used from tokens (more accurate)
+          existing.remaining = availableTokens;
+          existing.percentage = Math.round((existing.used / totalCapacity) * 100);
         }
       });
     }
@@ -318,7 +311,6 @@ export function usePipelineV2() {
     ready_to_invoice: 3,
     invoice_sent: 4,
     paid_complete: 5,
-    needs_attention: 0, // Always first when sorting asc
     rejected: 6,
   };
 
@@ -392,7 +384,6 @@ export function usePipelineV2() {
       readyToInvoice: reservations.filter((r) => r.displayStatus === 'ready_to_invoice').length,
       awaitingPayment: reservations.filter((r) => r.displayStatus === 'invoice_sent').length,
       paidComplete: reservations.filter((r) => r.displayStatus === 'paid_complete').length,
-      needsAttention: reservations.filter((r) => r.displayStatus === 'needs_attention').length,
     };
   }, [reservations]);
 
