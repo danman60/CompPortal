@@ -793,11 +793,11 @@ export const schedulingRouter = router({
               id: true,
               name: true,
               code: true, // Studio's own 5-digit code (fallback)
-              // Get studio code from approved reservation
+              // Get studio code from active reservation
               reservations: {
                 where: {
                   competition_id: input.competitionId,
-                  status: 'approved',
+                  status: { in: ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'] },
                 },
                 select: {
                   studio_code: true,
@@ -2606,12 +2606,12 @@ export const schedulingRouter = router({
       tenantId: z.string().uuid(),
     }))
     .mutation(async ({ input }) => {
-      // Get all approved reservations for this competition
+      // Get all active reservations for this competition
       const reservations = await prisma.reservations.findMany({
         where: {
           competition_id: input.competitionId,
           tenant_id: input.tenantId,
-          status: 'approved',
+          status: { in: ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'] },
         },
         include: {
           studios: {
@@ -2732,7 +2732,7 @@ export const schedulingRouter = router({
         where: {
           competition_id: input.competitionId,
           tenant_id: input.tenantId,
-          status: 'approved',
+          status: { in: ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'] },
         },
         select: {
           studio_id: true,
@@ -2985,7 +2985,7 @@ export const schedulingRouter = router({
         where: {
           competition_id: competitionId,
           tenant_id: tenantId,
-          status: 'approved',
+          status: { in: ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'] },
         },
         select: {
           studio_id: true,
@@ -3067,7 +3067,7 @@ export const schedulingRouter = router({
         where: {
           competition_id: competitionId,
           tenant_id: tenantId,
-          status: 'approved',
+          status: { in: ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'] },
         },
         select: {
           studio_id: true,
@@ -3997,12 +3997,12 @@ export const schedulingRouter = router({
       tenantId: z.string().uuid(),
     }))
     .query(async ({ input, ctx }) => {
-      // Get all approved reservations for this competition
+      // Get all active reservations for this competition (any status except pending/cancelled)
       const reservations = await prisma.reservations.findMany({
         where: {
           competition_id: input.competitionId,
           tenant_id: input.tenantId,
-          status: 'approved',
+          status: { in: ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'] },
         },
         include: {
           studios: {
@@ -4045,12 +4045,12 @@ export const schedulingRouter = router({
       tenantId: z.string().uuid(),
     }))
     .mutation(async ({ input, ctx }) => {
-      // Get all approved reservations ordered by approval time
+      // Get all active reservations ordered by approval time
       const reservations = await prisma.reservations.findMany({
         where: {
           competition_id: input.competitionId,
           tenant_id: input.tenantId,
-          status: 'approved',
+          status: { in: ['approved', 'adjusted', 'summarized', 'invoiced', 'closed'] },
         },
         include: {
           studios: {
