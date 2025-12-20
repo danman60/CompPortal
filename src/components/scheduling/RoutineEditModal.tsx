@@ -563,17 +563,17 @@ export function RoutineEditModal({
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-white mb-4">Notes & Requirements</h3>
 
-                {/* Special Requirements */}
+                {/* Special Requirements & Scheduling Requests */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Special Requirements
+                    Special Requirements <span className="text-amber-400 font-semibold">& Scheduling Requests</span>
                   </label>
                   <textarea
                     value={formData.special_requirements || ''}
                     onChange={(e) => updateField('special_requirements', e.target.value)}
                     rows={3}
                     className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
-                    placeholder="Props, special needs, etc."
+                    placeholder="Props, special needs, scheduling preferences, etc."
                   />
                 </div>
 
