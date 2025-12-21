@@ -71,10 +71,10 @@ export function LiveSummaryBar({
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900/95 via-indigo-900/95 to-blue-900/95 backdrop-blur-md border-t border-white/20 shadow-2xl">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 md:py-4">
-          {/* Mobile Layout: 2x2 grid + button */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-            {/* Stats - Grid on mobile, flex on desktop */}
-            <div className="grid grid-cols-2 gap-3 md:flex md:items-center md:gap-8">
+          {/* Mobile Layout: button first, then stats (reversed) so button is always visible above bottom nav */}
+          <div className="flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            {/* Stats - Compact 3-column grid on mobile, flex on desktop */}
+            <div className="grid grid-cols-3 gap-2 md:flex md:items-center md:gap-8">
               <div className="text-white">
                 <div className="text-xs md:text-sm text-white/60">Slots</div>
                 <div className="text-lg md:text-2xl font-bold">🎫 {confirmedSpaces}</div>

@@ -585,18 +585,12 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
 
   return (
     <div>
-      {/* Header with Create Button (Studio Directors Only - Issue #18) */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Reservations</h2>
-          <p className="text-gray-400 mt-1">
-            {isStudioDirector ? 'Manage your competition reservations' : 'Approve and manage studio reservation requests'}
-          </p>
-        </div>
+      {/* Action Buttons (header is in page.tsx - removed duplicate) */}
+      <div className="flex justify-end mb-6">
         {isStudioDirector && (
           <Link
             href="/dashboard/reservations/new"
-            className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 text-sm md:text-base"
           >
             + Request Reservation
           </Link>
@@ -605,7 +599,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
         {!isStudioDirector && (
           <button
             onClick={() => setIsManualReservationModalOpen(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-medium"
+            className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-medium text-sm md:text-base"
           >
             📋 Manual Reservation
           </button>
