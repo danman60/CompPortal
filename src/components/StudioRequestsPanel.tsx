@@ -28,7 +28,7 @@ interface StudioRequest {
   updated_at: Date | null;
   tenant_id: string;
   note_type: string;
-  created_by: string;
+  created_by: string | null;
   is_internal: boolean | null;
   priority: string | null;
 }

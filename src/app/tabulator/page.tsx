@@ -95,7 +95,7 @@ interface BreakRequest {
   requestedDurationMinutes: number;
   reason: string | null;
   status: string;
-  createdAt: Date;
+  createdAt: Date | null;
 }
 
 // Default test competition for tester environment

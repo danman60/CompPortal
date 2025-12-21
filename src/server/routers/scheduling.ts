@@ -1758,7 +1758,7 @@ export const schedulingRouter = router({
           note_text: input.content,
           created_by: input.authorId,
           is_internal: true, // CD notes are internal
-          priority: null,
+          priority: undefined,
         },
       });
 

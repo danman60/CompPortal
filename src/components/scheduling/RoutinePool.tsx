@@ -55,6 +55,8 @@ interface RoutinePoolProps {
   onToggleSelection?: (routineId: string, shiftKey: boolean) => void;
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
+  // P2-16: Auto-highlight competing routines (share dancers with selected)
+  competingRoutineIds?: Set<string>;
   // Filter options and state (Session 64)
   classifications?: FilterOption[];
   ageGroups?: FilterOption[];
@@ -118,7 +120,7 @@ function SortableHeader({
 }
 
 // Draggable Table Row
-function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity, hasNotes, noteText, hasAgeChange, isLastRoutine, isSelected, onToggleSelection }: {
+function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity, hasNotes, noteText, hasAgeChange, isLastRoutine, isSelected, isCompeting, onToggleSelection }: {
   routine: Routine;
   viewMode: ViewMode;
   hasConflict: boolean;
@@ -128,6 +130,7 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
   hasAgeChange: boolean;
   isLastRoutine: boolean;
   isSelected: boolean;
+  isCompeting: boolean; // P2-16: Highlight routines that share dancers with selected
   onToggleSelection?: (routineId: string, shiftKey: boolean) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -139,13 +142,15 @@ function DraggableRoutineRow({ routine, viewMode, hasConflict, conflictSeverity,
   // Always show studio code (5-digit code)
   const studioDisplay = routine.studioCode;
 
-  // Row classes - P1-7: Amber highlight for notes
+  // Row classes - P1-7: Amber highlight for notes, P2-16: Purple gradient for competing routines
   const rowClasses = [
     'border-b border-white/10 hover:bg-white/5 transition-colors cursor-grab',
     isLastRoutine ? 'bg-yellow-500/10 border-l-4 border-l-yellow-400' : '',
     hasAgeChange ? 'bg-yellow-900/30' : '',
     hasConflict ? 'border-l-4 border-l-red-500' : '',
-    hasNotes && !isLastRoutine && !hasAgeChange ? 'bg-amber-900/20' : '', // P1-7: Amber background for notes
+    // P2-16: Purple gradient background for routines sharing dancers with selected routine
+    isCompeting && !hasConflict && !isLastRoutine && !hasAgeChange ? 'bg-gradient-to-r from-purple-500/20 to-transparent border-l-4 border-l-purple-500' : '',
+    hasNotes && !isLastRoutine && !hasAgeChange && !isCompeting ? 'bg-amber-900/20' : '', // P1-7: Amber background for notes
     isDragging ? 'opacity-50' : '',
   ].filter(Boolean).join(' ');
 
@@ -246,6 +251,7 @@ export function RoutinePool({
   onToggleSelection,
   onSelectAll,
   onDeselectAll,
+  competingRoutineIds = new Set(), // P2-16: IDs of routines sharing dancers with selected
   classifications = [],
   ageGroups = [],
   genres = [],
@@ -658,6 +664,7 @@ export function RoutinePool({
                     hasAgeChange={ageChanges.includes(routine.id)}
                     isLastRoutine={isLastRoutine(routine.id)}
                     isSelected={selectedRoutineIds.has(routine.id)}
+                    isCompeting={competingRoutineIds.has(routine.id)}
                     onToggleSelection={onToggleSelection}
                   />
                 ))}

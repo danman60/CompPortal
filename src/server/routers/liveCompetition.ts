@@ -1118,6 +1118,7 @@ export const liveCompetitionRouter = router({
           insert_after_entry_id: input.insertAfterRoutineId,
           title: input.label,
           status: 'scheduled',
+          position_in_day: 0, // Will be updated when schedule is recalculated
         },
       });
 
@@ -1931,6 +1932,7 @@ export const liveCompetitionRouter = router({
           status: 'active',
           actual_start_time: new Date(),
           created_by: ctx.userId || null,
+          position_in_day: 0, // Will be updated when schedule is recalculated
         },
       });
 
@@ -1971,7 +1973,7 @@ export const liveCompetitionRouter = router({
       }
 
       const now = new Date();
-      const startTime = breakRecord.actual_start_time || breakRecord.created_at;
+      const startTime = breakRecord.actual_start_time || breakRecord.created_at || now;
       const actualDurationMs = now.getTime() - startTime.getTime();
       const actualDurationMinutes = Math.ceil(actualDurationMs / (1000 * 60));
       const timeSavedMinutes = Math.max(0, breakRecord.duration_minutes - actualDurationMinutes);
@@ -2016,7 +2018,7 @@ export const liveCompetitionRouter = router({
       if (!activeBreak) return null;
 
       const now = new Date();
-      const startTime = activeBreak.actual_start_time || activeBreak.created_at;
+      const startTime = activeBreak.actual_start_time || activeBreak.created_at || now;
       const elapsedMs = now.getTime() - startTime.getTime();
       const elapsedMinutes = Math.floor(elapsedMs / (1000 * 60));
       const remainingMinutes = Math.max(0, activeBreak.duration_minutes - elapsedMinutes);

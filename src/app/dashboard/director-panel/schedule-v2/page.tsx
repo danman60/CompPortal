@@ -1276,6 +1276,33 @@ export default function ScheduleV2Page() {
     };
   }, [routinesData]);
 
+  // ===== P2-16: COMPUTED: Competing Routines (share dancers with selected) =====
+  const competingRoutineIds = useMemo(() => {
+    if (selectedRoutineIds.size === 0) return new Set<string>();
+
+    // Get dancer names from all selected routines
+    const selectedDancerNames = new Set<string>();
+    unscheduledRoutines.forEach(routine => {
+      if (selectedRoutineIds.has(routine.id) && routine.dancer_names) {
+        routine.dancer_names.forEach((name: string) => selectedDancerNames.add(name));
+      }
+    });
+
+    // Find other routines that share any dancer
+    const competing = new Set<string>();
+    unscheduledRoutines.forEach(routine => {
+      if (!selectedRoutineIds.has(routine.id) && routine.dancer_names) {
+        for (const name of routine.dancer_names) {
+          if (selectedDancerNames.has(name)) {
+            competing.add(routine.id);
+            break;
+          }
+        }
+      }
+    });
+    return competing;
+  }, [selectedRoutineIds, unscheduledRoutines]);
+
   // Note: dayTabsData computed fields (startTime, routineCount, savedRoutineCount) removed
   // as they were unused. competitionDates is now derived from competition start/end dates.
 
@@ -2579,6 +2606,7 @@ export default function ScheduleV2Page() {
                 filterOptions={filterOptions}
                 onSelectAll={handleSelectAll}
                 onDeselectAll={handleDeselectAll}
+                competingRoutineIds={competingRoutineIds}
               />
             </div>
 
@@ -2930,6 +2958,7 @@ function DroppableUnscheduledPool({
   filterOptions,
   onSelectAll,
   onDeselectAll,
+  competingRoutineIds,
 }: {
   routines: any[];
   selectedIds: Set<string>;
@@ -2939,6 +2968,7 @@ function DroppableUnscheduledPool({
   filterOptions: any;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  competingRoutineIds: Set<string>; // P2-16: Routines sharing dancers with selected
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unscheduled-pool' });
 
@@ -2977,6 +3007,7 @@ function DroppableUnscheduledPool({
         onDeselectAll={onDeselectAll}
         routineNotes={routineNotes}
         routineNotesText={routineNotesText}
+        competingRoutineIds={competingRoutineIds}
       />
     </div>
   );
