@@ -11,7 +11,7 @@ import { MetadataRoute } from 'next';
  * Authenticated pages are excluded from sitemap
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL!;
   const currentDate = new Date();
 
   return [

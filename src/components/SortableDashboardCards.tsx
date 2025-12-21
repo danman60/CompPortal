@@ -146,6 +146,7 @@ interface SortableDashboardCardsProps {
 export default function SortableDashboardCards({ cards: initialCards }: SortableDashboardCardsProps) {
   const [cards, setCards] = useState(initialCards);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const [showHelp, setShowHelp] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return !localStorage.getItem('dashboardHelpSeen');
@@ -174,6 +175,11 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Ensure client-side only initialization (prevents Safari hydration errors)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Apply saved layout on load
   useEffect(() => {
@@ -254,6 +260,73 @@ export default function SortableDashboardCards({ cards: initialCards }: Sortable
     saveLayoutMutation.mutate({ layout: layoutIds });
     toast.success('Dashboard order reset to default', { position: 'top-right' });
   };
+
+  // Render static version until client-side mounted (prevents Safari hydration errors)
+  if (!isMounted) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-white">Quick Actions</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cards.map((card) => {
+            if (card.disabled) {
+              return (
+                <div key={card.id} className="relative w-full">
+                  {card.tooltip && (
+                    <div className="text-xs text-purple-300 font-medium mb-2 px-2">
+                      {card.tooltip}
+                    </div>
+                  )}
+                  <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 opacity-50 cursor-not-allowed h-32 w-full">
+                    <div className="flex items-center gap-4 h-full">
+                      <div className="inline-block flex-shrink-0">
+                        {(() => {
+                          const IconComponent = getIconFromEmoji(card.icon);
+                          return <IconComponent size={40} strokeWidth={2} className="text-gray-400" />;
+                        })()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xl font-semibold text-white truncate">{card.title}</h3>
+                        <p className="text-gray-400 text-sm line-clamp-2">{card.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div key={card.id} className="relative w-full">
+                {card.tooltip && (
+                  <div className="text-xs text-purple-300 font-medium mb-2 px-2">
+                    {card.tooltip}
+                  </div>
+                )}
+                <Link
+                  href={card.href}
+                  className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all duration-200 block h-32 w-full"
+                >
+                  <div className="flex items-center gap-4 h-full">
+                    <div className="inline-block hover:scale-110 transition-transform flex-shrink-0">
+                      {(() => {
+                        const IconComponent = getIconFromEmoji(card.icon);
+                        return <IconComponent size={40} strokeWidth={2} className="text-purple-400" />;
+                      })()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-semibold text-white truncate">{card.title}</h3>
+                      <p className="text-gray-400 text-sm line-clamp-2">{card.description}</p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -15,8 +15,8 @@ export default async function Home() {
   const branding = tenant?.branding || {};
   const tenantName = tenant?.name || 'Competition Portal';
   const tagline = (typeof branding === 'object' && branding.tagline) || 'Professional dance competition management platform';
-  const primaryColor = (typeof branding === 'object' && branding.primaryColor) || '#8B5CF6';
-  const secondaryColor = (typeof branding === 'object' && branding.secondaryColor) || '#EC4899';
+  const primaryColor = (typeof branding === 'object' && branding.primaryColor) || '#6366F1';
+  const secondaryColor = (typeof branding === 'object' && branding.secondaryColor) || '#8B5CF6';
 
   // Tenant-specific landing page (e.g., empwr.compsync.net)
   return (
@@ -57,16 +57,11 @@ export default async function Home() {
               >
                 Sign In
               </Link>
-              <Link
-                href="/signup"
-                className="block w-full text-center bg-white/5 border border-white/20 text-white px-6 py-3 rounded-lg hover:bg-white/10 transition-all duration-200"
-              >
-                Create Studio Account
-              </Link>
+              {/* Signup disabled - studios must use claim links from Competition Directors */}
             </div>
 
             <div className="mt-6 text-center text-gray-400 text-sm">
-              Studio Directors create accounts<br />
+              New studios: Contact your competition director for an invitation link<br />
               Competition Directors login with provided credentials
             </div>
           </div>

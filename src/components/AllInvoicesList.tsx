@@ -10,7 +10,6 @@ import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { showUndoToast } from '@/lib/undoToast';
-import PullToRefresh from 'react-pull-to-refresh';
 import { SkeletonTable } from '@/components/Skeleton';
 
 export default function AllInvoicesList() {
@@ -137,6 +136,17 @@ export default function AllInvoicesList() {
     },
   });
 
+  // Void invoice mutation
+  const voidInvoiceMutation = trpc.invoice.voidInvoice.useMutation({
+    onSuccess: () => {
+      toast.success('Invoice voided successfully');
+      utils.invoice.getAllInvoices.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
   const handleMarkAsPaid = (reservationId: string, currentStatus: string, studioName: string) => {
     // Store previous status for undo
     const previousStatus = currentStatus as 'pending' | 'cancelled' | 'partial' | 'paid' | 'refunded';
@@ -168,6 +178,16 @@ export default function AllInvoicesList() {
     sendReminderMutation.mutate({
       studioId,
       competitionId,
+    });
+  };
+
+  const handleVoidInvoice = (invoiceId: string, studioName: string) => {
+    const reason = prompt(`Void invoice for ${studioName}?\n\nEnter reason (optional):`);
+    if (reason === null) return; // User cancelled
+
+    voidInvoiceMutation.mutate({
+      invoiceId,
+      reason: reason || undefined,
     });
   };
 
@@ -306,6 +326,24 @@ export default function AllInvoicesList() {
     );
   };
 
+  const getInvoiceStatusBadge = (status: string | null | undefined) => {
+    const statusColors: Record<string, string> = {
+      DRAFT: 'bg-gray-500/20 text-gray-300 border-gray-400/30',
+      SENT: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
+      PAID: 'bg-green-500/20 text-green-300 border-green-400/30',
+      VOIDED: 'bg-red-500/20 text-red-400 border-red-500/30 line-through',
+      UNPAID: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30',
+    };
+
+    const color = statusColors[status || 'UNPAID'] || statusColors.UNPAID;
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${color}`}>
+        {status || 'UNPAID'}
+      </span>
+    );
+  };
+
   const invoices = data?.invoices || [];
   const competitions = competitionsData?.competitions || [];
 
@@ -317,13 +355,7 @@ export default function AllInvoicesList() {
     return <SkeletonTable rows={5} />;
   }
 
-  // Pull-to-refresh handler
-  const handleRefresh = async () => {
-    await refetch();
-  };
-
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
@@ -425,7 +457,7 @@ export default function AllInvoicesList() {
             <button
               onClick={() => {
               // Generate CSV from current invoices
-              const csvHeaders = ['Studio', 'Code', 'City', 'Event', 'Year', 'Routines', 'Total Amount', 'Payment Status'];
+              const csvHeaders = ['Studio', 'Code', 'City', 'Event', 'Year', 'Routines', 'Balance Due', 'Payment Status'];
               const csvRows = sortedInvoices.map(inv => [
                 inv.studioName || 'N/A',
                 inv.studioCode || 'N/A',
@@ -520,7 +552,8 @@ export default function AllInvoicesList() {
                 <SortableHeader label="Studio" sortKey="studioName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Routines" sortKey="entryCount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
-                <SortableHeader label="Total Amount" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Balance Due" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Invoice Status" sortKey="invoiceStatus" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Payment Status" sortKey="reservation.payment_status" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Actions
@@ -530,7 +563,7 @@ export default function AllInvoicesList() {
             <tbody className="divide-y divide-white/10">
               {sortedInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={8} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center">
                       <div className="text-6xl mb-4">📋</div>
                       <h3 className="text-xl font-bold text-white mb-2">No Invoices Found</h3>
@@ -592,6 +625,14 @@ export default function AllInvoicesList() {
                       {formatCurrency(invoice.totalAmount || 0)}
                     </td>
                     <td className="px-6 py-4">
+                      {getInvoiceStatusBadge(invoice.invoiceStatus)}
+                      {invoice.invoiceCreatedAt && (
+                        <div className="text-gray-500 text-xs mt-1">
+                          Created: {formatDate(invoice.invoiceCreatedAt)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
                       {getPaymentStatusBadge(invoice.reservation?.paymentStatus)}
                       {invoice.reservation?.paymentConfirmedAt && (
                         <div className="text-gray-500 text-xs mt-1">
@@ -632,6 +673,15 @@ export default function AllInvoicesList() {
                               {sendReminderMutation.isPending ? 'Sending...' : 'Send Reminder'}
                             </button>
                           </>
+                        )}
+                        {invoice.invoiceId && invoice.invoiceStatus !== 'VOIDED' && (
+                          <button
+                            onClick={() => handleVoidInvoice(invoice.invoiceId!, invoice.studioName)}
+                            disabled={voidInvoiceMutation.isPending}
+                            className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg text-sm font-semibold transition-all border border-red-400/30 disabled:opacity-50"
+                          >
+                            {voidInvoiceMutation.isPending ? 'Voiding...' : 'Void'}
+                          </button>
                         )}
                       </div>
                     </td>
@@ -703,7 +753,7 @@ export default function AllInvoicesList() {
                       <div className="text-xl font-bold text-white">{invoice.entryCount || 0}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-400">Total Amount</div>
+                      <div className="text-sm text-gray-400">Balance Due</div>
                       <div className="text-xl font-bold text-green-400">
                         {formatCurrency(invoice.totalAmount || 0)}
                       </div>
@@ -752,6 +802,5 @@ export default function AllInvoicesList() {
         </div>
       </div>
     </div>
-    </PullToRefresh>
   );
 }

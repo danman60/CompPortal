@@ -59,6 +59,35 @@ export function ChatwootWidget({
       return;
     }
 
+    // Global error handler to suppress Chatwoot SDK race condition errors
+    // These errors happen INSIDE the SDK's internal code (packs/js/sdk.js)
+    // and cannot be caught by our try/catch around SDK.run()
+    const chatwootErrorHandler = (event: ErrorEvent) => {
+      const errorMsg = event.message || '';
+      const errorStack = event.error?.stack || '';
+
+      // Check if it's the known Chatwoot contentWindow/parentNode race condition
+      const isChatwootError =
+        errorStack.includes('sdk.js') ||
+        errorMsg.includes('contentWindow') ||
+        errorMsg.includes('parentNode') ||
+        errorMsg.includes('getAppFrame');
+
+      if (isChatwootError) {
+        // Prevent this error from propagating to Sentry
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Suppressed Chatwoot SDK race condition error (harmless):', errorMsg);
+        }
+        return true; // Indicates the error was handled
+      }
+      return false;
+    };
+
+    // Add error listener with capture to catch before Sentry
+    window.addEventListener('error', chatwootErrorHandler, true);
+
     // Additional safety check to prevent undefined in template literal
     if (typeof baseUrl !== 'string' || baseUrl.trim() === '') {
       console.error('ChatwootWidget: Invalid baseUrl', { baseUrl });
@@ -111,21 +140,34 @@ export function ChatwootWidget({
           config.customAttributes = customAttributes;
         }
 
+        // Delay initialization to prevent iframe race condition errors
+        // Safari needs longer delay, but add small delay for all browsers
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const initDelay = isSafari ? 1000 : 200;
+
         // Wrap SDK initialization to suppress known race condition errors
-        try {
-          window.chatwootSDK.run(config);
-        } catch (error) {
-          // Suppress known Chatwoot SDK race condition with contentWindow
-          // This is a cosmetic error that doesn't affect functionality
-          if (error instanceof Error && error.message?.includes('contentWindow')) {
-            if (process.env.NODE_ENV === 'development') {
-              console.debug('Chatwoot SDK race condition (harmless, widget will still work):', error.message);
+        const initializeChatwoot = () => {
+          try {
+            window.chatwootSDK?.run(config);
+          } catch (error) {
+            // Suppress known Chatwoot SDK race condition with contentWindow/parentNode
+            // This is a cosmetic error that doesn't affect functionality
+            if (error instanceof Error && (error.message?.includes('contentWindow') || error.message?.includes('parentNode'))) {
+              if (process.env.NODE_ENV === 'development') {
+                console.debug('Chatwoot SDK race condition (harmless, widget will still work):', error.message);
+              }
+            } else {
+              // Re-throw unexpected errors
+              console.error('ChatwootWidget: Unexpected SDK initialization error', error);
+              throw error;
             }
-          } else {
-            // Re-throw unexpected errors
-            console.error('ChatwootWidget: Unexpected SDK initialization error', error);
-            throw error;
           }
+        };
+
+        if (initDelay > 0) {
+          setTimeout(initializeChatwoot, initDelay);
+        } else {
+          initializeChatwoot();
         }
       }
     };
@@ -142,6 +184,9 @@ export function ChatwootWidget({
 
     // Cleanup function
     return () => {
+      // Remove error handler
+      window.removeEventListener('error', chatwootErrorHandler, true);
+
       // Remove script
       if (script.parentNode) {
         document.body.removeChild(script);

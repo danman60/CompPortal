@@ -4,6 +4,7 @@ import InvoiceDelivery from '@/emails/InvoiceDelivery';
 import ReservationApproved from '@/emails/ReservationApproved';
 import ReservationRejected from '@/emails/ReservationRejected';
 import ReservationSubmitted from '@/emails/ReservationSubmitted';
+import ReservationMoved from '@/emails/ReservationMoved';
 import RoutineSummarySubmitted from '@/emails/RoutineSummarySubmitted';
 import StudioProfileSubmitted from '@/emails/StudioProfileSubmitted';
 import EntrySubmitted from '@/emails/EntrySubmitted';
@@ -14,9 +15,8 @@ import MissingMusicReminder from '@/emails/MissingMusicReminder';
 import WelcomeEmail from '@/emails/WelcomeEmail';
 import DailyDigest from '@/emails/DailyDigest';
 import AccountRecovery from '@/emails/AccountRecovery';
-import MusicStatusReport from '@/emails/MusicStatusReport';
-import MusicUrgentWarning from '@/emails/MusicUrgentWarning';
-import MusicPostDeadlineReport from '@/emails/MusicPostDeadlineReport';
+import SpaceRequestNotification from '@/emails/SpaceRequestNotification';
+import SummaryReopened from '@/emails/SummaryReopened';
 
 /**
  * Render email templates to HTML
@@ -69,6 +69,17 @@ export interface ReservationRejectedData {
   reason?: string;
   portalUrl: string;
   contactEmail: string;
+  tenantBranding?: TenantBranding;
+}
+
+export interface ReservationMovedData {
+  studioName: string;
+  oldCompetitionName: string;
+  newCompetitionName: string;
+  newCompetitionYear: number;
+  spacesConfirmed: number;
+  entriesUpdated: number;
+  portalUrl: string;
   tenantBranding?: TenantBranding;
 }
 
@@ -131,7 +142,7 @@ export interface MissingMusicReminderData {
 export interface WelcomeEmailData {
   name: string;
   email: string;
-  dashboardUrl?: string;
+  dashboardUrl: string; // Required - must be tenant-specific URL
   tenantBranding?: TenantBranding;
 }
 
@@ -173,54 +184,23 @@ export interface AccountRecoveryData {
   tenantBranding?: TenantBranding;
 }
 
-export interface MusicStatusReportData {
-  cdName: string;
-  competitionName: string;
-  competitionYear: number;
-  totalEntries: number;
-  withMusic: number;
-  missingMusic: number;
-  studiosWithMissing: Array<{
-    studioName: string;
-    studioId: string;
-    missingCount: number;
-    entryNumbers: number[];
-    lastReminderAt?: Date | null;
-  }>;
-  portalUrl: string;
-  daysUntilDeadline?: number;
-  tenantBranding?: TenantBranding;
-}
-
-export interface MusicUrgentWarningData {
+export interface SpaceRequestNotificationData {
   studioName: string;
   competitionName: string;
   competitionYear: number;
-  routinesWithoutMusic: Array<{
-    title: string;
-    entryNumber?: number;
-    category: string;
-  }>;
+  currentSpaces: number;
+  additionalSpaces: number;
+  newTotal: number;
+  justification?: string | null;
   portalUrl: string;
-  hoursUntilDeadline: number;
-  deadlineDate: string;
-  deadlineTime: string;
   tenantBranding?: TenantBranding;
 }
 
-export interface MusicPostDeadlineReportData {
-  cdName: string;
+export interface SummaryReopenedData {
+  studioName: string;
   competitionName: string;
   competitionYear: number;
-  totalEntries: number;
-  withMusic: number;
-  missingMusic: number;
-  entriesMissing: Array<{
-    entryNumber: number;
-    title: string;
-    studioName: string;
-    category: string;
-  }>;
+  reason?: string;
   portalUrl: string;
   tenantBranding?: TenantBranding;
 }
@@ -285,6 +265,13 @@ export async function renderReservationApproved(data: ReservationApprovedData) {
  */
 export async function renderReservationRejected(data: ReservationRejectedData) {
   return render(<ReservationRejected {...data} />);
+}
+
+/**
+ * Render reservation moved email
+ */
+export async function renderReservationMoved(data: ReservationMovedData) {
+  return render(<ReservationMoved {...data} />);
 }
 
 /**
@@ -365,31 +352,24 @@ export async function renderAccountRecovery(data: AccountRecoveryData) {
 }
 
 /**
- * Render music status report email (for CD)
+ * Render space request notification email (for CD)
  */
-export async function renderMusicStatusReport(data: MusicStatusReportData) {
-  return render(<MusicStatusReport {...data} />);
+export async function renderSpaceRequestNotification(data: SpaceRequestNotificationData) {
+  return render(<SpaceRequestNotification {...data} />);
 }
 
 /**
- * Render music urgent warning email (for SD)
+ * Render summary reopened email (for SD)
  */
-export async function renderMusicUrgentWarning(data: MusicUrgentWarningData) {
-  return render(<MusicUrgentWarning {...data} />);
-}
-
-/**
- * Render music post-deadline report email (for CD)
- */
-export async function renderMusicPostDeadlineReport(data: MusicPostDeadlineReportData) {
-  return render(<MusicPostDeadlineReport {...data} />);
+export async function renderSummaryReopened(data: SummaryReopenedData) {
+  return render(<SummaryReopened {...data} />);
 }
 
 /**
  * Get email subject for template
  */
 export function getEmailSubject(
-  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music' | 'daily-digest' | 'music-status-report' | 'music-urgent-warning' | 'music-post-deadline',
+  template: 'registration' | 'invoice' | 'reservation-approved' | 'reservation-rejected' | 'reservation-submitted' | 'reservation-moved' | 'routine-summary-submitted' | 'studio-profile-submitted' | 'entry' | 'studio-approved' | 'studio-rejected' | 'payment-confirmed' | 'missing-music' | 'daily-digest',
   data: { [key: string]: any }
 ): string {
   const subjects = {
@@ -398,6 +378,7 @@ export function getEmailSubject(
     'reservation-approved': `Reservation Approved - ${data.competitionName} (${data.competitionYear})`,
     'reservation-rejected': `Reservation Status Update - ${data.competitionName} (${data.competitionYear})`,
     'reservation-submitted': `New Reservation from ${data.studioName} - ${data.competitionName}`,
+    'reservation-moved': `Competition Change: Moved to ${data.newCompetitionName}`,
     'routine-summary-submitted': `Routine Summary Ready from ${data.studioName} - ${data.competitionName}`,
     'studio-profile-submitted': `New Studio Registration - ${data.studioName}`,
     entry: `Routine Submitted: ${data.entryTitle} - ${data.competitionName}`,
@@ -406,9 +387,6 @@ export function getEmailSubject(
     'payment-confirmed': `Payment ${data.paymentStatus ? data.paymentStatus.toUpperCase() : 'CONFIRMED'} - ${data.competitionName} (${data.competitionYear})`,
     'missing-music': `⏰ Reminder: Upload Music Files - ${data.competitionName}`,
     'daily-digest': `${data.tenantName} Daily Digest - ${new Date().toLocaleDateString()}`,
-    'music-status-report': `Music Status Report - ${data.competitionName} (${data.competitionYear})`,
-    'music-urgent-warning': `⚠️ URGENT: ${data.hoursUntilDeadline}h Left to Upload Music - ${data.competitionName}`,
-    'music-post-deadline': `Final Music Report - ${data.competitionName} (${data.competitionYear})`,
   };
 
   return subjects[template];

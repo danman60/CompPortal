@@ -178,8 +178,8 @@ export default function SubInvoiceList({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl shadow-2xl border border-white/20">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20 overflow-y-auto">
+      <div className="w-full max-w-6xl max-h-[85vh] overflow-y-auto bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl shadow-2xl border border-white/20">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/20 sticky top-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 z-10">
           <div>
@@ -387,8 +387,8 @@ function EmailAllModal({
   const allValid = dancers.every(d => !d.sendEmail || d.email.trim().includes('@'));
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl shadow-2xl border border-white/20">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center z-[60] p-4 pt-20 overflow-y-auto">
+      <div className="w-full max-w-4xl max-h-[85vh] overflow-y-auto bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-xl shadow-2xl border border-white/20">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/20 sticky top-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 z-10">
           <div>

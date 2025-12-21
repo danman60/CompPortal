@@ -81,7 +81,7 @@ export default function DancersPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
           <div>
             <Link
               href="/dashboard"
@@ -89,24 +89,24 @@ export default function DancersPage() {
             >
               ← Back to Dashboard
             </Link>
-            <h1 className="text-4xl font-bold text-white mb-2">Dancers</h1>
-            <p className="text-gray-400">Manage dancers and competition routines</p>
+            <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">Dancers</h1>
+            <p className="text-gray-400 text-sm md:text-base">Manage dancers and competition routines</p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <Link href="/dashboard/dancers/add">
-              <Button variant="primary" size="lg">
+              <Button variant="primary" size="lg" className="w-full sm:w-auto">
                 <Plus size={20} strokeWidth={2} />
                 <span>Add Dancers</span>
               </Button>
             </Link>
             <Link href="/dashboard/dancers/import">
-              <Button variant="secondary" size="lg">
+              <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                 <Upload size={20} strokeWidth={2} />
                 <span>Import</span>
               </Button>
             </Link>
-            <Button variant="secondary" size="lg" onClick={handleExportCSV}>
+            <Button variant="secondary" size="lg" onClick={handleExportCSV} className="w-full sm:w-auto">
               <Download size={20} strokeWidth={2} />
               <span>Export CSV</span>
             </Button>

@@ -192,9 +192,22 @@ export function DancerSelectionSection({
                 </div>
                 <div className="flex-1 text-left">
                   <div className="text-white font-medium">{fullName}</div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm flex-wrap">
+                    {(() => {
+                      const dob = parseISODateToUTC(dancer.date_of_birth);
+                      return dob ? (
+                        <>
+                          <span className="text-gray-400">
+                            DOB: {dob.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+                          </span>
+                          <span className="text-gray-500">•</span>
+                        </>
+                      ) : null;
+                    })()}
                     {age !== null && (
-                      <span className="text-gray-400">{age} years old</span>
+                      <span className="text-gray-400">
+                        {age} years old (Age as of December 31st, {eventStartDate?.getUTCFullYear() || new Date().getUTCFullYear()})
+                      </span>
                     )}
                     {age !== null && dancer.classifications && (
                       <span className="text-gray-500">•</span>

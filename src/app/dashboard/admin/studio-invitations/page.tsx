@@ -18,7 +18,7 @@ type FilterStatus = 'all' | 'unclaimed' | 'claimed' | 'invited' | 'not-invited' 
 export default function StudioInvitationsPage() {
   const [selectedStudios, setSelectedStudios] = useState<Set<string>>(new Set());
   const [sendingInvites, setSendingInvites] = useState(false);
-  const [sortField, setSortField] = useState<SortField>('eventDate');
+  const [sortField, setSortField] = useState<SortField>('name'); // Default to alphabetical
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');

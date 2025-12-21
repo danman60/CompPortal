@@ -53,14 +53,14 @@ const userManagementRouter = router({
       }
 
       if (search) {
+        // Note: email search is handled separately via raw SQL below
         where.OR = [
           { first_name: { contains: search, mode: 'insensitive' } },
           { last_name: { contains: search, mode: 'insensitive' } },
-          { users: { email: { contains: search, mode: 'insensitive' } } },
         ];
       }
 
-      const [users, total] = await Promise.all([
+      const [userProfiles, total] = await Promise.all([
         prisma.user_profiles.findMany({
           where,
           select: {
@@ -78,17 +78,6 @@ const userManagementRouter = router({
                 subdomain: true,
               },
             },
-            users: {
-              select: {
-                email: true,
-                last_sign_in_at: true,
-                _count: {
-                  select: {
-                    studios_studios_owner_idTousers: true,
-                  },
-                },
-              },
-            },
           },
           orderBy: { created_at: 'desc' },
           take: limit,
@@ -96,6 +85,42 @@ const userManagementRouter = router({
         }),
         prisma.user_profiles.count({ where }),
       ]);
+
+      // Fetch auth.users data separately (email, last_sign_in_at)
+      const userIds = userProfiles.map(u => u.id);
+      const authUsersData = userIds.length > 0 ? await prisma.$queryRaw<{
+        id: string;
+        email: string;
+        last_sign_in_at: Date | null;
+      }[]>`
+        SELECT id, email, last_sign_in_at
+        FROM auth.users
+        WHERE id = ANY(${userIds}::uuid[])
+      ` : [];
+      const authUserMap = new Map(authUsersData.map(u => [u.id, u]));
+
+      // Get studio counts per user
+      const studioCounts = userIds.length > 0 ? await prisma.studios.groupBy({
+        by: ['owner_id'],
+        where: { owner_id: { in: userIds } },
+        _count: { id: true },
+      }) : [];
+      const studioCountMap = new Map(studioCounts.map(s => [s.owner_id!, s._count.id]));
+
+      // Merge data
+      const users = userProfiles.map(profile => {
+        const authUser = authUserMap.get(profile.id);
+        return {
+          ...profile,
+          users: {
+            email: authUser?.email || null,
+            last_sign_in_at: authUser?.last_sign_in_at || null,
+            _count: {
+              studios_studios_owner_idTousers: studioCountMap.get(profile.id) || 0,
+            },
+          },
+        };
+      });
 
       return {
         users,
@@ -119,7 +144,7 @@ const userManagementRouter = router({
         throw new Error('Only super admins can change user roles');
       }
 
-      const user = await prisma.user_profiles.update({
+      const userProfile = await prisma.user_profiles.update({
         where: { id: input.userId },
         data: {
           role: input.newRole,
@@ -130,13 +155,14 @@ const userManagementRouter = router({
           first_name: true,
           last_name: true,
           role: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || null;
 
       // Activity logging
       try {
@@ -146,7 +172,7 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users.email,
+            target_user_email: userEmail,
             new_role: input.newRole,
           },
         });
@@ -154,7 +180,11 @@ const userManagementRouter = router({
         logger.error('Failed to log activity (user.role_change)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
-      return user;
+      // Return with merged email for compatibility
+      return {
+        ...userProfile,
+        users: { email: userEmail },
+      };
     }),
 
   // Disable/enable user account
@@ -170,7 +200,7 @@ const userManagementRouter = router({
         throw new Error('Only super admins can toggle user status');
       }
 
-      const user = await prisma.user_profiles.update({
+      const userProfile = await prisma.user_profiles.update({
         where: { id: input.userId },
         data: {
           updated_at: new Date(),
@@ -179,13 +209,14 @@ const userManagementRouter = router({
           id: true,
           first_name: true,
           last_name: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || null;
 
       // Activity logging
       try {
@@ -195,7 +226,7 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users.email,
+            target_user_email: userEmail,
             new_status: input.isActive ? 'active' : 'disabled',
           },
         });
@@ -203,7 +234,10 @@ const userManagementRouter = router({
         logger.error('Failed to log activity (user.toggle_status)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
-      return user;
+      return {
+        ...userProfile,
+        users: { email: userEmail },
+      };
     }),
 
   // Reset user password (sends password reset email via Supabase)
@@ -218,28 +252,33 @@ const userManagementRouter = router({
         throw new Error('Only super admins can reset user passwords');
       }
 
-      // Get user email from user_profiles
-      const user = await prisma.user_profiles.findUnique({
+      // Get user profile
+      const userProfile = await prisma.user_profiles.findUnique({
         where: { id: input.userId },
         select: {
           first_name: true,
           last_name: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
 
-      if (!user || !user.users?.email) {
-        throw new Error('User not found or has no email');
+      if (!userProfile) {
+        throw new Error('User not found');
+      }
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email;
+
+      if (!userEmail) {
+        throw new Error('User has no email');
       }
 
       // Send password reset email via Supabase Admin API
       const { error } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
-        email: user.users.email,
+        email: userEmail,
       });
 
       if (error) {
@@ -255,7 +294,7 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users.email,
+            target_user_email: userEmail,
           },
         });
       } catch (err) {
@@ -264,7 +303,7 @@ const userManagementRouter = router({
 
       return {
         success: true,
-        message: `Password reset email sent to ${user.users.email}`,
+        message: `Password reset email sent to ${userEmail}`,
       };
     }),
 
@@ -280,23 +319,24 @@ const userManagementRouter = router({
         throw new Error('Only super admins can delete user accounts');
       }
 
-      const user = await prisma.user_profiles.findUnique({
+      const userProfile = await prisma.user_profiles.findUnique({
         where: { id: input.userId },
         select: {
           first_name: true,
           last_name: true,
           role: true,
-          users: {
-            select: {
-              email: true,
-            },
-          },
         },
       });
 
-      if (!user) {
+      if (!userProfile) {
         throw new Error('User not found');
       }
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || 'unknown';
 
       await prisma.$transaction(async (tx) => {
         // Delete user profile
@@ -320,9 +360,9 @@ const userManagementRouter = router({
           entityType: 'user',
           entityId: input.userId,
           details: {
-            target_user_email: user.users?.email || 'unknown',
-            target_user_name: `${user.first_name} ${user.last_name}`,
-            target_user_role: user.role,
+            target_user_email: userEmail,
+            target_user_name: `${userProfile.first_name} ${userProfile.last_name}`,
+            target_user_role: userProfile.role,
           },
         });
       } catch (err) {
@@ -331,7 +371,7 @@ const userManagementRouter = router({
 
       return {
         success: true,
-        message: `User ${user.users?.email || 'unknown'} deleted successfully`,
+        message: `User ${userEmail} deleted successfully`,
       };
     }),
 });
@@ -1375,12 +1415,18 @@ const impersonationRouter = router({
       // Get target user info
       const targetUser = await prisma.user_profiles.findUnique({
         where: { id: input.userId },
-        include: { users: true, tenants: true },
+        include: { tenants: true },
       });
 
       if (!targetUser) {
         throw new Error('User not found');
       }
+
+      // Get email from auth.users separately
+      const authUser = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${input.userId}::uuid LIMIT 1
+      `;
+      const userEmail = authUser[0]?.email || null;
 
       // Log impersonation start
       try {
@@ -1392,7 +1438,7 @@ const impersonationRouter = router({
           details: {
             targetUser: {
               id: targetUser.id,
-              email: targetUser.users.email,
+              email: userEmail,
               role: targetUser.role,
               tenant: targetUser.tenants?.name,
             },
@@ -1408,7 +1454,7 @@ const impersonationRouter = router({
         success: true,
         targetUser: {
           id: targetUser.id,
-          email: targetUser.users.email,
+          email: userEmail,
           firstName: targetUser.first_name,
           lastName: targetUser.last_name,
           role: targetUser.role,
@@ -1743,6 +1789,233 @@ const digestRouter = router({
 });
 
 // ============================================================================
+// ROUTINE VERIFICATION
+// ============================================================================
+
+const routineVerificationRouter = router({
+  // Verify routines for age/data quality issues
+  verifyRoutines: protectedProcedure
+    .input(
+      z.object({
+        routineIds: z.array(z.string().uuid()).optional(),
+      }).nullish()
+    )
+    .query(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can verify routines');
+      }
+
+      const routineIds = input?.routineIds;
+
+      // Build WHERE clause for optional routine IDs filter
+      const whereClause = routineIds && routineIds.length > 0
+        ? `AND ce.id = ANY($1::uuid[])`
+        : '';
+      const params = routineIds && routineIds.length > 0 ? [routineIds] : [];
+
+      // Get all routines with their dancers
+      const routines = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT
+          ce.id as routine_id,
+          ce.title as routine_title,
+          ce.routine_age as stored_age,
+          ce.age_group_id,
+          ce.status,
+          ce.created_at,
+          ag.name as age_group_name,
+          ag.min_age,
+          ag.max_age,
+          t.id as tenant_id,
+          t.name as tenant_name,
+          s.name as studio_name,
+          c.competition_start_date,
+          jsonb_agg(
+            jsonb_build_object(
+              'dob', d.date_of_birth,
+              'name', d.first_name || ' ' || d.last_name
+            )
+          ) as dancers
+        FROM competition_entries ce
+        LEFT JOIN age_groups ag ON ce.age_group_id = ag.id
+        LEFT JOIN tenants t ON ce.tenant_id = t.id
+        LEFT JOIN reservations r ON ce.reservation_id = r.id
+        LEFT JOIN competitions c ON r.competition_id = c.id
+        LEFT JOIN studios s ON r.studio_id = s.id
+        LEFT JOIN entry_participants ep ON ep.entry_id = ce.id
+        LEFT JOIN dancers d ON ep.dancer_id = d.id
+        WHERE ce.routine_age IS NOT NULL
+          ${whereClause}
+        GROUP BY ce.id, ce.title, ce.routine_age, ce.age_group_id, ce.status, ce.created_at, ag.name, ag.min_age, ag.max_age, t.id, t.name, s.name, c.competition_start_date
+        ORDER BY ce.created_at DESC
+      `, ...params);
+
+      // Process each routine to calculate correct age
+      const results = routines.map((routine) => {
+        const { routine_id, routine_title, stored_age, age_group_id, age_group_name, min_age, max_age, status, created_at, tenant_id, tenant_name, studio_name, competition_start_date, dancers } = routine;
+
+        // Calculate age calculation date: Dec 31 of REGISTRATION year
+        // Registration year = Competition year - 1 (ALWAYS the fall prior to comp year)
+        // E.g., 2026 competition → 2025 registration year → Dec 31, 2025
+        const ageCalcDate = competition_start_date
+          ? (() => {
+              const competitionYear = new Date(competition_start_date).getUTCFullYear();
+              const registrationYear = competitionYear - 1;
+              return new Date(Date.UTC(registrationYear, 11, 31));
+            })()
+          : new Date(Date.UTC(new Date().getUTCFullYear(), 11, 31)); // Fallback: Dec 31 of current year
+
+        // Calculate correct age from dancers
+        let correctAge: number;
+        const dancerList = dancers as Array<{ dob: string; name: string }>;
+
+        if (dancerList.length === 1) {
+          // Solo - calculate age at competition date
+          const dob = new Date(dancerList[0].dob);
+          correctAge = ageCalcDate.getFullYear() - dob.getFullYear();
+        } else {
+          // Group - average ages (floored)
+          const ages = dancerList.map((dancer) => {
+            const dob = new Date(dancer.dob);
+            return ageCalcDate.getFullYear() - dob.getFullYear();
+          });
+          correctAge = Math.floor(ages.reduce((sum, age) => sum + age, 0) / ages.length);
+        }
+
+        const discrepancy = stored_age - correctAge;
+        const createdBeforeNov12 = new Date(created_at) < new Date('2025-11-12');
+
+        // Classify severity
+        let severity: 'PASS' | 'WARNING' | 'ERROR';
+        if (discrepancy === 0) {
+          severity = 'PASS';
+        } else if (discrepancy === 1) {
+          severity = 'WARNING'; // Could be intentional +1 override
+        } else {
+          severity = 'ERROR'; // Significant discrepancy
+        }
+
+        // Proposed age (correct calculated age, or +1 if WARNING created after Nov 12)
+        const proposedAge = severity === 'WARNING' && !createdBeforeNov12
+          ? correctAge + 1  // Preserve potential intentional override
+          : correctAge;
+
+        return {
+          routineId: routine_id,
+          routineTitle: routine_title,
+          studioName: studio_name,
+          tenantId: tenant_id,
+          tenantName: tenant_name,
+          status,
+          severity,
+          currentAge: stored_age,
+          proposedAge,
+          discrepancy,
+          createdBeforeNov12,
+          currentAgeGroup: age_group_name || 'N/A',
+          proposedAgeGroup: age_group_name || 'N/A', // TODO: Calculate correct age group
+          currentAgeGroupId: age_group_id,
+          proposedAgeGroupId: age_group_id, // TODO: Calculate correct age group
+        };
+      });
+
+      // Calculate summary
+      const summary = {
+        total: results.length,
+        passed: results.filter(r => r.severity === 'PASS').length,
+        warnings: results.filter(r => r.severity === 'WARNING').length,
+        errors: results.filter(r => r.severity === 'ERROR').length,
+      };
+
+      return {
+        results,
+        summary,
+      };
+    }),
+
+  // Apply routine corrections
+  applyRoutineCorrections: protectedProcedure
+    .input(
+      z.object({
+        corrections: z.array(
+          z.object({
+            routineId: z.string().uuid(),
+            newAge: z.number().int().min(5).max(99),
+            newAgeGroupId: z.string().uuid().nullable(),
+          })
+        ),
+        notifyStudios: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can apply routine corrections');
+      }
+
+      if (input.corrections.length === 0) {
+        throw new Error('No corrections to apply');
+      }
+
+      // Create backup table
+      const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const backupTableName = `routine_age_correction_backup_${timestamp}`;
+
+      const routineIds = input.corrections.map(c => c.routineId);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS ${backupTableName} AS
+        SELECT
+          id,
+          routine_age,
+          age_group_id,
+          updated_at as original_updated_at,
+          NOW() as backup_timestamp
+        FROM competition_entries
+        WHERE id IN (${routineIds.map((_, i) => `$${i + 1}::uuid`).join(', ')})
+      `, ...routineIds);
+
+      // Apply corrections in transaction
+      await prisma.$transaction(async (tx) => {
+        for (const correction of input.corrections) {
+          await tx.competition_entries.update({
+            where: { id: correction.routineId },
+            data: {
+              routine_age: correction.newAge,
+              age_group_id: correction.newAgeGroupId ?? undefined,
+              updated_at: new Date(),
+            },
+          });
+        }
+      });
+
+      // Log activity
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          action: 'routine.bulk_age_correction',
+          entityType: 'competition_entry',
+          entityId: ctx.userId,
+          details: {
+            corrections_count: input.corrections.length,
+            backup_table: backupTableName,
+            notify_studios: input.notifyStudios,
+          },
+        });
+      } catch (err) {
+        logger.error('Failed to log routine correction activity', { error: err instanceof Error ? err : new Error(String(err)) });
+      }
+
+      // TODO: Studio notification email logic if notifyStudios is true
+
+      return {
+        success: true,
+        message: `${input.corrections.length} routines corrected successfully`,
+        correctionCount: input.corrections.length,
+        backupTable: backupTableName,
+      };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -1756,4 +2029,6 @@ export const superAdminRouter = router({
   backup: backupRestoreRouter,
   impersonation: impersonationRouter,
   digest: digestRouter,
+  verifyRoutines: routineVerificationRouter.verifyRoutines,
+  applyRoutineCorrections: routineVerificationRouter.applyRoutineCorrections,
 });

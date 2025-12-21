@@ -45,10 +45,10 @@ export function EntriesHeader({ selectedReservationId, selectedCompetitionId, is
         ← Back to Dashboard
       </Link>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-white">My Routines</h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl md:text-4xl font-bold text-white">My Routines</h1>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           {/* Resume Import Button - Shows when there's an active import session */}
           {activeSession && resumeUrl && (
             <Button

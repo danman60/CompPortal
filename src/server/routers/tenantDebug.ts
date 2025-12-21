@@ -17,20 +17,25 @@ export const tenantDebugRouter = router({
    * Get complete session context information
    */
   getContextInfo: protectedProcedure.query(async ({ ctx }) => {
-    // Get full user profile with email from users table
+    // Get full user profile
     const userProfile = await prisma.user_profiles.findUnique({
       where: { id: ctx.userId },
       include: {
         tenants: true,
-        users: true,
       },
     });
+
+    // Get email from auth.users separately
+    const authUser = await prisma.$queryRaw<{ email: string }[]>`
+      SELECT email FROM auth.users WHERE id = ${ctx.userId}::uuid LIMIT 1
+    `;
+    const userEmail = authUser[0]?.email || null;
 
     return {
       userId: ctx.userId,
       tenantId: ctx.tenantId,
       role: ctx.userRole,
-      email: userProfile?.users?.email,
+      email: userEmail,
       firstName: userProfile?.first_name,
       lastName: userProfile?.last_name,
       userProfile: userProfile,

@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import AllInvoicesList from '@/components/AllInvoicesList';
 
+// Force client-side rendering to avoid SSR window errors
+export const dynamic = 'force-dynamic';
+
 export default function AllInvoicesPage() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
@@ -58,7 +61,7 @@ export default function AllInvoicesPage() {
           >
             ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Global Invoices</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">Global Invoices</h1>
           <p className="text-gray-400">
             View and manage invoices for all studios across all events
           </p>

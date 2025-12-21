@@ -105,14 +105,19 @@ export const invoiceRouter = router({
           }))
         : [];
       const subtotal = parseFloat(invoice.subtotal?.toString() || '0');
+      const creditAmount = Number(invoice.credit_amount || 0);
+      const otherCreditAmount = Number(invoice.other_credit_amount || 0);
       const taxRate = parseFloat(invoice.tax_rate?.toString() || '0.13') / 100;
-      const taxAmount = subtotal * taxRate;
-      const totalAmount = parseFloat(invoice.total?.toString() || '0');
+      // Tax is calculated AFTER all credits are applied
+      const afterAllCredits = subtotal - creditAmount - otherCreditAmount;
+      const taxAmount = afterAllCredits * taxRate;
+      const totalAmount = afterAllCredits + taxAmount;
 
       return {
         id: invoice.id,
         invoiceNumber: `INV-${invoice.competitions?.year}-${invoice.studios?.code || invoice.studios?.id.substring(0, 8) || 'UNKNOWN'}-${invoice.id.substring(0, 8)}`,
         invoiceDate: invoice.created_at || new Date(),
+        tenantId: invoice.tenant_id,
         studio: {
           id: invoice.studios?.id || '',
           name: invoice.studios?.name || 'Unknown',
@@ -149,10 +154,24 @@ export const invoiceRouter = router({
           taxRate,
           taxAmount,
           totalAmount,
+          creditAmount,
+          creditReason: invoice.credit_reason,
+          otherCreditAmount,
+          otherCreditReason: invoice.other_credit_reason,
         },
         status: invoice.status,
         paidAt: invoice.paid_at,
         isLocked: invoice.is_locked,
+        credit_amount: invoice.credit_amount,
+        credit_reason: invoice.credit_reason,
+        other_credit_amount: invoice.other_credit_amount,
+        other_credit_reason: invoice.other_credit_reason,
+        amount_paid: invoice.amount_paid,
+        balance_remaining: invoice.balance_remaining,
+        // Add database fields for accurate accounting
+        total: invoice.total,
+        deposit_amount: invoice.deposit_amount,
+        amount_due: invoice.amount_due,
       };
     }),
 
@@ -279,6 +298,7 @@ export const invoiceRouter = router({
       return {
         invoiceNumber: `INV-${competition.year}-${studio.code || studio.id.substring(0, 8)}-${Date.now()}`,
         invoiceDate: new Date(),
+        tenantId: studio.tenant_id,
         studio: {
           id: studio.id,
           name: studio.name,
@@ -315,6 +335,8 @@ export const invoiceRouter = router({
           taxRate,
           taxAmount,
           totalAmount,
+          creditAmount: 0,
+          creditReason: null,
         },
       };
     }),
@@ -362,7 +384,7 @@ export const invoiceRouter = router({
           competitionYear: inv.competitions?.year,
           startDate: inv.competitions?.competition_start_date,
           entryCount: lineItems.length,
-          totalAmount: parseFloat(inv.total?.toString() || '0'),
+          totalAmount: parseFloat(inv.balance_remaining?.toString() || '0'),
           status: inv.status,
           paidAt: inv.paid_at,
           invoiceStatus: inv.status,
@@ -401,12 +423,33 @@ export const invoiceRouter = router({
         _sum: { total_fee: true },
       });
 
-      // Extract unique studio and competition IDs
-      const studioIds = [...new Set(entryGroups.map(g => g.studio_id))];
-      const competitionIds = [...new Set(entryGroups.map(g => g.competition_id))];
+      // Fetch ALL invoices first to get complete studio+competition list
+      const allInvoices = await prisma.invoices.findMany({
+        where: {
+          ...whereClause,
+          ...(competitionId && { competition_id: competitionId }),
+        },
+        select: {
+          id: true,
+          studio_id: true,
+          competition_id: true,
+          status: true,
+          created_at: true,
+          balance_remaining: true,
+        },
+      });
 
-      // Fetch all studios, competitions, reservations, and invoices in parallel
-      const [studios, competitions, reservations, invoices] = await Promise.all([
+      // Extract unique studio and competition IDs from BOTH entries AND invoices
+      const studioIdsFromEntries = entryGroups.map(g => g.studio_id);
+      const studioIdsFromInvoices = allInvoices.map(inv => inv.studio_id);
+      const studioIds = [...new Set([...studioIdsFromEntries, ...studioIdsFromInvoices])];
+
+      const competitionIdsFromEntries = entryGroups.map(g => g.competition_id);
+      const competitionIdsFromInvoices = allInvoices.map(inv => inv.competition_id);
+      const competitionIds = [...new Set([...competitionIdsFromEntries, ...competitionIdsFromInvoices])];
+
+      // Fetch all studios, competitions, and reservations in parallel (invoices already fetched)
+      const [studios, competitions, reservations] = await Promise.all([
         prisma.studios.findMany({
           where: { id: { in: studioIds } },
           select: {
@@ -449,41 +492,57 @@ export const invoiceRouter = router({
             status: true,
           },
         }),
-        prisma.invoices.findMany({
-          where: {
-            ...whereClause,
-            studio_id: { in: studioIds },
-            competition_id: { in: competitionIds },
-          },
-          select: {
-            id: true,
-            studio_id: true,
-            competition_id: true,
-            status: true,
-            created_at: true,
-          },
-        }),
       ]);
+
+      // Use allInvoices (already fetched above)
+      const invoices = allInvoices;
 
       // Create maps for fast lookup
       const studioMap = new Map(studios.map(s => [s.id, s]));
       const competitionMap = new Map(competitions.map(c => [c.id, c]));
       const reservationMap = new Map<string, typeof reservations[0]>();
       reservations.forEach(r => {
-        reservationMap.set(`${r.studio_id}-${r.competition_id}`, r);
+        reservationMap.set(`${r.studio_id}::${r.competition_id}`, r);
       });
       const invoiceMap = new Map<string, typeof invoices[0]>();
       invoices.forEach(inv => {
-        invoiceMap.set(`${inv.studio_id}-${inv.competition_id}`, inv);
+        invoiceMap.set(`${inv.studio_id}::${inv.competition_id}`, inv);
       });
 
-      // Build invoices from grouped data
-      const summaries = entryGroups
-        .map((group) => {
-          const studio = studioMap.get(group.studio_id);
-          const competition = competitionMap.get(group.competition_id);
-          const reservation = reservationMap.get(`${group.studio_id}-${group.competition_id}`);
-          const existingInvoice = invoiceMap.get(`${group.studio_id}-${group.competition_id}`);
+      // Create entry group map for fast lookup
+      const entryGroupMap = new Map<string, typeof entryGroups[0]>();
+      entryGroups.forEach(group => {
+        entryGroupMap.set(`${group.studio_id}::${group.competition_id}`, group);
+      });
+
+      // DEBUG: Log data for troubleshooting
+      console.log('[getAllInvoices] Data Summary:', {
+        entryGroupsCount: entryGroups.length,
+        invoicesCount: invoices.length,
+        studiosCount: studios.length,
+        competitionsCount: competitions.length,
+        studioIds,
+        competitionIds,
+        allCombinationsCount: new Set([
+          ...entryGroups.map(g => `${g.studio_id}::${g.competition_id}`),
+          ...invoices.map(inv => `${inv.studio_id}::${inv.competition_id}`)
+        ]).size,
+      });
+
+      // Get all unique studio+competition combinations from BOTH invoices and entries
+      const allCombinations = new Set<string>();
+      entryGroups.forEach(group => allCombinations.add(`${group.studio_id}::${group.competition_id}`));
+      invoices.forEach(inv => allCombinations.add(`${inv.studio_id}::${inv.competition_id}`));
+
+      // Build invoices from all combinations (entries + invoices)
+      const summaries = Array.from(allCombinations)
+        .map((key) => {
+          const [studio_id, competition_id] = key.split('::');
+          const group = entryGroupMap.get(key);
+          const studio = studioMap.get(studio_id!);
+          const competition = competitionMap.get(competition_id!);
+          const reservation = reservationMap.get(key);
+          const existingInvoice = invoiceMap.get(key);
 
           // Skip if studio or competition not found
           if (!studio || !competition) {
@@ -512,11 +571,11 @@ export const invoiceRouter = router({
             competitionYear: competition.year || 0,
             competitionStartDate: competition.competition_start_date,
             competitionEndDate: competition.competition_end_date,
-            entryCount: group._count.id,
-            totalAmount: Number(group._sum.total_fee || 0),
+            entryCount: group?._count.id || 0,
+            totalAmount: Number(existingInvoice?.balance_remaining || 0),
             hasInvoice: !!existingInvoice,
             invoiceId: existingInvoice?.id || null,
-            invoiceStatus: existingInvoice?.status || null,
+            invoiceStatus: existingInvoice?.status || null, // DRAFT, SENT, PAID, VOIDED
             invoiceCreatedAt: existingInvoice?.created_at || null,
             reservation: reservation ? {
               id: reservation.id,
@@ -532,7 +591,7 @@ export const invoiceRouter = router({
             } : null,
           };
         })
-        .filter((inv): inv is NonNullable<typeof inv> => inv !== null)
+        .filter((inv): inv is NonNullable<typeof inv> => inv !== null && inv.hasInvoice)
         .sort((a, b) => {
           // Sort by year descending first
           const yearDiff = (b.competitionYear || 0) - (a.competitionYear || 0);
@@ -554,50 +613,115 @@ export const invoiceRouter = router({
       studioId: z.string().uuid(),
       competitionId: z.string().uuid(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { studioId, competitionId } = input;
 
-      // Get studio and competition details
-      const studio = await prisma.studios.findUnique({
-        where: { id: studioId },
-        select: {
-          name: true,
-          contact_email: true,
+      // Find the invoice for this studio/competition
+      const invoice = await prisma.invoices.findFirst({
+        where: {
+          tenant_id: ctx.tenantId!,
+          studio_id: studioId,
+          competition_id: competitionId,
+        },
+        orderBy: {
+          created_at: 'desc', // Get most recent invoice
         },
       });
 
-      const competition = await prisma.competitions.findUnique({
-        where: { id: competitionId },
+      if (!invoice) {
+        throw new Error('Item not found - it may have been deleted');
+      }
+
+      // Get studio and competition details with tenant subdomain
+      const studio = await prisma.studios.findFirst({
+        where: {
+          id: studioId,
+          tenant_id: ctx.tenantId!,
+        },
+        select: {
+          owner_id: true,
+          name: true,
+          email: true,
+          tenants: {
+            select: {
+              subdomain: true,
+            },
+          },
+        },
+      });
+
+      const competition = await prisma.competitions.findFirst({
+        where: {
+          id: competitionId,
+          tenant_id: ctx.tenantId!,
+        },
         select: {
           name: true,
           year: true,
         },
       });
 
-      if (!studio || !competition || !studio.contact_email) {
+      if (!studio || !competition || !studio.email || !studio.tenants) {
         throw new Error('Studio or competition not found');
       }
 
-      // Get confirmed entries only for total amount
-      const entries = await prisma.competition_entries.findMany({
-        where: {
-          studio_id: studioId,
-          competition_id: competitionId,
-          status: 'confirmed',
-        },
+      // Check if email is enabled for this studio owner
+      const isEnabled = await isEmailEnabled(studio.owner_id!, 'invoice_received');
+
+      if (!isEnabled) {
+        return { success: true, email: studio.email, emailDisabled: true };
+      }
+
+      // Get actual invoice data
+      const lineItems = (invoice.line_items as any) || [];
+      const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
+      // Use amount_due (total - deposit) instead of raw total
+      const totalAmount = Number(invoice.amount_due || invoice.total || 0);
+
+      // Build tenant-specific URL
+      const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+
+      // Get tenant branding
+      const tenantBrandingData = await prisma.tenants.findUnique({
+        where: { id: ctx.tenantId! },
+        select: { branding: true },
+      });
+      const branding = tenantBrandingData?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
+      const emailData: InvoiceDeliveryData = {
+        studioName: studio.name,
+        competitionName: competition.name,
+        competitionYear: competition.year || new Date().getFullYear(),
+        invoiceNumber: invoice.id.substring(0, 8),
+        totalAmount,
+        routineCount,
+        invoiceUrl: `${baseUrl}/dashboard/invoices/${invoice.id}/${invoice.competition_id}`,
+        tenantBranding: branding || undefined,
+      };
+
+      const html = await renderInvoiceDelivery(emailData);
+      const subject = getEmailSubject('invoice', {
+        invoiceNumber: emailData.invoiceNumber,
+        competitionName: emailData.competitionName,
+        competitionYear: emailData.competitionYear,
       });
 
-      const totalAmount = entries.reduce((sum, entry) => sum + Number(entry.total_fee || 0), 0);
+      await sendEmail({
+        to: studio.email,
+        subject,
+        html,
+        templateType: 'invoice-delivery',
+        studioId: invoice.studio_id,
+        competitionId: invoice.competition_id,
+      });
 
-      // Send reminder email (basic notification for now)
-      // In production, this would use email router with proper template
       logger.info('Invoice reminder sent', {
-        email: studio.contact_email,
+        email: studio.email,
         competition: `${competition.name} ${competition.year}`,
         amount: totalAmount.toFixed(2),
       });
 
-    return { success: true, email: studio.contact_email };
+      return { success: true, email: studio.email };
     }),
 
   // Create invoice from a reservation (replaces direct approve flow)
@@ -641,18 +765,34 @@ export const invoiceRouter = router({
         });
       }
 
-      // 🛡️ GUARD: Check for existing invoice
+      // 🛡️ GUARD: Check for existing invoice and void it if found
+      // This allows creating new invoices after reopening/resubmitting summaries
       const existingInvoice = await prisma.invoices.findFirst({
         where: {
           tenant_id: ctx.tenantId!,
           studio_id: reservation.studio_id,
           competition_id: reservation.competition_id,
           reservation_id: reservationId,
+          status: { not: 'VOIDED' }, // Only check non-voided invoices
         },
       });
 
       if (existingInvoice) {
-        throw new Error('Invoice already exists for this reservation');
+        // Void the old invoice instead of blocking
+        await prisma.invoices.update({
+          where: { id: existingInvoice.id },
+          data: {
+            status: 'VOIDED',
+            is_locked: true,
+            other_credit_reason: 'VOIDED: Summary reopened and resubmitted',
+            updated_at: new Date(),
+          },
+        });
+
+        console.log('[INVOICE] Voided existing invoice:', {
+          invoice_id: existingInvoice.id,
+          reason: 'Summary reopened and resubmitted',
+        });
       }
 
       // Build line items from all entries for this reservation (summary was already validated)
@@ -664,7 +804,7 @@ export const invoiceRouter = router({
       const entries = await prisma.competition_entries.findMany({
         where: {
           reservation_id: reservationId,
-          status: { not: 'cancelled' }, // Exclude only cancelled entries
+          status: { notIn: ['cancelled', 'withdrawn'] }, // Exclude cancelled and withdrawn entries
         },
         include: {
           dance_categories: true,
@@ -759,6 +899,8 @@ export const invoiceRouter = router({
             total,
             deposit_amount: depositAmount,
             amount_due: amountDue,
+            amount_paid: 0,
+            balance_remaining: amountDue,
             status: 'DRAFT',
           },
         });
@@ -836,8 +978,9 @@ export const invoiceRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
       }
 
-      if (invoice.status !== 'DRAFT') {
-        throw new Error('Can only send invoices with DRAFT status');
+      // Only block voided invoices - allow re-sending DRAFT, SENT, or PAID invoices
+      if (invoice.status === 'VOIDED') {
+        throw new Error('Invoice has been voided. Create a new invoice to send.');
       }
 
       const updatedInvoice = await prisma.invoices.update({
@@ -853,6 +996,7 @@ export const invoiceRouter = router({
       try {
         await logActivity({
           userId: ctx.userId,
+          tenantId: ctx.tenantId ?? undefined,
           studioId: invoice.studio_id,
           action: 'invoice.send',
           entityType: 'invoice',
@@ -869,7 +1013,13 @@ export const invoiceRouter = router({
       try {
         const studio = await prisma.studios.findUnique({
           where: { id: updatedInvoice.studio_id },
-          select: { owner_id: true, name: true, email: true },
+          select: {
+            owner_id: true,
+            name: true,
+            email: true,
+            tenant_id: true,
+            tenants: { select: { subdomain: true, branding: true } },
+          },
         });
 
         const competition = await prisma.competitions.findUnique({
@@ -884,8 +1034,11 @@ export const invoiceRouter = router({
             // Get actual invoice data
             const lineItems = (updatedInvoice.line_items as any) || [];
             const routineCount = Array.isArray(lineItems) ? lineItems.length : 0;
-            const totalAmount = Number(updatedInvoice.total || 0);
+            // Use amount_due (total - deposit) instead of raw total
+            const totalAmount = Number(updatedInvoice.amount_due || updatedInvoice.total || 0);
 
+            const baseUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+            const branding = studio.tenants.branding as { primaryColor?: string; secondaryColor?: string } | null;
             const emailData: InvoiceDeliveryData = {
               studioName: studio.name,
               competitionName: competition.name,
@@ -893,7 +1046,8 @@ export const invoiceRouter = router({
               invoiceNumber: updatedInvoice.id.substring(0, 8),
               totalAmount,
               routineCount,
-              invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/invoices/${updatedInvoice.studio_id}/${updatedInvoice.competition_id}`,
+              invoiceUrl: `${baseUrl}/dashboard/invoices/${updatedInvoice.id}/${updatedInvoice.competition_id}`,
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderInvoiceDelivery(emailData);
@@ -1003,7 +1157,7 @@ export const invoiceRouter = router({
       try {
         const studio = await prisma.studios.findUnique({
           where: { id: invoice.studio_id },
-          select: { owner_id: true, name: true, email: true },
+          select: { owner_id: true, name: true, email: true, tenants: { select: { branding: true } } },
         });
 
         const competition = await prisma.competitions.findUnique({
@@ -1015,6 +1169,7 @@ export const invoiceRouter = router({
           const isEnabled = await isEmailEnabled(studio.owner_id, 'payment_confirmed');
 
           if (isEnabled) {
+            const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string } | null;
             const emailData: PaymentConfirmedData = {
               studioName: studio.name,
               competitionName: competition.name,
@@ -1023,6 +1178,7 @@ export const invoiceRouter = router({
               paymentStatus: 'paid',
               invoiceNumber: invoice.id.substring(0, 8),
               paymentDate: new Date().toISOString(),
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderPaymentConfirmed(emailData);
@@ -1050,6 +1206,135 @@ export const invoiceRouter = router({
       }
 
       return { success: true };
+    }),
+
+  // Apply or remove discount (Competition Directors only)
+  applyDiscount: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      discountPercentage: z.number().min(0).max(100), // 0 to remove discount
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can apply discounts
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can apply discounts to invoices.',
+        });
+      }
+
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
+      }
+
+      const subtotal = Number(invoice.subtotal);
+      const taxRate = Number(invoice.tax_rate);
+
+      // Calculate discount amount
+      const discountAmount = input.discountPercentage > 0
+        ? (subtotal * input.discountPercentage) / 100
+        : 0;
+
+      // Calculate new total: (subtotal - discount) * (1 + taxRate/100)
+      const afterDiscount = subtotal - discountAmount;
+      const newTotal = afterDiscount * (1 + taxRate / 100);
+
+      // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
+      const depositAmount = Number(invoice.deposit_amount || 0);
+      const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
+
+      // Update invoice with discount AND amount_due AND balance_remaining
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          credit_amount: discountAmount,
+          credit_reason: input.discountPercentage > 0
+            ? `${input.discountPercentage}% studio discount`
+            : null,
+          total: newTotal,
+          amount_due: newAmountDue,
+          balance_remaining: newAmountDue - Number(invoice.amount_paid || 0),
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        discountAmount,
+        newTotal,
+      };
+    }),
+
+  // Apply or remove custom credit (Competition Directors only)
+  // This is for fixed dollar credits (separate from percentage discounts)
+  applyCustomCredit: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      creditAmount: z.number().min(0), // Dollar amount, 0 to remove
+      creditReason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can apply credits
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can apply credits to invoices.',
+        });
+      }
+
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
+      }
+
+      const subtotal = Number(invoice.subtotal);
+      const taxRate = Number(invoice.tax_rate);
+      const existingCreditAmount = Number(invoice.credit_amount || 0); // Percentage discount
+
+      // Calculate new total: (subtotal - percentage_discount - other_credit) * (1 + taxRate/100)
+      const afterAllCredits = subtotal - existingCreditAmount - input.creditAmount;
+      const taxAmount = afterAllCredits * (taxRate / 100);
+      const newTotal = afterAllCredits + taxAmount;
+
+      // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
+      const depositAmount = Number(invoice.deposit_amount || 0);
+      const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
+
+      // Update invoice with other_credit AND amount_due AND balance_remaining
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          other_credit_amount: input.creditAmount,
+          other_credit_reason: input.creditAmount > 0
+            ? (input.creditReason || 'Custom credit')
+            : null,
+          total: newTotal,
+          amount_due: newAmountDue,
+          balance_remaining: newAmountDue - Number(invoice.amount_paid || 0),
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        creditAmount: input.creditAmount,
+        newTotal,
+      };
     }),
 
   // Update invoice line items (editable pricing - Competition Directors and Studio Directors)
@@ -1096,12 +1381,24 @@ export const invoiceRouter = router({
       // Recalculate subtotal and total from line items
       const subtotal = input.lineItems.reduce((sum, item) => sum + item.total, 0);
 
+      // Apply tax and discount (if any) to get correct total
+      const creditAmount = Number(invoice.credit_amount || 0);
+      const taxRate = Number(invoice.tax_rate || 13) / 100;
+      const afterDiscount = subtotal - creditAmount;
+      const newTotal = Number((afterDiscount * (1 + taxRate)).toFixed(2));
+
+      // Recalculate amount_due with deposit (CRITICAL: must update when total changes)
+      const depositAmount = Number(invoice.deposit_amount || 0);
+      const newAmountDue = Number((newTotal - depositAmount).toFixed(2));
+
       await prisma.invoices.update({
         where: { id: input.invoiceId },
         data: {
           line_items: input.lineItems as any,
           subtotal,
-          total: subtotal,
+          total: newTotal,
+          amount_due: newAmountDue,
+          balance_remaining: newAmountDue - Number(invoice.amount_paid || 0),
           updated_at: new Date(),
         },
       });
@@ -1876,6 +2173,82 @@ export const invoiceRouter = router({
     }),
 
   /**
+   * Void an invoice (CD/SA only)
+   * Sets invoice status to VOIDED and prevents further modifications
+   */
+  voidInvoice: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // 🔐 CRITICAL: Only Competition Directors and Super Admins can void invoices
+      if (ctx.userRole === 'studio_director') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can void invoices.',
+        });
+      }
+
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+      });
+
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot access invoice from another tenant' });
+      }
+
+      if (invoice.status === 'VOIDED') {
+        throw new Error('Invoice is already voided');
+      }
+
+      // Update invoice to VOIDED status
+      await prisma.invoices.update({
+        where: { id: input.invoiceId },
+        data: {
+          status: 'VOIDED',
+          is_locked: true, // Lock voided invoices
+          other_credit_reason: input.reason ? `VOIDED: ${input.reason}` : 'VOIDED',
+          updated_at: new Date(),
+        },
+      });
+
+      // Update reservation status back to 'summarized' so CD can create fresh invoice
+      if (invoice.reservation_id) {
+        await prisma.reservations.update({
+          where: { id: invoice.reservation_id },
+          data: {
+            status: 'summarized',
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      // Activity log (non-blocking)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          action: 'invoice.void',
+          entityType: 'invoice',
+          entityId: invoice.id,
+          details: {
+            competition_id: invoice.competition_id,
+            reason: input.reason,
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity (invoice.void)', { error: e instanceof Error ? e : new Error(String(e)) });
+      }
+
+      return { success: true };
+    }),
+
+  /**
    * Send dancer invoice emails with PDF attachments
    * Manual email sending triggered by studio owner (Step 4 of split invoice wizard)
    */
@@ -2019,5 +2392,181 @@ export const invoiceRouter = router({
         failed,
         errors: errors.length > 0 ? errors : undefined,
       };
+    }),
+
+  /**
+   * Apply partial payment to invoice
+   * AUDIT TRAIL: Records WHO applied payment, WHEN, and full payment details
+   */
+  applyPartialPayment: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+      amount: z.number().positive(),
+      paymentDate: z.date(),
+      paymentMethod: z.enum(['check', 'e-transfer', 'cash', 'credit_card', 'wire_transfer', 'other']).optional(),
+      referenceNumber: z.string().max(100).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Authorization: Only CD/SA
+      const userProfile = await prisma.user_profiles.findUnique({
+        where: { id: ctx.userId },
+        select: { role: true },
+      });
+
+      if (!userProfile || !userProfile.role || !['competition_director', 'super_admin'].includes(userProfile.role)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Competition Directors can apply payments',
+        });
+      }
+
+      // Get invoice with tenant check
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+        select: {
+          id: true,
+          total: true,
+          amount_due: true,
+          amount_paid: true,
+          balance_remaining: true,
+          status: true,
+          tenant_id: true,
+          studio_id: true,
+          studios: { select: { name: true } },
+        },
+      });
+
+      if (!invoice) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Tenant isolation check
+      if (invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Invoice not found' });
+      }
+
+      // Validation: Cannot apply payment to already-paid invoice
+      if (invoice.status === 'PAID') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invoice is already marked as paid',
+        });
+      }
+
+      // Validation: Payment cannot exceed remaining balance
+      const currentBalance = parseFloat(invoice.balance_remaining?.toString() || '0');
+      if (input.amount > currentBalance) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Payment amount ($${input.amount.toFixed(2)}) exceeds remaining balance ($${currentBalance.toFixed(2)})`,
+        });
+      }
+
+      // ATOMIC TRANSACTION: Create payment + Update invoice
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Record payment in invoice_payments table (AUDIT TRAIL)
+        const payment = await tx.invoice_payments.create({
+          data: {
+            invoice_id: input.invoiceId,
+            tenant_id: ctx.tenantId!,
+            amount: input.amount,
+            payment_date: input.paymentDate,
+            payment_method: input.paymentMethod || null,
+            reference_number: input.referenceNumber || null,
+            notes: input.notes || null,
+            recorded_by: ctx.userId!,
+          },
+        });
+
+        // 2. Calculate new totals
+        const newAmountPaid = parseFloat(invoice.amount_paid?.toString() || '0') + input.amount;
+        const newBalance = parseFloat(invoice.amount_due?.toString() || '0') - newAmountPaid;
+        const isFullyPaid = newBalance <= 0.01; // Allow for floating point rounding
+
+        // 3. Update invoice
+        const updatedInvoice = await tx.invoices.update({
+          where: { id: input.invoiceId },
+          data: {
+            amount_paid: newAmountPaid,
+            balance_remaining: newBalance,
+            status: isFullyPaid ? 'PAID' : invoice.status,
+            paid_at: isFullyPaid ? new Date() : null,
+            updated_at: new Date(),
+          },
+        });
+
+        return { payment, updatedInvoice, isFullyPaid };
+      });
+
+      // 4. Log activity (AUDIT TRAIL)
+      try {
+        await logActivity({
+          userId: ctx.userId,
+          studioId: invoice.studio_id,
+          tenantId: ctx.tenantId,
+          action: 'invoice.partialPaymentApplied',
+          entityType: 'invoice',
+          entityId: input.invoiceId,
+          details: {
+            studio_name: invoice.studios?.name,
+            payment_amount: input.amount,
+            payment_method: input.paymentMethod || 'not_specified',
+            reference_number: input.referenceNumber,
+            new_amount_paid: result.updatedInvoice.amount_paid,
+            new_balance: result.updatedInvoice.balance_remaining,
+            fully_paid: result.isFullyPaid,
+          },
+        });
+      } catch (e) {
+        logger.error('Failed to log activity (invoice.partialPaymentApplied)', {
+          error: e instanceof Error ? e : new Error(String(e))
+        });
+      }
+
+      return {
+        success: true,
+        payment: result.payment,
+        invoice: result.updatedInvoice,
+        message: result.isFullyPaid
+          ? `Payment of $${input.amount.toFixed(2)} applied. Invoice is now PAID in full!`
+          : `Payment of $${input.amount.toFixed(2)} applied. Remaining balance: $${result.updatedInvoice.balance_remaining?.toString() || '0'}`,
+      };
+    }),
+
+  /**
+   * Get payment history for an invoice
+   * Returns all payments with WHO recorded them
+   */
+  getPaymentHistory: protectedProcedure
+    .input(z.object({
+      invoiceId: z.string().uuid(),
+    }))
+    .query(async ({ input, ctx }) => {
+      // Get invoice to check tenant isolation
+      const invoice = await prisma.invoices.findUnique({
+        where: { id: input.invoiceId },
+        select: { tenant_id: true },
+      });
+
+      if (!invoice || invoice.tenant_id !== ctx.tenantId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+      }
+
+      // Get all payments with user details (WHO recorded each payment)
+      const payments = await prisma.invoice_payments.findMany({
+        where: { invoice_id: input.invoiceId },
+        include: {
+          user_profiles: {
+            select: {
+              first_name: true,
+              last_name: true,
+            },
+          },
+        },
+        orderBy: { payment_date: 'desc' },
+      });
+
+      return payments;
     }),
 });

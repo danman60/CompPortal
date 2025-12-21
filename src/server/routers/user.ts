@@ -46,13 +46,14 @@ export const userRouter = router({
         last_name: true,
         phone: true,
         notification_preferences: true,
-        users: {
-          select: {
-            email: true,
-          },
-        },
       },
     });
+
+    // Get email from auth.users separately
+    const authUser = await prisma.$queryRaw<{ email: string }[]>`
+      SELECT email FROM auth.users WHERE id = ${ctx.userId}::uuid LIMIT 1
+    `;
+    const userEmail = authUser[0]?.email || null;
 
     // Fetch tenant info for Chatwoot metadata
     const tenant = await prisma.tenants.findUnique({
@@ -88,7 +89,7 @@ export const userRouter = router({
       first_name: userProfile?.first_name,
       last_name: userProfile?.last_name,
       phone: userProfile?.phone,
-      email: userProfile?.users?.email,
+      email: userEmail,
       notification_preferences: userProfile?.notification_preferences,
       notificationsEnabled,
       studio,

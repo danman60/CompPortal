@@ -8,7 +8,8 @@ type CapacityChangeReason =
   | 'manual_adjustment'
   | 'cd_adjustment_increase'
   | 'cd_adjustment_decrease'
-  | 'sd_space_increase';
+  | 'sd_space_increase'
+  | 'space_request_approved';
 
 /**
  * Single source of truth for competition capacity management
@@ -22,8 +23,11 @@ export class CapacityService {
    * Reserve capacity (decrement available)
    * Uses database row locking to prevent race conditions
    *
-   * @throws InsufficientCapacityError if not enough capacity
+   * SOFT LIMIT: Capacity can go negative (over-booking allowed)
+   * Returns warning when capacity exceeded for UI display
+   *
    * @throws Error if reservation already processed
+   * @returns Object with exceededBy value (0 if within capacity, positive if exceeded)
    */
   async reserve(
     competitionId: string,
@@ -31,7 +35,7 @@ export class CapacityService {
     reservationId: string,
     userId: string,
     reason: CapacityChangeReason = 'reservation_approval'
-  ): Promise<void> {
+  ): Promise<{ exceededBy: number; availableBefore: number; availableAfter: number }> {
     logger.info('🔵 CapacityService.reserve CALLED', {
       competitionId,
       spaces,
@@ -43,6 +47,10 @@ export class CapacityService {
     if (spaces <= 0) {
       throw new Error('Spaces must be positive');
     }
+
+    let exceededBy = 0;
+    let availableBefore = 0;
+    let availableAfter = 0;
 
     await prisma.$transaction(async (tx) => {
       logger.info('🔵 Transaction started - acquiring advisory lock', { reservationId });
@@ -111,11 +119,19 @@ export class CapacityService {
       }
 
       const available = competition.available_reservation_tokens || 0;
+      availableBefore = available;
 
+      // 🆕 SOFT LIMIT: Check if exceeding capacity but ALLOW it
       if (available < spaces) {
-        throw new Error(
-          `Insufficient capacity: ${available} available, ${spaces} requested`
-        );
+        exceededBy = spaces - available;
+        logger.warn('⚠️ CAPACITY EXCEEDED - Allowed with warning', {
+          competitionId,
+          reservationId,
+          available,
+          requested: spaces,
+          exceededBy,
+          reason,
+        });
       }
 
       // ⚡ ATOMIC OPERATIONS: All updates in same transaction
@@ -131,10 +147,20 @@ export class CapacityService {
           change_amount: -spaces, // Negative = deduction
           reason,
           created_by: userId,
+          // 🆕 Add metadata when capacity exceeded for audit trail
+          ...(exceededBy > 0 && {
+            metadata: {
+              capacity_exceeded: true,
+              exceeded_by: exceededBy,
+              available_before: available,
+              requested: spaces,
+            },
+          }),
         },
       });
 
       // 2. Deduct capacity (only executes if ledger created successfully)
+      // 🆕 ALLOW NEGATIVE: No check, can go below zero
       await tx.competitions.update({
         where: { id: competitionId },
         data: {
@@ -143,6 +169,8 @@ export class CapacityService {
           },
         },
       });
+
+      availableAfter = available - spaces;
 
       // 3. Update reservation status (prevents double-processing)
       await tx.reservations.update({
@@ -161,20 +189,27 @@ export class CapacityService {
         reservationId,
         spaces,
         previousAvailable: available,
-        newAvailable: available - spaces,
+        newAvailable: availableAfter,
+        exceededBy,
         timestamp: new Date().toISOString(),
       });
     });
 
     logger.info('🟢 CapacityService.reserve COMPLETED', {
       reservationId,
+      exceededBy,
       timestamp: new Date().toISOString(),
     });
+
+    return { exceededBy, availableBefore, availableAfter };
   }
 
   /**
    * Refund capacity (increment available)
    * Used when summary submitted with unused entries or reservation cancelled
+   *
+   * SOFT LIMIT: Can refund even if it would exceed total capacity
+   * (e.g., when returning capacity from over-booked reservations)
    *
    * Matches Phase 1 spec lines 589-651 (summary refund pseudocode)
    */
@@ -207,18 +242,19 @@ export class CapacityService {
       const available = competition.available_reservation_tokens || 0;
       const total = competition.total_reservation_tokens || 0;
 
-      // Prevent refunding beyond total capacity
+      // 🆕 SOFT LIMIT: Allow refunding beyond total capacity
+      // This can happen when returning capacity from over-booked reservations
       if (available + spaces > total) {
-        logger.error('Refund would exceed total capacity', {
+        logger.warn('⚠️ Refund exceeds total capacity - Allowed with warning', {
           competitionId,
           currentAvailable: available,
           refundAmount: spaces,
           total,
+          newAvailable: available + spaces,
         });
-        throw new Error('Cannot refund more than total capacity');
       }
 
-      // Increment capacity
+      // Increment capacity (can go above total)
       await tx.competitions.update({
         where: { id: competitionId },
         data: {

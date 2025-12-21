@@ -44,7 +44,7 @@ export default function EntrySubmitted({
 }: EntrySubmittedProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
   const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
-  const dashboardUrl = portalUrl || 'https://www.compsync.net/dashboard';
+  const dashboardUrl = portalUrl;
 
   return (
     <Html>

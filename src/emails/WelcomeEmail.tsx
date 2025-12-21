@@ -16,7 +16,7 @@ export interface WelcomeEmailProps {
   name: string;
   email: string;
   studioPublicCode?: string;
-  dashboardUrl?: string;
+  dashboardUrl: string; // Required - must be tenant-specific URL
   tenantBranding?: {
     primaryColor?: string;
     secondaryColor?: string;
@@ -35,7 +35,6 @@ export default function WelcomeEmail({
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
   const secondaryColor = tenantBranding?.secondaryColor || defaultBranding.secondaryColor;
   const tenantName = tenantBranding?.tenantName || 'Competition Portal';
-  const portal = dashboardUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'}/dashboard`;
 
   return (
     <Html>
@@ -80,7 +79,7 @@ export default function WelcomeEmail({
           </Section>
 
           <Section style={{ textAlign: 'center', padding: '20px 40px' }}>
-            <Button href={portal} style={gradientButton(primaryColor, secondaryColor)}>
+            <Button href={dashboardUrl} style={gradientButton(primaryColor, secondaryColor)}>
               Go to your dashboard
             </Button>
           </Section>

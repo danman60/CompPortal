@@ -1,7 +1,10 @@
-import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase-server-client';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import InvoiceDetail from '@/components/InvoiceDetail';
+import { trpc } from '@/lib/trpc';
 
 type Props = {
   params: Promise<{
@@ -10,36 +13,41 @@ type Props = {
   }>;
 };
 
-export default async function InvoiceDetailPage({ params }: Props) {
-  const supabase = await createServerSupabaseClient();
-  const { studioId, competitionId } = await params;
+export default function InvoiceDetailPage({ params }: Props) {
+  const router = useRouter();
+  const [studioId, setStudioId] = useState<string>('');
+  const [competitionId, setCompetitionId] = useState<string>('');
+  const [isReady, setIsReady] = useState(false);
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  // Unwrap params
+  useEffect(() => {
+    params.then(({ studioId: sid, competitionId: cid }) => {
+      setStudioId(sid);
+      setCompetitionId(cid);
+      setIsReady(true);
+    });
+  }, [params]);
 
-  if (error || !user) {
-    redirect('/login');
-  }
+  // Get current user
+  const { data: userProfile, isLoading } = trpc.user.getCurrentUser.useQuery(undefined, {
+    enabled: isReady,
+  });
 
-  // Fetch user role to conditionally show navigation
-  const { data: userProfile } = await supabase
-    .from('user_profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!isLoading && !userProfile) {
+      router.push('/login');
+    }
+  }, [userProfile, isLoading, router]);
 
   const isCD = userProfile?.role === 'competition_director' || userProfile?.role === 'super_admin';
 
-  // UX Isolation: Verify Studio Director owns the studio they're viewing
-  if (userProfile?.role === 'studio_director') {
-    const { data: userStudio } = await supabase
-      .from('studios')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (!userStudio || userStudio.id !== studioId) {
-      redirect('/dashboard/invoices'); // Redirect to their own invoices
-    }
+  if (!isReady || isLoading || !userProfile) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </main>
+    );
   }
 
   return (
@@ -57,7 +65,7 @@ export default async function InvoiceDetailPage({ params }: Props) {
               </Link>
             )}
             <Link
-              href="/dashboard/invoices"
+              href="/dashboard/invoices/all"
               className="text-purple-400 hover:text-purple-300 text-sm inline-block"
             >
               ← Back to Invoices

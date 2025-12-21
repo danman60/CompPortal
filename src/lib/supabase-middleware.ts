@@ -70,39 +70,27 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Block dashboard access from base domain (compsync.net)
-  // Reserve compsync.net for marketing/landing pages only
+  // Block ALL non-landing routes from base domain (compsync.net)
+  // Reserve compsync.net for marketing/landing page ONLY
   const isBaseDomain = !subdomain && hostname.includes('compsync.net');
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
 
-  if (isBaseDomain && isDashboardRoute) {
-    // If user is logged in, redirect to their tenant subdomain
-    if (user) {
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single();
+  // Allowed routes on base domain (only landing page + API)
+  const allowedBaseRoutes = [
+    '/', // Landing page only
+    '/api', // Keep API routes accessible
+  ];
 
-      if (userProfile?.tenant_id) {
-        const { data: tenant } = await supabase
-          .from('tenants')
-          .select('subdomain')
-          .eq('id', userProfile.tenant_id)
-          .single();
+  const isAllowedBaseRoute = allowedBaseRoutes.some(route =>
+    request.nextUrl.pathname === route ||
+    (route === '/api' && request.nextUrl.pathname.startsWith('/api/'))
+  );
 
-        if (tenant?.subdomain) {
-          // Redirect to correct tenant subdomain
-          const url = request.nextUrl.clone();
-          url.hostname = `${tenant.subdomain}.compsync.net`;
-          return NextResponse.redirect(url);
-        }
-      }
-    }
-
-    // No user or no tenant → redirect to select-tenant
+  if (isBaseDomain && !isAllowedBaseRoute) {
+    // Block all other routes: /login, /signup, /dashboard, /select-tenant, etc.
+    // Redirect to landing page with error message
     const url = request.nextUrl.clone();
-    url.pathname = '/select-tenant';
+    url.pathname = '/';
+    url.searchParams.set('error', 'tenant_required');
     return NextResponse.redirect(url);
   }
 

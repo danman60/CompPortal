@@ -1,11 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import Link from 'next/link';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 import { createClient } from '@/lib/supabase';
+
+// Loading fallback for Suspense
+function SignupPageLoading() {
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white/70">Loading...</p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/**
+ * Signup Page - CLAIM CODE REQUIRED
+ *
+ * Users can ONLY create accounts via invitation links from Competition Directors.
+ * Direct signup (without claim code) is blocked.
+ */
 
 interface SignupFormData {
   email: string;
@@ -13,7 +34,8 @@ interface SignupFormData {
   confirmPassword: string;
 }
 
-export default function SignupPage() {
+// Content component that uses useSearchParams
+function SignupPageContent() {
   const [formData, setFormData] = useState<SignupFormData>({
     email: '',
     password: '',
@@ -40,7 +62,7 @@ export default function SignupPage() {
   }, [searchParams]);
 
   // Lookup studio by code using tRPC (avoids RLS issues)
-  const { data: studioData } = trpc.studio.lookupByCode.useQuery(
+  const { data: studioData, isLoading: studioLoading, error: studioError } = trpc.studio.lookupByCode.useQuery(
     { code: studioCode! },
     { enabled: !!studioCode && studioCode.length === 5 }
   );
@@ -208,6 +230,112 @@ export default function SignupPage() {
     }
   };
 
+  // 🔒 BLOCK: If no claim code or invalid code, show disabled message
+  if (!studioCode) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="mb-8 flex justify-center">
+            <div
+              className="h-16 w-16 rounded-2xl flex items-center justify-center"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+              }}
+            >
+              <span className="text-3xl">✨</span>
+            </div>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 min-h-[420px]">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">🔒</div>
+              <h1 className="text-2xl font-bold text-white mb-2">Invitation Required</h1>
+              <p className="text-gray-300">
+                You need an invitation link to create an account
+              </p>
+            </div>
+
+            <div className="bg-blue-500/20 border border-blue-400/30 rounded-lg p-4 mb-6">
+              <p className="text-blue-200 text-sm mb-3">
+                <strong>Studio Directors:</strong> Check your email for an invitation link from your Competition Director.
+              </p>
+              <p className="text-blue-200 text-sm">
+                <strong>Competition Directors:</strong> Contact the system administrator for credentials.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Link
+                href="/login"
+                className="block w-full text-center text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold"
+                style={{
+                  background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
+                }}
+              >
+                Go to Login
+              </Link>
+
+              <Link
+                href="/"
+                className="block w-full text-center bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-lg transition-all duration-200 border border-white/20"
+              >
+                ← Back to Home
+              </Link>
+            </div>
+
+            <div className="mt-6 text-center text-gray-400 text-xs">
+              Need help? Email <a href="mailto:techsupport@compsync.net" className="text-purple-400 hover:text-purple-300 underline">techsupport@compsync.net</a>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Loading studio data
+  if (studioLoading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white">Validating invitation code...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Invalid claim code
+  if (studioError || !studioData) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">❌</div>
+              <h1 className="text-2xl font-bold text-white mb-2">Invalid Invitation Code</h1>
+              <p className="text-gray-300">
+                This invitation link is invalid or has expired
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Link
+                href="/login"
+                className="block w-full text-center text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold"
+                style={{
+                  background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
+                }}
+              >
+                Go to Login
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Success state
   if (success) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
@@ -234,6 +362,7 @@ export default function SignupPage() {
     );
   }
 
+  // ✅ VALID CLAIM CODE: Show signup form
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -241,7 +370,7 @@ export default function SignupPage() {
           <div
             className="h-16 w-16 rounded-2xl flex items-center justify-center"
             style={{
-              background: `linear-gradient(135deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
             }}
           >
             <span className="text-3xl">✨</span>
@@ -251,7 +380,9 @@ export default function SignupPage() {
         <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-8 min-h-[420px]">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold text-white mb-1">Create Account</h1>
-            <p className="text-gray-300 text-sm">Join {tenant?.name || 'us'} today</p>
+            <p className="text-gray-300 text-sm">
+              Claim your studio: <strong>{studioData.name}</strong>
+            </p>
           </div>
 
           {error && (
@@ -277,7 +408,7 @@ export default function SignupPage() {
                 autoFocus={!emailLocked}
               />
               {emailLocked && (
-                <p className="text-xs text-gray-400 mt-1">Email pre-filled from your studio invitation</p>
+                <p className="text-xs text-gray-400 mt-1">Email from your studio invitation</p>
               )}
             </div>
 
@@ -319,14 +450,14 @@ export default function SignupPage() {
               disabled={loading || tenantLoading}
               className="w-full text-white py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold"
               style={{
-                background: `linear-gradient(90deg, ${primaryColor || '#FF1493'}, ${secondaryColor || '#EC4899'})`
+                background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`
               }}
             >
               {loading || tenantLoading ? 'Creating account...' : 'Create Account'}
             </button>
 
             <p className="text-xs text-gray-400 text-center">
-              Complete your studio profile after confirming your email
+              After creating your account, you'll claim your studio
             </p>
           </form>
 
@@ -345,5 +476,14 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// Wrap in Suspense to handle useSearchParams hydration
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupPageLoading />}>
+      <SignupPageContent />
+    </Suspense>
   );
 }

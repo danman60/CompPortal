@@ -1,22 +1,42 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { useTenantTheme } from '@/contexts/TenantThemeProvider';
 import { trpc } from '@/lib/trpc';
 
-export default function ClaimPage() {
+// Loading fallback for Suspense boundary
+function ClaimPageLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 flex items-center justify-center p-6">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+        <p className="text-white text-lg">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main claim page content - uses useSearchParams which requires Suspense
+function ClaimPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { tenant } = useTenantTheme();
   const code = searchParams.get('code');
+  const token = searchParams.get('token');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [studio, setStudio] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [claiming, setClaiming] = useState(false);
+
+  // Lookup studio by token (for legacy token-based links)
+  const { data: tokenData } = trpc.studio.lookupByToken.useQuery(
+    { token: token || '' },
+    { enabled: !!token && !code }
+  );
 
   // Lookup studio by code using tRPC (avoids RLS issues)
   const { data: studioData, isLoading: studioLoading, error: studioQueryError } = trpc.studio.lookupByCode.useQuery(
@@ -29,6 +49,18 @@ export default function ClaimPage() {
 
   useEffect(() => {
     async function init() {
+      // Handle legacy token-based links by redirecting to code-based links
+      if (token && !code) {
+        // Wait for token lookup to complete
+        if (tokenData?.public_code) {
+          // Redirect to code-based claim URL
+          router.replace(`/claim?code=${tokenData.public_code}`);
+          return;
+        }
+        // Keep showing loading while tokenData is being fetched
+        return;
+      }
+
       if (!code) {
         setError('No studio code provided');
         setLoading(false);
@@ -47,6 +79,7 @@ export default function ClaimPage() {
 
       if (!authUser) {
         // Not authenticated → redirect to signup with return URL
+        // Signup page validates claim code and shows form only with valid invitation
         router.push(`/signup?returnUrl=${encodeURIComponent(`/claim?code=${code}`)}`);
         return;
       }
@@ -82,7 +115,7 @@ export default function ClaimPage() {
     }
 
     init();
-  }, [code, router, tenant?.id, studioData, studioLoading, studioQueryError]);
+  }, [code, token, tokenData, router, tenant?.id, studioData, studioLoading, studioQueryError]);
 
   const handleClaim = async () => {
     if (!studio || !user) return;
@@ -214,5 +247,14 @@ export default function ClaimPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Wrap in Suspense to handle useSearchParams hydration
+export default function ClaimPage() {
+  return (
+    <Suspense fallback={<ClaimPageLoading />}>
+      <ClaimPageContent />
+    </Suspense>
   );
 }

@@ -691,16 +691,15 @@ export const competitionRouter = router({
         status: { not: 'cancelled' },
       };
 
+      // MANDATORY: Tenant validation for non-super-admins
       if (!isSuperAdmin(ctx.userRole)) {
-        if (ctx.tenantId) {
-          entriesWhere.competitions = { tenant_id: ctx.tenantId };
-        } else {
-          return {
-            categoryTypes: [],
-            danceCategories: [],
-            ageDivisions: [],
-          };
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
         }
+        entriesWhere.competitions = { tenant_id: ctx.tenantId };
       }
 
       // Fetch all entries to get unique IDs
@@ -723,7 +722,7 @@ export const competitionRouter = router({
         prisma.dance_categories.findMany({
           where: {
             id: { in: uniqueCategoryIds },
-            ...(ctx.tenantId && { tenant_id: ctx.tenantId }),
+            ...(isSuperAdmin(ctx.userRole) ? {} : { tenant_id: ctx.tenantId! }), // FIXED: Mandatory tenant filter
           },
           select: {
             id: true,
@@ -735,7 +734,7 @@ export const competitionRouter = router({
         prisma.classifications.findMany({
           where: {
             id: { in: uniqueClassificationIds },
-            ...(ctx.tenantId && { tenant_id: ctx.tenantId }),
+            ...(isSuperAdmin(ctx.userRole) ? {} : { tenant_id: ctx.tenantId! }), // FIXED: Mandatory tenant filter
           },
           select: {
             id: true,
@@ -747,7 +746,7 @@ export const competitionRouter = router({
         prisma.age_groups.findMany({
           where: {
             id: { in: uniqueAgeGroupIds },
-            ...(ctx.tenantId && { tenant_id: ctx.tenantId }),
+            ...(isSuperAdmin(ctx.userRole) ? {} : { tenant_id: ctx.tenantId! }), // FIXED: Mandatory tenant filter
           },
           select: {
             id: true,

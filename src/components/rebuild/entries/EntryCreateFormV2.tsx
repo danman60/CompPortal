@@ -12,6 +12,7 @@ import { ReservationContextBar } from './ReservationContextBar';
 import { EntryFormActions } from './EntryFormActions';
 import { ImportActions } from './ImportActions';
 import { ClassificationRequestExceptionModal } from '@/components/ClassificationRequestExceptionModal';
+import RequestSpacesModal from '@/components/RequestSpacesModal';
 import { parseISODateToUTC } from '@/lib/date-utils';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,8 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showClassificationModal, setShowClassificationModal] = useState(false);
+  const [showRequestSpacesModal, setShowRequestSpacesModal] = useState(false);
+  const [capacityError, setCapacityError] = useState<string | null>(null);
   const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const [prefilledRoutineId, setPrefilledRoutineId] = useState<string | null>(null);
   const [initialParticipants, setInitialParticipants] = useState<Array<{ id: string; dancer_id: string }>>([]);
@@ -32,7 +35,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
   const isEditMode = !!entryId;
 
   // Load existing entry if in edit mode
-  const { data: existingEntry, isLoading: entryLoading } = trpc.entry.getById.useQuery(
+  const { data: existingEntry, isLoading: entryLoading, isError: entryError, error: entryErrorDetails } = trpc.entry.getById.useQuery(
     { id: entryId! },
     { enabled: isEditMode }
   );
@@ -80,17 +83,23 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
 
   const dancers = (dancersData?.dancers || []) as any[];
 
-  // Age calculation uses December 31st of competition year (not competition date)
-  // FIXED: Create as UTC to prevent timezone shifts in age calculation
+  // Age calculation uses Dec 31 of REGISTRATION year
+  // Registration year = Competition year - 1 (ALWAYS the fall prior to comp year)
+  // E.g., 2026 competition → 2025 registration year → Dec 31, 2025
+  // This is independent of when the routine is created
   const eventStartDate = competition?.competition_start_date
     ? (() => {
-        const year = new Date(competition.competition_start_date).getUTCFullYear();
-        return new Date(Date.UTC(year, 11, 31)); // Dec 31st UTC midnight
+        const competitionYear = new Date(competition.competition_start_date).getUTCFullYear();
+        const registrationYear = competitionYear - 1;
+        return new Date(Date.UTC(registrationYear, 11, 31)); // Dec 31 of registration year
       })()
-    : null;
+    : (() => {
+        const currentYear = new Date().getUTCFullYear();
+        return new Date(Date.UTC(currentYear, 11, 31)); // Fallback: Dec 31 of current year
+      })();
 
   const formHook = useEntryFormV2({
-    eventStartDate,
+    eventStartDate: (eventStartDate ?? null) as Date | null,
     ageGroups: lookups?.ageGroups || [],
     sizeCategories: lookups?.entrySizeCategories || [],
   });
@@ -271,6 +280,33 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
     lookups
   ]);
 
+  // IMPROV Auto-Lock: Bidirectional link between Improv style and Improv size category
+  useEffect(() => {
+    if (!lookups) return;
+
+    const improvStyle = lookups.categories.find(c => c.name.toLowerCase() === 'improv');
+    const improvSizeCategory = lookups.entrySizeCategories.find(c => c.name === 'Improv');
+
+    if (!improvStyle || !improvSizeCategory) return;
+
+    const isImprovStyleSelected = formHook.form.category_id === improvStyle.id;
+    const isImprovSizeSelected = formHook.form.size_category_override === improvSizeCategory.id;
+
+    // If Improv style selected → auto-select Improv size category
+    if (isImprovStyleSelected && formHook.form.size_category_override !== improvSizeCategory.id) {
+      formHook.updateField('size_category_override', improvSizeCategory.id);
+    }
+
+    // If Improv size category selected → auto-select Improv style
+    if (isImprovSizeSelected && formHook.form.category_id !== improvStyle.id) {
+      formHook.updateField('category_id', improvStyle.id);
+    }
+  }, [
+    formHook.form.category_id,
+    formHook.form.size_category_override,
+    lookups
+  ]);
+
   // Pre-fill form from existing entry if in edit mode
   useEffect(() => {
     if (!isEditMode || !existingEntry || !dancers.length || !eventStartDate) return;
@@ -332,7 +368,13 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
       utils.entry.getAll.invalidate();
     },
     onError: (error) => {
-      toast.error(`Failed: ${error.message}`);
+      // Check if it's a capacity error
+      if (error.message.includes('Reservation capacity exceeded') || error.message.includes('capacity')) {
+        setCapacityError(error.message);
+        setShowRequestSpacesModal(true);
+      } else {
+        toast.error(`Failed: ${error.message}`);
+      }
     },
   });
 
@@ -358,6 +400,24 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
       <div className="max-w-4xl mx-auto mt-20 bg-red-500/20 border border-red-500/50 rounded-xl p-8 text-center">
         <h2 className="text-2xl font-bold text-red-300 mb-4">Missing Reservation</h2>
         <button onClick={() => router.push('/dashboard/entries')} className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg">
+          Back to Entries
+        </button>
+      </div>
+    );
+  }
+
+  // Check for entry loading error (e.g., entry not found, 500 error, permission denied)
+  if (isEditMode && entryError) {
+    return (
+      <div className="max-w-4xl mx-auto mt-20 bg-red-500/20 border border-red-500/50 rounded-xl p-8 text-center">
+        <h2 className="text-2xl font-bold text-red-300 mb-4">Failed to Load Entry</h2>
+        <p className="text-red-200 mb-6">
+          {entryErrorDetails?.message || 'The entry could not be loaded. It may have been deleted or you may not have permission to view it.'}
+        </p>
+        <button
+          onClick={() => router.push('/dashboard/entries')}
+          className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+        >
           Back to Entries
         </button>
       </div>
@@ -413,6 +473,7 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
         routine_age: formHook.effectiveAge, // Final selected age (calculated or +1)
+        age_changed: formHook.form.age_override !== null, // Track intentional +1 bumps
         is_title_upgrade: formHook.form.is_title_upgrade,
         // Phase 2 spec lines 324-373: Extended time fields
         extended_time_requested: formHook.form.extended_time_requested,
@@ -507,6 +568,8 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         special_requirements: formHook.form.special_requirements || undefined,
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
+        routine_age: formHook.effectiveAge ?? undefined, // Fix: was missing from CSV import mode
+        age_changed: formHook.form.age_override !== null, // Track intentional +1 bumps
         is_title_upgrade: formHook.form.is_title_upgrade,
         extended_time_requested: formHook.form.extended_time_requested,
         routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
@@ -631,6 +694,8 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
         age_group_id: formHook.effectiveAgeGroup?.id,
         entry_size_category_id: formHook.effectiveSizeCategory?.id,
         is_title_upgrade: formHook.form.is_title_upgrade,
+        routine_age: formHook.effectiveAge ?? undefined, // Fix: was missing from CSV import mode
+        age_changed: formHook.form.age_override !== null, // Track intentional +1 bumps
         extended_time_requested: formHook.form.extended_time_requested,
         routine_length_minutes: formHook.form.extended_time_requested ? formHook.form.routine_length_minutes : undefined,
         routine_length_seconds: formHook.form.extended_time_requested ? formHook.form.routine_length_seconds : undefined,
@@ -812,6 +877,30 @@ export function EntryCreateFormV2({ entryId }: EntryCreateFormV2Props = {}) {
               // Manual entry - go back to entries list
               router.push('/dashboard/entries');
             }
+          }}
+        />
+      )}
+
+      {/* Request Additional Spaces Modal */}
+      {showRequestSpacesModal && actualReservationId && reservation && (
+        <RequestSpacesModal
+          isOpen={showRequestSpacesModal}
+          onClose={() => {
+            setShowRequestSpacesModal(false);
+            setCapacityError(null);
+          }}
+          reservationId={actualReservationId}
+          currentSpaces={reservation.spaces_confirmed || 0}
+          activeEntries={
+            (entriesData?.entries || []).filter(
+              (e: any) => e.reservation_id === actualReservationId && e.status !== 'withdrawn'
+            ).length
+          }
+          errorMessage={capacityError || undefined}
+          onSuccess={() => {
+            toast.success('Space request sent to Competition Director');
+            setShowRequestSpacesModal(false);
+            setCapacityError(null);
           }}
         />
       )}

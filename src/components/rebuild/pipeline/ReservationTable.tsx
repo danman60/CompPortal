@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Badge } from '@/components/rebuild/ui/Badge';
 import { Button } from '@/components/rebuild/ui/Button';
 
 /**
- * Get last action text based on reservation status
+ * Get last action text based on reservation status and invoice status
  */
 function getLastAction(reservation: Reservation): string {
   if (reservation.invoicePaid) {
@@ -14,7 +15,8 @@ function getLastAction(reservation: Reservation): string {
 
   switch (reservation.status) {
     case 'invoiced':
-      return 'Invoice Sent';
+      // Check invoice status: DRAFT = created but not sent, SENT = sent to studio
+      return reservation.invoiceStatus === 'DRAFT' ? 'Invoice Created' : 'Invoice Sent';
     case 'summarized':
       return 'Summary Sent';
     case 'approved':
@@ -38,6 +40,7 @@ interface Reservation {
   entryCount?: number;
   status?: string | null;
   invoiceId?: string | null;
+  invoiceStatus?: string | null;
   invoicePaid?: boolean;
   invoiceAmount?: number;
   lastActionDate?: string;
@@ -53,6 +56,7 @@ interface ReservationTableProps {
   onCreateInvoice: (reservationId: string) => Promise<void>;
   onSendInvoice: (invoiceId: string) => Promise<void>;
   onMarkAsPaid: (invoiceId: string, studioId: string, competitionId: string) => Promise<void>;
+  onReopenSummary: (reservationId: string, studioName: string) => Promise<void>;
 }
 
 /**
@@ -66,8 +70,11 @@ export function ReservationTable({
   onCreateInvoice,
   onSendInvoice,
   onMarkAsPaid,
+  onReopenSummary,
 }: ReservationTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [sortColumn, setSortColumn] = useState<'studio' | 'competition' | 'requested' | 'routines' | 'status' | 'lastAction'>('studio');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {
@@ -81,13 +88,50 @@ export function ReservationTable({
     });
   };
 
+  const handleSort = (column: typeof sortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   };
 
-  if (reservations.length === 0) {
+  // Sort reservations
+  const sortedReservations = [...reservations].sort((a, b) => {
+    let comparison = 0;
+
+    switch (sortColumn) {
+      case 'studio':
+        comparison = (a.studioName || '').localeCompare(b.studioName || '');
+        break;
+      case 'competition':
+        comparison = (a.competitionName || '').localeCompare(b.competitionName || '');
+        break;
+      case 'requested':
+        comparison = (a.spacesRequested || 0) - (b.spacesRequested || 0);
+        break;
+      case 'routines':
+        comparison = (a.entryCount || 0) - (b.entryCount || 0);
+        break;
+      case 'status':
+        comparison = (a.status || '').localeCompare(b.status || '');
+        break;
+      case 'lastAction':
+        comparison = new Date(a.lastActionDate || 0).getTime() - new Date(b.lastActionDate || 0).getTime();
+        break;
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  if (sortedReservations.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-16 text-center">
         <div className="text-6xl mb-4">📭</div>
@@ -104,24 +148,67 @@ export function ReservationTable({
           <thead className="bg-black/30">
             <tr>
               <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase w-10"></th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Studio</th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Competition</th>
-              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Requested</th>
-              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Routines</th>
-              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Status</th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase">Last Action</th>
+              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('studio')}>
+                <div className="flex items-center gap-1">
+                  Studio
+                  {sortColumn === 'studio' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('competition')}>
+                <div className="flex items-center gap-1">
+                  Competition
+                  {sortColumn === 'competition' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('requested')}>
+                <div className="flex items-center justify-center gap-1">
+                  Requested
+                  {sortColumn === 'requested' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('routines')}>
+                <div className="flex items-center justify-center gap-1">
+                  Routines
+                  {sortColumn === 'routines' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('status')}>
+                <div className="flex items-center justify-center gap-1">
+                  Status
+                  {sortColumn === 'status' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-400 uppercase cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('lastAction')}>
+                <div className="flex items-center gap-1">
+                  Last Action
+                  {sortColumn === 'lastAction' && (
+                    <span className="text-purple-400">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </div>
+              </th>
               <th className="px-4 py-4 text-center text-xs font-semibold text-gray-400 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reservation) => {
+            {sortedReservations.map((reservation) => {
               const isExpanded = expandedRows.has(reservation.id);
               const isPending = reservation.status === 'pending';
               const isSummarized = reservation.status === 'summarized';
               const isInvoiced = reservation.status === 'invoiced';
               const hasDraftInvoice = reservation.invoiceId && reservation.invoiceStatus === 'DRAFT';
+              const hasSentInvoice = reservation.invoiceId && reservation.invoiceStatus === 'SENT';
               const needsInvoice = isSummarized && !reservation.invoiceId;
-              const canMarkPaid = isInvoiced && reservation.invoiceId && !reservation.invoicePaid;
+              const canMarkPaid = isInvoiced && hasSentInvoice && !reservation.invoicePaid;
               const isPaid = reservation.invoicePaid === true;
 
               return (
@@ -187,32 +274,61 @@ export function ReservationTable({
                           Create Invoice
                         </Button>
                       )}
-                      {hasDraftInvoice && (
+                      {isSummarized && (
                         <Button
-                          onClick={() => onSendInvoice(reservation.invoiceId!)}
-                          variant="primary"
-                          className="text-sm px-3 py-1"
+                          onClick={() => onReopenSummary(reservation.id, reservation.studioName || 'Studio')}
+                          variant="secondary"
+                          className="text-sm px-3 py-1 bg-orange-500 hover:bg-orange-600 border-orange-500"
                         >
-                          Send Invoice
+                          Reopen Summary
                         </Button>
                       )}
-                      {canMarkPaid && (
-                        <Button
-                          onClick={() => onMarkAsPaid(
-                            reservation.invoiceId!,
-                            reservation.studioId || '',
-                            reservation.competitionId || ''
-                          )}
-                          variant="primary"
-                          className="text-sm px-3 py-1"
-                        >
-                          Mark as Paid
-                        </Button>
+                      {hasDraftInvoice && (
+                        <>
+                          <Link href={`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`}>
+                            <Button
+                              variant="secondary"
+                              className="text-sm px-3 py-1"
+                            >
+                              View Invoice
+                            </Button>
+                          </Link>
+                          <Button
+                            onClick={() => onSendInvoice(reservation.invoiceId!)}
+                            variant="primary"
+                            className="text-sm px-3 py-1"
+                          >
+                            Send Invoice
+                          </Button>
+                        </>
+                      )}
+                      {hasSentInvoice && !reservation.invoicePaid && (
+                        <>
+                          <Link href={`/dashboard/invoices/${reservation.studioId}/${reservation.competitionId}`}>
+                            <Button
+                              variant="secondary"
+                              className="text-sm px-3 py-1"
+                            >
+                              View Invoice
+                            </Button>
+                          </Link>
+                          <Button
+                            onClick={() => onMarkAsPaid(
+                              reservation.invoiceId!,
+                              reservation.studioId || '',
+                              reservation.competitionId || ''
+                            )}
+                            variant="primary"
+                            className="text-sm px-3 py-1"
+                          >
+                            Mark as Paid
+                          </Button>
+                        </>
                       )}
                       {isPaid && (
                         <span className="text-green-400 text-sm font-semibold">✓ Complete!</span>
                       )}
-                      {!isPending && !needsInvoice && !canMarkPaid && !isPaid && (
+                      {!isPending && !needsInvoice && !hasDraftInvoice && !hasSentInvoice && !isPaid && (
                         <span className="text-gray-500 text-sm">—</span>
                       )}
                     </div>

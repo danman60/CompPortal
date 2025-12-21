@@ -56,13 +56,26 @@ export const dancerRouter = router({
 
       const where: any = {};
 
-      // Tenant isolation (required for all non-super-admins)
-      if (!isSuperAdmin(ctx.userRole) && ctx.tenantId) {
+      // Tenant isolation (MANDATORY for all non-super-admins)
+      if (!isSuperAdmin(ctx.userRole)) {
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
         where.tenant_id = ctx.tenantId;
       }
 
       // Studio directors can only see their own studio's dancers
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // SECURITY: Block access if studioId is missing (prevents data leak)
+        if (!ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Studio not found. Please contact support.',
+          });
+        }
         where.studio_id = ctx.studioId;
       } else if (studioId) {
         // Admins can filter by studioId if provided
@@ -316,7 +329,14 @@ export const dancerRouter = router({
       const where: any = {};
 
       // Studio directors can only see their own studio's stats
-      if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+      if (isStudioDirector(ctx.userRole)) {
+        // SECURITY: Block access if studioId is missing (prevents data leak)
+        if (!ctx.studioId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Studio not found. Please contact support.',
+          });
+        }
         where.studio_id = ctx.studioId;
       } else if (input?.studioId) {
         // Admins can filter by studioId if provided
@@ -358,6 +378,16 @@ export const dancerRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { date_of_birth, ...data } = input;
 
+      // MANDATORY: Ensure tenantId exists for non-super-admins
+      if (!isSuperAdmin(ctx.userRole)) {
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+      }
+
       // Studio directors can only create dancers for their own studio
       if (isStudioDirector(ctx.userRole)) {
         // If ctx.studioId is not available (due to tRPC context gap),
@@ -369,7 +399,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId!,
             },
             select: { id: true },
           });
@@ -506,6 +536,14 @@ export const dancerRouter = router({
 
       // Studio directors can only update dancers from their own studio
       if (isStudioDirector(ctx.userRole)) {
+        // MANDATORY: Tenant validation for studio directors
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+
         // If ctx.studioId is not available (due to tRPC context gap),
         // fetch it from the database using user ID
         let userStudioId = ctx.studioId;
@@ -515,7 +553,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId, // FIXED: No longer conditional
             },
             select: { id: true },
           });
@@ -575,6 +613,14 @@ export const dancerRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Studio directors can only delete dancers from their own studio
       if (isStudioDirector(ctx.userRole)) {
+        // MANDATORY: Tenant validation for studio directors
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+
         // If ctx.studioId is not available (due to tRPC context gap),
         // fetch it from the database using user ID
         let userStudioId = ctx.studioId;
@@ -584,7 +630,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId, // FIXED: No longer conditional
             },
             select: { id: true },
           });
@@ -635,6 +681,14 @@ export const dancerRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Studio directors can only archive dancers from their own studio
       if (isStudioDirector(ctx.userRole)) {
+        // MANDATORY: Tenant validation for studio directors
+        if (!ctx.tenantId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Tenant context required',
+          });
+        }
+
         // If ctx.studioId is not available (due to tRPC context gap),
         // fetch it from the database using user ID
         let userStudioId = ctx.studioId;
@@ -644,7 +698,7 @@ export const dancerRouter = router({
           const userStudio = await prisma.studios.findFirst({
             where: {
               owner_id: ctx.userId,
-              ...(ctx.tenantId ? { tenant_id: ctx.tenantId } : {}),
+              tenant_id: ctx.tenantId, // FIXED: No longer conditional
             },
             select: { id: true },
           });
@@ -832,7 +886,7 @@ export const dancerRouter = router({
           studioId: ctx.studioId || input.studio_id,
           action: 'dancer.batchCreate',
           entityType: 'dancer',
-          entityId: 'batch',
+          entityId: undefined, // Batch operations don't have a single entity ID
           entityName: `Batch (${createdDancers.length} dancers)`,
           details: {
             count: createdDancers.length,

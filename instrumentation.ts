@@ -1,5 +1,8 @@
 import * as Sentry from '@sentry/nextjs';
 
+// Export required hook for error tracking in nested React server components
+export const onRequestError = Sentry.captureRequestError;
+
 export async function register() {
   // Server and Edge runtime configuration
   if (process.env.NEXT_RUNTIME === 'nodejs') {

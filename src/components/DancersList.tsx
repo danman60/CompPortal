@@ -16,7 +16,7 @@ import { calculateAge } from '@/lib/ageGroupCalculator';
 export default function DancersList() {
   const { data, isLoading, error, refetch, dataUpdatedAt } = trpc.dancer.getAll.useQuery({ limit: 1000 });
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedDancers, setSelectedDancers] = useState<Set<string>>(new Set());
   const [timeAgo, setTimeAgo] = useState<string>('');
 
@@ -366,7 +366,9 @@ export default function DancersList() {
                   ? dancer.date_of_birth.toISOString().split('T')[0]
                   : dancer.date_of_birth;
                 const dob = parseISODateToUTC(isoString)!;
-                const age = calculateAge(isoString);
+                // Calculate age as of Dec 31 of current year (not TODAY)
+                const ageCalculationDate = new Date(Date.UTC(new Date().getUTCFullYear(), 11, 31));
+                const age = calculateAge(isoString, ageCalculationDate);
                 return (
                   <div className="flex items-center gap-2 text-gray-400 text-sm mb-3">
                     <span>🎂</span>
@@ -442,10 +444,7 @@ export default function DancersList() {
             <table className="w-full table-fixed">
               <tbody>
                 {sortedDancers.map((dancer, index) => {
-                  const age = dancer.date_of_birth
-                    ? new Date().getFullYear() - new Date(dancer.date_of_birth).getFullYear()
-                    : null;
-
+                  // Age is calculated inside the IIFE below using calculateAge for proper UTC handling
                   return (
                   <tr
                     key={dancer.id}
@@ -479,7 +478,9 @@ export default function DancersList() {
                           ? dancer.date_of_birth.toISOString().split('T')[0]
                           : dancer.date_of_birth;
                         const dob = parseISODateToUTC(isoString)!;
-                        const age = calculateAge(isoString);
+                        // Calculate age as of Dec 31 of current year (not TODAY)
+                        const ageCalculationDate = new Date(Date.UTC(new Date().getUTCFullYear(), 11, 31));
+                        const age = calculateAge(isoString, ageCalculationDate);
                         return (
                           <div className="text-white">
                             {age} yrs

@@ -101,17 +101,19 @@ export function AutoCalculatedSection({
       return dancerClassifications[0];
     }
 
-    // Non-Solo: AVERAGE classification (like age calculation)
+    // Non-Solo: AVERAGE classification (like age calculation - round down)
     const totalSkillLevel = dancerClassifications.reduce(
       (sum, cls) => sum + (cls.skill_level ?? 0),
       0
     );
     const avgSkillLevel = Math.floor(totalSkillLevel / dancerClassifications.length);
 
-    // Find classification closest to average (round down)
+    // Find classification with skill_level closest to average without going over
+    // Sort by skill level ascending, filter to <= average, take the highest
     const avgClassification = classifications
       .filter(c => (c.skill_level ?? 0) <= avgSkillLevel)
-      .sort((a, b) => (b.skill_level ?? 0) - (a.skill_level ?? 0))[0];
+      .sort((a, b) => (a.skill_level ?? 0) - (b.skill_level ?? 0))
+      .pop(); // Take last (highest skill within range)
 
     return avgClassification || dancerClassifications[0];
   }, [selectedDancers, classifications]);
@@ -204,7 +206,12 @@ export function AutoCalculatedSection({
             <div className="text-sm text-blue-300">
               {calculatedAge !== null ? (
                 <>
-                  <span className="font-semibold">Calculated: {calculatedAge}</span>
+                  <span
+                    className="font-semibold cursor-help"
+                    title="Age calculated as of Dec 31 of registration year"
+                  >
+                    Calculated: {calculatedAge}
+                  </span>
                   <span className="text-blue-400 ml-2">
                     (can select {calculatedAge} or {calculatedAge + 1})
                   </span>
@@ -278,21 +285,32 @@ export function AutoCalculatedSection({
             </div>
           </div>
 
-          {/* Auto-Detected Display (Read-Only) */}
-          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-            <div className="text-sm text-green-300">
-              {inferredSizeCategory ? (
-                <>
-                  <span className="font-semibold">Detected: {inferredSizeCategory.name}</span>
-                  <span className="text-green-400 ml-2">
-                    ({selectedDancerCount} dancer{selectedDancerCount !== 1 ? 's' : ''})
-                  </span>
-                </>
-              ) : (
-                <span className="text-white/60">Select dancers to auto-detect</span>
-              )}
+          {/* Size Category Display - Shows Improv when locked, otherwise shows detected */}
+          {sizeCategoryOverride && sizeCategories.find(c => c.id === sizeCategoryOverride)?.name === 'Improv' ? (
+            <div className="p-3 bg-pink-500/20 border border-pink-500/40 rounded-lg">
+              <div className="text-sm text-pink-300">
+                <span className="font-semibold">🎭 Improv</span>
+                <span className="text-pink-400 ml-2">
+                  ($110 flat fee - locked by style selection)
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <div className="text-sm text-green-300">
+                {inferredSizeCategory ? (
+                  <>
+                    <span className="font-semibold">Detected: {inferredSizeCategory.name}</span>
+                    <span className="text-green-400 ml-2">
+                      ({selectedDancerCount} dancer{selectedDancerCount !== 1 ? 's' : ''})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-white/60">Select dancers to auto-detect</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Classification - Always visible */}
@@ -430,6 +448,17 @@ export function AutoCalculatedSection({
               <p className="text-xs text-orange-400 mt-1">
                 ⚠️ This selection requires CD approval before summary submission
               </p>
+            )}
+            {/* IMPROV Solo-Only Warning */}
+            {sizeCategoryOverride && sizeCategories.find(c => c.id === sizeCategoryOverride)?.name === 'Improv' && selectedDancerCount > 1 && (
+              <div className="mt-2 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+                <p className="text-sm text-red-300 font-semibold">
+                  ⚠️ Improv is solo-only
+                </p>
+                <p className="text-xs text-red-400 mt-1">
+                  Improv entries can only have 1 dancer. Please remove dancers or select a different style.
+                </p>
+              </div>
             )}
         </div>
       </div>

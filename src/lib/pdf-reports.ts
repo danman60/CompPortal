@@ -6,6 +6,45 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Helper to format dates for PDF (handles both Date objects and date strings)
+const formatPDFDate = (dateValue: any, includeYear: boolean = true): string => {
+  try {
+    let year: number, month: number, day: number;
+
+    if (dateValue instanceof Date) {
+      year = dateValue.getUTCFullYear();
+      month = dateValue.getUTCMonth() + 1;
+      day = dateValue.getUTCDate();
+    } else {
+      const dateStr = dateValue.toString();
+      if (dateStr.includes('-')) {
+        const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
+        year = parseInt(yearStr);
+        month = parseInt(monthStr);
+        day = parseInt(dayStr);
+      } else {
+        const d = new Date(dateStr);
+        year = d.getUTCFullYear();
+        month = d.getUTCMonth() + 1;
+        day = d.getUTCDate();
+      }
+    }
+
+    const MONTH_NAMES = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    if (includeYear) {
+      return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
+    } else {
+      return `${MONTH_NAMES[month - 1]} ${day}`;
+    }
+  } catch {
+    return 'Date not available';
+  }
+};
+
 // Brand colors from design system
 const COLORS = {
   primary: '#a855f7', // purple-500
@@ -529,6 +568,7 @@ export function generateCompetitionSummaryReport(data: {
 export function generateInvoicePDF(invoice: {
   invoiceNumber: string;
   invoiceDate: Date | string;
+  tenantId?: string;
   studio: {
     name: string;
     code?: string | null;
@@ -580,11 +620,61 @@ export function generateInvoicePDF(invoice: {
     taxRate: number;
     taxAmount: number;
     totalAmount: number;
+    creditAmount?: number;
+    creditReason?: string | null;
+    otherCreditAmount?: number;
+    otherCreditReason?: string | null;
   };
 }): Blob {
   // Use tenant primary color if available, fallback to default
   const brandColor = invoice.tenant?.branding?.primaryColor || COLORS.primary;
   const brandTagline = invoice.tenant?.branding?.tagline || 'Competition Management System';
+
+  // Helper to format dates (handles both Date objects and date strings)
+  const formatPDFDate = (dateValue: any, includeYear: boolean = true): string => {
+    console.log('[PDF formatPDFDate] Input:', { dateValue, type: typeof dateValue, isDate: dateValue instanceof Date, includeYear });
+    try {
+      let year: number, month: number, day: number;
+
+      if (dateValue instanceof Date) {
+        console.log('[PDF formatPDFDate] Processing as Date object');
+        year = dateValue.getUTCFullYear();
+        month = dateValue.getUTCMonth() + 1;
+        day = dateValue.getUTCDate();
+        console.log('[PDF formatPDFDate] Extracted from Date:', { year, month, day });
+      } else {
+        const dateStr = dateValue.toString();
+        console.log('[PDF formatPDFDate] Processing as string:', dateStr);
+        if (dateStr.includes('-')) {
+          const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
+          year = parseInt(yearStr);
+          month = parseInt(monthStr);
+          day = parseInt(dayStr);
+          console.log('[PDF formatPDFDate] Parsed from hyphenated string:', { year, month, day });
+        } else {
+          const d = new Date(dateStr);
+          year = d.getUTCFullYear();
+          month = d.getUTCMonth() + 1;
+          day = d.getUTCDate();
+          console.log('[PDF formatPDFDate] Created Date and extracted:', { year, month, day });
+        }
+      }
+
+      const MONTH_NAMES = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+
+      const result = includeYear
+        ? `${MONTH_NAMES[month - 1]} ${day}, ${year}`
+        : `${MONTH_NAMES[month - 1]} ${day}`;
+      console.log('[PDF formatPDFDate] Result:', result);
+      return result;
+    } catch (err) {
+      console.error('[PDF formatPDFDate] Error:', err);
+      return 'Date not available';
+    }
+  };
 
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -624,18 +714,13 @@ export function generateInvoicePDF(invoice: {
   doc.text(`Invoice #: ${invoice.invoiceNumber}`, 15, yPos);
   yPos += 5;
 
-  const invoiceDate = new Date(invoice.invoiceDate);
-  doc.text(`Date: ${invoiceDate.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })}`, 15, yPos);
+  doc.text(`Date: ${formatPDFDate(invoice.invoiceDate, true)}`, 15, yPos);
   yPos += 15;
 
-  // Total amount in top right
+  // Invoice total in top right
   doc.setFontSize(10);
   doc.setTextColor(COLORS.textLight);
-  doc.text('Total Amount', 200, 40, { align: 'right' });
+  doc.text('Invoice Total', 200, 40, { align: 'right' });
   doc.setFontSize(20);
   doc.setTextColor(COLORS.success);
   doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, 200, 48, { align: 'right' });
@@ -707,16 +792,10 @@ export function generateInvoicePDF(invoice: {
   compYPos += 4;
 
   if (invoice.competition.startDate) {
-    const startDate = new Date(invoice.competition.startDate);
-    let dateText = `Date: ${startDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })}`;
+    let dateText = `Date: ${formatPDFDate(invoice.competition.startDate, true)}`;
 
     if (invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate) {
-      const endDate = new Date(invoice.competition.endDate);
-      dateText += ` - ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+      dateText += ` - ${formatPDFDate(invoice.competition.endDate, false)}`;
     }
 
     doc.text(dateText, rightX, compYPos);
@@ -737,8 +816,7 @@ export function generateInvoicePDF(invoice: {
     yPos += 6;
 
     const resData = [
-      ['Spaces Requested', invoice.reservation.spacesRequested.toString()],
-      ['Spaces Confirmed', invoice.reservation.spacesConfirmed.toString()],
+      ['Routines Submitted', invoice.lineItems.length.toString()],
       ['Deposit Amount', `$${invoice.reservation.depositAmount.toFixed(2)}`],
       ['Payment Status', (invoice.reservation.paymentStatus || 'PENDING').toUpperCase()],
     ];
@@ -817,13 +895,23 @@ export function generateInvoicePDF(invoice: {
   doc.text(`$${invoice.summary.subtotal.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 6;
 
-  // Late fees (if applicable)
-  const totalLateFees = invoice.lineItems.reduce((sum, item) => sum + item.lateFee, 0);
-  if (totalLateFees > 0) {
-    doc.setTextColor(COLORS.textLight);
-    doc.text('Late Fees', totalsX, yPos);
-    doc.setTextColor(COLORS.text);
-    doc.text(`$${totalLateFees.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+  // Discount (if applicable)
+  const creditAmount = invoice.summary.creditAmount || 0;
+  if (creditAmount > 0) {
+    doc.setTextColor(COLORS.success);
+    const discountLabel = invoice.summary.creditReason || 'Discount';
+    doc.text(discountLabel, totalsX, yPos);
+    doc.text(`-$${creditAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+  }
+
+  // Other credits (if applicable) - e.g., Glow Dollars
+  const otherCreditAmount = invoice.summary.otherCreditAmount || 0;
+  if (otherCreditAmount > 0) {
+    doc.setTextColor(COLORS.success);
+    const otherCreditLabel = invoice.summary.otherCreditReason || 'Credit';
+    doc.text(otherCreditLabel, totalsX, yPos);
+    doc.text(`-$${otherCreditAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
     yPos += 6;
   }
 
@@ -836,7 +924,7 @@ export function generateInvoicePDF(invoice: {
     yPos += 6;
   }
 
-  // Total (highlighted)
+  // Invoice Total (use backend-calculated value)
   doc.setDrawColor(COLORS.success);
   doc.setLineWidth(0.5);
   doc.line(totalsX, yPos, totalsX + totalsWidth, yPos);
@@ -844,22 +932,103 @@ export function generateInvoicePDF(invoice: {
 
   doc.setFontSize(12);
   doc.setTextColor(COLORS.text);
-  doc.text('TOTAL', totalsX, yPos);
+  doc.text('INVOICE TOTAL', totalsX, yPos);
   doc.setFontSize(14);
   doc.setTextColor(COLORS.success);
   doc.text(`$${invoice.summary.totalAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
   yPos += 10;
 
-  // Footer
-  yPos += 5;
+  // Deposit (if applicable) - shown separately as payment, not deducted from invoice
+  const depositAmount = (invoice.summary as any).depositAmount || 0;
+  if (depositAmount > 0) {
+    doc.setFontSize(10);
+    doc.setTextColor(COLORS.textLight);
+    doc.text('LESS: Deposit Paid', totalsX, yPos);
+    doc.setTextColor(255, 193, 7); // Yellow
+    doc.text(`-$${depositAmount.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 6;
+
+    // Balance Due
+    const balanceDue = Math.max(0, invoice.summary.totalAmount - depositAmount);
+    doc.setFontSize(12);
+    doc.setTextColor(COLORS.text);
+    doc.text('BALANCE DUE', totalsX, yPos);
+    doc.setFontSize(14);
+    doc.setTextColor(balanceDue > 0 ? COLORS.text : COLORS.success);
+    doc.text(`$${balanceDue.toFixed(2)}`, totalsX + totalsWidth, yPos, { align: 'right' });
+    yPos += 10;
+  }
+
+  // Payment Instructions Footer (EMPWR tenant only)
+  const EMPWR_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+  const isEMPWR = invoice.tenantId === EMPWR_TENANT_ID;
+
+  if (isEMPWR) {
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(COLORS.text);
+    doc.text('PAYMENT OPTIONS', 15, yPos);
+    yPos += 10;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.textLight);
+
+    // E-Transfer
+    doc.setFont('helvetica', 'bold');
+    doc.text('E-Transfer:', 15, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text('empwrdance@gmail.com', 50, yPos);
+    yPos += 10;
+
+    // Cheque
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cheque:', 15, yPos);
+    doc.setFont('helvetica', 'normal');
+    yPos += 10;
+    doc.text('EMPWR Dance Experience', 20, yPos);
+    yPos += 8;
+    doc.text('Attn: Emily Einsmann', 20, yPos);
+    yPos += 8;
+    doc.text('69 Albert St', 20, yPos);
+    yPos += 8;
+    doc.text('Uxbridge, ON L9P 1E5', 20, yPos);
+    yPos += 15; // Extra spacing after payment instructions
+  } else {
+    yPos += 10;
+  }
+
+  console.log('[PDF] Adding footer text at yPos:', yPos);
+
+  // Check if there's enough space for thank you message (need ~20mm for 2 lines + footer space)
+  const pageHeight = doc.internal.pageSize.height;
+  const footerReservedSpace = 20; // Reserve 20mm for footer area
+
+  if (yPos > pageHeight - footerReservedSpace) {
+    console.log('[PDF] Not enough space for thank you message, adding new page');
+    doc.addPage();
+    yPos = 20; // Start at top of new page
+  }
+
+  yPos += 5; // Extra space before thank you message
+  doc.setFont('helvetica', 'italic');
   doc.setFontSize(9);
   doc.setTextColor(COLORS.textLight);
   doc.text(`Thank you for participating in ${invoice.competition.name}!`, 15, yPos, { maxWidth: 180 });
-  yPos += 5;
+  yPos += 7; // Increase spacing between thank you messages
   doc.text('For questions about this invoice, please contact the competition organizers.', 15, yPos, { maxWidth: 180 });
 
-  addFooter(doc, 1, 1, invoice.competition.name);
+  // Get total number of pages and add footer to ALL pages
+  const totalPages = doc.getNumberOfPages();
+  console.log('[PDF] Total pages:', totalPages);
 
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addFooter(doc, i, totalPages, invoice.competition.name);
+  }
+
+  console.log('[PDF] PDF generation complete');
   return doc.output('blob');
 }
 

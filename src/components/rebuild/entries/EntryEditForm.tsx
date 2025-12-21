@@ -17,13 +17,14 @@ interface EntryEditFormProps {
 /**
  * Entry Edit Form Component
  * Based on EntryCreateFormV2 but pre-fills data and handles updates
- * Implements conditional field disabling when entry.status === 'summarized'
+ * Implements conditional field disabling when reservation is invoiced
  */
 export function EntryEditForm({ entry }: EntryEditFormProps) {
   const router = useRouter();
 
-  // Determine if entry is summarized (lock most fields)
-  const isSummarized = entry.reservations?.status === 'summarized';
+  // Lock entries only once invoiced (not just summarized)
+  // SDs can edit freely until invoice is generated
+  const isInvoiced = ['invoiced', 'paid', 'closed'].includes(entry.reservations?.status || '');
 
   const { data: lookups, isLoading: lookupsLoading } = trpc.lookup.getAllForEntry.useQuery();
 
@@ -34,9 +35,20 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
 
   const dancers = (dancersData?.dancers || []) as any[];
 
+  // Age calculation uses Dec 31 of REGISTRATION year
+  // Registration year = Competition year - 1 (ALWAYS the fall prior to comp year)
+  // E.g., 2026 competition → 2025 registration year → Dec 31, 2025
+  // This is independent of when the routine is created
   const eventStartDate = entry.competitions.competition_start_date
-    ? new Date(entry.competitions.competition_start_date)
-    : null;
+    ? (() => {
+        const competitionYear = new Date(entry.competitions.competition_start_date).getUTCFullYear();
+        const registrationYear = competitionYear - 1;
+        return new Date(Date.UTC(registrationYear, 11, 31)); // Dec 31 of registration year
+      })()
+    : (() => {
+        const currentYear = new Date().getUTCFullYear();
+        return new Date(Date.UTC(currentYear, 11, 31)); // Fallback: Dec 31 of current year
+      })();
 
   const formHook = useEntryFormV2({
     eventStartDate,
@@ -175,7 +187,7 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
       };
 
       // Only include editable fields if NOT summarized
-      if (!isSummarized) {
+      if (!isInvoiced) {
         updateData.category_id = formHook.form.category_id;
         updateData.classification_id = formHook.form.classification_id;
         updateData.special_requirements = formHook.form.special_requirements || undefined;
@@ -190,7 +202,7 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
       });
 
       // Update participants if changed and not summarized
-      if (!isSummarized) {
+      if (!isInvoiced) {
         // Get current participant IDs from entry
         const currentParticipantIds = new Set(
           entry.entry_participants?.map((p: any) => p.dancer_id) || []
@@ -250,7 +262,7 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Warning message if summarized */}
-      {isSummarized && (
+      {isInvoiced && (
         <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <span className="text-2xl">⚠️</span>
@@ -270,10 +282,10 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
         updateField={formHook.updateField}
         categories={lookups.categories}
         classifications={lookups.classifications}
-        disabled={isSummarized}
+        disabled={isInvoiced}
       />
 
-      {!isSummarized && (
+      {!isInvoiced && (
         <>
           <DancerSelectionSection
             dancers={dancers}
@@ -331,9 +343,9 @@ export function EntryEditForm({ entry }: EntryEditFormProps) {
       )}
 
       <EntryFormActions
-        canSave={isSummarized ? formHook.form.title.trim().length >= 3 : formHook.canSave}
+        canSave={isInvoiced ? formHook.form.title.trim().length >= 3 : formHook.canSave}
         isLoading={updateMutation.isPending}
-        validationErrors={isSummarized ? [] : formHook.validationErrors}
+        validationErrors={isInvoiced ? [] : formHook.validationErrors}
         onSave={handleSave}
         mode="edit"
       />

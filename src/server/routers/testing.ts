@@ -344,14 +344,16 @@ export const testingRouter = router({
                 const invoiceStatus = stage === 'invoiced_draft' ? 'DRAFT' : 'SENT';
                 const paidAt = stage === 'paid' ? faker.date.recent({ days: 3 }) : null;
 
+                const invoiceTotal = spacesRequested * 50; // $50 per entry
                 await tx.invoices.create({
                   data: {
                     studio_id: studio.id,
                     competition_id: competition.id,
                     reservation_id: reservation.id,
                     status: invoiceStatus,
-                    subtotal: spacesRequested * 50, // $50 per entry
-                    total: spacesRequested * 50,
+                    subtotal: invoiceTotal,
+                    total: invoiceTotal,
+                    balance_remaining: paidAt ? 0 : invoiceTotal, // 0 if paid, full amount if unpaid
                     paid_at: paidAt,
                     payment_method: paidAt ? 'credit_card' : null,
                     tenant_id: tenantId,

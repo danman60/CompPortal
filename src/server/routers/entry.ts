@@ -21,7 +21,10 @@ import {
   validateEntrySizeCategory,
   validateMinimumParticipants,
   validateMaximumParticipants,
-  validateFeeRange
+  validateFeeRange,
+  validateImprovSoloOnly,
+  validateImprovGroupSize,
+  getImprovFeeOverride
 } from '@/lib/validators/businessRules';
 
 /**
@@ -103,7 +106,7 @@ const entryInputSchema = z.object({
   entry_fee: z.number().min(0).optional(),
   late_fee: z.number().min(0).default(0),
   total_fee: z.number().min(0).optional(),
-  status: z.enum(['draft', 'registered', 'confirmed', 'cancelled', 'completed']).default('draft'),
+  status: z.enum(['draft', 'submitted', 'registered', 'confirmed', 'cancelled', 'completed', 'pending_classification_approval', 'withdrawn']).default('draft'),
   choreographer: z.string().min(1).max(255), // Phase 2 spec lines 36-42: Required
   costume_description: z.string().optional(),
   props_required: z.string().optional(),
@@ -114,6 +117,7 @@ const entryInputSchema = z.object({
   routine_length_seconds: z.number().int().min(0).max(59).optional(),
   scheduling_notes: z.string().optional(),
   routine_age: z.number().int().min(5).max(99).optional(), // Final selected age for routine
+  age_changed: z.boolean().optional(), // True if SD intentionally bumped age +1
   participants: z.array(entryParticipantSchema).optional(),
 });
 
@@ -141,7 +145,7 @@ export const entryRouter = router({
 
       // Only count entries for THIS reservation (matches submitSummary at line 171)
       const entries = await prisma.competition_entries.findMany({
-        where: { reservation_id: reservation.id, status: { not: 'cancelled' } },
+        where: { reservation_id: reservation.id, status: { notIn: ['cancelled', 'withdrawn'] } },
         select: { total_fee: true },
       });
 
@@ -165,12 +169,12 @@ export const entryRouter = router({
 
       // Fetch studio and competition data
       // First find the reservation to filter entries by reservation_id (per PHASE1_SPEC.md line 602)
+      // Note: Don't filter by status='approved' here - let idempotency check handle already-submitted summaries
       const reservation = await prisma.reservations.findFirst({
         where: {
           tenant_id: ctx.tenantId!,
           studio_id: studioId,
           competition_id: competitionId,
-          status: 'approved',
         },
         select: { id: true },
       });
@@ -188,7 +192,7 @@ export const entryRouter = router({
           where: {
             tenant_id: ctx.tenantId!,
             reservation_id: reservation?.id,
-            status: { not: 'cancelled' },
+            status: { notIn: ['cancelled', 'withdrawn'] },
           },
           // Fetch full entry data for snapshot (entry.ts:351)
           select: {
@@ -257,7 +261,7 @@ export const entryRouter = router({
       if (!fullReservation) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'You don\'t have an approved reservation yet. Please request a reservation from the Competition Director first, or check back soon if you\'ve already requested one.',
+          message: 'No reservation found for this studio and competition. Please contact the Competition Director if you believe this is an error.',
         });
       }
 
@@ -272,6 +276,27 @@ export const entryRouter = router({
       // Calculate unused spaces before transaction for activity logging
       const originalSpaces = fullReservation.spaces_confirmed || 0;
       const unusedSpaces = originalSpaces - routineCount;
+
+      // 🐛 FIX: Validate capacity before attempting database insert (graceful error)
+      // Allow 5-routine tolerance for edge cases (race conditions, data sync issues)
+      const OVERAGE_TOLERANCE = 5;
+      if (unusedSpaces < -OVERAGE_TOLERANCE) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot submit summary: You have ${routineCount} active routines but only ${originalSpaces} approved spaces. Please withdraw ${Math.abs(unusedSpaces)} routines or request additional spaces from the Competition Director.`,
+        });
+      }
+
+      // Log warning if over capacity but within tolerance (for tracking)
+      if (unusedSpaces < 0) {
+        logger.warn('⚠️ Summary submission with overage (within tolerance)', {
+          studioId,
+          competitionId,
+          routineCount,
+          approvedSpaces: originalSpaces,
+          overage: Math.abs(unusedSpaces),
+        });
+      }
 
       // Wrap all database operations in a transaction for atomicity
       logger.info('🔄 Transaction START - summary submission', {
@@ -503,6 +528,13 @@ export const entryRouter = router({
           },
         });
 
+        // Fetch tenant branding for emails
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: studio.tenant_id },
+          select: { branding: true },
+        });
+        const branding = tenant?.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
         // Send email to each CD who has this preference enabled
         for (const cd of competitionDirectors) {
           const isEnabled = await isEmailEnabled(cd.id, 'routine_summary_submitted');
@@ -519,6 +551,7 @@ export const entryRouter = router({
             totalFees,
             studioEmail: studio.email || '',
             portalUrl: await getTenantPortalUrl(studio.tenant_id, '/dashboard/routine-summaries'),
+            tenantBranding: branding || undefined,
           };
 
           const html = await renderRoutineSummarySubmitted(emailData);
@@ -670,6 +703,9 @@ export const entryRouter = router({
 
       if (status) {
         where.status = status;
+      } else {
+        // Hide withdrawn entries from SD view (soft delete)
+        where.status = { notIn: ['withdrawn'] };
       }
 
       const [entries, total] = await Promise.all([
@@ -743,7 +779,6 @@ export const entryRouter = router({
                 role: true,
               },
               orderBy: { display_order: 'asc' },
-              take: 4, // Only fetch first 4 participants for list view
             },
             classification_exception_requests: {
               select: {
@@ -755,6 +790,7 @@ export const entryRouter = router({
           },
           orderBy: [
             { entry_number: 'asc' },
+            { title: 'asc' },
           ],
           take: limit,
           skip: offset,
@@ -948,7 +984,10 @@ export const entryRouter = router({
     .input(z.object({ studioId: z.string().uuid() }))
     .query(async ({ input }) => {
       const entries = await prisma.competition_entries.findMany({
-        where: { studio_id: input.studioId },
+        where: {
+          studio_id: input.studioId,
+          status: { not: 'withdrawn' }, // Hide withdrawn entries from studio view
+        },
         include: {
           competitions: {
             select: {
@@ -1074,9 +1113,10 @@ export const entryRouter = router({
         const confirmedSpaces = reservation.spaces_confirmed || 0;
 
         if (currentEntries >= confirmedSpaces) {
-          throw new Error(
-            `Reservation capacity exceeded. You have ${confirmedSpaces} confirmed spaces and ${currentEntries} active routines. Please contact the competition director to request additional spaces.`
-          );
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Reservation capacity exceeded. You have ${confirmedSpaces} confirmed spaces and ${currentEntries} active routines. Please request additional spaces from the Competition Director.`,
+          });
         }
       }
 
@@ -1159,6 +1199,13 @@ export const entryRouter = router({
 
       // Validate maximum participants limit
       validateMaximumParticipants(participantCount);
+
+      // Validate IMPROV is solo-only (Glow tenant requirement)
+      if (data.classification_id) {
+        await validateImprovSoloOnly(data.classification_id, participantCount);
+        // Validate IMPROV requires Solo size category
+        await validateImprovGroupSize(data.classification_id, entrySizeCategoryId || null);
+      }
 
       // Create entry with participants using two-step pattern
       // See docs/PRISMA_BEST_PRACTICES.md - nested creates cause NULL FK violations
@@ -1251,6 +1298,25 @@ export const entryRouter = router({
             finalEntryFee += 30;
           }
 
+          // Add extended time fee if applicable (not for submitted entries)
+          if (data.extended_time_requested && data.status !== 'submitted') {
+            const extendedTimeFee = participantCount === 1 ? 5 : participantCount * 2;
+            finalEntryFee += extendedTimeFee;
+          }
+
+          finalTotalFee = finalEntryFee + (late_fee || 0);
+        }
+      }
+
+      // IMPROV fee override - flat $110 regardless of other fees (Glow tenant)
+      if (data.classification_id) {
+        const improvFee = await getImprovFeeOverride(data.classification_id);
+        if (improvFee !== null) {
+          finalEntryFee = improvFee;
+          // Add title upgrade fee on top of IMPROV fee if applicable
+          if (data.is_title_upgrade) {
+            finalEntryFee += 30;
+          }
           finalTotalFee = finalEntryFee + (late_fee || 0);
         }
       }
@@ -1324,7 +1390,7 @@ export const entryRouter = router({
           await logActivity({
             userId: ctx.userId,
             tenantId: ctx.tenantId ?? undefined,
-            studioId: ctx.studioId || input.studio_id,
+            studioId: input.studio_id,
             action: 'entry.create',
             entityType: 'entry',
             entityId: entry.id,
@@ -1742,14 +1808,11 @@ export const entryRouter = router({
       const isDraftStatus = entry.status === 'draft';
       const isReservationOpen = !entry.reservations?.is_closed;
 
-      // Allow SDs to soft-delete their own draft routines if reservation is open
+      // Allow SDs to hard-delete their own draft routines if reservation is open
       if (isSDBelongsToStudio && isDraftStatus && isReservationOpen) {
-        await prisma.competition_entries.update({
+        // Hard delete: permanently remove entry
+        await prisma.competition_entries.delete({
           where: { id: input.id },
-          data: {
-            status: 'withdrawn',
-            updated_at: new Date()
-          },
         });
 
         // Log activity
@@ -1758,7 +1821,7 @@ export const entryRouter = router({
             userId: ctx.userId,
             tenantId: ctx.tenantId!,
             studioId: entry.studio_id,
-            action: 'entry.soft_delete',
+            action: 'entry.hard_delete',
             entityType: 'entry',
             entityId: input.id,
             details: {
@@ -1777,7 +1840,7 @@ export const entryRouter = router({
 
         return {
           success: true,
-          message: 'Draft routine deleted successfully',
+          message: 'Draft routine permanently deleted',
           entry: {
             id: entry.id,
             title: entry.title,
@@ -1875,7 +1938,7 @@ export const entryRouter = router({
       }
 
       const where: any = {
-        status: { not: 'cancelled' },
+        status: { notIn: ['cancelled', 'withdrawn'] },
       };
 
       // Tenant filtering

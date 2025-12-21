@@ -1,10 +1,11 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ManualReservationModal from './ManualReservationModal';
+import MoveReservationModal from './MoveReservationModal';
 import toast from 'react-hot-toast';
 import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 import { SkeletonList } from '@/components/Skeleton';
@@ -14,18 +15,35 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface ReservationsListProps {
   isStudioDirector?: boolean; // If true, hide capacity/approve/reject UI
-  isCompetitionDirector?: boolean; // If true, show Edit Spaces and Add Deposit buttons
+  isCompetitionDirector?: boolean; // If true, show Edit Spaces and Edit Deposit buttons
 }
 
 export default function ReservationsList({ isStudioDirector = false, isCompetitionDirector = false }: ReservationsListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const highlightedReservationId = searchParams.get('expand');
   const utils = trpc.useUtils();
   const { data, isLoading, dataUpdatedAt, refetch } = trpc.reservation.getAll.useQuery({ limit: 100 });
   const { data: studiosData } = trpc.studio.getAll.useQuery();
   const { data: entriesData } = trpc.entry.getAll.useQuery({ limit: 100 });
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<string>('all');
+  const [selectedStudio, setSelectedStudio] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'studio-alpha' | 'spaces-desc' | 'competition-alpha'>('studio-alpha');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [tableSortColumn, setTableSortColumn] = useState<'studio' | 'competition' | 'status' | 'requested' | 'confirmed' | 'created'>('studio');
+  const [tableSortDirection, setTableSortDirection] = useState<'asc' | 'desc'>('asc');
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Handle table column sorting
+  const handleTableSort = (column: typeof tableSortColumn) => {
+    if (tableSortColumn === column) {
+      setTableSortDirection(tableSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setTableSortColumn(column);
+      setTableSortDirection('asc');
+    }
+  };
   const [rejectModalData, setRejectModalData] = useState<{ id: string; studioName: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isManualReservationModalOpen, setIsManualReservationModalOpen] = useState(false);
@@ -51,7 +69,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     reason: string;
   } | null>(null);
 
-  // Add Deposit modal state (CD feature)
+  // Edit Deposit modal state (CD feature)
   const [depositModal, setDepositModal] = useState<{
     isOpen: boolean;
     reservationId: string;
@@ -61,6 +79,16 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     paymentMethod: string;
     paymentDate: string;
     notes: string;
+  } | null>(null);
+
+  // Move Reservation modal state (CD feature)
+  const [moveReservationModal, setMoveReservationModal] = useState<{
+    isOpen: boolean;
+    reservationId: string;
+    studioName: string;
+    currentCompetitionName: string;
+    currentCompetitionId: string;
+    spacesConfirmed: number;
   } | null>(null);
 
   // SD Request Space Increase modal state (SD feature)
@@ -215,7 +243,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     },
   });
 
-  // Add Deposit mutation (CD feature)
+  // Edit Deposit mutation (CD feature)
   const recordDepositMutation = trpc.reservation.recordDeposit.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
@@ -236,6 +264,29 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     },
     onError: (error) => {
       toast.error(error.message); // Backend provides friendly messages
+    },
+  });
+
+
+  // CD: Approve pending space request mutation
+  const approveSpaceRequestMutation = trpc.reservation.approveSpaceRequest.useMutation({
+    onSuccess: () => {
+      toast.success('Space request approved! Additional spaces have been allocated.');
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
+    },
+  });
+
+  // CD: Deny pending space request mutation
+  const denySpaceRequestMutation = trpc.reservation.denySpaceRequest.useMutation({
+    onSuccess: () => {
+      toast.success('Space request denied.');
+      utils.reservation.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getFriendlyErrorMessage(error.message));
     },
   });
 
@@ -295,6 +346,25 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [rejectModalData, rejectionReason]);
 
+  // Scroll to highlighted reservation from URL param
+  useEffect(() => {
+    if (highlightedReservationId && data?.reservations) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const element = document.getElementById(`reservation-${highlightedReservationId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add a pulsing highlight effect
+          element.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+          // Remove highlight after a few seconds
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
+          }, 5000);
+        }
+      }, 300);
+    }
+  }, [highlightedReservationId, data?.reservations]);
+
   const handleReduceCapacity = (
     reservationId: string,
     studioName: string,
@@ -344,17 +414,29 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
     });
   };
 
-  // CD Feature: Add Deposit handler
+  // CD Feature: Edit Deposit handler
   const handleRecordDeposit = (reservation: any) => {
     setDepositModal({
       isOpen: true,
       reservationId: reservation.id,
       studioName: reservation.studios?.name || '',
       competitionName: reservation.competitions?.name || '',
-      depositAmount: '',
+      depositAmount: reservation.deposit_amount ? String(reservation.deposit_amount) : '',
       paymentMethod: 'etransfer',
       paymentDate: new Date().toISOString().split('T')[0],
       notes: '',
+    });
+  };
+
+  // CD Feature: Move Reservation handler
+  const handleMoveReservation = (reservation: any) => {
+    setMoveReservationModal({
+      isOpen: true,
+      reservationId: reservation.id,
+      studioName: reservation.studios?.name || 'Unknown Studio',
+      currentCompetitionName: reservation.competitions?.name || 'Unknown Competition',
+      currentCompetitionId: reservation.competition_id,
+      spacesConfirmed: reservation.spaces_confirmed || 0,
     });
   };
 
@@ -430,13 +512,63 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
 
   const reservations = data?.reservations || [];
   const competitions = data?.competitions || [];
+  const studios = studiosData?.studios || [];
 
-  // Filter reservations
-  const filteredReservations = reservations.filter((reservation) => {
-    const matchesStatus = filter === 'all' || reservation.status === filter;
-    const matchesCompetition = selectedCompetition === 'all' || (reservation as any).competition_id === selectedCompetition;
-    return matchesStatus && matchesCompetition;
-  });
+  // Filter and sort reservations
+  const filteredReservations = reservations
+    .filter((reservation) => {
+      const matchesStatus = filter === 'all' || reservation.status === filter;
+      const matchesCompetition = selectedCompetition === 'all' || (reservation as any).competition_id === selectedCompetition;
+      const matchesStudio = selectedStudio === 'all' || (reservation as any).studio_id === selectedStudio;
+      return matchesStatus && matchesCompetition && matchesStudio;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'studio-alpha') {
+        // Alphabetical by studio name (DEFAULT)
+        const studioA = ((a as any).studios?.name || '').toLowerCase();
+        const studioB = ((b as any).studios?.name || '').toLowerCase();
+        return studioA.localeCompare(studioB);
+      } else if (sortBy === 'spaces-desc') {
+        // Sort by spaces confirmed (descending - highest first)
+        return (b.spaces_confirmed || 0) - (a.spaces_confirmed || 0);
+      } else if (sortBy === 'competition-alpha') {
+        // Sort by competition name (alphabetical)
+        const compA = ((a as any).competitions?.name || '').toLowerCase();
+        const compB = ((b as any).competitions?.name || '').toLowerCase();
+        return compA.localeCompare(compB);
+      }
+      return 0;
+    });
+
+  // Apply table sorting (separate from grid sorting)
+  const sortedFilteredReservations = viewMode === 'table'
+    ? [...filteredReservations].sort((a, b) => {
+        let comparison = 0;
+
+        switch (tableSortColumn) {
+          case 'studio':
+            comparison = ((a as any).studios?.name || '').localeCompare((b as any).studios?.name || '');
+            break;
+          case 'competition':
+            comparison = ((a as any).competitions?.name || '').localeCompare((b as any).competitions?.name || '');
+            break;
+          case 'status':
+            comparison = (a.status || '').localeCompare(b.status || '');
+            break;
+          case 'requested':
+            comparison = (a.spaces_requested || 0) - (b.spaces_requested || 0);
+            break;
+          case 'confirmed':
+            comparison = (a.spaces_confirmed || 0) - (b.spaces_confirmed || 0);
+            break;
+          case 'created':
+            comparison = ((a as any)._count?.competition_entries || 0) - ((b as any)._count?.competition_entries || 0);
+            break;
+        }
+
+        return tableSortDirection === 'asc' ? comparison : -comparison;
+      })
+    : filteredReservations;
 
   // Calculate capacity percentage
   const getCapacityPercentage = (requested: number, confirmed: number) => {
@@ -453,18 +585,12 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
 
   return (
     <div>
-      {/* Header with Create Button (Studio Directors Only - Issue #18) */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Reservations</h2>
-          <p className="text-gray-400 mt-1">
-            {isStudioDirector ? 'Manage your competition reservations' : 'Approve and manage studio reservation requests'}
-          </p>
-        </div>
+      {/* Action Buttons (header is in page.tsx - removed duplicate) */}
+      <div className="flex justify-end mb-6">
         {isStudioDirector && (
           <Link
             href="/dashboard/reservations/new"
-            className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 text-sm md:text-base"
           >
             + Request Reservation
           </Link>
@@ -473,7 +599,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
         {!isStudioDirector && (
           <button
             onClick={() => setIsManualReservationModalOpen(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-medium"
+            className="px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-medium text-sm md:text-base"
           >
             📋 Manual Reservation
           </button>
@@ -484,6 +610,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Competition Filter */}
         <div className="flex-1">
+          <label className="block text-xs text-gray-400 mb-1">Competition</label>
           <select
             value={selectedCompetition}
             onChange={(e) => setSelectedCompetition(e.target.value)}
@@ -538,6 +665,40 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
           })()}
         </div>
 
+        {/* Studio Filter */}
+        <div className="flex-1">
+          <label className="block text-xs text-gray-400 mb-1">Studio</label>
+          <select
+            value={selectedStudio}
+            onChange={(e) => setSelectedStudio(e.target.value)}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="all" className="bg-gray-900 text-white">All Studios</option>
+            {studios.map((studio) => (
+              <option key={studio.id} value={studio.id} className="bg-gray-900 text-white">
+                {studio.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Sort By */}
+        <div className="flex-1">
+          <label className="block text-xs text-gray-400 mb-1">Sort By</label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="studio-alpha" className="bg-gray-900 text-white">Studio Name (A-Z)</option>
+            <option value="spaces-desc" className="bg-gray-900 text-white">Reservation Spaces (High-Low)</option>
+            <option value="competition-alpha" className="bg-gray-900 text-white">Competition Name (A-Z)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Status Filter Row */}
+      <div className="mb-6">
         {/* Status Filter - Wraps on Mobile */}
         <div className="flex gap-2 flex-wrap">
           <button
@@ -611,6 +772,38 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
         </div>
       </div>
 
+      {/* View Toggle */}
+      <div className="flex justify-end mb-4">
+        <div className="flex gap-2 bg-white/5 p-1 rounded-lg border border-white/20">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+              viewMode === 'grid'
+                ? 'bg-purple-500 text-white'
+                : 'text-gray-300 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            Grid
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+              viewMode === 'table'
+                ? 'bg-purple-500 text-white'
+                : 'text-gray-300 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Table
+          </button>
+        </div>
+      </div>
+
       {/* Data Refresh Indicator */}
       {dataUpdatedAt && (
         <div className="flex justify-end mb-4">
@@ -651,8 +844,8 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             </button>
           ) : null}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      ) : viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {filteredReservations.map((reservation) => {
             const capacityPercentage = getCapacityPercentage(
               reservation.spaces_requested,
@@ -662,12 +855,13 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             return (
               <div
                 key={reservation.id}
-                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all"
+                id={`reservation-${reservation.id}`}
+                className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 hover:bg-white/20 transition-all flex flex-col h-full min-h-[400px]"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`grid grid-cols-1 gap-6 ${isStudioDirector ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   {/* Left: Studio & Competition Info */}
                   <div>
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white mb-1">
                           {(reservation as any).studios?.name || 'Unknown Studio'}
@@ -766,18 +960,20 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                     {/* Payment status hidden for Studio Directors */}
                     {!isStudioDirector && reservation.payment_status && (
                       <div className="pt-3 border-t border-white/10">
-                        <div className="text-sm text-gray-400 mb-1">Payment Status</div>
-                        <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            reservation.payment_status === 'paid'
-                              ? 'bg-green-500/20 text-green-400'
-                              : reservation.payment_status === 'pending'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}
-                        >
-                          {reservation.payment_status.toUpperCase()}
-                        </span>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-400">Payment Status:</span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              reservation.payment_status === 'paid'
+                                ? 'bg-green-500/20 text-green-400'
+                                : reservation.payment_status === 'pending'
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : 'bg-red-500/20 text-red-400'
+                            }`}
+                          >
+                            {reservation.payment_status.toUpperCase()}
+                          </span>
+                        </div>
                       </div>
                     )}
 
@@ -1005,20 +1201,72 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                           </div>
                         </div>
 
-                        {/* CD Feature: Edit Spaces & Add Deposit buttons */}
-                        {isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
+                        {/* CD Feature: Edit Spaces, Edit Deposit, Move Reservation buttons */}
+                        {isCompetitionDirector && (
                           <div className="space-y-3">
+                            {/* Edit Spaces - only for approved/summarized/invoiced */}
+                            {['approved', 'summarized', 'invoiced'].includes(reservation.status || '') && (
+                              <button
+                                onClick={() => handleEditSpaces(reservation)}
+                                className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                              >
+                                ✏️ Edit Spaces
+                              </button>
+                            )}
+                            {/* Edit Deposit - only for approved/summarized/invoiced and invoice not SENT */}
+                            {['approved', 'summarized', 'invoiced'].includes(reservation.status || '') &&
+                              (!reservation.invoices || reservation.invoices.length === 0 || reservation.invoices[0]?.status !== 'SENT') && (
+                              <button
+                                onClick={() => handleRecordDeposit(reservation)}
+                                className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                              >
+                                ✏️ Edit Deposit
+                              </button>
+                            )}
+                                                        {/* Pending Space Request - show if studio requested more spaces */}
+                            {(reservation as any).pending_additional_spaces && (
+                              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-lg">📋</span>
+                                  <span className="text-sm font-semibold text-amber-300">Pending Space Request</span>
+                                </div>
+                                <div className="space-y-1 mb-3 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-amber-200/70">Requested</span>
+                                    <span className="font-medium text-amber-300">+{(reservation as any).pending_additional_spaces}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-amber-200/70">New Total</span>
+                                    <span className="font-medium text-amber-300">{(reservation.spaces_confirmed || 0) + (reservation as any).pending_additional_spaces}</span>
+                                  </div>
+                                  {(reservation as any).pending_spaces_justification && (
+                                    <p className="text-xs text-amber-200/80 mt-2 italic">&quot;{(reservation as any).pending_spaces_justification}&quot;</p>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => approveSpaceRequestMutation.mutate({ reservationId: reservation.id })}
+                                    disabled={approveSpaceRequestMutation.isPending}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-sm font-medium text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg border border-emerald-500/40"
+                                  >
+                                    ✓ {approveSpaceRequestMutation.isPending ? '...' : 'Approve'}
+                                  </button>
+                                  <button
+                                    onClick={() => denySpaceRequestMutation.mutate({ reservationId: reservation.id })}
+                                    disabled={denySpaceRequestMutation.isPending}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-sm font-medium text-red-300 bg-red-500/20 hover:bg-red-500/30 rounded-lg border border-red-500/40"
+                                  >
+                                    ✗ {denySpaceRequestMutation.isPending ? '...' : 'Deny'}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {/* Move Reservation - always available for CD */}
                             <button
-                              onClick={() => handleEditSpaces(reservation)}
-                              className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
+                              onClick={() => handleMoveReservation(reservation)}
+                              className="w-full bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
                             >
-                              ✏️ Edit Spaces
-                            </button>
-                            <button
-                              onClick={() => handleRecordDeposit(reservation)}
-                              className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 font-semibold py-3 px-6 rounded-lg transition-all duration-200"
-                            >
-                              💰 Add Deposit
+                              🔄 Move Reservation
                             </button>
                           </div>
                         )}
@@ -1029,6 +1277,149 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
               </div>
             );
           })}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-white/5 border-b border-white/20">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('studio')}>
+                    <div className="flex items-center gap-1">
+                      Studio
+                      {tableSortColumn === 'studio' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('competition')}>
+                    <div className="flex items-center gap-1">
+                      Competition
+                      {tableSortColumn === 'competition' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('status')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Status
+                      {tableSortColumn === 'status' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('requested')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Requested
+                      {tableSortColumn === 'requested' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('confirmed')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Confirmed
+                      {tableSortColumn === 'confirmed' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300 cursor-pointer hover:text-white transition-colors" onClick={() => handleTableSort('created')}>
+                    <div className="flex items-center justify-center gap-1">
+                      Created
+                      {tableSortColumn === 'created' && (
+                        <span className="text-purple-400">{tableSortDirection === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </th>
+                  {!isStudioDirector && (
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">Actions</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {sortedFilteredReservations.map((reservation) => {
+                  const entriesCount = (reservation as any)._count?.competition_entries || 0;
+                  return (
+                    <tr key={reservation.id} id={`reservation-${reservation.id}`} className="hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="text-white font-semibold">
+                          {(reservation as any).studios?.name || 'Unknown Studio'}
+                        </div>
+                        {!isStudioDirector && reservation.agent_first_name && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {reservation.agent_first_name} {reservation.agent_last_name}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-gray-300">
+                          {(reservation as any).competitions?.name || 'Unknown Competition'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <StatusBadge status={(reservation.status || 'pending') as any} />
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-white font-semibold">{reservation.spaces_requested}</div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-white font-semibold">
+                          {reservation.spaces_confirmed || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-white font-semibold">{entriesCount}</div>
+                      </td>
+                      {!isStudioDirector && (
+                        <td className="px-6 py-4">
+                          {reservation.status === 'pending' ? (
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => handleApprove(reservation.id, reservation.spaces_requested)}
+                                disabled={processingId === reservation.id}
+                                className="px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white text-sm font-semibold rounded transition-all disabled:cursor-not-allowed"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(reservation.id, (reservation as any).studios?.name || 'studio')}
+                                disabled={processingId === reservation.id}
+                                className="px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white text-sm font-semibold rounded transition-all disabled:cursor-not-allowed"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : isCompetitionDirector && ['approved', 'summarized', 'invoiced'].includes(reservation.status || '') ? (
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => handleEditSpaces(reservation)}
+                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 text-sm font-semibold rounded transition-all"
+                              >
+                                Edit
+                              </button>
+                              {/* Hide Edit Deposit button if invoice has been SENT */}
+                              {(!reservation.invoices || reservation.invoices.length === 0 || reservation.invoices[0]?.status !== 'SENT') && (
+                                <button
+                                  onClick={() => handleRecordDeposit(reservation)}
+                                  className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 text-sm font-semibold rounded transition-all"
+                                >
+                                  Edit Deposit
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-sm text-center">-</div>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -1263,14 +1654,14 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
         </div>
       )}
 
-      {/* Add Deposit Modal (CD Feature) */}
+      {/* Edit Deposit Modal (CD Feature) */}
       {depositModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-slate-900 to-gray-900 rounded-xl border border-white/20 p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">💰 Add Deposit</h3>
+            <h3 className="text-xl font-bold text-white mb-4">✏️ Edit Deposit</h3>
 
             <p className="text-gray-300 mb-4">
-              Adding deposit for <span className="font-semibold text-white">{depositModal.studioName}</span>
+              Editing deposit for <span className="font-semibold text-white">{depositModal.studioName}</span>
             </p>
 
             <div className="bg-white/5 rounded-lg p-4 mb-4 space-y-2">
@@ -1371,7 +1762,7 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
                 disabled={!depositModal.depositAmount || recordDepositMutation.isPending}
                 className="flex-1 min-h-[44px] px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-green-500/50 disabled:to-green-600/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed"
               >
-                {recordDepositMutation.isPending ? '⚙️ Adding...' : '✅ Add Deposit'}
+                {recordDepositMutation.isPending ? '⚙️ Saving...' : '✅ Save Deposit'}
               </button>
             </div>
           </div>
@@ -1478,6 +1869,26 @@ export default function ReservationsList({ isStudioDirector = false, isCompetiti
             </div>
           </div>
         </div>
+      )}
+
+      {/* Move Reservation Modal (CD Feature) */}
+      {moveReservationModal && data?.competitions && (
+        <MoveReservationModal
+          isOpen={moveReservationModal.isOpen}
+          onClose={() => setMoveReservationModal(null)}
+          reservation={{
+            id: moveReservationModal.reservationId,
+            studio_name: moveReservationModal.studioName,
+            current_competition_name: moveReservationModal.currentCompetitionName,
+            current_competition_id: moveReservationModal.currentCompetitionId,
+            spaces_confirmed: moveReservationModal.spacesConfirmed,
+          }}
+          competitions={data.competitions || []}
+          onSuccess={() => {
+            setMoveReservationModal(null);
+            utils.reservation.getAll.invalidate();
+          }}
+        />
       )}
     </div>
   );

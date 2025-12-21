@@ -1,11 +1,73 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { trpc } from '@/lib/trpc';
 import { generateInvoicePDF } from '@/lib/pdf-reports';
 import toast from 'react-hot-toast';
 import SplitInvoiceWizard from '@/components/SplitInvoiceWizard';
 import SubInvoiceList from '@/components/SubInvoiceList';
+import ApplyPartialPaymentModal from '@/components/ApplyPartialPaymentModal';
+import PaymentHistoryTable from '@/components/PaymentHistoryTable';
+
+// Helper functions to format dates (manual formatting to avoid SSR/CSR hydration mismatch)
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+function formatDate(dateValue: any, includeYear: boolean = true): string {
+  try {
+    if (!dateValue) return includeYear ? 'Date not available' : '';
+
+    let year: number, month: number, day: number;
+
+    // Check if it's already a Date object
+    if (dateValue instanceof Date) {
+      year = dateValue.getUTCFullYear();
+      month = dateValue.getUTCMonth() + 1;
+      day = dateValue.getUTCDate();
+    } else {
+      // Handle string formats (YYYY-MM-DD or ISO timestamp)
+      const dateStr = dateValue.toString();
+
+      if (dateStr.includes('-')) {
+        // Parse YYYY-MM-DD format manually (avoid timezone offset)
+        const [yearStr, monthStr, dayStr] = dateStr.split('T')[0].split('-');
+        year = parseInt(yearStr);
+        month = parseInt(monthStr);
+        day = parseInt(dayStr);
+      } else {
+        // Fallback: create Date object
+        const d = new Date(dateStr);
+        year = d.getUTCFullYear();
+        month = d.getUTCMonth() + 1;
+        day = d.getUTCDate();
+      }
+    }
+
+    if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+      return includeYear ? 'Date not available' : '';
+    }
+
+    if (includeYear) {
+      return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
+    } else {
+      return `${MONTH_NAMES[month - 1]} ${day}`;
+    }
+  } catch (err) {
+    console.error('[formatDate] Error:', err);
+    return includeYear ? 'Date not available' : '';
+  }
+}
+
+function formatCompetitionDate(dateValue: any): string {
+  return formatDate(dateValue, true);
+}
+
+function formatCompetitionEndDate(dateValue: any): string {
+  return formatDate(dateValue, false);
+}
 
 type Props = {
   studioId: string;
@@ -13,13 +75,21 @@ type Props = {
 };
 
 export default function InvoiceDetail({ studioId, competitionId }: Props) {
-  const [discountPercent, setDiscountPercent] = useState(0);
-  const [otherCredit, setOtherCredit] = useState({ amount: 0, reason: "" });
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [isEditingPrices, setIsEditingPrices] = useState(false);
   const [editableLineItems, setEditableLineItems] = useState<any[]>([]);
   const [showSplitWizard, setShowSplitWizard] = useState(false);
   const [showSubInvoices, setShowSubInvoices] = useState(false);
+  const [otherCreditInput, setOtherCreditInput] = useState({ amount: 0, reason: "" });
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [customDiscountInput, setCustomDiscountInput] = useState<string>('');
+  const [portalMounted, setPortalMounted] = useState(false);
+
+  // Portal mount for SSR safety
+  useEffect(() => {
+    setPortalMounted(true);
+    return () => setPortalMounted(false);
+  }, []);
 
   // Get current user role
   const { data: userProfile } = trpc.user.getCurrentUser.useQuery();
@@ -54,6 +124,16 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
   const hasSubInvoices = (subInvoicesData?.sub_invoices?.length || 0) > 0;
 
+  // Populate modal with existing credit values when opening
+  useEffect(() => {
+    if (showCreditModal && dbInvoice) {
+      setOtherCreditInput({
+        amount: Number(dbInvoice.other_credit_amount || 0),
+        reason: dbInvoice.other_credit_reason || "",
+      });
+    }
+  }, [showCreditModal, dbInvoice]);
+
   const sendInvoiceMutation = trpc.invoice.sendInvoice.useMutation({
     onSuccess: () => {
       toast.success('Invoice sent to studio!');
@@ -74,6 +154,28 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
     },
   });
 
+  const applyDiscountMutation = trpc.invoice.applyDiscount.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.discountAmount > 0 ? 'Discount applied!' : 'Discount removed!');
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to apply discount: ${error.message}`);
+    },
+  });
+
+  const applyCustomCreditMutation = trpc.invoice.applyCustomCredit.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.creditAmount > 0 ? 'Credit applied!' : 'Credit removed!');
+      setShowCreditModal(false);
+      setOtherCreditInput({ amount: 0, reason: "" });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to apply credit: ${error.message}`);
+    },
+  });
+
   const updateLineItemsMutation = trpc.invoice.updateLineItems.useMutation({
     onSuccess: () => {
       toast.success('Invoice prices updated!');
@@ -84,6 +186,31 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       toast.error(`Failed to update prices: ${error.message}`);
     },
   });
+
+  const reopenSummaryMutation = trpc.reservation.reopenSummary.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to reopen summary: ${error.message}`);
+    },
+  });
+
+  const handleReopenSummary = () => {
+    if (!invoice?.reservation?.id) {
+      toast.error('No reservation found for this invoice');
+      return;
+    }
+
+    if (!confirm('Void this invoice and reopen summary?\n\nThis will:\n• Mark this invoice as VOID\n• Allow studio to edit entries again\n• Require studio to resubmit summary\n• Require you to regenerate invoice\n\nContinue?')) {
+      return;
+    }
+
+    reopenSummaryMutation.mutate({
+      reservationId: invoice.reservation.id,
+    });
+  };
 
   // Line items come from the invoice (either DB or generated)
   const displayLineItems = invoice?.lineItems || [];
@@ -119,11 +246,54 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
   // Calculate subtotal from current line items (editable or display)
   const currentLineItems = isEditingPrices ? editableLineItems : displayLineItems;
   const currentSubtotal = currentLineItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
-  const taxRate = invoice?.summary.taxRate || 0;
-  const taxAmount = currentSubtotal * taxRate;
-  const totalAfterDiscount = currentSubtotal * (1 - discountPercent / 100);
-  const totalWithTax = totalAfterDiscount * (1 + taxRate);
-  const totalAmount = Math.max(0, totalWithTax - otherCredit.amount);
+  const taxRate = invoice?.summary?.taxRate || 0;
+
+  // Get discounts and credits from database (source of truth)
+  const creditAmount = dbInvoice ? Number(dbInvoice.credit_amount || 0) : 0; // Percentage discount
+  const otherCreditAmount = dbInvoice ? Number(dbInvoice.other_credit_amount || 0) : 0; // Fixed credit
+  const discountPercent = currentSubtotal > 0 ? (creditAmount / currentSubtotal) * 100 : 0;
+
+  // Sync custom discount input with current database value
+  useEffect(() => {
+    if (typeof discountPercent === 'number' && !isNaN(discountPercent) && discountPercent > 0) {
+      setCustomDiscountInput(discountPercent.toFixed(1));
+    } else {
+      setCustomDiscountInput('');
+    }
+  }, [discountPercent]);
+
+  // Debug logging (safe in useEffect to avoid hydration errors)
+  useEffect(() => {
+    console.log('[InvoiceDetail] Credit/Discount calculation:', {
+      hasDbInvoice: !!dbInvoice,
+      creditAmountFromDb: dbInvoice?.credit_amount,
+      otherCreditAmountFromDb: dbInvoice?.other_credit_amount,
+      creditAmountCalculated: creditAmount,
+      otherCreditAmountCalculated: otherCreditAmount,
+      creditReason: dbInvoice?.credit_reason,
+      otherCreditReason: dbInvoice?.other_credit_reason,
+      discountPercent,
+      currentSubtotal,
+      userRole: userProfile?.role
+    });
+  }, [dbInvoice, creditAmount, otherCreditAmount, discountPercent, currentSubtotal, userProfile]);
+
+  // SOURCE OF TRUTH: Use database values when available, fall back to calculated for old/generated invoices
+  const totalAfterAllCredits = currentSubtotal - creditAmount - otherCreditAmount;
+  const taxAmount = totalAfterAllCredits * taxRate;
+  const calculatedTotal = totalAfterAllCredits + taxAmount;
+
+  // Use database values as source of truth
+  const invoiceTotal = dbInvoice ? parseFloat(dbInvoice.total.toString()) : calculatedTotal;
+  const depositAmount = dbInvoice && dbInvoice.deposit_amount
+    ? parseFloat(dbInvoice.deposit_amount.toString())
+    : (invoice?.reservation?.depositAmount || 0);
+  const balanceDue = dbInvoice && dbInvoice.amount_due
+    ? parseFloat(dbInvoice.amount_due.toString())
+    : Math.max(0, calculatedTotal - depositAmount);
+  const amountPaid = dbInvoice?.amount_paid ? parseFloat(dbInvoice.amount_paid.toString()) : 0;
+  const balanceRemaining = dbInvoice?.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : balanceDue;
+  const hasPayments = amountPaid > 0;
 
   if (isLoading) {
     return (
@@ -161,21 +331,24 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
           <h2 className="text-3xl font-bold text-white mb-2">INVOICE</h2>
           <p className="text-gray-300">#{invoice.invoiceNumber}</p>
           <p className="text-sm text-gray-400">
-            Date: {new Date(invoice.invoiceDate).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+            Date: {formatDate(invoice.invoiceDate, true)}
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-400 mb-1">Total Amount</div>
-          <div className="text-4xl font-bold text-green-400">
-            ${totalAmount.toFixed(2)}
+          <div className="text-sm text-gray-400 mb-1">
+            {hasPayments ? 'Balance Remaining' : 'Balance Due'}
           </div>
-          {discountPercent > 0 && (
+          <div className="text-4xl font-bold text-green-400">
+            ${(hasPayments ? balanceRemaining : balanceDue).toFixed(2)}
+          </div>
+          {hasPayments && (
+            <div className="text-xs text-blue-400 mt-1">
+              ${amountPaid.toFixed(2)} paid
+            </div>
+          )}
+          {discountPercent > 0 && !hasPayments && (
             <div className="text-xs text-green-400 mt-1">
-              ({discountPercent}% discount applied)
+              ({discountPercent.toFixed(1)}% discount applied)
             </div>
           )}
         </div>
@@ -212,16 +385,9 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <p>Year: {invoice.competition.year}</p>
             {invoice.competition.startDate && (
               <p>
-                Date: {new Date(invoice.competition.startDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+                Date: {formatCompetitionDate(invoice.competition.startDate)}
                 {invoice.competition.endDate && invoice.competition.startDate !== invoice.competition.endDate && (
-                  <> - {new Date(invoice.competition.endDate).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                  })}</>
+                  <> - {formatCompetitionEndDate(invoice.competition.endDate)}</>
                 )}
               </p>
             )}
@@ -234,11 +400,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       {invoice.reservation && (
         <div className="mb-8 pb-8 border-b border-white/20">
           <h3 className="text-sm font-semibold text-gray-400 mb-3">RESERVATION DETAILS</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-black/20 p-4 rounded-lg">
-              <div className="text-xs text-gray-400 mb-1">Routines Requested</div>
-              <div className="text-xl font-bold text-white">{invoice.reservation.spacesRequested}</div>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-black/20 p-4 rounded-lg">
               <div className="text-xs text-gray-400 mb-1">Routines Submitted</div>
               <div className="text-xl font-bold text-green-400">{invoice.lineItems.length}</div>
@@ -246,7 +408,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             <div className="bg-black/20 p-4 rounded-lg">
               <div className="text-xs text-gray-400 mb-1">Deposit</div>
               <div className="text-xl font-bold text-white">
-                ${invoice.reservation.depositAmount.toFixed(2)}
+                ${depositAmount.toFixed(2)}
               </div>
             </div>
             <div className="bg-black/20 p-4 rounded-lg">
@@ -328,7 +490,7 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                         className="w-24 px-2 py-1 bg-white/10 border border-white/30 rounded text-right text-white"
                       />
                     ) : (
-                      `$${item.entryFee.toFixed(2)}`
+                      `$${(item.entryFee ?? 0).toFixed(2)}`
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-yellow-400">
@@ -342,11 +504,11 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                         className="w-24 px-2 py-1 bg-white/10 border border-white/30 rounded text-right text-white"
                       />
                     ) : (
-                      item.lateFee > 0 ? `$${item.lateFee.toFixed(2)}` : '-'
+                      item.lateFee > 0 ? `$${(item.lateFee ?? 0).toFixed(2)}` : '-'
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-white font-semibold">
-                    ${item.total.toFixed(2)}
+                    ${(item.total ?? 0).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -355,59 +517,78 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         </div>
       </div>
 
-      {/* Discount Buttons - Only for Competition Directors */}
+      {/* Discount Input - Only for Competition Directors */}
       {isCompetitionDirector && (
         <div className="mb-6 flex justify-end">
-          <div className="flex gap-2">
-            <span className="text-gray-300 self-center mr-2">Apply Discount:</span>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-300 mr-2">Discount:</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="0"
+              value={customDiscountInput}
+              onChange={(e) => setCustomDiscountInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && dbInvoice) {
+                  const percent = parseFloat(customDiscountInput) || 0;
+                  if (percent >= 0 && percent <= 100) {
+                    applyDiscountMutation.mutate({
+                      invoiceId: dbInvoice.id,
+                      discountPercentage: percent,
+                    });
+                  }
+                }
+              }}
+              disabled={!dbInvoice || applyDiscountMutation.isPending}
+              className="w-20 px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white text-right disabled:opacity-50"
+            />
+            <span className="text-gray-300">%</span>
             <button
-              onClick={() => setDiscountPercent(discountPercent === 5 ? 0 : 5)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                discountPercent === 5
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-              }`}
+              onClick={() => {
+                if (!dbInvoice) return;
+                const percent = parseFloat(customDiscountInput) || 0;
+                if (percent < 0 || percent > 100) {
+                  toast.error('Discount must be between 0% and 100%');
+                  return;
+                }
+                applyDiscountMutation.mutate({
+                  invoiceId: dbInvoice.id,
+                  discountPercentage: percent,
+                });
+              }}
+              disabled={!dbInvoice || applyDiscountMutation.isPending}
+              className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold text-sm hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50"
             >
-              5%
+              {applyDiscountMutation.isPending ? 'Applying...' : 'Apply'}
             </button>
-            <button
-              onClick={() => setDiscountPercent(discountPercent === 10 ? 0 : 10)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                discountPercent === 10
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-              }`}
-            >
-              10%
-            </button>
-            <button
-              onClick={() => setDiscountPercent(discountPercent === 15 ? 0 : 15)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                discountPercent === 15
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-              }`}
-            >
-              15%
-            </button>
-            {discountPercent > 0 && (
+            {discountPercent > 0.01 && (
               <button
-                onClick={() => setDiscountPercent(0)}
-                className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all"
+                onClick={() => {
+                  if (!dbInvoice) return;
+                  setCustomDiscountInput('');
+                  applyDiscountMutation.mutate({
+                    invoiceId: dbInvoice.id,
+                    discountPercentage: 0,
+                  });
+                }}
+                disabled={!dbInvoice || applyDiscountMutation.isPending}
+                className="px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg font-semibold text-sm hover:bg-red-500/30 transition-all disabled:opacity-50"
               >
                 Clear
+              </button>
+            )}
+            <button
+              onClick={() => setShowCreditModal(true)}
+              className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg font-semibold text-sm hover:bg-purple-500/30 transition-all ml-4"
+            >
+              Other Credits
             </button>
-          )}
-          <button
-            onClick={() => setShowCreditModal(true)}
-            className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg font-semibold text-sm hover:bg-purple-500/30 transition-all ml-4"
-          >
-            💳 Other Credits
-          </button>
+          </div>
         </div>
-      </div>
-
       )}
+
       {/* Totals */}
       <div className="flex justify-end">
         <div className="w-full md:w-1/2 lg:w-1/3 space-y-2">
@@ -418,39 +599,88 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
 
           {discountPercent > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-green-400">Discount ({discountPercent}%)</span>
-              <span className="text-green-400">-${((currentSubtotal * discountPercent) / 100).toFixed(2)}</span>
+              <span className="text-green-400">Discount ({discountPercent.toFixed(1)}%)</span>
+              <span className="text-green-400">-${creditAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {otherCreditAmount > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-white/10">
+              <span className="text-purple-400">Other Credits{dbInvoice?.other_credit_reason && `: ${dbInvoice.other_credit_reason}`}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-purple-400">-${otherCreditAmount.toFixed(2)}</span>
+                {isCompetitionDirector && (
+                  <button
+                    onClick={() => {
+                      if (!dbInvoice) return;
+                      applyCustomCreditMutation.mutate({
+                        invoiceId: dbInvoice.id,
+                        creditAmount: 0,
+                      });
+                    }}
+                    className="text-red-400 hover:text-red-300 transition-colors"
+                    title="Remove credit"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
           {taxAmount > 0 && (
             <div className="flex justify-between py-2 border-b border-white/10">
               <span className="text-gray-300">Tax ({(taxRate * 100).toFixed(2)}%)</span>
-              <span className="text-white">${(((currentSubtotal * (1 - discountPercent / 100)) * taxRate)).toFixed(2)}</span>
-            </div>
-          )}
-          {otherCredit.amount > 0 && (
-            <div className="flex justify-between items-center py-2 border-b border-white/10">
-              <span className="text-purple-400">Other Credits{otherCredit.reason && `: ${otherCredit.reason}`}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-purple-400">-${otherCredit.amount.toFixed(2)}</span>
-                <button
-                  onClick={() => setOtherCredit({ amount: 0, reason: "" })}
-                  className="text-red-400 hover:text-red-300 transition-colors"
-                  title="Remove credit"
-                >
-                  ✕
-                </button>
-              </div>
+              <span className="text-white">${taxAmount.toFixed(2)}</span>
             </div>
           )}
 
-          <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
-            <span className="text-white font-bold text-lg">TOTAL</span>
-            <span className="text-green-400 font-bold text-2xl">
-              ${totalAmount.toFixed(2)}
+          {/* Invoice Total (before deposit) */}
+          <div className="flex justify-between py-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-4 rounded-lg border-b border-white/10">
+            <span className="text-white font-bold text-lg">INVOICE TOTAL</span>
+            <span className="text-blue-300 font-bold text-2xl">
+              ${invoiceTotal.toFixed(2)}
             </span>
           </div>
+
+          {/* Deposit (if applicable) */}
+          {depositAmount > 0 && (
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-yellow-400">LESS: Deposit Paid</span>
+              <span className="text-yellow-400">-${depositAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* When payments exist: show Balance Remaining as primary */}
+          {hasPayments ? (
+            <>
+              {/* Original balance (smaller, secondary) */}
+              <div className="flex justify-between py-2 border-b border-white/10">
+                <span className="text-gray-400">Original Balance:</span>
+                <span className="text-gray-300">${balanceDue.toFixed(2)}</span>
+              </div>
+              {/* Amount paid */}
+              <div className="flex justify-between py-2 border-b border-white/10">
+                <span className="text-blue-400">Amount Paid:</span>
+                <span className="text-blue-400">-${amountPaid.toFixed(2)}</span>
+              </div>
+              {/* Balance Remaining - PRIMARY display */}
+              <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
+                <span className="text-white font-bold text-lg">BALANCE REMAINING</span>
+                <span className="text-green-400 font-bold text-2xl">
+                  ${balanceRemaining.toFixed(2)}
+                </span>
+              </div>
+            </>
+          ) : (
+            /* No payments: show Balance Due as primary */
+            <div className="flex justify-between py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-4 rounded-lg">
+              <span className="text-white font-bold text-lg">BALANCE DUE</span>
+              <span className="text-green-400 font-bold text-2xl">
+                ${balanceDue.toFixed(2)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -473,20 +703,26 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
                 {isStudioDirector ? (
                   // Studio Directors see read-only status (payment happens externally)
                   <div className="flex-1 bg-blue-500/20 border-2 border-blue-500/50 text-blue-300 px-6 py-3 rounded-lg font-semibold text-center">
-                    📋 Invoice Sent - Payment will be confirmed by competition staff after external payment received (e-transfer, check, etc.)
+                    📋 Invoice Sent - Awaiting payment
                   </div>
                 ) : (
-                  // Competition Directors can mark as paid
+                  // Competition Directors can record partial payments or mark as fully paid
                   <>
                     <div className="flex-1 bg-yellow-500/20 border-2 border-yellow-500/50 text-yellow-300 px-6 py-3 rounded-lg font-semibold text-center">
                       ⏳ Awaiting External Payment from Studio
                     </div>
                     <button
+                      onClick={() => setShowPaymentModal(true)}
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-semibold"
+                    >
+                      💵 Apply Partial Payment
+                    </button>
+                    <button
                       onClick={() => markAsPaidMutation.mutate({ invoiceId: dbInvoice.id, paymentMethod: 'manual' })}
                       disabled={markAsPaidMutation.isPending}
                       className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
                     >
-                      {markAsPaidMutation.isPending ? '✓ Confirming...' : '✓ Mark as Paid'}
+                      {markAsPaidMutation.isPending ? '✓ Confirming...' : '✓ Mark as Paid (Full)'}
                     </button>
                   </>
                 )}
@@ -495,14 +731,30 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
             {dbInvoice.status === 'PAID' && (
               <div className="flex-1 bg-green-500/20 border-2 border-green-500/50 text-green-300 px-6 py-3 rounded-lg font-semibold text-center flex items-center justify-center gap-2">
                 <span className="text-2xl">✓</span>
-                <span>Invoice Paid - {dbInvoice.paidAt ? new Date(dbInvoice.paidAt).toLocaleDateString() : 'Recently'}</span>
+                <span>Invoice Paid - {dbInvoice.paidAt ? formatDate(dbInvoice.paidAt, true) : 'Recently'}</span>
               </div>
             )}
           </div>
         )}
 
+        {/* Reopen Summary Button (Competition Directors only, not for paid invoices) */}
+        {dbInvoice && isCompetitionDirector && (dbInvoice.status === 'DRAFT' || dbInvoice.status === 'SENT') && invoice?.reservation?.id && (
+          <div className="mt-4">
+            <button
+              onClick={handleReopenSummary}
+              disabled={reopenSummaryMutation.isPending}
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 font-semibold"
+            >
+              {reopenSummaryMutation.isPending ? '🔄 Reopening...' : '🔄 Void Invoice & Reopen Summary'}
+            </button>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Use this if studio needs to make changes after submitting summary. Invoice will be voided and studio can edit entries.
+            </p>
+          </div>
+        )}
+
         {/* Studio Director: Split Invoice / View Dancer Invoices */}
-        {isStudioDirector && dbInvoice && (
+        {isStudioDirector && !isCompetitionDirector && dbInvoice && (
           <div className="mb-4">
             {hasSubInvoices ? (
               <button
@@ -544,7 +796,26 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         </button>
         <button
           onClick={() => {
-            const pdfBlob = generateInvoicePDF(invoice);
+            // Ensure invoice includes credit/discount info from database
+            const invoiceWithCredit = {
+              ...invoice,
+              summary: {
+                ...invoice.summary,
+                creditAmount: creditAmount,
+                creditReason: dbInvoice?.credit_reason || null,
+                otherCreditAmount: otherCreditAmount,
+                otherCreditReason: dbInvoice?.other_credit_reason || null,
+                depositAmount: depositAmount,
+              }
+            };
+            console.log('[InvoiceDetail] Generating PDF with credits:', {
+              percentageDiscount: creditAmount,
+              creditReason: dbInvoice?.credit_reason,
+              otherCredit: otherCreditAmount,
+              otherCreditReason: dbInvoice?.other_credit_reason,
+              depositAmount
+            });
+            const pdfBlob = generateInvoicePDF(invoiceWithCredit);
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
             link.href = url;
@@ -568,16 +839,16 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
               item.category,
               item.sizeCategory,
               item.participantCount,
-              `$${item.entryFee.toFixed(2)}`,
-              `$${item.lateFee.toFixed(2)}`,
-              `$${item.total.toFixed(2)}`
+              `$${(item.entryFee ?? 0).toFixed(2)}`,
+              `$${(item.lateFee ?? 0).toFixed(2)}`,
+              `$${(item.total ?? 0).toFixed(2)}`
             ]);
 
             // Add summary rows
             rows.push([]);
-            rows.push(['', '', '', '', '', '', 'Subtotal:', `$${invoice.summary.subtotal.toFixed(2)}`]);
-            rows.push(['', '', '', '', '', '', `Tax (${invoice.summary.taxRate}%):`, `$${invoice.summary.taxAmount.toFixed(2)}`]);
-            rows.push(['', '', '', '', '', '', 'Total:', `$${invoice.summary.totalAmount.toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', 'Subtotal:', `$${(invoice.summary?.subtotal ?? 0).toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', `Tax (${invoice.summary?.taxRate ?? 0}%):`, `$${(invoice.summary?.taxAmount ?? 0).toFixed(2)}`]);
+            rows.push(['', '', '', '', '', '', 'Total:', `$${(invoice.summary?.totalAmount ?? 0).toFixed(2)}`]);
 
             // Convert to CSV
             const csvContent = [headers, ...rows]
@@ -602,59 +873,80 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
       </div>
       </div>
 
+      {/* Payment History (show if invoice exists in database) */}
+      {dbInvoice && isCompetitionDirector && (
+        <div className="mt-8">
+          <PaymentHistoryTable invoiceId={dbInvoice.id} />
+        </div>
+      )}
+
       {/* Footer */}
       <div className="mt-8 pt-8 border-t border-white/20 text-center text-sm text-gray-400">
         <p>Thank you for participating in {invoice.competition.name}!</p>
         <p className="mt-2">For questions about this invoice, please contact the competition organizers.</p>
       </div>
 
-      {/* Other Credits Modal */}
-      {showCreditModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-xl max-w-md w-full">
-            <h3 className="text-xl font-bold text-white mb-4">Add Other Credits</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Credit Amount ($)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={otherCredit.amount}
-                  onChange={(e) => setOtherCredit({ ...otherCredit, amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
-                />
+      {/* Other Credits Modal - rendered via Portal to document.body */}
+      {showCreditModal && dbInvoice && portalMounted && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-sm">
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-6 rounded-xl max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-4">Apply Custom Credit</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Apply a fixed dollar credit (separate from percentage discounts). This credit will be visible to both Competition Directors and Studio Directors.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-blue-300 text-sm mb-2">Credit Amount ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={otherCreditInput.amount}
+                    onChange={(e) => setOtherCreditInput({ ...otherCreditInput, amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+                    placeholder={otherCreditAmount > 0 ? `Current: ${otherCreditAmount.toFixed(2)}` : 'Enter amount'}
+                  />
+                </div>
+                <div>
+                  <label className="block text-blue-300 text-sm mb-2">Reason (Optional)</label>
+                  <input
+                    type="text"
+                    value={otherCreditInput.reason}
+                    onChange={(e) => setOtherCreditInput({ ...otherCreditInput, reason: e.target.value })}
+                    placeholder={dbInvoice.other_credit_reason || "e.g., Loyalty credit, Refund, Compensation"}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-400"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Reason</label>
-                <input
-                  type="text"
-                  value={otherCredit.reason}
-                  onChange={(e) => setOtherCredit({ ...otherCredit, reason: e.target.value })}
-                  placeholder="e.g., Early bird discount, Loyalty credit"
-                  className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
-                />
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => {
+                    applyCustomCreditMutation.mutate({
+                      invoiceId: dbInvoice.id,
+                      creditAmount: otherCreditInput.amount,
+                      creditReason: otherCreditInput.reason || undefined,
+                    });
+                  }}
+                  disabled={applyCustomCreditMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold disabled:opacity-50"
+                >
+                  {applyCustomCreditMutation.isPending ? 'Saving...' : 'Save Credit'}
+                </button>
+                <button
+                  onClick={() => {
+                    setOtherCreditInput({ amount: 0, reason: "" });
+                    setShowCreditModal(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                >
+                  Cancel
+                </button>
               </div>
-            </div>
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={() => setShowCreditModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
-              >
-                Apply
-              </button>
-              <button
-                onClick={() => {
-                  setOtherCredit({ amount: 0, reason: "" });
-                  setShowCreditModal(false);
-                }}
-                className="flex-1 px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30"
-              >
-                Cancel
-              </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Split Invoice Wizard Modal */}
@@ -670,16 +962,31 @@ export default function InvoiceDetail({ studioId, competitionId }: Props) {
         />
       )}
 
-      {/* Sub-Invoices View */}
-      {showSubInvoices && dbInvoice && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="w-full max-w-6xl">
-            <SubInvoiceList
-              parentInvoiceId={dbInvoice.id}
-              onBack={() => setShowSubInvoices(false)}
-            />
+      {/* Sub-Invoices View - rendered via Portal to document.body */}
+      {showSubInvoices && dbInvoice && portalMounted && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/50 backdrop-blur-sm">
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="w-full max-w-6xl max-h-[85vh] overflow-y-auto">
+              <SubInvoiceList
+                parentInvoiceId={dbInvoice.id}
+                onBack={() => setShowSubInvoices(false)}
+              />
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Apply Partial Payment Modal */}
+      {showPaymentModal && dbInvoice && (
+        <ApplyPartialPaymentModal
+          invoiceId={dbInvoice.id}
+          currentBalance={dbInvoice.balance_remaining ? parseFloat(dbInvoice.balance_remaining.toString()) : balanceDue}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
       )}
     </div>
   );

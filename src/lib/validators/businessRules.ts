@@ -364,3 +364,112 @@ export function validateStatusTransition(
     );
   }
 }
+
+/**
+ * Validate IMPROV classification is solo-only
+ *
+ * IMPROV entries are restricted to solo performances only (1 participant).
+ * This validation ensures that entries with the "Improv" classification
+ * cannot be created as duet, trio, or group entries.
+ *
+ * @param classificationId - ID of the classification to check
+ * @param participantCount - Number of dancers in the entry
+ * @throws {Error} If classification is Improv and participant count > 1
+ */
+export async function validateImprovSoloOnly(
+  classificationId: string,
+  participantCount: number
+): Promise<void> {
+  const classification = await prisma.classifications.findUnique({
+    where: { id: classificationId },
+    select: { name: true },
+  });
+
+  if (!classification) {
+    return; // Classification not found - let other validation handle it
+  }
+
+  // Check if this is an Improv classification (case-insensitive)
+  if (classification.name.toLowerCase() === 'improv') {
+    if (participantCount > 1) {
+      throw new Error(
+        `Improv entries are solo-only. Cannot create Improv entry with ${participantCount} dancers.`
+      );
+    }
+  }
+}
+
+/**
+ * Get IMPROV fee override
+ *
+ * Returns the fixed fee for IMPROV classification entries.
+ * IMPROV entries have a flat $110 fee regardless of entry size category pricing.
+ *
+ * @param classificationId - ID of the classification to check
+ * @returns The IMPROV fee (110) if classification is Improv, null otherwise
+ */
+export async function getImprovFeeOverride(
+  classificationId: string
+): Promise<number | null> {
+  const classification = await prisma.classifications.findUnique({
+    where: { id: classificationId },
+    select: { name: true },
+  });
+
+  if (!classification) {
+    return null;
+  }
+
+  // IMPROV has a fixed $110 fee (Glow tenant requirement)
+  if (classification.name.toLowerCase() === 'improv') {
+    return 110;
+  }
+
+  return null;
+}
+
+/**
+ * Validate IMPROV classification requires Improv size category
+ *
+ * IMPROV entries must use the "Improv" entry size category.
+ * This enforces the linkage between IMPROV classification and Improv group size.
+ *
+ * @param classificationId - ID of the classification to check
+ * @param entrySizeCategoryId - ID of the selected entry size category
+ * @throws {Error} If classification is Improv but size category is not Improv
+ */
+export async function validateImprovGroupSize(
+  classificationId: string,
+  entrySizeCategoryId: string | null
+): Promise<void> {
+  if (!classificationId) return;
+
+  const classification = await prisma.classifications.findUnique({
+    where: { id: classificationId },
+    select: { name: true },
+  });
+
+  if (!classification) {
+    return; // Classification not found - let other validation handle it
+  }
+
+  // Check if this is an Improv classification (case-insensitive)
+  if (classification.name.toLowerCase() === 'improv') {
+    if (!entrySizeCategoryId) {
+      throw new Error(
+        'Improv entries must have a size category assigned (Improv size required).'
+      );
+    }
+
+    const sizeCategory = await prisma.entry_size_categories.findUnique({
+      where: { id: entrySizeCategoryId },
+      select: { name: true },
+    });
+
+    if (!sizeCategory || sizeCategory.name !== 'Improv') {
+      throw new Error(
+        `Improv entries must use Improv entry size category. Got: ${sizeCategory?.name || 'unknown'}`
+      );
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { TRPCError } from '@trpc/server';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { isStudioDirector, isAdmin, isSuperAdmin } from '@/lib/auth-utils';
@@ -86,6 +87,35 @@ export const studioRouter = router({
       return studio;
     }),
 
+  // Lookup studio by account recovery token (for legacy token-based claim links)
+  lookupByToken: publicProcedure
+    .input(z.object({
+      token: z.string(),
+    }))
+    .query(async ({ input }) => {
+      // Look up the token in account_recovery_tokens
+      const recoveryToken = await prisma.account_recovery_tokens.findUnique({
+        where: { token: input.token },
+        select: { studio_id: true },
+      });
+
+      if (!recoveryToken?.studio_id) {
+        throw new Error('Invalid or expired token');
+      }
+
+      // Get the studio's public code
+      const studio = await prisma.studios.findUnique({
+        where: { id: recoveryToken.studio_id },
+        select: { public_code: true },
+      });
+
+      if (!studio?.public_code) {
+        throw new Error('Studio not found');
+      }
+
+      return { public_code: studio.public_code };
+    }),
+
   // Claim studio ownership (bypasses RLS for unclaimed studios)
   claimStudio: protectedProcedure
     .input(z.object({
@@ -118,9 +148,6 @@ export const studioRouter = router({
         select: {
           first_name: true,
           last_name: true,
-          users: {
-            select: { email: true }
-          }
         },
       });
 
@@ -169,15 +196,40 @@ export const studioRouter = router({
         logger.error('Failed to log activity (studio.claim)', { error: err instanceof Error ? err : new Error(String(err)) });
       }
 
-      // Send notification email to Super Admin
+      // Get Competition Director for this tenant
+      const competitionDirector = await prisma.user_profiles.findFirst({
+        where: {
+          tenant_id: studio.tenant_id,
+          role: 'competition_director',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      // Get CD email from auth.users if available
+      let cdEmail: string | null = null;
+      if (competitionDirector?.id) {
+        const authUser = await prisma.$queryRaw<{ email: string }[]>`
+          SELECT email FROM auth.users WHERE id = ${competitionDirector.id}::uuid LIMIT 1
+        `;
+        cdEmail = authUser[0]?.email || null;
+      }
+
+      // Get claimer's email
+      const authUserClaimer = await prisma.$queryRaw<{ email: string }[]>`
+        SELECT email FROM auth.users WHERE id = ${userId}::uuid LIMIT 1
+      `;
+      const claimerEmail = authUserClaimer[0]?.email || 'Unknown';
+
+      // Send notification email to Super Admin AND tenant CD
       const { sendEmail } = await import('@/lib/email');
-      try {
-        const emailResult = await sendEmail({
-          to: 'danieljohnabrahamson@gmail.com',
-          subject: `🎉 Studio Claimed: ${studio.name} (${tenant?.name})`,
-          templateType: 'studio-claimed',
-          studioId: studio.id,
-          html: `
+      const emailRecipients = ['danieljohnabrahamson@gmail.com'];
+      if (cdEmail) {
+        emailRecipients.push(cdEmail);
+      }
+
+      const emailTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -197,7 +249,7 @@ export const studioRouter = router({
 
     <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0 0 10px 0; color: #374151;"><strong>Claimed By:</strong> ${userProfile?.first_name || ''} ${userProfile?.last_name || ''}</p>
-      <p style="margin: 0 0 0 0; color: #374151;"><strong>Email:</strong> ${userProfile?.users?.email || 'Unknown'}</p>
+      <p style="margin: 0 0 0 0; color: #374151;"><strong>Email:</strong> ${claimerEmail}</p>
     </div>
 
     <p style="color: #6b7280; font-size: 14px; margin: 20px 0 0 0;">
@@ -212,22 +264,34 @@ export const studioRouter = router({
   </div>
 </body>
 </html>
-          `,
-        });
+      `;
 
-        // Log email result
-        if (!emailResult.success) {
-          logger.error('Failed to send claim notification email', {
-            error: new Error(emailResult.error || 'Unknown email error'),
+      try {
+        // Send to all recipients
+        for (const recipient of emailRecipients) {
+          const emailResult = await sendEmail({
+            to: recipient,
+            subject: `🎉 Studio Claimed: ${studio.name} (${tenant?.name})`,
+            templateType: 'studio-claimed',
             studioId: studio.id,
-            studioName: studio.name,
+            html: emailTemplate,
           });
-        } else {
-          logger.info('Claim notification email sent', {
-            studioId: studio.id,
-            studioName: studio.name,
-            to: 'danieljohnabrahamson@gmail.com',
-          });
+
+          // Log email result
+          if (!emailResult.success) {
+            logger.error('Failed to send claim notification email', {
+              error: new Error(emailResult.error || 'Unknown email error'),
+              studioId: studio.id,
+              studioName: studio.name,
+              recipient,
+            });
+          } else {
+            logger.info('Claim notification email sent', {
+              studioId: studio.id,
+              studioName: studio.name,
+              to: recipient,
+            });
+          }
         }
       } catch (emailError) {
         // Don't fail the claim if email fails - just log it
@@ -273,7 +337,14 @@ export const studioRouter = router({
     }
 
     // Studio directors can only see their own studio (studio.ts:42-49 sets ctx.studioId)
-    if (isStudioDirector(ctx.userRole) && ctx.studioId) {
+    if (isStudioDirector(ctx.userRole)) {
+      // SECURITY: Block access if studioId is missing (prevents data leak)
+      if (!ctx.studioId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Studio not found. Please contact support.',
+        });
+      }
       where.id = ctx.studioId;
     }
 
@@ -293,6 +364,13 @@ export const studioRouter = router({
         phone: true,
         website: true,
         created_at: true,
+        _count: {
+          select: {
+            dancers: true,
+            competition_entries: true,
+            reservations: true,
+          },
+        },
       },
       orderBy: {
         name: 'asc',
@@ -416,6 +494,19 @@ export const studioRouter = router({
 
       // Send "studio_profile_submitted" email to Competition Directors (non-blocking)
       try {
+        // Get tenant subdomain and branding for URL construction and email styling
+        const tenant = await prisma.tenants.findUnique({
+          where: { id: ctx.tenantId! },
+          select: { subdomain: true, branding: true },
+        });
+
+        if (!tenant) {
+          throw new Error('Tenant not found');
+        }
+
+        const portalUrl = `https://${tenant.subdomain}.compsync.net`;
+        const branding = tenant.branding as { primaryColor?: string; secondaryColor?: string } | null;
+
         // Get all Competition Directors for this tenant
         const competitionDirectors = await prisma.user_profiles.findMany({
           where: {
@@ -441,7 +532,8 @@ export const studioRouter = router({
             studioEmail: studio.email || '',
             city: studio.city || undefined,
             province: studio.province || undefined,
-            portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/admin/studios`,
+            portalUrl: `${portalUrl}/dashboard/admin/studios`,
+            tenantBranding: branding || undefined,
           };
 
           const html = await renderStudioProfileSubmitted(emailData);
@@ -516,18 +608,6 @@ export const studioRouter = router({
           updated_at: new Date(),
         },
         include: {
-          users_studios_owner_idTousers: {
-            select: {
-              id: true,
-              email: true,
-              user_profiles: {
-                select: {
-                  first_name: true,
-                  last_name: true,
-                },
-              },
-            },
-          },
           tenants: {
             select: {
               name: true,
@@ -537,6 +617,24 @@ export const studioRouter = router({
           },
         },
       });
+
+      // Fetch owner email from auth.users and profile separately
+      let ownerEmail: string | null = null;
+      let ownerProfile: { first_name: string | null; last_name: string | null } | null = null;
+
+      if (studio.owner_id) {
+        // Get email from auth.users
+        const authUser = await prisma.$queryRaw<{ email: string }[]>`
+          SELECT email FROM auth.users WHERE id = ${studio.owner_id}::uuid LIMIT 1
+        `;
+        ownerEmail = authUser[0]?.email || null;
+
+        // Get profile from user_profiles
+        ownerProfile = await prisma.user_profiles.findUnique({
+          where: { id: studio.owner_id },
+          select: { first_name: true, last_name: true },
+        });
+      }
 
       // Activity logging (non-blocking)
       try {
@@ -556,41 +654,42 @@ export const studioRouter = router({
       }
 
       // Send approval email to studio owner
-      if (studio.users_studios_owner_idTousers?.email && studio.users_studios_owner_idTousers.id) {
+      if (ownerEmail && studio.owner_id) {
         try {
           // Check if studio_approved email preference is enabled
-          const isEnabled = await isEmailEnabled(studio.users_studios_owner_idTousers.id, 'studio_approved');
+          const isEnabled = await isEmailEnabled(studio.owner_id, 'studio_approved');
 
           if (isEnabled) {
-            const profile = studio.users_studios_owner_idTousers.user_profiles;
-            const ownerName = profile && (profile.first_name || profile.last_name)
-              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+            const ownerName = ownerProfile && (ownerProfile.first_name || ownerProfile.last_name)
+              ? `${ownerProfile.first_name || ''} ${ownerProfile.last_name || ''}`.trim()
               : undefined;
 
+            const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+            const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string; logo?: string } | null;
             const emailData: StudioApprovedData = {
               studioName: studio.name,
               ownerName,
-              portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+              portalUrl: `${portalUrl}/dashboard`,
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderStudioApproved(emailData);
             const subject = getEmailSubject('studio-approved', { studioName: studio.name });
 
             await sendEmail({
-              to: studio.users_studios_owner_idTousers.email,
+              to: ownerEmail,
               subject,
               html,
             });
 
             // Also send welcome email
             const tenantName = studio.tenants?.name || 'Competition Portal';
-            const branding = studio.tenants?.branding as any;
             const welcomeHtml = await renderEmail(
               WelcomeEmail({
                 name: ownerName || 'Studio Owner',
-                email: studio.users_studios_owner_idTousers.email,
+                email: ownerEmail,
                 studioPublicCode: studio.public_code || undefined,
-                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+                dashboardUrl: `${portalUrl}/dashboard`,
                 tenantBranding: {
                   tenantName: studio.tenants?.name,
                   primaryColor: branding?.primaryColor,
@@ -600,7 +699,7 @@ export const studioRouter = router({
               })
             );
             await sendEmail({
-              to: studio.users_studios_owner_idTousers.email,
+              to: ownerEmail,
               subject: `Welcome to ${tenantName} - Studio Approved!`,
               html: welcomeHtml,
             });
@@ -637,20 +736,32 @@ export const studioRouter = router({
           updated_at: new Date(),
         },
         include: {
-          users_studios_owner_idTousers: {
+          tenants: {
             select: {
-              id: true,
-              email: true,
-              user_profiles: {
-                select: {
-                  first_name: true,
-                  last_name: true,
-                },
-              },
+              subdomain: true,
+              branding: true,
             },
           },
         },
       });
+
+      // Fetch owner email from auth.users and profile separately
+      let ownerEmail: string | null = null;
+      let ownerProfile: { first_name: string | null; last_name: string | null } | null = null;
+
+      if (studio.owner_id) {
+        // Get email from auth.users
+        const authUser = await prisma.$queryRaw<{ email: string }[]>`
+          SELECT email FROM auth.users WHERE id = ${studio.owner_id}::uuid LIMIT 1
+        `;
+        ownerEmail = authUser[0]?.email || null;
+
+        // Get profile from user_profiles
+        ownerProfile = await prisma.user_profiles.findUnique({
+          where: { id: studio.owner_id },
+          select: { first_name: true, last_name: true },
+        });
+      }
 
       // Activity logging (non-blocking)
       try {
@@ -671,30 +782,32 @@ export const studioRouter = router({
       }
 
       // Send rejection email to studio owner
-      if (studio.users_studios_owner_idTousers?.email && studio.users_studios_owner_idTousers.id) {
+      if (ownerEmail && studio.owner_id) {
         try {
           // Check if studio_rejected email preference is enabled
-          const isEnabled = await isEmailEnabled(studio.users_studios_owner_idTousers.id, 'studio_rejected');
+          const isEnabled = await isEmailEnabled(studio.owner_id, 'studio_rejected');
 
           if (isEnabled) {
-            const profile = studio.users_studios_owner_idTousers.user_profiles;
-            const ownerName = profile && (profile.first_name || profile.last_name)
-              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+            const ownerName = ownerProfile && (ownerProfile.first_name || ownerProfile.last_name)
+              ? `${ownerProfile.first_name || ''} ${ownerProfile.last_name || ''}`.trim()
               : undefined;
 
+            const portalUrl = `https://${studio.tenants.subdomain}.compsync.net`;
+            const branding = studio.tenants?.branding as { primaryColor?: string; secondaryColor?: string } | null;
             const emailData: StudioRejectedData = {
               studioName: studio.name,
               ownerName,
               reason: input.reason,
-              portalUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+              portalUrl: `${portalUrl}/dashboard`,
               contactEmail: process.env.CONTACT_EMAIL || 'info@example.com',
+              tenantBranding: branding || undefined,
             };
 
             const html = await renderStudioRejected(emailData);
             const subject = getEmailSubject('studio-rejected', { studioName: studio.name });
 
             await sendEmail({
-              to: studio.users_studios_owner_idTousers.email,
+              to: ownerEmail,
               subject,
               html,
             });
@@ -712,7 +825,6 @@ export const studioRouter = router({
   delete: protectedProcedure
     .input(z.object({
       id: z.string().uuid(),
-      hardDelete: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
       // Only CDs and super admins can delete studios
@@ -724,11 +836,22 @@ export const studioRouter = router({
         where: { id: input.id },
         select: {
           name: true,
+          tenant_id: true,
           _count: {
             select: {
               dancers: true,
               competition_entries: true,
               reservations: true,
+            },
+          },
+          reservations: {
+            where: {
+              status: 'approved',
+            },
+            select: {
+              id: true,
+              competition_id: true,
+              spaces_confirmed: true,
             },
           },
         },
@@ -738,55 +861,59 @@ export const studioRouter = router({
         throw new Error('Studio not found');
       }
 
+      let totalRefunded = 0;
+
       await prisma.$transaction(async (tx) => {
-        if (input.hardDelete) {
-          // Hard delete: remove all related data
-          // 1. Delete entries
-          await tx.competition_entries.deleteMany({
-            where: { studio_id: input.id },
-          });
+        // Refund approved reservation spaces back to competitions BEFORE deleting
+        for (const reservation of studio.reservations) {
+          const spacesToRefund = reservation.spaces_confirmed || 0;
+          if (spacesToRefund > 0) {
+            // Increment competition capacity
+            await tx.competitions.update({
+              where: { id: reservation.competition_id },
+              data: {
+                available_reservation_tokens: {
+                  increment: spacesToRefund,
+                },
+              },
+            });
 
-          // 2. Delete reservations
-          await tx.reservations.deleteMany({
-            where: { studio_id: input.id },
-          });
+            // Log refund to capacity ledger
+            await tx.capacity_ledger.create({
+              data: {
+                tenant_id: studio.tenant_id,
+                competition_id: reservation.competition_id,
+                reservation_id: reservation.id,
+                change_amount: spacesToRefund, // Positive = refund
+                reason: 'studio_hard_delete',
+                created_by: ctx.userId,
+              },
+            });
 
-          // 3. Delete dancers
-          await tx.dancers.deleteMany({
-            where: { studio_id: input.id },
-          });
-
-          // 4. Delete invoices
-          await tx.invoices.deleteMany({
-            where: { studio_id: input.id },
-          });
-
-          // 5. Delete studio
-          await tx.studios.delete({
-            where: { id: input.id },
-          });
-        } else {
-          // Soft delete: mark as deleted
-          await tx.studios.update({
-            where: { id: input.id },
-            data: {
-              status: 'deleted',
-              updated_at: new Date(),
-            },
-          });
-
-          // Cancel active reservations
-          await tx.reservations.updateMany({
-            where: {
-              studio_id: input.id,
-              status: { in: ['pending', 'approved'] },
-            },
-            data: {
-              status: 'cancelled',
-              internal_notes: 'Studio deleted by super admin',
-            },
-          });
+            totalRefunded += spacesToRefund;
+          }
         }
+
+        // Hard delete: CASCADE delete all related records
+        // Delete competition entries (references studio_id)
+        await tx.competition_entries.deleteMany({
+          where: { studio_id: input.id },
+        });
+
+        // Delete dancers (references studio_id)
+        await tx.dancers.deleteMany({
+          where: { studio_id: input.id },
+        });
+
+        // Delete reservations (references studio_id)
+        await tx.reservations.deleteMany({
+          where: { studio_id: input.id },
+        });
+
+        // Finally, hard delete the studio itself
+        await tx.studios.delete({
+          where: { id: input.id },
+        });
       });
 
       // Activity logging (non-blocking)
@@ -794,7 +921,7 @@ export const studioRouter = router({
         await logActivity({
           userId: ctx.userId,
           studioId: input.id,
-          action: input.hardDelete ? 'studio.hard_delete' : 'studio.soft_delete',
+          action: 'studio.delete',
           entityType: 'studio',
           entityId: input.id,
           details: {
@@ -802,6 +929,7 @@ export const studioRouter = router({
             dancers_count: studio._count.dancers,
             entries_count: studio._count.competition_entries,
             reservations_count: studio._count.reservations,
+            spaces_refunded: totalRefunded,
           },
         });
       } catch (err) {
@@ -810,16 +938,17 @@ export const studioRouter = router({
 
       return {
         success: true,
-        message: input.hardDelete ? 'Studio permanently deleted' : 'Studio soft deleted',
+        message: 'Studio deleted and spaces refunded',
         deletedCounts: {
           dancers: studio._count.dancers,
           entries: studio._count.competition_entries,
           reservations: studio._count.reservations,
         },
+        spacesRefunded: totalRefunded,
       };
     }),
 
-  // P1-9: Get studios with entries for a specific competition
+  // Get studios with entries for a specific competition (for scheduler)
   getStudiosForCompetition: publicProcedure
     .input(
       z.object({
@@ -829,15 +958,11 @@ export const studioRouter = router({
     )
     .query(async ({ input }) => {
       const { competitionId, tenantId } = input;
-
-      // Get all studios with entries for this competition
       const studios = await prisma.studios.findMany({
         where: {
           tenant_id: tenantId,
           competition_entries: {
-            some: {
-              competition_id: competitionId,
-            },
+            some: { competition_id: competitionId },
           },
         },
         select: {
@@ -846,19 +971,13 @@ export const studioRouter = router({
           _count: {
             select: {
               competition_entries: {
-                where: {
-                  competition_id: competitionId,
-                },
+                where: { competition_id: competitionId },
               },
             },
           },
         },
-        orderBy: {
-          name: 'asc',
-        },
+        orderBy: { name: 'asc' },
       });
-
-      // Transform to include entry count directly
       return studios.map((studio) => ({
         id: studio.id,
         name: studio.name,

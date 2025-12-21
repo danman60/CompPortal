@@ -85,10 +85,10 @@ export default async function DashboardPage() {
 
   const role = userProfile?.role || 'studio_director';
 
-  // Get branding colors from tenant (defaults to pink/purple for non-admin)
+  // Get branding colors from tenant (matches TenantThemeProvider defaults)
   const branding = tenant?.branding as any;
-  const primaryColor = branding?.primaryColor || '#FF1493';
-  const secondaryColor = branding?.secondaryColor || '#EC4899';
+  const primaryColor = branding?.primaryColor || '#6366F1';
+  const secondaryColor = branding?.secondaryColor || '#8B5CF6';
   const logoUrl = branding?.logoUrl || null;
 
   return (

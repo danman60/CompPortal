@@ -29,7 +29,20 @@ export function useEntriesFilters(
   reservations: Reservation[]
 ) {
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card'); // Default to card for mobile-first
+
+  // Force cards view on mobile (< 640px / sm breakpoint)
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 640) {
+        setViewMode('card');
+      }
+    };
+
+    handleResize(); // Check on mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Filter to all post-approval reservations (Phase1 spec:61)
   // Show approved, adjusted, summarized, invoiced, and closed

@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
     authors: [{ name: `${tenantName} Team` }],
     creator: tenantName,
     publisher: tenantName,
-    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://comp-portal-one.vercel.app'),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL!),
     openGraph: {
       type: 'website',
       locale: 'en_US',

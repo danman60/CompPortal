@@ -25,8 +25,18 @@
  * @param isoDateString - Date in ISO format (YYYY-MM-DD)
  * @returns Date object at UTC midnight, or undefined if input is empty
  */
-export function parseISODateToUTC(isoDateString: string | undefined | null): Date | undefined {
-  if (!isoDateString || isoDateString.trim() === '') {
+export function parseISODateToUTC(isoDateString: string | Date | undefined | null): Date | undefined {
+  if (!isoDateString) {
+    return undefined;
+  }
+
+  // If already a Date object, return as-is
+  if (isoDateString instanceof Date) {
+    return isoDateString;
+  }
+
+  // If string is empty after trimming, return undefined
+  if (isoDateString.trim() === '') {
     return undefined;
   }
 

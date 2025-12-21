@@ -37,7 +37,7 @@ export default function InvoiceDelivery({
   routineCount,
   invoiceUrl,
   dueDate,
-  portalUrl = 'https://www.compsync.net/dashboard',
+  portalUrl,
   tenantBranding,
 }: InvoiceDeliveryProps) {
   const primaryColor = tenantBranding?.primaryColor || defaultBranding.primaryColor;
@@ -73,7 +73,7 @@ export default function InvoiceDelivery({
                     <Text style={{...emailTheme.value, margin: '0'}}>{routineCount}</Text>
                   </td>
                   <td style={{width: '50%', verticalAlign: 'top', padding: '0', textAlign: 'right' as const}}>
-                    <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Total Amount</Text>
+                    <Text style={{...emailTheme.label, margin: '0 0 8px 0'}}>Amount Due</Text>
                     <Text style={{...emailTheme.value, color: '#22c55e', fontSize: '28px', margin: '0'}}>
                       ${totalAmount.toFixed(2)}
                     </Text>

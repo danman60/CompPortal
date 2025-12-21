@@ -70,29 +70,31 @@ export function LiveSummaryBar({
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900/95 via-indigo-900/95 to-blue-900/95 backdrop-blur-md border-t border-white/20 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 md:py-4">
+          {/* Mobile Layout: button first, then stats (reversed) so button is always visible above bottom nav */}
+          <div className="flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            {/* Stats - Compact 3-column grid on mobile, flex on desktop */}
+            <div className="grid grid-cols-3 gap-2 md:flex md:items-center md:gap-8">
               <div className="text-white">
-                <div className="text-sm text-white/60">Available Slots</div>
-                <div className="text-2xl font-bold">🎫 {confirmedSpaces}</div>
+                <div className="text-xs md:text-sm text-white/60">Slots</div>
+                <div className="text-lg md:text-2xl font-bold">🎫 {confirmedSpaces}</div>
               </div>
 
               <div className="text-white">
-                <div className="text-sm text-white/60">Created</div>
-                <div className="text-2xl font-bold">✅ {created}</div>
+                <div className="text-xs md:text-sm text-white/60">Created</div>
+                <div className="text-lg md:text-2xl font-bold">✅ {created}</div>
               </div>
 
               <div className="text-white">
-                <div className="text-sm text-white/60">Remaining</div>
-                <div className={`text-2xl font-bold ${isIncomplete ? 'text-red-400' : 'text-green-400'}`}>
+                <div className="text-xs md:text-sm text-white/60">Remaining</div>
+                <div className={`text-lg md:text-2xl font-bold ${isIncomplete ? 'text-red-400' : 'text-green-400'}`}>
                   {confirmedSpaces - created}
                 </div>
               </div>
 
-              <div className="text-white">
-                <div className="text-sm text-white/60">Deposit</div>
-                <div className="text-2xl font-bold text-blue-300">
+              <div className="text-white hidden sm:block">
+                <div className="text-xs md:text-sm text-white/60">Deposit</div>
+                <div className="text-lg md:text-2xl font-bold text-blue-300">
                   ${(reservation.deposit_amount
                     ? (typeof reservation.deposit_amount === 'number'
                       ? reservation.deposit_amount
@@ -101,20 +103,21 @@ export function LiveSummaryBar({
                 </div>
               </div>
 
-              <div className="text-white">
-                <div className="text-sm text-white/60">Event</div>
-                <div className="text-lg font-medium">
+              <div className="text-white hidden lg:block">
+                <div className="text-xs md:text-sm text-white/60">Event</div>
+                <div className="text-sm md:text-lg font-medium truncate max-w-[200px]">
                   🎪 {(reservation as any).competitions?.name || 'Unknown'}
                 </div>
               </div>
             </div>
 
-            <div>
+            {/* Action button */}
+            <div className="w-full md:w-auto">
               {isClosed ? (
-                <div className="text-white/60 text-sm">
-                  <div>Summary submitted (reservation closed)</div>
-                  <div className="text-xs text-white/40 mt-1">
-                    💡 You can edit your routines/dancers, but create a new reservation to add more routines
+                <div className="text-white/60 text-xs md:text-sm text-center md:text-right">
+                  <div>Summary submitted</div>
+                  <div className="text-xs text-white/40 mt-1 hidden md:block">
+                    💡 Edit routines/dancers, but create new reservation to add more
                   </div>
                 </div>
               ) : (
@@ -122,9 +125,9 @@ export function LiveSummaryBar({
                   onClick={handleSubmit}
                   disabled={!canSubmit}
                   variant="primary"
-                  className="text-lg px-6 py-3"
+                  className="w-full md:w-auto text-sm md:text-lg px-4 md:px-6 py-2 md:py-3"
                 >
-                  📤 Submit Summary
+                  📤 View/Submit Summary
                 </Button>
               )}
             </div>
