@@ -91,7 +91,7 @@ export default async function AddDancersPage() {
           >
             ← Back to Dancers
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Add Dancers</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">Add Dancers</h1>
           <p className="text-gray-400">
             Add one or more dancers using the table below · Studio: {studioName}
           </p>

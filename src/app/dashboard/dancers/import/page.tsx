@@ -23,7 +23,7 @@ export default async function DancerImportPage() {
           >
             ← Back to Dancers
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Import Dancers</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">Import Dancers</h1>
           <p className="text-gray-400">Upload a CSV file to bulk import dancers</p>
         </div>
 

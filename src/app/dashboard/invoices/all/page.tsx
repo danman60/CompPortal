@@ -61,7 +61,7 @@ export default function AllInvoicesPage() {
           >
             ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Global Invoices</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">Global Invoices</h1>
           <p className="text-gray-400">
             View and manage invoices for all studios across all events
           </p>

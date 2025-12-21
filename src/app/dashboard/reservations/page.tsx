@@ -46,7 +46,7 @@ export default async function ReservationsPage() {
           >
             ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Reservations</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">Reservations</h1>
           <p className="text-gray-400">Manage competition reservations and capacity tracking</p>
         </div>
 
