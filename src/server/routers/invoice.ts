@@ -435,6 +435,7 @@ export const invoiceRouter = router({
           competition_id: true,
           status: true,
           created_at: true,
+          total: true,
           balance_remaining: true,
         },
       });
@@ -506,7 +507,27 @@ export const invoiceRouter = router({
       });
       const invoiceMap = new Map<string, typeof invoices[0]>();
       invoices.forEach(inv => {
-        invoiceMap.set(`${inv.studio_id}::${inv.competition_id}`, inv);
+        const key = `${inv.studio_id}::${inv.competition_id}`;
+        const existing = invoiceMap.get(key);
+
+        if (!existing) {
+          invoiceMap.set(key, inv);
+        } else {
+          const existingVoided = existing.status === 'VOIDED';
+          const newVoided = inv.status === 'VOIDED';
+
+          // Prefer non-voided over voided
+          if (existingVoided && !newVoided) {
+            invoiceMap.set(key, inv);
+          }
+          // If both same voided status, prefer newer (by created_at)
+          else if (existingVoided === newVoided) {
+            if (inv.created_at && existing.created_at && new Date(inv.created_at) > new Date(existing.created_at)) {
+              invoiceMap.set(key, inv);
+            }
+          }
+          // If existing is non-voided and new is voided, keep existing
+        }
       });
 
       // Create entry group map for fast lookup
@@ -572,7 +593,8 @@ export const invoiceRouter = router({
             competitionStartDate: competition.competition_start_date,
             competitionEndDate: competition.competition_end_date,
             entryCount: group?._count.id || 0,
-            totalAmount: Number(existingInvoice?.balance_remaining || 0),
+            invoiceTotal: Number(existingInvoice?.total || 0),
+            balanceRemaining: Number(existingInvoice?.balance_remaining || 0),
             hasInvoice: !!existingInvoice,
             invoiceId: existingInvoice?.id || null,
             invoiceStatus: existingInvoice?.status || null, // DRAFT, SENT, PAID, VOIDED
@@ -2433,6 +2455,7 @@ export const invoiceRouter = router({
           status: true,
           tenant_id: true,
           studio_id: true,
+          reservation_id: true,
           studios: { select: { name: true } },
         },
       });
@@ -2495,6 +2518,21 @@ export const invoiceRouter = router({
             updated_at: new Date(),
           },
         });
+
+        // Sync reservation payment_status when fully paid
+        if (isFullyPaid && invoice.reservation_id) {
+          await tx.reservations.update({
+            where: { id: invoice.reservation_id },
+            data: {
+              payment_status: 'paid',
+              status: 'closed',
+              is_closed: true,
+              payment_confirmed_at: new Date(),
+              payment_confirmed_by: ctx.userId,
+              updated_at: new Date(),
+            },
+          });
+        }
 
         return { payment, updatedInvoice, isFullyPaid };
       });

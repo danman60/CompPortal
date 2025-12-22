@@ -421,7 +421,7 @@ export default function AllInvoicesList() {
         </div>
         <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-md rounded-xl border border-white/20 p-6">
           <div className="text-3xl font-bold text-white mb-2">
-            {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0))}
+            {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.invoiceTotal || 0), 0))}
           </div>
           <div className="text-sm text-gray-300">Total Revenue</div>
         </div>
@@ -465,7 +465,7 @@ export default function AllInvoicesList() {
                 inv.competitionName || 'N/A',
                 inv.competitionYear || 0,
                 inv.entryCount || 0,
-                (inv.totalAmount || 0).toFixed(2),
+                (inv.invoiceTotal || 0).toFixed(2),
                 inv.reservation?.paymentStatus || 'pending',
               ]);
 
@@ -552,7 +552,8 @@ export default function AllInvoicesList() {
                 <SortableHeader label="Studio" sortKey="studioName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Event" sortKey="competitionName" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Routines" sortKey="entryCount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
-                <SortableHeader label="Balance Due" sortKey="totalAmount" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Invoice Total" sortKey="invoiceTotal" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
+                <SortableHeader label="Balance Due" sortKey="balanceRemaining" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Invoice Status" sortKey="invoiceStatus" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <SortableHeader label="Payment Status" sortKey="reservation.payment_status" sortConfig={sortConfig} onSort={requestSort} className="text-xs uppercase tracking-wider" />
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
@@ -563,7 +564,7 @@ export default function AllInvoicesList() {
             <tbody className="divide-y divide-white/10">
               {sortedInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center">
+                  <td colSpan={9} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center">
                       <div className="text-6xl mb-4">📋</div>
                       <h3 className="text-xl font-bold text-white mb-2">No Invoices Found</h3>
@@ -622,7 +623,10 @@ export default function AllInvoicesList() {
                       {invoice.entryCount || 0}
                     </td>
                     <td className="px-6 py-4 text-white font-semibold">
-                      {formatCurrency(invoice.totalAmount || 0)}
+                      {formatCurrency(invoice.invoiceTotal || 0)}
+                    </td>
+                    <td className="px-6 py-4 text-white font-semibold">
+                      {formatCurrency(invoice.balanceRemaining || 0)}
                     </td>
                     <td className="px-6 py-4">
                       {getInvoiceStatusBadge(invoice.invoiceStatus)}
@@ -650,8 +654,9 @@ export default function AllInvoicesList() {
                         </Link>
                         {invoice.reservation && (
                           <>
-                            <button
-                              onClick={() => handleMarkAsPaid(
+                            {invoice.invoiceStatus !== 'PAID' && invoice.invoiceStatus !== 'VOIDED' && (
+                              <button
+                                onClick={() => handleMarkAsPaid(
                                 invoice.reservation!.id,
                                 invoice.reservation!.paymentStatus || 'pending',
                                 invoice.studioName
@@ -660,7 +665,8 @@ export default function AllInvoicesList() {
                               className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg text-sm font-semibold transition-all border border-green-400/30 disabled:opacity-50"
                             >
                               {processingId === invoice.reservation?.id ? 'Processing...' : 'Mark Paid'}
-                            </button>
+                              </button>
+                            )}
                             <button
                               onClick={() => handleSendReminder(
                                 invoice.studioId,
@@ -747,15 +753,21 @@ export default function AllInvoicesList() {
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-3 gap-4 mb-4">
                     <div>
                       <div className="text-sm text-gray-400">Routines</div>
                       <div className="text-xl font-bold text-white">{invoice.entryCount || 0}</div>
                     </div>
                     <div>
+                      <div className="text-sm text-gray-400">Invoice Total</div>
+                      <div className="text-xl font-bold text-white">
+                        {formatCurrency(invoice.invoiceTotal || 0)}
+                      </div>
+                    </div>
+                    <div>
                       <div className="text-sm text-gray-400">Balance Due</div>
                       <div className="text-xl font-bold text-green-400">
-                        {formatCurrency(invoice.totalAmount || 0)}
+                        {formatCurrency(invoice.balanceRemaining || 0)}
                       </div>
                     </div>
                   </div>
@@ -770,9 +782,10 @@ export default function AllInvoicesList() {
                     </Link>
                     {invoice.reservation && (
                       <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() =>
-                            handleMarkAsPaid(
+                        {invoice.invoiceStatus !== 'PAID' && invoice.invoiceStatus !== 'VOIDED' && (
+                          <button
+                            onClick={() =>
+                              handleMarkAsPaid(
                               invoice.reservation!.id,
                               invoice.reservation!.paymentStatus || 'pending',
                               invoice.studioName
@@ -782,7 +795,8 @@ export default function AllInvoicesList() {
                           className="px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg font-semibold transition-all border border-green-400/30 disabled:opacity-50"
                         >
                           {processingId === invoice.reservation?.id ? 'Processing...' : 'Mark Paid'}
-                        </button>
+                          </button>
+                        )}
                         <button
                           onClick={() =>
                             handleSendReminder(invoice.studioId, invoice.competitionId, invoice.studioName)
