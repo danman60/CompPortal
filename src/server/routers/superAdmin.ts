@@ -2112,30 +2112,37 @@ const schedulingProgressRouter = router({
       const scheduled = Number(progressResult[0]?.scheduled || 0);
       const percentComplete = total > 0 ? ((scheduled / total) * 100).toFixed(1) : '0';
 
+      // Get tenant branding
+      const branding = competition.tenants?.branding as { primaryColor?: string; logoUrl?: string } | null;
+      const primaryColor = branding?.primaryColor || '#7c3aed';
+      const logoUrl = branding?.logoUrl;
+      const tenantName = competition.tenants?.name || 'CompSync';
+
       // Send email using the sendEmail utility
       const { sendEmail } = await import('@/lib/email');
 
       await sendEmail({
         to: input.recipientEmail,
-        subject: `[CompSync] ${competition.name} - ${input.threshold}% Scheduling Milestone`,
+        subject: `[${tenantName}] ${competition.name} - ${input.threshold}% Scheduling Milestone`,
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #7c3aed;">Scheduling Progress Alert</h2>
-            <p>Competition: <strong>${competition.name}</strong></p>
-            <p>Tenant: <strong>${competition.tenants?.name || 'Unknown'}</strong></p>
-            <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
-            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="font-size: 24px; margin: 0; text-align: center;">
-                <strong>${scheduled}</strong> of <strong>${total}</strong> routines scheduled
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; padding: 32px; border-radius: 16px;">
+            ${logoUrl ? `<div style="text-align: center; margin-bottom: 24px;"><img src="${logoUrl}" alt="${tenantName}" style="max-height: 60px; max-width: 200px;" /></div>` : ''}
+            <h2 style="color: ${primaryColor}; margin: 0 0 8px;">Scheduling Progress Alert</h2>
+            <p style="color: #9ca3af; margin: 0 0 24px;">Competition: <strong style="color: #fff;">${competition.name}</strong></p>
+            <div style="background: rgba(255,255,255,0.05); padding: 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+              <p style="font-size: 20px; margin: 0; text-align: center; color: #9ca3af;">
+                <strong style="color: #fff;">${scheduled}</strong> of <strong style="color: #fff;">${total}</strong> routines scheduled
               </p>
-              <p style="font-size: 36px; color: #7c3aed; margin: 10px 0 0; text-align: center;">
-                <strong>${percentComplete}%</strong>
+              <p style="font-size: 48px; color: ${primaryColor}; margin: 16px 0 0; text-align: center; font-weight: bold;">
+                ${percentComplete}%
               </p>
             </div>
-            <p style="color: #6b7280; font-size: 14px;">
-              Threshold alert: ${input.threshold}%<br />
-              Sent at: ${new Date().toISOString()}
+            <p style="color: #6b7280; font-size: 12px; margin-top: 24px; text-align: center;">
+              Milestone: ${input.threshold}% | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} EST
             </p>
+            <div style="text-align: center; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+              <p style="color: #4b5563; font-size: 11px; margin: 0;">Powered by CompSync</p>
+            </div>
           </div>
         `,
         templateType: 'progress_alert',
