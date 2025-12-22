@@ -293,6 +293,13 @@ export default function CompetitionDirectorDashboard({ userEmail, firstName, rol
       description: 'Manage competitions',
     },
     {
+      id: 'calendar-progress',
+      href: '/dashboard/admin/calendar-progress',
+      icon: '📅',
+      title: 'Calendar Progress',
+      description: 'Monitor CD scheduling progress',
+    },
+    {
       id: 'analytics',
       href: '/dashboard/analytics',
       icon: '📊',

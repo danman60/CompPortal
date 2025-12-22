@@ -2016,6 +2016,150 @@ const routineVerificationRouter = router({
 });
 
 // ============================================================================
+// SCHEDULING PROGRESS MONITORING
+// ============================================================================
+
+const schedulingProgressRouter = router({
+  // Get scheduling progress for all competitions
+  getSchedulingProgress: protectedProcedure.query(async ({ ctx }) => {
+    if (!isSuperAdmin(ctx.userRole)) {
+      throw new Error('Only super admins can access scheduling progress');
+    }
+
+    // Get all competitions with their routine counts
+    const progressData = await prisma.$queryRaw<{
+      competition_id: string;
+      competition_name: string;
+      tenant_id: string;
+      tenant_name: string;
+      total_routines: bigint;
+      scheduled_routines: bigint;
+      last_scheduled: Date | null;
+    }[]>`
+      SELECT
+        c.id as competition_id,
+        c.name as competition_name,
+        c.tenant_id,
+        t.name as tenant_name,
+        COUNT(ce.id) as total_routines,
+        COUNT(ce.id) FILTER (WHERE ce.session_id IS NOT NULL) as scheduled_routines,
+        MAX(ce.updated_at) FILTER (WHERE ce.session_id IS NOT NULL) as last_scheduled
+      FROM competitions c
+      INNER JOIN tenants t ON c.tenant_id = t.id
+      LEFT JOIN competition_entries ce ON ce.competition_id = c.id AND ce.status != 'cancelled'
+      WHERE c.status IN ('draft', 'scheduling', 'published')
+      GROUP BY c.id, c.name, c.tenant_id, t.name
+      HAVING COUNT(ce.id) > 0
+      ORDER BY t.name, c.name
+    `;
+
+    const competitions = progressData.map(row => {
+      const total = Number(row.total_routines);
+      const scheduled = Number(row.scheduled_routines);
+      return {
+        competitionId: row.competition_id,
+        competitionName: row.competition_name,
+        tenantId: row.tenant_id,
+        tenantName: row.tenant_name,
+        totalRoutines: total,
+        scheduledRoutines: scheduled,
+        percentComplete: total > 0 ? (scheduled / total) * 100 : 0,
+        lastUpdated: row.last_scheduled?.toISOString() || null,
+      };
+    });
+
+    return { competitions };
+  }),
+
+  // Send progress notification email
+  sendProgressNotification: protectedProcedure
+    .input(
+      z.object({
+        competitionId: z.string().uuid(),
+        threshold: z.number().int().min(0).max(100),
+        recipientEmail: z.string().email(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isSuperAdmin(ctx.userRole)) {
+        throw new Error('Only super admins can send progress notifications');
+      }
+
+      // Get competition details
+      const competition = await prisma.competitions.findUnique({
+        where: { id: input.competitionId },
+        include: { tenants: true },
+      });
+
+      if (!competition) {
+        throw new Error('Competition not found');
+      }
+
+      // Get current progress
+      const progressResult = await prisma.$queryRaw<{
+        total: bigint;
+        scheduled: bigint;
+      }[]>`
+        SELECT
+          COUNT(id) as total,
+          COUNT(id) FILTER (WHERE session_id IS NOT NULL) as scheduled
+        FROM competition_entries
+        WHERE competition_id = ${input.competitionId}
+          AND status != 'cancelled'
+      `;
+
+      const total = Number(progressResult[0]?.total || 0);
+      const scheduled = Number(progressResult[0]?.scheduled || 0);
+      const percentComplete = total > 0 ? ((scheduled / total) * 100).toFixed(1) : '0';
+
+      // Send email using the sendEmail utility
+      const { sendEmail } = await import('@/lib/email');
+
+      await sendEmail({
+        to: input.recipientEmail,
+        subject: `[CompSync] ${competition.name} - ${input.threshold}% Scheduling Milestone`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #7c3aed;">Scheduling Progress Alert</h2>
+            <p>Competition: <strong>${competition.name}</strong></p>
+            <p>Tenant: <strong>${competition.tenants?.name || 'Unknown'}</strong></p>
+            <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="font-size: 24px; margin: 0; text-align: center;">
+                <strong>${scheduled}</strong> of <strong>${total}</strong> routines scheduled
+              </p>
+              <p style="font-size: 36px; color: #7c3aed; margin: 10px 0 0; text-align: center;">
+                <strong>${percentComplete}%</strong>
+              </p>
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">
+              Threshold alert: ${input.threshold}%<br />
+              Sent at: ${new Date().toISOString()}
+            </p>
+          </div>
+        `,
+        templateType: 'progress_alert',
+      });
+
+      // Log activity
+      await logActivity({
+        userId: ctx.userId,
+        action: 'scheduling.progress_notification',
+        entityType: 'competition',
+        entityId: input.competitionId,
+        details: {
+          competition_name: competition.name,
+          threshold: input.threshold,
+          percent_complete: percentComplete,
+          recipient: input.recipientEmail,
+        },
+      });
+
+      return { success: true, percentComplete };
+    }),
+});
+
+// ============================================================================
 // MAIN ROUTER
 // ============================================================================
 
@@ -2031,4 +2175,7 @@ export const superAdminRouter = router({
   digest: digestRouter,
   verifyRoutines: routineVerificationRouter.verifyRoutines,
   applyRoutineCorrections: routineVerificationRouter.applyRoutineCorrections,
+  // Scheduling progress monitoring (Calendar Progress admin)
+  getSchedulingProgress: schedulingProgressRouter.getSchedulingProgress,
+  sendProgressNotification: schedulingProgressRouter.sendProgressNotification,
 });
