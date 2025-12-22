@@ -786,6 +786,7 @@ export const schedulingRouter = router({
           created_at: true,
           has_studio_requests: true, // SD notes flag for blue glow
           scheduling_notes: true, // SD notes text for tooltip
+          special_requirements: true, // Studio requests field from entry form
           dancer_names: true, // Array of dancer names in this routine
 
           studios: {
@@ -905,6 +906,7 @@ export const schedulingRouter = router({
           entryNumber: routine.entry_number, // V4: Sequential entry number
           has_studio_requests: routine.has_studio_requests ?? false, // SD notes flag
           scheduling_notes: routine.scheduling_notes ?? null, // SD notes text
+          special_requirements: routine.special_requirements ?? null, // Studio requests from entry form
           dancer_names: routine.dancer_names ?? [], // Array of dancer names (auto-populated by trigger)
         };
       });

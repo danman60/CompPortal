@@ -155,6 +155,7 @@ interface RoutineData {
   dancer_names?: string[];
   has_studio_requests?: boolean;
   scheduling_notes?: string;
+  special_requirements?: string;
 }
 
 interface BlockData {
@@ -593,8 +594,8 @@ function DroppableScheduleTable({
         hasTrophy={trophyIds.has(actualId)}
         hasConflict={hasConflict}
         conflictInfo={conflictsMap.get(actualId)}
-        hasNotes={routine?.has_studio_requests}
-        notesText={routine?.scheduling_notes}
+        hasNotes={routine?.has_studio_requests || !!routine?.special_requirements || !!routine?.scheduling_notes}
+        notesText={[routine?.scheduling_notes, routine?.special_requirements].filter(Boolean).join('\n---\n') || undefined}
         sessionColor={sessionColors.get(id) || 'bg-purple-500/5'}
         onDelete={isBlock ? () => onDeleteBlock(actualId) : undefined}
         onEdit={isBlock && block ? () => onEditBlock(block) : undefined}
@@ -973,6 +974,7 @@ export default function ScheduleV2Page() {
         dancer_names: r.dancer_names || [],
         has_studio_requests: r.has_studio_requests || false,
         scheduling_notes: r.scheduling_notes || undefined,
+        special_requirements: r.special_requirements || undefined,
       });
     });
     return map;
@@ -2963,9 +2965,9 @@ function DroppableUnscheduledPool({
   const routineNotesText: Record<string, string> = {};
 
   routines.forEach(routine => {
-    if (routine.has_studio_requests || routine.scheduling_notes) {
+    if (routine.has_studio_requests || routine.scheduling_notes || routine.special_requirements) {
       routineNotes[routine.id] = true;
-      routineNotesText[routine.id] = routine.scheduling_notes || 'Has studio requests';
+      routineNotesText[routine.id] = [routine.scheduling_notes, routine.special_requirements].filter(Boolean).join('\n---\n') || 'Has studio requests';
     }
   });
 
