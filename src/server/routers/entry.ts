@@ -169,12 +169,13 @@ export const entryRouter = router({
 
       // Fetch studio and competition data
       // First find the reservation to filter entries by reservation_id (per PHASE1_SPEC.md line 602)
-      // Note: Don't filter by status='approved' here - let idempotency check handle already-submitted summaries
+      // Must filter by approved status to avoid picking up rejected reservations
       const reservation = await prisma.reservations.findFirst({
         where: {
           tenant_id: ctx.tenantId!,
           studio_id: studioId,
           competition_id: competitionId,
+          status: 'approved',
         },
         select: { id: true },
       });
