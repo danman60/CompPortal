@@ -2109,6 +2109,36 @@ export const reservationRouter = router({
         },
       });
 
+      // 🔄 SYNC: Update existing invoice if one exists for this reservation
+      const existingInvoice = await prisma.invoices.findFirst({
+        where: {
+          reservation_id: input.reservationId,
+          status: { notIn: ['VOIDED', 'DRAFT'] }
+        }
+      });
+
+      if (existingInvoice) {
+        const newAmountDue = Number(existingInvoice.total) - input.depositAmount;
+        const newBalanceRemaining = newAmountDue - Number(existingInvoice.amount_paid || 0);
+
+        await prisma.invoices.update({
+          where: { id: existingInvoice.id },
+          data: {
+            deposit_amount: input.depositAmount.toString(),
+            amount_due: newAmountDue.toString(),
+            balance_remaining: newBalanceRemaining.toString(),
+            updated_at: new Date(),
+          }
+        });
+
+        console.log('[DEPOSIT_SYNC] Synced deposit to invoice:', {
+          invoice_id: existingInvoice.id,
+          deposit: input.depositAmount,
+          new_amount_due: newAmountDue,
+          new_balance: newBalanceRemaining,
+        });
+      }
+
       // Log activity
       await logActivity({
         userId: ctx.userId!,
